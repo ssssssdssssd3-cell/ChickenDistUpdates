@@ -192,19 +192,21 @@ namespace ChickenDist.Forms
                 }
 
                 int drawerSafeID = _shiftRow != null && _shiftRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_shiftRow["SafeAccountID"]) : 1;
+                int openedBy = _shiftRow != null && _shiftRow["OpenedBy"] != DBNull.Value ? Convert.ToInt32(_shiftRow["OpenedBy"]) : Session.EmpID;
 
-                // المصروفات والتوريدات
+                // المصروفات والتوريدات النقدية للدرج حصراً
                 var dtExp = DbHelper.Query(@"
                     SELECT 
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
-                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL OR @accId = 0)
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND TransDate >= @dt))
+                      AND (AccountID = @accId OR (@accId = 0 AND (AccountID IS NULL OR AccountID = 1)))
                       AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
                     DbHelper.P("@sid", _shiftID),
                     DbHelper.P("@dt", _openTime),
-                    DbHelper.P("@accId", drawerSafeID));
+                    DbHelper.P("@accId", drawerSafeID),
+                    DbHelper.P("@emp", openedBy));
 
                 if (dtExp.Rows.Count > 0)
                 {
@@ -226,8 +228,8 @@ namespace ChickenDist.Forms
                             ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
                             ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed','Wallet','Instapay','VodafoneCash') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
                         FROM Sales 
-                        WHERE (ShiftID = @sid OR (ShiftID IS NULL AND SaleDate >= @dt)) AND IsPosted = 1",
-                        DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime));
+                        WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND SaleDate >= @dt)) AND IsPosted = 1",
+                        DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime), DbHelper.P("@emp", openedBy));
 
                     if (dtSales.Rows.Count > 0)
                     {
@@ -239,6 +241,10 @@ namespace ChickenDist.Forms
                         _walletSales = Convert.ToDecimal(dtSales.Rows[0]["WalletSales"]);
                         _creditSales = Convert.ToDecimal(dtSales.Rows[0]["CreditSales"]);
                         _otherSales = Convert.ToDecimal(dtSales.Rows[0]["OtherSales"]);
+
+                        decimal calcCredit = Math.Max(0m, (_totalSales - _totalDiscounts) - (_cashSales + _visaSales + _walletSales));
+                        if (calcCredit > _creditSales) _creditSales = calcCredit;
+
                         _netSales = _totalSales - _totalReturns - _totalDiscounts;
                     }
 
@@ -249,8 +255,8 @@ namespace ChickenDist.Forms
                             ISNULL(SUM(CASE WHEN sr.PaymentType = 'Visa' OR (sr.PaymentType IS NULL AND s.SaleType = 'Visa') THEN sr.TotalAmount ELSE 0 END), 0) AS VisaReturns
                         FROM SalesReturns sr
                         LEFT JOIN Sales s ON sr.SaleID = s.SaleID
-                        WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND s.ShiftID = @sid) OR (sr.ShiftID IS NULL AND s.ShiftID IS NULL AND sr.ReturnDate >= @dt))",
-                        DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime));
+                        WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND (sr.CreatedBy = @emp OR s.CreatedBy = @emp) AND sr.ReturnDate >= @dt))",
+                        DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime), DbHelper.P("@emp", openedBy));
 
                     if (dtR.Rows.Count > 0)
                     {

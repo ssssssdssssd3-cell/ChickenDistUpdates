@@ -1541,25 +1541,41 @@ namespace ChickenDist.DAL
                     : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
 
                 object o = null;
-                if (empID > 0 || safeID > 0)
+                // 1. البحث عن وردية مفتوحة لهذا الموظف تحديداً مع الدرج
+                if (empID > 0 && safeID > 0)
                 {
                     o = DbHelper.Scalar(
-                        "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND (OpenedBy = @emp OR SafeAccountID = @safe) ORDER BY ShiftID DESC",
+                        "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND OpenedBy = @emp AND SafeAccountID = @safe ORDER BY ShiftID DESC",
                         DbHelper.P("@emp", empID),
-                        DbHelper.P("@safe", safeID > 0 ? (object)safeID : DBNull.Value));
+                        DbHelper.P("@safe", safeID));
                 }
 
-                if (o == null || o == DBNull.Value)
+                // 2. إذا لم توجد، البحث عن وردية مفتوحة لهذا الموظف
+                if ((o == null || o == DBNull.Value) && empID > 0)
                 {
-                    o = DbHelper.Scalar("SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' ORDER BY ShiftID DESC");
+                    o = DbHelper.Scalar(
+                        "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND OpenedBy = @emp ORDER BY ShiftID DESC",
+                        DbHelper.P("@emp", empID));
+                }
+
+                // 3. كحل أخير، البحث عن وردية مفتوحة لهذا الدرج
+                if ((o == null || o == DBNull.Value) && safeID > 0)
+                {
+                    o = DbHelper.Scalar(
+                        "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND SafeAccountID = @safe ORDER BY ShiftID DESC",
+                        DbHelper.P("@safe", safeID));
                 }
 
                 if (o != null && o != DBNull.Value)
                 {
                     int sid = Convert.ToInt32(o);
                     Session.CurrentShiftID = sid;
-                    // Auto-heal any orphan invoices created today that were saved without a ShiftID
-                    try { DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", DbHelper.P("@sid", sid)); } catch {}
+                    // معالجة الفواتير غير المرتبطة بوردية لهذا الموظف حصراً
+                    try 
+                    { 
+                        DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CreatedBy = @emp AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", 
+                            DbHelper.P("@sid", sid), DbHelper.P("@emp", empID > 0 ? empID : Session.EmpID)); 
+                    } catch {}
                     return sid;
                 }
             }
@@ -1581,17 +1597,27 @@ namespace ChickenDist.DAL
                     ? safeAccountID.Value 
                     : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
 
-                // 1. التحقق من وجود وردية مفتوحة لهذا الموظف أو هذا الدرج تحديداً
+                // 1. التحقق من وجود وردية مفتوحة لهذا الموظف تحديداً
                 object o = DbHelper.Scalar(
-                    "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND (OpenedBy = @emp OR SafeAccountID = @safe) ORDER BY ShiftID DESC",
-                    DbHelper.P("@emp", empID),
-                    DbHelper.P("@safe", safeID > 0 ? (object)safeID : DBNull.Value));
+                    "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND OpenedBy = @emp ORDER BY ShiftID DESC",
+                    DbHelper.P("@emp", empID));
+
+                if (o == null || o == DBNull.Value)
+                {
+                    o = DbHelper.Scalar(
+                        "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND SafeAccountID = @safe ORDER BY ShiftID DESC",
+                        DbHelper.P("@safe", safeID > 0 ? (object)safeID : DBNull.Value));
+                }
 
                 if (o != null && o != DBNull.Value)
                 {
                     int sid = Convert.ToInt32(o);
                     Session.CurrentShiftID = sid;
-                    try { DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", DbHelper.P("@sid", sid)); } catch {}
+                    try 
+                    { 
+                        DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CreatedBy = @emp AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", 
+                            DbHelper.P("@sid", sid), DbHelper.P("@emp", empID)); 
+                    } catch {}
                     return sid;
                 }
 
@@ -1653,7 +1679,11 @@ namespace ChickenDist.DAL
                         DbHelper.P("@uid", empID),
                         DbHelper.P("@ref", newShiftID));
 
-                    try { DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", DbHelper.P("@sid", newShiftID)); } catch {}
+                    try 
+                    { 
+                        DbHelper.Execute("UPDATE Sales SET ShiftID = @sid WHERE ShiftID IS NULL AND CreatedBy = @emp AND CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)", 
+                            DbHelper.P("@sid", newShiftID), DbHelper.P("@emp", empID)); 
+                    } catch {}
 
                     return newShiftID;
                 }

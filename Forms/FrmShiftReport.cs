@@ -322,7 +322,6 @@ namespace ChickenDist.Forms
                     LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
                     WHERE s.ShiftID = @sid",
                     DbHelper.P("@sid", shiftID));
-
                 if (dtShift.Rows.Count == 0) return;
                 DataRow sRow = dtShift.Rows[0];
 
@@ -337,6 +336,7 @@ namespace ChickenDist.Forms
                     : $"🔴 الوردية مغلقة | فتح: {openedBy} | أغلقت بواسطة: {closedBy} | الخزنة: {safeName}";
 
                 int drawerSafeID = sRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(sRow["SafeAccountID"]) : 1;
+                int openedByEmpID = sRow["OpenedBy"] != DBNull.Value ? Convert.ToInt32(sRow["OpenedBy"]) : Session.EmpID;
 
                 // 1. مبيعات الوردية
                 var dtSales = DbHelper.Query(@"
@@ -346,43 +346,48 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(CASE WHEN SaleType = 'Visa' THEN ISNULL(VisaPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
                         ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
                         ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
-                    FROM Sales WHERE (ShiftID = @sid OR (ShiftID IS NULL AND SaleDate >= @dt)) AND IsPosted = 1",
-                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
+                    FROM Sales WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND SaleDate >= @dt)) AND IsPosted = 1",
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@emp", openedByEmpID));
 
                 // 2. مرتجعات الوردية
                 var dtReturns = DbHelper.Query(@"
                     SELECT ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns
                     FROM SalesReturns sr
                     JOIN Sales s ON sr.SaleID = s.SaleID
-                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))",
-                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
+                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND (sr.CreatedBy = @emp OR s.CreatedBy = @emp) AND sr.ReturnDate >= @dt))",
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@emp", openedByEmpID));
 
-                // 3. مصروفات وتوريدات الوردية
+                // 3. مصروفات وتوريدات الوردية للدرج حصراً
                 var dtExp = DbHelper.Query(@"
                     SELECT 
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
-                      AND (AccountID = @accId OR AccountID = 1 OR AccountID IS NULL OR @accId = 0)
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND TransDate >= @dt))
+                      AND (AccountID = @accId OR (@accId = 0 AND (AccountID IS NULL OR AccountID = 1)))
                       AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
                     DbHelper.P("@sid", shiftID),
                     DbHelper.P("@dt", openTime),
-                    DbHelper.P("@accId", drawerSafeID));
+                    DbHelper.P("@accId", drawerSafeID),
+                    DbHelper.P("@emp", openedByEmpID));
 
                 decimal ts  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["TotalSales"])   : 0;
                 decimal cs  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["CashSales"])    : 0;
                 decimal vs  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["VisaSales"])    : 0;
                 decimal cr  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["CreditSales"])  : 0;
                 decimal os  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["OtherSales"])   : 0;
+                
+                decimal calcCredit = Math.Max(0m, ts - (cs + vs));
+                if (calcCredit > cr) cr = calcCredit;
+
                 decimal tr  = dtReturns.Rows.Count > 0 ? Convert.ToDecimal(dtReturns.Rows[0]["TotalReturns"]) : 0;
                 decimal ex  = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalExpenses"]) : 0;
                 decimal cin = dtExp.Rows.Count > 0 ? Convert.ToDecimal(dtExp.Rows[0]["TotalCashIn"]) : 0;
                 decimal oc  = sRow["OpeningCash"] != DBNull.Value ? Convert.ToDecimal(sRow["OpeningCash"]) : 0;
 
                 decimal expected = oc + cs + cin - tr - ex;
-                decimal actual   = status == "Closed" && sRow["ActualCash"] != DBNull.Value ? Convert.ToDecimal(sRow["ActualCash"]) : expected;
-                decimal diff     = status == "Closed" && sRow["Difference"] != DBNull.Value ? Convert.ToDecimal(sRow["Difference"]) : (actual - expected);
+                decimal actual   = sRow["ActualCash"] != DBNull.Value ? Convert.ToDecimal(sRow["ActualCash"]) : expected;
+                decimal diff     = actual - expected;
 
                 lblOpeningCashVal.Text = oc.ToString("N2") + " ج";
                 lblCashSalesVal.Text   = cs.ToString("N2") + " ج";
@@ -395,31 +400,31 @@ namespace ChickenDist.Forms
 
                 if (diff == 0)
                 {
-                    lblDiffVal.Text = "0.00 ج (مطابق ✔)";
+                    lblDiffVal.Text = "0.00 ج (مطابق)";
                     lblDiffVal.ForeColor = Theme.Success;
                 }
-                else if (diff < 0)
+                else if (diff > 0)
                 {
-                    lblDiffVal.Text = $"{diff:N2} ج (عجز 🔴)";
-                    lblDiffVal.ForeColor = Theme.Danger;
+                    lblDiffVal.Text = $"+{diff:N2} ج (زيادة)";
+                    lblDiffVal.ForeColor = Theme.Accent;
                 }
                 else
                 {
-                    lblDiffVal.Text = $"{diff:N2} ج (زيادة 🟢)";
-                    lblDiffVal.ForeColor = Color.FromArgb(52, 152, 219);
+                    lblDiffVal.Text = $"{diff:N2} ج (عجز)";
+                    lblDiffVal.ForeColor = Theme.Danger;
                 }
 
-                // 4. جدول الحركات
+                // 4. جدول الحركات التفصيلية
                 dgMovements.Rows.Clear();
                 var dtMovements = DbHelper.Query(@"
                     SELECT 'مبيعات' AS TransType, s.SaleCode AS RefCode, s.SaleDate AS TransTime, ISNULL(c.ClientName, N'عميل نقدي') AS Details, s.TotalAmount AS Amount
                     FROM Sales s
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
-                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt)) AND s.IsPosted = 1
+                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.CreatedBy = @emp AND s.SaleDate >= @dt)) AND s.IsPosted = 1
                     UNION ALL
                     SELECT 'مرتجع' AS TransType, CAST(sr.ReturnID AS NVARCHAR) AS RefCode, sr.ReturnDate AS TransTime, 'مرتجع فاتورة' AS Details, sr.TotalAmount AS Amount
                     FROM SalesReturns sr JOIN Sales s ON sr.SaleID = s.SaleID 
-                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt))
+                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND (sr.CreatedBy = @emp OR s.CreatedBy = @emp) AND sr.ReturnDate >= @dt))
                     UNION ALL
                     SELECT 
                         CASE 
@@ -438,9 +443,11 @@ namespace ChickenDist.Forms
                         Notes AS Details, 
                         CASE WHEN AmountIn > 0 THEN AmountIn ELSE -AmountOut END AS Amount
                     FROM CashBox 
-                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt)) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND TransDate >= @dt)) 
+                      AND (AccountID = @accId OR (@accId = 0 AND (AccountID IS NULL OR AccountID = 1)))
+                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     ORDER BY TransTime DESC",
-                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@accId", drawerSafeID), DbHelper.P("@emp", openedByEmpID));
 
                 foreach (DataRow r in dtMovements.Rows)
                 {

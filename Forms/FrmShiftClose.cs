@@ -782,6 +782,7 @@ namespace ChickenDist.Forms
             {
                 DateTime openTime = _openShift != null ? Convert.ToDateTime(_openShift["OpenTime"]) : DateTime.Today;
                 int drawerSafeID = _openShift != null && _openShift["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_openShift["SafeAccountID"]) : (Session.DefaultSafeID ?? 1);
+                int openedBy = _openShift != null && _openShift["OpenedBy"] != DBNull.Value ? Convert.ToInt32(_openShift["OpenedBy"]) : Session.EmpID;
 
                 // 1. استعلام إحصائيات المبيعات وطرق الدفع
                 var dtSales = DbHelper.Query(@"
@@ -795,8 +796,8 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
                         ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed','Wallet','Instapay','VodafoneCash') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
                     FROM Sales 
-                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND SaleDate >= @dt)) AND IsPosted = 1",
-                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND SaleDate >= @dt)) AND IsPosted = 1",
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@emp", openedBy));
 
                 // 2. المرتجعات
                 var dtR = DbHelper.Query(@"
@@ -807,21 +808,22 @@ namespace ChickenDist.Forms
                         ISNULL(SUM(CASE WHEN sr.PaymentType = 'Credit' OR (sr.PaymentType IS NULL AND s.SaleType = 'Credit') THEN sr.TotalAmount ELSE 0 END), 0) AS CreditReturns
                     FROM SalesReturns sr
                     LEFT JOIN Sales s ON sr.SaleID = s.SaleID
-                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND s.ShiftID = @sid) OR (sr.ShiftID IS NULL AND s.ShiftID IS NULL AND sr.ReturnDate >= @dt))",
-                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime));
+                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND (sr.CreatedBy = @emp OR s.CreatedBy = @emp) AND sr.ReturnDate >= @dt))",
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@emp", openedBy));
 
-                // 3. المصروفات والتوريدات النقدية
+                // 3. المصروفات والتوريدات النقدية للدرج حصراً
                 var dtExp = DbHelper.Query(@"
                     SELECT 
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND TransDate >= @dt))
-                      AND (AccountID = @accId OR AccountID IS NULL OR @accId = 0)
+                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND TransDate >= @dt))
+                      AND (AccountID = @accId OR (@accId = 0 AND (AccountID IS NULL OR AccountID = 1)))
                       AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ReturnOutcome', 'VisaReturn', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
                     DbHelper.P("@sid", shiftID),
                     DbHelper.P("@dt", openTime),
-                    DbHelper.P("@accId", drawerSafeID));
+                    DbHelper.P("@accId", drawerSafeID),
+                    DbHelper.P("@emp", openedBy));
 
                 int invCount = dtSales.Rows.Count > 0 ? Convert.ToInt32(dtSales.Rows[0]["InvoiceCount"]) : 0;
                 decimal grossSales = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["GrossSales"]) : 0;
@@ -832,6 +834,10 @@ namespace ChickenDist.Forms
                 decimal cr  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["CreditSales"]) : 0;
                 decimal os  = dtSales.Rows.Count > 0 ? Convert.ToDecimal(dtSales.Rows[0]["OtherSales"]) : 0;
                 
+                // التأكد من تطابق المبيعات الآجلة والمتبقية مع الإجمالي الكلي
+                decimal calcCredit = Math.Max(0m, (grossSales - discounts) - (cs + vs + ws));
+                if (calcCredit > cr) cr = calcCredit;
+
                 decimal tr  = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["TotalReturns"]) : 0;
                 decimal crtn = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["CashReturns"]) : 0;
                 decimal vrtn = dtR.Rows.Count > 0 ? Convert.ToDecimal(dtR.Rows[0]["VisaReturns"]) : 0;
@@ -942,7 +948,7 @@ namespace ChickenDist.Forms
                     FROM Sales s
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     LEFT JOIN Employees e ON s.CreatedBy = e.EmpID
-                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.SaleDate >= @dt)) AND s.IsPosted = 1
+                    WHERE (s.ShiftID = @sid OR (s.ShiftID IS NULL AND s.CreatedBy = @emp AND s.SaleDate >= @dt)) AND s.IsPosted = 1
                     
                     UNION ALL
                     
@@ -963,7 +969,7 @@ namespace ChickenDist.Forms
                     FROM SalesReturns sr 
                     LEFT JOIN Sales s ON sr.SaleID = s.SaleID 
                     LEFT JOIN Employees e ON sr.CreatedBy = e.EmpID
-                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND s.ShiftID = @sid) OR (sr.ShiftID IS NULL AND s.ShiftID IS NULL AND sr.ReturnDate >= @dt))
+                    WHERE (sr.ShiftID = @sid OR (sr.ShiftID IS NULL AND (sr.CreatedBy = @emp OR s.CreatedBy = @emp) AND sr.ReturnDate >= @dt))
                     
                     UNION ALL
                     
@@ -993,12 +999,12 @@ namespace ChickenDist.Forms
                         END AS FilterCategory
                     FROM CashBox cb
                     LEFT JOIN Employees e ON cb.CreatedBy = e.EmpID
-                    WHERE (cb.ShiftID = @sid OR (cb.ShiftID IS NULL AND cb.TransDate >= @dt))
-                      AND (cb.AccountID = @accId OR cb.AccountID = 1 OR cb.AccountID IS NULL OR @accId = 0)
+                    WHERE (cb.ShiftID = @sid OR (cb.ShiftID IS NULL AND cb.CreatedBy = @emp AND cb.TransDate >= @dt))
+                      AND (cb.AccountID = @accId OR (@accId = 0 AND (cb.AccountID IS NULL OR cb.AccountID = 1)))
                       AND cb.TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     
                     ORDER BY TransTime DESC",
-                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@accId", drawerSafeID));
+                    DbHelper.P("@sid", shiftID), DbHelper.P("@dt", openTime), DbHelper.P("@accId", drawerSafeID), DbHelper.P("@emp", _openShift != null && _openShift["OpenedBy"] != DBNull.Value ? Convert.ToInt32(_openShift["OpenedBy"]) : Session.EmpID));
 
                 ApplyMovementsFilter();
             }
