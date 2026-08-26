@@ -367,19 +367,21 @@ setlocal enabledelayedexpansion
 :: إنهاء العملية الحالية
 taskkill /f /pid {Process.GetCurrentProcess().Id} >nul 2>&1
 
-:: حلقة تكرار لضمان تحرير الملف واستبداله مباشرة فوق الملف التنفيذي الحالي
+:: حلقة تكرار لضمان تحرير الملف واستبداله مباشرة فوق الملف التنفيذي الأصلي
 set /a attempts=0
 :waitloop
 timeout /t 1 /nobreak > nul
 copy /y ""{newExePath}"" ""{currentExePath}"" > nul 2>&1
 if errorlevel 1 (
+    taskkill /f /pid {Process.GetCurrentProcess().Id} >nul 2>&1
     set /a attempts+=1
-    if !attempts! lss 15 (
+    if !attempts! lss 20 (
         goto waitloop
     )
 )
 
-:: تشغيل البرنامج المحدث فوراً
+:: الانتقال لمجلد البرنامج وتشغيل الملف المحدث فوراً لضمان تحميل الإعدادات وقاعدة البيانات
+cd /d ""{currentDir}""
 start """" ""{currentExePath}""
 
 :: تنظيف ملف التحديث المؤقت
