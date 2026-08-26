@@ -108,39 +108,13 @@ namespace ChickenDist.Services
         {
             try
             {
-                string clientSerial = GetPermanentClientSerial();
-                string jsonPayload = DAL.DriverDAL.BuildDriverExportJson(null);
-                string encrypted = SecurityHelper.Encrypt(jsonPayload);
+                string projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
+                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
 
-                bool uploadOk = false;
-                string statusMsg = $"تم التزامن السحابي بنجاح 🟢 (السيريال: {clientSerial})";
-
-                // 1. Upload to KVDB (CORS-enabled persistent Cloud Store by Client Serial)
-                try
-                {
-                    using (var client = new HttpClient())
-                    {
-                        client.Timeout = TimeSpan.FromSeconds(8);
-                        var content = new StringContent(encrypted, Encoding.UTF8, "text/plain");
-                        var response = await client.PutAsync($"https://kvdb.io/9u8nZ23pBqX412/{clientSerial}", content);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            uploadOk = true;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine("KVDB Upload warning: " + ex.Message);
-                }
-
-                // 2. Upload to DriverPortalServer fallback
-                try
-                {
-                    DriverPortalServer.UploadToCloud();
-                    uploadOk = true;
-                }
-                catch { }
+                bool ok = await PushLiveStatsToFirebaseAsync(projectId);
+                string statusMsg = ok 
+                    ? $"تم التزامن بنجاح مع Firebase 🔥 ({projectId})" 
+                    : "فشل التزامن، يرجى التحقق من اتصال الإنترنت ومشروع Firebase";
 
                 DbHelper.Execute(@"
                     UPDATE CloudSyncSettings 
@@ -148,22 +122,162 @@ namespace ChickenDist.Services
                     WHERE SettingID = 1",
                     DbHelper.P("@status", statusMsg));
 
-                return (uploadOk, statusMsg);
+                return (ok, statusMsg);
             }
             catch (Exception ex)
             {
-                AppLogger.Error("فشل المزامنة مع السيرفر السحابي", ex, "CloudSyncService.SyncNowAsync");
+                AppLogger.Error("فشل المزامنة مع Firebase", ex, "CloudSyncService.SyncNowAsync");
                 return (false, "خطأ أثناء المزامنة: " + ex.Message);
             }
         }
 
-        public static string GeneratePairingPayload()
+        public static async Task<bool> PushLiveStatsToFirebaseAsync(string projectId = null)
         {
-            DataTable dtSet = DbHelper.Query("SELECT TOP 1 ApiUrl, OwnerSecretKey FROM CloudSyncSettings WHERE SettingID = 1");
-            string apiUrl = dtSet.Rows.Count > 0 ? dtSet.Rows[0]["ApiUrl"]?.ToString() : "https://api.chickendist.com/v1";
-            string ownerKey = dtSet.Rows.Count > 0 ? dtSet.Rows[0]["OwnerSecretKey"]?.ToString() : "OWNER-SECRET-KEY";
+            if (string.IsNullOrEmpty(projectId))
+            {
+                projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
+            }
+            if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
 
-            return $@"chickendist://pair?url={Uri.EscapeDataString(apiUrl)}&key={Uri.EscapeDataString(ownerKey)}&company={Uri.EscapeDataString(AppConfig.CompanyName)}";
+            bool rtdbOk = false;
+            bool firestoreOk = false;
+
+            try
+            {
+                var dto = GetLiveStats();
+
+                // 1. حساب صافي الربح اليوم
+                object profitObj = DbHelper.Scalar(
+                    @"SELECT ISNULL(SUM(si.TotalPrice - (si.Quantity * ISNULL(p.PurchasePrice, 0))), 0)
+                      FROM SaleItems si
+                      JOIN Sales s ON si.SaleID = s.SaleID
+                      JOIN Products p ON si.ProductID = p.ProductID
+                      WHERE CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                decimal todayProfit = profitObj != null && profitObj != DBNull.Value ? Convert.ToDecimal(profitObj) : 0m;
+
+                // 2. مشتريات اليوم
+                object purObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(TotalAmount, 0)), 0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                decimal todayPurchases = purObj != null && purObj != DBNull.Value ? Convert.ToDecimal(purObj) : 0m;
+
+                // 3. ديون العملاء
+                object clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Clients WHERE Balance > 0");
+                decimal clientDebts = clientDebtsObj != null && clientDebtsObj != DBNull.Value ? Convert.ToDecimal(clientDebtsObj) : 0m;
+
+                // 4. مستحقات الموردين
+                object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WHERE Balance > 0");
+                decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
+
+                // 5. كشكول النواقص الحقيقي
+                DataTable dtMissing = DbHelper.Query(
+                    "SELECT TOP 40 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(Quantity,0) AS Quantity, ISNULL(MinQuantity,5) AS MinQuantity, ISNULL(Brand,'عام') AS Supplier FROM Products WHERE IsActive=1 AND Quantity <= ISNULL(MinQuantity, 5) ORDER BY Quantity ASC");
+                string missingJson = DataTableToJson(dtMissing);
+
+                // 6. دليل الأصناف
+                DataTable dtProducts = DbHelper.Query(
+                    "SELECT TOP 100 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(SalePrice,0) AS SalePrice, ISNULL(PurchasePrice,0) AS PurchasePrice, ISNULL(Quantity,0) AS Quantity FROM Products WHERE IsActive=1 ORDER BY ProductName ASC");
+                string productsJson = DataTableToJson(dtProducts);
+
+                // 7. قائمة الموردين
+                DataTable dtSuppliers = DbHelper.Query(
+                    "SELECT TOP 30 SupplierID, SupplierName, ISNULL(Balance,0) AS Balance FROM Suppliers WHERE IsActive=1 ORDER BY SupplierName ASC");
+                string suppliersJson = DataTableToJson(dtSuppliers);
+
+                // 8. ديون العملاء
+                DataTable dtClients = DbHelper.Query(
+                    "SELECT TOP 30 ClientID, ClientName, ISNULL(Balance,0) AS Balance FROM Clients WHERE IsActive=1 AND Balance > 0 ORDER BY Balance DESC");
+                string clientsJson = DataTableToJson(dtClients);
+
+                string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string timeStr = DateTime.Now.ToString("hh:mm tt");
+                string storeName = EscapeJsonString(AppConfig.CompanyName);
+
+                // A. الرفع المباشر لـ Firebase Realtime Database (RTDB)
+                try
+                {
+                    string rtdbPayload = "{" +
+                        "\"TodaySalesTotal\": " + dto.TodaySalesTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayCashSales\": " + dto.TodayCashSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayCreditSales\": " + dto.TodayCreditSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"CashboxBalance\": " + dto.CashboxBalance.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayNetProfit\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayPurchases\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"ClientDebts\": " + clientDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"SupplierDebts\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"LowStockCount\": " + dto.LowStockCount + "," +
+                        "\"StoreName\": \"" + storeName + "\"," +
+                        "\"SyncTime\": \"" + timeStr + "\"," +
+                        "\"LastSyncDate\": \"" + isoNow + "\"," +
+                        "\"MissingItems\": " + missingJson + "," +
+                        "\"ProductsCatalog\": " + productsJson + "," +
+                        "\"SuppliersList\": " + suppliersJson + "," +
+                        "\"ClientsList\": " + clientsJson +
+                        "}";
+
+                    using (var client = new HttpClient())
+                    {
+                        client.Timeout = TimeSpan.FromSeconds(10);
+                        var content = new StringContent(rtdbPayload, Encoding.UTF8, "application/json");
+                        var resp = await client.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/erp_data.json", content);
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            rtdbOk = true;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Firebase RTDB Upload: " + ex.Message);
+                }
+
+                // B. الرفع المباشر لـ Google Cloud Firestore
+                try
+                {
+                    string firestorePayload = "{\"fields\": {" +
+                        "\"TodaySalesTotal\": {\"doubleValue\": " + dto.TodaySalesTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"TodayCashSales\": {\"doubleValue\": " + dto.TodayCashSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"TodayCreditSales\": {\"doubleValue\": " + dto.TodayCreditSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"CashboxBalance\": {\"doubleValue\": " + dto.CashboxBalance.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"TodayNetProfit\": {\"doubleValue\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"TodayPurchases\": {\"doubleValue\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"ClientDebts\": {\"doubleValue\": " + clientDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"SupplierDebts\": {\"doubleValue\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
+                        "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
+                        "\"SyncTime\": {\"stringValue\": \"" + timeStr + "\"}," +
+                        "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
+                        "\"MissingItemsJson\": {\"stringValue\": \"" + EscapeJsonString(missingJson) + "\"}," +
+                        "\"ProductsCatalogJson\": {\"stringValue\": \"" + EscapeJsonString(productsJson) + "\"}," +
+                        "\"SuppliersListJson\": {\"stringValue\": \"" + EscapeJsonString(suppliersJson) + "\"}," +
+                        "\"ClientsListJson\": {\"stringValue\": \"" + EscapeJsonString(clientsJson) + "\"}" +
+                        "}}";
+
+                    using (var client = new HttpClient())
+                    {
+                        client.Timeout = TimeSpan.FromSeconds(10);
+                        var content = new StringContent(firestorePayload, Encoding.UTF8, "application/json");
+                        var req = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/live_reports")
+                        {
+                            Content = content
+                        };
+                        var response = await client.SendAsync(req);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            firestoreOk = true;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Firestore Upload: " + ex.Message);
+                }
+
+                return rtdbOk || firestoreOk;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل رفع بيانات المالك لـ Firebase", ex, "PushLiveStatsToFirebaseAsync");
+                return false;
+            }
         }
 
         public static async Task<bool> PushLiveStatsToFirestoreAsync(string projectId = null)

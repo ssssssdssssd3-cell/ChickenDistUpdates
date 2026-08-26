@@ -10,12 +10,12 @@ namespace ChickenDist.Forms
     /// <summary>شاشة إعدادات وتزامن تطبيق الموبايل مع تقارير تفصيلية وتاريخ التحديث</summary>
     public class FrmCloudSync : Form
     {
-        private TextBox txtApiUrl, txtSecretKey;
+        private TextBox txtFirebaseProjectId;
         private CheckBox chkAutoSync;
         private ComboBox cboInterval;
         private Label lblSalesTotal, lblCashSales, lblCreditSales, lblCashboxBalance, lblLowStock, lblSyncStatus, lblLastSyncTime;
         private Label lblInvoiceCount, lblCashIn, lblCashOut, lblStockVal, lblClientDebts, lblSupplierDebts;
-        private Button btnSyncNow, btnSave, btnGeneratePairing;
+        private Button btnSyncNow, btnSave, btnOpenMobileApp;
 
         public FrmCloudSync()
         {
@@ -26,7 +26,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📱 ربط وتزامن تطبيق الموبايل مع التقارير التفصيلية";
+            this.Text = "📱 ربط وتزامن تطبيق الموبايل للمالك (Firebase)";
             this.Size = new Size(1000, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -35,7 +35,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ===== 1. Header Title =====
-            var pnlTitle = Theme.MakeTitleBar("📱 ربط وتزامن تطبيق الموبايل للمالك", "متابعة تفاصيل التقارير وتاريخ آخر تحديث ومزامنة لحظة بلحظة");
+            var pnlTitle = Theme.MakeTitleBar("📱 ربط وتزامن تطبيق الموبايل للمالك (Firebase Cloud)", "متابعة تفاصيل المبيعات والخزنة والديون والأرباح مباشرة عبر فيربيز لحظة بلحظة");
             pnlTitle.Dock = DockStyle.Top;
 
             // ===== 2. Detailed KPI & Report Cards Panel =====
@@ -75,9 +75,9 @@ namespace ChickenDist.Forms
 
             var grpSettings = new GroupBox
             {
-                Text = "⚙️ إعدادات الاتصال وتاريخ التحديث",
+                Text = "🔥 إعدادات الربط المباشر مع Firebase",
                 Dock = DockStyle.Top,
-                Height = 250,
+                Height = 220,
                 ForeColor = Theme.Accent,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 Padding = new Padding(15)
@@ -87,33 +87,29 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 5,
+                RowCount = 4,
                 Padding = new Padding(10)
             };
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200f));
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f));
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
 
-            var lblApi = new Label { Text = "رابط سيرفر الموبايل (API):", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
-            txtApiUrl = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No };
+            var lblProject = new Label { Text = "معرّف مشروع فيربيز (Project ID):", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
+            txtFirebaseProjectId = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No, Font = new Font("Segoe UI", 11f, FontStyle.Bold) };
 
-            var lblKey = new Label { Text = "مفتاح الربط للمالك (Secret):", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
-            txtSecretKey = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No };
+            var lblAuto = new Label { Text = "المزامنة اللحظية:", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
+            chkAutoSync = new CheckBox { Text = "تفعيل المزامنة التلقائية اللحظية مع كل حركة بيع وتقفيل شيفت", AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
 
-            var lblAuto = new Label { Text = "المزامنة التلقائية:", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
-            chkAutoSync = new CheckBox { Text = "تفعيل المزامنة التلقائية مع كل عملية بيع وتقفيل شيفت", AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-
-            var lblInt = new Label { Text = "معدل التكرار:", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
+            var lblInt = new Label { Text = "معدل التحديث:", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
             cboInterval = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            cboInterval.Items.AddRange(new object[] { "كل دقيقة", "كل 5 دقائق", "كل 15 دقيقة", "كل ساعة" });
-            cboInterval.SelectedIndex = 1;
+            cboInterval.Items.AddRange(new object[] { "كل 30 ثانية", "كل دقيقة", "كل 5 دقائق", "كل 15 دقيقة" });
+            cboInterval.SelectedIndex = 0;
 
             lblLastSyncTime = new Label { Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: لم تتم بعد", AutoSize = true, ForeColor = Color.FromArgb(70, 200, 240), Anchor = AnchorStyles.Left, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) };
 
-            tbl.Controls.Add(lblApi, 0, 0); tbl.Controls.Add(txtApiUrl, 1, 0);
-            tbl.Controls.Add(lblKey, 0, 1); tbl.Controls.Add(txtSecretKey, 1, 1);
-            tbl.Controls.Add(lblAuto, 0, 2); tbl.Controls.Add(chkAutoSync, 1, 2);
-            tbl.Controls.Add(lblInt, 0, 3); tbl.Controls.Add(cboInterval, 1, 3);
-            tbl.Controls.Add(lblLastSyncTime, 1, 4);
+            tbl.Controls.Add(lblProject, 0, 0); tbl.Controls.Add(txtFirebaseProjectId, 1, 0);
+            tbl.Controls.Add(lblAuto, 0, 1); tbl.Controls.Add(chkAutoSync, 1, 1);
+            tbl.Controls.Add(lblInt, 0, 2); tbl.Controls.Add(cboInterval, 1, 2);
+            tbl.Controls.Add(lblLastSyncTime, 1, 3);
 
             grpSettings.Controls.Add(tbl);
 
@@ -126,19 +122,19 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            btnSyncNow = Theme.MakeButton("⚡ مزامنة وتحديث التقارير السحابية الآن", Theme.Accent);
-            btnSyncNow.Size = new Size(240, 38);
+            btnSyncNow = Theme.MakeButton("🔥 مزامنة وتحديث بيانات المالك على Firebase الآن", Theme.Accent);
+            btnSyncNow.Size = new Size(300, 40);
             btnSyncNow.Click += BtnSyncNow_Click;
 
-            btnGeneratePairing = Theme.MakeButton("🔑 توليد ونسخ سيريال العميل للموبايل", Color.FromArgb(160, 80, 220));
-            btnGeneratePairing.Size = new Size(240, 38);
-            btnGeneratePairing.Click += BtnGeneratePairing_Click;
+            btnOpenMobileApp = Theme.MakeButton("📱 فتح تطبيق الموبايل للمالك (Web App)", Color.FromArgb(160, 80, 220));
+            btnOpenMobileApp.Size = new Size(260, 40);
+            btnOpenMobileApp.Click += BtnOpenMobileApp_Click;
 
             btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Theme.Success);
-            btnSave.Size = new Size(160, 38);
+            btnSave.Size = new Size(160, 40);
             btnSave.Click += BtnSave_Click;
 
-            pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnGeneratePairing, btnSave });
+            pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnOpenMobileApp, btnSave });
 
             pnlMain.Controls.Add(grpSettings);
             pnlMain.Controls.Add(pnlActions);
@@ -191,23 +187,18 @@ namespace ChickenDist.Forms
         {
             try
             {
-                DataTable dt = DbHelper.Query("SELECT TOP 1 ApiUrl, OwnerSecretKey, AutoSyncEnabled, SyncIntervalMinutes, LastSyncDate, LastSyncStatus FROM CloudSyncSettings WHERE SettingID = 1");
+                string projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
+                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+                txtFirebaseProjectId.Text = projectId;
+
+                DataTable dt = DbHelper.Query("SELECT TOP 1 AutoSyncEnabled, SyncIntervalMinutes, LastSyncDate, LastSyncStatus FROM CloudSyncSettings WHERE SettingID = 1");
                 if (dt.Rows.Count > 0)
                 {
                     DataRow r = dt.Rows[0];
-                    txtApiUrl.Text = r["ApiUrl"]?.ToString() ?? "https://api.chickendist.com/v1";
-                    
-                    string key = r["OwnerSecretKey"]?.ToString();
-                    if (string.IsNullOrEmpty(key) || key == "OWNER-SECRET-KEY")
-                    {
-                        key = CloudSyncService.GetPermanentClientSerial();
-                    }
-                    txtSecretKey.Text = key;
-
                     chkAutoSync.Checked = r["AutoSyncEnabled"] != DBNull.Value && Convert.ToBoolean(r["AutoSyncEnabled"]);
 
-                    int interval = r["SyncIntervalMinutes"] != DBNull.Value ? Convert.ToInt32(r["SyncIntervalMinutes"]) : 5;
-                    cboInterval.SelectedIndex = interval <= 1 ? 0 : interval <= 5 ? 1 : interval <= 15 ? 2 : 3;
+                    int interval = r["SyncIntervalMinutes"] != DBNull.Value ? Convert.ToInt32(r["SyncIntervalMinutes"]) : 1;
+                    cboInterval.SelectedIndex = interval <= 1 ? 0 : interval <= 2 ? 1 : interval <= 5 ? 2 : 3;
 
                     if (r["LastSyncDate"] != DBNull.Value)
                         lblLastSyncTime.Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: " + Convert.ToDateTime(r["LastSyncDate"]).ToString("yyyy-MM-dd HH:mm:ss");
@@ -251,14 +242,21 @@ namespace ChickenDist.Forms
         private async void BtnSyncNow_Click(object sender, EventArgs e)
         {
             btnSyncNow.Enabled = false;
-            lblSyncStatus.Text = "جاري المزامنة...";
+            lblSyncStatus.Text = "جاري المزامنة مع Firebase...";
             try
             {
-                var result = await CloudSyncService.SyncNowAsync();
-                lblSyncStatus.Text = result.message;
+                string projectId = txtFirebaseProjectId.Text.Trim();
+                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+
+                bool ok = await CloudSyncService.PushLiveStatsToFirebaseAsync(projectId);
+                string msg = ok 
+                    ? $"✅ تم تحديث ورفع بيانات المالك الحية بنجاح إلى Firebase 🔥 ({projectId})" 
+                    : "❌ تعذر الاتصال بـ Firebase، يرجى التأكد من اتصال الإنترنت وصحة معرّف المشروع";
+
+                lblSyncStatus.Text = ok ? "متصل 🔥" : "فشل الاتصال";
                 lblLastSyncTime.Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 RefreshLiveStats();
-                MessageBox.Show(result.message, "نتيجة المزامنة والتحديث", MessageBoxButtons.OK, result.success ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+                MessageBox.Show(msg, "نتيجة المزامنة مع Firebase", MessageBoxButtons.OK, ok ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             }
             finally
             {
@@ -266,41 +264,36 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void BtnGeneratePairing_Click(object sender, EventArgs e)
+        private void BtnOpenMobileApp_Click(object sender, EventArgs e)
         {
             try
             {
-                btnGeneratePairing.Enabled = false;
-                btnGeneratePairing.Text = "⏳ جاري التوليد والمزامنة...";
+                string projectId = txtFirebaseProjectId.Text.Trim();
+                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
 
-                string cloudCode = DriverPortalServer.UploadToCloud();
-                if (!string.IsNullOrEmpty(cloudCode))
+                string url = $"https://{projectId}.web.app";
+                string localMobilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp", "index.html");
+
+                if (System.IO.File.Exists(localMobilePath))
                 {
-                    txtSecretKey.Text = cloudCode;
-                    Clipboard.SetText(cloudCode);
-
-                    // Save latest key in settings
-                    DbHelper.Execute("UPDATE CloudSyncSettings SET OwnerSecretKey = @key, LastSyncDate = GETDATE() WHERE SettingID = 1", DbHelper.P("@key", cloudCode));
-
-                    MessageBox.Show(
-                        $"🔑 كود الربط السحابي لمتجرك هو:\n\n" +
-                        $"👉   {cloudCode}   👈\n\n" +
-                        $"✅ تم التزامـن ونسخ الكود بنجاح إلى الحافظة!\n\n" +
-                        $"📋 خطوات الاستخدام:\n" +
-                        $"1. افتح تطبيق الموبايل على أي جهاز من أي مكان.\n" +
-                        $"2. الصق الكود ({cloudCode}) واضغط '⚡ ربط ودخول'.\n" +
-                        $"3. سيتم عرض بيانات محلك الحية فوراً بدون أي إعدادات أخرى.",
-                        "كود الربط بالموبايل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = localMobilePath,
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("خطأ أثناء إنشاء كود الربط السحابي: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                btnGeneratePairing.Enabled = true;
-                btnGeneratePairing.Text = "🔑 توليد كود الربط (السيريال)";
+                MessageBox.Show("تعذر فتح التطبيق: " + ex.Message, "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -308,17 +301,20 @@ namespace ChickenDist.Forms
         {
             try
             {
-                int interval = cboInterval.SelectedIndex == 0 ? 1 : cboInterval.SelectedIndex == 1 ? 5 : cboInterval.SelectedIndex == 2 ? 15 : 60;
+                string projectId = txtFirebaseProjectId.Text.Trim();
+                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+
+                AppConfig.Set("FirebaseProjectId", projectId);
+
+                int interval = cboInterval.SelectedIndex == 0 ? 1 : cboInterval.SelectedIndex == 1 ? 2 : cboInterval.SelectedIndex == 2 ? 5 : 15;
                 DbHelper.Execute(@"
                     UPDATE CloudSyncSettings 
-                    SET ApiUrl = @url, OwnerSecretKey = @key, AutoSyncEnabled = @auto, SyncIntervalMinutes = @int 
+                    SET AutoSyncEnabled = @auto, SyncIntervalMinutes = @int 
                     WHERE SettingID = 1",
-                    DbHelper.P("@url", txtApiUrl.Text.Trim()),
-                    DbHelper.P("@key", txtSecretKey.Text.Trim()),
                     DbHelper.P("@auto", chkAutoSync.Checked),
                     DbHelper.P("@int", interval));
 
-                MessageBox.Show("✅ تم حفظ إعدادات ربط الموبايل بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("✅ تم حفظ إعدادات ربط الموبايل مع Firebase بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
