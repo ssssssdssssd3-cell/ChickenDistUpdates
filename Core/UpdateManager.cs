@@ -327,25 +327,66 @@ namespace ChickenDist.Core
             {
                 MessageBox.Show(
                     $"✅ تم تحميل التحديث (v{remoteVersion}) بنجاح!\n\n" +
-                    "سيتم الآن تحديث ملفات البرنامج وإعادة التشغيل تلقائياً.",
+                    "سيتم الآن استبدال ملف البرنامج وإعادة التشغيل فوراً.",
                     "اكتمل تحميل التحديث",
                     MessageBoxButtons.OK, MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button1,
                     MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 
-                string batPath = Path.Combine(currentDir, "apply_update.bat");
+                ApplyAndReplaceExe(newExePath);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Auto apply update failed", ex, "UpdateManager");
+                try { Process.Start("explorer.exe", $"/select,\"{newExePath}\""); } catch { }
+                Application.Exit();
+            }
+        }
+
+        /// <summary>
+        /// استبدال الملف التنفيذي الحالي للبرنامج (الأيقونة الحالية) بملف جديد وإعادة تشغيله فوراً
+        /// </summary>
+        public static void ApplyAndReplaceExe(string newExePath)
+        {
+            try
+            {
+                if (!File.Exists(newExePath))
+                {
+                    MessageBox.Show("ملف التحديث غير موجود:\n" + newExePath, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                string currentExePath = Process.GetCurrentProcess().MainModule.FileName;
+                string currentDir     = Path.GetDirectoryName(currentExePath);
+                string batPath        = Path.Combine(currentDir, "apply_update.bat");
+
                 string bat = $@"@echo off
 chcp 65001 > nul
-timeout /t 1 /nobreak > nul
+setlocal enabledelayedexpansion
+
+:: إنهاء العملية الحالية
+taskkill /f /pid {Process.GetCurrentProcess().Id} >nul 2>&1
+
+:: حلقة تكرار لضمان تحرير الملف واستبداله مباشرة فوق الملف التنفيذي الحالي
+set /a attempts=0
 :waitloop
-tasklist /fi ""pid eq {Process.GetCurrentProcess().Id}"" | find /i ""{Process.GetCurrentProcess().Id}"" > nul
-if not errorlevel 1 (
-    timeout /t 1 /nobreak > nul
-    goto waitloop
+timeout /t 1 /nobreak > nul
+copy /y ""{newExePath}"" ""{currentExePath}"" > nul 2>&1
+if errorlevel 1 (
+    set /a attempts+=1
+    if !attempts! lss 15 (
+        goto waitloop
+    )
 )
-copy /y ""{newExePath}"" ""{currentExePath}"" > nul
+
+:: تشغيل البرنامج المحدث فوراً
 start """" ""{currentExePath}""
-del ""%~f0""
+
+:: تنظيف ملف التحديث المؤقت
+del /f /q ""{newExePath}"" > nul 2>&1
+
+:: حذف ملف الباتش الذاتي
+(goto) 2>nul & del ""%~f0""
 ";
                 File.WriteAllText(batPath, bat, Encoding.UTF8);
 
@@ -362,9 +403,8 @@ del ""%~f0""
             }
             catch (Exception ex)
             {
-                AppLogger.Error("Auto apply update failed", ex, "UpdateManager");
-                try { Process.Start("explorer.exe", $"/select,\"{newExePath}\""); } catch { }
-                Application.Exit();
+                AppLogger.Error("ApplyAndReplaceExe failed", ex, "UpdateManager");
+                MessageBox.Show("فشل استبدال ملف البرنامج تلقائياً:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

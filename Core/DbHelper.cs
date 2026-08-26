@@ -3718,7 +3718,7 @@ namespace ChickenDist.Core
 
                 if (cmp >= 0)
                 {
-                    // إذا كان هذا الجهاز أحدث، نحدث جدول versions برقم الإصدار الجديد
+                    // إذا كان هذا الجهاز أحدث (الجهاز الرئيسي تم تحديثه مانويل)، نحدث جدول versions برقم الإصدار الجديد بالسيكول فوراً
                     if (cmp > 0)
                     {
                         Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
@@ -3728,24 +3728,19 @@ namespace ChickenDist.Core
                 }
                 else
                 {
-                    // إذا كان إصدار البرنامج الحالي أقدم من المسجل في السيكول (جهاز فرعي لم يتم تحديثه)
-                    string errorMsg = $"⛔ تنبيه هام: عدم تطابق إصدار البرنامج مع السيرفر الرئيسي!\n\n" +
-                                      $"• إصدار هذا الجهاز (الفرعي):           [ v{currentAppVersion} ]\n" +
-                                      $"• إصدار السيرفر الرئيسي وقاعدة البيانات: [ v{dbVersionStr} ]\n\n" +
-                                      $"تم تحديث السيرفر الرئيسي إلى إصدار أحدث (v{dbVersionStr}).\n" +
-                                      $"لا يمكن فتح البرنامج من هذا الجهاز الفرعي إلا بعد تحديثه لنفس إصدار السيرفر الرئيسي منعاً لتلف البيانات وتضارب الفواتير.\n\n" +
-                                      $"هل ترغب في فحص وتنزيل التحديث (v{dbVersionStr}) الآن؟";
+                    // إذا كان إصدار البرنامج على هذا الجهاز أقدم من المسجل في السيكول (جهاز فرعي لم يتم تحديثه مانويل)
+                    string errorMsg = $"⛔ تم منع تشغيل البرنامج - مطلوب تحديث إصدار هذا الجهاز!\n\n" +
+                                      $"• إصدار هذا الجهاز (القديم):            [ v{currentAppVersion} ]\n" +
+                                      $"• إصدار السيرفر الرئيسي المعتمد بالسيكول: [ v{dbVersionStr} ]\n\n" +
+                                      $"تم تحديث السيرفر الرئيسي وقاعدة البيانات إلى الإصدار الأحدث (v{dbVersionStr}).\n" +
+                                      $"تم حظر فتح البرنامج من هذا الجهاز منعاً لتلف البيانات وتضارب الفواتير والعمليات.\n\n" +
+                                      $"يرجى استبدال ملف البرنامج (الأيقونة) على هذا الجهاز بالإصدار الحديث (v{dbVersionStr}).";
 
-                    var result = MessageBox.Show(errorMsg, "⛔ تنبيه عدم تطابق إصدار قاعدة البيانات",
-                        MessageBoxButtons.YesNo,
+                    MessageBox.Show(errorMsg, "⛔ تم حظر التشغيل - إصدار البرنامج غير مطابق للسيرفر",
+                        MessageBoxButtons.OK,
                         MessageBoxIcon.Stop,
                         MessageBoxDefaultButton.Button1,
                         MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-
-                    if (result == DialogResult.Yes)
-                    {
-                        UpdateManager.CheckForUpdates(showNoUpdateMsg: true);
-                    }
 
                     return false;
                 }
