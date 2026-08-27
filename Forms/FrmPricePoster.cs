@@ -397,9 +397,62 @@ namespace ChickenDist.Forms
             int headerH = 160;
             int notesH = string.IsNullOrWhiteSpace(txtPosterNotes.Text) ? 0 : 50;
             int tableHeaderH = 35;
-            int rowH = 30;
             int footerH = 60;
-            int totalH = headerH + notesH + tableHeaderH + (selectedCount * rowH) + footerH + 40;
+
+            bool showQty   = chkShowQty   != null && chkShowQty.Checked;
+            bool showPrice = chkShowPrice == null || chkShowPrice.Checked;
+            int colSerialW = 40;
+            int colSerialX = totalW - 40 - colSerialW;
+            int colNameX, colUnitX, colQtyX, colPriceX;
+            int colNameW, colUnitW, colQtyW, colPriceW;
+
+            if (showQty && showPrice)
+            {
+                colNameX = 290; colNameW = 380;
+                colUnitX = 200; colUnitW = 90;
+                colQtyX  = 120; colQtyW  = 80;
+                colPriceX = 40; colPriceW = 80;
+            }
+            else if (showQty && !showPrice)
+            {
+                colNameX = 230; colNameW = 440;
+                colUnitX = 130; colUnitW = 100;
+                colQtyX  = 40;  colQtyW  = 90;
+                colPriceX = 0;  colPriceW = 0;
+            }
+            else if (!showQty && showPrice)
+            {
+                colNameX = 260; colNameW = 410;
+                colUnitX = 140; colUnitW = 120;
+                colQtyX  = 0;   colQtyW  = 0;
+                colPriceX = 40; colPriceW = 100;
+            }
+            else
+            {
+                colNameX = 40;  colNameW = 630;
+                colUnitX = 0;   colUnitW = 0;
+                colQtyX  = 0;   colQtyW  = 0;
+                colPriceX = 0;  colPriceW = 0;
+            }
+
+            // Pre-calculate dynamic row height for each item (allowing long names to wrap cleanly onto 2 lines)
+            var rowHeights = new System.Collections.Generic.List<int>();
+            using (var bmpMeasure = new Bitmap(1, 1))
+            using (var gMeasure = Graphics.FromImage(bmpMeasure))
+            using (var fBoldMeasure = new Font("Arial", 10.5f, FontStyle.Bold))
+            {
+                var rtlMeasure = new StringFormat { Alignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                foreach (ProductItem item in clbProducts.CheckedItems)
+                {
+                    SizeF sz = gMeasure.MeasureString(item.Name, fBoldMeasure, colNameW - 14, rtlMeasure);
+                    int rh = (sz.Height > 20f || sz.Width > colNameW - 16f) ? 48 : 30;
+                    rowHeights.Add(rh);
+                }
+            }
+
+            int rowsTotalH = 0;
+            foreach (int h in rowHeights) rowsTotalH += h;
+            int totalH = headerH + notesH + tableHeaderH + rowsTotalH + footerH + 40;
 
             if (_posterBitmap != null) _posterBitmap.Dispose();
             _posterBitmap = new Bitmap(totalW, totalH);
@@ -424,8 +477,8 @@ namespace ChickenDist.Forms
                 var fRegular = new Font("Arial", 10f);
 
                 var center = new StringFormat { Alignment = StringAlignment.Center };
-                var rtlNear = new StringFormat { Alignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
-                var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                var rtlNear = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
                 float yCur = 25;
 
@@ -498,44 +551,6 @@ namespace ChickenDist.Forms
                     yCur += notesH;
                 }
 
-                bool showQty   = chkShowQty   != null && chkShowQty.Checked;
-                bool showPrice = chkShowPrice == null || chkShowPrice.Checked;
-                int colSerialX, colNameX, colUnitX, colQtyX, colPriceX;
-                int colSerialW, colNameW, colUnitW, colQtyW, colPriceW;
-
-                // Column layout: always RTL => serial at far right, price at far left
-                colSerialX = totalW - 40 - 40;
-                colSerialW = 40;
-
-                if (showQty && showPrice)
-                {
-                    colNameX = 290; colNameW = 380;
-                    colUnitX = 200; colUnitW = 90;
-                    colQtyX  = 120; colQtyW  = 80;
-                    colPriceX = 40; colPriceW = 80;
-                }
-                else if (showQty && !showPrice)
-                {
-                    colNameX = 230; colNameW = 440;
-                    colUnitX = 130; colUnitW = 100;
-                    colQtyX  = 40;  colQtyW  = 90;
-                    colPriceX = 0;  colPriceW = 0;
-                }
-                else if (!showQty && showPrice)
-                {
-                    colNameX = 260; colNameW = 410;
-                    colUnitX = 140; colUnitW = 120;
-                    colQtyX  = 0;   colQtyW  = 0;
-                    colPriceX = 40; colPriceW = 100;
-                }
-                else // both hidden – show only serial + name
-                {
-                    colNameX = 40;  colNameW = 630;
-                    colUnitX = 0;   colUnitW = 0;
-                    colQtyX  = 0;   colQtyW  = 0;
-                    colPriceX = 0;  colPriceW = 0;
-                }
-
                 // Draw Table Header
                 using (var brushHeader = new SolidBrush(Color.FromArgb(30, 41, 59)))
                 {
@@ -544,13 +559,13 @@ namespace ChickenDist.Forms
 
                 using (var brushWhite = new SolidBrush(Color.White))
                 {
-                    g.DrawString("م", fBold, brushWhite, new RectangleF(colSerialX, yCur + 8, colSerialW, tableHeaderH), rtlCenter);
-                    g.DrawString("اسم الصنف", fBold, brushWhite, new RectangleF(colNameX, yCur + 8, colNameW, tableHeaderH), rtlNear);
-                    if (colUnitW > 0) g.DrawString("الوحدة", fBold, brushWhite, new RectangleF(colUnitX, yCur + 8, colUnitW, tableHeaderH), rtlCenter);
+                    g.DrawString("م", fBold, brushWhite, new RectangleF(colSerialX, yCur, colSerialW, tableHeaderH), rtlCenter);
+                    g.DrawString("اسم الصنف", fBold, brushWhite, new RectangleF(colNameX + 6, yCur, colNameW - 12, tableHeaderH), rtlNear);
+                    if (colUnitW > 0) g.DrawString("الوحدة", fBold, brushWhite, new RectangleF(colUnitX, yCur, colUnitW, tableHeaderH), rtlCenter);
                     if (showQty && colQtyW > 0)
-                        g.DrawString("الكمية", fBold, brushWhite, new RectangleF(colQtyX, yCur + 8, colQtyW, tableHeaderH), rtlCenter);
+                        g.DrawString("الكمية", fBold, brushWhite, new RectangleF(colQtyX, yCur, colQtyW, tableHeaderH), rtlCenter);
                     if (showPrice && colPriceW > 0)
-                        g.DrawString("السعر", fBold, brushWhite, new RectangleF(colPriceX, yCur + 8, colPriceW, tableHeaderH), rtlCenter);
+                        g.DrawString("السعر", fBold, brushWhite, new RectangleF(colPriceX, yCur, colPriceW, tableHeaderH), rtlCenter);
                 }
 
                 using (var penGrid = new Pen(Color.FromArgb(229, 231, 235), 1))
@@ -567,40 +582,44 @@ namespace ChickenDist.Forms
                 using (var brushLightRow = new SolidBrush(Color.FromArgb(245, 245, 245)))
                 using (var brushDarkRow = new SolidBrush(Color.FromArgb(225, 225, 225)))
                 {
-                    foreach (ProductItem item in clbProducts.CheckedItems)
+                    for (int i = 0; i < clbProducts.CheckedItems.Count; i++)
                     {
+                        var item = (ProductItem)clbProducts.CheckedItems[i];
+                        int thisRowH = (i < rowHeights.Count) ? rowHeights[i] : 30;
+
                         if (idx % 2 == 0)
                         {
-                            g.FillRectangle(brushDarkRow, 40, yCur, totalW - 80, rowH);
+                            g.FillRectangle(brushDarkRow, 40, yCur, totalW - 80, thisRowH);
                         }
                         else
                         {
-                            g.FillRectangle(brushLightRow, 40, yCur, totalW - 80, rowH);
+                            g.FillRectangle(brushLightRow, 40, yCur, totalW - 80, thisRowH);
                         }
 
-                        g.DrawString(idx.ToString(), fRegular, brushBlack, new RectangleF(colSerialX, yCur + 6, colSerialW, rowH), rtlCenter);
-                        g.DrawString(item.Name, fBold, brushBlack, new RectangleF(colNameX, yCur + 6, colNameW, rowH), rtlNear);
+                        g.DrawString(idx.ToString(), fRegular, brushBlack, new RectangleF(colSerialX, yCur, colSerialW, thisRowH), rtlCenter);
+                        // Name cell - wraps onto 2 lines cleanly if long
+                        g.DrawString(item.Name, fBold, brushBlack, new RectangleF(colNameX + 6, yCur + 4, colNameW - 12, thisRowH - 8), rtlNear);
                         
                         if (colUnitW > 0)
                         {
                             string unitStr = string.IsNullOrWhiteSpace(item.Unit) ? "قطعة" : item.Unit;
-                            g.DrawString(unitStr, fRegular, brushBlack, new RectangleF(colUnitX, yCur + 6, colUnitW, rowH), rtlCenter);
+                            g.DrawString(unitStr, fRegular, brushBlack, new RectangleF(colUnitX, yCur, colUnitW, thisRowH), rtlCenter);
                         }
                         if (showQty && colQtyW > 0)
-                            g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur + 6, colQtyW, rowH), rtlCenter);
+                            g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur, colQtyW, thisRowH), rtlCenter);
                         if (showPrice && colPriceW > 0)
-                            g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur + 6, colPriceW, rowH), rtlCenter);
+                            g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur, colPriceW, thisRowH), rtlCenter);
 
                         // Draw Grid Lines
-                        g.DrawLine(penGrid, 40, yCur + rowH, totalW - 40, yCur + rowH);
-                        g.DrawLine(penGrid, colSerialX, yCur, colSerialX, yCur + rowH);
-                        if (colNameX > 40) g.DrawLine(penGrid, colNameX, yCur, colNameX, yCur + rowH);
-                        if (colUnitW > 0) g.DrawLine(penGrid, colUnitX, yCur, colUnitX, yCur + rowH);
-                        if (showQty && colQtyW > 0) g.DrawLine(penGrid, colQtyX, yCur, colQtyX, yCur + rowH);
-                        g.DrawLine(penGrid, 40, yCur, 40, yCur + rowH);
-                        g.DrawLine(penGrid, totalW - 40, yCur, totalW - 40, yCur + rowH);
+                        g.DrawLine(penGrid, 40, yCur + thisRowH, totalW - 40, yCur + thisRowH);
+                        g.DrawLine(penGrid, colSerialX, yCur, colSerialX, yCur + thisRowH);
+                        if (colNameX > 40) g.DrawLine(penGrid, colNameX, yCur, colNameX, yCur + thisRowH);
+                        if (colUnitW > 0) g.DrawLine(penGrid, colUnitX, yCur, colUnitX, yCur + thisRowH);
+                        if (showQty && colQtyW > 0) g.DrawLine(penGrid, colQtyX, yCur, colQtyX, yCur + thisRowH);
+                        g.DrawLine(penGrid, 40, yCur, 40, yCur + thisRowH);
+                        g.DrawLine(penGrid, totalW - 40, yCur, totalW - 40, yCur + thisRowH);
 
-                        yCur += rowH;
+                        yCur += thisRowH;
                         idx++;
                     }
                 }
@@ -782,8 +801,8 @@ namespace ChickenDist.Forms
             var fRegular = new Font("Arial", 9.5f);
 
             var center = new StringFormat { Alignment = StringAlignment.Center };
-            var rtlNear = new StringFormat { Alignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
-            var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+            var rtlNear = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+            var rtlCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
             bool showQty   = chkShowQty   != null && chkShowQty.Checked;
             bool showPrice = chkShowPrice == null || chkShowPrice.Checked;
@@ -881,11 +900,11 @@ namespace ChickenDist.Forms
             }
             using (var brushWhite = new SolidBrush(Color.White))
             {
-                g.DrawString("م", fBold, brushWhite, new RectangleF(colSerialX, yCur + 6, colSerialW, headerH), rtlCenter);
-                g.DrawString("اسم الصنف", fBold, brushWhite, new RectangleF(colNameX, yCur + 6, colNameW, headerH), rtlNear);
-                g.DrawString("الوحدة", fBold, brushWhite, new RectangleF(colUnitX, yCur + 6, colUnitW, headerH), rtlCenter);
-                if (showQty && colQtyW > 0)  g.DrawString("الكمية", fBold, brushWhite, new RectangleF(colQtyX, yCur + 6, colQtyW, headerH), rtlCenter);
-                if (showPrice && colPriceW > 0) g.DrawString("السعر", fBold, brushWhite, new RectangleF(colPriceX, yCur + 6, colPriceW, headerH), rtlCenter);
+                g.DrawString("م", fBold, brushWhite, new RectangleF(colSerialX, yCur, colSerialW, headerH), rtlCenter);
+                g.DrawString("اسم الصنف", fBold, brushWhite, new RectangleF(colNameX + 5, yCur, colNameW - 10, headerH), rtlNear);
+                g.DrawString("الوحدة", fBold, brushWhite, new RectangleF(colUnitX, yCur, colUnitW, headerH), rtlCenter);
+                if (showQty && colQtyW > 0)  g.DrawString("الكمية", fBold, brushWhite, new RectangleF(colQtyX, yCur, colQtyW, headerH), rtlCenter);
+                if (showPrice && colPriceW > 0) g.DrawString("السعر", fBold, brushWhite, new RectangleF(colPriceX, yCur, colPriceW, headerH), rtlCenter);
             }
             yCur += headerH;
 
@@ -898,8 +917,14 @@ namespace ChickenDist.Forms
             {
                 while (_printItemIndex < itemsCount)
                 {
+                    var item = (ProductItem)clbProducts.CheckedItems[_printItemIndex];
+
+                    // Check if item name wraps onto 2 lines
+                    SizeF sz = g.MeasureString(item.Name, fBold, (int)(colNameW - 12), rtlNear);
+                    float thisRowH = (sz.Height > 18f || sz.Width > colNameW - 14f) ? 38f : 24f;
+
                     // Check page boundary. Leave 50 units for page footer
-                    if (yCur + rowH + 50 > yStart + pageHeight)
+                    if (yCur + thisRowH + 50 > yStart + pageHeight)
                     {
                         // Draw page number in footer before leaving
                         g.DrawString($"صفحة {_pageNum}", fSub, Brushes.DimGray, new RectangleF(xStart, yStart + pageHeight - 25, pageWidth, 20), center);
@@ -909,32 +934,31 @@ namespace ChickenDist.Forms
                         return;
                     }
 
-                    var item = (ProductItem)clbProducts.CheckedItems[_printItemIndex];
-
                     // Draw alternating row background
-                    var rowRect = new RectangleF(xStart, yCur, pageWidth, rowH);
+                    var rowRect = new RectangleF(xStart, yCur, pageWidth, thisRowH);
                     g.FillRectangle((_printItemIndex % 2 == 0) ? brushLightRow : brushDarkRow, rowRect);
 
                     // Draw row texts
-                    g.DrawString((_printItemIndex + 1).ToString(), fRegular, brushBlack, new RectangleF(colSerialX, yCur + 4, colSerialW, rowH), rtlCenter);
-                    g.DrawString(item.Name, fBold, brushBlack, new RectangleF(colNameX, yCur + 4, colNameW, rowH), rtlNear);
+                    g.DrawString((_printItemIndex + 1).ToString(), fRegular, brushBlack, new RectangleF(colSerialX, yCur, colSerialW, thisRowH), rtlCenter);
+                    // Name cell - wraps onto 2 lines cleanly
+                    g.DrawString(item.Name, fBold, brushBlack, new RectangleF(colNameX + 5, yCur + 3, colNameW - 10, thisRowH - 6), rtlNear);
                     
                     string unitStr = string.IsNullOrWhiteSpace(item.Unit) ? "قطعة" : item.Unit;
-                    g.DrawString(unitStr, fRegular, brushBlack, new RectangleF(colUnitX, yCur + 4, colUnitW, rowH), rtlCenter);
+                    g.DrawString(unitStr, fRegular, brushBlack, new RectangleF(colUnitX, yCur, colUnitW, thisRowH), rtlCenter);
                     
                     if (showQty && colQtyW > 0)
-                        g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur + 4, colQtyW, rowH), rtlCenter);
+                        g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur, colQtyW, thisRowH), rtlCenter);
                     if (showPrice && colPriceW > 0)
-                        g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur + 4, colPriceW, rowH), rtlCenter);
+                        g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur, colPriceW, thisRowH), rtlCenter);
 
                     // Draw Grid Lines
-                    g.DrawLine(penGrid, xStart, yCur + rowH, xStart + pageWidth, yCur + rowH);
-                    g.DrawLine(penGrid, colSerialX, yCur, colSerialX, yCur + rowH);
-                    g.DrawLine(penGrid, colNameX, yCur, colNameX, yCur + rowH);
-                    g.DrawLine(penGrid, colUnitX, yCur, colUnitX, yCur + rowH);
-                    if (showQty && colQtyW > 0) g.DrawLine(penGrid, colQtyX, yCur, colQtyX, yCur + rowH);
+                    g.DrawLine(penGrid, xStart, yCur + thisRowH, xStart + pageWidth, yCur + thisRowH);
+                    g.DrawLine(penGrid, colSerialX, yCur, colSerialX, yCur + thisRowH);
+                    g.DrawLine(penGrid, colNameX, yCur, colNameX, yCur + thisRowH);
+                    g.DrawLine(penGrid, colUnitX, yCur, colUnitX, yCur + thisRowH);
+                    if (showQty && colQtyW > 0) g.DrawLine(penGrid, colQtyX, yCur, colQtyX, yCur + thisRowH);
 
-                    yCur += rowH;
+                    yCur += thisRowH;
                     _printItemIndex++;
                 }
             }
