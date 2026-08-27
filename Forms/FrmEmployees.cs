@@ -1190,7 +1190,7 @@ namespace ChickenDist.Forms
         private Panel pnlDetailCard;
         private Label lblSelectedTitle, lblSelectedDesc;
         private CheckBox chkMasterAccess;
-        private FlowLayoutPanel flowSubPerms;
+        private Panel pnlSubPerms;
         private Label lblStatsBadge, lblFooterStats;
         private string _activeCategoryFilter = "الكل";
 
@@ -1289,8 +1289,8 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Color.FromArgb(16, 22, 34)
             };
-            tblPerms.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360f)); // Column 0 (Right): Screens List
-            tblPerms.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Column 1 (Left): Detailed Sub-Permissions (100% remaining width!)
+            tblPerms.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 480f)); // Column 0 (Right): Screens List (توسيع خانة الشاشات لتتسع لكافة الأسماء بوضوح)
+            tblPerms.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Column 1 (Left): Detailed Sub-Permissions (100% remaining width)
             tblPerms.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             // ── Right Panel: Categories & Screen List ─────────────────────
@@ -1366,9 +1366,9 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var colCheck = new DataGridViewCheckBoxColumn { Name = "colAccess", HeaderText = "👁️ الدخول", Width = 70 };
+            var colCheck = new DataGridViewCheckBoxColumn { Name = "colAccess", HeaderText = "👁️ الدخول", Width = 75 };
             var colName = new DataGridViewTextBoxColumn { Name = "colName", HeaderText = "اسم الشاشة / القسم", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
-            var colBadge = new DataGridViewTextBoxColumn { Name = "colBadge", HeaderText = "الصلاحيات", Width = 95 };
+            var colBadge = new DataGridViewTextBoxColumn { Name = "colBadge", HeaderText = "الصلاحيات", Width = 110 };
             colBadge.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             colBadge.DefaultCellStyle.ForeColor = Color.FromArgb(70, 200, 240);
 
@@ -1394,7 +1394,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15),
-                AutoScroll = true
+                AutoScroll = false
             };
 
             // Selected Screen Header inside Left Card
@@ -1460,30 +1460,16 @@ namespace ChickenDist.Forms
 
             pnlMaster.Controls.AddRange(new Control[] { chkMasterAccess, btnClearAllCurrent, btnSelectAllCurrent });
 
-            // Sub-Permissions Scrollable Container
-            flowSubPerms = new FlowLayoutPanel
+            // Sub-Permissions Scrollable Container (Vertical Stacking Panel)
+            pnlSubPerms = new Panel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
                 AutoScroll = true,
                 Padding = new Padding(10, 10, 10, 10),
                 BackColor = Color.Transparent
             };
 
-            Action adjustCardsWidth = () =>
-            {
-                int cardWidth = flowSubPerms.ClientSize.Width - 25;
-                if (cardWidth < 400) cardWidth = 400;
-                foreach (Control c in flowSubPerms.Controls)
-                {
-                    c.Width = cardWidth;
-                }
-            };
-            flowSubPerms.Resize += (s, e) => adjustCardsWidth();
-            pnlDetailCard.Resize += (s, e) => adjustCardsWidth();
-
-            pnlDetailCard.Controls.Add(flowSubPerms);
+            pnlDetailCard.Controls.Add(pnlSubPerms);
             pnlDetailCard.Controls.Add(pnlMaster);
             pnlDetailCard.Controls.Add(pnlDetailHeader);
 
@@ -1779,23 +1765,20 @@ namespace ChickenDist.Forms
 
         private void BuildSubPermissionsCards(ScreenDef def, ScreenPermState st)
         {
-            flowSubPerms.SuspendLayout();
-            flowSubPerms.Controls.Clear();
+            pnlSubPerms.SuspendLayout();
+            pnlSubPerms.Controls.Clear();
 
             bool isEnabled = st.CanAccess;
 
             if (!isEnabled)
             {
-                int cardW = flowSubPerms.ClientSize.Width > 50 ? flowSubPerms.ClientSize.Width - 25 : 800;
-                if (cardW < 400) cardW = 800;
-
                 var pnlDisabled = new Panel
                 {
-                    Width = cardW,
+                    Dock = DockStyle.Top,
                     Height = 90,
                     BackColor = Color.FromArgb(30, 25, 30),
                     Padding = new Padding(20),
-                    Margin = new Padding(0, 10, 0, 10)
+                    Margin = new Padding(0, 0, 0, 10)
                 };
                 var lblDis = new Label
                 {
@@ -1806,111 +1789,93 @@ namespace ChickenDist.Forms
                     TextAlign = ContentAlignment.MiddleCenter
                 };
                 pnlDisabled.Controls.Add(lblDis);
-                flowSubPerms.Controls.Add(pnlDisabled);
-                flowSubPerms.ResumeLayout();
+                pnlSubPerms.Controls.Add(pnlDisabled);
+                pnlDisabled.BringToFront();
+                pnlSubPerms.ResumeLayout();
                 return;
+            }
+
+            void AddCard(Panel card)
+            {
+                pnlSubPerms.Controls.Add(card);
+                card.BringToFront();
             }
 
             // 1. CanAdd
             if (def.HasAdd)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard(def.AddLabel, def.AddHint, st.CanAdd, v => { st.CanAdd = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard(def.AddLabel, def.AddHint, st.CanAdd, v => { st.CanAdd = v; OnSubPermChanged(def); }));
 
             // 2. CanEdit
             if (def.HasEdit)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard(def.EditLabel, def.EditHint, st.CanEdit, v => { st.CanEdit = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard(def.EditLabel, def.EditHint, st.CanEdit, v => { st.CanEdit = v; OnSubPermChanged(def); }));
 
             // 3. CanEditSalesInvoice (فواتير الغير)
             if (def.HasEditSalesInvoice)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard(def.OtherSalesLabel, def.OtherSalesHint, st.CanEditSalesInvoice, v => { st.CanEditSalesInvoice = v; OnSubPermChanged(def); }, Color.FromArgb(243, 156, 18)));
-            }
+                AddCard(MakeSubPermCard(def.OtherSalesLabel, def.OtherSalesHint, st.CanEditSalesInvoice, v => { st.CanEditSalesInvoice = v; OnSubPermChanged(def); }, Color.FromArgb(243, 156, 18)));
 
             // 4. CanEditPrice
             if (def.HasEditPrice)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard(def.EditPriceLabel, def.EditPriceHint, st.CanEditPrice, v => { st.CanEditPrice = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard(def.EditPriceLabel, def.EditPriceHint, st.CanEditPrice, v => { st.CanEditPrice = v; OnSubPermChanged(def); }));
 
             // 5. CanDelete
             if (def.HasDelete)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard(def.DeleteLabel, def.DeleteHint, st.CanDelete, v => { st.CanDelete = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
-            }
+                AddCard(MakeSubPermCard(def.DeleteLabel, def.DeleteHint, st.CanDelete, v => { st.CanDelete = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
 
             // 6. CanDeleteSalesInvoice
             if (def.HasDeleteSalesInvoice)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("❌ حذف وإلغاء فواتير المبيعات الصادرة", "السماح للموظف بحذف فواتير البيع بالكامل وشطبها من السجل.", st.CanDeleteSalesInvoice, v => { st.CanDeleteSalesInvoice = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
-            }
+                AddCard(MakeSubPermCard("❌ حذف وإلغاء فواتير المبيعات الصادرة", "السماح للموظف بحذف فواتير البيع بالكامل وشطبها من السجل.", st.CanDeleteSalesInvoice, v => { st.CanDeleteSalesInvoice = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
 
             // 7. CanCopySalesInvoice
             if (def.HasCopySalesInvoice)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("📋 نسخ وإعادة طباعة الفواتير السابقة", "السماح بإعادة طباعة الإيصالات أو نسخ بنود الفاتورة لإنشاء فاتورة جديدة.", st.CanCopySalesInvoice, v => { st.CanCopySalesInvoice = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard("📋 نسخ وإعادة طباعة الفواتير السابقة", "السماح بإعادة طباعة الإيصالات أو نسخ بنود الفاتورة لإنشاء فاتورة جديدة.", st.CanCopySalesInvoice, v => { st.CanCopySalesInvoice = v; OnSubPermChanged(def); }));
 
             // 8. CanViewCost
             if (def.HasViewCost)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("💲 الاطلاع على سعر التكلفة والربح", "إظهار سعر الشراء والتكلفة وأرباح الفاتورة وهوامش الأصناف للموظف.", st.CanViewCost, v => { st.CanViewCost = v; OnSubPermChanged(def); }, Color.FromArgb(155, 89, 182)));
-            }
+                AddCard(MakeSubPermCard("💲 الاطلاع على سعر التكلفة والربح", "إظهار سعر الشراء والتكلفة وأرباح الفاتورة وهوامش الأصناف للموظف.", st.CanViewCost, v => { st.CanViewCost = v; OnSubPermChanged(def); }, Color.FromArgb(155, 89, 182)));
 
             // 9. CanViewBalance
             if (def.HasViewBalance)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("💰 الاطلاع على الرصيد الفعلي وكشف الحساب", "كشف الرصيد الفعلي المتوفر في الدرج أو كشف مديونيات وحسابات العملاء والموردين.", st.CanViewBalance, v => { st.CanViewBalance = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard("💰 الاطلاع على الرصيد الفعلي وكشف الحساب", "كشف الرصيد الفعلي المتوفر في الدرج أو كشف مديونيات وحسابات العملاء والموردين.", st.CanViewBalance, v => { st.CanViewBalance = v; OnSubPermChanged(def); }));
 
             // 10. CanViewDetails (التقفيل)
             if (def.HasViewDetails)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("📄 الاطلاع على تفاصيل التقفيل والشيفت", "كشف المبالغ النقدية المتوقعة ومبيعات الكاش والفيزا عند إغلاق الوردية.", st.CanViewDetails, v => { st.CanViewDetails = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard("📄 الاطلاع على تفاصيل التقفيل والشيفت", "كشف المبالغ النقدية المتوقعة ومبيعات الكاش والفيزا عند إغلاق الوردية.", st.CanViewDetails, v => { st.CanViewDetails = v; OnSubPermChanged(def); }));
 
             // 11. CanChangeSafe
             if (def.HasChangeSafe)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("🔄 تغيير الخزينة / الحساب المالي", "السماح باختيار خزينة أو درج مالي آخر بخلاف الدرج الافتراضي المحدد للموظف.", st.CanChangeSafe, v => { st.CanChangeSafe = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard("🔄 تغيير الخزينة / الحساب المالي", "السماح باختيار خزينة أو درج مالي آخر بخلاف الدرج الافتراضي المحدد للموظف.", st.CanChangeSafe, v => { st.CanChangeSafe = v; OnSubPermChanged(def); }));
 
             // 12. CanViewSalesTotals
             if (def.HasViewSalesTotals)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("📊 عرض شريط الإجماليات والأرباح في السجل", "إظهار شريط الإجماليات المالية السفلية في سجل الفواتير والمبيعات.", st.CanViewSalesTotals, v => { st.CanViewSalesTotals = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard("📊 عرض شريط الإجماليات والأرباح في السجل", "إظهار شريط الإجماليات المالية السفلية في سجل الفواتير والمبيعات.", st.CanViewSalesTotals, v => { st.CanViewSalesTotals = v; OnSubPermChanged(def); }));
 
             // 13. CanViewQuickItems
             if (def.HasViewQuickItems)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("⚡ إظهار أزرار الأصناف السريعة", "عرض شبكة أزرار الأصناف الأكثر مبيعاً في شاشة الكاشير POS.", st.CanViewQuickItems, v => { st.CanViewQuickItems = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard("⚡ إظهار أزرار الأصناف السريعة", "عرض شبكة أزرار الأصناف الأكثر مبيعاً في شاشة الكاشير POS.", st.CanViewQuickItems, v => { st.CanViewQuickItems = v; OnSubPermChanged(def); }));
 
             // 14. CanOrderColumns
             if (def.HasOrderColumns)
-            {
-                flowSubPerms.Controls.Add(MakeSubPermCard("↕️ ترتيب وتخصيص أعمدة الجدول", "السماح للموظف بسحب وتغيير ترتيب وعرض الأعمدة في الجداول.", st.CanOrderColumns, v => { st.CanOrderColumns = v; OnSubPermChanged(def); }));
-            }
+                AddCard(MakeSubPermCard("↕️ ترتيب وتخصيص أعمدة الجدول", "السماح للموظف بسحب وتغيير ترتيب وعرض الأعمدة في الجداول.", st.CanOrderColumns, v => { st.CanOrderColumns = v; OnSubPermChanged(def); }));
 
-            flowSubPerms.ResumeLayout();
+            pnlSubPerms.ResumeLayout();
         }
 
         private Panel MakeSubPermCard(string title, string hint, bool isChecked, Action<bool> onChange, Color? accentColor = null)
         {
-            int cardW = flowSubPerms.ClientSize.Width > 50 ? flowSubPerms.ClientSize.Width - 25 : 800;
-            if (cardW < 400) cardW = 800;
+            var pnlWrapper = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 78,
+                Padding = new Padding(0, 0, 0, 8),
+                BackColor = Color.Transparent
+            };
 
             var pnl = new Panel
             {
-                Width = cardW,
-                Height = 72,
+                Dock = DockStyle.Fill,
                 BackColor = isChecked ? Color.FromArgb(28, 38, 56) : Color.FromArgb(22, 28, 40),
                 BorderStyle = BorderStyle.FixedSingle,
                 Padding = new Padding(15, 8, 15, 8),
-                Margin = new Padding(0, 4, 0, 4),
                 Cursor = Cursors.Hand
             };
 
@@ -1928,7 +1893,7 @@ namespace ChickenDist.Forms
             var lblHint = new Label
             {
                 Text = hint,
-                Font = new Font("Segoe UI", 8.5f),
+                Font = new Font("Segoe UI", 8.8f),
                 ForeColor = isChecked ? Color.FromArgb(170, 190, 215) : Color.FromArgb(130, 140, 155),
                 Dock = DockStyle.Fill,
                 Cursor = Cursors.Hand
@@ -1953,7 +1918,8 @@ namespace ChickenDist.Forms
 
             pnl.Controls.Add(lblHint);
             pnl.Controls.Add(chk);
-            return pnl;
+            pnlWrapper.Controls.Add(pnl);
+            return pnlWrapper;
         }
 
         private void OnSubPermChanged(ScreenDef def)
