@@ -898,23 +898,25 @@ namespace ChickenDist.Forms
                         }
 
                         // 2. Yellow/Gold Polygon Accent Banner
+                        int polyW = isA4Page ? 250 : 150;
+                        int polyH = isA4Page ? 45 : 30;
                         using (var yellowBrush = new SolidBrush(Color.FromArgb(245, 158, 11)))
                         {
                             PointF[] yellowPoly = {
-                                new PointF(pageW - margin - 250, margin),
+                                new PointF(pageW - margin - polyW, margin),
                                 new PointF(pageW - margin, margin),
-                                new PointF(pageW - margin, margin + 45),
-                                new PointF(pageW - margin - 190, margin + 45)
+                                new PointF(pageW - margin, margin + polyH),
+                                new PointF(pageW - margin - polyW + (isA4Page ? 60 : 35), margin + polyH)
                             };
                             g.FillPolygon(yellowBrush, yellowPoly);
                         }
                         using (var darkPolyBrush = new SolidBrush(Color.FromArgb(30, 41, 59)))
                         {
                             PointF[] darkPoly = {
-                                new PointF(pageW - margin - 270, margin),
-                                new PointF(pageW - margin - 250, margin),
-                                new PointF(pageW - margin - 190, margin + 45),
-                                new PointF(pageW - margin - 210, margin + 45)
+                                new PointF(pageW - margin - polyW - (isA4Page ? 20 : 12), margin),
+                                new PointF(pageW - margin - polyW, margin),
+                                new PointF(pageW - margin - polyW + (isA4Page ? 60 : 35), margin + polyH),
+                                new PointF(pageW - margin - polyW + (isA4Page ? 40 : 23), margin + polyH)
                             };
                             g.FillPolygon(darkPolyBrush, darkPoly);
                         }
@@ -926,45 +928,47 @@ namespace ChickenDist.Forms
                         string compAddr = !string.IsNullOrEmpty(AppConfig.CompanyAddress) ? AppConfig.CompanyAddress : "العنوان: البحيرة - إيتاي البارود";
                         string compPhone = !string.IsNullOrEmpty(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "موبايل: 01091800089";
 
-                        g.DrawString(compName, boldBigSheet, Brushes.Black, new RectangleF(0, y, pageW - margin - 10, 24), right);
-                        g.DrawString(compAddr, normal, Brushes.Black, new RectangleF(0, y + 24, pageW - margin - 10, 18), right);
-                        g.DrawString(compPhone, normal, Brushes.Black, new RectangleF(0, y + 42, pageW - margin - 10, 18), right);
+                        int headerTextW = pageW - margin - polyW - 15;
+                        g.DrawString(compName, boldBigSheet, Brushes.Black, new RectangleF(0, y, pageW - margin - 10, isA4Page ? 24 : 20), right);
+                        g.DrawString(compAddr, normal, Brushes.Black, new RectangleF(0, y + (isA4Page ? 24 : 20), pageW - margin - 10, 18), right);
+                        g.DrawString(compPhone, normal, Brushes.Black, new RectangleF(0, y + (isA4Page ? 42 : 36), pageW - margin - 10, 18), right);
 
-                        y += 66;
+                        y += isA4Page ? 66 : 56;
 
                         // 4. Customer Info Box & Metadata
                         if (_saleRow != null)
                         {
                             int boxW = pageW - 2 * margin;
-                            int boxH = 56;
+                            int boxH = isA4Page ? 56 : 50;
                             g.DrawRectangle(new Pen(Color.Black, 1.2f), margin, y, boxW, boxH);
 
                             string clientName = _saleRow["ClientName"]?.ToString() ?? "";
                             string phone = _saleRow.Table.Columns.Contains("ClientPhone") ? _saleRow["ClientPhone"].ToString() : "";
                             string addr = _saleRow.Table.Columns.Contains("ClientAddress") ? _saleRow["ClientAddress"].ToString() : "";
                             string saleCode = _saleRow["SaleCode"]?.ToString() ?? "";
-                            string saleDateStr = Convert.ToDateTime(_saleRow["SaleDate"]).ToString("yyyy/MM/dd hh:mm tt");
+                            string saleDateStr = Convert.ToDateTime(_saleRow["SaleDate"]).ToString(isA4Page ? "yyyy/MM/dd hh:mm tt" : "dd/MM/yy hh:mm tt");
                             string branchName = _saleRow.Table.Columns.Contains("WarehouseName") && _saleRow["WarehouseName"] != DBNull.Value
                                 ? _saleRow["WarehouseName"].ToString()
-                                : compName;
+                                : (!string.IsNullOrEmpty(compName) ? compName : "الرئيسي");
 
                             int halfW = boxW / 2;
                             int rightColX = margin + halfW;
-                            int leftColX = margin + 10;
+                            int leftColX = margin + 8;
+                            int leftColW = halfW - 16;
 
                             // Vertical subtle separator
                             g.DrawLine(Pens.LightGray, margin + halfW, y + 4, margin + halfW, y + boxH - 4);
 
                             // Right Column (Client Information) - RTL Right Aligned
-                            g.DrawString($"اسم العميل :  {clientName}", boldSheet, Brushes.Black, new RectangleF(rightColX + 5, y + 6, halfW - 15, 20), right);
+                            g.DrawString($"اسم العميل :  {clientName}", boldSheet, Brushes.Black, new RectangleF(rightColX + 5, y + (isA4Page ? 6 : 4), halfW - 15, 20), right);
 
                             string addrDisplay = !string.IsNullOrEmpty(addr) ? addr : "الرئيسي";
                             string phoneDisplay = !string.IsNullOrEmpty(phone) ? $"   |   رقم الهاتف : {phone}" : "";
-                            g.DrawString($"العنـوان :  {addrDisplay}{phoneDisplay}", normal, Brushes.Black, new RectangleF(rightColX + 5, y + 30, halfW - 15, 20), right);
+                            g.DrawString($"العنـوان :  {addrDisplay}{phoneDisplay}", normal, Brushes.Black, new RectangleF(rightColX + 5, y + (isA4Page ? 30 : 26), halfW - 15, 20), right);
 
-                            // Left Column (Branch & Invoice Metadata) - LTR Left Aligned
-                            g.DrawString($"الفرع / الحساب: {branchName}", normal, Brushes.Black, new RectangleF(leftColX, y + 6, halfW - 20, 20), left);
-                            g.DrawString($"رقم : {saleCode}  |  {saleDateStr}", boldSheet, Brushes.Black, new RectangleF(leftColX, y + 30, halfW - 20, 20), left);
+                            // Left Column (Branch & Invoice Metadata) - Clean RTL alignment inside left half to prevent overflow
+                            g.DrawString($"الفرع / الحساب: {branchName}", normal, Brushes.Black, new RectangleF(leftColX, y + (isA4Page ? 6 : 4), leftColW, 20), right);
+                            g.DrawString($"رقم : {saleCode}  |  {saleDateStr}", boldSheet, Brushes.Black, new RectangleF(leftColX, y + (isA4Page ? 30 : 26), leftColW, 20), right);
 
                             y += boxH + 8;
                         }
@@ -1180,51 +1184,43 @@ namespace ChickenDist.Forms
                             xProduct     = xName;
                             colWProduct  = colWName;
                         }
-                        else if (hideDiscountCol)
-                        {
-                            colWIndex    = 26;
-                            colWCode     = 58;
-                            colWUnit     = 45;
-                            colWQty      = 50;
-                            colWPrice    = 70;
-                            colWDiscount = 0;
-                            colWTotal    = 80;
-                            colWNotes    = 65;
-
-                            xNotes       = margin;
-                            xTotal       = xNotes + colWNotes;
-                            xDiscount    = xTotal;
-                            xPrice       = xTotal + colWTotal;
-                            xQty         = xPrice + colWPrice;
-                            xUnit        = xQty + colWQty;
-                            xIndex       = pageW - margin - colWIndex;
-                            xCode        = xIndex - colWCode;
-                            xName        = xUnit + colWUnit;
-                            colWName     = xCode - xName;
-                            xProduct     = xName;
-                            colWProduct  = colWName;
-                        }
                         else
                         {
-                            colWIndex    = 26;
-                            colWCode     = 58;
-                            colWUnit     = 45;
-                            colWQty      = 48;
-                            colWPrice    = 65;
-                            colWDiscount = 45;
-                            colWTotal    = 75;
-                            colWNotes    = 65;
+                            // A5 sheet: compact, proportionally fitted to exactly (pageW - 2 * margin)
+                            bool hasAnyNotes = false;
+                            if (_items != null)
+                            {
+                                foreach (DataRow r in _items.Rows)
+                                {
+                                    if (r.Table.Columns.Contains("Notes") && !string.IsNullOrWhiteSpace(r["Notes"]?.ToString()))
+                                    { hasAnyNotes = true; break; }
+                                    if (r.Table.Columns.Contains("KitchenNotes") && !string.IsNullOrWhiteSpace(r["KitchenNotes"]?.ToString()))
+                                    { hasAnyNotes = true; break; }
+                                }
+                            }
+
+                            colWIndex    = 24;
+                            colWCode     = 52;
+                            colWUnit     = 42;
+                            colWQty      = 46;
+                            colWPrice    = 60;
+                            colWDiscount = hideDiscountCol ? 0 : 42;
+                            colWTotal    = 72;
+                            colWNotes    = hasAnyNotes ? 50 : 0;
+
+                            int fixedW = colWIndex + colWCode + colWUnit + colWQty + colWPrice + colWDiscount + colWTotal + colWNotes;
+                            colWName = (pageW - 2 * margin) - fixedW;
+                            if (colWName < 80) colWName = 80;
 
                             xNotes       = margin;
                             xTotal       = xNotes + colWNotes;
-                            xDiscount    = xTotal + colWTotal;
-                            xPrice       = xDiscount + colWDiscount;
+                            xDiscount    = hideDiscountCol ? xTotal : (xTotal + colWTotal);
+                            xPrice       = hideDiscountCol ? (xTotal + colWTotal) : (xDiscount + colWDiscount);
                             xQty         = xPrice + colWPrice;
                             xUnit        = xQty + colWQty;
                             xIndex       = pageW - margin - colWIndex;
                             xCode        = xIndex - colWCode;
                             xName        = xUnit + colWUnit;
-                            colWName     = xCode - xName;
                             xProduct     = xName;
                             colWProduct  = colWName;
                         }
@@ -1272,7 +1268,10 @@ namespace ChickenDist.Forms
                             DrawColHeader(g, boldSheet, "الخصم", xDiscount, colWDiscount, y + (isA4Page ? 5 : 3));
                         }
                         DrawColHeader(g, boldSheet, "إجمالي البيع", xTotal, colWTotal, y + (isA4Page ? 5 : 3));
-                        DrawColHeader(g, boldSheet, "ملاحظات", xNotes, colWNotes, y + (isA4Page ? 5 : 3));
+                        if (colWNotes > 0)
+                        {
+                            DrawColHeader(g, boldSheet, "ملاحظات", xNotes, colWNotes, y + (isA4Page ? 5 : 3));
+                        }
                         y += tblHeaderH;
                     }
                     else if (string.Equals(a4Template, "Modern", StringComparison.OrdinalIgnoreCase))
@@ -1396,7 +1395,10 @@ namespace ChickenDist.Forms
                                     g.DrawRectangle(Pens.Black, xDiscount, y, colWDiscount, rowHeight);
                                 }
                                 g.DrawRectangle(Pens.Black, xTotal, y, colWTotal, rowHeight);
-                                g.DrawRectangle(Pens.Black, xNotes, y, colWNotes, rowHeight);
+                                if (colWNotes > 0)
+                                {
+                                    g.DrawRectangle(Pens.Black, xNotes, y, colWNotes, rowHeight);
+                                }
 
                                 DrawColCell(g, normal, (_printItemIndex + 1).ToString(), xIndex, colWIndex, y, rowHeight, center);
                                 string rawCode = r.Table.Columns.Contains("ProductCode") && r["ProductCode"] != DBNull.Value ? r["ProductCode"].ToString() : (r.Table.Columns.Contains("ProductID") ? r["ProductID"].ToString() : "");
@@ -1421,9 +1423,12 @@ namespace ChickenDist.Forms
                                 }
                                 DrawColCell(g, normal, tot.ToString("N2"), xTotal, colWTotal, y, rowHeight, center);
 
-                                string itemNotes = r.Table.Columns.Contains("Notes") && r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
-                                if (string.IsNullOrEmpty(itemNotes) && r.Table.Columns.Contains("KitchenNotes") && r["KitchenNotes"] != DBNull.Value) itemNotes = r["KitchenNotes"].ToString();
-                                DrawColCell(g, normal, itemNotes, xNotes, colWNotes, y, rowHeight, center);
+                                if (colWNotes > 0)
+                                {
+                                    string itemNotes = r.Table.Columns.Contains("Notes") && r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
+                                    if (string.IsNullOrEmpty(itemNotes) && r.Table.Columns.Contains("KitchenNotes") && r["KitchenNotes"] != DBNull.Value) itemNotes = r["KitchenNotes"].ToString();
+                                    DrawColCell(g, normal, itemNotes, xNotes, colWNotes, y, rowHeight, center);
+                                }
                                 y += rowHeight;
                             }
                             else if (string.Equals(a4Template, "Official", StringComparison.OrdinalIgnoreCase) ||
@@ -1915,8 +1920,8 @@ namespace ChickenDist.Forms
                     if (isAlTarek)
                     {
                         // Draw bottom black footer bar for Al Tarek Home
-                        int footerH = 28;
-                        int safeBottom = e.MarginBounds.Bottom > 0 ? Math.Min(e.MarginBounds.Bottom - 8, e.PageBounds.Height - 45) : (e.PageBounds.Height - 50);
+                        int footerH = isA4Page ? 28 : 24;
+                        int safeBottom = e.MarginBounds.Bottom > 0 ? Math.Min(e.MarginBounds.Bottom - 8, e.PageBounds.Height - (isA4Page ? 45 : 35)) : (e.PageBounds.Height - (isA4Page ? 50 : 40));
                         int footerY = safeBottom - footerH;
 
                         g.FillRectangle(Brushes.Black, margin, footerY, pageW - 2 * margin, footerH);
@@ -1925,13 +1930,15 @@ namespace ChickenDist.Forms
                             ? $"العنوان : {AppConfig.CompanyAddress}"
                             : "العنوان : إيتاي البارود - شارع الجمهورية - بجوار مسجد المحطة";
 
+                        int bcW = isA4Page ? 120 : 85;
                         if (_saleRow != null)
                         {
                             string saleCode = _saleRow["SaleCode"]?.ToString() ?? "";
-                            DrawSimpleBarcode(g, saleCode, margin + 8, footerY + 3, 120, 22);
+                            DrawSimpleBarcode(g, saleCode, margin + 4, footerY + 2, bcW, footerH - 4);
                         }
 
-                        g.DrawString(companyFooterAddr, boldSheet, Brushes.White, new RectangleF(margin + 130, footerY + 5, pageW - 2 * margin - 140, 20), center);
+                        int bcOffset = bcW + 10;
+                        g.DrawString(companyFooterAddr, isA4Page ? boldSheet : normal, Brushes.White, new RectangleF(margin + bcOffset, footerY + (isA4Page ? 5 : 3), pageW - 2 * margin - bcOffset - 8, 20), center);
                     }
                     else
                     {
@@ -2349,11 +2356,11 @@ namespace ChickenDist.Forms
                 else
                 {
                     // توزيع أعمدة النموذج القياسي (# | الكود | اسم الصنف | الكمية المطلوبة | الوحدة | موقع الرف)
-                    colNumW   = isReceipt ? 18 : (int)(width * 0.05);
-                    colCodeW  = isReceipt ? 35 : (int)(width * 0.13);
-                    colExtraW = isReceipt ? 45 : (int)(width * 0.20); // الرف
-                    colUnitW  = isReceipt ? 30 : (int)(width * 0.11);
-                    colQtyW   = isReceipt ? 30 : (int)(width * 0.13);
+                    colNumW   = isReceipt ? 18 : (isA4Page ? (int)(width * 0.05) : (int)(width * 0.06));
+                    colCodeW  = isReceipt ? 35 : (isA4Page ? (int)(width * 0.13) : (int)(width * 0.14));
+                    colExtraW = isReceipt ? 45 : (isA4Page ? (int)(width * 0.20) : (int)(width * 0.14)); // الرف
+                    colUnitW  = isReceipt ? 30 : (isA4Page ? (int)(width * 0.11) : (int)(width * 0.12));
+                    colQtyW   = isReceipt ? 30 : (isA4Page ? (int)(width * 0.13) : (int)(width * 0.14));
                     colProdW  = width - colNumW - colCodeW - colExtraW - colUnitW - colQtyW;
 
                     if (!isReceipt)
@@ -2365,9 +2372,9 @@ namespace ChickenDist.Forms
                         curX -= colNumW;   g.DrawRectangle(penGrid, curX, y, colNumW, headerRowH);   g.DrawString("#", fontHeader, Brushes.White, new RectangleF(curX, y, colNumW, headerRowH), sfCenter);
                         curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, headerRowH);  g.DrawString("الكود", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, headerRowH), sfCenter);
                         curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, headerRowH);  g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, headerRowH), sfCenter);
-                        curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, headerRowH);   g.DrawString("الكمية المطلوبة", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, headerRowH), sfCenter);
+                        curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, headerRowH);   g.DrawString(isA4Page ? "الكمية المطلوبة" : "الكمية", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, headerRowH), sfCenter);
                         curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, headerRowH);  g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, headerRowH), sfCenter);
-                        curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, headerRowH); g.DrawString("مكان التخزين / الرف", fontHeader, Brushes.White, new RectangleF(curX, y, colExtraW, headerRowH), sfCenter);
+                        curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, headerRowH); g.DrawString(isA4Page ? "مكان التخزين / الرف" : "موقع الرف", fontHeader, Brushes.White, new RectangleF(curX, y, colExtraW, headerRowH), sfCenter);
                         y += headerRowH;
                     }
                     else
@@ -2484,8 +2491,8 @@ namespace ChickenDist.Forms
                         g.DrawString($"{(_items != null ? _items.Rows.Count : 0)}", fontBold, Brushes.Black, new RectangleF(boxX - boxW, y, boxW, boxH), sfCenter);
                         y += boxH + 20;
 
-                        string sigDisb = "توقيع مسؤول الصرف بالمخزن: ..................................";
-                        string sigRecv = "توقيع المستلم / السائق: ..................................";
+                        string sigDisb = isA4Page ? "توقيع مسؤول الصرف بالمخزن: .................................." : "مسؤول الصرف: ...................";
+                        string sigRecv = isA4Page ? "توقيع المستلم / السائق: .................................." : "توقيع المستلم: ...................";
                         g.DrawString(sigDisb, fontHeader, Brushes.Black, right - g.MeasureString(sigDisb, fontHeader).Width, y);
                         g.DrawString(sigRecv, fontHeader, Brushes.Black, left, y);
                     }
@@ -2507,10 +2514,10 @@ namespace ChickenDist.Forms
 
                         string totStr = $"إجمالي الأصناف: {(_items != null ? _items.Rows.Count : 0)} صنف  |  إجمالي كميات التحضير: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
                         g.DrawString(totStr, fontHeader, Brushes.Black, new RectangleF(left, y, width, headerRowH), sfCenter);
-                        y += headerRowH + 15;
+                        y += headerRowH + (isA4Page ? 15 : 10);
 
-                        string sig1 = "مسؤول التحضير بالمخزن: ..................................";
-                        string sig2 = "توقيع المستلم / السائق: ..................................";
+                        string sig1 = isA4Page ? "مسؤول التحضير بالمخزن: .................................." : "مسؤول التحضير: ...................";
+                        string sig2 = isA4Page ? "توقيع المستلم / السائق: .................................." : "توقيع المستلم: ...................";
                         g.DrawString(sig1, fontHeader, Brushes.Black, right - g.MeasureString(sig1, fontHeader).Width, y);
                         g.DrawString(sig2, fontHeader, Brushes.Black, left, y);
                     }
