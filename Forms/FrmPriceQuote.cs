@@ -780,7 +780,12 @@ namespace ChickenDist.Forms
                 _currentQuoteID = savedID;
                 if (!isSilent)
                 {
-                    MessageBox.Show("✅ تم تعليق وحفظ بيان التسعير بنجاح (بدون أي تأثير مخزني).", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var askWa = MessageBox.Show("✅ تم تعليق وحفظ بيان التسعير بنجاح (بدون أي تأثير مخزني).\n\nهل تريد إرسال بيان الأسعار للعميل عبر واتساب؟",
+                        "إرسال واتساب", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (askWa == DialogResult.Yes)
+                    {
+                        SendQuoteWhatsApp();
+                    }
                     NewQuote(true);
                 }
                 return true;

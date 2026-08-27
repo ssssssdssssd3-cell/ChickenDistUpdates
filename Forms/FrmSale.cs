@@ -2660,60 +2660,69 @@ namespace ChickenDist.Forms
 				if (dgItems.IsCurrentCellInEditMode) dgItems.CancelEdit();
 				dgItems.EndEdit();
 
-				using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID, isPurchaseMode: false, defaultShowZeroStock: false, clientID: saleClientID);
-				frmProductSearch.ShowDialog();
-
-				if (frmProductSearch.DialogResult == DialogResult.OK)
+				string lastSearchText = "";
+				while (true)
 				{
-					// إزالة السطر المعلق إن وجد
-					if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
-					{
-						dgItems.Rows.RemoveAt(_pendingRowIdx);
-						_pendingRowIdx = -1;
-					}
+					using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID, isPurchaseMode: false, defaultShowZeroStock: false, clientID: saleClientID, initialSearchText: lastSearchText);
+					frmProductSearch.ShowDialog(this);
 
-					decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
-					decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
-					decimal discount = frmProductSearch.SelectedDiscount;
-					decimal discPct = 0m;
-					decimal discAmt = 0m;
-					if (discount > 0)
+					if (frmProductSearch.DialogResult == DialogResult.OK && frmProductSearch.SelectedProductID > 0)
 					{
-						if (discount <= 100m)
+						lastSearchText = frmProductSearch.SearchText;
+						// إزالة السطر المعلق إن وجد
+						if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
 						{
-							discPct = discount;
-							discAmt = Math.Round((qty * price) * discount / 100m, 2);
+							dgItems.Rows.RemoveAt(_pendingRowIdx);
+							_pendingRowIdx = -1;
 						}
-						else
+
+						decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
+						decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
+						decimal discount = frmProductSearch.SelectedDiscount;
+						decimal discPct = 0m;
+						decimal discAmt = 0m;
+						if (discount > 0)
 						{
-							discAmt = discount;
-							discPct = (qty * price) > 0 ? Math.Round((discount / (qty * price)) * 100m, 2) : 0m;
+							if (discount <= 100m)
+							{
+								discPct = discount;
+								discAmt = Math.Round((qty * price) * discount / 100m, 2);
+							}
+							else
+							{
+								discAmt = discount;
+								discPct = (qty * price) > 0 ? Math.Round((discount / (qty * price)) * 100m, 2) : 0m;
+							}
+						}
+						AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName, discountPct: discPct, discountAmt: discAmt);
+						FocusQtyCellInGrid(frmProductSearch.SelectedProductID);
+						if (frmProductSearch.SelectedBatchID.HasValue)
+						{
+							if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
+							{
+								MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+								var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+								if (lastItem != null)
+								{
+									_items.Remove(lastItem);
+									RefreshGrid();
+								}
+							}
+							else
+							{
+								var lastItem2 = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+								if (lastItem2 != null)
+								{
+									lastItem2.BatchID = frmProductSearch.SelectedBatchID;
+									lastItem2.ExpiryDate = frmProductSearch.SelectedExpiryDate;
+									RefreshGrid();
+								}
+							}
 						}
 					}
-					AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName, discountPct: discPct, discountAmt: discAmt);
-					FocusQtyCellInGrid(frmProductSearch.SelectedProductID);
-					if (frmProductSearch.SelectedBatchID.HasValue)
+					else
 					{
-						if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
-						{
-							MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
-							var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
-							if (lastItem != null)
-							{
-								_items.Remove(lastItem);
-								RefreshGrid();
-							}
-						}
-						else
-						{
-							var lastItem2 = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
-							if (lastItem2 != null)
-							{
-								lastItem2.BatchID = frmProductSearch.SelectedBatchID;
-								lastItem2.ExpiryDate = frmProductSearch.SelectedExpiryDate;
-								RefreshGrid();
-							}
-						}
+						break;
 					}
 				}
 			}
@@ -2724,10 +2733,7 @@ namespace ChickenDist.Forms
 			finally
 			{
 				_searchSessionActive = false;
-				if (_items.Count == 0 && _pendingRowIdx < 0)
-				{
-					this.BeginInvoke((MethodInvoker)delegate { AddNewCodeRow(); });
-				}
+				this.BeginInvoke((MethodInvoker)delegate { AddNewCodeRow(); });
 			}
 		}
 
@@ -4629,8 +4635,12 @@ namespace ChickenDist.Forms
 					}
 					if (isDraft)
 					{
-						MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر 📂 معلقات.",
-							"تعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						var askWa = MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\n\nهل تريد إرسال تفاصيل الفاتورة المعلقة للعميل عبر واتساب؟",
+							"إرسال واتساب", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+						if (askWa == DialogResult.Yes)
+						{
+							SendSaleInvoiceWhatsApp(num3, this);
+						}
 					}
 					else
 					{
@@ -6690,9 +6700,13 @@ namespace ChickenDist.Forms
 				string saleDate = Convert.ToDateTime(sRow["SaleDate"]).ToString("yyyy/MM/dd hh:mm tt");
 				decimal totalAmount = Convert.ToDecimal(sRow["TotalAmount"]);
 
+				bool isDraftInvoice = sRow.Table.Columns.Contains("IsDraft") && sRow["IsDraft"] != DBNull.Value && Convert.ToBoolean(sRow["IsDraft"]);
 				DataTable items = SaleDAL.GetItems(saleID);
 				var sb = new System.Text.StringBuilder();
-				sb.AppendLine($"🧾 *فاتورة مبيعات - {shopName}*");
+				if (isDraftInvoice)
+					sb.AppendLine($"📋 *فاتورة مبيعات معلقة - {shopName}*");
+				else
+					sb.AppendLine($"🧾 *فاتورة مبيعات - {shopName}*");
 				sb.AppendLine($"رقم الفاتورة: #{saleCode}");
 				sb.AppendLine($"التاريخ: {saleDate}");
 				sb.AppendLine($"العميل: {clientName}");
@@ -6723,7 +6737,7 @@ namespace ChickenDist.Forms
 					clientPhone,
 					sb.ToString(),
 					() => ReceiptImageGenerator.GenerateSaleReceiptImage(saleID),
-					"📱 إرسال فاتورة المبيعات عبر الواتساب");
+					isDraftInvoice ? "📱 إرسال الفاتورة المعلقة عبر الواتساب" : "📱 إرسال فاتورة المبيعات عبر الواتساب");
 			}
 			catch (Exception ex)
 			{
