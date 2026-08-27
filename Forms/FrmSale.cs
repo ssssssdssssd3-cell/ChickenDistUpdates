@@ -1036,6 +1036,7 @@ namespace ChickenDist.Forms
 			dgItems.CellClick += DgItems_CellClick;
 			dgItems.CellEndEdit += DgItems_CellEndEdit;
 			dgItems.EditingControlShowing += DgItems_EditingControlShowing;
+			dgItems.DataError += (s, e) => { e.ThrowException = false; };
 			dgItems.RowsAdded   += (s, e) => _isDirty = true;
 			dgItems.RowsRemoved += (s, e) => _isDirty = true;
 			
@@ -1332,6 +1333,7 @@ namespace ChickenDist.Forms
 
 			Button btnHold = Theme.MakeButton("⏸️ تعليق", 0, 0, 90, 26, Color.FromArgb(200, 140, 50));
 			Button btnLoadHold = Theme.MakeButton("📂 معلقات", 0, 0, 90, 26, Color.FromArgb(100, 100, 150));
+			Button btnLoadQuote = Theme.MakeButton("📑 بيان أسعار", 0, 0, 115, 26, Color.FromArgb(180, 83, 9));
 			Button btnTawreed = Theme.MakeButton("💵 توريد", 0, 0, 80, 26, Theme.Success);
 			btnNew = Theme.MakeButton("🆕 جديد", 0, 0, 75, 26, Color.FromArgb(80, 120, 80));
 			btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 90, 26, Theme.Primary);
@@ -1345,6 +1347,7 @@ namespace ChickenDist.Forms
 			btnSave.Anchor = AnchorStyles.None;
 			btnHold.Anchor = AnchorStyles.None;
 			btnLoadHold.Anchor = AnchorStyles.None;
+			btnLoadQuote.Anchor = AnchorStyles.None;
 			btnTawreed.Anchor = AnchorStyles.None;
 			btnNew.Anchor = AnchorStyles.None;
 			btnPrint.Anchor = AnchorStyles.None;
@@ -1355,6 +1358,7 @@ namespace ChickenDist.Forms
 			btnSave.Click += BtnSave_Click;
 			btnHold.Click += BtnHold_Click;
 			btnLoadHold.Click += BtnLoadHold_Click;
+			btnLoadQuote.Click += BtnLoadQuote_Click;
 			btnTawreed.Click += BtnTawreed_Click;
 			btnNew.Click += delegate { ResetForm(); };
 			btnPrint.Click += BtnPrint_Click;
@@ -1377,6 +1381,7 @@ namespace ChickenDist.Forms
 			btnPrepSlip.Margin = new Padding(2);
 			btnNew.Margin = new Padding(2);
 			btnTawreed.Margin = new Padding(2);
+			btnLoadQuote.Margin = new Padding(2);
 			btnLoadHold.Margin = new Padding(2);
 			btnHold.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
@@ -1385,7 +1390,7 @@ namespace ChickenDist.Forms
 			btnIncomplete.Margin = new Padding(2);
 			btnIncomplete.Click += (s, e) => OpenIncompleteSalesDialog();
 
-			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnIncomplete, btnTawreed, btnLoadHold, btnHold, btnSave });
+			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnIncomplete, btnTawreed, btnLoadQuote, btnLoadHold, btnHold, btnSave });
 
 			// Status bar for Hotkeys
 			var pnlStatus = new Panel
@@ -2127,6 +2132,8 @@ namespace ChickenDist.Forms
 					);
 					itemOld.PendingSalePrice = 0m;
 					itemOld.PendingQtyThreshold = 0m;
+					itemOld.ProductSize = row3.Table.Columns.Contains("ProductSize") && row3["ProductSize"] != DBNull.Value ? row3["ProductSize"].ToString().Trim() : "";
+					itemOld.Color = row3.Table.Columns.Contains("Color") && row3["Color"] != DBNull.Value ? row3["Color"].ToString().Trim() : "";
 					itemOld.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
 					itemOld.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
 					itemOld.Brand = row3["Brand"]?.ToString().Trim() ?? "";
@@ -2649,74 +2656,78 @@ namespace ChickenDist.Forms
 			{
 				int? saleClientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient && ciClient.ID > 0) ? ciClient.ID : (int?)null;
 				_searchSessionActive = true;
-				string lastSearchText = "";
-				while (true)
-				{
-					using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID, isPurchaseMode: false, defaultShowZeroStock: false, clientID: saleClientID, initialSearchText: lastSearchText);
-					frmProductSearch.ShowDialog();
+				
+				if (dgItems.IsCurrentCellInEditMode) dgItems.CancelEdit();
+				dgItems.EndEdit();
 
-					if (frmProductSearch.DialogResult == DialogResult.OK)
+				using FrmProductSearch frmProductSearch = new FrmProductSearch(warehouseID, isPurchaseMode: false, defaultShowZeroStock: false, clientID: saleClientID);
+				frmProductSearch.ShowDialog();
+
+				if (frmProductSearch.DialogResult == DialogResult.OK)
+				{
+					// إزالة السطر المعلق إن وجد
+					if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
 					{
-						lastSearchText = frmProductSearch.SearchText;
-						decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
-						decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
-						decimal discount = frmProductSearch.SelectedDiscount;
-						decimal discPct = 0m;
-						decimal discAmt = 0m;
-						if (discount > 0)
-						{
-							if (discount <= 100m)
-							{
-								discPct = discount;
-								discAmt = Math.Round((qty * price) * discount / 100m, 2);
-							}
-							else
-							{
-								discAmt = discount;
-								discPct = (qty * price) > 0 ? Math.Round((discount / (qty * price)) * 100m, 2) : 0m;
-							}
-						}
-						AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName, discountPct: discPct, discountAmt: discAmt);
-						FocusQtyCellInGrid(frmProductSearch.SelectedProductID);
-						if (frmProductSearch.SelectedBatchID.HasValue)
-						{
-							if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
-							{
-								MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
-								var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
-								if (lastItem != null)
-								{
-									_items.Remove(lastItem);
-									RefreshGrid();
-								}
-							}
-							else
-							{
-								var lastItem2 = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
-								if (lastItem2 != null)
-								{
-									lastItem2.BatchID = frmProductSearch.SelectedBatchID;
-									lastItem2.ExpiryDate = frmProductSearch.SelectedExpiryDate;
-									RefreshGrid();
-								}
-							}
-						}
-						// فتح الشاشة مرة أخرى لاختيار صنف تاني
-						continue;
+						dgItems.Rows.RemoveAt(_pendingRowIdx);
+						_pendingRowIdx = -1;
 					}
-					else
+
+					decimal qty = frmProductSearch.SelectedQuantity > 0 ? frmProductSearch.SelectedQuantity : 1.00m;
+					decimal price = frmProductSearch.SelectedSalePrice > 0 ? frmProductSearch.SelectedSalePrice : frmProductSearch.SelectedPrice;
+					decimal discount = frmProductSearch.SelectedDiscount;
+					decimal discPct = 0m;
+					decimal discAmt = 0m;
+					if (discount > 0)
 					{
-						// المستخدم ضغط إلغاء → نخرج من الحلقة
-						break;
+						if (discount <= 100m)
+						{
+							discPct = discount;
+							discAmt = Math.Round((qty * price) * discount / 100m, 2);
+						}
+						else
+						{
+							discAmt = discount;
+							discPct = (qty * price) > 0 ? Math.Round((discount / (qty * price)) * 100m, 2) : 0m;
+						}
+					}
+					AddOrUpdateProduct(frmProductSearch.SelectedProductID, qty, price, false, frmProductSearch.SelectedUnitName, discountPct: discPct, discountAmt: discAmt);
+					FocusQtyCellInGrid(frmProductSearch.SelectedProductID);
+					if (frmProductSearch.SelectedBatchID.HasValue)
+					{
+						if (frmProductSearch.SelectedExpiryDate.HasValue && frmProductSearch.SelectedExpiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
+						{
+							MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+							var lastItem = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+							if (lastItem != null)
+							{
+								_items.Remove(lastItem);
+								RefreshGrid();
+							}
+						}
+						else
+						{
+							var lastItem2 = _items.FindLast(i => i.ProductID == frmProductSearch.SelectedProductID);
+							if (lastItem2 != null)
+							{
+								lastItem2.BatchID = frmProductSearch.SelectedBatchID;
+								lastItem2.ExpiryDate = frmProductSearch.SelectedExpiryDate;
+								RefreshGrid();
+							}
+						}
 					}
 				}
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				AppLogger.Error("BtnSearchProduct_Click", ex);
+			}
 			finally
 			{
 				_searchSessionActive = false;
-				// إرجاع الفوكس للجدول لسطر الإدخال
-				this.BeginInvoke((MethodInvoker)delegate { AddNewCodeRow(); });
+				if (_items.Count == 0 && _pendingRowIdx < 0)
+				{
+					this.BeginInvoke((MethodInvoker)delegate { AddNewCodeRow(); });
+				}
 			}
 		}
 
@@ -2779,7 +2790,6 @@ namespace ChickenDist.Forms
 					dgItems.ClearSelection();
 					dgItems.CurrentCell = dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"];
 					dgItems.BeginEdit(true);
-					dgItems.FirstDisplayedScrollingRowIndex = _pendingRowIdx;
 				}
 				catch { }
 			});
@@ -3040,7 +3050,6 @@ namespace ChickenDist.Forms
 						AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
 
 						try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
-						// فتح سطر جديد للإدخال أو المسح التالي فوراً
 						AddNewCodeRow();
 					}
 					else
@@ -3266,6 +3275,12 @@ namespace ChickenDist.Forms
 
 		private void RefreshGrid()
 		{
+			if (dgItems.IsCurrentCellInEditMode)
+			{
+				dgItems.CancelEdit();
+			}
+			dgItems.EndEdit();
+
 			_pendingRowIdx = -1; // إعادة تعيين السطر المعلق عند تحديث الجدول
 			dgItems.Rows.Clear();
 			int clientID = (cboClient != null && cboClient.SelectedItem is ComboItem ci) ? ci.ID : 0;
@@ -3349,39 +3364,47 @@ namespace ChickenDist.Forms
 					if (prod != null)
 					{
 						// 1. الوحدة الكبرى (الأساسية)
-						if (!string.IsNullOrEmpty(prod.BaseUnitName))
-						{
-							unitList.Add(prod.BaseUnitName);
-						}
-						else
-						{
-							unitList.Add("وحدة");
-						}
+						string baseU = !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName : "وحدة";
+						if (!unitList.Contains(baseU)) unitList.Add(baseU);
 
-						// 2. الوحدة الوسطى (إن وُجدت)
-						if (!string.IsNullOrEmpty(prod.Unit2Name))
+						// 2. الوحدة الوسطى (إن وُجدت وليست مكررة)
+						if (!string.IsNullOrEmpty(prod.Unit2Name) && !unitList.Contains(prod.Unit2Name))
 						{
 							unitList.Add(prod.Unit2Name);
 						}
 
-						// 3. الوحدة الصغرى (إن وُجدت وليست مكررة مع الكبرى)
-						if (!string.IsNullOrEmpty(prod.Unit1Name) && prod.Unit1Name != prod.BaseUnitName)
+						// 3. الوحدة الصغرى (إن وُجدت وليست مكررة)
+						if (!string.IsNullOrEmpty(prod.Unit1Name) && !unitList.Contains(prod.Unit1Name))
 						{
 							unitList.Add(prod.Unit1Name);
 						}
 					}
 					else
 					{
-						unitList.Add(!string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "وحدة");
+						string defU = !string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "وحدة";
+						unitList.Add(defU);
 					}
 
-					unitCell.DataSource = unitList;
-					// تعيين القيمة المحفوظة (أو الافتراضية)
+					unitCell.DataSource = null;
+					unitCell.Items.Clear();
+					foreach (var u in unitList)
+					{
+						if (u != null && !unitCell.Items.Contains(u.ToString()))
+							unitCell.Items.Add(u.ToString());
+					}
+					// تعيين القيمة المحفوظة (أو الافتراضية) مع ضمان وجودها في القائمة
 					string savedUnit = item.UnitName;
-					if (!string.IsNullOrEmpty(savedUnit) && unitList.Contains(savedUnit))
+					if (!string.IsNullOrEmpty(savedUnit))
+					{
+						if (!unitCell.Items.Contains(savedUnit))
+							unitCell.Items.Add(savedUnit);
 						unitCell.Value = savedUnit;
-					else if (unitList.Count > 0)
-						unitCell.Value = unitList[0];
+					}
+					else if (unitCell.Items.Count > 0)
+					{
+						unitCell.Value = unitCell.Items[0];
+						item.UnitName = unitCell.Items[0].ToString();
+					}
 				}
 
                 var cell = dgItems.Rows[rIndex].Cells["StockQty"];
@@ -3410,6 +3433,12 @@ namespace ChickenDist.Forms
                 dgItems.Rows[rIndex].Tag = item;
 			}
 			CalculateNet();
+			try
+			{
+				dgItems.Invalidate();
+				dgItems.Update();
+			}
+			catch { }
 		}
 
 		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null, string scannedBarcode = null, decimal discountPct = 0m, decimal discountAmt = 0m)
@@ -3459,11 +3488,17 @@ namespace ChickenDist.Forms
 						product.Unit3Factor = pRow.Table.Columns.Contains("Unit3Factor") && pRow["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit3Factor"]) : 1m;
 						product.PartNumber = pRow["PartNumber"]?.ToString() ?? "";
 						product.ShelfLocation = pRow["ShelfLocation"]?.ToString() ?? "";
+						product.ProductSize = pRow.Table.Columns.Contains("ProductSize") && pRow["ProductSize"] != DBNull.Value ? pRow["ProductSize"].ToString().Trim() : "";
+						product.Color = pRow.Table.Columns.Contains("Color") && pRow["Color"] != DBNull.Value ? pRow["Color"].ToString().Trim() : "";
+						product.CarModel = pRow.Table.Columns.Contains("CarModel") && pRow["CarModel"] != DBNull.Value ? pRow["CarModel"].ToString().Trim() : "";
+						product.Brand = pRow.Table.Columns.Contains("Brand") && pRow["Brand"] != DBNull.Value ? pRow["Brand"].ToString().Trim() : "";
 
-						// أضف الصنف للقائمة لتجنب التحميل مرة أخرى
+						// أضف الصنف للقائمة والكاش لتجنب التحميل مرة أخرى
 						cboProduct.Items.Add(product);
 						if (cboProduct.Tag is List<ComboItem> tagList)
 							tagList.Add(product);
+						if (_productCache != null && !_productCache.Contains(product))
+							_productCache.Add(product);
 					}
 				}
 				catch (Exception ex)
@@ -4799,6 +4834,246 @@ namespace ChickenDist.Forms
 			dlg.ShowDialog();
 		}
 
+		private void BtnLoadQuote_Click(object sender, EventArgs e)
+		{
+			DataTable dt = PriceQuoteDAL.GetPendingQuotes();
+			if (dt == null || dt.Rows.Count == 0)
+			{
+				MessageBox.Show("لا توجد عروض أسعار أو بيانات أسعار معلقة حالياً.", "معلومات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				return;
+			}
+
+			var dlg = new Form
+			{
+				Width = 980, Height = 580,
+				Text = "📑 استدعاء بيان الأسعار / عروض الأسعار للفاتورة",
+				StartPosition = FormStartPosition.CenterParent,
+				RightToLeft = RightToLeft.Yes,
+				RightToLeftLayout = true,
+				BackColor = Theme.BgCard,
+				Font = Theme.FontMain
+			};
+
+			// Split container: top grid for quotes, bottom grid for items preview
+			var splitQuotes = new SplitContainer
+			{
+				Dock = DockStyle.Fill,
+				Orientation = Orientation.Horizontal,
+				SplitterDistance = 240,
+				BackColor = Theme.BorderColor
+			};
+
+			// Top Search panel
+			var pnlSearchQuote = new Panel { Dock = DockStyle.Top, Height = 42, BackColor = Theme.BgCard, Padding = new Padding(10, 6, 10, 6) };
+			var lblSearch = new Label { Text = "🔍 بحث سريع عن بيان أسعار:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain, Dock = DockStyle.Right, Padding = new Padding(0, 4, 10, 0) };
+			var txtSearchQuote = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10.5f) };
+			pnlSearchQuote.Controls.Add(txtSearchQuote);
+			pnlSearchQuote.Controls.Add(lblSearch);
+
+			var bsQuotes = new BindingSource { DataSource = dt };
+
+			txtSearchQuote.TextChanged += (s, e) =>
+			{
+				string q = txtSearchQuote.Text.Trim().Replace("'", "''");
+				if (string.IsNullOrWhiteSpace(q))
+					bsQuotes.Filter = "";
+				else
+					bsQuotes.Filter = $"QuoteCode LIKE '%{q}%' OR DisplayClient LIKE '%{q}%' OR Notes LIKE '%{q}%' OR PriceTier LIKE '%{q}%'";
+			};
+
+			var dgQuotes = new DataGridView
+			{
+				Dock = DockStyle.Fill,
+				DataSource = bsQuotes,
+				BackgroundColor = Theme.BgCard,
+				RowHeadersVisible = false,
+				ReadOnly = true,
+				AllowUserToAddRows = false,
+				SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+				DefaultCellStyle = new DataGridViewCellStyle { Font = Theme.FontMain, BackColor = Theme.BgCard, ForeColor = Theme.TextMain },
+				ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { Font = Theme.FontBold, BackColor = Theme.Primary, ForeColor = Color.White },
+				EnableHeadersVisualStyles = false,
+				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+				RowTemplate = { Height = 30 }
+			};
+
+			// Bottom items preview grid
+			var pnlItemsTitle = new Panel { Dock = DockStyle.Top, Height = 28, BackColor = Color.FromArgb(40, 50, 70), Padding = new Padding(10, 4, 10, 4) };
+			var lblItemsTitle = new Label { Text = "📦 الأصناف المتضمنة في بيان السعر المحدد:", AutoSize = true, Font = Theme.FontBold, ForeColor = Color.White };
+			pnlItemsTitle.Controls.Add(lblItemsTitle);
+
+			var dgQuoteItems = new DataGridView
+			{
+				Dock = DockStyle.Fill,
+				BackgroundColor = Theme.BgCard,
+				RowHeadersVisible = false,
+				ReadOnly = true,
+				AllowUserToAddRows = false,
+				SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+				DefaultCellStyle = new DataGridViewCellStyle { Font = Theme.FontMain, BackColor = Theme.BgCard, ForeColor = Theme.TextMain },
+				ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), BackColor = Color.FromArgb(50, 65, 90), ForeColor = Color.White },
+				EnableHeadersVisualStyles = false,
+				AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+				RowTemplate = { Height = 26 }
+			};
+
+			dgQuoteItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colProductCode", HeaderText = "كود الصنف", FillWeight = 80 });
+			dgQuoteItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colProductName", HeaderText = "اسم الصنف", FillWeight = 160 });
+			dgQuoteItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colUnit", HeaderText = "الوحدة", FillWeight = 60 });
+			dgQuoteItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colQty", HeaderText = "الكمية", FillWeight = 60 });
+			dgQuoteItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrice", HeaderText = "السعر", FillWeight = 70 });
+			dgQuoteItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colTotal", HeaderText = "الإجمالي", FillWeight = 80 });
+
+			Action updateItemsPreview = () =>
+			{
+				dgQuoteItems.Rows.Clear();
+				if (dgQuotes.SelectedRows.Count == 0) return;
+				var row = (DataRowView)dgQuotes.SelectedRows[0].DataBoundItem;
+				int qid = Convert.ToInt32(row["QuoteID"]);
+				var dtItems = PriceQuoteDAL.GetQuoteItems(qid);
+				foreach (DataRow ir in dtItems.Rows)
+				{
+					string pcode = ir["ProductCode"]?.ToString() ?? "";
+					string pname = ir["ProductName"]?.ToString() ?? "";
+					string unit = ir["UnitName"]?.ToString() ?? "";
+					decimal qty = Convert.ToDecimal(ir["Quantity"]);
+					decimal uprice = Convert.ToDecimal(ir["UnitPrice"]);
+					decimal tot = Convert.ToDecimal(ir["TotalPrice"]);
+					dgQuoteItems.Rows.Add(pcode, pname, unit, qty.ToString("G29"), uprice.ToString("N2"), tot.ToString("N2"));
+				}
+			};
+
+			dgQuotes.SelectionChanged += (s, e) => updateItemsPreview();
+
+			dlg.Load += (sl, el) =>
+			{
+				if (dgQuotes.Columns.Contains("QuoteID")) dgQuotes.Columns["QuoteID"].Visible = false;
+				if (dgQuotes.Columns.Contains("ClientID")) dgQuotes.Columns["ClientID"].Visible = false;
+				if (dgQuotes.Columns.Contains("ClientName")) dgQuotes.Columns["ClientName"].Visible = false;
+				if (dgQuotes.Columns.Contains("WarehouseID")) dgQuotes.Columns["WarehouseID"].Visible = false;
+
+				if (dgQuotes.Columns.Contains("QuoteCode")) { dgQuotes.Columns["QuoteCode"].HeaderText = "رقم البيان"; dgQuotes.Columns["QuoteCode"].FillWeight = 80; }
+				if (dgQuotes.Columns.Contains("QuoteDate")) { dgQuotes.Columns["QuoteDate"].HeaderText = "التاريخ والوقت"; dgQuotes.Columns["QuoteDate"].FillWeight = 110; }
+				if (dgQuotes.Columns.Contains("DisplayClient")) { dgQuotes.Columns["DisplayClient"].HeaderText = "العميل"; dgQuotes.Columns["DisplayClient"].FillWeight = 140; }
+				if (dgQuotes.Columns.Contains("ItemCount")) { dgQuotes.Columns["ItemCount"].HeaderText = "الأصناف"; dgQuotes.Columns["ItemCount"].FillWeight = 50; }
+				if (dgQuotes.Columns.Contains("TotalAmount")) { dgQuotes.Columns["TotalAmount"].HeaderText = "الإجمالي (ج.م)"; dgQuotes.Columns["TotalAmount"].FillWeight = 80; dgQuotes.Columns["TotalAmount"].DefaultCellStyle.Format = "N2"; }
+				if (dgQuotes.Columns.Contains("DiscountAmount")) { dgQuotes.Columns["DiscountAmount"].HeaderText = "الخصم"; dgQuotes.Columns["DiscountAmount"].FillWeight = 60; dgQuotes.Columns["DiscountAmount"].DefaultCellStyle.Format = "N2"; }
+				if (dgQuotes.Columns.Contains("DiscountPct")) { dgQuotes.Columns["DiscountPct"].HeaderText = "نسبة الخصم %"; dgQuotes.Columns["DiscountPct"].FillWeight = 65; }
+				if (dgQuotes.Columns.Contains("PriceTier")) { dgQuotes.Columns["PriceTier"].HeaderText = "فئة السعر"; dgQuotes.Columns["PriceTier"].FillWeight = 70; }
+				if (dgQuotes.Columns.Contains("CreatedByName")) { dgQuotes.Columns["CreatedByName"].HeaderText = "المنشئ"; dgQuotes.Columns["CreatedByName"].FillWeight = 90; }
+				if (dgQuotes.Columns.Contains("Notes")) { dgQuotes.Columns["Notes"].HeaderText = "ملاحظات"; dgQuotes.Columns["Notes"].FillWeight = 120; }
+
+				updateItemsPreview();
+			};
+
+			var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Theme.BgCard, Padding = new Padding(10, 7, 10, 7) };
+			var btnImportQuote = Theme.MakeButton("✅ استدعاء بيان السعر للفاتورة", 0, 0, 240, 34, Theme.Success);
+			btnImportQuote.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+			var btnDeleteQuote = Theme.MakeButton("🗑️ حذف بيان السعر", 250, 0, 160, 34, Color.FromArgb(180, 60, 60));
+			btnDeleteQuote.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+			var btnClose = Theme.MakeButton("❌ إغلاق", 420, 0, 100, 34, Color.FromArgb(100, 110, 125));
+			btnClose.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+			btnClose.Click += (s, e) => dlg.Close();
+
+			Action doImport = () =>
+			{
+				if (dgQuotes.SelectedRows.Count == 0) return;
+				var row = (DataRowView)dgQuotes.SelectedRows[0].DataBoundItem;
+
+				if (_isDirty && _items.Count > 0)
+				{
+					if (MessageBox.Show("توجد أصناف مسجلة في الفاتورة الحالية، سيتم تفريغها لتحميل بيان الأسعار.\nهل أنت متأكد؟", "تأكيد", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+						return;
+				}
+
+				int qid = Convert.ToInt32(row["QuoteID"]);
+				var dtItems = PriceQuoteDAL.GetQuoteItems(qid);
+				if (dtItems.Rows.Count == 0)
+				{
+					MessageBox.Show("بيان الأسعار المحدد لا يحتوي على أصناف!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					return;
+				}
+
+				ResetForm();
+
+				int? clientID = row["ClientID"] != DBNull.Value ? Convert.ToInt32(row["ClientID"]) : (int?)null;
+				int? warehouseID = row["WarehouseID"] != DBNull.Value ? Convert.ToInt32(row["WarehouseID"]) : (int?)null;
+				string priceTier = row["PriceTier"]?.ToString() ?? "قطاعي";
+				string notes = row["Notes"]?.ToString() ?? "";
+				string customClient = row["ClientName"]?.ToString() ?? "";
+
+				var quoteItemsList = new List<SaleItemDTO>();
+				foreach (DataRow ir in dtItems.Rows)
+				{
+					decimal factor = ir["Factor"] != DBNull.Value ? Convert.ToDecimal(ir["Factor"]) : 1m;
+					if (factor <= 0) factor = 1m;
+
+					quoteItemsList.Add(new SaleItemDTO
+					{
+						ProductID = Convert.ToInt32(ir["ProductID"]),
+						ProductName = ir["ProductName"]?.ToString() ?? "",
+						ProductCode = ir["ProductCode"]?.ToString() ?? "",
+						ShelfLocation = ir["ShelfLocation"]?.ToString() ?? ir["ProductShelfLocation"]?.ToString() ?? "",
+						UnitName = ir["UnitName"]?.ToString() ?? "",
+						Quantity = Convert.ToDecimal(ir["Quantity"]),
+						UnitPrice = Convert.ToDecimal(ir["UnitPrice"]),
+						DiscountAmt = ir["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(ir["DiscountAmt"]) : 0m,
+						DiscountPct = ir["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(ir["DiscountPct"]) : 0m,
+						Factor = factor,
+						PurchasePrice = ir["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(ir["PurchasePrice"]) : 0m
+					});
+				}
+
+				LoadFromPriceQuote(qid, clientID, warehouseID, priceTier, quoteItemsList, notes);
+				if (clientID == null && !string.IsNullOrWhiteSpace(customClient))
+				{
+					txtNotes.Text = string.IsNullOrWhiteSpace(notes) ? $"العميل: {customClient}" : $"{notes} (العميل: {customClient})";
+				}
+
+				_isDirty = true;
+				dlg.DialogResult = DialogResult.OK;
+				dlg.Close();
+			};
+
+			btnImportQuote.Click += (s, e) => doImport();
+			dgQuotes.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) doImport(); };
+
+			btnDeleteQuote.Click += (s, e) =>
+			{
+				if (dgQuotes.SelectedRows.Count == 0) return;
+				var row = (DataRowView)dgQuotes.SelectedRows[0].DataBoundItem;
+				string code = row["QuoteCode"]?.ToString() ?? "";
+				if (MessageBox.Show($"هل أنت متأكد من حذف بيان الأسعار رقم ({code}) نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+				{
+					int qid = Convert.ToInt32(row["QuoteID"]);
+					PriceQuoteDAL.DeleteQuote(qid);
+					var refreshed = PriceQuoteDAL.GetPendingQuotes();
+					bsQuotes.DataSource = refreshed;
+					if (refreshed.Rows.Count == 0)
+					{
+						dlg.Close();
+					}
+					else
+					{
+						updateItemsPreview();
+					}
+				}
+			};
+
+			pnlBottom.Controls.AddRange(new Control[] { btnImportQuote, btnDeleteQuote, btnClose });
+
+			splitQuotes.Panel1.Controls.Add(dgQuotes);
+			splitQuotes.Panel1.Controls.Add(pnlSearchQuote);
+			splitQuotes.Panel2.Controls.Add(dgQuoteItems);
+			splitQuotes.Panel2.Controls.Add(pnlItemsTitle);
+
+			dlg.Controls.Add(splitQuotes);
+			dlg.Controls.Add(pnlBottom);
+			dlg.ShowDialog();
+		}
+
 		private void OpenIncompleteSalesDialog()
 		{
 			using (var frm = new FrmIncompleteInvoices("Sale"))
@@ -5099,6 +5374,7 @@ namespace ChickenDist.Forms
 
 			var pd = new System.Drawing.Printing.PrintDocument();
 			pd.PrintController = new System.Drawing.Printing.StandardPrintController();
+			pd.DefaultPageSettings.Landscape = false;
 			if (isReceipt)
 			{
 				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("Receipt", 300, 1000);
@@ -5119,7 +5395,9 @@ namespace ChickenDist.Forms
 			}
 
 			string whName = cboWarehouse != null && cboWarehouse.SelectedItem != null ? cboWarehouse.Text : "المخزن الرئيسي";
-			string clientName = (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.Text : (cboClient?.Text?.Trim() ?? "عميل نقدي");
+			string clientName = (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0) 
+				? ci.Text 
+				: (!string.IsNullOrWhiteSpace(cboClient?.Text) && !cboClient.Text.StartsWith("--") ? cboClient.Text.Trim() : "عميل نقدي");
 			if (string.IsNullOrEmpty(clientName) || clientName.StartsWith("--")) clientName = "عميل نقدي";
 			string empName = Session.EmpName;
 			string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "AL-RAHMA GROUP";
@@ -5177,10 +5455,12 @@ namespace ChickenDist.Forms
 				using var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
 				using var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
 
-				int y     = e.MarginBounds.Top;
-				int left  = e.MarginBounds.Left;
-				int right = e.MarginBounds.Right;
-				int width = e.MarginBounds.Width;
+				int margin = isReceipt ? 10 : (isA5 ? 20 : 30);
+				int pageWidth = e.PageBounds.Width;
+				int left  = margin;
+				int right = pageWidth - margin;
+				int width = right - left;
+				int y     = margin;
 
 				string dateStr = dtpDate.Value.ToString("dd/MM/yyyy hh:mm tt");
 
@@ -5217,9 +5497,9 @@ namespace ChickenDist.Forms
 						}
 						else
 						{
-							g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
-							g.DrawString($"التاريخ: {dateStr}",   fontBody,   Brushes.Black, left, y); y += 18;
-							g.DrawString($"المرجع: {invoiceCode}", fontBody,   Brushes.Black, left, y); y += 18;
+							g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y); y += 18;
+							g.DrawString($"التاريخ: {dateStr}",   fontBody,   Brushes.Black, right - g.MeasureString($"التاريخ: {dateStr}", fontBody).Width, y); y += 18;
+							g.DrawString($"المرجع: {invoiceCode}", fontBody,   Brushes.Black, right - g.MeasureString($"المرجع: {invoiceCode}", fontBody).Width, y); y += 18;
 						}
 					}
 					else if (isModern)
@@ -5229,7 +5509,7 @@ namespace ChickenDist.Forms
 						g.FillRectangle(brushHeaderBg, left, y, width, bannerH);
 						g.DrawRectangle(penDark, left, y, width, bannerH);
 
-						string tit = $"📋 إذن تحضير وصرف بضاعة  -  {companyName}";
+						string tit = $"إذن تحضير وصرف بضاعة  -  {companyName}";
 						var sfBanner = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 						g.DrawString(tit, fontTitle, Brushes.White, new RectangleF(left, y, width, bannerH), sfBanner);
 						y += bannerH + 8;
@@ -5246,9 +5526,9 @@ namespace ChickenDist.Forms
 						}
 						else
 						{
-							g.DrawString($"المخزن: {whName}", fontHeader, Brushes.Black, left, y); y += 18;
-							g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
-							g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, left, y); y += 18;
+							g.DrawString($"المخزن: {whName}", fontHeader, Brushes.Black, right - g.MeasureString($"المخزن: {whName}", fontHeader).Width, y); y += 18;
+							g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y); y += 18;
+							g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, right - g.MeasureString($"التاريخ: {dateStr}", fontBody).Width, y); y += 18;
 						}
 					}
 					else
@@ -5274,7 +5554,7 @@ namespace ChickenDist.Forms
 							y += (int)szPh.Height + 4;
 						}
 
-						string tit = "📋 إذن تحضير وتجميع بضاعة (من المخزن)";
+						string tit = "إذن تحضير وتجميع بضاعة";
 						SizeF szT  = g.MeasureString(tit, fontTitle);
 						g.DrawString(tit, fontTitle, Brushes.Black, left + (width - szT.Width) / 2, y);
 						y += (int)szT.Height + (isReceipt ? 4 : (isA4Page ? 8 : 6));
@@ -5305,13 +5585,13 @@ namespace ChickenDist.Forms
 						}
 						else
 						{
-							g.DrawString($"المخزن: {whName}",   fontHeader, Brushes.Black, left, y); y += 18;
-							g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
-							g.DrawString($"المرجع: {invoiceCode} | الموظف: {empName}", fontBody, Brushes.Black, left, y); y += 18;
-							g.DrawString($"التاريخ: {dateStr}", fontBody,   Brushes.Black, left, y); y += 18;
+							g.DrawString($"المخزن: {whName}",   fontHeader, Brushes.Black, right - g.MeasureString($"المخزن: {whName}", fontHeader).Width, y); y += 18;
+							g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y); y += 18;
+							g.DrawString($"المرجع: {invoiceCode} | الموظف: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"المرجع: {invoiceCode} | الموظف: {empName}", fontBody).Width, y); y += 18;
+							g.DrawString($"التاريخ: {dateStr}", fontBody,   Brushes.Black, right - g.MeasureString($"التاريخ: {dateStr}", fontBody).Width, y); y += 18;
 							if (!string.IsNullOrWhiteSpace(txtNotes.Text))
 							{
-								g.DrawString($"ملاحظة: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, left, y); y += 18;
+								g.DrawString($"ملاحظة: {txtNotes.Text.Trim()}", fontBody, Brushes.DarkRed, right - g.MeasureString($"ملاحظة: {txtNotes.Text.Trim()}", fontBody).Width, y); y += 18;
 							}
 						}
 					}

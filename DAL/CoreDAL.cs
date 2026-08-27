@@ -11,7 +11,7 @@ namespace ChickenDist.DAL
     {
         public static DataTable GetAll()
         {
-            return DbHelper.Query("SELECT EmpID,EmpName,UserName,Role,Phone,IsActive,IsDriver FROM Employees ORDER BY EmpName");
+            return DbHelper.Query("SELECT EmpID,EmpName,UserName,Role,Phone,JobTitle,Salary,DailyWorkHours,WorkStartTime,WorkEndTime,GracePeriodMinutes,IsActive,IsDriver FROM Employees ORDER BY EmpName");
         }
 
         public static DataTable GetDrivers()
@@ -57,7 +57,8 @@ namespace ChickenDist.DAL
             int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment,
             bool canEditShippingCharge = true, bool canSelectDriver = true, bool canSellVisa = true,
             decimal salary = 0, decimal dailyWorkHours = 8, decimal hourlyRate = 0, decimal commissionRate = 0, decimal targetAmount = 0,
-            string jobTitle = null, DateTime? hireDate = null, string nationalID = null)
+            string jobTitle = null, DateTime? hireDate = null, string nationalID = null,
+            string workStartTime = "09:00", string workEndTime = "17:00", int gracePeriodMinutes = 15)
         {
             // التحقق من عدم تكرار اسم المستخدم
             if (!string.IsNullOrWhiteSpace(username))
@@ -77,10 +78,14 @@ namespace ChickenDist.DAL
                 ? null
                 : PasswordHelper.Hash(password);
 
+            string safeStartTime = string.IsNullOrWhiteSpace(workStartTime) ? "09:00" : workStartTime.Trim();
+            string safeEndTime = string.IsNullOrWhiteSpace(workEndTime) ? "17:00" : workEndTime.Trim();
+            int safeGrace = gracePeriodMinutes >= 0 ? gracePeriodMinutes : 15;
+
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa,Salary,DailyWorkHours,HourlyRate,SalesCommissionRate,TargetAmount,JobTitle,HireDate,NationalID) " +
-                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv,@sal,@dwh,@hrate,@crate,@target,@jtitle,@hdate,@nid)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa,Salary,DailyWorkHours,HourlyRate,SalesCommissionRate,TargetAmount,JobTitle,HireDate,NationalID,WorkStartTime,WorkEndTime,GracePeriodMinutes) " +
+                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv,@sal,@dwh,@hrate,@crate,@target,@jtitle,@hdate,@nid,@wstart,@wend,@gpm)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
                     DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
@@ -96,7 +101,10 @@ namespace ChickenDist.DAL
                     DbHelper.P("@target", targetAmount),
                     DbHelper.P("@jtitle", (object)jobTitle ?? DBNull.Value),
                     DbHelper.P("@hdate", hireDate.HasValue ? (object)hireDate.Value : DBNull.Value),
-                    DbHelper.P("@nid", (object)nationalID ?? DBNull.Value));
+                    DbHelper.P("@nid", (object)nationalID ?? DBNull.Value),
+                    DbHelper.P("@wstart", safeStartTime),
+                    DbHelper.P("@wend", safeEndTime),
+                    DbHelper.P("@gpm", safeGrace));
             else
             {
                 var prmsList = new System.Collections.Generic.List<SqlParameter>
@@ -124,12 +132,16 @@ namespace ChickenDist.DAL
                     DbHelper.P("@jtitle", (object)jobTitle ?? DBNull.Value),
                     DbHelper.P("@hdate", hireDate.HasValue ? (object)hireDate.Value : DBNull.Value),
                     DbHelper.P("@nid", (object)nationalID ?? DBNull.Value),
+                    DbHelper.P("@wstart", safeStartTime),
+                    DbHelper.P("@wend", safeEndTime),
+                    DbHelper.P("@gpm", safeGrace),
                     DbHelper.P("@id", id)
                 };
 
                 string updateSql = "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a," +
                                    "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd,CanSellVisa=@csv," +
-                                   "Salary=@sal,DailyWorkHours=@dwh,HourlyRate=@hrate,SalesCommissionRate=@crate,TargetAmount=@target,JobTitle=@jtitle,HireDate=@hdate,NationalID=@nid";
+                                   "Salary=@sal,DailyWorkHours=@dwh,HourlyRate=@hrate,SalesCommissionRate=@crate,TargetAmount=@target,JobTitle=@jtitle,HireDate=@hdate,NationalID=@nid," +
+                                   "WorkStartTime=@wstart,WorkEndTime=@wend,GracePeriodMinutes=@gpm";
 
                 if (hashedPassword != null)
                 {

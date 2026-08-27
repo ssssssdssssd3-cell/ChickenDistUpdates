@@ -769,6 +769,22 @@ namespace ChickenDist.Core
                 CREATE INDEX IX_EmpPayroll_Month ON EmployeeMonthlyPayroll(MonthYear, EmpID);
             END");
 
+            SafeMigrate("HR.WorkShiftSchedule", @"
+            IF OBJECT_ID('Employees', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('Employees', 'WorkStartTime') IS NULL
+                    ALTER TABLE Employees ADD WorkStartTime NVARCHAR(10) NULL DEFAULT '09:00';
+                IF COL_LENGTH('Employees', 'WorkEndTime') IS NULL
+                    ALTER TABLE Employees ADD WorkEndTime NVARCHAR(10) NULL DEFAULT '17:00';
+                IF COL_LENGTH('Employees', 'GracePeriodMinutes') IS NULL
+                    ALTER TABLE Employees ADD GracePeriodMinutes INT NOT NULL DEFAULT 15;
+            END
+            IF OBJECT_ID('EmployeeAttendance', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('EmployeeAttendance', 'EarlyLeaveMinutes') IS NULL
+                    ALTER TABLE EmployeeAttendance ADD EarlyLeaveMinutes INT NOT NULL DEFAULT 0;
+            END");
+
             SafeMigrate("Sales.IsPosted.Early", @"
             IF OBJECT_ID('Sales', 'U') IS NOT NULL AND COL_LENGTH('Sales', 'IsPosted') IS NULL
             BEGIN

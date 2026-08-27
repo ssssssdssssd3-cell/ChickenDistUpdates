@@ -17,12 +17,20 @@ namespace ChickenDist.Forms
         private TextBox txtJobTitle, txtSalary, txtDailyHours, txtCommissionRate, txtTarget, txtNationalID;
         private ComboBox cboRole;
         private CheckBox chkDriver, chkActive;
-        private Button btnNew, btnSave, btnDelete, btnPerms;
+        private Button btnNew, btnSave, btnDelete, btnPerms, btnOpenAttendance;
         private int _selectedID = 0;
 
         private ComboBox cboDefaultSafe;
         private CheckedListBox clbAllowedSafes;
         private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge, chkCanSelectDriver;
+
+        // حقول إدارة الدوام والشيفتات
+        private DateTimePicker dtpWorkStartTime, dtpWorkEndTime;
+        private NumericUpDown numGracePeriod;
+        private Label lblShiftSummary, lblHourlyRatePreview;
+        private TextBox txtSearchEmp;
+        private Label lblStatTotal, lblStatActive, lblStatDrivers;
+        private string _activeFilter = "الكل";
 
         public FrmEmployees()
         {
@@ -41,17 +49,85 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "إدارة الموظفين والصلاحيات";
-            this.Size = new Size(1000, 620);
+            this.Text = "👥 إدارة الموظفين وفريق العمل والورديات";
+            this.Size = new Size(1240, 760);
+            this.MinimumSize = new Size(1100, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            // header handled by main form's top bar
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 1. الشريط العلوي (Header Bar مع الإحصائيات والبحث)
+            // ═══════════════════════════════════════════════════════════════════════════
+            var pnlTopHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 58,
+                BackColor = Color.FromArgb(24, 34, 53),
+                Padding = new Padding(15, 10, 15, 10)
+            };
 
+            var lblHeaderTitle = new Label
+            {
+                Text = "👥 شؤون الموظفين وفريق العمل وإدارة الورديات",
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                Padding = new Padding(0, 6, 0, 0)
+            };
 
+            var flowStats = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(20, 4, 10, 0),
+                BackColor = Color.Transparent
+            };
+
+            lblStatTotal = MakeStatBadge("👥 إجمالي الموظفين: 0", Color.FromArgb(37, 99, 235));
+            lblStatActive = MakeStatBadge("🟢 النشطون: 0", Color.FromArgb(16, 185, 129));
+            lblStatDrivers = MakeStatBadge("🚚 المناديب: 0", Color.FromArgb(245, 158, 11));
+            flowStats.Controls.AddRange(new Control[] { lblStatTotal, lblStatActive, lblStatDrivers });
+
+            var pnlTopSearch = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 280,
+                Padding = new Padding(0, 4, 0, 4),
+                BackColor = Color.Transparent
+            };
+            txtSearchEmp = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10.5f),
+                BackColor = Color.FromArgb(32, 44, 68),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            txtSearchEmp.TextChanged += (s, e) => LoadEmployees();
+
+            var lblSearchIcon = new Label
+            {
+                Text = "🔍 بحث:",
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(200, 215, 235),
+                Padding = new Padding(0, 4, 5, 0)
+            };
+            pnlTopSearch.Controls.Add(txtSearchEmp);
+            pnlTopSearch.Controls.Add(lblSearchIcon);
+
+            pnlTopHeader.Controls.Add(flowStats);
+            pnlTopHeader.Controls.Add(pnlTopSearch);
+            pnlTopHeader.Controls.Add(lblHeaderTitle);
+
+            // ═══════════════════════════════════════════════════════════════════════════
+            // 2. تقسيم الشاشة الرئيسي (يمين: بطاقة التفاصيل والتبويبات | يسار: جدول الموظفين)
+            // ═══════════════════════════════════════════════════════════════════════════
             var tbl = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -60,11 +136,44 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Theme.BgMain
             };
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35f)); // Column 0 (Right): Details (35%)
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65f)); // Column 1 (Left): Grid (65%)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 510f)); // Right: Detail Cards (510px)
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Left: Grid (All remaining)
             tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            // Left: Grid panel
+            // ── الجانب الأيسر: جدول الموظفين ──────────────────────────────────────────
+            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 10, 5, 10), BackColor = Theme.BgMain };
+
+            var pnlFilterBar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 40,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(8, 4, 8, 4)
+            };
+
+            var btnFilterAll = MakeFilterChip("الكل", true);
+            var btnFilterActive = MakeFilterChip("النشطون فقط", false);
+            var btnFilterDrivers = MakeFilterChip("المناديب فقط", false);
+
+            Action<string, Button> setFilter = (flt, activeBtn) =>
+            {
+                _activeFilter = flt;
+                btnFilterAll.BackColor = btnFilterAll == activeBtn ? Theme.Primary : Color.FromArgb(240, 243, 246);
+                btnFilterAll.ForeColor = btnFilterAll == activeBtn ? Color.White : Theme.TextMain;
+                btnFilterActive.BackColor = btnFilterActive == activeBtn ? Theme.Primary : Color.FromArgb(240, 243, 246);
+                btnFilterActive.ForeColor = btnFilterActive == activeBtn ? Color.White : Theme.TextMain;
+                btnFilterDrivers.BackColor = btnFilterDrivers == activeBtn ? Theme.Primary : Color.FromArgb(240, 243, 246);
+                btnFilterDrivers.ForeColor = btnFilterDrivers == activeBtn ? Color.White : Theme.TextMain;
+                LoadEmployees();
+            };
+
+            btnFilterAll.Click += (s, e) => setFilter("الكل", btnFilterAll);
+            btnFilterActive.Click += (s, e) => setFilter("نشط", btnFilterActive);
+            btnFilterDrivers.Click += (s, e) => setFilter("مندوب", btnFilterDrivers);
+
+            pnlFilterBar.Controls.AddRange(new Control[] { btnFilterAll, btnFilterActive, btnFilterDrivers });
+
             dgEmployees = new DataGridView
             {
                 Dock = DockStyle.Fill,
@@ -78,116 +187,446 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White, Font = Theme.FontMain },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                RowTemplate = { Height = 34 },
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, SelectionBackColor = Color.FromArgb(224, 242, 254), SelectionForeColor = Color.Black, Font = Theme.FontMain },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter },
                 EnableHeadersVisualStyles = false
             };
+
             dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "EmpID", Visible = false });
-            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "EmpName", HeaderText = "الاسم" });
-            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "UserName", HeaderText = "اسم المستخدم", FillWeight = 60 });
-            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "Role", HeaderText = "الدور", FillWeight = 50 });
-            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "Phone", HeaderText = "الهاتف", FillWeight = 55 });
-            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 25 });
+            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "EmpName", HeaderText = "اسم الموظف", FillWeight = 110 });
+            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "JobTitle", HeaderText = "الوظيفة", FillWeight = 85 });
+            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShiftSchedule", HeaderText = "الدوام الرسمي (الشيفت)", FillWeight = 105 });
+            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "Role", HeaderText = "الدور", FillWeight = 55 });
+            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "Salary", HeaderText = "الراتب", FillWeight = 60 });
+            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "Phone", HeaderText = "الهاتف", FillWeight = 75 });
+            dgEmployees.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "الحالة", FillWeight = 45 });
             dgEmployees.SelectionChanged += DgEmployees_SelectionChanged;
 
-            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(5) };
             pnlGrid.Controls.Add(dgEmployees);
+            pnlGrid.Controls.Add(pnlFilterBar);
 
-            // Right: Detail panel
-            var pnlDetails = new Panel
+            // ── الجانب الأيمن: بطاقة تفاصيل الموظف منظمة في تبويبات ─────────────────
+            var pnlDetailsCard = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15),
-                AutoScroll = true
+                Padding = new Padding(12),
+                Margin = new Padding(10)
             };
 
-            int y = 20;
-            AddField(pnlDetails, "الاسم:", ref y, out txtName);
-            AddField(pnlDetails, "اسم المستخدم:", ref y, out txtUsername);
-            AddField(pnlDetails, "كلمة المرور:", ref y, out txtPassword);
-            AddField(pnlDetails, "الهاتف:", ref y, out txtPhone);
-            AddField(pnlDetails, "المسمى الوظيفي:", ref y, out txtJobTitle);
-            AddField(pnlDetails, "الراتب الأساسي (ج.م):", ref y, out txtSalary);
-            AddField(pnlDetails, "ساعات العمل اليومية:", ref y, out txtDailyHours);
-            AddField(pnlDetails, "نسبة عمولة المبيعات (%):", ref y, out txtCommissionRate);
-            AddField(pnlDetails, "تارجت المبيعات (ج.م):", ref y, out txtTarget);
-            AddField(pnlDetails, "الرقم القومي:", ref y, out txtNationalID);
-
-            pnlDetails.Controls.Add(new Label { Text = "الدور:", Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            cboRole = new ComboBox { Location = new Point(15, y - 2), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput };
-            cboRole.Items.AddRange(new object[] { "Admin", "Supervisor", "Driver", "Accountant", "User" });
-            cboRole.SelectedIndex = 4;
-            pnlDetails.Controls.Add(cboRole); y += 38;
-
-            chkDriver = new CheckBox { Text = "مندوب توزيع", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain }; y += 32;
-            chkActive = new CheckBox { Text = "موظف نشط", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true }; y += 40;
-            pnlDetails.Controls.AddRange(new Control[] { chkDriver, chkActive });
-
-            // Default Safe
-            pnlDetails.Controls.Add(new Label { Text = "الخزينة الافتراضية:", Location = new Point(220, y), AutoSize = true, ForeColor = Theme.TextMain });
-            cboDefaultSafe = new ComboBox { Location = new Point(15, y - 2), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            pnlDetails.Controls.Add(cboDefaultSafe); y += 38;
-
-            // Allowed Safes CheckedListBox
-            pnlDetails.Controls.Add(new Label { Text = "الخزائن المسموحة:", Location = new Point(220, y), AutoSize = true, ForeColor = Theme.TextMain });
-            clbAllowedSafes = new CheckedListBox { Location = new Point(15, y), Width = 180, Height = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
-            pnlDetails.Controls.Add(clbAllowedSafes); y += 105;
-
-            // Selling permissions checkboxes
-            pnlDetails.Controls.Add(new Label { Text = "طرق البيع المسموحة:", Location = new Point(200, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
-            y += 24;
-            chkCanSellCash = new CheckBox { Text = "بيع نقدي (كاش)", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            chkCanSellCredit = new CheckBox { Text = "بيع آجل", Location = new Point(50, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            y += 28;
-            chkCanSellVisa = new CheckBox { Text = "بيع فيزا / شبكة", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            chkCanSellInstallment = new CheckBox { Text = "تقسيط شرعي", Location = new Point(50, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            y += 28;
-            chkCanSellDriverLoad = new CheckBox { Text = "تحميل مندوب", Location = new Point(200, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            chkCanSelectDriver = new CheckBox { Text = "اختيار/ظهور المندوب", Location = new Point(20, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            y += 28;
-            chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(160, y), AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-            pnlDetails.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellInstallment, chkCanSellDriverLoad, chkCanSelectDriver, chkCanEditShippingCharge });
-            y += 35;
-
-            btnNew = Theme.MakeButton("🆕 جديد", 240, y, 90, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("💾 حفظ", 140, y, 90, 32, Theme.Accent);
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 40, y, 90, 32, Color.FromArgb(140, 40, 40)); y += 44;
-            btnPerms = Theme.MakeButton("🔐 الصلاحيات", 180, y, 150, 32, Theme.Primary);
+            // شريط أزرار العمليات أسفل البطاقة
+            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Theme.BgCard, Padding = new Padding(0, 6, 0, 0) };
+            btnNew = Theme.MakeButton("🆕 جديد", 380, 6, 85, 36, Color.FromArgb(40, 140, 70));
+            btnSave = Theme.MakeButton("💾 حفظ البيانات", 240, 6, 130, 36, Theme.Primary);
+            btnDelete = Theme.MakeButton("🗑 إيقاف", 150, 6, 80, 36, Color.FromArgb(200, 50, 60));
+            btnPerms = Theme.MakeButton("🔐 الصلاحيات", 10, 6, 130, 36, Color.FromArgb(75, 45, 140));
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
             btnPerms.Click += BtnPerms_Click;
 
-            pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPerms });
+            pnlActions.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnPerms });
 
-            tbl.Controls.Add(pnlDetails, 0, 0); // Column 0 (Right): Details
-            tbl.Controls.Add(pnlGrid, 1, 0);    // Column 1 (Left): Grid
+            // تبويبات التفاصيل
+            var tabDetails = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Padding = new Point(12, 6)
+            };
+
+            var tabBasic = new TabPage("📋 الأساسية");
+            var tabShift = new TabPage("🕒 مواعيد الدوام والشيفت");
+            var tabFinancial = new TabPage("💰 الراتب والعمولات");
+            var tabSafes = new TabPage("🏦 الخزائن والصلاحيات");
+
+            BuildBasicTab(tabBasic);
+            BuildShiftTab(tabShift);
+            BuildFinancialTab(tabFinancial);
+            BuildSafesTab(tabSafes);
+
+            tabDetails.TabPages.Add(tabBasic);
+            tabDetails.TabPages.Add(tabShift);
+            tabDetails.TabPages.Add(tabFinancial);
+            tabDetails.TabPages.Add(tabSafes);
+
+            pnlDetailsCard.Controls.Add(tabDetails);
+            pnlDetailsCard.Controls.Add(pnlActions);
+
+            tbl.Controls.Add(pnlDetailsCard, 0, 0); // Right: Detail Card
+            tbl.Controls.Add(pnlGrid, 1, 0);        // Left: Grid
+
             this.Controls.Add(tbl);
+            this.Controls.Add(pnlTopHeader);
 
             LoadSafesList();
             Theme.ApplyFormRTL(this);
         }
 
-        private void AddField(Control parent, string label, ref int y, out TextBox txt)
+        private void BuildBasicTab(TabPage tab)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(250, y), AutoSize = true, ForeColor = Theme.TextMain });
-            txt = new TextBox { Location = new Point(15, y - 2), Width = 180, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            tab.BackColor = Theme.BgCard;
+            tab.AutoScroll = true;
+            int y = 15;
+
+            AddModernField(tab, "الاسم الكامل:", ref y, out txtName);
+            AddModernField(tab, "اسم المستخدم:", ref y, out txtUsername);
+            AddModernField(tab, "كلمة المرور:", ref y, out txtPassword, isPassword: true);
+
+            var lblPassHint = new Label
+            {
+                Text = "💡 اتركها فارغة عند التعديل للحفاظ على كلمة المرور الحالية",
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = Color.FromArgb(120, 130, 150),
+                Location = new Point(20, y - 4),
+                AutoSize = true
+            };
+            tab.Controls.Add(lblPassHint);
+            y += 24;
+
+            AddModernField(tab, "المسمى الوظيفي:", ref y, out txtJobTitle);
+            AddModernField(tab, "رقم الهاتف:", ref y, out txtPhone);
+            AddModernField(tab, "الرقم القومي:", ref y, out txtNationalID);
+
+            // Role
+            tab.Controls.Add(new Label { Text = "الدور في النظام:", Location = new Point(340, y + 3), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            cboRole = new ComboBox { Location = new Point(20, y), Width = 280, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f), BackColor = Theme.BgInput };
+            cboRole.Items.AddRange(new object[] { "Admin", "Supervisor", "Driver", "Accountant", "User" });
+            cboRole.SelectedIndex = 4;
+            tab.Controls.Add(cboRole);
+            y += 42;
+
+            chkActive = new CheckBox { Text = "موظف نشط ومفعل في النظام", Location = new Point(240, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Color.FromArgb(16, 149, 193), Checked = true };
+            chkDriver = new CheckBox { Text = "مندوب توزيع سيارات / شحن", Location = new Point(40, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Color.FromArgb(245, 158, 11) };
+            tab.Controls.AddRange(new Control[] { chkActive, chkDriver });
+        }
+
+        private void BuildShiftTab(TabPage tab)
+        {
+            tab.BackColor = Theme.BgCard;
+            tab.AutoScroll = true;
+            int y = 15;
+
+            var pnlNotice = new Panel { Location = new Point(15, y), Size = new Size(460, 48), BackColor = Color.FromArgb(238, 242, 255), Padding = new Padding(8) };
+            var lblNotice = new Label
+            {
+                Text = "⏱️ تحديد مواعيد الحضور والانصراف الرسمية للموظف، ليتم بناءً عليها احتساب دقائق التأخير وساعات العمل والإضافي في شاشة الحضور.",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(67, 56, 202)
+            };
+            pnlNotice.Controls.Add(lblNotice);
+            tab.Controls.Add(pnlNotice);
+            y += 58;
+
+            // Work Start Time
+            tab.Controls.Add(new Label { Text = "⏰ موعد الحضور الرسمي:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            dtpWorkStartTime = new DateTimePicker
+            {
+                Location = new Point(15, y),
+                Width = 260,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "hh:mm tt",
+                ShowUpDown = true,
+                Value = DateTime.Today.AddHours(9)
+            };
+            dtpWorkStartTime.ValueChanged += (s, e) => UpdateShiftSummary();
+            tab.Controls.Add(dtpWorkStartTime);
+            y += 44;
+
+            // Work End Time
+            tab.Controls.Add(new Label { Text = "🚪 موعد الانصراف الرسمي:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            dtpWorkEndTime = new DateTimePicker
+            {
+                Location = new Point(15, y),
+                Width = 260,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "hh:mm tt",
+                ShowUpDown = true,
+                Value = DateTime.Today.AddHours(17)
+            };
+            dtpWorkEndTime.ValueChanged += (s, e) => UpdateShiftSummary();
+            tab.Controls.Add(dtpWorkEndTime);
+            y += 44;
+
+            // Daily Work Hours
+            AddModernField(tab, "ساعات العمل المقررة:", ref y, out txtDailyHours);
+            txtDailyHours.Text = "8.0";
+            txtDailyHours.TextChanged += (s, e) => { UpdateShiftSummary(); UpdateHourlyRatePreview(); };
+
+            // Grace Period Minutes
+            tab.Controls.Add(new Label { Text = "⏳ سماح التأخير (بالدقائق):", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            numGracePeriod = new NumericUpDown
+            {
+                Location = new Point(15, y),
+                Width = 260,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Minimum = 0,
+                Maximum = 120,
+                Value = 15
+            };
+            numGracePeriod.ValueChanged += (s, e) => UpdateShiftSummary();
+            tab.Controls.Add(numGracePeriod);
+            y += 48;
+
+            // Quick Shift Presets Bar
+            var lblPresets = new Label { Text = "⚡ ورديات سريعة جاهزة:", Location = new Point(310, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Color.FromArgb(70, 80, 100) };
+            tab.Controls.Add(lblPresets);
+            y += 24;
+
+            var pnlPresets = new FlowLayoutPanel { Location = new Point(15, y), Size = new Size(460, 42), FlowDirection = FlowDirection.RightToLeft, BackColor = Color.Transparent };
+            var btnMorning = MakeShiftPresetBtn("☀️ صباحي (9 ص - 5 م)", () => SetShiftPreset(9, 17, 8));
+            var btnEvening = MakeShiftPresetBtn("🌆 مسائي (2 م - 10 م)", () => SetShiftPreset(14, 22, 8));
+            var btnNight = MakeShiftPresetBtn("🌙 ليلي (8 م - 4 ص)", () => SetShiftPreset(20, 4, 8));
+            var btnFullDay = MakeShiftPresetBtn("⏰ دوام (8 ص - 4 م)", () => SetShiftPreset(8, 16, 8));
+            pnlPresets.Controls.AddRange(new Control[] { btnMorning, btnEvening, btnNight, btnFullDay });
+            tab.Controls.Add(pnlPresets);
+            y += 50;
+
+            // Smart Summary Card
+            var pnlSummary = new Panel { Location = new Point(15, y), Size = new Size(460, 42), BackColor = Color.FromArgb(240, 253, 244), BorderStyle = BorderStyle.FixedSingle };
+            lblShiftSummary = new Label
+            {
+                Text = "⏱️ إجمالي الدوام: 8.0 ساعات | السماح حتى: 09:15 ص",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(21, 128, 61)
+            };
+            pnlSummary.Controls.Add(lblShiftSummary);
+            tab.Controls.Add(pnlSummary);
+            y += 52;
+
+            btnOpenAttendance = Theme.MakeButton("🕒 فتح شاشة وسجل الحضور والانصراف", 15, y, 460, 36, Color.FromArgb(16, 149, 193));
+            btnOpenAttendance.Click += (s, e) => new FrmEmployeeAttendance().ShowDialog();
+            tab.Controls.Add(btnOpenAttendance);
+        }
+
+        private void BuildFinancialTab(TabPage tab)
+        {
+            tab.BackColor = Theme.BgCard;
+            tab.AutoScroll = true;
+            int y = 20;
+
+            AddModernField(tab, "الراتب الأساسي (ج.م):", ref y, out txtSalary);
+            txtSalary.Text = "0.00";
+            txtSalary.TextChanged += (s, e) => UpdateHourlyRatePreview();
+
+            AddModernField(tab, "نسبة عمولة المبيعات (%):", ref y, out txtCommissionRate);
+            txtCommissionRate.Text = "0.0";
+
+            AddModernField(tab, "تارجت المبيعات المستهدف:", ref y, out txtTarget);
+            txtTarget.Text = "0.00";
+
+            y += 10;
+            var pnlHourly = new Panel { Location = new Point(15, y), Size = new Size(460, 52), BackColor = Color.FromArgb(248, 250, 252), BorderStyle = BorderStyle.FixedSingle };
+            lblHourlyRatePreview = new Label
+            {
+                Text = "💰 أجر ساعة العمل المحسوب: 0.00 ج.م / ساعة\n(يحسب على أساس الراتب ÷ 30 يوم ÷ ساعات الدوام اليومي)",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42)
+            };
+            pnlHourly.Controls.Add(lblHourlyRatePreview);
+            tab.Controls.Add(pnlHourly);
+        }
+
+        private void BuildSafesTab(TabPage tab)
+        {
+            tab.BackColor = Theme.BgCard;
+            tab.AutoScroll = true;
+            int y = 15;
+
+            tab.Controls.Add(new Label { Text = "الخزينة الافتراضية:", Location = new Point(340, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            cboDefaultSafe = new ComboBox { Location = new Point(20, y), Width = 280, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            tab.Controls.Add(cboDefaultSafe);
+            y += 42;
+
+            tab.Controls.Add(new Label { Text = "الخزائن المسموح الصرف والإيداع بها:", Location = new Point(220, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            y += 24;
+            clbAllowedSafes = new CheckedListBox { Location = new Point(20, y), Width = 450, Height = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
+            tab.Controls.Add(clbAllowedSafes);
+            y += 105;
+
+            var lblSalesPerms = new Label { Text = "أذونات وطرق البيع المسموحة:", Location = new Point(280, y), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.Primary };
+            tab.Controls.Add(lblSalesPerms);
+            y += 28;
+
+            chkCanSellCash = new CheckBox { Text = "بيع نقدي (كاش)", Location = new Point(280, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
+            chkCanSellCredit = new CheckBox { Text = "بيع آجل", Location = new Point(80, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
+            y += 28;
+            chkCanSellVisa = new CheckBox { Text = "بيع فيزا / شبكة", Location = new Point(280, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
+            chkCanSellInstallment = new CheckBox { Text = "تقسيط شرعي", Location = new Point(80, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
+            y += 28;
+            chkCanSellDriverLoad = new CheckBox { Text = "تحميل مندوب", Location = new Point(280, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
+            chkCanSelectDriver = new CheckBox { Text = "اختيار/ظهور المندوب", Location = new Point(80, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
+            y += 28;
+            chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(250, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
+            tab.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellInstallment, chkCanSellDriverLoad, chkCanSelectDriver, chkCanEditShippingCharge });
+        }
+
+        private void AddModernField(Control parent, string label, ref int y, out TextBox txt, bool isPassword = false)
+        {
+            parent.Controls.Add(new Label { Text = label, Location = new Point(320, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            txt = new TextBox
+            {
+                Location = new Point(20, y),
+                Width = 280,
+                Font = new Font("Segoe UI", 10.5f),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                UseSystemPasswordChar = isPassword
+            };
             parent.Controls.Add(txt);
-            y += 38;
+            y += 40;
+        }
+
+        private Label MakeStatBadge(string text, Color color)
+        {
+            var lbl = new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = color,
+                Padding = new Padding(8, 4, 8, 4),
+                Margin = new Padding(4, 0, 4, 0)
+            };
+            return lbl;
+        }
+
+        private Button MakeFilterChip(string text, bool isActive)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                AutoSize = true,
+                Height = 28,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                BackColor = isActive ? Theme.Primary : Color.FromArgb(240, 243, 246),
+                ForeColor = isActive ? Color.White : Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(3, 0, 3, 0)
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            return btn;
+        }
+
+        private Button MakeShiftPresetBtn(string text, Action onClick)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                AutoSize = true,
+                Height = 30,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                BackColor = Color.FromArgb(241, 245, 249),
+                ForeColor = Color.FromArgb(30, 41, 59),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 0, 2, 0)
+            };
+            btn.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+            btn.Click += (s, e) => onClick();
+            return btn;
+        }
+
+        private void SetShiftPreset(int startHour, int endHour, decimal hours)
+        {
+            dtpWorkStartTime.Value = DateTime.Today.AddHours(startHour);
+            dtpWorkEndTime.Value = DateTime.Today.AddHours(endHour);
+            txtDailyHours.Text = hours.ToString("N1");
+            UpdateShiftSummary();
+        }
+
+        private void UpdateShiftSummary()
+        {
+            if (lblShiftSummary == null || dtpWorkStartTime == null || dtpWorkEndTime == null) return;
+            string startStr = dtpWorkStartTime.Value.ToString("hh:mm tt");
+            string endStr = dtpWorkEndTime.Value.ToString("hh:mm tt");
+            decimal.TryParse(txtDailyHours.Text.Trim(), out decimal dwh);
+            if (dwh <= 0) dwh = 8;
+            int grace = (int)numGracePeriod.Value;
+            var graceTime = dtpWorkStartTime.Value.AddMinutes(grace).ToString("hh:mm tt");
+
+            lblShiftSummary.Text = $"⏱️ الدوام: {startStr} إلى {endStr} ({dwh:N1} س) | السماح حتى: {graceTime}";
+        }
+
+        private void UpdateHourlyRatePreview()
+        {
+            if (lblHourlyRatePreview == null) return;
+            decimal.TryParse(txtSalary.Text.Trim(), out decimal sal);
+            decimal.TryParse(txtDailyHours.Text.Trim(), out decimal dwh);
+            if (dwh <= 0) dwh = 8;
+            decimal hourly = (sal > 0 && dwh > 0) ? (sal / 30m / dwh) : 0m;
+            lblHourlyRatePreview.Text = $"💰 أجر ساعة العمل المحسوب: {hourly:N2} ج.م / ساعة\n(يحسب على أساس الراتب ÷ 30 يوم ÷ ساعات الدوام اليومي)";
+        }
+
+        private string FormatTimeForDisplay(string timeStr)
+        {
+            if (string.IsNullOrWhiteSpace(timeStr)) return "09:00 ص";
+            if (DateTime.TryParse(timeStr, out DateTime dt)) return dt.ToString("hh:mm tt");
+            if (TimeSpan.TryParse(timeStr, out TimeSpan ts)) return DateTime.Today.Add(ts).ToString("hh:mm tt");
+            return timeStr;
         }
 
         private void LoadEmployees()
         {
             dgEmployees.Rows.Clear();
             var dt = EmployeeDAL.GetAll();
+            int total = dt.Rows.Count, activeCount = 0, driversCount = 0;
+            string q = txtSearchEmp != null ? txtSearchEmp.Text.Trim().ToLowerInvariant() : "";
+
             foreach (DataRow r in dt.Rows)
             {
                 bool active = Convert.ToBoolean(r["IsActive"]);
-                var ri = dgEmployees.Rows.Add(r["EmpID"], r["EmpName"], r["UserName"], r["Role"], r["Phone"], active ? "✓" : "✗");
-                if (!active) dgEmployees.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
+                bool isDriver = Convert.ToBoolean(r["IsDriver"]);
+                if (active) activeCount++;
+                if (isDriver) driversCount++;
+
+                if (_activeFilter == "نشط" && !active) continue;
+                if (_activeFilter == "مندوب" && !isDriver) continue;
+
+                string name = r["EmpName"]?.ToString() ?? "";
+                string uname = r["UserName"]?.ToString() ?? "";
+                string phone = r["Phone"]?.ToString() ?? "";
+                string job = r.Table.Columns.Contains("JobTitle") && r["JobTitle"] != DBNull.Value ? r["JobTitle"].ToString() : "";
+                string role = r["Role"]?.ToString() ?? "";
+
+                if (!string.IsNullOrEmpty(q))
+                {
+                    if (!name.ToLowerInvariant().Contains(q) && !uname.ToLowerInvariant().Contains(q) &&
+                        !phone.Contains(q) && !job.ToLowerInvariant().Contains(q) && !role.ToLowerInvariant().Contains(q))
+                    {
+                        continue;
+                    }
+                }
+
+                string startStr = r.Table.Columns.Contains("WorkStartTime") && r["WorkStartTime"] != DBNull.Value ? r["WorkStartTime"].ToString() : "09:00";
+                string endStr = r.Table.Columns.Contains("WorkEndTime") && r["WorkEndTime"] != DBNull.Value ? r["WorkEndTime"].ToString() : "17:00";
+                string shiftDisplay = $"{FormatTimeForDisplay(startStr)} - {FormatTimeForDisplay(endStr)}";
+
+                string salDisplay = r.Table.Columns.Contains("Salary") && r["Salary"] != DBNull.Value ? Convert.ToDecimal(r["Salary"]).ToString("N0") : "0";
+
+                var ri = dgEmployees.Rows.Add(r["EmpID"], name, job, shiftDisplay, role, salDisplay, phone, active ? "✓ نشط" : "✗ معطل");
+                if (!active)
+                {
+                    dgEmployees.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
+                    dgEmployees.Rows[ri].DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+                }
             }
+
+            if (lblStatTotal != null) lblStatTotal.Text = $"👥 إجمالي الموظفين: {total}";
+            if (lblStatActive != null) lblStatActive.Text = $"🟢 النشطون: {activeCount}";
+            if (lblStatDrivers != null) lblStatDrivers.Text = $"🚚 المناديب: {driversCount}";
         }
 
         private void DgEmployees_SelectionChanged(object sender, EventArgs e)
@@ -196,9 +635,9 @@ namespace ChickenDist.Forms
             _selectedID = Convert.ToInt32(dgEmployees.SelectedRows[0].Cells["EmpID"].Value);
             var dr = EmployeeDAL.GetByID(_selectedID);
             if (dr == null) return;
+
             txtName.Text = dr["EmpName"].ToString();
             txtUsername.Text = dr["UserName"].ToString();
-            // تفريغ حقل كلمة المرور للأمان؛ يمكن كتابة كلمة مرور جديدة أو تركها فارغة للحفاظ على الحالية
             txtPassword.Clear();
             txtPhone.Text = dr["Phone"].ToString();
             txtJobTitle.Text = dr.Table.Columns.Contains("JobTitle") && dr["JobTitle"] != DBNull.Value ? dr["JobTitle"].ToString() : "";
@@ -211,9 +650,26 @@ namespace ChickenDist.Forms
             chkDriver.Checked = Convert.ToBoolean(dr["IsDriver"]);
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
 
+            // مواعيد الشيفت
+            string startStr = dr.Table.Columns.Contains("WorkStartTime") && dr["WorkStartTime"] != DBNull.Value ? dr["WorkStartTime"].ToString() : "09:00";
+            string endStr = dr.Table.Columns.Contains("WorkEndTime") && dr["WorkEndTime"] != DBNull.Value ? dr["WorkEndTime"].ToString() : "17:00";
+            int grace = dr.Table.Columns.Contains("GracePeriodMinutes") && dr["GracePeriodMinutes"] != DBNull.Value ? Convert.ToInt32(dr["GracePeriodMinutes"]) : 15;
+
+            if (DateTime.TryParse(startStr, out DateTime dtStart)) dtpWorkStartTime.Value = dtStart;
+            else if (TimeSpan.TryParse(startStr, out TimeSpan tsStart)) dtpWorkStartTime.Value = DateTime.Today.Add(tsStart);
+            else dtpWorkStartTime.Value = DateTime.Today.AddHours(9);
+
+            if (DateTime.TryParse(endStr, out DateTime dtEnd)) dtpWorkEndTime.Value = dtEnd;
+            else if (TimeSpan.TryParse(endStr, out TimeSpan tsEnd)) dtpWorkEndTime.Value = DateTime.Today.Add(tsEnd);
+            else dtpWorkEndTime.Value = DateTime.Today.AddHours(17);
+
+            numGracePeriod.Value = Math.Max(0, Math.Min(120, grace));
+            UpdateShiftSummary();
+            UpdateHourlyRatePreview();
+
             // Default Safe
             int defaultSafeId = dr["DefaultSafeID"] != DBNull.Value ? Convert.ToInt32(dr["DefaultSafeID"]) : 0;
-            cboDefaultSafe.SelectedIndex = 0; // Default none
+            cboDefaultSafe.SelectedIndex = 0;
             for (int i = 0; i < cboDefaultSafe.Items.Count; i++)
             {
                 if (cboDefaultSafe.Items[i] is ComboItem item && item.ID == defaultSafeId)
@@ -253,6 +709,12 @@ namespace ChickenDist.Forms
             txtCommissionRate.Text = "0.0"; txtTarget.Text = "0.00"; txtNationalID.Clear();
             cboRole.SelectedIndex = 4;
             chkDriver.Checked = false; chkActive.Checked = true;
+
+            dtpWorkStartTime.Value = DateTime.Today.AddHours(9);
+            dtpWorkEndTime.Value = DateTime.Today.AddHours(17);
+            numGracePeriod.Value = 15;
+            UpdateShiftSummary();
+            UpdateHourlyRatePreview();
 
             if (cboDefaultSafe.Items.Count > 0) cboDefaultSafe.SelectedIndex = 0;
             for (int i = 0; i < clbAllowedSafes.Items.Count; i++)
@@ -299,6 +761,10 @@ namespace ChickenDist.Forms
             string jobTitle = txtJobTitle.Text.Trim();
             string nationalID = txtNationalID.Text.Trim();
 
+            string workStartTime = dtpWorkStartTime.Value.ToString("HH:mm");
+            string workEndTime = dtpWorkEndTime.Value.ToString("HH:mm");
+            int gracePeriod = (int)numGracePeriod.Value;
+
             try
             {
                 int id = EmployeeDAL.Save(_selectedID, txtName.Text, txtUsername.Text,
@@ -306,8 +772,9 @@ namespace ChickenDist.Forms
                     defaultSafeID, allowedSafeIDs, chkCanSellCash.Checked, chkCanSellCredit.Checked,
                     chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked, chkCanEditShippingCharge.Checked,
                     chkCanSelectDriver.Checked, chkCanSellVisa.Checked,
-                    sal, dwh, hourlyRate, crate, target, jobTitle, null, nationalID);
-                if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadEmployees(); }
+                    sal, dwh, hourlyRate, crate, target, jobTitle, null, nationalID,
+                    workStartTime, workEndTime, gracePeriod);
+                if (id > 0) { MessageBox.Show("✅ تم حفظ بيانات الموظف بنجاح"); _selectedID = id; LoadEmployees(); }
                 else MessageBox.Show("❌ فشل الحفظ");
             }
             catch (Exception ex)
@@ -328,14 +795,10 @@ namespace ChickenDist.Forms
             try
             {
                 DataTable safes = AccountDAL.GetActiveSafeAccounts();
-                
-                // For cboDefaultSafe
                 cboDefaultSafe.Items.Clear();
                 cboDefaultSafe.Items.Add(new ComboItem(0, "--- بدون خزينة افتراضية ---"));
-                
                 clbAllowedSafes.Items.Clear();
-                
-foreach (DataRow r in safes.Rows)
+                foreach (DataRow r in safes.Rows)
                 {
                     int id = Convert.ToInt32(r["AccountID"]);
                     string name = r["AccountName"].ToString();
@@ -754,41 +1217,59 @@ foreach (DataRow r in safes.Rows)
             var pnlTop = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 75,
+                Height = 88,
                 BackColor = Color.FromArgb(20, 26, 38),
-                Padding = new Padding(20, 10, 20, 10)
+                Padding = new Padding(15, 8, 15, 6)
+            };
+
+            var pnlHeaderInfo = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 38,
+                BackColor = Color.Transparent
             };
 
             var lblTitle = new Label
             {
-                Text = $"🔐 صلاحيات الموظف: {_empName}",
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                Text = $"🔐 ضبط وتخصيص صلاحيات الموظف: {_empName}",
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.White,
+                Dock = DockStyle.Right,
                 AutoSize = true,
-                Location = new Point(20, 10)
+                Padding = new Padding(0, 4, 0, 0)
             };
 
             var lblSub = new Label
             {
-                Text = "اختر أي شاشة من القائمة اليمنى لعرض وضبط كافة صلاحياتها الفرعية بالتفصيل مع شروحات واضحة ومعاني صريحة.",
+                Text = "اختر أي شاشة من القائمة اليمنى لعرض وضبط كافة صلاحياتها بالتفصيل بشكل أفقي ممتد ومريح.",
                 Font = new Font("Segoe UI", 9.5f),
                 ForeColor = Color.FromArgb(170, 190, 215),
+                Dock = DockStyle.Left,
                 AutoSize = true,
-                Location = new Point(20, 42)
+                Padding = new Padding(0, 7, 0, 0)
             };
-            pnlTop.Controls.AddRange(new Control[] { lblTitle, lblSub });
+            pnlHeaderInfo.Controls.Add(lblTitle);
+            pnlHeaderInfo.Controls.Add(lblSub);
 
-            // Preset Roles Bar (Top-Left inside Header)
+            // Preset Roles Bar (Row 2 in Header)
             var flowPresets = new FlowLayoutPanel
             {
-                Dock = DockStyle.Left,
-                Width = 620,
-                Height = 65,
-                FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(5, 12, 5, 5),
-                BackColor = Color.Transparent
+                Dock = DockStyle.Bottom,
+                Height = 36,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 0, 0, 0)
             };
 
+            var lblPresetTitle = new Label
+            {
+                Text = "⚡ قوالب جاهزة:",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(243, 198, 35),
+                Padding = new Padding(0, 6, 8, 0)
+            };
+            flowPresets.Controls.Add(lblPresetTitle);
             flowPresets.Controls.Add(MakePresetBtn("👑 مدير كامل", Color.FromArgb(192, 57, 43), () => ApplyPreset("Admin")));
             flowPresets.Controls.Add(MakePresetBtn("🛒 كاشير / بيع", Color.FromArgb(41, 128, 185), () => ApplyPreset("Cashier")));
             flowPresets.Controls.Add(MakePresetBtn("📥 مشتريات", Color.FromArgb(142, 68, 173), () => ApplyPreset("Purchases")));
@@ -796,23 +1277,29 @@ foreach (DataRow r in safes.Rows)
             flowPresets.Controls.Add(MakePresetBtn("💰 محاسب مالي", Color.FromArgb(211, 84, 0), () => ApplyPreset("Accountant")));
             flowPresets.Controls.Add(MakePresetBtn("🧹 تفريغ الكل", Color.FromArgb(108, 122, 137), () => ApplyPreset("Clear")));
 
+            pnlTop.Controls.Add(pnlHeaderInfo);
             pnlTop.Controls.Add(flowPresets);
 
-            // ===== 2. Main Workspace Split (Right: Screen Navigation List, Left: Detailed Workspace) =====
-            var split = new SplitContainer
+            // ===== 2. Main Workspace Split (TableLayoutPanel: Right = Screens List 360px, Left = Sub-Permissions 100%) =====
+            var tblPerms = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                SplitterDistance = 420,
-                SplitterWidth = 6,
-                BackColor = Color.FromArgb(15, 20, 30),
-                RightToLeft = RightToLeft.Yes
+                ColumnCount = 2,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.FromArgb(16, 22, 34)
             };
+            tblPerms.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360f)); // Column 0 (Right): Screens List
+            tblPerms.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // Column 1 (Left): Detailed Sub-Permissions (100% remaining width!)
+            tblPerms.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             // ── Right Panel: Categories & Screen List ─────────────────────
-            var pnlRight = split.Panel1;
-            pnlRight.BackColor = Theme.BgCard;
-            pnlRight.Padding = new Padding(10);
+            var pnlRight = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10)
+            };
 
             // Search Box
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(0, 0, 0, 8) };
@@ -895,28 +1382,31 @@ foreach (DataRow r in safes.Rows)
             pnlRight.Controls.Add(pnlSearch);
 
             // ── Left Panel: Detailed Permissions Card Workspace ──────────
-            var pnlLeft = split.Panel2;
-            pnlLeft.BackColor = Color.FromArgb(16, 22, 34);
-            pnlLeft.Padding = new Padding(15);
+            var pnlLeft = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(16, 22, 34),
+                Padding = new Padding(12)
+            };
 
             pnlDetailCard = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(20),
+                Padding = new Padding(15),
                 AutoScroll = true
             };
 
             // Selected Screen Header inside Left Card
-            var pnlDetailHeader = new Panel { Dock = DockStyle.Top, Height = 100, BackColor = Color.FromArgb(25, 33, 48), Padding = new Padding(15, 12, 15, 12) };
+            var pnlDetailHeader = new Panel { Dock = DockStyle.Top, Height = 95, BackColor = Color.FromArgb(25, 33, 48), Padding = new Padding(15, 10, 15, 10) };
 
             lblSelectedTitle = new Label
             {
                 Text = "🛒 فاتورة المبيعات الرئيسية",
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35),
                 AutoSize = true,
-                Location = new Point(15, 10)
+                Location = new Point(15, 8)
             };
 
             lblSelectedDesc = new Label
@@ -925,7 +1415,7 @@ foreach (DataRow r in safes.Rows)
                 Font = new Font("Segoe UI", 9.5f),
                 ForeColor = Color.FromArgb(180, 195, 220),
                 AutoSize = true,
-                Location = new Point(15, 42)
+                Location = new Point(15, 38)
             };
 
             lblStatsBadge = new Label
@@ -935,7 +1425,7 @@ foreach (DataRow r in safes.Rows)
                 ForeColor = Color.FromArgb(46, 204, 113),
                 Dock = DockStyle.Left,
                 AutoSize = true,
-                Padding = new Padding(10, 15, 0, 0)
+                Padding = new Padding(10, 12, 0, 0)
             };
 
             pnlDetailHeader.Controls.AddRange(new Control[] { lblSelectedTitle, lblSelectedDesc, lblStatsBadge });
@@ -944,16 +1434,16 @@ foreach (DataRow r in safes.Rows)
             var pnlMaster = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 65,
+                Height = 56,
                 BackColor = Color.FromArgb(32, 42, 60),
-                Padding = new Padding(15, 12, 15, 12),
-                Margin = new Padding(0, 10, 0, 10)
+                Padding = new Padding(15, 10, 15, 10),
+                Margin = new Padding(0, 8, 0, 8)
             };
 
             chkMasterAccess = new CheckBox
             {
                 Text = "👁️ السماح للموظف بفتح واستخدام هذه الشاشة في البرنامج",
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Right,
                 AutoSize = true,
@@ -963,10 +1453,12 @@ foreach (DataRow r in safes.Rows)
 
             var btnSelectAllCurrent = MakeSmallBtn("✔️ تحديد كافة الصلاحيات", Color.FromArgb(5, 150, 105), () => ToggleCurrentScreenSubPerms(true));
             var btnClearAllCurrent = MakeSmallBtn("❌ إلغاء الصلاحيات الفرعية", Color.FromArgb(140, 60, 70), () => ToggleCurrentScreenSubPerms(false));
-            btnSelectAllCurrent.Location = new Point(230, 15);
-            btnClearAllCurrent.Location = new Point(45, 15);
+            btnSelectAllCurrent.Dock = DockStyle.Left;
+            btnClearAllCurrent.Dock = DockStyle.Left;
+            btnSelectAllCurrent.Margin = new Padding(4);
+            btnClearAllCurrent.Margin = new Padding(4);
 
-            pnlMaster.Controls.AddRange(new Control[] { chkMasterAccess, btnSelectAllCurrent, btnClearAllCurrent });
+            pnlMaster.Controls.AddRange(new Control[] { chkMasterAccess, btnClearAllCurrent, btnSelectAllCurrent });
 
             // Sub-Permissions Scrollable Container
             flowSubPerms = new FlowLayoutPanel
@@ -975,15 +1467,30 @@ foreach (DataRow r in safes.Rows)
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = true,
-                Padding = new Padding(5, 15, 5, 15),
+                Padding = new Padding(10, 10, 10, 10),
                 BackColor = Color.Transparent
             };
+
+            Action adjustCardsWidth = () =>
+            {
+                int cardWidth = flowSubPerms.ClientSize.Width - 25;
+                if (cardWidth < 400) cardWidth = 400;
+                foreach (Control c in flowSubPerms.Controls)
+                {
+                    c.Width = cardWidth;
+                }
+            };
+            flowSubPerms.Resize += (s, e) => adjustCardsWidth();
+            pnlDetailCard.Resize += (s, e) => adjustCardsWidth();
 
             pnlDetailCard.Controls.Add(flowSubPerms);
             pnlDetailCard.Controls.Add(pnlMaster);
             pnlDetailCard.Controls.Add(pnlDetailHeader);
 
             pnlLeft.Controls.Add(pnlDetailCard);
+
+            tblPerms.Controls.Add(pnlRight, 0, 0);
+            tblPerms.Controls.Add(pnlLeft, 1, 0);
 
             // ===== 3. Bottom Footer Actions Bar =====
             var pnlFooter = new Panel
@@ -1017,7 +1524,7 @@ foreach (DataRow r in safes.Rows)
 
             pnlFooter.Controls.AddRange(new Control[] { btnSavePerms, btnClose, lblFooterStats });
 
-            this.Controls.Add(split);
+            this.Controls.Add(tblPerms);
             this.Controls.Add(pnlFooter);
             this.Controls.Add(pnlTop);
 
@@ -1279,13 +1786,16 @@ foreach (DataRow r in safes.Rows)
 
             if (!isEnabled)
             {
+                int cardW = flowSubPerms.ClientSize.Width > 50 ? flowSubPerms.ClientSize.Width - 25 : 800;
+                if (cardW < 400) cardW = 800;
+
                 var pnlDisabled = new Panel
                 {
-                    Width = 720,
+                    Width = cardW,
                     Height = 90,
                     BackColor = Color.FromArgb(30, 25, 30),
                     Padding = new Padding(20),
-                    Margin = new Padding(5, 10, 5, 10)
+                    Margin = new Padding(0, 10, 0, 10)
                 };
                 var lblDis = new Label
                 {
@@ -1390,14 +1900,17 @@ foreach (DataRow r in safes.Rows)
 
         private Panel MakeSubPermCard(string title, string hint, bool isChecked, Action<bool> onChange, Color? accentColor = null)
         {
+            int cardW = flowSubPerms.ClientSize.Width > 50 ? flowSubPerms.ClientSize.Width - 25 : 800;
+            if (cardW < 400) cardW = 800;
+
             var pnl = new Panel
             {
-                Width = 720,
+                Width = cardW,
                 Height = 72,
                 BackColor = isChecked ? Color.FromArgb(28, 38, 56) : Color.FromArgb(22, 28, 40),
                 BorderStyle = BorderStyle.FixedSingle,
                 Padding = new Padding(15, 8, 15, 8),
-                Margin = new Padding(4, 5, 4, 5),
+                Margin = new Padding(0, 4, 0, 4),
                 Cursor = Cursors.Hand
             };
 

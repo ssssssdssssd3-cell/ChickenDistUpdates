@@ -16,6 +16,9 @@ namespace ChickenDist.DAL
         {
             string sql = @"
                 SELECT e.EmpID, e.EmpName, e.Role, e.JobTitle, e.DailyWorkHours,
+                       COALESCE(e.WorkStartTime, N'09:00') AS WorkStartTime,
+                       COALESCE(e.WorkEndTime, N'17:00') AS WorkEndTime,
+                       COALESCE(e.GracePeriodMinutes, 15) AS GracePeriodMinutes,
                        ea.AttendanceID,
                        ea.AttendDate,
                        ea.CheckInTime,
@@ -24,6 +27,7 @@ namespace ChickenDist.DAL
                        COALESCE(ea.WorkHours, e.DailyWorkHours) AS WorkHours,
                        COALESCE(ea.OvertimeHours, 0) AS OvertimeHours,
                        COALESCE(ea.LateMinutes, 0) AS LateMinutes,
+                       COALESCE(ea.EarlyLeaveMinutes, 0) AS EarlyLeaveMinutes,
                        ea.Notes
                 FROM Employees e
                 LEFT JOIN EmployeeAttendance ea ON e.EmpID = ea.EmpID AND CAST(ea.AttendDate AS DATE) = @dt
@@ -38,7 +42,7 @@ namespace ChickenDist.DAL
             string sql = @"
                 SELECT ea.AttendanceID, ea.EmpID, e.EmpName, e.Role, ea.AttendDate,
                        ea.CheckInTime, ea.CheckOutTime, ea.Status, ea.WorkHours,
-                       ea.OvertimeHours, ea.LateMinutes, ea.Notes,
+                       ea.OvertimeHours, ea.LateMinutes, COALESCE(ea.EarlyLeaveMinutes, 0) AS EarlyLeaveMinutes, ea.Notes,
                        creator.EmpName AS CreatedByName
                 FROM EmployeeAttendance ea
                 JOIN Employees e ON ea.EmpID = e.EmpID
@@ -67,8 +71,76 @@ namespace ChickenDist.DAL
             return DbHelper.Query(sql, prms.ToArray());
         }
 
+        public static (int lateMinutes, int earlyLeaveMinutes, decimal workHours, decimal overtimeHours)
+            CalculateAttendanceMetrics(string schedStartStr, string schedEndStr, decimal scheduledDailyHours,
+                int gracePeriodMinutes, DateTime? actualCheckIn, DateTime? actualCheckOut)
+        {
+            int lateMinutes = 0;
+            int earlyLeaveMinutes = 0;
+            decimal workHours = scheduledDailyHours > 0 ? scheduledDailyHours : 8;
+            decimal overtimeHours = 0;
+
+            TimeSpan schedStart = TimeSpan.FromHours(9);
+            TimeSpan schedEnd = TimeSpan.FromHours(17);
+
+            if (!string.IsNullOrWhiteSpace(schedStartStr))
+            {
+                if (DateTime.TryParse(schedStartStr, out DateTime dtStart))
+                    schedStart = dtStart.TimeOfDay;
+                else if (TimeSpan.TryParse(schedStartStr, out TimeSpan tsStart))
+                    schedStart = tsStart;
+            }
+
+            if (!string.IsNullOrWhiteSpace(schedEndStr))
+            {
+                if (DateTime.TryParse(schedEndStr, out DateTime dtEnd))
+                    schedEnd = dtEnd.TimeOfDay;
+                else if (TimeSpan.TryParse(schedEndStr, out TimeSpan tsEnd))
+                    schedEnd = tsEnd;
+            }
+
+            if (gracePeriodMinutes < 0) gracePeriodMinutes = 15;
+
+            // حساب التأخير عند الحضور
+            if (actualCheckIn.HasValue)
+            {
+                TimeSpan inTime = actualCheckIn.Value.TimeOfDay;
+                int diffMinutes = (int)(inTime - schedStart).TotalMinutes;
+                if (diffMinutes > gracePeriodMinutes)
+                {
+                    lateMinutes = diffMinutes;
+                }
+            }
+
+            // حساب الانصراف المبكر أو الإضافي عند الانصراف
+            if (actualCheckOut.HasValue)
+            {
+                TimeSpan outTime = actualCheckOut.Value.TimeOfDay;
+                if (outTime > schedEnd)
+                {
+                    overtimeHours = Math.Round((decimal)(outTime - schedEnd).TotalHours, 2);
+                }
+                else if (outTime < schedEnd)
+                {
+                    earlyLeaveMinutes = (int)(schedEnd - outTime).TotalMinutes;
+                }
+            }
+
+            // حساب ساعات العمل الفعلية
+            if (actualCheckIn.HasValue && actualCheckOut.HasValue)
+            {
+                var duration = actualCheckOut.Value - actualCheckIn.Value;
+                if (duration.TotalHours > 0)
+                {
+                    workHours = Math.Round((decimal)duration.TotalHours, 2);
+                }
+            }
+
+            return (lateMinutes, earlyLeaveMinutes, workHours, overtimeHours);
+        }
+
         public static bool SaveAttendance(int empID, DateTime attendDate, DateTime? checkIn, DateTime? checkOut,
-            string status, decimal workHours, decimal overtime, int lateMinutes, string notes)
+            string status, decimal workHours, decimal overtime, int lateMinutes, string notes, int earlyLeaveMinutes = 0)
         {
             try
             {
@@ -77,13 +149,13 @@ namespace ChickenDist.DAL
                     BEGIN
                         UPDATE EmployeeAttendance
                         SET CheckInTime = @in, CheckOutTime = @out, Status = @st,
-                            WorkHours = @wh, OvertimeHours = @ot, LateMinutes = @lm, Notes = @notes
+                            WorkHours = @wh, OvertimeHours = @ot, LateMinutes = @lm, EarlyLeaveMinutes = @elm, Notes = @notes
                         WHERE EmpID = @empID AND CAST(AttendDate AS DATE) = @dt;
                     END
                     ELSE
                     BEGIN
-                        INSERT INTO EmployeeAttendance (EmpID, AttendDate, CheckInTime, CheckOutTime, Status, WorkHours, OvertimeHours, LateMinutes, Notes, CreatedBy)
-                        VALUES (@empID, @dt, @in, @out, @st, @wh, @ot, @lm, @notes, @uid);
+                        INSERT INTO EmployeeAttendance (EmpID, AttendDate, CheckInTime, CheckOutTime, Status, WorkHours, OvertimeHours, LateMinutes, EarlyLeaveMinutes, Notes, CreatedBy)
+                        VALUES (@empID, @dt, @in, @out, @st, @wh, @ot, @lm, @elm, @notes, @uid);
                     END";
 
                 int res = DbHelper.Execute(sql,
@@ -95,6 +167,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@wh", workHours),
                     DbHelper.P("@ot", overtime),
                     DbHelper.P("@lm", lateMinutes),
+                    DbHelper.P("@elm", earlyLeaveMinutes),
                     DbHelper.P("@notes", notes ?? ""),
                     DbHelper.P("@uid", Session.EmpID));
 
@@ -109,29 +182,52 @@ namespace ChickenDist.DAL
 
         public static bool QuickCheckIn(int empID, DateTime now)
         {
-            return SaveAttendance(empID, now.Date, now, null, "حاضر", 8, 0, 0, "تسجيل حضور سريع");
+            var empRow = EmployeeDAL.GetByID(empID);
+            string schedStart = empRow != null && empRow.Table.Columns.Contains("WorkStartTime") && empRow["WorkStartTime"] != DBNull.Value 
+                ? empRow["WorkStartTime"].ToString() : "09:00";
+            int grace = empRow != null && empRow.Table.Columns.Contains("GracePeriodMinutes") && empRow["GracePeriodMinutes"] != DBNull.Value 
+                ? Convert.ToInt32(empRow["GracePeriodMinutes"]) : 15;
+            decimal dwh = empRow != null && empRow.Table.Columns.Contains("DailyWorkHours") && empRow["DailyWorkHours"] != DBNull.Value 
+                ? Convert.ToDecimal(empRow["DailyWorkHours"]) : 8;
+
+            var metrics = CalculateAttendanceMetrics(schedStart, "17:00", dwh, grace, now, null);
+            string note = metrics.lateMinutes > 0 ? $"تسجيل حضور (تأخير {metrics.lateMinutes} دقيقة)" : "تسجيل حضور سريع في الموعد";
+            string status = metrics.lateMinutes > 60 ? "متأخر" : "حاضر";
+            return SaveAttendance(empID, now.Date, now, null, status, dwh, 0, metrics.lateMinutes, note, 0);
         }
 
         public static bool QuickCheckOut(int empID, DateTime now)
         {
-            var dt = DbHelper.Query("SELECT TOP 1 AttendanceID, CheckInTime, WorkHours FROM EmployeeAttendance WHERE EmpID = @empID AND CAST(AttendDate AS DATE) = @dt",
+            var dt = DbHelper.Query("SELECT TOP 1 AttendanceID, CheckInTime, LateMinutes FROM EmployeeAttendance WHERE EmpID = @empID AND CAST(AttendDate AS DATE) = @dt",
                 DbHelper.P("@empID", empID), DbHelper.P("@dt", now.Date));
 
             DateTime? inTime = null;
-            decimal hours = 8;
-            decimal overtime = 0;
-            if (dt.Rows.Count > 0)
+            int lateMinutes = 0;
+            if (dt.Rows.Count > 0 && dt.Rows[0]["CheckInTime"] != DBNull.Value)
             {
-                if (dt.Rows[0]["CheckInTime"] != DBNull.Value)
-                {
-                    inTime = Convert.ToDateTime(dt.Rows[0]["CheckInTime"]);
-                    var diff = now - inTime.Value;
-                    hours = Math.Round((decimal)diff.TotalHours, 2);
-                    if (hours > 8) overtime = hours - 8;
-                }
+                inTime = Convert.ToDateTime(dt.Rows[0]["CheckInTime"]);
+                if (dt.Rows[0]["LateMinutes"] != DBNull.Value)
+                    lateMinutes = Convert.ToInt32(dt.Rows[0]["LateMinutes"]);
             }
 
-            return SaveAttendance(empID, now.Date, inTime, now, "حاضر", hours, overtime, 0, "تسجيل انصراف سريع");
+            var empRow = EmployeeDAL.GetByID(empID);
+            string schedStart = empRow != null && empRow.Table.Columns.Contains("WorkStartTime") && empRow["WorkStartTime"] != DBNull.Value 
+                ? empRow["WorkStartTime"].ToString() : "09:00";
+            string schedEnd = empRow != null && empRow.Table.Columns.Contains("WorkEndTime") && empRow["WorkEndTime"] != DBNull.Value 
+                ? empRow["WorkEndTime"].ToString() : "17:00";
+            decimal dwh = empRow != null && empRow.Table.Columns.Contains("DailyWorkHours") && empRow["DailyWorkHours"] != DBNull.Value 
+                ? Convert.ToDecimal(empRow["DailyWorkHours"]) : 8;
+            int grace = empRow != null && empRow.Table.Columns.Contains("GracePeriodMinutes") && empRow["GracePeriodMinutes"] != DBNull.Value 
+                ? Convert.ToInt32(empRow["GracePeriodMinutes"]) : 15;
+
+            var metrics = CalculateAttendanceMetrics(schedStart, schedEnd, dwh, grace, inTime, now);
+            if (lateMinutes > 0) metrics.lateMinutes = lateMinutes;
+
+            string note = $"تسجيل انصراف (ساعات العمل: {metrics.workHours:N1})";
+            if (metrics.overtimeHours > 0) note += $" | إضافي: {metrics.overtimeHours:N1} س";
+            if (metrics.earlyLeaveMinutes > 0) note += $" | خروج مبكر: {metrics.earlyLeaveMinutes} د";
+
+            return SaveAttendance(empID, now.Date, inTime, now, "حاضر", metrics.workHours, metrics.overtimeHours, metrics.lateMinutes, note, metrics.earlyLeaveMinutes);
         }
 
         // ═══════════════════════════════════════════════════════════════════════════

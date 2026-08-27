@@ -108,31 +108,45 @@ namespace ChickenDist.Forms
             };
             dtpAttendDay.ValueChanged += (s, e) => LoadDailyData();
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 100, 34, Theme.Secondary);
+            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 95, 34, Theme.Secondary);
             btnRefresh.Click += (s, e) => LoadDailyData();
 
-            btnCheckInAll = Theme.MakeButton("⚡ تحضير الكل (حاضر)", 0, 0, 160, 34, Color.FromArgb(16, 149, 193));
+            btnCheckInAll = Theme.MakeButton("⚡ تحضير الكل وفق الورديات", 0, 0, 180, 34, Color.FromArgb(16, 149, 193));
             btnCheckInAll.Click += (s, e) =>
             {
                 foreach (DataGridViewRow row in dgDailyAttendance.Rows)
                 {
                     row.Cells["Status"].Value = "حاضر";
-                    if (row.Cells["CheckInTime"].Value == null || string.IsNullOrWhiteSpace(row.Cells["CheckInTime"].Value.ToString()))
+                    if (row.Tag is ShiftInfo sInfo)
                     {
-                        row.Cells["CheckInTime"].Value = "09:00 ص";
+                        if (row.Cells["CheckInTime"].Value == null || string.IsNullOrWhiteSpace(row.Cells["CheckInTime"].Value.ToString()))
+                        {
+                            row.Cells["CheckInTime"].Value = FormatDisplayTime(sInfo.StartTime);
+                        }
+                        if (row.Cells["CheckOutTime"].Value == null || string.IsNullOrWhiteSpace(row.Cells["CheckOutTime"].Value.ToString()))
+                        {
+                            row.Cells["CheckOutTime"].Value = FormatDisplayTime(sInfo.EndTime);
+                        }
                     }
-                    if (row.Cells["CheckOutTime"].Value == null || string.IsNullOrWhiteSpace(row.Cells["CheckOutTime"].Value.ToString()))
-                    {
-                        row.Cells["CheckOutTime"].Value = "05:00 م";
-                    }
-                    row.Cells["WorkHours"].Value = "8.00";
+                    RecalculateRowMetrics(row);
                 }
             };
 
-            btnSaveDaily = Theme.MakeButton("💾 حفظ واعتماد يومية الحضور", 0, 0, 220, 34, Theme.Success);
+            var btnAutoCalc = Theme.MakeButton("⚡ احتساب التأخيرات وساعات العمل", 0, 0, 220, 34, Color.FromArgb(217, 119, 6));
+            btnAutoCalc.Click += (s, e) =>
+            {
+                dgDailyAttendance.EndEdit();
+                foreach (DataGridViewRow row in dgDailyAttendance.Rows)
+                {
+                    RecalculateRowMetrics(row);
+                }
+                MessageBox.Show("✅ تم احتساب دقائق التأخير والانصراف وساعات العمل والإضافي لجميع الموظفين وفق وردياتهم الرسمية.", "تم الاحتساب", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+
+            btnSaveDaily = Theme.MakeButton("💾 حفظ واعتماد يومية الحضور", 0, 0, 210, 34, Theme.Success);
             btnSaveDaily.Click += BtnSaveDaily_Click;
 
-            pnlToolbar.Controls.AddRange(new Control[] { lblDate, dtpAttendDay, btnRefresh, btnCheckInAll, btnSaveDaily });
+            pnlToolbar.Controls.AddRange(new Control[] { lblDate, dtpAttendDay, btnRefresh, btnCheckInAll, btnAutoCalc, btnSaveDaily });
 
             // الجدول اليومي
             dgDailyAttendance = new DataGridView
@@ -145,42 +159,113 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.CellSelect,
                 GridColor = Theme.BorderColor,
                 DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Color.FromArgb(224, 242, 254), SelectionForeColor = Color.Black },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter },
                 EnableHeadersVisualStyles = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 RowTemplate = { Height = 34 }
             };
 
             dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "EmpID", Visible = false });
-            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "EmpName", HeaderText = "اسم الموظف", ReadOnly = true, FillWeight = 110 });
-            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "JobTitle", HeaderText = "الوظيفة / الدور", ReadOnly = true, FillWeight = 80 });
+            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "EmpName", HeaderText = "اسم الموظف", ReadOnly = true, FillWeight = 105 });
+            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "JobTitle", HeaderText = "الوظيفة / الدور", ReadOnly = true, FillWeight = 75 });
+            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShiftSchedule", HeaderText = "الدوام المقرر", ReadOnly = true, FillWeight = 85 });
 
             var colStatus = new DataGridViewComboBoxColumn
             {
                 Name = "Status",
                 HeaderText = "حالة الحضور",
-                FillWeight = 80
+                FillWeight = 75
             };
-            colStatus.Items.AddRange(new object[] { "حاضر", "غائب", "إجازة", "نصف يوم", "مأمورية" });
+            colStatus.Items.AddRange(new object[] { "حاضر", "متأخر", "غائب", "إجازة", "نصف يوم", "مأمورية" });
             dgDailyAttendance.Columns.Add(colStatus);
 
             dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "CheckInTime", HeaderText = "وقت الحضور", FillWeight = 70 });
             dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "CheckOutTime", HeaderText = "وقت الانصراف", FillWeight = 70 });
+            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "LateMinutes", HeaderText = "تأخير (د)", FillWeight = 55 });
+            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "EarlyLeaveMinutes", HeaderText = "خروج مبكر (د)", FillWeight = 60 });
             dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "WorkHours", HeaderText = "ساعات العمل", FillWeight = 60 });
-            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "OvertimeHours", HeaderText = "ساعات إضافية", FillWeight = 60 });
-            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "LateMinutes", HeaderText = "تأخير (دقيقة)", FillWeight = 60 });
-            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 120 });
+            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "OvertimeHours", HeaderText = "إضافي (س)", FillWeight = 55 });
+            dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 110 });
 
             // أزرار سريعة
-            var btnColIn = new DataGridViewButtonColumn { Name = "BtnIn", HeaderText = "", Text = "🟢 حضور الآن", UseColumnTextForButtonValue = true, FillWeight = 60 };
-            var btnColOut = new DataGridViewButtonColumn { Name = "BtnOut", HeaderText = "", Text = "🔴 انصراف الآن", UseColumnTextForButtonValue = true, FillWeight = 60 };
+            var btnColIn = new DataGridViewButtonColumn { Name = "BtnIn", HeaderText = "", Text = "🟢 حضور", UseColumnTextForButtonValue = true, FillWeight = 55 };
+            var btnColOut = new DataGridViewButtonColumn { Name = "BtnOut", HeaderText = "", Text = "🔴 انصراف", UseColumnTextForButtonValue = true, FillWeight = 55 };
             dgDailyAttendance.Columns.Add(btnColIn);
             dgDailyAttendance.Columns.Add(btnColOut);
 
             dgDailyAttendance.CellClick += DgDailyAttendance_CellClick;
+            dgDailyAttendance.CellEndEdit += (s, e) =>
+            {
+                if (e.RowIndex >= 0)
+                {
+                    RecalculateRowMetrics(dgDailyAttendance.Rows[e.RowIndex]);
+                }
+            };
 
             tab.Controls.Add(dgDailyAttendance);
             tab.Controls.Add(pnlToolbar);
+        }
+
+        private class ShiftInfo
+        {
+            public string StartTime { get; set; }
+            public string EndTime { get; set; }
+            public int GraceMinutes { get; set; }
+            public decimal DailyHours { get; set; }
+        }
+
+        private string FormatDisplayTime(string timeStr)
+        {
+            if (string.IsNullOrWhiteSpace(timeStr)) return "";
+            if (DateTime.TryParse(timeStr, out DateTime dt)) return dt.ToString("hh:mm tt");
+            if (TimeSpan.TryParse(timeStr, out TimeSpan ts)) return DateTime.Today.Add(ts).ToString("hh:mm tt");
+            return timeStr;
+        }
+
+        private void RecalculateRowMetrics(DataGridViewRow row)
+        {
+            if (row == null || !(row.Tag is ShiftInfo sInfo)) return;
+            DateTime targetDate = dtpAttendDay.Value.Date;
+
+            string inStr = row.Cells["CheckInTime"].Value?.ToString();
+            string outStr = row.Cells["CheckOutTime"].Value?.ToString();
+
+            DateTime? inTime = null;
+            DateTime? outTime = null;
+
+            if (!string.IsNullOrWhiteSpace(inStr) && DateTime.TryParse(inStr, out DateTime dtIn))
+            {
+                inTime = targetDate.Add(dtIn.TimeOfDay);
+            }
+            if (!string.IsNullOrWhiteSpace(outStr) && DateTime.TryParse(outStr, out DateTime dtOut))
+            {
+                outTime = targetDate.Add(dtOut.TimeOfDay);
+            }
+
+            var metrics = EmployeeHRDAL.CalculateAttendanceMetrics(sInfo.StartTime, sInfo.EndTime, sInfo.DailyHours, sInfo.GraceMinutes, inTime, outTime);
+
+            row.Cells["LateMinutes"].Value = metrics.lateMinutes.ToString();
+            row.Cells["EarlyLeaveMinutes"].Value = metrics.earlyLeaveMinutes.ToString();
+            row.Cells["WorkHours"].Value = metrics.workHours.ToString("N2");
+            row.Cells["OvertimeHours"].Value = metrics.overtimeHours.ToString("N2");
+
+            string currentStatus = row.Cells["Status"].Value?.ToString() ?? "حاضر";
+            if (currentStatus == "حاضر" && metrics.lateMinutes > sInfo.GraceMinutes)
+            {
+                row.Cells["Status"].Value = "متأخر";
+                currentStatus = "متأخر";
+            }
+
+            ApplyRowStyling(row, currentStatus, metrics.lateMinutes);
+        }
+
+        private void ApplyRowStyling(DataGridViewRow row, string status, int lateMinutes)
+        {
+            if (status == "غائب") row.DefaultCellStyle.BackColor = Color.FromArgb(254, 226, 226);
+            else if (status == "إجازة") row.DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+            else if (status == "نصف يوم") row.DefaultCellStyle.BackColor = Color.FromArgb(224, 231, 255);
+            else if (status == "متأخر" || lateMinutes > 0) row.DefaultCellStyle.BackColor = Color.FromArgb(255, 237, 213);
+            else row.DefaultCellStyle.BackColor = Theme.BgCard;
         }
 
         private void LoadDailyData()
@@ -195,21 +280,34 @@ namespace ChickenDist.Forms
                 string job = r["JobTitle"]?.ToString();
                 if (string.IsNullOrWhiteSpace(job)) job = r["Role"]?.ToString() ?? "";
 
+                string schedStart = r["WorkStartTime"]?.ToString() ?? "09:00";
+                string schedEnd = r["WorkEndTime"]?.ToString() ?? "17:00";
+                int grace = Convert.ToInt32(r["GracePeriodMinutes"]);
+                decimal dwh = Convert.ToDecimal(r["DailyWorkHours"]);
+
+                string shiftText = $"{FormatDisplayTime(schedStart)} - {FormatDisplayTime(schedEnd)}";
+
                 string st = r["Status"]?.ToString() ?? "حاضر";
                 string inTime = r["CheckInTime"] != DBNull.Value ? Convert.ToDateTime(r["CheckInTime"]).ToString("hh:mm tt") : "";
                 string outTime = r["CheckOutTime"] != DBNull.Value ? Convert.ToDateTime(r["CheckOutTime"]).ToString("hh:mm tt") : "";
                 decimal wh = Convert.ToDecimal(r["WorkHours"]);
                 decimal ot = Convert.ToDecimal(r["OvertimeHours"]);
                 int lm = Convert.ToInt32(r["LateMinutes"]);
+                int elm = r.Table.Columns.Contains("EarlyLeaveMinutes") && r["EarlyLeaveMinutes"] != DBNull.Value ? Convert.ToInt32(r["EarlyLeaveMinutes"]) : 0;
                 string notes = r["Notes"]?.ToString() ?? "";
 
-                int rowIdx = dgDailyAttendance.Rows.Add(empId, name, job, st, inTime, outTime, wh.ToString("N2"), ot.ToString("N2"), lm.ToString(), notes);
+                int rowIdx = dgDailyAttendance.Rows.Add(empId, name, job, shiftText, st, inTime, outTime, lm.ToString(), elm.ToString(), wh.ToString("N2"), ot.ToString("N2"), notes);
 
-                // تلوين الصفوف حسب الحالة
                 var row = dgDailyAttendance.Rows[rowIdx];
-                if (st == "غائب") row.DefaultCellStyle.BackColor = Color.FromArgb(254, 226, 226);
-                else if (st == "إجازة") row.DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
-                else if (st == "نصف يوم") row.DefaultCellStyle.BackColor = Color.FromArgb(224, 231, 255);
+                row.Tag = new ShiftInfo
+                {
+                    StartTime = schedStart,
+                    EndTime = schedEnd,
+                    GraceMinutes = grace,
+                    DailyHours = dwh
+                };
+
+                ApplyRowStyling(row, st, lm);
             }
         }
 
@@ -221,13 +319,11 @@ namespace ChickenDist.Forms
 
             if (dgDailyAttendance.Columns[e.ColumnIndex].Name == "BtnIn")
             {
-                r.Cells["CheckInTime"].Value = DateTime.Now.ToString("hh:mm tt");
-                r.Cells["Status"].Value = "حاضر";
                 EmployeeHRDAL.QuickCheckIn(empId, DateTime.Now);
+                LoadDailyData();
             }
             else if (dgDailyAttendance.Columns[e.ColumnIndex].Name == "BtnOut")
             {
-                r.Cells["CheckOutTime"].Value = DateTime.Now.ToString("hh:mm tt");
                 EmployeeHRDAL.QuickCheckOut(empId, DateTime.Now);
                 LoadDailyData();
             }
@@ -260,9 +356,10 @@ namespace ChickenDist.Forms
                 decimal.TryParse(r.Cells["WorkHours"].Value?.ToString(), out decimal wh);
                 decimal.TryParse(r.Cells["OvertimeHours"].Value?.ToString(), out decimal ot);
                 int.TryParse(r.Cells["LateMinutes"].Value?.ToString(), out int lm);
+                int.TryParse(r.Cells["EarlyLeaveMinutes"].Value?.ToString(), out int elm);
                 string notes = r.Cells["Notes"].Value?.ToString() ?? "";
 
-                if (EmployeeHRDAL.SaveAttendance(empId, targetDate, checkIn, checkOut, st, wh, ot, lm, notes))
+                if (EmployeeHRDAL.SaveAttendance(empId, targetDate, checkIn, checkOut, st, wh, ot, lm, notes, elm))
                 {
                     savedCount++;
                 }

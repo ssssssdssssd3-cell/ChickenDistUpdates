@@ -2182,10 +2182,12 @@ namespace ChickenDist.Forms
                 using var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
                 using var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
 
-                int y     = e.MarginBounds.Top;
-                int left  = e.MarginBounds.Left;
-                int right = e.MarginBounds.Right;
-                int width = e.MarginBounds.Width;
+                int margin = isReceipt ? 10 : (isA5 ? 20 : 30);
+                int pageWidth = e.PageBounds.Width;
+                int left  = margin;
+                int right = pageWidth - margin;
+                int width = right - left;
+                int y     = margin;
 
                 string compName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "AL-RAHMA GROUP";
                 string compPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
@@ -2233,9 +2235,9 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
-                            g.DrawString($"التاريخ: {dateStr}",   fontBody,   Brushes.Black, left, y); y += 18;
-                            g.DrawString($"المرجع: {codeStr}",    fontBody,   Brushes.Black, left, y); y += 18;
+                            g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y); y += 18;
+                            g.DrawString($"التاريخ: {dateStr}",   fontBody,   Brushes.Black, right - g.MeasureString($"التاريخ: {dateStr}", fontBody).Width, y); y += 18;
+                            g.DrawString($"المرجع: {codeStr}",    fontBody,   Brushes.Black, right - g.MeasureString($"المرجع: {codeStr}", fontBody).Width, y); y += 18;
                         }
                     }
                     else if (isModern)
@@ -2245,7 +2247,7 @@ namespace ChickenDist.Forms
                         g.FillRectangle(brushHeaderBg, left, y, width, bannerH);
                         g.DrawRectangle(penDark, left, y, width, bannerH);
 
-                        string tit = $"اذن تحضير وصرف بضاعة  -  {compName}";
+                        string tit = $"إذن تحضير وصرف بضاعة  -  {compName}";
                         var sfBanner = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
                         g.DrawString(tit, fontTitle, Brushes.White, new RectangleF(left, y, width, bannerH), sfBanner);
                         y += bannerH + 8;
@@ -2262,8 +2264,8 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
-                            g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, left, y); y += 18;
+                            g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y); y += 18;
+                            g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, right - g.MeasureString($"التاريخ: {dateStr}", fontBody).Width, y); y += 18;
                         }
                     }
                     else
@@ -2277,7 +2279,7 @@ namespace ChickenDist.Forms
                             y += (int)szPh.Height + 4;
                         }
 
-                        string title = "اذن تحضير وتجميع بضاعة (من المخزن)";
+                        string title = "إذن تحضير وتجميع بضاعة";
                         SizeF szTitle = g.MeasureString(title, fontTitle);
                         g.DrawString(title, fontTitle, Brushes.Black, left + (width - szTitle.Width) / 2, y);
                         y += (int)szTitle.Height + (isReceipt ? 4 : 6);
@@ -2302,9 +2304,9 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            g.DrawString($"فاتورة رقم: {codeStr}", fontHeader, Brushes.Black, left, y); y += 18;
-                            g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, left, y); y += 18;
-                            g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, left, y); y += 18;
+                            g.DrawString($"فاتورة رقم: {codeStr}", fontHeader, Brushes.Black, right - g.MeasureString($"فاتورة رقم: {codeStr}", fontHeader).Width, y); y += 18;
+                            g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, right - g.MeasureString($"العميل: {clientName}", fontHeader).Width, y); y += 18;
+                            g.DrawString($"التاريخ: {dateStr}", fontBody, Brushes.Black, right - g.MeasureString($"التاريخ: {dateStr}", fontBody).Width, y); y += 18;
                         }
                     }
 

@@ -931,6 +931,7 @@ namespace ChickenDist.Forms
             }
             else
             {
+                pd.DefaultPageSettings.Landscape = false;
                 pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
                 pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
@@ -938,6 +939,7 @@ namespace ChickenDist.Forms
 
             string whName  = cboWarehouse.Text;
             string empName = Session.EmpName;
+            string clientName = GetClientName();
             string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة قطع غيار وتوزيع";
             string companyPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
             string companyAddress = !string.IsNullOrWhiteSpace(AppConfig.CompanyAddress) ? AppConfig.CompanyAddress : "";
@@ -974,13 +976,15 @@ namespace ChickenDist.Forms
                 var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
                 var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
 
-                int y    = e.MarginBounds.Top;
-                int left = e.MarginBounds.Left;
-                int rght = e.MarginBounds.Right;
-                int w    = e.MarginBounds.Width;
+                int margin = isReceipt ? 10 : (isA5 ? 20 : 28);
+                int pageWidth = e.PageBounds.Width;
+                int left = margin;
+                int rght = pageWidth - margin;
+                int w    = rght - left;
+                int y    = margin;
 
                 var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                var sfRight  = new StringFormat { Alignment = StringAlignment.Near,   LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
                 var sfLeft   = new StringFormat { Alignment = StringAlignment.Near,   LineAlignment = StringAlignment.Center };
 
                 // ── Header: Logo, Company Name & Title ─────────
@@ -1002,7 +1006,7 @@ namespace ChickenDist.Forms
                     y += 20;
                 }
 
-                string tit = "📋 إذن تحضير وتجميع بضاعة (من المخزن)";
+                string tit = "إذن تحضير وتجميع بضاعة";
                 g.DrawString(tit, fontTitle, Brushes.Black, new RectangleF(left, y, w, isA5 ? 24 : 28), sfCenter);
                 y += isA5 ? 26 : 30;
 
@@ -1018,15 +1022,19 @@ namespace ChickenDist.Forms
                     g.DrawString($"التاريخ والوقت: {dateStr}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
                     y += (isA5 ? 20 : 22);
 
-                    g.DrawString($"الموظف المسؤول: {empName}", fontHeader, Brushes.Black, new RectangleF(left + halfW, y, halfW, 20), sfRight);
+                    g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, new RectangleF(left + halfW, y, halfW, 20), sfRight);
+                    g.DrawString($"الموظف المسؤول: {empName}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
+                    y += (isA5 ? 20 : 22);
+
                     g.DrawString($"عدد الأصناف: {_items.Count}", fontBody, Brushes.Black, new RectangleF(left, y, halfW, 20), sfLeft);
                     y += (isA5 ? 22 : 24);
                 }
                 else
                 {
-                    g.DrawString($"المخزن: {whName}",   fontHeader, Brushes.Black, left, y); y += 18;
-                    g.DrawString($"الموظف: {empName}",  fontBody,   Brushes.Black, left, y); y += 18;
-                    g.DrawString($"التاريخ: {dateStr}", fontBody,   Brushes.Black, left, y); y += 18;
+                    g.DrawString($"المخزن: {whName}",   fontHeader, Brushes.Black, new RectangleF(left, y, w, 18), sfRight); y += 18;
+                    g.DrawString($"العميل: {clientName}", fontHeader, Brushes.Black, new RectangleF(left, y, w, 18), sfRight); y += 18;
+                    g.DrawString($"الموظف: {empName}",  fontBody,   Brushes.Black, new RectangleF(left, y, w, 18), sfRight); y += 18;
+                    g.DrawString($"التاريخ: {dateStr}", fontBody,   Brushes.Black, new RectangleF(left, y, w, 18), sfRight); y += 18;
                 }
 
                 g.DrawLine(penGrid, left, y, rght, y);
@@ -1167,7 +1175,7 @@ namespace ChickenDist.Forms
                 g.DrawLine(penDark, left, y, rght, y);
                 y += (isReceipt ? 6 : 12);
                 string sig = "توقيع مسؤول التحضير بالمخزن: ..................................";
-                g.DrawString(sig, fontHeader, Brushes.Black, rght - g.MeasureString(sig, fontHeader).Width, y);
+                g.DrawString(sig, fontHeader, Brushes.Black, new RectangleF(left, y, w, 24), sfRight);
 
                 brushDarkBlue.Dispose(); brushHeaderBg.Dispose();
                 brushRowAlt.Dispose(); penGrid.Dispose(); penDark.Dispose();
