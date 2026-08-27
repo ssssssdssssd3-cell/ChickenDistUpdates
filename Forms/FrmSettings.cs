@@ -1146,9 +1146,11 @@ namespace ChickenDist.Forms
                 "🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
                 "🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
                 "🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
+                "🖼️ كارت فاتورة الطارق هوم (Al Tarek Home Grid Card)",
                 "💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
                 "💬 النموذج السريع الموجز (رسالة نصية سريعة)",
-                "💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)"
+                "💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)",
+                "💬 نموذج الطارق المعتمد (رسالة نصية الطارق)"
             });
             cboWhatsAppInvoiceTemplate.SelectedIndex = AppConfig.WhatsAppInvoiceTemplate switch
             {
@@ -1156,9 +1158,11 @@ namespace ChickenDist.Forms
                 "ImageCardCommercial" => 2,
                 "ImageCardEmerald" => 3,
                 "ImageCardGold" => 4,
-                "Detailed" => 5,
-                "Summary" => 6,
-                "Financial" => 7,
+                "ImageCardAlTarek" or "AlTarek" or "AlTarekGrid" or "AlTarekHome" => 5,
+                "Detailed" => 6,
+                "Summary" => 7,
+                "Financial" => 8,
+                "AlTarekText" => 9,
                 _ => 0
             };
             this.Controls.Add(cboWhatsAppInvoiceTemplate);
@@ -1172,9 +1176,11 @@ namespace ChickenDist.Forms
                     2 => "ImageCardCommercial",
                     3 => "ImageCardEmerald",
                     4 => "ImageCardGold",
-                    5 => "Detailed",
-                    6 => "Summary",
-                    7 => "Financial",
+                    5 => "ImageCardAlTarek",
+                    6 => "Detailed",
+                    7 => "Summary",
+                    8 => "Financial",
+                    9 => "AlTarekText",
                     _ => "ImageCardNavy"
                 };
 
@@ -1432,9 +1438,11 @@ namespace ChickenDist.Forms
                     2 => "ImageCardCommercial",
                     3 => "ImageCardEmerald",
                     4 => "ImageCardGold",
-                    5 => "Detailed",
-                    6 => "Summary",
-                    7 => "Financial",
+                    5 => "ImageCardAlTarek",
+                    6 => "Detailed",
+                    7 => "Summary",
+                    8 => "Financial",
+                    9 => "AlTarekText",
                     _ => "ImageCardNavy"
                 };
                 AppConfig.EnableCratesTracking = chkEnableCrates.Checked;

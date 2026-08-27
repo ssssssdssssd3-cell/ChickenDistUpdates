@@ -139,12 +139,16 @@ namespace ChickenDist.Core
                     templateName = AppConfig.WhatsAppInvoiceTemplate;
                 }
 
+                bool isAlTarek    = string.Equals(templateName, "ImageCardAlTarek", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(templateName, "AlTarek", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(templateName, "AlTarekGrid", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(templateName, "AlTarekHome", StringComparison.OrdinalIgnoreCase);
                 bool isCommercial = string.Equals(templateName, "ImageCardCommercial", StringComparison.OrdinalIgnoreCase);
                 bool isModern     = string.Equals(templateName, "ImageCardModern", StringComparison.OrdinalIgnoreCase);
                 bool isEmerald    = string.Equals(templateName, "ImageCardEmerald", StringComparison.OrdinalIgnoreCase);
                 bool isGold       = string.Equals(templateName, "ImageCardGold", StringComparison.OrdinalIgnoreCase);
                 // default is Royal Navy
-                bool isNavy       = !isCommercial && !isModern && !isEmerald && !isGold;
+                bool isNavy       = !isCommercial && !isModern && !isEmerald && !isGold && !isAlTarek;
 
                 int itemCount = dtItems != null ? dtItems.Rows.Count : 0;
                 bool showFinancial = row.Table.Columns.Contains("ClientID") && row["ClientID"] != DBNull.Value;
@@ -153,39 +157,43 @@ namespace ChickenDist.Core
                 decimal remainVal = netVal - paidVal;
 
                 // Color Themes
-                Color cPrimary   = isNavy       ? Color.FromArgb(0, 51, 153)
+                Color cPrimary   = isAlTarek    ? Color.FromArgb(24, 34, 53)
+                                 : isNavy       ? Color.FromArgb(0, 51, 153)
                                  : isModern     ? Color.FromArgb(15, 23, 42)
                                  : isEmerald    ? Color.FromArgb(5, 150, 105)
                                  : isGold       ? Color.FromArgb(24, 24, 27)
                                  : Color.FromArgb(30, 41, 59);
 
-                Color cSecondary = isNavy       ? Color.FromArgb(30, 64, 175)
+                Color cSecondary = isAlTarek    ? Color.FromArgb(37, 52, 78)
+                                 : isNavy       ? Color.FromArgb(30, 64, 175)
                                  : isModern     ? Color.FromArgb(30, 41, 59)
                                  : isEmerald    ? Color.FromArgb(4, 120, 87)
                                  : isGold       ? Color.FromArgb(217, 119, 6)
                                  : Color.FromArgb(51, 65, 85);
 
-                Color cAccent    = isNavy       ? Color.FromArgb(245, 158, 11)
+                Color cAccent    = isAlTarek    ? Color.FromArgb(245, 158, 11)
+                                 : isNavy       ? Color.FromArgb(245, 158, 11)
                                  : isModern     ? Color.FromArgb(16, 185, 129)
                                  : isEmerald    ? Color.FromArgb(217, 119, 6)
                                  : isGold       ? Color.FromArgb(245, 158, 11)
                                  : Color.FromArgb(2, 132, 199);
 
-                Color cAltBg     = isNavy       ? Color.FromArgb(248, 250, 252)
+                Color cAltBg     = isAlTarek    ? Color.FromArgb(248, 250, 253)
+                                 : isNavy       ? Color.FromArgb(248, 250, 252)
                                  : isModern     ? Color.FromArgb(241, 245, 249)
                                  : isEmerald    ? Color.FromArgb(236, 253, 245)
                                  : isGold       ? Color.FromArgb(254, 252, 232)
                                  : Color.FromArgb(248, 250, 252);
 
-                int width = isCommercial ? 660 : 620;
-                int rowH = isCommercial ? 28 : 32;
-                int headerH = isCommercial ? 120 : 100;
-                int metaH = isCommercial ? 65 : 75;
+                int width = (isCommercial || isAlTarek) ? 680 : 620;
+                int rowH = (isCommercial || isAlTarek) ? 28 : 32;
+                int headerH = isAlTarek ? 130 : (isCommercial ? 120 : 100);
+                int metaH = (isCommercial || isAlTarek) ? 65 : 75;
                 int tableHeaderH = 34;
                 int itemsH = (itemCount * rowH);
-                int netH = isCommercial ? 0 : 45;
-                int financialH = showFinancial ? (isCommercial ? 190 : 190) : 0;
-                int footerH = 65;
+                int netH = (isCommercial || isAlTarek) ? 0 : 45;
+                int financialH = showFinancial ? (isAlTarek ? 210 : (isCommercial ? 190 : 190)) : 0;
+                int footerH = 70;
 
                 int totalH = headerH + metaH + tableHeaderH + itemsH + netH + 20 + financialH + footerH + 40;
                 var bmp = new Bitmap(width, totalH);
@@ -213,17 +221,60 @@ namespace ChickenDist.Core
                     {
                         // Outer Frame
                         g.DrawRectangle(pThick, 4, 4, width - 8, totalH - 8);
-                        if (isGold || isNavy)
+                        if (isGold || isNavy || isAlTarek)
                         {
                             g.DrawRectangle(pAccent, 8, 8, width - 16, totalH - 16);
                         }
 
                         int y = 14;
-                        string compName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+                        string compName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة الطارق للاستيراد والتصدير";
                         string compPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
 
                         // ── 1. HEADER SECTION ───────────────────────
-                        if (isCommercial)
+                        if (isAlTarek)
+                        {
+                            // Al-Tarek Gold Accent Banner
+                            PointF[] poly = {
+                                new PointF(width - 210, 8),
+                                new PointF(width - 8, 8),
+                                new PointF(width - 8, 44),
+                                new PointF(width - 160, 44)
+                            };
+                            g.FillPolygon(brAccent, poly);
+                            g.DrawString("شركة الطارق", fBold, Brushes.White, new RectangleF(width - 195, 14, 180, 24), SfCenter);
+
+                            g.DrawString(compName, fBig, brPrimary, new RectangleF(15, y, width - 225, 32), SfRtlRight);
+                            y += 32;
+                            if (!string.IsNullOrEmpty(compPhone))
+                            {
+                                string addrStr = !string.IsNullOrEmpty(AppConfig.CompanyAddress) ? $"  |  العنوان: {AppConfig.CompanyAddress}" : "";
+                                g.DrawString($"موبايل: {compPhone}{addrStr}", fSmall, Brushes.DarkSlateGray, new RectangleF(15, y, width - 30, 20), SfRtlRight);
+                            }
+                            y += 20;
+                            g.DrawString("فاتورة مبيعات معتمدة (نموذج الطارق هوم)", fSub, brAccent, new RectangleF(15, y, width - 30, 22), SfCenter);
+                            y += 24;
+                            g.DrawLine(pThick, 20, y, width - 20, y);
+                            y += 8;
+
+                            // Metadata Box
+                            string clientName = row.Table.Columns.Contains("ClientName") && row["ClientName"] != DBNull.Value ? row["ClientName"].ToString() : "عميل نقدي";
+                            string saleCode = row["SaleCode"]?.ToString() ?? "";
+                            string saleDateStr = Convert.ToDateTime(row["SaleDate"]).ToString("yyyy/MM/dd hh:mm tt");
+                            string userName = (!string.IsNullOrEmpty(Session.UserName) ? Session.UserName : (!string.IsNullOrEmpty(Session.EmpName) ? Session.EmpName : "المسؤول"));
+                            string saleType = row["SaleType"].ToString() == "Credit" ? "آجل" : "نقدي";
+
+                            g.FillRectangle(brAlt, 20, y, width - 40, metaH);
+                            g.DrawRectangle(pThin, 20, y, width - 40, metaH);
+                            g.DrawLine(pThin, width / 2, y, width / 2, y + metaH);
+
+                            g.DrawString($"العميل:  {clientName}", fBold, Brushes.Black, new RectangleF(width / 2 + 10, y + 8, width / 2 - 25, 22), SfRtlRight);
+                            g.DrawString($"رقم الفاتورة:  #{saleCode}", fBold, brPrimary, new RectangleF(width / 2 + 10, y + 34, width / 2 - 25, 22), SfRtlRight);
+
+                            g.DrawString($"التاريخ:  {saleDateStr}", fNorm, Brushes.DarkSlateGray, new RectangleF(25, y + 8, width / 2 - 35, 22), SfRtlRight);
+                            g.DrawString($"نوع البيع:  {saleType}  |  المستخدم: {userName}", fNorm, Brushes.Black, new RectangleF(25, y + 34, width / 2 - 35, 22), SfRtlRight);
+                            y += metaH + 10;
+                        }
+                        else if (isCommercial)
                         {
                             g.DrawString(compName, fBig, brPrimary, new RectangleF(15, y, width - 30, 30), SfCenter);
                             y += 30;
@@ -284,27 +335,30 @@ namespace ChickenDist.Core
                         }
 
                         // ── 2. ITEMS TABLE ──────────────────────────
-                        if (isCommercial)
+                        if (isCommercial || isAlTarek)
                         {
                             // 8 Columns: م(28) | كود(55) | صنف(215) | وحدة(45) | كمية(48) | سعر(65) | خصم(45) | إجمالي(75)
                             int x0 = 20;
-                            int wTot = 75, wDisc = 45, wPrice = 65, wQty = 48, wUnit = 45, wCode = 55, wIdx = 28;
+                            int wTot = 78, wDisc = 45, wPrice = 65, wQty = 48, wUnit = 45, wCode = 55, wIdx = 28;
                             int wName = (width - 40) - (wTot + wDisc + wPrice + wQty + wUnit + wCode + wIdx);
 
                             int curX = width - 20;
                             
                             // Header Row
-                            g.FillRectangle(new SolidBrush(Color.FromArgb(226, 232, 240)), 20, y, width - 40, tableHeaderH);
+                            Brush thBrush = isAlTarek ? brSecondary : new SolidBrush(Color.FromArgb(226, 232, 240));
+                            Brush thTextBrush = isAlTarek ? Brushes.White : Brushes.Black;
+
+                            g.FillRectangle(thBrush, 20, y, width - 40, tableHeaderH);
                             g.DrawRectangle(pBlack, 20, y, width - 40, tableHeaderH);
 
-                            curX -= wIdx; g.DrawRectangle(pBlack, curX, y, wIdx, tableHeaderH); g.DrawString("م", fBold, Brushes.Black, new RectangleF(curX, y + 6, wIdx, tableHeaderH - 6), SfCenter);
-                            curX -= wCode; g.DrawRectangle(pBlack, curX, y, wCode, tableHeaderH); g.DrawString("الكود", fBold, Brushes.Black, new RectangleF(curX, y + 6, wCode, tableHeaderH - 6), SfCenter);
-                            curX -= wName; g.DrawRectangle(pBlack, curX, y, wName, tableHeaderH); g.DrawString("اسم الصنف", fBold, Brushes.Black, new RectangleF(curX, y + 6, wName, tableHeaderH - 6), SfCenter);
-                            curX -= wUnit; g.DrawRectangle(pBlack, curX, y, wUnit, tableHeaderH); g.DrawString("الوحدة", fBold, Brushes.Black, new RectangleF(curX, y + 6, wUnit, tableHeaderH - 6), SfCenter);
-                            curX -= wQty; g.DrawRectangle(pBlack, curX, y, wQty, tableHeaderH); g.DrawString("الكمية", fBold, Brushes.Black, new RectangleF(curX, y + 6, wQty, tableHeaderH - 6), SfCenter);
-                            curX -= wPrice; g.DrawRectangle(pBlack, curX, y, wPrice, tableHeaderH); g.DrawString("سعر البيع", fBold, Brushes.Black, new RectangleF(curX, y + 6, wPrice, tableHeaderH - 6), SfCenter);
-                            curX -= wDisc; g.DrawRectangle(pBlack, curX, y, wDisc, tableHeaderH); g.DrawString("الخصم", fBold, Brushes.Black, new RectangleF(curX, y + 6, wDisc, tableHeaderH - 6), SfCenter);
-                            curX -= wTot; g.DrawRectangle(pBlack, curX, y, wTot, tableHeaderH); g.DrawString("إجمالي البيع", fBold, Brushes.Black, new RectangleF(curX, y + 6, wTot, tableHeaderH - 6), SfCenter);
+                            curX -= wIdx; g.DrawRectangle(pBlack, curX, y, wIdx, tableHeaderH); g.DrawString("م", fBold, thTextBrush, new RectangleF(curX, y + 6, wIdx, tableHeaderH - 6), SfCenter);
+                            curX -= wCode; g.DrawRectangle(pBlack, curX, y, wCode, tableHeaderH); g.DrawString("الكود", fBold, thTextBrush, new RectangleF(curX, y + 6, wCode, tableHeaderH - 6), SfCenter);
+                            curX -= wName; g.DrawRectangle(pBlack, curX, y, wName, tableHeaderH); g.DrawString(isAlTarek ? "اسم الصنف والبيان" : "اسم الصنف", fBold, thTextBrush, new RectangleF(curX, y + 6, wName, tableHeaderH - 6), SfCenter);
+                            curX -= wUnit; g.DrawRectangle(pBlack, curX, y, wUnit, tableHeaderH); g.DrawString("الوحدة", fBold, thTextBrush, new RectangleF(curX, y + 6, wUnit, tableHeaderH - 6), SfCenter);
+                            curX -= wQty; g.DrawRectangle(pBlack, curX, y, wQty, tableHeaderH); g.DrawString("الكمية", fBold, thTextBrush, new RectangleF(curX, y + 6, wQty, tableHeaderH - 6), SfCenter);
+                            curX -= wPrice; g.DrawRectangle(pBlack, curX, y, wPrice, tableHeaderH); g.DrawString("سعر البيع", fBold, thTextBrush, new RectangleF(curX, y + 6, wPrice, tableHeaderH - 6), SfCenter);
+                            curX -= wDisc; g.DrawRectangle(pBlack, curX, y, wDisc, tableHeaderH); g.DrawString("الخصم", fBold, thTextBrush, new RectangleF(curX, y + 6, wDisc, tableHeaderH - 6), SfCenter);
+                            curX -= wTot; g.DrawRectangle(pBlack, curX, y, wTot, tableHeaderH); g.DrawString("إجمالي البيع", fBold, thTextBrush, new RectangleF(curX, y + 6, wTot, tableHeaderH - 6), SfCenter);
 
                             y += tableHeaderH;
 
@@ -395,7 +449,75 @@ namespace ChickenDist.Core
                         // ── 3. FINANCIAL SUMMARY BOX ────────────────
                         if (showFinancial)
                         {
-                            if (isCommercial)
+                            if (isAlTarek)
+                            {
+                                // ════════ Al-Tarek 5-Column Grid Table ════════
+                                decimal discVal = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
+                                decimal beforeDisc = netVal + discVal;
+
+                                int tLeft = 20;
+                                int tWidth = width - 40;
+                                int col5W = tWidth / 5;
+
+                                // 5 Columns Headers
+                                string[] h5 = { "إجمالي الفاتورة", "الخصم", "الصافي المطلوب", "المدفوع", "المتبقي (آجل)" };
+                                string[] v5 = {
+                                    $"{beforeDisc:N2} ج",
+                                    discVal > 0 ? $"-{discVal:N2} ج" : "0.00 ج",
+                                    $"{netVal:N2} ج",
+                                    $"{paidVal:N2} ج",
+                                    $"{remainVal:N2} ج"
+                                };
+
+                                g.FillRectangle(brSecondary, tLeft, y, tWidth, 26);
+                                g.DrawRectangle(pThin, tLeft, y, tWidth, 26);
+                                for (int c = 0; c < 5; c++)
+                                {
+                                    int cx = tLeft + tWidth - (c + 1) * col5W;
+                                    if (c < 4) g.DrawLine(Pens.White, cx, y, cx, y + 26);
+                                    g.DrawString(h5[c], fSmall, Brushes.White, new RectangleF(cx, y + 4, col5W, 20), SfCenter);
+                                }
+                                y += 26;
+
+                                // 5 Columns Values
+                                g.FillRectangle(brAlt, tLeft, y, tWidth, 28);
+                                g.DrawRectangle(pThin, tLeft, y, tWidth, 28);
+                                for (int c = 0; c < 5; c++)
+                                {
+                                    int cx = tLeft + tWidth - (c + 1) * col5W;
+                                    if (c < 4) g.DrawLine(pThin, cx, y, cx, y + 28);
+                                    Brush vBr = (c == 2) ? brPrimary : (c == 4 && remainVal > 0) ? brRed : Brushes.Black;
+                                    g.DrawString(v5[c], fBold, vBr, new RectangleF(cx, y + 5, col5W, 22), SfCenter);
+                                }
+                                y += 32;
+
+                                // Balance Box (الرصيد السابق + الرصيد الحالي)
+                                int balBoxW = tWidth;
+                                g.FillRectangle(new SolidBrush(Color.FromArgb(254, 242, 242)), tLeft, y, balBoxW, 30);
+                                g.DrawRectangle(pThin, tLeft, y, balBoxW, 30);
+                                g.DrawLine(pThin, tLeft + balBoxW / 2, y, tLeft + balBoxW / 2, y + 30);
+
+                                g.DrawString($"الرصيد السابق للعميل:  {prevBalance:N2} ج.م", fNorm, brPrimary, new RectangleF(tLeft + balBoxW / 2 + 10, y + 6, balBoxW / 2 - 20, 22), SfRtlRight);
+                                g.DrawString($"🔴 إجمالي الرصيد الحالي المستحق:  {actualCurrentBalance:N2} ج.م", fBold, brRed, new RectangleF(tLeft + 10, y + 6, balBoxW / 2 - 20, 22), SfRtlRight);
+                                y += 34;
+
+                                // Tafqeet Row
+                                try
+                                {
+                                    string taf = TafqeetHelper.ConvertToArabicWords(netVal);
+                                    g.FillRectangle(brAlt, tLeft, y, tWidth, 24);
+                                    g.DrawRectangle(pThin, tLeft, y, tWidth, 24);
+                                    g.DrawString($"فقط {taf} لا غير.", fSmall, Brushes.DarkSlateGray, new RectangleF(tLeft + 10, y + 3, tWidth - 20, 20), SfCenter);
+                                    y += 28;
+                                }
+                                catch { }
+
+                                // Signatures
+                                g.DrawString("توقيع المستلم: ...............................", fSmall, Brushes.Black, 30, y);
+                                g.DrawString("توقيع الحسابات: ...............................", fSmall, Brushes.Black, new RectangleF(0, y, width - 30, 20), SfRtlLeft);
+                                y += 24;
+                            }
+                            else if (isCommercial)
                             {
                                 int boxW = 270;
                                 int boxX = 20;
@@ -489,7 +611,14 @@ namespace ChickenDist.Core
                         }
 
                         // ── 4. FOOTER ───────────────────────────────
-                        if (!isCommercial)
+                        if (isAlTarek)
+                        {
+                            g.DrawLine(pAccent, 20, y, width - 20, y);
+                            y += 8;
+                            g.DrawString("🙏 شركة الطارق للاستيراد والتصدير - نتشرف بخدمتكم دائماً", fSub, brPrimary, new RectangleF(0, y, width, 24), SfCenter);
+                            y += 24;
+                        }
+                        else if (!isCommercial)
                         {
                             g.DrawLine(pAccent, 20, y, width - 20, y);
                             y += 8;

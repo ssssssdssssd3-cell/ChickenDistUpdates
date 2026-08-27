@@ -82,9 +82,11 @@ namespace ChickenDist.Forms
                 "🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
                 "🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
                 "🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
+                "🖼️ كارت فاتورة الطارق هوم (Al Tarek Home Grid Card)",
                 "💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
                 "💬 النموذج السريع الموجز (رسالة نصية سريعة)",
-                "💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)"
+                "💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)",
+                "💬 نموذج الطارق المعتمد (رسالة نصية الطارق)"
             });
 
             int selIdx = 0;
@@ -95,9 +97,11 @@ namespace ChickenDist.Forms
                 "ImageCardCommercial" => 2,
                 "ImageCardEmerald" => 3,
                 "ImageCardGold" => 4,
-                "Detailed" => 5,
-                "Summary" => 6,
-                "Financial" => 7,
+                "ImageCardAlTarek" or "AlTarek" or "AlTarekGrid" or "AlTarekHome" => 5,
+                "Detailed" => 6,
+                "Summary" => 7,
+                "Financial" => 8,
+                "AlTarekText" => 9,
                 _ => 0
             };
             cboTemplates.SelectedIndex = selIdx;
@@ -158,7 +162,7 @@ namespace ChickenDist.Forms
             btnCopy.Dock = DockStyle.Left;
             btnCopy.Click += (s, e) =>
             {
-                if (cboTemplates.SelectedIndex < 5 && currentBitmap != null)
+                if (cboTemplates.SelectedIndex < 6 && currentBitmap != null)
                 {
                     Clipboard.SetImage(currentBitmap);
                     MessageBox.Show("✅ تم نسخ صورة كارت الفاتورة للحافظة بنجاح!\nيمكنك الآن لصقها في أي محادثة واتساب (Ctrl + V).", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -331,9 +335,11 @@ namespace ChickenDist.Forms
                 2 => "ImageCardCommercial",
                 3 => "ImageCardEmerald",
                 4 => "ImageCardGold",
-                5 => "Detailed",
-                6 => "Summary",
-                7 => "Financial",
+                5 => "ImageCardAlTarek",
+                6 => "Detailed",
+                7 => "Summary",
+                8 => "Financial",
+                9 => "AlTarekText",
                 _ => "ImageCardNavy"
             };
         }
@@ -341,7 +347,7 @@ namespace ChickenDist.Forms
         private void RenderSelectedTemplate()
         {
             int idx = cboTemplates.SelectedIndex;
-            if (idx < 5)
+            if (idx < 6)
             {
                 // Image Card
                 txtPreview.Visible = false;
@@ -367,13 +373,65 @@ namespace ChickenDist.Forms
 
                 currentText = idx switch
                 {
-                    6 => BuildSampleSummaryText(),
-                    7 => BuildSampleFinancialText(),
+                    7 => BuildSampleSummaryText(),
+                    8 => BuildSampleFinancialText(),
+                    9 => BuildSampleAlTarekText(),
                     _ => BuildSampleDetailedText()
                 };
 
                 txtPreview.Text = currentText;
             }
+        }
+
+        private string BuildSampleAlTarekText()
+        {
+            string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة الطارق للاستيراد والتصدير";
+            string phone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "01091800089";
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"⭐ *{comp}* ⭐");
+            sb.AppendLine($"📞 خدمة العملاء: {phone}");
+            sb.AppendLine("━━━━━━━━━━━━━━━━");
+            sb.AppendLine("🧾 *فاتورة مبيعات معتمدة (نموذج الطارق)*");
+            sb.AppendLine($"🔖 *رقم الفاتورة:* #{saleRow["SaleCode"]}");
+            sb.AppendLine($"📅 *التاريخ:* {Convert.ToDateTime(saleRow["SaleDate"]):yyyy/MM/dd hh:mm tt}");
+            sb.AppendLine($"👤 *العميل:* {saleRow["ClientName"]}");
+            sb.AppendLine("━━━━━━━━━━━━━━━━");
+            sb.AppendLine("📦 *تفاصيل الأصناف والبنود:*");
+            if (saleItems != null)
+            {
+                int i = 1;
+                foreach (DataRow r in saleItems.Rows)
+                {
+                    sb.AppendLine($"{i}. {r["ProductName"]} ({Convert.ToDecimal(r["Quantity"]):0.##} {r["UnitName"]} × {Convert.ToDecimal(r["UnitPrice"]):N2}) = *{Convert.ToDecimal(r["TotalPrice"]):N2} ج.م*");
+                    i++;
+                }
+            }
+            decimal net = Convert.ToDecimal(saleRow["TotalAmount"]);
+            decimal disc = Convert.ToDecimal(saleRow["DiscountAmount"]);
+            decimal paid = Convert.ToDecimal(saleRow["CashPaid"]);
+            decimal remain = net - paid;
+            sb.AppendLine("━━━━━━━━━━━━━━━━");
+            if (disc > 0)
+            {
+                sb.AppendLine($"💵 *الإجمالي قبل الخصم:* {(net + disc):N2} ج.م");
+                sb.AppendLine($"✂️ *قيمة الخصم:* {disc:N2} ج.م");
+            }
+            sb.AppendLine($"💰 *صافي الفاتورة:* {net:N2} ج.م");
+            sb.AppendLine($"💸 *المدفوع نقداً:* {paid:N2} ج.م");
+            if (remain > 0)
+            {
+                sb.AppendLine($"⏳ *المتبقي من الفاتورة (آجل):* {remain:N2} ج.م");
+            }
+            sb.AppendLine($"⚖️ *الرصيد السابق:* {prevBalance:N2} ج.م");
+            sb.AppendLine($"🔴 *إجمالي الرصيد الحالي المستحق:* {actualCurrentBalance:N2} ج.م");
+            try
+            {
+                sb.AppendLine($"📝 *فقط {TafqeetHelper.ConvertToArabicWords(net)} لا غير.*");
+            }
+            catch { }
+            sb.AppendLine("━━━━━━━━━━━━━━━━");
+            sb.AppendLine("🙏 *شكراً لتعاملكم معنا ونسعد بخدمتكم دائماً!*");
+            return sb.ToString();
         }
 
         private string BuildSampleDetailedText()

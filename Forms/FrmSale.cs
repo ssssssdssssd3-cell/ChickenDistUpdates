@@ -6357,6 +6357,80 @@ namespace ChickenDist.Forms
 			return sb.ToString();
 		}
 
+		private static string BuildWhatsAppTextAlTarek(DataRow saleRow, DataTable items, decimal prevBalance, decimal actualCurrentBalance)
+		{
+			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة الطارق للاستيراد والتصدير";
+			string shopPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
+			string saleCode = saleRow["SaleCode"]?.ToString() ?? "";
+			string saleDate = Convert.ToDateTime(saleRow["SaleDate"]).ToString("yyyy/MM/dd hh:mm tt");
+			string clientName = saleRow.Table.Columns.Contains("ClientName") && saleRow["ClientName"] != DBNull.Value ? saleRow["ClientName"].ToString() : "عميل نقدي";
+			decimal netVal = Convert.ToDecimal(saleRow["TotalAmount"]);
+			decimal discVal = saleRow.Table.Columns.Contains("DiscountAmount") && saleRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(saleRow["DiscountAmount"]) : 0m;
+			decimal grossVal = netVal + discVal;
+			decimal paidVal = saleRow.Table.Columns.Contains("CashPaid") && saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : (saleRow["SaleType"].ToString() == "Cash" ? netVal : 0m);
+			decimal remainVal = netVal - paidVal;
+			bool isDraft = saleRow.Table.Columns.Contains("IsDraft") && saleRow["IsDraft"] != DBNull.Value && Convert.ToBoolean(saleRow["IsDraft"]);
+
+			var sb = new System.Text.StringBuilder();
+			sb.AppendLine($"⭐ *{shopName}* ⭐");
+			if (!string.IsNullOrEmpty(shopPhone)) sb.AppendLine($"📞 خدمة العملاء: {shopPhone}");
+			sb.AppendLine("━━━━━━━━━━━━━━━━");
+			sb.AppendLine(isDraft ? "📋 *فاتورة مبيعات معلقة (نموذج الطارق)*" : "🧾 *فاتورة مبيعات معتمدة (نموذج الطارق)*");
+			sb.AppendLine($"🔖 *رقم الفاتورة:* #{saleCode}");
+			sb.AppendLine($"📅 *التاريخ:* {saleDate}");
+			sb.AppendLine($"👤 *العميل:* {clientName}");
+			sb.AppendLine("━━━━━━━━━━━━━━━━");
+			sb.AppendLine("📦 *تفاصيل الأصناف والبنود:*");
+
+			int idx = 1;
+			if (items != null)
+			{
+				foreach (DataRow itm in items.Rows)
+				{
+					string pName = itm["ProductName"]?.ToString() ?? "";
+					string uName = itm.Table.Columns.Contains("UnitName") && !string.IsNullOrWhiteSpace(itm["UnitName"]?.ToString()) ? itm["UnitName"].ToString() : "قطعة";
+					decimal qty = Convert.ToDecimal(itm["Quantity"]);
+					decimal price = Convert.ToDecimal(itm["UnitPrice"]);
+					decimal total = Convert.ToDecimal(itm["TotalPrice"]);
+					sb.AppendLine($"{idx}. {pName} ({qty:0.##} {uName} × {price:N2}) = *{total:N2} ج.م*");
+					idx++;
+				}
+			}
+
+			sb.AppendLine("━━━━━━━━━━━━━━━━");
+			if (discVal > 0)
+			{
+				sb.AppendLine($"💵 *الإجمالي قبل الخصم:* {grossVal:N2} ج.م");
+				sb.AppendLine($"✂️ *قيمة الخصم:* {discVal:N2} ج.م");
+			}
+			sb.AppendLine($"💰 *صافي الفاتورة:* {netVal:N2} ج.م");
+			sb.AppendLine($"💸 *المدفوع نقداً:* {paidVal:N2} ج.م");
+			if (remainVal > 0)
+			{
+				sb.AppendLine($"⏳ *المتبقي من الفاتورة (آجل):* {remainVal:N2} ج.م");
+			}
+			if (saleRow.Table.Columns.Contains("ClientID") && saleRow["ClientID"] != DBNull.Value)
+			{
+				sb.AppendLine($"⚖️ *الرصيد السابق:* {prevBalance:N2} ج.م");
+				sb.AppendLine($"🔴 *إجمالي الرصيد الحالي المستحق:* {actualCurrentBalance:N2} ج.م");
+			}
+			try
+			{
+				sb.AppendLine($"📝 *فقط {TafqeetHelper.ConvertToArabicWords(netVal)} لا غير.*");
+			}
+			catch { }
+
+			string notes = saleRow.Table.Columns.Contains("Notes") && !string.IsNullOrWhiteSpace(saleRow["Notes"]?.ToString()) ? saleRow["Notes"].ToString() : "";
+			if (!string.IsNullOrEmpty(notes))
+			{
+				sb.AppendLine($"📌 *ملاحظات:* {notes}");
+			}
+
+			sb.AppendLine("━━━━━━━━━━━━━━━━");
+			sb.AppendLine("🙏 *شكراً لتعاملكم معنا ونسعد بخدمتكم دائماً!*");
+			return sb.ToString();
+		}
+
 		private static void ShowWhatsAppTemplateModal(string phone, DataRow saleRow, DataTable items, decimal prevBalance, decimal lastPaymentAmt, DateTime lastPaymentDate, decimal todayPayments, decimal todayReturns, decimal actualCurrentBalance, Form parent)
 		{
 			var dlg = new Form
@@ -6392,9 +6466,11 @@ namespace ChickenDist.Forms
 				"🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
 				"🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
 				"🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
+				"🖼️ كارت فاتورة الطارق هوم (Al Tarek Home Grid Card)",
 				"💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
 				"💬 النموذج السريع الموجز (رسالة نصية سريعة)",
-				"💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)"
+				"💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)",
+				"💬 نموذج الطارق المعتمد (رسالة نصية الطارق)"
 			});
 
 			string savedTpl = AppConfig.WhatsAppInvoiceTemplate;
@@ -6404,9 +6480,11 @@ namespace ChickenDist.Forms
 				"ImageCardCommercial" => 2,
 				"ImageCardEmerald" => 3,
 				"ImageCardGold" => 4,
-				"Detailed" => 5,
-				"Summary" => 6,
-				"Financial" => 7,
+				"ImageCardAlTarek" or "AlTarek" or "AlTarekGrid" or "AlTarekHome" => 5,
+				"Detailed" => 6,
+				"Summary" => 7,
+				"Financial" => 8,
+				"AlTarekText" => 9,
 				_ => 0
 			};
 
@@ -6442,7 +6520,7 @@ namespace ChickenDist.Forms
 			Action updatePreview = () =>
 			{
 				int idx = cboTpl.SelectedIndex;
-				if (idx < 5)
+				if (idx < 6)
 				{
 					txtTextPreview.Visible = false;
 					picImagePreview.Visible = true;
@@ -6452,6 +6530,7 @@ namespace ChickenDist.Forms
 						2 => "ImageCardCommercial",
 						3 => "ImageCardEmerald",
 						4 => "ImageCardGold",
+						5 => "ImageCardAlTarek",
 						_ => "ImageCardNavy"
 					};
 					cachedBmp = ReceiptImageGenerator.GenerateSaleReceiptImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance, tplKey);
@@ -6463,8 +6542,9 @@ namespace ChickenDist.Forms
 					txtTextPreview.Visible = true;
 					string textContent = idx switch
 					{
-						6 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
-						7 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+						7 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
+						8 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+						9 => BuildWhatsAppTextAlTarek(saleRow, items, prevBalance, actualCurrentBalance),
 						_ => BuildWhatsAppTextDetailed(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance)
 					};
 					txtTextPreview.Text = textContent;
@@ -6505,9 +6585,11 @@ namespace ChickenDist.Forms
 					2 => "ImageCardCommercial",
 					3 => "ImageCardEmerald",
 					4 => "ImageCardGold",
-					5 => "Detailed",
-					6 => "Summary",
-					7 => "Financial",
+					5 => "ImageCardAlTarek",
+					6 => "Detailed",
+					7 => "Summary",
+					8 => "Financial",
+					9 => "AlTarekText",
 					_ => "ImageCardNavy"
 				};
 				AppConfig.WhatsAppInvoiceTemplate = tplKey;
@@ -6519,8 +6601,9 @@ namespace ChickenDist.Forms
 				int idx = cboTpl.SelectedIndex;
 				string messageToSend = idx switch
 				{
-					6 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
-					7 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+					7 => BuildWhatsAppTextSummary(saleRow, items, actualCurrentBalance),
+					8 => BuildWhatsAppTextFinancial(saleRow, items, prevBalance, actualCurrentBalance),
+					9 => BuildWhatsAppTextAlTarek(saleRow, items, prevBalance, actualCurrentBalance),
 					_ => BuildWhatsAppTextDetailed(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance)
 				};
 				SendWhatsApp(phone, messageToSend);
@@ -6538,9 +6621,10 @@ namespace ChickenDist.Forms
 						2 => "ImageCardCommercial",
 						3 => "ImageCardEmerald",
 						4 => "ImageCardGold",
+						5 => "ImageCardAlTarek",
 						_ => "ImageCardNavy"
 					};
-					if (cachedBmp == null)
+					if (cachedBmp == null || idx >= 6)
 					{
 						cachedBmp = ReceiptImageGenerator.GenerateSaleReceiptImage(saleRow, items, prevBalance, lastPaymentAmt, lastPaymentDate, todayPayments, todayReturns, actualCurrentBalance, tplKey);
 					}
