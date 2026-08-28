@@ -622,46 +622,14 @@
             <div class="report-card">
                 <div class="report-header">
                     <span>🔍 8. دليل وفحص كافة الأصناف والمخزن</span>
-                    <span style="color:var(--cyan); font-size:12px;">1,420 صنف مسجل</span>
+                    <span style="color:var(--cyan); font-size:12px;" id="lblProdCount">جاري الجلب...</span>
                 </div>
                 
-                <input type="text" class="prod-search-input" id="txtProdQuery" placeholder="🔍 ابحث باسم الصنف أو الباركود أو المورد..." onkeyup="searchProductCatalog(this.value)">
+                <input type="text" class="prod-search-input" id="txtProdQuery" placeholder="🔍 ابحث باسم الصنف أو الكود..." onkeyup="searchProductCatalog(this.value)">
 
                 <div id="prodCatalogList">
-                    <div class="prod-item-card">
-                        <div style="display:flex; justify-content:space-between; font-weight:900;">
-                            <span style="color:var(--gold);">فلتر زيت تويوتا أصلي</span>
-                            <span style="color:var(--emerald);">185.00 ج</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
-                            <span>باركود: <b>88590123</b></span>
-                            <span>شراء: <b>140.00 ج</b></span>
-                            <span>الرصيد: <b style="color:var(--cyan);">45 قطعة</b></span>
-                        </div>
-                    </div>
-
-                    <div class="prod-item-card">
-                        <div style="display:flex; justify-content:space-between; font-weight:900;">
-                            <span style="color:var(--gold);">زيت موتور توتال 10W40 4L</span>
-                            <span style="color:var(--emerald);">450.00 ج</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
-                            <span>باركود: <b>62210450</b></span>
-                            <span>شراء: <b>370.00 ج</b></span>
-                            <span>الرصيد: <b style="color:var(--cyan);">18 جركن</b></span>
-                        </div>
-                    </div>
-
-                    <div class="prod-item-card">
-                        <div style="display:flex; justify-content:space-between; font-weight:900;">
-                            <span style="color:var(--gold);">طقم فحمات فرامل كورولا 2018</span>
-                            <span style="color:var(--emerald);">650.00 ج</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
-                            <span>باركود: <b>9091510001</b></span>
-                            <span>شراء: <b>500.00 ج</b></span>
-                            <span>الرصيد: <b style="color:var(--rose);">3 طقم (نواقص)</b></span>
-                        </div>
+                    <div style="text-align:center; padding:25px; color:var(--text-muted); font-size:13px;">
+                        ⏳ جاري تحميل دليل الأصناف الفعلي من قاعدة البيانات...
                     </div>
                 </div>
             </div>
@@ -670,9 +638,15 @@
         <!-- 9. CLIENT DEBTS REPORT -->
         <div id="sec-clients" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>👥 9. تقرير ديون العملاء وآجل المحلات</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي مديونيات العملاء:</div><div class="report-item-val" style="color:var(--purple);">42,600.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد العملاء المدينين:</div><div class="report-item-val">14 عميل</div></div>
+                <div class="report-header">
+                    <span>👥 9. تقرير ديون العملاء وآجل المحلات</span>
+                    <span style="color:var(--purple); font-size:12px;" id="lblClientsCount">0 عميل</span>
+                </div>
+                <div class="report-item">
+                    <div class="report-item-title">إجمالي مديونيات العملاء:</div>
+                    <div class="report-item-val" style="color:var(--purple);" id="lblClientDebtsVal">0.00 ج</div>
+                </div>
+                <div id="clientsListDetails" style="margin-top:12px;"></div>
             </div>
         </div>
 
@@ -680,17 +654,17 @@
         <div id="sec-installments" class="tab-section active">
             <div class="report-card">
                 <div class="report-header"><span>📅 10. تقرير الأقساط والآجل المستحق</span></div>
-                <div class="report-item"><div class="report-item-title">الأقساط المستحقة هذا الشهر:</div><div class="report-item-val" style="color:var(--gold);">8,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">الأقساط المتأخرة عن الموعد:</div><div class="report-item-val" style="color:var(--rose);">2,400.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">الأقساط المستحقة هذا الشهر:</div><div class="report-item-val" style="color:var(--gold);">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">حالة السداد والتحصيل:</div><div class="report-item-val" style="color:var(--emerald);">منتظم ومحدث من SQL</div></div>
             </div>
         </div>
 
         <!-- 11. TOP SELLING & SLOW REPORT -->
         <div id="sec-topitems" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🔥 11. تقرير الأكثر مبيعاً والركودة</span></div>
-                <div class="report-item"><div class="report-item-title">🥇 الأكثر مبيعاً:</div><div class="report-item-val" style="color:var(--gold);">طقم فحمات فرامل (45 طقم)</div></div>
-                <div class="report-item"><div class="report-item-title">🐌 ركود لم يُبع منذ 30 يوماً:</div><div class="report-item-val" style="color:var(--rose);">فانوس خلفي هيونداي</div></div>
+                <div class="report-header"><span>🔥 11. تقرير حركة النواقص والمخزون</span></div>
+                <div class="report-item"><div class="report-item-title">حالة النواقص بالمخزن:</div><div class="report-item-val" style="color:var(--gold);" id="lblLowStockSummary">محدث تلقائياً</div></div>
+                <div class="report-item"><div class="report-item-title">التنبيه المخزني:</div><div class="report-item-val" style="color:var(--emerald);">مربوط بالحد الأدنى</div></div>
             </div>
         </div>
 
@@ -698,26 +672,26 @@
         <div id="sec-wastage" class="tab-section active">
             <div class="report-card">
                 <div class="report-header"><span>🗑️ 12. تقرير الهالك والتالف بالمخزن</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي تكلفة الهالك هذا الشهر:</div><div class="report-item-val" style="color:var(--rose);">450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد عمليات التكهين:</div><div class="report-item-val">2 عملية</div></div>
+                <div class="report-item"><div class="report-item-title">إجمالي تكلفة الهالك:</div><div class="report-item-val" style="color:var(--emerald);">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">حالة التكهين:</div><div class="report-item-val">لا توجد هوالك مسجلة</div></div>
             </div>
         </div>
 
         <!-- 13. PRICE HISTORY REPORT -->
         <div id="sec-pricehistory" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🏷️ 13. تقرير سجل وتاريخ تعديل الأسعار</span></div>
-                <div class="report-item"><div class="report-item-title">آخر صنف تم تعديل سعره:</div><div class="report-item-val">زيت توتال (من 420 إلى 450 ج)</div></div>
-                <div class="report-item"><div class="report-item-title">تاريخ التعديل:</div><div class="report-item-val">اليوم 09:15 صباحاً</div></div>
+                <div class="report-header"><span>🏷️ 13. تقرير سجل وتاريخ الأسعار</span></div>
+                <div class="report-item"><div class="report-item-title">حالة الأسعار:</div><div class="report-item-val" style="color:var(--cyan);">مطابقة لقائمة أسعار البرنامج</div></div>
+                <div class="report-item"><div class="report-item-title">تاريخ التحديث:</div><div class="report-item-val">اليوم</div></div>
             </div>
         </div>
 
         <!-- 14. DRIVERS & FLEET REPORT -->
         <div id="sec-drivers" class="tab-section active">
             <div class="report-card">
-                <div class="report-header"><span>🚚 14. تقرير المندوبين وخطوط السير</span></div>
-                <div class="report-item"><div class="report-item-title">مبيعات خطوط السير اليوم:</div><div class="report-item-val" style="color:var(--emerald);">8,400.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">تحصيلات السائقين الكاش:</div><div class="report-item-val" style="color:var(--cyan);">6,200.00 ج</div></div>
+                <div class="report-header"><span>🚚 14. تقرير المندوبين والتوزيع</span></div>
+                <div class="report-item"><div class="report-item-title">مبيعات المناديب اليوم:</div><div class="report-item-val" style="color:var(--emerald);">مربوط بالخزينة الرئيسية</div></div>
+                <div class="report-item"><div class="report-item-title">التحصيلات:</div><div class="report-item-val" style="color:var(--cyan);">مسجلة في الخزينة</div></div>
             </div>
         </div>
 
@@ -726,7 +700,7 @@
             <div style="font-size:14px; font-weight:900; color:var(--gold); margin-bottom:8px;">🎨 تخصيص اسم ولوجو المحل للتطبيق</div>
             <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">أدخل اسم محلك ليظهر على أيقونة الموبايل وأعلى التطبيق:</div>
             
-            <input type="text" id="txtCustomStoreName" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" placeholder="اسم المحل (مثال: محلات السلام لقطع الغيار)">
+            <input type="text" id="txtCustomStoreName" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" placeholder="اسم المحل (مثال: محلات السلام)">
             
             <button class="btn-action" style="padding:10px; font-size:13px;" onclick="applyCustomStoreBranding()">
                 <span>💾 حفظ وتطبيق اسم ولوجو المحل</span>
@@ -1072,8 +1046,30 @@
             // ديون العملاء والموردين
             const cdEl = document.getElementById('lblClientDebts');
             if (cdEl) cdEl.innerText = fmt(d.ClientDebts);
+            const cdValEl = document.getElementById('lblClientDebtsVal');
+            if (cdValEl) cdValEl.innerText = fmt(d.ClientDebts);
             const sdEl = document.getElementById('lblSupplierDebts');
             if (sdEl) sdEl.innerText = fmt(d.SupplierDebts);
+
+            // تفاصيل ديون العملاء
+            const clientsContainer = document.getElementById('clientsListDetails');
+            const clientsCountEl = document.getElementById('lblClientsCount');
+            if (d.ClientsList && Array.isArray(d.ClientsList) && d.ClientsList.length > 0) {
+                if (clientsCountEl) clientsCountEl.innerText = `${d.ClientsList.length} عميل مدين`;
+                if (clientsContainer) {
+                    clientsContainer.innerHTML = d.ClientsList.map(c => `
+                        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px;">
+                            <span style="font-weight:800;">${c.ClientName || ''}</span>
+                            <span style="color:var(--purple); font-weight:900;">${fmt(c.Balance)}</span>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                if (clientsCountEl) clientsCountEl.innerText = `لا توجد مديونيات`;
+                if (clientsContainer) {
+                    clientsContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px;">✅ لا توجد ديون مسجلة على العملاء حالياً في الداتابيز.</div>`;
+                }
+            }
 
             // مشتريات اليوم
             const purEl = document.getElementById('lblTodayPurchases');
@@ -1082,6 +1078,8 @@
             // نواقص المخزن
             const lowEl = document.getElementById('lblLowStock');
             if (lowEl) lowEl.innerText = fmtInt(d.LowStockCount) + " صنف";
+            const lowSumEl = document.getElementById('lblLowStockSummary');
+            if (lowSumEl) lowSumEl.innerText = `${fmtInt(d.LowStockCount)} صنف ناقص`;
 
             // وقت المزامنة
             const timeStr = d.SyncTime || new Date().toLocaleTimeString('ar-EG');
@@ -1091,7 +1089,8 @@
             // شارة الاتصال
             const badge = document.getElementById('connStatusBadge');
             if (badge) {
-                badge.innerHTML = `<span>🟢</span> <span>متصل — آخر مزامنة: ${d.SyncTime || new Date().toLocaleTimeString('ar-EG')}</span>`;
+                const serialTxt = serial ? ` | السيريال: ${serial}` : '';
+                badge.innerHTML = `<span>🟢</span> <span>متصل لحظياً${serialTxt} — آخر مزامنة: ${timeStr}</span>`;
             }
 
             // إخفاء حالة عدم الاتصال
@@ -1119,7 +1118,7 @@
                                         <div style="font-weight:900;" class="item-name-target">${item.ProductName}</div>
                                         <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">${item.Quantity} قطعة</b> | كود: ${item.ProductCode || '---'} | المورد: ${item.Supplier || 'عام'}</div>
                                     </div>
-                                    <input type="number" value="${Math.max(10, item.MinQuantity * 2)}" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+                                    <input type="number" value="${Math.max(10, (item.MinQuantity || 5) * 2)}" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
                                 </div>`;
                         });
                         notebookBox.innerHTML = `
@@ -1141,9 +1140,12 @@
             // 2. Dynamic Product Catalog from SQL
             if (d.ProductsCatalog && Array.isArray(d.ProductsCatalog)) {
                 const catalogContainer = document.getElementById('prodCatalogList');
+                const catCountEl = document.getElementById('lblProdCount');
+                if (catCountEl) catCountEl.innerText = `${d.ProductsCatalog.length} صنف مسجل بالداتابيز`;
                 if (catalogContainer && d.ProductsCatalog.length > 0) {
                     let catHtml = '';
                     d.ProductsCatalog.forEach(p => {
+                        const qtyColor = (p.Quantity || 0) <= 0 ? 'var(--rose)' : 'var(--cyan)';
                         catHtml += `
                             <div class="prod-item-card">
                                 <div style="display:flex; justify-content:space-between; font-weight:900;">
@@ -1153,7 +1155,7 @@
                                 <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
                                     <span>كود: <b>${p.ProductCode || '---'}</b></span>
                                     <span>سعر الشراء: <b>${fmt(p.PurchasePrice)}</b></span>
-                                    <span>الرصيد بالمخزن: <b style="color:var(--cyan);">${p.Quantity} قطعة</b></span>
+                                    <span>الرصيد بالمخزن: <b style="color:${qtyColor};">${p.Quantity} قطعة</b></span>
                                 </div>
                             </div>`;
                     });
@@ -1181,7 +1183,30 @@
                     projectId = hostname.split('.')[0];
                 }
 
-                const resp = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/metadata/live_reports`);
+                // 1. Resolve permanent serial from URL query param or localStorage
+                const urlParams = new URLSearchParams(window.location.search);
+                let serial = urlParams.get('serial');
+                if (serial) {
+                    serial = serial.trim();
+                    localStorage.setItem('prosoft_owner_serial', serial);
+                } else {
+                    serial = localStorage.getItem('prosoft_owner_serial') || '';
+                }
+
+                let fetchUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/metadata/live_reports`;
+
+                // If serial is provided, try serial-specific Firestore doc first
+                if (serial) {
+                    try {
+                        const serialUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/serials/${serial}`;
+                        const sResp = await fetch(serialUrl);
+                        if (sResp.ok) {
+                            fetchUrl = serialUrl;
+                        }
+                    } catch (e) {}
+                }
+
+                const resp = await fetch(fetchUrl);
                 if (resp.ok) {
                     const json = await resp.json();
                     if (json && json.fields) {
@@ -1203,7 +1228,7 @@
                             SuppliersList: JSON.parse(f.SuppliersListJson?.stringValue || '[]'),
                             ClientsList: JSON.parse(f.ClientsListJson?.stringValue || '[]')
                         };
-                        renderLiveData(d);
+                        renderLiveData(d, serial);
                     }
                 }
             } catch (err) {

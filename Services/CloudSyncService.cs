@@ -264,6 +264,21 @@ namespace ChickenDist.Services
                         {
                             firestoreOk = true;
                         }
+
+                        string clientSerial = GetPermanentClientSerial();
+                        if (!string.IsNullOrEmpty(clientSerial))
+                        {
+                            try
+                            {
+                                var contentSerial = new StringContent(firestorePayload, Encoding.UTF8, "application/json");
+                                var reqSerial = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/serials/{clientSerial}")
+                                {
+                                    Content = contentSerial
+                                };
+                                await client.SendAsync(reqSerial);
+                            }
+                            catch { }
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -336,15 +351,16 @@ namespace ChickenDist.Services
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string storeName = EscapeJsonString(AppConfig.CompanyName);
 
+                string clientSerial = GetPermanentClientSerial();
                 string json = "{\"fields\": {" +
-                    "\"TodaySalesTotal\": {\"doubleValue\": " + dto.TodaySalesTotal + "}," +
-                    "\"TodayCashSales\": {\"doubleValue\": " + dto.TodayCashSales + "}," +
-                    "\"TodayCreditSales\": {\"doubleValue\": " + dto.TodayCreditSales + "}," +
-                    "\"CashboxBalance\": {\"doubleValue\": " + dto.CashboxBalance + "}," +
-                    "\"TodayNetProfit\": {\"doubleValue\": " + todayProfit + "}," +
-                    "\"TodayPurchases\": {\"doubleValue\": " + todayPurchases + "}," +
-                    "\"ClientDebts\": {\"doubleValue\": " + clientDebts + "}," +
-                    "\"SupplierDebts\": {\"doubleValue\": " + suppDebts + "}," +
+                    "\"TodaySalesTotal\": {\"doubleValue\": " + dto.TodaySalesTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                    "\"TodayCashSales\": {\"doubleValue\": " + dto.TodayCashSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                    "\"TodayCreditSales\": {\"doubleValue\": " + dto.TodayCreditSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                    "\"CashboxBalance\": {\"doubleValue\": " + dto.CashboxBalance.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                    "\"TodayNetProfit\": {\"doubleValue\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                    "\"TodayPurchases\": {\"doubleValue\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                    "\"ClientDebts\": {\"doubleValue\": " + clientDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                    "\"SupplierDebts\": {\"doubleValue\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                     "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
                     "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
                     "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
@@ -357,13 +373,31 @@ namespace ChickenDist.Services
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(10);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var req = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/live_reports")
+                    
+                    // 1. Push to global metadata/live_reports
+                    var content1 = new StringContent(json, Encoding.UTF8, "application/json");
+                    var req1 = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/live_reports")
                     {
-                        Content = content
+                        Content = content1
                     };
-                    var response = await client.SendAsync(req);
-                    return response.IsSuccessStatusCode;
+                    var response1 = await client.SendAsync(req1);
+
+                    // 2. Push to client serial document serials/{clientSerial}
+                    if (!string.IsNullOrEmpty(clientSerial))
+                    {
+                        try
+                        {
+                            var content2 = new StringContent(json, Encoding.UTF8, "application/json");
+                            var req2 = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/serials/{clientSerial}")
+                            {
+                                Content = content2
+                            };
+                            await client.SendAsync(req2);
+                        }
+                        catch { }
+                    }
+
+                    return response1.IsSuccessStatusCode;
                 }
             }
             catch (Exception ex)

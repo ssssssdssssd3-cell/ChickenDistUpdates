@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Text;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
@@ -11,19 +12,30 @@ namespace ChickenDist.Forms
 {
     /// <summary>
     /// شاشة الحسابات والمالية اليومية الشاملة
-    /// تشمل: سندات الصرف والقبض، تقارير التوريد والمصروفات، القيود اليومية، حركة الخزينة والبنوك والتحويلات، وتكلفة المباع والمخزون
+    /// تشمل: سندات الصرف والقبض، تقرير المصروفات الشامل والتحليلي، تقرير المقبوضات والتوريدات، القيود اليومية، حركة الخزينة والبنوك والتحويلات، وتكلفة المباع والمخزون
     /// </summary>
     public class FrmDailyAccounts : Form
     {
         private TabControl tabMain;
 
-        // ===== Tab 1: Vouchers & Daily Reports =====
+        // ===== Tab 1: Issue Vouchers =====
         private ComboBox cboVoucherType, cboEntityCategory, cboEntity, cboPayMethod, cboAccountSafe;
         private TextBox txtAmount, txtNotes;
         private Button btnSaveVoucher, btnPrintVoucher;
-        private DataGridView dgExpensesReport, dgReceiptsReport;
-        private DateTimePicker dtpExpFrom, dtpExpTo, dtpRecFrom, dtpRecTo;
-        private Label lblTotalExp, lblTotalRec;
+
+        // ===== Tab 2: Dedicated Expenses Report (تقرير المصروفات الشامل) =====
+        private DataGridView dgExpensesReport, dgExpensesSummary;
+        private DateTimePicker dtpExpFrom, dtpExpTo;
+        private ComboBox cboExpPresets, cboExpCategoryFilter, cboExpSafeFilter;
+        private TextBox txtExpSearch;
+        private Label lblExpTotalAmount, lblExpTotalCount, lblExpTopCategory, lblExpAvgAmount;
+
+        // ===== Tab 3: Receipts Report (تقرير المقبوضات والتوريدات) =====
+        private DataGridView dgReceiptsReport;
+        private DateTimePicker dtpRecFrom, dtpRecTo;
+        private ComboBox cboRecSafeFilter;
+        private TextBox txtRecSearch;
+        private Label lblTotalRec, lblRecCount;
 
         // ===== Tab 2: Journal Entries (القيود اليومية) =====
         private TextBox txtJournalRef, txtJournalNotes;
@@ -80,10 +92,15 @@ namespace ChickenDist.Forms
             BuildCreateVoucherTab(tabCreateVoucher);
             tabMain.TabPages.Add(tabCreateVoucher);
 
-            // Build Tab 2: Reports of Vouchers
-            var tabVoucherReports = new TabPage("📊 المقبوضات والمصروفات");
-            BuildVoucherReportsTab(tabVoucherReports);
-            tabMain.TabPages.Add(tabVoucherReports);
+            // Build Tab 2: Expenses Report (تقرير المصروفات الشامل)
+            var tabExpensesReport = new TabPage("📑 تقرير المصروفات");
+            BuildExpensesReportTab(tabExpensesReport);
+            tabMain.TabPages.Add(tabExpensesReport);
+
+            // Build Tab 3: Receipts Report (تقرير المقبوضات والتوريدات)
+            var tabReceiptsReport = new TabPage("📗 تقرير المقبوضات والتوريدات");
+            BuildReceiptsReportTab(tabReceiptsReport);
+            tabMain.TabPages.Add(tabReceiptsReport);
 
             // Build Tab 3: Journal Entries
             var tabJournal = new TabPage("🔄 القيود اليومية");
@@ -159,6 +176,7 @@ namespace ChickenDist.Forms
             cboEntityCategory = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
             cboEntityCategory.Items.Add("مورد");
             cboEntityCategory.Items.Add("عميل");
+            cboEntityCategory.Items.Add("🤝 شريك / مساهم (رأس مال وأرباح)");
             cboEntityCategory.Items.Add("مصروف عام / بند إداري");
             cboEntityCategory.SelectedIndex = 0;
             cboEntityCategory.SelectedIndexChanged += (s, e) => LoadEntitiesForCategory();
@@ -218,88 +236,323 @@ namespace ChickenDist.Forms
         }
 
         // =========================================================================
-        // TAB 2: VOUCHER REPORTS (تقارير التوريدات والمصروفات اليومية الكاملة)
+        // TAB 2: EXPENSES REPORT (تقرير المصروفات الشامل والتحليلي)
         // =========================================================================
-        private void BuildVoucherReportsTab(TabPage page)
+        private void BuildExpensesReportTab(TabPage page)
         {
             page.BackColor = Theme.BgMain;
 
-            var splitRep = new SplitContainer
+            // 1. Top Filter and Controls Bar
+            var pnlTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 84,
+                BackColor = Theme.BgSearchPanel,
+                Padding = new Padding(6, 5, 6, 5)
+            };
+
+            var flowFilter1 = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent
+            };
+
+            flowFilter1.Controls.Add(new Label { Text = "الفترة من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(3, 7, 0, 0) });
+            dtpExpFrom = new DateTimePicker { Width = 155, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1) };
+            flowFilter1.Controls.Add(dtpExpFrom);
+
+            flowFilter1.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(8, 7, 0, 0) });
+            dtpExpTo = new DateTimePicker { Width = 155, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
+            flowFilter1.Controls.Add(dtpExpTo);
+
+            flowFilter1.Controls.Add(new Label { Text = "فترة جاهزة:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(8, 7, 0, 0) });
+            cboExpPresets = new ComboBox { Width = 110, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboExpPresets.Items.AddRange(new object[] { "هذا الشهر", "اليوم", "أمس", "آخر 7 أيام", "الشهر السابق", "هذا العام", "كل الفترات" });
+            cboExpPresets.SelectedIndex = 0;
+            cboExpPresets.SelectedIndexChanged += (s, e) => ApplyExpDatePreset();
+            flowFilter1.Controls.Add(cboExpPresets);
+
+            flowFilter1.Controls.Add(new Label { Text = "الخزنة / الحساب:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(8, 7, 0, 0) });
+            cboExpSafeFilter = new ComboBox { Width = 135, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboExpSafeFilter.Items.Add("جميع الخزائن والحسابات");
+            cboExpSafeFilter.SelectedIndex = 0;
+            cboExpSafeFilter.SelectedIndexChanged += (s, e) => LoadExpensesReport();
+            flowFilter1.Controls.Add(cboExpSafeFilter);
+
+            flowFilter1.Controls.Add(new Label { Text = "بند المصروف:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(8, 7, 0, 0) });
+            cboExpCategoryFilter = new ComboBox { Width = 145, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboExpCategoryFilter.Items.Add("جميع بنود المصروفات");
+            cboExpCategoryFilter.SelectedIndex = 0;
+            cboExpCategoryFilter.SelectedIndexChanged += (s, e) => LoadExpensesReport();
+            flowFilter1.Controls.Add(cboExpCategoryFilter);
+
+            var flowFilter2 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Orientation = Orientation.Horizontal,
-                SplitterDistance = 300
-            };
-            splitRep.SizeChanged += (s, e) => {
-                if (splitRep.Height > 100)
-                    splitRep.SplitterDistance = splitRep.Height / 2;
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0, 3, 0, 0)
             };
 
-            // Panel Top: Expenses Report (المصروفات وعمليات الصرف)
-            var pnlExpRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
-            var pnlExpHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(4) };
-            pnlExpHeader.Controls.Add(new Label { Text = "📕 المصروفات  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(3, 4, 0, 0) });
-            dtpExpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today };
-            dtpExpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
+            flowFilter2.Controls.Add(new Label { Text = "🔍 بحث سريع:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(3, 7, 0, 0) });
+            txtExpSearch = new TextBox { Width = 175, Font = new Font("Segoe UI", 9.5f) };
+            txtExpSearch.TextChanged += (s, e) => LoadExpensesReport();
+            flowFilter2.Controls.Add(txtExpSearch);
+
+            var btnRefresh = Theme.MakeButton("🔄 تحديث التقرير", Color.FromArgb(16, 140, 90));
+            btnRefresh.Size = new Size(120, 28);
+            btnRefresh.Click += (s, e) => LoadExpensesReport();
+            flowFilter2.Controls.Add(btnRefresh);
+
+            var btnPrintReport = Theme.MakeButton("🖨️ طباعة تقرير المصروفات", Color.FromArgb(30, 80, 160));
+            btnPrintReport.Size = new Size(165, 28);
+            btnPrintReport.Click += (s, e) => PrintExpensesReport();
+            flowFilter2.Controls.Add(btnPrintReport);
+
+            var btnExportExcel = Theme.MakeButton("📊 تصدير Excel", Color.FromArgb(34, 139, 34));
+            btnExportExcel.Size = new Size(115, 28);
+            btnExportExcel.Click += (s, e) => ExportExpensesToExcel();
+            flowFilter2.Controls.Add(btnExportExcel);
+
+            var btnPrintSingle = Theme.MakeButton("🧾 طباعة السند المحدد", Color.FromArgb(70, 80, 95));
+            btnPrintSingle.Size = new Size(135, 28);
+            btnPrintSingle.Click += (s, e) => PrintSelectedVoucher(dgExpensesReport);
+            flowFilter2.Controls.Add(btnPrintSingle);
+
+            var btnNewVoucher = Theme.MakeButton("➕ تسجيل مصروف جديد", Color.FromArgb(180, 50, 50));
+            btnNewVoucher.Size = new Size(140, 28);
+            btnNewVoucher.Click += (s, e) => { tabMain.SelectedIndex = 0; cboVoucherType.SelectedIndex = 0; };
+            flowFilter2.Controls.Add(btnNewVoucher);
+
+            pnlTop.Controls.Add(flowFilter2);
+            pnlTop.Controls.Add(flowFilter1);
+
             dtpExpFrom.ValueChanged += (s, e) => LoadExpensesReport();
             dtpExpTo.ValueChanged += (s, e) => LoadExpensesReport();
-            pnlExpHeader.Controls.Add(dtpExpFrom);
-            pnlExpHeader.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(3, 4, 0, 0) });
-            pnlExpHeader.Controls.Add(dtpExpTo);
 
-            lblTotalExp = new Label { Text = "إجمالي المصروفات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(220, 60, 60), Font = Theme.FontBold, Margin = new Padding(12, 4, 0, 0) };
-            pnlExpHeader.Controls.Add(lblTotalExp);
+            // 2. KPI Summary Cards Panel
+            var pnlKpi = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 62,
+                ColumnCount = 4,
+                RowCount = 1,
+                BackColor = Theme.BgMain,
+                Padding = new Padding(3, 2, 3, 2)
+            };
+            for (int i = 0; i < 4; i++) pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlKpi.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            var btnPrintExp = Theme.MakeButton("🖨️ طباعة السند", Color.FromArgb(30, 80, 140));
-            btnPrintExp.Size = new Size(130, 24);
-            btnPrintExp.Margin = new Padding(12, 1, 0, 0);
-            btnPrintExp.Click += (s, e) => PrintSelectedVoucher(dgExpensesReport);
-            pnlExpHeader.Controls.Add(btnPrintExp);
+            lblExpTotalAmount = MakeKpiCard(pnlKpi, 0, "💰 إجمالي المصروفات", "0.00 ج", Color.FromArgb(180, 40, 40));
+            lblExpTotalCount = MakeKpiCard(pnlKpi, 1, "🧾 عدد سندات الصرف", "0 سند", Color.FromArgb(30, 100, 150));
+            lblExpTopCategory = MakeKpiCard(pnlKpi, 2, "🏆 أعلى بند مصروفات", "---", Color.FromArgb(180, 110, 20));
+            lblExpAvgAmount = MakeKpiCard(pnlKpi, 3, "⏱️ متوسط قيمة السند", "0.00 ج", Color.FromArgb(40, 120, 80));
 
+            // 3. Main Split View (Category Breakdown on Right, Detailed Grid on Left)
+            var splitContent = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                SplitterDistance = 370,
+                BackColor = Theme.BorderColor
+            };
+
+            // Right: Category Breakdown
+            var pnlSummary = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(4) };
+            var lblSummaryTitle = new Label
+            {
+                Text = "📊 تحليل وتوزيع المصروفات حسب البند",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.Accent,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            dgExpensesSummary = MakeStandardGrid();
+            pnlSummary.Controls.Add(dgExpensesSummary);
+            pnlSummary.Controls.Add(lblSummaryTitle);
+            splitContent.Panel1.Controls.Add(pnlSummary);
+
+            // Left: Detailed Grid
+            var pnlDetail = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(4) };
+            var lblDetailTitle = new Label
+            {
+                Text = "📋 كشف حركات وسندات الصرف التفصيلية (انقر مرتين للمعاينة والطباعة)",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.White,
+                TextAlign = ContentAlignment.MiddleRight
+            };
             dgExpensesReport = MakeStandardGrid();
             dgExpensesReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgExpensesReport);
+            pnlDetail.Controls.Add(dgExpensesReport);
+            pnlDetail.Controls.Add(lblDetailTitle);
+            splitContent.Panel2.Controls.Add(pnlDetail);
 
-            var tblExp = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
-            tblExp.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
-            tblExp.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            tblExp.Controls.Add(pnlExpHeader, 0, 0);
-            tblExp.Controls.Add(dgExpensesReport, 0, 1);
-            pnlExpRep.Controls.Add(tblExp);
-            splitRep.Panel1.Controls.Add(pnlExpRep);
+            page.Controls.Add(splitContent);
+            page.Controls.Add(pnlKpi);
+            page.Controls.Add(pnlTop);
+        }
 
-            // Panel Bottom: Receipts Report (التوريدات والمقبوضات)
-            var pnlRecRep = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard };
-            var pnlRecHeader = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 32, Name = "pnlFilter", BackColor = Theme.BgSearchPanel, Padding = new Padding(4) };
-            pnlRecHeader.Controls.Add(new Label { Text = "📗 المقبوضات  |  من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(3, 4, 0, 0) });
-            dtpRecFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today };
-            dtpRecTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
+        private bool _suppressExpPreset = false;
+        private void ApplyExpDatePreset()
+        {
+            if (_suppressExpPreset || cboExpPresets == null) return;
+            _suppressExpPreset = true;
+            try
+            {
+                DateTime now = DateTime.Now;
+                switch (cboExpPresets.SelectedItem?.ToString())
+                {
+                    case "اليوم":
+                        dtpExpFrom.Value = DateTime.Today;
+                        dtpExpTo.Value = DateTime.Today.AddDays(1).AddTicks(-1);
+                        break;
+                    case "أمس":
+                        dtpExpFrom.Value = DateTime.Today.AddDays(-1);
+                        dtpExpTo.Value = DateTime.Today.AddTicks(-1);
+                        break;
+                    case "آخر 7 أيام":
+                        dtpExpFrom.Value = DateTime.Today.AddDays(-6);
+                        dtpExpTo.Value = DateTime.Today.AddDays(1).AddTicks(-1);
+                        break;
+                    case "هذا الشهر":
+                        dtpExpFrom.Value = new DateTime(now.Year, now.Month, 1);
+                        dtpExpTo.Value = DateTime.Today.AddDays(1).AddTicks(-1);
+                        break;
+                    case "الشهر السابق":
+                        var firstOfThisMonth = new DateTime(now.Year, now.Month, 1);
+                        var firstOfLastMonth = firstOfThisMonth.AddMonths(-1);
+                        dtpExpFrom.Value = firstOfLastMonth;
+                        dtpExpTo.Value = firstOfThisMonth.AddTicks(-1);
+                        break;
+                    case "هذا العام":
+                        dtpExpFrom.Value = new DateTime(now.Year, 1, 1);
+                        dtpExpTo.Value = DateTime.Today.AddDays(1).AddTicks(-1);
+                        break;
+                    case "كل الفترات":
+                        dtpExpFrom.Value = new DateTime(2020, 1, 1);
+                        dtpExpTo.Value = DateTime.Today.AddDays(1).AddTicks(-1);
+                        break;
+                }
+            }
+            finally
+            {
+                _suppressExpPreset = false;
+            }
+            LoadExpensesReport();
+        }
+
+        // =========================================================================
+        // TAB 3: RECEIPTS REPORT (تقرير المقبوضات والتوريدات)
+        // =========================================================================
+        private void BuildReceiptsReportTab(TabPage page)
+        {
+            page.BackColor = Theme.BgMain;
+
+            var pnlTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 84,
+                BackColor = Theme.BgSearchPanel,
+                Padding = new Padding(6, 5, 6, 5)
+            };
+
+            var flow1 = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent
+            };
+
+            flow1.Controls.Add(new Label { Text = "الفترة من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(3, 7, 0, 0) });
+            dtpRecFrom = new DateTimePicker { Width = 155, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1) };
+            flow1.Controls.Add(dtpRecFrom);
+
+            flow1.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(8, 7, 0, 0) });
+            dtpRecTo = new DateTimePicker { Width = 155, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
+            flow1.Controls.Add(dtpRecTo);
+
+            flow1.Controls.Add(new Label { Text = "الخزنة / الحساب:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(8, 7, 0, 0) });
+            cboRecSafeFilter = new ComboBox { Width = 145, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboRecSafeFilter.Items.Add("جميع الخزائن والحسابات");
+            cboRecSafeFilter.SelectedIndex = 0;
+            cboRecSafeFilter.SelectedIndexChanged += (s, e) => LoadReceiptsReport();
+            flow1.Controls.Add(cboRecSafeFilter);
+
+            var flow2 = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0, 3, 0, 0)
+            };
+
+            flow2.Controls.Add(new Label { Text = "🔍 بحث:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(3, 7, 0, 0) });
+            txtRecSearch = new TextBox { Width = 180, Font = new Font("Segoe UI", 9.5f) };
+            txtRecSearch.TextChanged += (s, e) => LoadReceiptsReport();
+            flow2.Controls.Add(txtRecSearch);
+
+            var btnRefresh = Theme.MakeButton("🔄 تحديث", Color.FromArgb(16, 140, 90));
+            btnRefresh.Size = new Size(100, 28);
+            btnRefresh.Click += (s, e) => LoadReceiptsReport();
+            flow2.Controls.Add(btnRefresh);
+
+            var btnPrintSingle = Theme.MakeButton("🧾 طباعة السند المحدد", Color.FromArgb(30, 80, 160));
+            btnPrintSingle.Size = new Size(140, 28);
+            btnPrintSingle.Click += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
+            flow2.Controls.Add(btnPrintSingle);
+
+            var btnExportExcel = Theme.MakeButton("📊 تصدير Excel", Color.FromArgb(34, 139, 34));
+            btnExportExcel.Size = new Size(110, 28);
+            btnExportExcel.Click += (s, e) => ExportGridToCsv(dgReceiptsReport, "تقرير_المقبوضات_والتوريدات");
+            flow2.Controls.Add(btnExportExcel);
+
+            pnlTop.Controls.Add(flow2);
+            pnlTop.Controls.Add(flow1);
+
             dtpRecFrom.ValueChanged += (s, e) => LoadReceiptsReport();
             dtpRecTo.ValueChanged += (s, e) => LoadReceiptsReport();
-            pnlRecHeader.Controls.Add(dtpRecFrom);
-            pnlRecHeader.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Margin = new Padding(3, 4, 0, 0) });
-            pnlRecHeader.Controls.Add(dtpRecTo);
 
-            lblTotalRec = new Label { Text = "إجمالي المقبوضات: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(40, 160, 70), Font = Theme.FontBold, Margin = new Padding(12, 4, 0, 0) };
-            pnlRecHeader.Controls.Add(lblTotalRec);
+            // KPI Cards
+            var pnlKpi = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 62,
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = Theme.BgMain,
+                Padding = new Padding(3, 2, 3, 2)
+            };
+            pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            pnlKpi.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            var btnPrintRec = Theme.MakeButton("🖨️ طباعة السند", Color.FromArgb(30, 80, 140));
-            btnPrintRec.Size = new Size(130, 24);
-            btnPrintRec.Margin = new Padding(12, 1, 0, 0);
-            btnPrintRec.Click += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
-            pnlRecHeader.Controls.Add(btnPrintRec);
+            lblTotalRec = MakeKpiCard(pnlKpi, 0, "📗 إجمالي المقبوضات والتوريدات", "0.00 ج", Color.FromArgb(30, 140, 80));
+            lblRecCount = MakeKpiCard(pnlKpi, 1, "🧾 عدد سندات القبض", "0 سند", Color.FromArgb(30, 100, 150));
 
+            var pnlGrid = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(4) };
+            var lblGridTitle = new Label
+            {
+                Text = "📋 كشف حركات وسندات القبض والتوريد بالتفصيل (انقر مرتين للطباعة)",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.White,
+                TextAlign = ContentAlignment.MiddleRight
+            };
             dgReceiptsReport = MakeStandardGrid();
             dgReceiptsReport.DoubleClick += (s, e) => PrintSelectedVoucher(dgReceiptsReport);
+            pnlGrid.Controls.Add(dgReceiptsReport);
+            pnlGrid.Controls.Add(lblGridTitle);
 
-            var tblRec = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
-            tblRec.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
-            tblRec.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            tblRec.Controls.Add(pnlRecHeader, 0, 0);
-            tblRec.Controls.Add(dgReceiptsReport, 0, 1);
-            pnlRecRep.Controls.Add(tblRec);
-            splitRep.Panel2.Controls.Add(pnlRecRep);
-
-            page.Controls.Add(splitRep);
+            page.Controls.Add(pnlGrid);
+            page.Controls.Add(pnlKpi);
+            page.Controls.Add(pnlTop);
         }
 
 
@@ -606,6 +859,24 @@ namespace ChickenDist.Forms
             if (cboTransferTo.Items.Count > 1) cboTransferTo.SelectedIndex = 1;
             else if (cboTransferTo.Items.Count > 0) cboTransferTo.SelectedIndex = 0;
 
+            if (cboExpSafeFilter != null)
+            {
+                cboExpSafeFilter.Items.Clear();
+                cboExpSafeFilter.Items.Add("جميع الخزائن والحسابات");
+                foreach (DataRow r in dtAcc.Rows)
+                    cboExpSafeFilter.Items.Add(new ComboItem((int)r["AccountID"], r["AccountName"].ToString()));
+                cboExpSafeFilter.SelectedIndex = 0;
+            }
+
+            if (cboRecSafeFilter != null)
+            {
+                cboRecSafeFilter.Items.Clear();
+                cboRecSafeFilter.Items.Add("جميع الخزائن والحسابات");
+                foreach (DataRow r in dtAcc.Rows)
+                    cboRecSafeFilter.Items.Add(new ComboItem((int)r["AccountID"], r["AccountName"].ToString()));
+                cboRecSafeFilter.SelectedIndex = 0;
+            }
+
             if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || dtAcc.Rows.Count <= 1))
             {
                 cboAccountSafe.Enabled = false;
@@ -630,6 +901,12 @@ namespace ChickenDist.Forms
                 foreach (DataRow r in dt.Rows)
                     cboEntity.Items.Add(new ComboItem((int)r["ClientID"], r["ClientName"].ToString()));
             }
+            else if (cat.Contains("شريك") || cat.Contains("مساهم"))
+            {
+                var dt = ShareholdersDAL.GetAllPartners(true);
+                foreach (DataRow r in dt.Rows)
+                    cboEntity.Items.Add(new ComboItem((int)r["PartnerID"], r["PartnerName"].ToString()));
+            }
             else
             {
                 cboEntity.Items.Add(new ComboItem(1, "مصروفات عمومية وإدارية"));
@@ -653,57 +930,221 @@ namespace ChickenDist.Forms
 
         private void LoadExpensesReport()
         {
-            var dt = DbHelper.Query(
-                @"SELECT e.ExpenseID AS [رقم السند], e.ExpenseDate AS [التاريخ والوقت], 
-                         CASE WHEN e.SupplierID IS NOT NULL THEN N'صرف لمورد' 
-                              ELSE N'مصروف إداري' END AS [نوع السند],
-                         COALESCE(s.SupplierName, N'مصروفات عامة') AS [الجهة],
-                         e.Amount AS [المبلغ], 
-                         e.ExpenseType AS [طريقة الدفع/البند], 
-                         sa.AccountName AS [الخزنة / الحساب], 
-                         e.Notes AS [البيان والملاحظات]
-                  FROM Expenses e
-                  LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID
-                  LEFT JOIN SafeAccounts sa ON e.SafeAccountID = sa.AccountID
-                  WHERE e.ExpenseDate BETWEEN @f AND @t
-                  ORDER BY e.ExpenseID DESC",
-                DbHelper.P("@f", dtpExpFrom.Value),
-                DbHelper.P("@t", dtpExpTo.Value));
+            try
+            {
+                if (dgExpensesReport == null) return;
 
-            dgExpensesReport.DataSource = dt;
+                DateTime f = dtpExpFrom != null ? dtpExpFrom.Value : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                DateTime t = dtpExpTo != null ? dtpExpTo.Value : DateTime.Now;
+                if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
 
-            decimal tot = 0m;
-            foreach (DataRow r in dt.Rows)
-                tot += r["المبلغ"] != DBNull.Value ? Convert.ToDecimal(r["المبلغ"]) : 0m;
-            lblTotalExp.Text = $"إجمالي المصروفات وصرف النقدية: {tot:N2} ج";
+                // Populate categories dropdown if not yet loaded
+                if (cboExpCategoryFilter != null && cboExpCategoryFilter.Items.Count <= 1)
+                {
+                    try
+                    {
+                        var dtCats = DbHelper.Query("SELECT DISTINCT ExpenseType FROM Expenses WHERE ExpenseType IS NOT NULL AND ExpenseType <> ''");
+                        foreach (DataRow cr in dtCats.Rows)
+                        {
+                            string cName = cr[0]?.ToString();
+                            if (!string.IsNullOrEmpty(cName) && !cboExpCategoryFilter.Items.Contains(cName))
+                                cboExpCategoryFilter.Items.Add(cName);
+                        }
+                    }
+                    catch { }
+                }
+
+                // 1. Detailed Expenses Query
+                string sql = @"
+                    SELECT e.ExpenseID AS [رقم السند], 
+                           e.ExpenseDate AS [التاريخ والوقت], 
+                           e.ExpenseType AS [بند المصروف],
+                           COALESCE(s.SupplierName, N'مصروفات عامة') AS [المستفيد / الجهة],
+                           e.Amount AS [المبلغ], 
+                           sa.AccountName AS [الخزنة / الحساب], 
+                           e.Notes AS [البيان والملاحظات],
+                           ISNULL(emp.EmpName, N'النظام') AS [المستخدم]
+                    FROM Expenses e
+                    LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID
+                    LEFT JOIN SafeAccounts sa ON e.SafeAccountID = sa.AccountID
+                    LEFT JOIN Employees emp ON e.CreatedBy = emp.EmpID
+                    WHERE e.ExpenseDate BETWEEN @f AND @t";
+
+                var pars = new List<System.Data.SqlClient.SqlParameter>
+                {
+                    DbHelper.P("@f", f),
+                    DbHelper.P("@t", t)
+                };
+
+                // Filter by Safe
+                if (cboExpSafeFilter != null && cboExpSafeFilter.SelectedItem is ComboItem safeCi && safeCi.ID > 0)
+                {
+                    sql += " AND e.SafeAccountID = @safeId";
+                    pars.Add(DbHelper.P("@safeId", safeCi.ID));
+                }
+
+                // Filter by Category
+                if (cboExpCategoryFilter != null && cboExpCategoryFilter.SelectedIndex > 0)
+                {
+                    sql += " AND e.ExpenseType = @expType";
+                    pars.Add(DbHelper.P("@expType", cboExpCategoryFilter.SelectedItem.ToString()));
+                }
+
+                // Search text filter
+                if (txtExpSearch != null && !string.IsNullOrWhiteSpace(txtExpSearch.Text))
+                {
+                    sql += " AND (e.Notes LIKE @q OR e.ExpenseType LIKE @q OR s.SupplierName LIKE @q OR emp.EmpName LIKE @q)";
+                    pars.Add(DbHelper.P("@q", "%" + txtExpSearch.Text.Trim() + "%"));
+                }
+
+                sql += " ORDER BY e.ExpenseID DESC";
+
+                var dt = DbHelper.Query(sql, pars.ToArray());
+                dgExpensesReport.DataSource = dt;
+
+                // 2. Summary Breakdown by Category
+                string sqlSum = @"
+                    SELECT e.ExpenseType AS [بند المصروف],
+                           COUNT(*) AS [عدد العمليات],
+                           SUM(e.Amount) AS [إجمالي المبلغ]
+                    FROM Expenses e
+                    LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID
+                    LEFT JOIN SafeAccounts sa ON e.SafeAccountID = sa.AccountID
+                    LEFT JOIN Employees emp ON e.CreatedBy = emp.EmpID
+                    WHERE e.ExpenseDate BETWEEN @f AND @t";
+
+                var parsSum = new List<System.Data.SqlClient.SqlParameter>
+                {
+                    DbHelper.P("@f", f),
+                    DbHelper.P("@t", t)
+                };
+
+                if (cboExpSafeFilter != null && cboExpSafeFilter.SelectedItem is ComboItem safeCi2 && safeCi2.ID > 0)
+                {
+                    sqlSum += " AND e.SafeAccountID = @safeId";
+                    parsSum.Add(DbHelper.P("@safeId", safeCi2.ID));
+                }
+
+                if (txtExpSearch != null && !string.IsNullOrWhiteSpace(txtExpSearch.Text))
+                {
+                    sqlSum += " AND (e.Notes LIKE @q OR e.ExpenseType LIKE @q OR s.SupplierName LIKE @q OR emp.EmpName LIKE @q)";
+                    parsSum.Add(DbHelper.P("@q", "%" + txtExpSearch.Text.Trim() + "%"));
+                }
+
+                sqlSum += " GROUP BY e.ExpenseType ORDER BY SUM(e.Amount) DESC";
+
+                var dtSum = DbHelper.Query(sqlSum, parsSum.ToArray());
+
+                // Calculate Totals & Percentages
+                decimal grandTotal = 0m;
+                int totalVouchers = dt.Rows.Count;
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (r["المبلغ"] != DBNull.Value)
+                        grandTotal += Convert.ToDecimal(r["المبلغ"]);
+                }
+
+                // Add Percentage column to dtSum
+                dtSum.Columns.Add("النسبة %", typeof(string));
+                string topCategory = "---";
+                decimal topCatAmount = 0m;
+
+                foreach (DataRow sr in dtSum.Rows)
+                {
+                    decimal catAmt = sr["إجمالي المبلغ"] != DBNull.Value ? Convert.ToDecimal(sr["إجمالي المبلغ"]) : 0m;
+                    if (grandTotal > 0)
+                    {
+                        decimal pct = (catAmt / grandTotal) * 100m;
+                        sr["النسبة %"] = $"{pct:N1}%";
+                    }
+                    else
+                    {
+                        sr["النسبة %"] = "0%";
+                    }
+
+                    if (catAmt > topCatAmount)
+                    {
+                        topCatAmount = catAmt;
+                        topCategory = sr["بند المصروف"]?.ToString() ?? "---";
+                    }
+                }
+
+                if (dgExpensesSummary != null)
+                {
+                    dgExpensesSummary.DataSource = dtSum;
+                }
+
+                // Update KPIs
+                if (lblExpTotalAmount != null) lblExpTotalAmount.Text = $"{grandTotal:N2} ج";
+                if (lblExpTotalCount != null) lblExpTotalCount.Text = $"{totalVouchers} سند";
+                if (lblExpTopCategory != null) lblExpTopCategory.Text = topCategory != "---" ? $"{topCategory} ({topCatAmount:N0} ج)" : "---";
+                if (lblExpAvgAmount != null) lblExpAvgAmount.Text = totalVouchers > 0 ? $"{(grandTotal / totalVouchers):N2} ج" : "0.00 ج";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadExpensesReport error: " + ex.Message);
+            }
         }
 
         private void LoadReceiptsReport()
         {
-            var dt = DbHelper.Query(
-                @"SELECT cb.CashID AS [رقم السند], cb.TransDate AS [التاريخ والوقت], 
-                         CASE WHEN cb.TransType = 'ClientPayment' THEN N'قبض من عميل' 
-                              WHEN cb.TransType = 'Deposit' THEN N'توريد نقدية' 
-                              ELSE N'توريد عام' END AS [نوع السند],
-                         cb.Notes AS [الجهة والبيان],
-                         cb.AmountIn AS [المبلغ], 
-                         cb.TransType AS [طريقة الدفع], 
-                         sa.AccountName AS [الخزنة / الحساب], 
-                         cb.Notes AS [البيان والملاحظات]
-                  FROM CashBox cb
-                  LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
-                  WHERE cb.AmountIn > 0 AND cb.TransDate BETWEEN @f AND @t
-                  ORDER BY cb.CashID DESC",
-                DbHelper.P("@f", dtpRecFrom.Value),
-                DbHelper.P("@t", dtpRecTo.Value));
+            try
+            {
+                if (dgReceiptsReport == null) return;
 
+                DateTime f = dtpRecFrom != null ? dtpRecFrom.Value : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                DateTime t = dtpRecTo != null ? dtpRecTo.Value : DateTime.Now;
+                if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
 
-            dgReceiptsReport.DataSource = dt;
+                string sql = @"
+                    SELECT cb.CashID AS [رقم السند], 
+                           cb.TransDate AS [التاريخ والوقت], 
+                           CASE WHEN cb.TransType = 'ClientPayment' THEN N'قبض من عميل' 
+                                WHEN cb.TransType = 'Deposit' THEN N'توريد نقدية' 
+                                ELSE N'توريد عام' END AS [نوع السند],
+                           cb.Notes AS [الجهة والبيان],
+                           cb.AmountIn AS [المبلغ], 
+                           sa.AccountName AS [الخزنة / الحساب], 
+                           ISNULL(emp.EmpName, N'النظام') AS [المستخدم]
+                    FROM CashBox cb
+                    LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    LEFT JOIN Employees emp ON cb.CreatedBy = emp.EmpID
+                    WHERE cb.AmountIn > 0 AND cb.TransDate BETWEEN @f AND @t";
 
-            decimal tot = 0m;
-            foreach (DataRow r in dt.Rows)
-                tot += r["المبلغ"] != DBNull.Value ? Convert.ToDecimal(r["المبلغ"]) : 0m;
-            lblTotalRec.Text = $"إجمالي المقبوضات والتوريدات: {tot:N2} ج";
+                var pars = new List<System.Data.SqlClient.SqlParameter>
+                {
+                    DbHelper.P("@f", f),
+                    DbHelper.P("@t", t)
+                };
+
+                if (cboRecSafeFilter != null && cboRecSafeFilter.SelectedItem is ComboItem safeCi && safeCi.ID > 0)
+                {
+                    sql += " AND cb.AccountID = @safeId";
+                    pars.Add(DbHelper.P("@safeId", safeCi.ID));
+                }
+
+                if (txtRecSearch != null && !string.IsNullOrWhiteSpace(txtRecSearch.Text))
+                {
+                    sql += " AND (cb.Notes LIKE @q OR sa.AccountName LIKE @q OR emp.EmpName LIKE @q)";
+                    pars.Add(DbHelper.P("@q", "%" + txtRecSearch.Text.Trim() + "%"));
+                }
+
+                sql += " ORDER BY cb.CashID DESC";
+
+                var dt = DbHelper.Query(sql, pars.ToArray());
+                dgReceiptsReport.DataSource = dt;
+
+                decimal tot = 0m;
+                foreach (DataRow r in dt.Rows)
+                    tot += r["المبلغ"] != DBNull.Value ? Convert.ToDecimal(r["المبلغ"]) : 0m;
+
+                if (lblTotalRec != null) lblTotalRec.Text = $"{tot:N2} ج";
+                if (lblRecCount != null) lblRecCount.Text = $"{dt.Rows.Count} سند";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadReceiptsReport error: " + ex.Message);
+            }
         }
 
         private void LoadJournalHistory()
@@ -819,19 +1260,35 @@ namespace ChickenDist.Forms
 
             bool isExpense = cboVoucherType.SelectedIndex == 0;
             string category = cboEntityCategory.SelectedItem?.ToString() ?? "";
-            int? supplierID = null, clientID = null;
+            int? supplierID = null, clientID = null, partnerID = null;
 
             if (cboEntity.SelectedItem is ComboItem ci && ci.ID > 0)
             {
                 if (category.Contains("مورد")) supplierID = ci.ID;
                 else if (category.Contains("عميل")) clientID = ci.ID;
+                else if (category.Contains("شريك") || category.Contains("مساهم")) partnerID = ci.ID;
             }
 
             int safeID = (cboAccountSafe.SelectedItem is ComboItem cs && cs.ID > 0) ? cs.ID : 1;
 
             try
             {
-                if (isExpense)
+                if (partnerID.HasValue)
+                {
+                    if (isExpense)
+                    {
+                        // صرف أرباح / مسحوبات للشريك
+                        ShareholdersDAL.DisbursePartnerDividends(0, partnerID.Value, amt, safeID, txtNotes.Text.Trim(), Session.EmpID);
+                        MessageBox.Show("✅ تم صرف المبلغ للشريك وخصمه من الخزينة وحساب الشريك بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        // توريد رأس مال / إيداع من الشريك
+                        ShareholdersDAL.AddPartnerTransaction(partnerID.Value, "CapitalDeposit", 0, amt, txtNotes.Text.Trim(), safeID, null, Session.EmpID);
+                        MessageBox.Show("✅ تم توريد المبلغ للخزينة وإضافته لحساب ورأس مال الشريك بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+                else if (isExpense)
                 {
                     if (supplierID.HasValue)
                     {
@@ -917,6 +1374,186 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("خطأ أثناء طباعة السند: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ExportExpensesToExcel()
+        {
+            ExportGridToCsv(dgExpensesReport, "تقرير_المصروفات_الشامل");
+        }
+
+        private void ExportGridToCsv(DataGridView grid, string fileNamePrefix)
+        {
+            try
+            {
+                if (grid == null || grid.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا توجد بيانات متاحة في الجدول للتصدير!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                using (var sfd = new SaveFileDialog())
+                {
+                    sfd.Filter = "ملف CSV (*.csv)|*.csv|كل الملفات (*.*)|*.*";
+                    sfd.FileName = $"{fileNamePrefix}_{DateTime.Now:yyyyMMdd_HHmm}.csv";
+                    if (sfd.ShowDialog() == DialogResult.OK)
+                    {
+                        var sb = new StringBuilder();
+                        var headers = new List<string>();
+                        foreach (DataGridViewColumn col in grid.Columns)
+                        {
+                            if (col.Visible) headers.Add("\"" + col.HeaderText.Replace("\"", "\"\"") + "\"");
+                        }
+                        sb.AppendLine(string.Join(",", headers));
+
+                        foreach (DataGridViewRow row in grid.Rows)
+                        {
+                            if (row.IsNewRow) continue;
+                            var cells = new List<string>();
+                            foreach (DataGridViewColumn col in grid.Columns)
+                            {
+                                if (col.Visible)
+                                {
+                                    string val = row.Cells[col.Index].Value?.ToString() ?? "";
+                                    cells.Add("\"" + val.Replace("\"", "\"\"") + "\"");
+                                }
+                            }
+                            sb.AppendLine(string.Join(",", cells));
+                        }
+
+                        System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
+                        MessageBox.Show("✅ تم تصدير التقرير بنجاح!\nالمسار: " + sfd.FileName, "نجاح التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        try { System.Diagnostics.Process.Start(sfd.FileName); } catch { }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء التصدير: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void PrintExpensesReport()
+        {
+            try
+            {
+                if (dgExpensesReport == null || dgExpensesReport.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا توجد مصروفات مسجلة في هذه الفترة لطباعتها!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var pd = new PrintDocument();
+                pd.DefaultPageSettings.Landscape = false;
+                pd.DefaultPageSettings.Margins = new Margins(30, 30, 40, 40);
+
+                int rowIndex = 0;
+                int pageNumber = 1;
+
+                pd.PrintPage += (s, ev) =>
+                {
+                    var g = ev.Graphics;
+                    var margin = ev.MarginBounds;
+                    float y = margin.Top;
+
+                    using (var fTitle = new Font("Segoe UI", 15f, FontStyle.Bold))
+                    using (var fSub = new Font("Segoe UI", 9.5f))
+                    using (var fHeader = new Font("Segoe UI", 9f, FontStyle.Bold))
+                    using (var fRow = new Font("Segoe UI", 8.5f))
+                    using (var bBlack = new SolidBrush(Color.Black))
+                    using (var bGray = new SolidBrush(Color.FromArgb(80, 80, 80)))
+                    using (var pBorder = new Pen(Color.FromArgb(180, 180, 180)))
+                    {
+                        var sfCenter = new StringFormat { Alignment = StringAlignment.Center };
+                        var sfRight = new StringFormat { Alignment = StringAlignment.Far };
+
+                        if (pageNumber == 1)
+                        {
+                            g.DrawString(AppConfig.CompanyName, fTitle, bBlack, new RectangleF(margin.Left, y, margin.Width, 28), sfCenter);
+                            y += 30;
+                            g.DrawString("📑 تقرير المصروفات وسندات الصرف الشامل", new Font("Segoe UI", 12f, FontStyle.Bold), bBlack, new RectangleF(margin.Left, y, margin.Width, 24), sfCenter);
+                            y += 26;
+                            g.DrawString($"الفترة: من {dtpExpFrom.Value:yyyy/MM/dd} إلى {dtpExpTo.Value:yyyy/MM/dd}  |  تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd hh:mm tt}", fSub, bGray, new RectangleF(margin.Left, y, margin.Width, 20), sfCenter);
+                            y += 24;
+
+                            // KPI Summary Box
+                            g.FillRectangle(new SolidBrush(Color.FromArgb(245, 245, 245)), margin.Left, y, margin.Width, 26);
+                            g.DrawRectangle(pBorder, margin.Left, y, margin.Width, 26);
+                            string kpiText = $"إجمالي المصروفات: {lblExpTotalAmount.Text}   |   عدد السندات: {lblExpTotalCount.Text}   |   أعلى بند: {lblExpTopCategory.Text}";
+                            g.DrawString(kpiText, fHeader, new SolidBrush(Color.FromArgb(180, 30, 30)), new RectangleF(margin.Left, y + 4, margin.Width, 20), sfCenter);
+                            y += 34;
+                        }
+
+                        // Table Headers
+                        float[] colWidths = { 65f, 110f, 130f, 130f, 85f, 180f };
+                        string[] colTitles = { "رقم السند", "التاريخ والوقت", "بند المصروف", "المستفيد / الجهة", "المبلغ", "البيان والملاحظات" };
+
+                        float x = margin.Right;
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(230, 235, 245)), margin.Left, y, margin.Width, 24);
+                        g.DrawRectangle(pBorder, margin.Left, y, margin.Width, 24);
+
+                        for (int i = 0; i < colWidths.Length; i++)
+                        {
+                            x -= colWidths[i];
+                            g.DrawString(colTitles[i], fHeader, bBlack, new RectangleF(x, y + 4, colWidths[i], 20), sfCenter);
+                        }
+                        y += 24;
+
+                        // Data Rows
+                        while (rowIndex < dgExpensesReport.Rows.Count)
+                        {
+                            var row = dgExpensesReport.Rows[rowIndex];
+                            if (row.IsNewRow) { rowIndex++; continue; }
+
+                            if (y + 22 > margin.Bottom - 30)
+                            {
+                                ev.HasMorePages = true;
+                                pageNumber++;
+                                return;
+                            }
+
+                            x = margin.Right;
+                            if (rowIndex % 2 == 1)
+                            {
+                                g.FillRectangle(new SolidBrush(Color.FromArgb(250, 250, 250)), margin.Left, y, margin.Width, 22);
+                            }
+                            g.DrawRectangle(Pens.LightGray, margin.Left, y, margin.Width, 22);
+
+                            string sId = row.Cells["رقم السند"].Value?.ToString() ?? "";
+                            string sDate = row.Cells["التاريخ والوقت"].Value != null && DateTime.TryParse(row.Cells["التاريخ والوقت"].Value.ToString(), out DateTime rd) ? rd.ToString("yyyy/MM/dd HH:mm") : "";
+                            string sCat = row.Cells["بند المصروف"].Value?.ToString() ?? "";
+                            string sBen = row.Cells["المستفيد / الجهة"].Value?.ToString() ?? "";
+                            string sAmt = row.Cells["المبلغ"].Value != null && decimal.TryParse(row.Cells["المبلغ"].Value.ToString(), out decimal am) ? am.ToString("N2") : "";
+                            string sNotes = row.Cells["البيان والملاحظات"].Value?.ToString() ?? "";
+
+                            string[] vals = { sId, sDate, sCat, sBen, sAmt, sNotes };
+
+                            for (int i = 0; i < colWidths.Length; i++)
+                            {
+                                x -= colWidths[i];
+                                var sf = (i == 4) ? sfRight : ((i == 5) ? sfRight : sfCenter);
+                                g.DrawString(vals[i], fRow, bBlack, new RectangleF(x + 2, y + 3, colWidths[i] - 4, 18), sf);
+                            }
+
+                            y += 22;
+                            rowIndex++;
+                        }
+
+                        g.DrawString($"صفحة {pageNumber}", fSub, bGray, new RectangleF(margin.Left, margin.Bottom + 5, margin.Width, 20), sfCenter);
+                        ev.HasMorePages = false;
+                    }
+                };
+
+                using (var dlg = new PrintPreviewDialog())
+                {
+                    dlg.Document = pd;
+                    dlg.WindowState = FormWindowState.Maximized;
+                    dlg.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء إعداد معاينة الطباعة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

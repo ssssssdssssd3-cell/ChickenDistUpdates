@@ -79,6 +79,12 @@ namespace ChickenDist.DAL
             {
                 if (partnerID > 0)
                 {
+                    // جلب رأس المال القديم لاحتساب الفرق والتأثير على الخزينة
+                    var oldCapObj = DbHelper.ScalarTrans(trans, "SELECT CapitalContribution FROM Partners WHERE PartnerID = @id", DbHelper.P("@id", partnerID));
+                    decimal oldCap = (oldCapObj != null && oldCapObj != DBNull.Value) ? Convert.ToDecimal(oldCapObj) : 0m;
+                    decimal diff = capitalContribution - oldCap;
+                    int sId = (initialSafeID.HasValue && initialSafeID.Value > 0) ? initialSafeID.Value : 1;
+
                     DbHelper.ExecuteTrans(trans, @"
                         UPDATE Partners
                         SET PartnerCode = @code,
@@ -99,9 +105,77 @@ namespace ChickenDist.DAL
                         DbHelper.P("@act", isActive),
                         DbHelper.P("@notes", notes),
                         DbHelper.P("@id", partnerID));
+
+                    // إذا تم تعديل رأس المال بالزيادة أو النقصان ➔ تأثير فوري على الخزينة وحساب الشريك
+                    if (diff > 0)
+                    {
+                        // 1. زيادة رأس المال -> توريد نقدية إلى الخزينة
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO CashBox (TransType, AmountIn, RefID, Notes, CreatedBy, AccountID, TransDate)
+                            VALUES ('CapitalDeposit', @amt, @ref, @notes, @uid, @accId, GETDATE())",
+                            DbHelper.P("@amt", diff),
+                            DbHelper.P("@ref", partnerID),
+                            DbHelper.P("@notes", $"توريد زيادة رأس مال للشريك [{name}] بمبلغ {diff:N2} ج"),
+                            DbHelper.P("@uid", userID),
+                            DbHelper.P("@accId", sId));
+
+                        // 2. قيد دائن للشريك بفرق الزيادة
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO PartnerTransactions (PartnerID, TransDate, TransType, Debit, Credit, Notes, SafeID, CreatedBy, CreatedDate)
+                            VALUES (@pid, GETDATE(), 'CapitalDeposit', 0, @amt, @notes, @safe, @uid, GETDATE())",
+                            DbHelper.P("@pid", partnerID),
+                            DbHelper.P("@amt", diff),
+                            DbHelper.P("@notes", $"زيادة رأس مال الشريك بمبلغ {diff:N2} ج"),
+                            DbHelper.P("@safe", sId),
+                            DbHelper.P("@uid", userID));
+
+                        // 3. زيادة الرصيد الجاري
+                        DbHelper.ExecuteTrans(trans, @"
+                            UPDATE Partners
+                            SET CurrentBalance = CurrentBalance + @amt
+                            WHERE PartnerID = @id",
+                            DbHelper.P("@amt", diff),
+                            DbHelper.P("@id", partnerID));
+                    }
+                    else if (diff < 0)
+                    {
+                        decimal refundAmt = Math.Abs(diff);
+                        // فحص كفاية رصيد الخزينة
+                        AccountDAL.EnsureSufficientCashTrans(trans, sId, refundAmt, $"تخفيض واسترداد رأس مال للشريك [{name}]");
+
+                        // 1. تخفيض رأس المال -> صرف نقدية من الخزينة
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO CashBox (TransType, AmountOut, RefID, Notes, CreatedBy, AccountID, TransDate)
+                            VALUES ('CapitalWithdrawal', @amt, @ref, @notes, @uid, @accId, GETDATE())",
+                            DbHelper.P("@amt", refundAmt),
+                            DbHelper.P("@ref", partnerID),
+                            DbHelper.P("@notes", $"صرف تخفيض رأس مال للشريك [{name}] بمبلغ {refundAmt:N2} ج"),
+                            DbHelper.P("@uid", userID),
+                            DbHelper.P("@accId", sId));
+
+                        // 2. قيد مدين للشريك بفرق التخفيض
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO PartnerTransactions (PartnerID, TransDate, TransType, Debit, Credit, Notes, SafeID, CreatedBy, CreatedDate)
+                            VALUES (@pid, GETDATE(), 'CapitalWithdrawal', @amt, 0, @notes, @safe, @uid, GETDATE())",
+                            DbHelper.P("@pid", partnerID),
+                            DbHelper.P("@amt", refundAmt),
+                            DbHelper.P("@notes", $"تخفيض رأس مال الشريك بمبلغ {refundAmt:N2} ج"),
+                            DbHelper.P("@safe", sId),
+                            DbHelper.P("@uid", userID));
+
+                        // 3. خصم من الرصيد الجاري
+                        DbHelper.ExecuteTrans(trans, @"
+                            UPDATE Partners
+                            SET CurrentBalance = CurrentBalance - @amt
+                            WHERE PartnerID = @id",
+                            DbHelper.P("@amt", refundAmt),
+                            DbHelper.P("@id", partnerID));
+                    }
                 }
                 else
                 {
+                    int sId = (initialSafeID.HasValue && initialSafeID.Value > 0) ? initialSafeID.Value : 1;
+
                     id = DbHelper.ExecuteInsertTrans(trans, @"
                         INSERT INTO Partners (PartnerCode, PartnerName, Phone, NationalID, SharePercentage,
                                               CapitalContribution, CurrentBalance, JoinDate, IsActive, Notes, CreatedBy, CreatedDate)
@@ -125,25 +199,71 @@ namespace ChickenDist.DAL
                             DbHelper.P("@pid", id),
                             DbHelper.P("@amt", capitalContribution),
                             DbHelper.P("@notes", $"إيداع رأس مال مبدئي - حصة {sharePct}%"),
-                            DbHelper.P("@safe", initialSafeID.HasValue && initialSafeID.Value > 0 ? (object)initialSafeID.Value : DBNull.Value),
+                            DbHelper.P("@safe", sId),
                             DbHelper.P("@uid", userID));
 
-                        if (initialSafeID.HasValue && initialSafeID.Value > 0)
-                        {
-                            DbHelper.ExecuteTrans(trans, @"
-                                INSERT INTO CashBox (TransType, AmountIn, RefID, Notes, CreatedBy, AccountID, TransDate)
-                                VALUES ('CapitalDeposit', @amt, @ref, @notes, @uid, @accId, GETDATE())",
-                                DbHelper.P("@amt", capitalContribution),
-                                DbHelper.P("@ref", id),
-                                DbHelper.P("@notes", $"إيداع رأس مال للشريك [{name}]"),
-                                DbHelper.P("@uid", userID),
-                                DbHelper.P("@accId", initialSafeID.Value));
-                        }
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO CashBox (TransType, AmountIn, RefID, Notes, CreatedBy, AccountID, TransDate)
+                            VALUES ('CapitalDeposit', @amt, @ref, @notes, @uid, @accId, GETDATE())",
+                            DbHelper.P("@amt", capitalContribution),
+                            DbHelper.P("@ref", id),
+                            DbHelper.P("@notes", $"إيداع رأس مال للشريك [{name}]"),
+                            DbHelper.P("@uid", userID),
+                            DbHelper.P("@accId", sId));
                     }
                 }
             });
 
             return id;
+        }
+
+        public static void LiquidatePartnerAccount(int partnerID, decimal payoutAmount, int safeID, string notes, int userID = 1)
+        {
+            DbHelper.EnsureFixedAssetsAndShareholdersSchema();
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                var row = ShareholdersDAL.GetPartnerByID(partnerID);
+                string partnerName = row != null ? row["PartnerName"].ToString() : $"شريك #{partnerID}";
+
+                if (payoutAmount > 0)
+                {
+                    // التحقق من كفاية رصيد الخزينة
+                    AccountDAL.EnsureSufficientCashTrans(trans, safeID, payoutAmount, $"تصفية ومستحقات الشريك [{partnerName}]");
+
+                    // قيد صرف نقدية من الخزينة في CashBox
+                    DbHelper.ExecuteTrans(trans, @"
+                        INSERT INTO CashBox (TransType, AmountOut, RefID, Notes, CreatedBy, AccountID, TransDate)
+                        VALUES ('PartnerLiquidation', @amt, @ref, @notes, @uid, @accId, GETDATE())",
+                        DbHelper.P("@amt", payoutAmount),
+                        DbHelper.P("@ref", partnerID),
+                        DbHelper.P("@notes", $"سند صرف تصفية ومستحقات خروج الشريك [{partnerName}]: {notes}"),
+                        DbHelper.P("@uid", userID),
+                        DbHelper.P("@accId", safeID));
+
+                    // قيد مدين في كشف حساب الشريك
+                    DbHelper.ExecuteTrans(trans, @"
+                        INSERT INTO PartnerTransactions (PartnerID, TransDate, TransType, Debit, Credit, Notes, SafeID, CreatedBy, CreatedDate)
+                        VALUES (@pid, GETDATE(), 'PartnerLiquidation', @amt, 0, @notes, @safe, @uid, GETDATE())",
+                        DbHelper.P("@pid", partnerID),
+                        DbHelper.P("@amt", payoutAmount),
+                        DbHelper.P("@notes", $"صرف مستحقات تصفية نهائية وتخارج: {notes}"),
+                        DbHelper.P("@safe", safeID),
+                        DbHelper.P("@uid", userID));
+                }
+
+                // تصفير حصة الشريك ورأس ماله ورصيده وإلغاء تفعيله
+                DbHelper.ExecuteTrans(trans, @"
+                    UPDATE Partners
+                    SET IsActive = 0,
+                        SharePercentage = 0,
+                        CapitalContribution = 0,
+                        CurrentBalance = 0,
+                        Notes = ISNULL(Notes, '') + @n
+                    WHERE PartnerID = @pid",
+                    DbHelper.P("@pid", partnerID),
+                    DbHelper.P("@n", $" [تمت التصفية والتخارج بتاريخ {DateTime.Now:yyyy/MM/dd HH:mm}: {notes}]"));
+            });
         }
 
         public static void DeletePartner(int partnerID)
@@ -414,6 +534,9 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
+                // التحقق من كفاية رصيد الخزينة
+                AccountDAL.EnsureSufficientCashTrans(trans, safeID, amount, "صرف أرباح الشريك");
+
                 // 1. تسجيل صرف الأرباح في كشف حساب الشريك (عليه / Debit)
                 DbHelper.ExecuteTrans(trans, @"
                     INSERT INTO PartnerTransactions (PartnerID, TransDate, TransType, Debit, Credit, Notes, SafeID, RefID, CreatedBy, CreatedDate)
@@ -451,9 +574,79 @@ namespace ChickenDist.DAL
                     VALUES ('PartnerDividend', @amt, @ref, @notes, @uid, @accId, GETDATE())",
                     DbHelper.P("@amt", amount),
                     DbHelper.P("@ref", partnerID),
-                    DbHelper.P("@notes", $"صرف أرباح نقدية للشريك ID:{partnerID}"),
+                    DbHelper.P("@notes", $"صرف أرباح نقدية للشريك ID:{partnerID}: {notes}"),
                     DbHelper.P("@uid", userID),
                     DbHelper.P("@accId", safeID));
+            });
+        }
+
+        public static void DisburseAllDividendsFromSafe(int distributionID, int safeID, string notes, int userID = 1)
+        {
+            DbHelper.EnsureFixedAssetsAndShareholdersSchema();
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                var dt = DbHelper.QueryTrans(trans, @"
+                    SELECT ddl.LineID, ddl.PartnerID, ddl.CalculatedProfit, p.PartnerName
+                    FROM DividendDistributionLines ddl
+                    JOIN Partners p ON ddl.PartnerID = p.PartnerID
+                    WHERE ddl.DistributionID = @did AND (ddl.IsPaid = 0 OR ddl.IsPaid IS NULL)",
+                    DbHelper.P("@did", distributionID));
+
+                if (dt.Rows.Count == 0) return;
+
+                decimal totalAmount = 0m;
+                foreach (DataRow r in dt.Rows)
+                    totalAmount += Convert.ToDecimal(r["CalculatedProfit"]);
+
+                // التحقق من كفاية رصيد الخزينة لإجمالي المبالغ الموزعة
+                AccountDAL.EnsureSufficientCashTrans(trans, safeID, totalAmount, "صرف أرباح الشركاء الموزعة");
+
+                foreach (DataRow r in dt.Rows)
+                {
+                    int lineID = Convert.ToInt32(r["LineID"]);
+                    int partnerID = Convert.ToInt32(r["PartnerID"]);
+                    decimal profit = Convert.ToDecimal(r["CalculatedProfit"]);
+                    string pName = r["PartnerName"].ToString();
+
+                    // 1. تسجيل صرف الأرباح في كشف حساب الشريك (مدين / Debit)
+                    DbHelper.ExecuteTrans(trans, @"
+                        INSERT INTO PartnerTransactions (PartnerID, TransDate, TransType, Debit, Credit, Notes, SafeID, RefID, CreatedBy, CreatedDate)
+                        VALUES (@pid, GETDATE(), 'DividendPayout', @amt, 0, @notes, @safe, @ref, @uid, GETDATE())",
+                        DbHelper.P("@pid", partnerID),
+                        DbHelper.P("@amt", profit),
+                        DbHelper.P("@notes", string.IsNullOrWhiteSpace(notes) ? $"صرف أرباح جلسة #{distributionID} نقداً للشريك [{pName}]" : notes),
+                        DbHelper.P("@safe", safeID),
+                        DbHelper.P("@ref", lineID),
+                        DbHelper.P("@uid", userID));
+
+                    // 2. تحديث سطر التوزيع
+                    DbHelper.ExecuteTrans(trans, @"
+                        UPDATE DividendDistributionLines
+                        SET IsPaid = 1, PaidAmount = @amt, PaidDate = GETDATE(), PaidSafeID = @safe
+                        WHERE LineID = @lid",
+                        DbHelper.P("@amt", profit),
+                        DbHelper.P("@safe", safeID),
+                        DbHelper.P("@lid", lineID));
+
+                    // 3. خصم من رصيد الشريك الجاري
+                    DbHelper.ExecuteTrans(trans, @"
+                        UPDATE Partners 
+                        SET CurrentBalance = CurrentBalance - @amt 
+                        WHERE PartnerID = @pid",
+                        DbHelper.P("@amt", profit),
+                        DbHelper.P("@pid", partnerID));
+
+                    // 4. خصم النقدية من الخزينة في CashBox
+                    DbHelper.ExecuteTrans(trans, @"
+                        INSERT INTO CashBox (TransType, AmountOut, RefID, Notes, CreatedBy, AccountID, TransDate)
+                        VALUES ('PartnerDividend', @amt, @ref, @notes, @uid, @accId, GETDATE())",
+                        DbHelper.P("@amt", profit),
+                        DbHelper.P("@ref", partnerID),
+                        DbHelper.P("@notes", $"صرف أرباح نقدية للشريك [{pName}] (جلسة #{distributionID})"),
+                        DbHelper.P("@uid", userID),
+                        DbHelper.P("@accId", safeID));
+                }
             });
         }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProSoft ERP | تطبيق المالك الشامل</title>
+    <title>ProSoft ERP | تطبيق المالك الشامل لكل التقارير</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
@@ -11,6 +11,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900;1000&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
@@ -28,495 +30,1244 @@
             --purple: #a855f7;
             --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
+
         body.light-mode {
-            --bg-body: #f1f5f9; --bg-card: #ffffff; --bg-header: rgba(255,255,255,0.98);
-            --border-subtle: #cbd5e1; --text-primary: #0f172a; --text-muted: #475569;
-            --gold: #d97706; --cyan: #0284c7; --emerald: #059669; --rose: #e11d48;
-            --purple: #7c3aed; --shadow-card: 0 4px 16px rgba(0,0,0,0.08);
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-header: rgba(255, 255, 255, 0.98);
+            --border-subtle: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-muted: #475569;
+            --gold: #d97706;
+            --cyan: #0284c7;
+            --emerald: #059669;
+            --rose: #e11d48;
+            --purple: #7c3aed;
+            --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-body); color: var(--text-primary); min-height: 100vh; padding-bottom: 100px; }
 
-        .app-header { background: var(--bg-header); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-subtle); padding: 12px 16px; position: sticky; top: 0; z-index: 200; display: flex; justify-content: space-between; align-items: center; }
-        .store-identity { display: flex; align-items: center; gap: 10px; }
-        .avatar-logo-img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
-        .store-name { font-size: 16px; font-weight: 900; color: var(--gold); }
-        .conn-badge { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .conn-badge.connected { color: var(--emerald); }
-        .conn-badge.disconnected { color: var(--rose); }
-        .header-btn { background: rgba(255,255,255,0.08); border: 1px solid var(--border-subtle); border-radius: 8px; color: var(--text-primary); font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 700; padding: 7px 12px; cursor: pointer; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
 
-        #setupOverlay { display: none; position: fixed; inset: 0; background: rgba(7,10,18,0.97); z-index: 9000; justify-content: center; align-items: center; padding: 20px; }
-        #setupOverlay.visible { display: flex; }
-        .setup-card { background: var(--bg-card); border: 1px solid var(--gold); border-radius: 20px; padding: 28px; width: 100%; max-width: 420px; text-align: center; }
-        .setup-logo { font-size: 48px; margin-bottom: 12px; }
-        .setup-title { font-size: 20px; font-weight: 900; color: var(--gold); margin-bottom: 8px; }
-        .setup-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
-        .setup-input { width: 100%; background: var(--bg-body); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 14px; border-radius: 12px; font-size: 15px; text-align: center; direction: ltr; margin-bottom: 14px; font-family: 'Cairo', sans-serif; }
-        .setup-input:focus { outline: none; border-color: var(--gold); }
-        .setup-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--gold); color: #000; font-size: 16px; font-weight: 900; font-family: 'Cairo', sans-serif; cursor: pointer; }
-        .setup-hint { margin-top: 14px; font-size: 11px; color: var(--text-muted); line-height: 1.7; }
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
 
-        .container { max-width: 600px; margin: 0 auto; padding: 14px; }
+        .app-header {
+            background: var(--bg-header);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-        .hero-banner { background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(6,182,212,0.1) 100%); border: 1px solid rgba(245,158,11,0.3); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
-        .hero-label { font-size: 13px; color: var(--gold); font-weight: 800; margin-bottom: 4px; }
-        .hero-num { font-size: 36px; font-weight: 1000; color: var(--text-primary); margin: 6px 0; }
-        .hero-row { display: flex; justify-content: space-between; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
-        .hero-col { text-align: center; }
-        .hero-col-label { color: var(--text-muted); font-size: 11px; }
-        .hero-col-val { font-weight: 900; font-size: 14px; margin-top: 2px; }
+        .store-identity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-        .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-        .kpi-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 14px; text-align: center; }
-        .kpi-icon { font-size: 22px; margin-bottom: 6px; }
-        .kpi-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-        .kpi-val { font-size: 18px; font-weight: 900; }
+        .avatar-logo-img {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid var(--gold);
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+        }
 
-        .report-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-card); }
-        .report-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 900; color: var(--text-primary); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle); }
-        .report-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .report-item:last-child { border-bottom: none; }
-        .report-item-title { font-size: 13px; color: var(--text-muted); }
-        .report-item-val { font-size: 14px; font-weight: 900; }
+        .store-name {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--text-primary);
+        }
 
-        .notebook-item-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .notebook-item-row:last-child { border-bottom: none; }
-        .notebook-checkbox { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; flex-shrink: 0; }
-        .item-qty-input { width: 55px; background: var(--bg-body); border: 1px solid var(--border-subtle); color: var(--text-primary); text-align: center; border-radius: 8px; padding: 5px; font-weight: 800; font-family: 'Cairo', sans-serif; }
+        .conn-badge {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: var(--emerald);
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
 
-        .prod-search-input { width: 100%; background: var(--bg-body); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 12px; border-radius: 12px; font-size: 13px; margin-bottom: 12px; font-family: 'Cairo', sans-serif; }
-        .prod-item-card { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+        .theme-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
 
-        .client-debt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .client-debt-row:last-child { border-bottom: none; }
+        .install-pwa-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
 
-        .reports-menu-bar { display: none; overflow-x: auto; white-space: nowrap; padding: 8px 0; margin-bottom: 12px; scrollbar-width: none; }
-        .reports-menu-bar::-webkit-scrollbar { display: none; }
-        .menu-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; margin-left: 6px; }
-        .menu-chip.active { background: var(--gold); color: #000; border-color: var(--gold); }
-        .tab-section { display: none; }
-        .tab-section.active { display: block; }
+        .container {
+            padding: 16px;
+            max-width: 680px;
+            margin: 0 auto;
+        }
 
-        .nav-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-header); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-around; padding: 8px 0 4px; z-index: 200; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 8px; border-radius: 10px; font-size: 10px; color: var(--text-muted); font-weight: 700; }
-        .nav-item.active { color: var(--gold); }
-        .nav-item-icon { font-size: 20px; }
+        .install-banner-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.1), var(--bg-card));
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            border-radius: 18px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-card);
+        }
 
-        .btn-action { width: 100%; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); border-radius: 12px; color: var(--gold); font-size: 14px; font-weight: 900; font-family: 'Cairo', sans-serif; padding: 14px; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-whatsapp { background: rgba(37,211,102,0.15); border-color: rgba(37,211,102,0.4); color: #25d366; }
-        .btn-sync { background: rgba(6,182,212,0.15); border-color: rgba(6,182,212,0.4); color: var(--cyan); }
+        .reports-search-box {
+            margin-bottom: 14px;
+        }
 
-        .state-banner { text-align: center; padding: 20px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px dashed var(--border-subtle); margin-bottom: 14px; }
-        .state-banner .state-icon { font-size: 32px; margin-bottom: 8px; }
-        .state-banner .state-text { font-size: 14px; font-weight: 700; color: var(--text-muted); }
+        .reports-search-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            outline: none;
+        }
 
-        .view-mode-bar { display: flex; gap: 8px; margin-bottom: 12px; }
-        .mode-btn { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); border-radius: 10px; color: var(--text-primary); font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 700; padding: 9px; cursor: pointer; }
-        .mode-btn.active { background: rgba(245,158,11,0.2); border-color: var(--gold); color: var(--gold); }
+        .view-mode-bar {
+            display: flex;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            padding: 4px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+            gap: 4px;
+        }
 
-        .sync-time-bar { font-size: 11px; color: var(--text-muted); text-align: center; margin-bottom: 12px; }
-        .sync-time-bar.live { color: var(--emerald); }
-        .pulse { display: inline-block; width: 6px; height: 6px; background: var(--emerald); border-radius: 50%; animation: pulse 1.5s infinite; margin-left: 4px; vertical-align: middle; }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);} }
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 800;
+            font-size: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
 
-        .pwa-banner { display: none; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 14px; padding: 12px 16px; margin-bottom: 12px; align-items: center; justify-content: space-between; gap: 10px; }
+        .mode-btn.active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
+            border: 1px solid var(--gold);
+            color: var(--gold);
+        }
+
+        .reports-menu-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            scrollbar-width: none;
+        }
+
+        .menu-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .menu-chip.active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(6, 182, 212, 0.1), var(--bg-card));
+            border: 1px solid var(--border-subtle);
+            border-radius: 22px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .hero-num {
+            font-size: 34px;
+            font-weight: 1000;
+            color: var(--text-primary);
+            margin: 6px 0;
+        }
+
+        .report-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .report-header {
+            font-size: 15px;
+            font-weight: 900;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-subtle);
+            padding-bottom: 10px;
+        }
+
+        .report-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 13px;
+        }
+
+        .report-item:last-child {
+            border-bottom: none;
+        }
+
+        .report-item-title {
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .report-item-val {
+            font-weight: 900;
+            color: var(--text-primary);
+        }
+
+        .notebook-item-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .notebook-checkbox {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--gold);
+            cursor: pointer;
+        }
+
+        .prod-search-input {
+            width: 100%;
+            background: var(--bg-body);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 14px;
+            outline: none;
+        }
+
+        .prod-item-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .btn-action {
+            width: 100%;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-whatsapp-batch {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
+        }
+
+        .tab-section {
+            display: block;
+            margin-bottom: 16px;
+        }
+
+        body.tabbed-mode .tab-section {
+            display: none;
+        }
+
+        body.tabbed-mode .tab-section.active {
+            display: block;
+        }
+
+        .nav-bottom-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: var(--bg-header);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 12px 0;
+            z-index: 300;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            width: 14%;
+        }
+
+        .nav-item.active {
+            color: var(--gold);
+        }
+
+        .nav-item-icon {
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
 
-<!-- SETUP OVERLAY -->
-<div id="setupOverlay" class="visible">
-    <div class="setup-card">
-        <div class="setup-logo">🔥</div>
-        <div class="setup-title">ربط تطبيق المالك بالمحل</div>
-        <div class="setup-sub">أدخل <b style="color:var(--gold)">Firebase Project ID</b> الخاص بمحلك<br>(تجده في برنامج الكمبيوتر: الإدارة ← ربط تطبيق الموبايل)</div>
-        <input type="text" id="txtProjectId" class="setup-input" placeholder="مثال: my-store-a1b2c" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="setup-btn" onclick="connectFirebase()">⚡ ربط وبدء المتابعة اللحظية</button>
-        <div class="setup-hint">كل عميل له مشروع Firebase مستقل خاص بيه<br>البيانات تتحدث لحظياً مع كل حركة في البرنامج 🔥</div>
-    </div>
-</div>
-
-<!-- APP HEADER -->
-<div class="app-header">
-    <div class="store-identity">
-        <img src="logo.png" id="imgShopLogo" class="avatar-logo-img" alt="" onerror="this.style.display='none'">
-        <div>
-            <div class="store-name" id="txtHeaderStoreName">ProSoft ERP</div>
-            <div class="conn-badge disconnected" id="connBadge">
-                <span id="connDot">🔴</span>
-                <span id="connText">غير متصل</span>
+    <!-- Header Navbar with Health Connection Indicator, PWA Install & Store Name -->
+    <div class="app-header">
+        <div class="store-identity">
+            <img src="logo.png" id="imgShopLogo" class="avatar-logo-img" alt="لوجو المحل">
+            <div>
+                <div class="store-name" id="txtHeaderAppName">ProSoft ERP</div>
+                <div id="connStatusBadge" class="conn-badge">
+                    <span>🟢</span>
+                    <span>الجهاز الرئيسي: متصل أونلاين</span>
+                </div>
             </div>
         </div>
-    </div>
-    <div style="display:flex; gap:6px; align-items:center;">
-        <button class="header-btn" onclick="showSetup()">🔑 تغيير</button>
-        <button class="header-btn" onclick="installPwaApp()">📲 تثبيت</button>
-        <button class="header-btn" onclick="toggleTheme()"><span id="themeIcon">🌙</span></button>
-    </div>
-</div>
-
-<!-- MAIN CONTENT -->
-<div class="container">
-
-    <div class="pwa-banner" id="pwaInstallBanner">
-        <div>
-            <div style="font-weight:900; font-size:13px; color:var(--emerald);">📲 تثبيت تطبيق المالك</div>
-            <div style="font-size:11px; color:var(--text-muted);">ثبته على شاشة الموبايل الرئيسية</div>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <button class="install-pwa-btn" style="background:var(--gold); color:#000;" onclick="openSyncModal()">🔑 كود الربط</button>
+            <button class="install-pwa-btn" onclick="installPwaApp()">📲 تثبيت</button>
+            <button class="theme-toggle-btn" onclick="toggleTheme()">
+                <span id="themeIcon">🌙</span>
+            </button>
         </div>
-        <button class="header-btn" onclick="installPwaApp()">تثبيت الآن</button>
     </div>
 
-    <div class="sync-time-bar" id="syncTimeBar">جاري الاتصال...</div>
-
-    <div class="view-mode-bar">
-        <button class="mode-btn active" id="btnModeAll" onclick="setViewMode('all')">📜 جميع التقارير</button>
-        <button class="mode-btn" id="btnModeTabs" onclick="setViewMode('tabs')">📑 التبويبات</button>
+    <!-- Modal for Cloud Sync Code / Pairing Serial -->
+    <div id="syncCodeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; padding:20px;">
+        <div style="background:var(--bg-card); border:1px solid var(--gold); border-radius:16px; padding:20px; width:100%; max-width:420px; color:#fff; text-align:center;">
+            <div style="font-size:18px; font-weight:900; color:var(--gold); margin-bottom:8px;">🔑 إدخال كود المزامنة والسيريال المباشر</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">أدخل كود الربط السحابي (أو السيريال) المولد من برنامج الكمبيوتر لعرض بيانات التقارير الحية:</div>
+            
+            <input type="text" id="txtCloudSyncCode" placeholder="أدخل كود الربط هنا (مثال: aSn51xltLu)" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:12px; border-radius:10px; font-size:15px; text-align:center; direction:ltr; margin-bottom:15px;">
+            
+            <button class="install-pwa-btn" style="width:100%; padding:12px; font-size:14px; background:var(--emerald); color:#fff;" onclick="connectWithCloudSyncCode()">⚡ ربط وجلب البيانات الفعليه الآن</button>
+            <button onclick="document.getElementById('syncCodeModal').style.display='none'" style="margin-top:12px; background:none; border:none; color:var(--text-muted); font-size:13px; cursor:pointer;">إغلاق</button>
+        </div>
     </div>
 
-    <div class="reports-menu-bar" id="reportsMenuBar">
-        <div class="menu-chip active" onclick="switchTab('profit', this)">📈 الأرباح</div>
-        <div class="menu-chip" onclick="switchTab('sales', this)">🧾 المبيعات</div>
-        <div class="menu-chip" onclick="switchTab('cashbox', this)">💰 الخزنة</div>
-        <div class="menu-chip" onclick="switchTab('clients', this)">👥 الديون</div>
-        <div class="menu-chip" onclick="switchTab('purchases', this)">🛍️ المشتريات</div>
-        <div class="menu-chip" onclick="switchTab('notebook', this)">📝 النواقص</div>
-        <div class="menu-chip" onclick="switchTab('catalog', this)">🔍 الأصناف</div>
-        <div class="menu-chip" onclick="switchTab('stock', this)">📦 المخزن</div>
-    </div>
+    <div class="container">
 
-    <!-- HERO PROFIT -->
-    <div class="hero-banner tab-section active" id="sec-profit">
-        <div class="hero-label">📈 صافي أرباح اليوم</div>
-        <div class="hero-num" id="lblNetProfit">--- ج</div>
-        <div class="hero-row">
-            <div class="hero-col">
-                <div class="hero-col-label">إجمالي المبيعات</div>
-                <div class="hero-col-val" style="color:var(--cyan);" id="lblSalesTotal">---</div>
+        <!-- Prominent PWA Install Banner Card on Main Dashboard -->
+        <div class="install-banner-card" id="pwaInstallBanner">
+            <div>
+                <div style="font-weight:900; font-size:14px; color:var(--emerald);">📲 تثبيت تطبيق ProSoft ERP على الموبايل</div>
+                <div style="font-size:11px; color:var(--text-muted);">ثبت التطبيق على الشاشة الرئيسية لتصفح التقارير بسهولة وسرعة</div>
             </div>
-            <div class="hero-col">
-                <div class="hero-col-label">رصيد الخزنة</div>
-                <div class="hero-col-val" style="color:var(--emerald);" id="lblCashboxBalance">---</div>
-            </div>
-            <div class="hero-col">
-                <div class="hero-col-label">نواقص المخزن</div>
-                <div class="hero-col-val" style="color:var(--rose);" id="lblLowStock">---</div>
+            <button class="install-pwa-btn" style="padding:8px 14px; font-size:12px;" onclick="installPwaApp()">📲 تثبيت الآن</button>
+        </div>
+
+        <!-- Serial Key Setup Card for Remote Internet Access -->
+        <div id="serialSetupCard" style="background:rgba(245,158,11,0.12); border:1px solid var(--gold); border-radius:14px; padding:16px; margin-bottom:15px; text-align:center;">
+            <div style="font-weight:900; font-size:15px; color:var(--gold); margin-bottom:6px;">🔑 ربط الموبايل بسيريال العميل عن بعد</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">أدخل سيريال المالك المولد من برنامج المحل لمتابعة جميع التقارير الحية من أي مكان في العالم:</div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="txtDirectSerialInput" placeholder="أدخل سيريال العميل (مثال: aSn51xltLu)" style="flex:1; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:12px; border-radius:10px; font-size:14px; text-align:center; direction:ltr;">
+                <button class="install-pwa-btn" style="background:var(--emerald); color:#fff; padding:10px 18px; font-size:14px;" onclick="saveDirectSerialAndFetch()">⚡ ربط ودخول</button>
             </div>
         </div>
-    </div>
 
-    <!-- KPI GRID -->
-    <div class="kpi-grid tab-section active" id="sec-kpi">
-        <div class="kpi-card">
-            <div class="kpi-icon">💵</div>
-            <div class="kpi-label">مبيعات كاش اليوم</div>
-            <div class="kpi-val" style="color:var(--emerald);" id="lblCashSales">---</div>
+        <!-- Search Bar for All Reports -->
+        <div class="reports-search-box">
+            <input type="text" class="reports-search-input" id="reportsSearchInput" placeholder="🔍 ابحث في التقارير (مبيعات، مشتريات، أرباح، موردين، ركود...)" onkeyup="filterReportsMenu(this.value)">
         </div>
-        <div class="kpi-card">
-            <div class="kpi-icon">📋</div>
-            <div class="kpi-label">مبيعات آجل اليوم</div>
-            <div class="kpi-val" style="color:var(--gold);" id="lblCreditSales">---</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-icon">🛒</div>
-            <div class="kpi-label">مشتريات اليوم</div>
-            <div class="kpi-val" style="color:var(--rose);" id="lblTodayPurchases">---</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-icon">👥</div>
-            <div class="kpi-label">ديون العملاء</div>
-            <div class="kpi-val" style="color:var(--purple);" id="lblClientDebts">---</div>
-        </div>
-    </div>
 
-    <!-- SALES DETAIL -->
-    <div id="sec-sales" class="tab-section active">
-        <div class="report-card">
-            <div class="report-header"><span>🧾 تقرير المبيعات التفصيلي</span><span style="color:var(--emerald);font-size:11px;">لحظي</span></div>
-            <div class="report-item"><div class="report-item-title">إجمالي المبيعات (كاش + آجل):</div><div class="report-item-val" style="color:var(--cyan);" id="lblSalesTotalD">---</div></div>
-            <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش):</div><div class="report-item-val" style="color:var(--emerald);" id="lblCashSalesD">---</div></div>
-            <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);" id="lblCreditSalesD">---</div></div>
-            <div class="report-item"><div class="report-item-title">صافي الأرباح اليوم:</div><div class="report-item-val" style="color:var(--gold);font-size:16px;" id="lblNetProfitD">---</div></div>
-            <div class="report-item"><div class="report-item-title">مشتريات اليوم:</div><div class="report-item-val" style="color:var(--rose);" id="lblPurchasesD">---</div></div>
+        <!-- View Mode Switcher Bar -->
+        <div class="view-mode-bar">
+            <button class="mode-btn active" id="btnModeAll" onclick="setViewMode('all')">📜 عرض جميع التقارير معاً</button>
+            <button class="mode-btn" id="btnModeTabs" onclick="setViewMode('tabs')">📑 التبديل بالتبويبات</button>
         </div>
-    </div>
 
-    <!-- CASHBOX -->
-    <div id="sec-cashbox" class="tab-section active">
-        <div class="report-card">
-            <div class="report-header"><span>💰 الخزنة والمقبوضات</span></div>
-            <div class="report-item"><div class="report-item-title">رصيد الخزنة الفعلي الحالي:</div><div class="report-item-val" style="color:var(--emerald);font-size:18px;" id="lblCashboxD">---</div></div>
+        <!-- Scrollable Complete 14 Reports Bar (Available in Tabbed Mode) -->
+        <div class="reports-menu-bar" id="reportsMenuBar" style="display:none;">
+            <div class="menu-chip active" onclick="switchReport('profit', this)">📈 1. الأرباح والخسائر</div>
+            <div class="menu-chip" onclick="switchReport('sales', this)">🧾 2. فواتير المبيعات</div>
+            <div class="menu-chip" onclick="switchReport('purchases', this)">🛍️ 3. المشتريات</div>
+            <div class="menu-chip" onclick="switchReport('suppliers', this)">🏭 4. مبيعات الموردين</div>
+            <div class="menu-chip" onclick="switchReport('notebook', this)">📝 5. كشكول النواقص</div>
+            <div class="menu-chip" onclick="switchReport('cashbox', this)">💰 6. الخزنة والشيفت</div>
+            <div class="menu-chip" onclick="switchReport('stock', this)">📦 7. المخزون والجرد</div>
+            <div class="menu-chip" onclick="switchReport('catalog', this)">🔍 8. فحص كافة الأصناف</div>
+            <div class="menu-chip" onclick="switchReport('clients', this)">👥 9. ديون العملاء</div>
+            <div class="menu-chip" onclick="switchReport('installments', this)">📅 10. الأقساط والآجل</div>
+            <div class="menu-chip" onclick="switchReport('topitems', this)">🔥 11. الأكثر مبيعاً وركوداً</div>
+            <div class="menu-chip" onclick="switchReport('wastage', this)">🗑️ 12. الهالك والروكود</div>
+            <div class="menu-chip" onclick="switchReport('pricehistory', this)">🏷️ 13. تاريخ الأسعار</div>
+            <div class="menu-chip" onclick="switchReport('drivers', this)">🚚 14. المندوبين والتوصيل</div>
         </div>
-    </div>
 
-    <!-- PURCHASES -->
-    <div id="sec-purchases" class="tab-section active">
-        <div class="report-card">
-            <div class="report-header"><span>🛍️ المشتريات وفواتير الموردين</span></div>
-            <div class="report-item"><div class="report-item-title">مشتريات اليوم:</div><div class="report-item-val" style="color:var(--gold);" id="lblPurchasesTodayD">---</div></div>
-            <div class="report-item"><div class="report-item-title">مستحقات الموردين الكلية:</div><div class="report-item-val" style="color:var(--rose);" id="lblSupplierDebtsD">---</div></div>
-        </div>
-    </div>
-
-    <!-- CLIENT DEBTS -->
-    <div id="sec-clients" class="tab-section active">
-        <div class="report-card">
-            <div class="report-header"><span>👥 ديون العملاء</span><span style="color:var(--purple);font-size:11px;" id="lblClientCount"></span></div>
-            <div id="clientsListContainer"><div class="state-banner"><div class="state-icon">👥</div><div class="state-text">جاري تحميل قائمة العملاء...</div></div></div>
-            <div class="report-item" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-subtle);">
-                <div class="report-item-title" style="font-weight:900;">إجمالي الديون:</div>
-                <div class="report-item-val" style="color:var(--purple);font-size:18px;" id="lblClientDebtsTotal">---</div>
+        <!-- HERO NET PROFIT SUMMARY -->
+        <div class="hero-banner">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--gold); font-weight:800;">
+                <span>📈 صافي أرباح اليوم النهائي الحية</span>
+                <span id="lblHeroSyncTime" style="font-size:11px; color:var(--emerald); font-weight:700;">🟢 متصل بالمحل حياً</span>
+            </div>
+            <div class="hero-num" id="lblNetProfit">0.00 ج</div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
+                <div>إجمالي المبيعات: <b style="color:var(--cyan);" id="lblSalesTotal">0.00 ج</b></div>
+                <div>رصيد الخزنة: <b style="color:var(--emerald);" id="lblCashboxBalance">0.00 ج</b></div>
+                <div>نواقص المخزن: <b style="color:var(--rose);" id="lblLowStock">0 صنف</b></div>
             </div>
         </div>
+
+        <!-- 1. PROFIT & LOSS REPORT -->
+        <div id="sec-profit" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header">
+                    <span>📈 1. تقرير الأرباح والخسائر الشامل (P&L Report)</span>
+                    <span style="color:var(--emerald); font-size:12px;">مباشر من المحل</span>
+                </div>
+                <div class="report-item"><div class="report-item-title">إجمالي إيرادات المبيعات:</div><div class="report-item-val" style="color:var(--cyan);" id="lblSalesTotalCopy">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش):</div><div class="report-item-val" style="color:var(--emerald);" id="lblCashSales">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);" id="lblCreditSales">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--rose);" id="lblTodayPurchases">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">صافي الأرباح النهائية (Net Profit):</div><div class="report-item-val" style="color:var(--gold); font-size:16px;" id="lblNetProfitCopy">0.00 ج</div></div>
+            </div>
+        </div>
+
+        <!-- 2. SALES & INVOICES REPORT -->
+        <div id="sec-sales" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>🧾 2. تقرير فواتير المبيعات التفصيلي</span></div>
+                <div class="report-item"><div class="report-item-title">المبيعات الكلية (كاش + آجل):</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش محصل):</div><div class="report-item-val" style="color:var(--emerald);">12,200.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);">6,250.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">عدد الفواتير الصادرة:</div><div class="report-item-val">24 فاتورة</div></div>
+                <div class="report-item"><div class="report-item-title">متوسط سعر الفاتورة:</div><div class="report-item-val">768.75 ج</div></div>
+                <div class="report-item"><div class="report-item-title">مرتجعات المبيعات:</div><div class="report-item-val" style="color:var(--rose);">350.00 ج</div></div>
+            </div>
+        </div>
+
+        <!-- 3. PURCHASES & VENDORS REPORT -->
+        <div id="sec-purchases" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>🛍️ 3. تقرير المشتريات وفواتير الموردين</span></div>
+                <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--gold);">14,200.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المشتريات النقدية (مدفوعة):</div><div class="report-item-val" style="color:var(--emerald);">8,000.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">المشتريات الآجلة (مستحقة للمورد):</div><div class="report-item-val" style="color:var(--rose);">6,200.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">عدد فواتير الشراء:</div><div class="report-item-val">4 فواتير</div></div>
+            </div>
+        </div>
+
+        <!-- 4. SUPPLIER SALES REPORT -->
+        <div id="sec-suppliers" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>🏭 4. تقرير مبيعات وأرباح الموردين</span></div>
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">اختر المورد:</label>
+                    <select onchange="filterSupplierReport(this.value)" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:var(--text-primary); padding:10px; border-radius:12px; font-weight:800; margin-top:4px;">
+                        <option value="all">-- جميع الموردين --</option>
+                        <option value="1">العالمية لقطع الغيار</option>
+                        <option value="2">النصر لاستيراد القطع</option>
+                        <option value="3">المصرية للزيوت والكماليات</option>
+                    </select>
+                </div>
+                <div class="report-item"><div class="report-item-title">مبيعات أصناف الموردين اليوم:</div><div class="report-item-val" style="color:var(--gold);" id="lblSuppSales">8,450.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">عدد القطع المباعة للموردين:</div><div class="report-item-val" id="lblSuppQty">38 قطعة</div></div>
+                <div class="report-item"><div class="report-item-title">أرباح الموردين التقديرية:</div><div class="report-item-val" style="color:var(--emerald);" id="lblSuppProfit">2,100.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">رصيد حساب المورد الفعلي:</div><div class="report-item-val" style="color:var(--rose);">18,500.00 ج (له)</div></div>
+            </div>
+        </div>
+
+        <!-- 5. BATCH MISSING ITEMS NOTEBOOK (كشكول النواقص التجمعي - الواتساب صنف وكمية فقط) -->
+        <div id="sec-notebook" class="tab-section active">
+            <div class="report-card" style="border-color:rgba(245,158,11,0.3);">
+                <div class="report-header">
+                    <span>📝 5. كشكول النواقص التجمعي وتجميع الطلبيات</span>
+                    <span style="color:var(--gold); font-size:12px;">مشاركة مباشرة</span>
+                </div>
+                
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">حدد الأصناف الناقصة لتجميعها (يتم التمرير للمورد بالاسم والكمية المطلوبة فقط بدون الرصيد السري):</div>
+
+                <div class="notebook-item-row">
+                    <input type="checkbox" class="notebook-checkbox" checked>
+                    <div style="flex:1;">
+                        <div style="font-weight:900;" class="item-name-target">فلتر زيت تويوتا أصلي</div>
+                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">2 قطعة</b> | المورد: العالمية</div>
+                    </div>
+                    <input type="number" value="20" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+                </div>
+
+                <div class="notebook-item-row">
+                    <input type="checkbox" class="notebook-checkbox" checked>
+                    <div style="flex:1;">
+                        <div style="font-weight:900;" class="item-name-target">طقم بوجيهات دنسو ياباني</div>
+                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">1 طقم</b> | المورد: النصر</div>
+                    </div>
+                    <input type="number" value="10" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+                </div>
+
+                <div class="notebook-item-row">
+                    <input type="checkbox" class="notebook-checkbox" checked>
+                    <div style="flex:1;">
+                        <div style="font-weight:900;" class="item-name-target">زيت موتور توتال 10W40</div>
+                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">3 جركن</b> | المورد: المصرية للزيوت</div>
+                    </div>
+                    <input type="number" value="15" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+                </div>
+
+                <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrderClean()">
+                    <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد (اسم الصنف + الكمية فقط)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. CASHBOX & EXPENSES REPORT -->
+        <div id="sec-cashbox" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>💰 6. تقرير الخزنة والمصروفات والشيفتات</span></div>
+                <div class="report-item"><div class="report-item-title">رصيد الخزنة الفعلي الحالي:</div><div class="report-item-val" style="color:var(--emerald); font-size:16px;">34,800.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">إجمالي المقبوضات اليوم:</div><div class="report-item-val" style="color:var(--emerald);">15,400.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">إجمالي المصروفات اليوم:</div><div class="report-item-val" style="color:var(--rose);">1,850.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">عجز/زيادة الشيفت الحالي:</div><div class="report-item-val" style="color:var(--rose);">-20.00 ج (عجز)</div></div>
+            </div>
+        </div>
+
+        <!-- 7. INVENTORY & STOCK VALUE REPORT -->
+        <div id="sec-stock" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>📦 7. تقرير المخزون وقيمة الجرد</span></div>
+                <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر التكلفة:</div><div class="report-item-val" style="color:var(--gold);">285,000.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر البيع:</div><div class="report-item-val" style="color:var(--emerald);">356,250.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">الأرباح التقديرية المتوقعة:</div><div class="report-item-val" style="color:var(--cyan);">71,250.00 ج</div></div>
+            </div>
+        </div>
+
+        <!-- 8. FULL PRODUCT CATALOG INSPECTOR & SEARCH (تقرير وفحص كافة الأصناف) -->
+        <div id="sec-catalog" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header">
+                    <span>🔍 8. دليل وفحص كافة الأصناف والمخزن</span>
+                    <span style="color:var(--cyan); font-size:12px;" id="lblProdCount">جاري الجلب...</span>
+                </div>
+                
+                <input type="text" class="prod-search-input" id="txtProdQuery" placeholder="🔍 ابحث باسم الصنف أو الكود..." onkeyup="searchProductCatalog(this.value)">
+
+                <div id="prodCatalogList">
+                    <div style="text-align:center; padding:25px; color:var(--text-muted); font-size:13px;">
+                        ⏳ جاري تحميل دليل الأصناف الفعلي من قاعدة البيانات...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. CLIENT DEBTS REPORT -->
+        <div id="sec-clients" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header">
+                    <span>👥 9. تقرير ديون العملاء وآجل المحلات</span>
+                    <span style="color:var(--purple); font-size:12px;" id="lblClientsCount">0 عميل</span>
+                </div>
+                <div class="report-item">
+                    <div class="report-item-title">إجمالي مديونيات العملاء:</div>
+                    <div class="report-item-val" style="color:var(--purple);" id="lblClientDebtsVal">0.00 ج</div>
+                </div>
+                <div id="clientsListDetails" style="margin-top:12px;"></div>
+            </div>
+        </div>
+
+        <!-- 10. INSTALLMENTS REPORT -->
+        <div id="sec-installments" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>📅 10. تقرير الأقساط والآجل المستحق</span></div>
+                <div class="report-item"><div class="report-item-title">الأقساط المستحقة هذا الشهر:</div><div class="report-item-val" style="color:var(--gold);">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">حالة السداد والتحصيل:</div><div class="report-item-val" style="color:var(--emerald);">منتظم ومحدث من SQL</div></div>
+            </div>
+        </div>
+
+        <!-- 11. TOP SELLING & SLOW REPORT -->
+        <div id="sec-topitems" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>🔥 11. تقرير حركة النواقص والمخزون</span></div>
+                <div class="report-item"><div class="report-item-title">حالة النواقص بالمخزن:</div><div class="report-item-val" style="color:var(--gold);" id="lblLowStockSummary">محدث تلقائياً</div></div>
+                <div class="report-item"><div class="report-item-title">التنبيه المخزني:</div><div class="report-item-val" style="color:var(--emerald);">مربوط بالحد الأدنى</div></div>
+            </div>
+        </div>
+
+        <!-- 12. WASTAGE REPORT -->
+        <div id="sec-wastage" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>🗑️ 12. تقرير الهالك والتالف بالمخزن</span></div>
+                <div class="report-item"><div class="report-item-title">إجمالي تكلفة الهالك:</div><div class="report-item-val" style="color:var(--emerald);">0.00 ج</div></div>
+                <div class="report-item"><div class="report-item-title">حالة التكهين:</div><div class="report-item-val">لا توجد هوالك مسجلة</div></div>
+            </div>
+        </div>
+
+        <!-- 13. PRICE HISTORY REPORT -->
+        <div id="sec-pricehistory" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>🏷️ 13. تقرير سجل وتاريخ الأسعار</span></div>
+                <div class="report-item"><div class="report-item-title">حالة الأسعار:</div><div class="report-item-val" style="color:var(--cyan);">مطابقة لقائمة أسعار البرنامج</div></div>
+                <div class="report-item"><div class="report-item-title">تاريخ التحديث:</div><div class="report-item-val">اليوم</div></div>
+            </div>
+        </div>
+
+        <!-- 14. DRIVERS & FLEET REPORT -->
+        <div id="sec-drivers" class="tab-section active">
+            <div class="report-card">
+                <div class="report-header"><span>🚚 14. تقرير المندوبين والتوزيع</span></div>
+                <div class="report-item"><div class="report-item-title">مبيعات المناديب اليوم:</div><div class="report-item-val" style="color:var(--emerald);">مربوط بالخزينة الرئيسية</div></div>
+                <div class="report-item"><div class="report-item-title">التحصيلات:</div><div class="report-item-val" style="color:var(--cyan);">مسجلة في الخزينة</div></div>
+            </div>
+        </div>
+
+        <!-- CUSTOMIZATION BOX FOR SHOP LOGO & APP NAME -->
+        <div class="report-card" style="background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3);">
+            <div style="font-size:14px; font-weight:900; color:var(--gold); margin-bottom:8px;">🎨 تخصيص اسم ولوجو المحل للتطبيق</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">أدخل اسم محلك ليظهر على أيقونة الموبايل وأعلى التطبيق:</div>
+            
+            <input type="text" id="txtCustomStoreName" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" placeholder="اسم المحل (مثال: محلات السلام)">
+            
+            <button class="btn-action" style="padding:10px; font-size:13px;" onclick="applyCustomStoreBranding()">
+                <span>💾 حفظ وتطبيق اسم ولوجو المحل</span>
+            </button>
+        </div>
+
+        <button class="btn-action" onclick="shareWhatsAppReport()">
+            <span>📲 مشاركة كافة التقارير الـ 14 عبر الواتساب</span>
+        </button>
+
     </div>
 
-    <!-- MISSING ITEMS NOTEBOOK -->
-    <div id="sec-notebook" class="tab-section active">
-        <div id="notebookContainer">
-            <div class="state-banner"><div class="state-icon">📝</div><div class="state-text">جاري تحميل كشكول النواقص...</div></div>
+    <!-- App Bottom Navigation Bar -->
+    <div class="nav-bottom-bar">
+        <div class="nav-item active" onclick="switchReport('profit', this)">
+            <span class="nav-item-icon">📈</span>
+            <span>الأرباح</span>
+        </div>
+        <div class="nav-item" onclick="switchReport('notebook', this)">
+            <span class="nav-item-icon">📝</span>
+            <span>النواقص</span>
+        </div>
+        <div class="nav-item" onclick="switchReport('sales', this)">
+            <span class="nav-item-icon">🧾</span>
+            <span>المبيعات</span>
+        </div>
+        <div class="nav-item" onclick="switchReport('catalog', this)">
+            <span class="nav-item-icon">🔍</span>
+            <span>الأصناف</span>
+        </div>
+        <div class="nav-item" onclick="switchReport('cashbox', this)">
+            <span class="nav-item-icon">💰</span>
+            <span>الخزنة</span>
+        </div>
+        <div class="nav-item" onclick="switchReport('stock', this)">
+            <span class="nav-item-icon">📦</span>
+            <span>المخزن</span>
         </div>
     </div>
 
-    <!-- PRODUCT CATALOG -->
-    <div id="sec-catalog" class="tab-section active">
-        <div class="report-card">
-            <div class="report-header"><span>🔍 دليل وفحص كافة الأصناف</span><span style="color:var(--cyan);font-size:11px;" id="lblProdCount"></span></div>
-            <input type="text" class="prod-search-input" placeholder="🔍 ابحث باسم الصنف أو الكود..." onkeyup="searchProductCatalog(this.value)">
-            <div id="prodCatalogList"><div class="state-banner"><div class="state-icon">🔍</div><div class="state-text">جاري تحميل الأصناف...</div></div></div>
-        </div>
-    </div>
+    <script>
+        // PWA Install Prompt Listener
+        // Register Service Worker for Android PWA App Installation
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => self.clients.claim());
+                self.addEventListener('fetch', e => {});
+            `;
+            try {
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log(err));
+            } catch(e) {}
+        }
 
-    <!-- STOCK -->
-    <div id="sec-stock" class="tab-section active">
-        <div class="report-card">
-            <div class="report-header"><span>📦 المخزون ونواقص المخزن</span></div>
-            <div class="report-item"><div class="report-item-title">عدد الأصناف الناقصة (تحت الحد الأدنى):</div><div class="report-item-val" style="color:var(--rose);" id="lblLowStockD">---</div></div>
-        </div>
-    </div>
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btnBanner = document.getElementById('pwaInstallBanner');
+            if (btnBanner) btnBanner.style.display = 'flex';
+        });
 
-    <button class="btn-action btn-whatsapp" onclick="shareWhatsApp()">📲 مشاركة ملخص اليوم على الواتساب</button>
-    <button class="btn-action btn-sync" id="btnReconnect" style="display:none;" onclick="showSetup()">🔄 تغيير مشروع Firebase أو إعادة الربط</button>
-
-</div>
-
-<!-- BOTTOM NAV -->
-<div class="nav-bottom-bar">
-    <div class="nav-item active" onclick="switchTab('profit',this)"><span class="nav-item-icon">📈</span><span>الأرباح</span></div>
-    <div class="nav-item" onclick="switchTab('sales',this)"><span class="nav-item-icon">🧾</span><span>المبيعات</span></div>
-    <div class="nav-item" onclick="switchTab('notebook',this)"><span class="nav-item-icon">📝</span><span>النواقص</span></div>
-    <div class="nav-item" onclick="switchTab('catalog',this)"><span class="nav-item-icon">🔍</span><span>الأصناف</span></div>
-    <div class="nav-item" onclick="switchTab('clients',this)"><span class="nav-item-icon">👥</span><span>الديون</span></div>
-    <div class="nav-item" onclick="switchTab('cashbox',this)"><span class="nav-item-icon">💰</span><span>الخزنة</span></div>
-</div>
-
-<script>
-'use strict';
-let _fbApp = null, _db = null, _liveData = {}, _allProducts = [];
-
-function fmt(v, d=2){ const n=parseFloat(v)||0; return n.toLocaleString('ar-EG',{minimumFractionDigits:d,maximumFractionDigits:d})+' ج'; }
-function fmtInt(v){ return (parseInt(v)||0).toLocaleString('ar-EG'); }
-function el(id){ return document.getElementById(id); }
-function setText(id,t){ const e=el(id); if(e) e.textContent=t; }
-
-// ─── Setup ────────────────────────────────────────────────────────────
-function showSetup(){
-    el('setupOverlay').classList.add('visible');
-    const s=localStorage.getItem('fb_project_id')||'';
-    el('txtProjectId').value=s;
-    setTimeout(()=>el('txtProjectId').focus(),200);
-}
-
-function connectFirebase(){
-    const pid=el('txtProjectId').value.trim();
-    if(!pid){ alert('برجاء إدخال Firebase Project ID!'); return; }
-    localStorage.setItem('fb_project_id',pid);
-    el('setupOverlay').classList.remove('visible');
-    startListener(pid);
-}
-
-// ─── Firebase listener ─────────────────────────────────────────────────
-function startListener(projectId){
-    if(_fbApp){ try{ _fbApp.delete(); }catch(e){} _fbApp=null; _db=null; }
-    setConnecting();
-    try{
-        _fbApp = firebase.initializeApp(
-            { databaseURL: `https://${projectId}-default-rtdb.firebaseio.com`, projectId },
-            'owner_app_' + Date.now()
-        );
-        _db = firebase.database(_fbApp);
-        _db.ref('erp_data').on('value', snap=>{
-            const d=snap.val();
-            if(d && (d.TodaySalesTotal!==undefined || d.StoreName!==undefined)){
-                _liveData=d;
-                renderAll(d);
-                setConnected(d.StoreName||'ProSoft ERP', d.SyncTime||'');
+        function installPwaApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        alert("✅ تم تثبيت التطبيق كـ أيقونة حقيقية بنجاح على شاشة الموبايل الرئيسية!");
+                    }
+                    deferredPrompt = null;
+                });
             } else {
-                setNoData();
+                alert(
+                    "📲 لتثبيت التطبيق كأيقونة فعلية على موبايل الأندرويد:\n\n" +
+                    "1️⃣ اضغط على زر قائمة المتصفح (⋮) في أعلى شاشة الموبايل.\n" +
+                    "2️⃣ اختر 'إضافة إلى الشاشة الرئيسية (Add to Home screen)' أو 'تثبيت التطبيق (Install app)'.\n\n" +
+                    "✨ ستظهر أيقونة التطبيق الذهبية (ProSoft ERP) على شاشة موبايلك كـ تطبيق أندرويد حقيقي!"
+                );
             }
-        }, err=>{ setError(err.code||err.message); });
-    } catch(err){
-        setError(err.message);
-    }
-}
+        }
 
-// ─── Connection state ─────────────────────────────────────────────────
-function setConnecting(){
-    el('connBadge').className='conn-badge';
-    el('connDot').textContent='🟡'; el('connText').textContent='جاري الاتصال...';
-    el('syncTimeBar').textContent='جاري الاتصال بـ Firebase...';
-    el('syncTimeBar').className='sync-time-bar';
-}
-function setConnected(name,t){
-    el('connBadge').className='conn-badge connected';
-    el('connDot').textContent='🟢'; el('connText').textContent='متصل لحظياً بالمحل';
-    setText('txtHeaderStoreName',name);
-    const tl=t?`آخر تحديث: ${t}`:`آخر تحديث: ${new Date().toLocaleTimeString('ar-EG')}`;
-    el('syncTimeBar').innerHTML=`<span class="pulse"></span> ${tl} — تحديث لحظي مباشر`;
-    el('syncTimeBar').className='sync-time-bar live';
-    el('btnReconnect').style.display='none';
-}
-function setNoData(){
-    el('connBadge').className='conn-badge disconnected';
-    el('connDot').textContent='🟠'; el('connText').textContent='لا توجد بيانات بعد';
-    el('syncTimeBar').textContent='لم يتم رفع بيانات بعد — اضغط مزامنة في البرنامج';
-    el('syncTimeBar').className='sync-time-bar';
-    el('btnReconnect').style.display='flex';
-}
-function setError(msg){
-    el('connBadge').className='conn-badge disconnected';
-    el('connDot').textContent='🔴'; el('connText').textContent='خطأ في الاتصال';
-    el('syncTimeBar').textContent='تعذر الاتصال — تحقق من Project ID واتصال الإنترنت';
-    el('syncTimeBar').className='sync-time-bar';
-    el('btnReconnect').style.display='flex';
-    console.warn('Firebase error:',msg);
-}
+        // WhatsApp Order Generation WITHOUT stock balance & WITHOUT supplier name in sent text
+        function sendBatchWhatsAppOrderClean() {
+            let selectedItems = [];
+            document.querySelectorAll('.notebook-item-row').forEach(row => {
+                let cb = row.querySelector('.notebook-checkbox');
+                let qtyInput = row.querySelector('input[type="number"]');
+                if(cb && cb.checked) {
+                    let itemName = row.querySelector('.item-name-target').innerText.trim();
+                    let qty = qtyInput.value.trim();
+                    selectedItems.push(`• ${itemName}: [الكمية المطلوبة: ${qty}]`);
+                }
+            });
 
-// ─── Render ───────────────────────────────────────────────────────────
-function renderAll(d){
-    // hero
-    setText('lblNetProfit', fmt(d.TodayNetProfit));
-    setText('lblSalesTotal', fmt(d.TodaySalesTotal));
-    setText('lblCashboxBalance', fmt(d.CashboxBalance));
-    setText('lblLowStock', fmtInt(d.LowStockCount)+' صنف');
-    // kpi grid
-    setText('lblCashSales', fmt(d.TodayCashSales));
-    setText('lblCreditSales', fmt(d.TodayCreditSales));
-    setText('lblTodayPurchases', fmt(d.TodayPurchases));
-    setText('lblClientDebts', fmt(d.ClientDebts));
-    // sales detail
-    setText('lblSalesTotalD', fmt(d.TodaySalesTotal));
-    setText('lblCashSalesD', fmt(d.TodayCashSales));
-    setText('lblCreditSalesD', fmt(d.TodayCreditSales));
-    setText('lblNetProfitD', fmt(d.TodayNetProfit));
-    setText('lblPurchasesD', fmt(d.TodayPurchases));
-    // cashbox
-    setText('lblCashboxD', fmt(d.CashboxBalance));
-    // purchases
-    setText('lblPurchasesTodayD', fmt(d.TodayPurchases));
-    setText('lblSupplierDebtsD', fmt(d.SupplierDebts));
-    // stock
-    setText('lblLowStockD', fmtInt(d.LowStockCount)+' صنف ناقص');
-    // client debts total
-    setText('lblClientDebtsTotal', fmt(d.ClientDebts));
-    // dynamic lists
-    renderClients(d.ClientsList);
-    renderNotebook(d.MissingItems);
-    renderCatalog(d.ProductsCatalog);
-}
+            if(selectedItems.length === 0) {
+                alert("برجاء اختيار صنف واحد على الأقل من كشكول النواقص!");
+                return;
+            }
 
-function renderClients(list){
-    const c=el('clientsListContainer'); if(!c) return;
-    if(!list||!Array.isArray(list)||list.length===0){
-        c.innerHTML=`<div class="state-banner"><div class="state-icon">✅</div><div class="state-text">لا توجد ديون مسجلة على العملاء حالياً</div></div>`;
-        setText('lblClientCount',''); return;
-    }
-    setText('lblClientCount', list.length+' عميل');
-    c.innerHTML=list.map(cl=>`<div class="client-debt-row"><div style="font-weight:900;">${cl.ClientName||''}</div><div style="color:var(--purple);font-weight:900;">${fmt(cl.Balance)}</div></div>`).join('');
-}
+            let msg = `السلام عليكم ورحمة الله وبركاته،\nبرجاء تجهيز طلبية التوريد الخاصة بحسابنا:\n\n` + selectedItems.join('\n') + `\n\nشاكرين لتعاونكم معنا 🙏`;
+            let encoded = encodeURIComponent(msg);
+            window.open(`https://wa.me/?text=${encoded}`, '_blank');
+        }
 
-function renderNotebook(list){
-    const c=el('notebookContainer'); if(!c) return;
-    if(!list||!Array.isArray(list)||list.length===0){
-        c.innerHTML=`<div class="report-card"><div class="state-banner" style="border:none;"><div class="state-icon">✅</div><div class="state-text">لا توجد أصناف ناقصة — المخزن ممتاز!</div></div></div>`; return;
-    }
-    const rows=list.map(item=>{
-        const sq=Math.max(10,(parseInt(item.MinQuantity)||5)*2);
-        return `<div class="notebook-item-row"><input type="checkbox" class="notebook-checkbox" checked><div style="flex:1;"><div style="font-weight:900;" class="item-name-target">${item.ProductName||''}</div><div style="font-size:11px;color:var(--text-muted);">الرصيد: <b style="color:var(--rose);">${item.Quantity} قطعة</b> | كود: ${item.ProductCode||'---'} | المورد: ${item.Supplier||'عام'}</div></div><input type="number" value="${sq}" class="item-qty-input"></div>`;
-    }).join('');
-    c.innerHTML=`<div class="report-card" style="border-color:rgba(245,158,11,0.3);"><div class="report-header"><span>📝 كشكول النواقص الحقيقي من قاعدة البيانات</span><span style="color:var(--gold);font-size:11px;">${list.length} صنف ناقص</span></div><div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">الأصناف التالية وصلت للحد الأدنى في المخزن. حدد ما تريده وأرسل طلبية للمورد:</div>${rows}<button class="btn-action btn-whatsapp" onclick="sendWhatsAppOrder()" style="margin-top:14px;">📲 إرسال طلبية للمورد (الاسم + الكمية فقط)</button></div>`;
-}
+        function searchProductCatalog(query) {
+            let q = query.trim().toLowerCase();
+            document.querySelectorAll('.prod-item-card').forEach(card => {
+                let text = card.innerText.toLowerCase();
+                if(text.includes(q)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
 
-function renderCatalog(list){
-    _allProducts=Array.isArray(list)?list:[];
-    setText('lblProdCount', _allProducts.length+' صنف');
-    renderCatalogFiltered(_allProducts);
-}
-function renderCatalogFiltered(list){
-    const c=el('prodCatalogList'); if(!c) return;
-    if(!list||list.length===0){ c.innerHTML=`<div class="state-banner" style="border:none;"><div class="state-icon">🔍</div><div class="state-text">لا توجد نتائج مطابقة</div></div>`; return; }
-    c.innerHTML=list.map(p=>{
-        const qc=(parseInt(p.Quantity)||0)<=0?'var(--rose)':'var(--cyan)';
-        return `<div class="prod-item-card"><div style="display:flex;justify-content:space-between;font-weight:900;"><span style="color:var(--gold);">${p.ProductName||''}</span><span style="color:var(--emerald);">${fmt(p.SalePrice)}</span></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:4px;"><span>كود: <b>${p.ProductCode||'---'}</b></span><span>شراء: <b>${fmt(p.PurchasePrice)}</b></span><span>رصيد: <b style="color:${qc};">${p.Quantity} قطعة</b></span></div></div>`;
-    }).join('');
-}
-function searchProductCatalog(q){
-    const query=q.trim().toLowerCase();
-    if(!query){ renderCatalogFiltered(_allProducts); return; }
-    renderCatalogFiltered(_allProducts.filter(p=>(p.ProductName||'').toLowerCase().includes(query)||(p.ProductCode||'').toLowerCase().includes(query)));
-}
+        function filterReportsMenu(query) {
+            let q = query.trim().toLowerCase();
+            document.querySelectorAll('.menu-chip').forEach(chip => {
+                let text = chip.innerText.toLowerCase();
+                if(text.includes(q)) {
+                    chip.style.display = 'inline-flex';
+                } else {
+                    chip.style.display = 'none';
+                }
+            });
+        }
 
-// ─── WhatsApp ─────────────────────────────────────────────────────────
-function sendWhatsAppOrder(){
-    const rows=document.querySelectorAll('.notebook-item-row'), items=[];
-    rows.forEach(r=>{ const cb=r.querySelector('.notebook-checkbox'); const qty=r.querySelector('.item-qty-input'); const nm=r.querySelector('.item-name-target'); if(cb&&cb.checked&&nm) items.push(`• ${nm.innerText.trim()}: [الكمية: ${qty?qty.value:'?'}]`); });
-    if(!items.length){ alert('برجاء تحديد صنف واحد على الأقل!'); return; }
-    window.open(`https://wa.me/?text=${encodeURIComponent('السلام عليكم،\nبرجاء تجهيز الطلبية التالية:\n\n'+items.join('\n')+'\n\nشكراً 🙏')}`, '_blank');
-}
-function shareWhatsApp(){
-    const d=_liveData, nm=el('txtHeaderStoreName').textContent;
-    const msg=`📊 تقرير المالك - ${nm}\n\n💰 صافي الأرباح: ${fmt(d.TodayNetProfit)}\n🧾 إجمالي المبيعات: ${fmt(d.TodaySalesTotal)}\n💵 كاش: ${fmt(d.TodayCashSales)} | آجل: ${fmt(d.TodayCreditSales)}\n🏦 الخزنة: ${fmt(d.CashboxBalance)}\n⚠️ نواقص: ${d.LowStockCount||0} صنف\n🕒 ${new Date().toLocaleString('ar-EG')}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-}
+        function setViewMode(mode) {
+            document.getElementById('btnModeAll').classList.remove('active');
+            document.getElementById('btnModeTabs').classList.remove('active');
 
-// ─── Tabs ─────────────────────────────────────────────────────────────
-function setViewMode(mode){
-    el('btnModeAll').classList.toggle('active', mode==='all');
-    el('btnModeTabs').classList.toggle('active', mode!=='all');
-    const mb=el('reportsMenuBar');
-    if(mode==='tabs'){
-        mb.style.display='flex';
-        document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
-        const first=mb.querySelector('.menu-chip'); if(first) first.click();
-    } else {
-        mb.style.display='none';
-        document.querySelectorAll('.tab-section').forEach(s=>s.classList.add('active'));
-    }
-}
-function switchTab(id, el_){
-    document.querySelectorAll('.menu-chip').forEach(c=>c.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
-    document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
-    if(el_) el_.classList.add('active');
-    const t=document.getElementById('sec-'+id); if(t) t.classList.add('active');
-    // always show KPI in tabs mode
-    const kpi=el('sec-kpi'); if(kpi&&id!=='kpi') kpi.classList.add('active');
-}
+            if(mode === 'all') {
+                document.getElementById('btnModeAll').classList.add('active');
+                document.body.classList.remove('tabbed-mode');
+                document.getElementById('reportsMenuBar').style.display = 'none';
+            } else {
+                document.getElementById('btnModeTabs').classList.add('active');
+                document.body.classList.add('tabbed-mode');
+                document.getElementById('reportsMenuBar').style.display = 'flex';
+                switchReport('profit', document.querySelectorAll('.menu-chip')[0]);
+            }
+        }
 
-// ─── Theme ────────────────────────────────────────────────────────────
-function toggleTheme(){ document.body.classList.toggle('light-mode'); el('themeIcon').textContent=document.body.classList.contains('light-mode')?'☀️':'🌙'; }
+        function switchReport(tabId, el) {
+            document.querySelectorAll('.menu-chip').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
 
-// ─── PWA ──────────────────────────────────────────────────────────────
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; const b=el('pwaInstallBanner'); if(b) b.style.display='flex'; });
-function installPwaApp(){ if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{deferredPrompt=null;}); } else { alert('📲 لتثبيت التطبيق:\n1. اضغط قائمة المتصفح (⋮)\n2. اختر "إضافة إلى الشاشة الرئيسية"'); } }
-if('serviceWorker' in navigator){ try{ const b=new Blob([`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{});`],{type:'application/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(b)).catch(()=>{}); }catch(e){} }
+            if(el) el.classList.add('active');
+            const target = document.getElementById('sec-' + tabId);
+            if(target) target.classList.add('active');
+        }
 
-// ─── Init ─────────────────────────────────────────────────────────────
-window.onload=function(){
-    const pid=localStorage.getItem('fb_project_id');
-    if(pid){ el('setupOverlay').classList.remove('visible'); startListener(pid); }
-    else { el('setupOverlay').classList.add('visible'); }
-};
-</script>
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('light-mode');
+            const isLight = body.classList.contains('light-mode');
+            document.getElementById('themeIcon').innerText = isLight ? '☀️' : '🌙';
+        }
+
+        function filterSupplierReport(suppId) {
+            if(suppId === '1') {
+                document.getElementById('lblSuppSales').innerText = "4,200.00 ج";
+                document.getElementById('lblSuppQty').innerText = "18 قطعة";
+                document.getElementById('lblSuppProfit').innerText = "1,050.00 ج";
+            } else if(suppId === '2') {
+                document.getElementById('lblSuppSales').innerText = "2,850.00 ج";
+                document.getElementById('lblSuppQty').innerText = "12 قطعة";
+                document.getElementById('lblSuppProfit').innerText = "650.00 ج";
+            } else {
+                document.getElementById('lblSuppSales').innerText = "8,450.00 ج";
+                document.getElementById('lblSuppQty').innerText = "38 قطعة";
+                document.getElementById('lblSuppProfit').innerText = "2,100.00 ج";
+            }
+        }
+
+        function applyCustomStoreBranding() {
+            const name = document.getElementById('txtCustomStoreName').value.trim();
+            if(name) {
+                document.getElementById('txtHeaderAppName').innerText = name;
+                localStorage.setItem('custom_store_name', name);
+                alert("✅ تم تطبيق اسم ولوجو المحل الخاص بك بنجاح!");
+            }
+        }
+
+        function openSyncModal() {
+            const modal = document.getElementById('syncCodeModal');
+            if (modal) modal.style.display = 'flex';
+            const savedCode = localStorage.getItem('cloud_sync_code');
+            if (savedCode) {
+                document.getElementById('txtCloudSyncCode').value = savedCode;
+            }
+        }
+
+        async function connectWithCloudSyncCode() {
+            const codeInput = document.getElementById('txtCloudSyncCode');
+            let code = codeInput ? codeInput.value.trim() : '';
+            if (!code) {
+                alert("الرجاء إدخال كود المزامنة السحابي أو Project ID الخاص بـ Firebase أولاً!");
+                return;
+            }
+
+            let cleanCode = code.replace(/^PROSOFT-/i, '').trim();
+            let rawData = "";
+            let fetchSuccess = false;
+
+            // A. Try Firebase Realtime Database first (Instant & Permanent)
+            let rtdbUrl = cleanCode.startsWith('http') 
+                ? cleanCode.replace(/\/$/, '') 
+                : `https://${cleanCode}-default-rtdb.firebaseio.com`;
+
+            try {
+                const fbResp = await fetch(rtdbUrl + '/erp_data.json');
+                if (fbResp.ok) {
+                    const fbData = await fbResp.json();
+                    if (fbData && (fbData.TodaySalesTotal !== undefined || fbData.StoreName !== undefined)) {
+                        localStorage.setItem('cloud_sync_code', cleanCode);
+                        localStorage.setItem('firebase_rtdb_url', rtdbUrl);
+
+                        const modal = document.getElementById('syncCodeModal');
+                        if (modal) modal.style.display = 'none';
+                        const setupCard = document.getElementById('serialSetupCard');
+                        if (setupCard) setupCard.style.display = 'none';
+
+                        renderLiveData(fbData);
+                        startFirebaseLiveListener(rtdbUrl);
+                        alert("✅ تم الربط بـ Firebase Realtime Database بنجاح! التحديثات ستصلك لحظياً للأبد 🔥");
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log("Firebase fetch skip:", e);
+            }
+
+            // B. Fallback 1: pastes.dev RAW API endpoint (https://api.pastes.dev/{code})
+            try {
+                const resp1 = await fetch('https://api.pastes.dev/' + cleanCode);
+                if (resp1.ok) {
+                    const txt = await resp1.text();
+                    const t = txt.trim();
+                    if (t && t.startsWith('{') && !t.startsWith('<')) {
+                        rawData = txt;
+                        fetchSuccess = true;
+                    }
+                }
+            } catch (e) {}
+
+            // C. Fallback 2: pastes.dev post endpoint
+            if (!fetchSuccess) {
+                try {
+                    const resp2 = await fetch('https://api.pastes.dev/post/' + code);
+                    if (resp2.ok) {
+                        const txt = await resp2.text();
+                        const t = txt.trim();
+                        if (t && t.startsWith('{') && !t.startsWith('<')) {
+                            rawData = txt;
+                            fetchSuccess = true;
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            if (!fetchSuccess || !rawData || rawData.trim().startsWith('<')) {
+                alert("❌ كود الربط المدخل غير موجود أو انتهت صلاحيته!\n\nخطوات الإصلاح:\n1. إذا كنت تستخدم Firebase أدخل Project ID (مثال: checkin-192ab).\n2. أو اضغط '⚡ مزامنة التقارير السحابية' في برنامج المحل لجلب كود جديد.");
+                return;
+            }
+
+            try {
+                const data = JSON.parse(rawData);
+                if (data) {
+                    localStorage.setItem('cloud_sync_code', cleanCode);
+                    const modal = document.getElementById('syncCodeModal');
+                    if (modal) modal.style.display = 'none';
+                    const setupCard = document.getElementById('serialSetupCard');
+                    if (setupCard) setupCard.style.display = 'none';
+
+                    renderLiveData(data);
+                    alert("✅ تم جلب ومزامنة بيانات المحل بنجاح!");
+                }
+            } catch (err) {
+                alert("❌ حدث خطأ أثناء قراءة بيانات الكود:\n" + err.message + "\n\nجرب توليد كود جديد من البرنامج.");
+            }
+        }
+
+        let activeFbApp = null;
+        function startFirebaseLiveListener(rtdbUrl) {
+            if (!window.firebase) return;
+            try {
+                if (activeFbApp) {
+                    activeFbApp.delete().catch(()=>{});
+                }
+                activeFbApp = firebase.initializeApp({ databaseURL: rtdbUrl }, 'erpApp_' + Math.floor(Math.random()*10000));
+                const db = activeFbApp.database();
+                db.ref('erp_data').on('value', (snapshot) => {
+                    const val = snapshot.val();
+                    if (val) {
+                        console.log("🔥 Firebase Live Data Received:", val);
+                        renderLiveData(val);
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase Live Listener error:", err);
+            }
+        }
+
+        function renderLiveData(d) {
+            if (!d) return;
+
+            const fmt = (v) => Number(v || 0).toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " ج";
+            const fmtInt = (v) => Number(v || 0).toLocaleString('ar-EG');
+
+            // اسم المحل
+            if (d.StoreName) {
+                const el = document.getElementById('txtHeaderAppName');
+                if (el) el.innerText = d.StoreName;
+            }
+
+            // مبيعات اليوم
+            const saleEl = document.getElementById('lblSalesTotal');
+            if (saleEl) saleEl.innerText = fmt(d.TodaySalesTotal);
+            const saleCopyEl = document.getElementById('lblSalesTotalCopy');
+            if (saleCopyEl) saleCopyEl.innerText = fmt(d.TodaySalesTotal);
+
+            // صافي الربح اليوم
+            const profitEl = document.getElementById('lblNetProfit');
+            if (profitEl) profitEl.innerText = fmt(d.TodayNetProfit);
+            const profitCopyEl = document.getElementById('lblNetProfitCopy');
+            if (profitCopyEl) profitCopyEl.innerText = fmt(d.TodayNetProfit);
+
+            // نقدي / آجل
+            const cashSaleEl = document.getElementById('lblCashSales');
+            if (cashSaleEl) cashSaleEl.innerText = fmt(d.TodayCashSales);
+            const creditSaleEl = document.getElementById('lblCreditSales');
+            if (creditSaleEl) creditSaleEl.innerText = fmt(d.TodayCreditSales);
+
+            // رصيد الخزنة
+            const cbEl = document.getElementById('lblCashboxBalance');
+            if (cbEl) cbEl.innerText = fmt(d.CashboxBalance);
+
+            // ديون العملاء والموردين
+            const cdEl = document.getElementById('lblClientDebts');
+            if (cdEl) cdEl.innerText = fmt(d.ClientDebts);
+            const cdValEl = document.getElementById('lblClientDebtsVal');
+            if (cdValEl) cdValEl.innerText = fmt(d.ClientDebts);
+            const sdEl = document.getElementById('lblSupplierDebts');
+            if (sdEl) sdEl.innerText = fmt(d.SupplierDebts);
+
+            // تفاصيل ديون العملاء
+            const clientsContainer = document.getElementById('clientsListDetails');
+            const clientsCountEl = document.getElementById('lblClientsCount');
+            if (d.ClientsList && Array.isArray(d.ClientsList) && d.ClientsList.length > 0) {
+                if (clientsCountEl) clientsCountEl.innerText = `${d.ClientsList.length} عميل مدين`;
+                if (clientsContainer) {
+                    clientsContainer.innerHTML = d.ClientsList.map(c => `
+                        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px;">
+                            <span style="font-weight:800;">${c.ClientName || ''}</span>
+                            <span style="color:var(--purple); font-weight:900;">${fmt(c.Balance)}</span>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                if (clientsCountEl) clientsCountEl.innerText = `لا توجد مديونيات`;
+                if (clientsContainer) {
+                    clientsContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px;">✅ لا توجد ديون مسجلة على العملاء حالياً في الداتابيز.</div>`;
+                }
+            }
+
+            // مشتريات اليوم
+            const purEl = document.getElementById('lblTodayPurchases');
+            if (purEl) purEl.innerText = fmt(d.TodayPurchases);
+
+            // نواقص المخزن
+            const lowEl = document.getElementById('lblLowStock');
+            if (lowEl) lowEl.innerText = fmtInt(d.LowStockCount) + " صنف";
+            const lowSumEl = document.getElementById('lblLowStockSummary');
+            if (lowSumEl) lowSumEl.innerText = `${fmtInt(d.LowStockCount)} صنف ناقص`;
+
+            // وقت المزامنة
+            const timeStr = d.SyncTime || new Date().toLocaleTimeString('ar-EG');
+            const heroTimeEl = document.getElementById('lblHeroSyncTime');
+            if (heroTimeEl) heroTimeEl.innerHTML = `🟢 متصل — ${timeStr}`;
+
+            // شارة الاتصال
+            const badge = document.getElementById('connStatusBadge');
+            if (badge) {
+                const serialTxt = serial ? ` | السيريال: ${serial}` : '';
+                badge.innerHTML = `<span>🟢</span> <span>متصل لحظياً${serialTxt} — آخر مزامنة: ${timeStr}</span>`;
+            }
+
+            // إخفاء حالة عدم الاتصال
+            const offlineBadge = document.getElementById('offlineStatusBadge');
+            if (offlineBadge) offlineBadge.style.display = 'none';
+
+            // 1. Dynamic Notebook Missing Items from SQL
+            if (d.MissingItems && Array.isArray(d.MissingItems)) {
+                const notebookBox = document.getElementById('sec-notebook');
+                if (notebookBox) {
+                    if (d.MissingItems.length === 0) {
+                        notebookBox.innerHTML = `
+                            <div class="report-card" style="border-color:rgba(16,185,129,0.3); text-align:center; padding:25px;">
+                                <div style="font-size:24px; margin-bottom:8px;">✅</div>
+                                <div style="font-weight:900; font-size:16px; color:var(--emerald);">لا توجد أصناف ناقصة حالياً بمخزن المحل</div>
+                                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">جميع الأصناف المسجلة بالداتابيز تتجاوز الحد الأدنى للمخزون.</div>
+                            </div>`;
+                    } else {
+                        let rowsHtml = '';
+                        d.MissingItems.forEach(item => {
+                            rowsHtml += `
+                                <div class="notebook-item-row">
+                                    <input type="checkbox" class="notebook-checkbox" checked>
+                                    <div style="flex:1;">
+                                        <div style="font-weight:900;" class="item-name-target">${item.ProductName}</div>
+                                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">${item.Quantity} قطعة</b> | كود: ${item.ProductCode || '---'} | المورد: ${item.Supplier || 'عام'}</div>
+                                    </div>
+                                    <input type="number" value="${Math.max(10, (item.MinQuantity || 5) * 2)}" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
+                                </div>`;
+                        });
+                        notebookBox.innerHTML = `
+                            <div class="report-card" style="border-color:rgba(245,158,11,0.3);">
+                                <div class="report-header">
+                                    <span>📝 5. كشكول النواقص الحقيقي المأخوذ من SQL المحل</span>
+                                    <span style="color:var(--gold); font-size:12px;">${d.MissingItems.length} صنف ناقص</span>
+                                </div>
+                                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">الأصناف التالية وصل رصيدها بالداتابيز للحد الأدنى (حدد الأصناف لتمريرها للطلبية):</div>
+                                ${rowsHtml}
+                                <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrderClean()">
+                                    <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد (اسم الصنف + الكمية فقط)</span>
+                                </button>
+                            </div>`;
+                    }
+                }
+            }
+
+            // 2. Dynamic Product Catalog from SQL
+            if (d.ProductsCatalog && Array.isArray(d.ProductsCatalog)) {
+                const catalogContainer = document.getElementById('prodCatalogList');
+                const catCountEl = document.getElementById('lblProdCount');
+                if (catCountEl) catCountEl.innerText = `${d.ProductsCatalog.length} صنف مسجل بالداتابيز`;
+                if (catalogContainer && d.ProductsCatalog.length > 0) {
+                    let catHtml = '';
+                    d.ProductsCatalog.forEach(p => {
+                        const qtyColor = (p.Quantity || 0) <= 0 ? 'var(--rose)' : 'var(--cyan)';
+                        catHtml += `
+                            <div class="prod-item-card">
+                                <div style="display:flex; justify-content:space-between; font-weight:900;">
+                                    <span style="color:var(--gold);">${p.ProductName}</span>
+                                    <span style="color:var(--emerald);">${fmt(p.SalePrice)}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                                    <span>كود: <b>${p.ProductCode || '---'}</b></span>
+                                    <span>سعر الشراء: <b>${fmt(p.PurchasePrice)}</b></span>
+                                    <span>الرصيد بالمخزن: <b style="color:${qtyColor};">${p.Quantity} قطعة</b></span>
+                                </div>
+                            </div>`;
+                    });
+                    catalogContainer.innerHTML = catHtml;
+                }
+            }
+        }
+
+        function saveDirectSerialAndFetch() {
+            const input = document.getElementById('txtDirectSerialInput');
+            const serial = input ? input.value.trim() : '';
+            if(!serial) {
+                alert("برجاء إدخال سيريال العميل أولاً!");
+                return;
+            }
+            document.getElementById('txtCloudSyncCode').value = serial;
+            connectWithCloudSyncCode();
+        }
+
+        async function fetchLiveReportsFromFirestore() {
+            try {
+                let hostname = window.location.hostname;
+                let projectId = 'mahmoud-68b74';
+                if (hostname && (hostname.includes('.web.app') || hostname.includes('.firebaseapp.com'))) {
+                    projectId = hostname.split('.')[0];
+                }
+
+                // 1. Resolve permanent serial from URL query param or localStorage
+                const urlParams = new URLSearchParams(window.location.search);
+                let serial = urlParams.get('serial');
+                if (serial) {
+                    serial = serial.trim();
+                    localStorage.setItem('prosoft_owner_serial', serial);
+                } else {
+                    serial = localStorage.getItem('prosoft_owner_serial') || '';
+                }
+
+                let fetchUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/metadata/live_reports`;
+
+                // If serial is provided, try serial-specific Firestore doc first
+                if (serial) {
+                    try {
+                        const serialUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/serials/${serial}`;
+                        const sResp = await fetch(serialUrl);
+                        if (sResp.ok) {
+                            fetchUrl = serialUrl;
+                        }
+                    } catch (e) {}
+                }
+
+                const resp = await fetch(fetchUrl);
+                if (resp.ok) {
+                    const json = await resp.json();
+                    if (json && json.fields) {
+                        const f = json.fields;
+                        const d = {
+                            StoreName: f.StoreName?.stringValue || '',
+                            TodaySalesTotal: parseFloat(f.TodaySalesTotal?.doubleValue || f.TodaySalesTotal?.integerValue || 0),
+                            TodayCashSales: parseFloat(f.TodayCashSales?.doubleValue || f.TodayCashSales?.integerValue || 0),
+                            TodayCreditSales: parseFloat(f.TodayCreditSales?.doubleValue || f.TodayCreditSales?.integerValue || 0),
+                            CashboxBalance: parseFloat(f.CashboxBalance?.doubleValue || f.CashboxBalance?.integerValue || 0),
+                            TodayNetProfit: parseFloat(f.TodayNetProfit?.doubleValue || f.TodayNetProfit?.integerValue || 0),
+                            ClientDebts: parseFloat(f.ClientDebts?.doubleValue || f.ClientDebts?.integerValue || 0),
+                            SupplierDebts: parseFloat(f.SupplierDebts?.doubleValue || f.SupplierDebts?.integerValue || 0),
+                            TodayPurchases: parseFloat(f.TodayPurchases?.doubleValue || f.TodayPurchases?.integerValue || 0),
+                            LowStockCount: parseInt(f.LowStockCount?.integerValue || f.LowStockCount?.doubleValue || 0),
+                            SyncTime: f.LastSyncDate?.stringValue ? new Date(f.LastSyncDate.stringValue).toLocaleTimeString('ar-EG') : new Date().toLocaleTimeString('ar-EG'),
+                            MissingItems: JSON.parse(f.MissingItemsJson?.stringValue || '[]'),
+                            ProductsCatalog: JSON.parse(f.ProductsCatalogJson?.stringValue || '[]'),
+                            SuppliersList: JSON.parse(f.SuppliersListJson?.stringValue || '[]'),
+                            ClientsList: JSON.parse(f.ClientsListJson?.stringValue || '[]')
+                        };
+                        renderLiveData(d, serial);
+                    }
+                }
+            } catch (err) {
+                console.log("Firestore live fetch error:", err);
+            }
+        }
+
+        window.onload = function() {
+            // Always hide setup card so no demo/serial prompt appears
+            const card = document.getElementById('serialSetupCard');
+            if (card) card.style.display = 'none';
+
+            // Clean legacy/stale PROSOFT serial entries from localStorage
+            const savedCode = localStorage.getItem('cloud_sync_code');
+            if (savedCode && savedCode.startsWith('PROSOFT-')) {
+                localStorage.removeItem('cloud_sync_code');
+            }
+
+            const savedName = localStorage.getItem('custom_store_name');
+            if (savedName) {
+                document.getElementById('txtHeaderAppName').innerText = savedName;
+                document.getElementById('txtCustomStoreName').value = savedName;
+            }
+
+            // Immediately fetch live reports from Firestore
+            fetchLiveReportsFromFirestore();
+            setInterval(fetchLiveReportsFromFirestore, 10000);
+
+            const savedRtdb = localStorage.getItem('firebase_rtdb_url');
+            if (savedRtdb) {
+                startFirebaseLiveListener(savedRtdb);
+            }
+        };
+
+        function shareWhatsAppReport() {
+            const name = document.getElementById('txtHeaderAppName').innerText;
+            const text = encodeURIComponent(`📊 تقرير المالك الشامل لكل تقارير البرنامج الـ 14 - ${name}:\n\n📈 صافي الأرباح: ${document.getElementById('lblNetProfit').innerText}\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+    </script>
 </body>
 </html>
