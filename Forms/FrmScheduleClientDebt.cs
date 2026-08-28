@@ -334,11 +334,25 @@ namespace ChickenDist.Forms
 
         private void LoadSafes()
         {
-            var dt = DbHelper.Query("SELECT AccountID, AccountName FROM Accounts WHERE IsActive = 1");
-            cboSafeAccount.Items.Clear();
-            foreach (DataRow r in dt.Rows)
+            var dt = AccountDAL.GetActiveSafeAccounts();
+            if (dt == null || dt.Rows.Count == 0)
             {
-                cboSafeAccount.Items.Add(new ComboItem(Convert.ToInt32(r["AccountID"]), r["AccountName"].ToString()));
+                dt = DbHelper.Query("SELECT AccountID, AccountName FROM SafeAccounts");
+            }
+            cboSafeAccount.Items.Clear();
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                foreach (DataRow r in dt.Rows)
+                {
+                    int accId = Convert.ToInt32(r["AccountID"]);
+                    string accName = r["AccountName"].ToString();
+                    decimal bal = AccountDAL.GetCashBalance(accId);
+                    cboSafeAccount.Items.Add(new ComboItem(accId, $"{accName}  [الرصيد: {bal:N2} ج]"));
+                }
+            }
+            else
+            {
+                cboSafeAccount.Items.Add(new ComboItem(1, "الخزينة الرئيسية"));
             }
             cboSafeAccount.DisplayMember = "Text";
             if (cboSafeAccount.Items.Count > 0) cboSafeAccount.SelectedIndex = 0;

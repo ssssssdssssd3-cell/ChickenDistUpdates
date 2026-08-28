@@ -496,8 +496,25 @@ namespace ChickenDist.Forms
 
                 dlg.Controls.Add(new Label { Text = "الخزينة المخصوم منها:", Location = new Point(260, 80), AutoSize = true });
                 var cboSafe = new ComboBox { Location = new Point(20, 102), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList };
-                var dtSafes = DbHelper.Query("SELECT AccountID, AccountName FROM Accounts WHERE IsActive = 1");
-                foreach (DataRow sr in dtSafes.Rows) cboSafe.Items.Add(new ComboItem(Convert.ToInt32(sr["AccountID"]), sr["AccountName"].ToString()));
+                var dtSafes = AccountDAL.GetActiveSafeAccounts();
+                if (dtSafes == null || dtSafes.Rows.Count == 0)
+                {
+                    dtSafes = DbHelper.Query("SELECT AccountID, AccountName FROM SafeAccounts");
+                }
+                if (dtSafes != null && dtSafes.Rows.Count > 0)
+                {
+                    foreach (DataRow sr in dtSafes.Rows)
+                    {
+                        int accId = Convert.ToInt32(sr["AccountID"]);
+                        string accName = sr["AccountName"].ToString();
+                        decimal bal = AccountDAL.GetCashBalance(accId);
+                        cboSafe.Items.Add(new ComboItem(accId, $"{accName}  [الرصيد: {bal:N2} ج]"));
+                    }
+                }
+                else
+                {
+                    cboSafe.Items.Add(new ComboItem(1, "الخزينة الرئيسية"));
+                }
                 cboSafe.DisplayMember = "Text";
                 if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
                 dlg.Controls.Add(cboSafe);
@@ -510,7 +527,7 @@ namespace ChickenDist.Forms
                 btnSave.Click += (s, ev) =>
                 {
                     decimal.TryParse(txtCost.Text.Trim(), out decimal cost);
-                    int safeID = (cboSafe.SelectedItem is ComboItem ci) ? ci.ID : 1;
+                    int safeID = (cboSafe.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.ID : 1;
                     FixedAssetsDAL.RecordMaintenance(assetID, cost, txtNotes.Text.Trim(), safeID, Session.EmpID);
                     MessageBox.Show("✅ تم تسجيل عملية الصيانة والتأثير على الخزينة بنجاح.", "تمت العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     dlg.DialogResult = DialogResult.OK;
@@ -550,8 +567,25 @@ namespace ChickenDist.Forms
 
                 dlg.Controls.Add(new Label { Text = "الخزينة المورد إليها:", Location = new Point(270, 105), AutoSize = true });
                 var cboSafe = new ComboBox { Location = new Point(20, 128), Width = 360, DropDownStyle = ComboBoxStyle.DropDownList };
-                var dtSafes = DbHelper.Query("SELECT AccountID, AccountName FROM Accounts WHERE IsActive = 1");
-                foreach (DataRow sr in dtSafes.Rows) cboSafe.Items.Add(new ComboItem(Convert.ToInt32(sr["AccountID"]), sr["AccountName"].ToString()));
+                var dtSafes = AccountDAL.GetActiveSafeAccounts();
+                if (dtSafes == null || dtSafes.Rows.Count == 0)
+                {
+                    dtSafes = DbHelper.Query("SELECT AccountID, AccountName FROM SafeAccounts");
+                }
+                if (dtSafes != null && dtSafes.Rows.Count > 0)
+                {
+                    foreach (DataRow sr in dtSafes.Rows)
+                    {
+                        int accId = Convert.ToInt32(sr["AccountID"]);
+                        string accName = sr["AccountName"].ToString();
+                        decimal bal = AccountDAL.GetCashBalance(accId);
+                        cboSafe.Items.Add(new ComboItem(accId, $"{accName}  [الرصيد: {bal:N2} ج]"));
+                    }
+                }
+                else
+                {
+                    cboSafe.Items.Add(new ComboItem(1, "الخزينة الرئيسية"));
+                }
                 cboSafe.DisplayMember = "Text";
                 if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
                 dlg.Controls.Add(cboSafe);
