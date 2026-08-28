@@ -130,8 +130,17 @@ namespace ChickenDist.Forms
                 var g = e.Graphics;
                 int pageW = e.PageBounds.Width;
                 bool isA4Page = !isReceipt && pageW > 700;
-                int lMargin = isReceipt ? 12 : (isA4Page ? 30 : 28);
-                int rMargin = isReceipt ? 28 : (isA4Page ? 30 : 28);
+
+                // إزاحة نموذج A5 ناحية اليمين بمقدار محسوب بدقة لمعادلة هوامش الطابعة وسحب المحتوى بالكامل داخل الصفحة
+                int a5Shift = (!isReceipt && !isA4Page) ? AppConfig.A5ShiftRight : 0;
+                if (a5Shift != 0)
+                {
+                    g.TranslateTransform(a5Shift, 0);
+                    pageW -= a5Shift;
+                }
+
+                int lMargin = isReceipt ? 12 : (isA4Page ? 30 : 22);
+                int rMargin = isReceipt ? 28 : (isA4Page ? 30 : 22);
                 int printableW = pageW - lMargin - rMargin;
                 int margin = lMargin;
                 int y = isReceipt ? 5 : (isA4Page ? 20 : 15);
@@ -2223,8 +2232,14 @@ namespace ChickenDist.Forms
                 using var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
                 using var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
 
+                int a5Shift = isA5 ? AppConfig.A5ShiftRight : 0;
+                if (a5Shift != 0)
+                {
+                    g.TranslateTransform(a5Shift, 0);
+                }
+
                 int margin = isReceipt ? 10 : (isA5 ? 20 : 30);
-                int pageWidth = e.PageBounds.Width;
+                int pageWidth = e.PageBounds.Width - a5Shift;
                 int left  = margin;
                 int right = pageWidth - margin;
                 int width = right - left;
