@@ -90,6 +90,7 @@ namespace ChickenDist.Forms
             tabStock = new TabPage("📦 جرد وتعديل أسعار الأصناف") { BackColor = Theme.BgMain };
             tabLogs = new TabPage("📜 سجل تسويات الجرد") { BackColor = Theme.BgMain };
             tabMain.TabPages.AddRange(new[] { tabStock, tabLogs });
+            Theme.StyleTabControl(tabMain);
             this.Controls.Add(tabMain);
 
             BuildStockTab();

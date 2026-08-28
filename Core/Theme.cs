@@ -321,16 +321,11 @@ namespace ChickenDist.Core
                 }
                 else if (c is TabControl tc)
                 {
-                    tc.RightToLeft = RightToLeft.Yes;
-                    tc.DrawMode = TabDrawMode.OwnerDrawFixed;
-                    tc.SizeMode = TabSizeMode.Fixed;
-                    tc.ItemSize = new Size(165, 32);
-                    tc.DrawItem -= TabControl_DrawItem;
-                    tc.DrawItem += TabControl_DrawItem;
+                    StyleTabControl(tc);
                     foreach (TabPage tp in tc.TabPages)
                     {
                         tp.RightToLeft = RightToLeft.Yes;
-                        tp.BackColor = BgCard;
+                        tp.BackColor = BgMain;
                         ApplyRTL(tp.Controls);
                     }
                 }
@@ -803,6 +798,70 @@ namespace ChickenDist.Core
                 grid.Columns["Color"].Visible = isClothing;
         }
 
+        /// <summary>تطبيق النمط البارز والملون وعالي التباين للتبويبات والشاشات الفرعية</summary>
+        public static void StyleTabControl(TabControl tc)
+        {
+            if (tc == null) return;
+            try
+            {
+                tc.DrawMode = TabDrawMode.OwnerDrawFixed;
+                tc.SizeMode = TabSizeMode.Normal;
+                tc.ItemSize = new Size(0, 42); // ارتفاع مميز وواضح 42px
+                tc.Padding = new Point(22, 10);
+                tc.Font = new Font(FontMain.FontFamily, 10.5f, FontStyle.Bold);
+                tc.RightToLeft = RightToLeft.Yes;
+                tc.RightToLeftLayout = true;
+
+                tc.DrawItem -= TabControl_DrawItem;
+                tc.DrawItem += TabControl_DrawItem;
+
+                tc.SelectedIndexChanged -= TabControl_SelectedIndexChanged;
+                tc.SelectedIndexChanged += TabControl_SelectedIndexChanged;
+
+                foreach (TabPage tp in tc.TabPages)
+                {
+                    tp.RightToLeft = RightToLeft.Yes;
+                    tp.BackColor = BgMain;
+                }
+                tc.Invalidate();
+            }
+            catch { }
+        }
+
+        private static void TabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (sender is TabControl tc)
+            {
+                tc.Invalidate();
+            }
+        }
+
+        /// <summary>فحص وتطبيق التنسيق البارز لكافة عناصر TabControl الموجودة في الشاشة</summary>
+        public static void AutoStyleAllTabControls(Control parent)
+        {
+            if (parent == null) return;
+            try
+            {
+                if (parent is TabControl tc)
+                {
+                    StyleTabControl(tc);
+                }
+
+                foreach (Control c in parent.Controls)
+                {
+                    if (c is TabControl childTc)
+                    {
+                        StyleTabControl(childTc);
+                    }
+                    if (c.HasChildren)
+                    {
+                        AutoStyleAllTabControls(c);
+                    }
+                }
+            }
+            catch { }
+        }
+
         private static void TabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
             try
@@ -810,23 +869,46 @@ namespace ChickenDist.Core
                 if (sender is TabControl tc && e.Index >= 0 && e.Index < tc.TabPages.Count)
                 {
                     TabPage tp = tc.TabPages[e.Index];
-                    Rectangle tabRect = tc.GetTabRect(e.Index);
+                    Rectangle rawRect = tc.GetTabRect(e.Index);
                     bool isSelected = tc.SelectedIndex == e.Index;
 
-                    Color backColor = isSelected ? Primary : Color.FromArgb(55, 65, 81);
-                    Color foreColor = isSelected ? Color.White : Color.FromArgb(200, 205, 215);
+                    // Deflate slightly for modern separate button spacing
+                    Rectangle tabRect = new Rectangle(rawRect.X + 2, rawRect.Y + 2, rawRect.Width - 4, rawRect.Height - 3);
 
-                    if (AppConfig.AppTheme == "Light")
+                    Color backColor;
+                    Color foreColor;
+                    Color borderColor;
+
+                    bool isDark = (AppConfig.AppTheme == "Dark");
+
+                    if (isSelected)
                     {
-                        backColor = isSelected ? Primary : Color.FromArgb(230, 235, 245);
-                        foreColor = isSelected ? Color.White : Color.FromArgb(70, 80, 95);
+                        // Selected Tab: Vibrant High-Contrast Royal Blue
+                        backColor = Color.FromArgb(30, 64, 175);
+                        foreColor = Color.White;
+                        borderColor = Color.FromArgb(245, 158, 11); // Golden Amber Indicator
                     }
-                    else if (AppConfig.AppTheme == "Slate")
+                    else
                     {
-                        backColor = isSelected ? Accent : Color.FromArgb(203, 213, 225);
-                        foreColor = isSelected ? Color.White : Color.FromArgb(50, 60, 75);
+                        // Inactive Tab: Highly distinct button look so customers instantly notice it
+                        if (isDark)
+                        {
+                            backColor = Color.FromArgb(45, 55, 72);
+                            foreColor = Color.FromArgb(226, 232, 240);
+                            borderColor = Color.FromArgb(74, 85, 104);
+                        }
+                        else
+                        {
+                            backColor = Color.FromArgb(226, 232, 240);
+                            foreColor = Color.FromArgb(15, 23, 42);
+                            borderColor = Color.FromArgb(148, 163, 184);
+                        }
                     }
 
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                    // Fill Tab Background
                     using (var brush = new SolidBrush(backColor))
                     {
                         e.Graphics.FillRectangle(brush, tabRect);
@@ -834,26 +916,38 @@ namespace ChickenDist.Core
 
                     if (isSelected)
                     {
-                        using (var pen = new Pen(Accent, 3f))
+                        // Distinct Top & Bottom Accent Bars for maximum visibility
+                        using (var goldBrush = new SolidBrush(Color.FromArgb(245, 158, 11)))
                         {
-                            e.Graphics.DrawLine(pen, tabRect.Left, tabRect.Bottom - 1, tabRect.Right, tabRect.Bottom - 1);
+                            // 4px bold golden indicator bar at bottom
+                            e.Graphics.FillRectangle(goldBrush, tabRect.X, tabRect.Bottom - 4, tabRect.Width, 4);
+                            // 2px accent at top
+                            e.Graphics.FillRectangle(goldBrush, tabRect.X, tabRect.Y, tabRect.Width, 2);
+                        }
+
+                        using (var pen = new Pen(Color.FromArgb(37, 99, 235), 1.5f))
+                        {
+                            e.Graphics.DrawRectangle(pen, tabRect);
                         }
                     }
                     else
                     {
-                        using (var pen = new Pen(BorderColor, 1f))
+                        // Distinct border around inactive tab buttons
+                        using (var pen = new Pen(borderColor, 1.5f))
                         {
-                            e.Graphics.DrawRectangle(pen, tabRect.X, tabRect.Y, tabRect.Width - 1, tabRect.Height - 1);
+                            e.Graphics.DrawRectangle(pen, tabRect);
                         }
                     }
 
+                    // Text rendering with emoji support
+                    var font = new Font(FontMain.FontFamily, isSelected ? 11f : 10f, FontStyle.Bold);
                     TextRenderer.DrawText(
                         e.Graphics,
                         tp.Text,
-                        new Font(FontMain.FontFamily, 9.5f, FontStyle.Bold),
+                        font,
                         tabRect,
                         foreColor,
-                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.RightToLeft
                     );
                 }
             }

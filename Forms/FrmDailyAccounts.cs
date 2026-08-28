@@ -117,6 +117,7 @@ namespace ChickenDist.Forms
             BuildCogsInvTab(tabCogsInv);
             tabMain.TabPages.Add(tabCogsInv);
 
+            Theme.StyleTabControl(tabMain);
             this.Controls.Add(tabMain);
             pnlTitle.SendToBack();
 

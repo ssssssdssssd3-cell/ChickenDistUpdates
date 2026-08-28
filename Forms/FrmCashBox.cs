@@ -64,6 +64,7 @@ namespace ChickenDist.Forms
             tabCash = new TabPage("حركات الخزنة") { BackColor = Theme.BgMain };
             tabExpenses = new TabPage("المصروفات التشغيلية") { BackColor = Theme.BgMain };
             tabMain.TabPages.AddRange(new[] { tabCash, tabExpenses });
+            Theme.StyleTabControl(tabMain);
             this.Controls.Add(tabMain);
 
             BuildCashTab();

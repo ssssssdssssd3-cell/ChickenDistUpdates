@@ -78,6 +78,7 @@ namespace ChickenDist.Forms
 
             tabControl.TabPages.Add(tabDaily);
             tabControl.TabPages.Add(tabReports);
+            Theme.StyleTabControl(tabControl);
 
             this.Controls.Add(tabControl);
             this.Controls.Add(pnlTop);

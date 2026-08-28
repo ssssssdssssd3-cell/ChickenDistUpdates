@@ -89,6 +89,7 @@ namespace ChickenDist.Forms
             tabControl.TabPages.Add(tabCalc);
             tabControl.TabPages.Add(tabProdRules);
             tabControl.TabPages.Add(tabTiers);
+            Theme.StyleTabControl(tabControl);
 
             this.Controls.Add(tabControl);
             this.Controls.Add(pnlTop);

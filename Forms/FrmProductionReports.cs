@@ -235,6 +235,7 @@ namespace ChickenDist.Forms
             };
             tabHistory.Controls.Add(dgHistoryDetail);
             tabDetails.TabPages.Add(tabHistory);
+            Theme.StyleTabControl(tabDetails);
 
             // ── Bottom Summary & Action Bar ──
             var pnlBottom = new Panel

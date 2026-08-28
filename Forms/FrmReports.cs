@@ -1124,6 +1124,7 @@ namespace ChickenDist.Forms
 					subTabClient.Controls.Add(dgCliProfit);
 					subTab.TabPages.Add(subTabClient);
 
+					Theme.StyleTabControl(subTab);
 					splitPanel.Controls.Add(subTab, 1, 0);
 					tabPage.Controls.Add(splitPanel);
 					tabReports.TabPages.Add(tabPage);

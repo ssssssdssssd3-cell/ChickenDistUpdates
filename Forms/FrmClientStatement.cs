@@ -199,6 +199,7 @@ namespace ChickenDist.Forms
 
             tabMain.TabPages.Add(tabFinancial);
             tabMain.TabPages.Add(tabItemized);
+            Theme.StyleTabControl(tabMain);
 
             var tblMain = new TableLayoutPanel
             {

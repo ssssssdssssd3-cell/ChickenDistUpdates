@@ -178,6 +178,7 @@ namespace ChickenDist.Forms
             tabAdjustments = new TabPage("⚙️ ضبط الحسابات الدفترية") { BackColor = Theme.BgMain };
             InitAdjustmentsTab();
             tabMain.TabPages.Add(tabAdjustments);
+            Theme.StyleTabControl(tabMain);
 
             // ربط حدث تغيير التبويب لإعادة التحميل
             tabMain.SelectedIndexChanged += (s, e) =>

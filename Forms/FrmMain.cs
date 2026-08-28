@@ -1276,6 +1276,8 @@ namespace ChickenDist.Forms
                     CloseTab(form, tab);
                 };
             }
+            Theme.AutoStyleAllTabControls(form);
+            form.Shown += (s, e) => Theme.AutoStyleAllTabControls(form);
             SwitchToTab(form, tab);
         }
 

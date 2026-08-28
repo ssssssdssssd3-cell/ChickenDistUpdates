@@ -85,6 +85,7 @@ namespace ChickenDist.Forms
 
             tabControl.TabPages.Add(tabPayroll);
             tabControl.TabPages.Add(tabItems);
+            Theme.StyleTabControl(tabControl);
 
             this.Controls.Add(tabControl);
             this.Controls.Add(pnlTop);

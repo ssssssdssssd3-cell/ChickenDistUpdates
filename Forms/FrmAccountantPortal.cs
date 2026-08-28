@@ -73,6 +73,7 @@ namespace ChickenDist.Forms
             };
             tabs.TabPages.Add(BuildCloudTab());
             tabs.TabPages.Add(BuildLocalTab());
+            Theme.StyleTabControl(tabs);
             this.Controls.Add(tabs);
         }
 

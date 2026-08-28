@@ -102,6 +102,7 @@ namespace ChickenDist.Forms
             BuildDividendsTab(tabDividends);
 
             tabMain.TabPages.AddRange(new TabPage[] { tabPartners, tabStatement, tabDividends });
+            Theme.StyleTabControl(tabMain);
 
             this.Controls.Add(tabMain);
             this.Controls.Add(pnlMetrics);

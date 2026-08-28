@@ -112,6 +112,7 @@ namespace ChickenDist.Forms
             BuildCategoriesTab(tabCategories);
 
             tabMain.TabPages.AddRange(new TabPage[] { tabRegistry, tabDepreciation, tabOperations, tabCategories });
+            Theme.StyleTabControl(tabMain);
 
             this.Controls.Add(tabMain);
             this.Controls.Add(pnlMetrics);

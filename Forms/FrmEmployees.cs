@@ -251,6 +251,7 @@ namespace ChickenDist.Forms
             tabDetails.TabPages.Add(tabShift);
             tabDetails.TabPages.Add(tabFinancial);
             tabDetails.TabPages.Add(tabSafes);
+            Theme.StyleTabControl(tabDetails);
 
             pnlDetailsCard.Controls.Add(tabDetails);
             pnlDetailsCard.Controls.Add(pnlActions);
