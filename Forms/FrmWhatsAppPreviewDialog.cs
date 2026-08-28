@@ -385,16 +385,22 @@ namespace ChickenDist.Forms
 
         private string BuildSampleAlTarekText()
         {
-            string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "شركة الطارق للاستيراد والتصدير";
-            string phone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "01091800089";
+            string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة التجارية";
+            string phone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"⭐ *{comp}* ⭐");
-            sb.AppendLine($"📞 خدمة العملاء: {phone}");
+            if (!string.IsNullOrWhiteSpace(phone))
+            {
+                sb.AppendLine($"📞 خدمة العملاء: {phone}");
+            }
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            sb.AppendLine("🧾 *فاتورة مبيعات معتمدة (نموذج الطارق)*");
+            sb.AppendLine("🧾 *فاتورة مبيعات معتمدة*");
             sb.AppendLine($"🔖 *رقم الفاتورة:* #{saleRow["SaleCode"]}");
             sb.AppendLine($"📅 *التاريخ:* {Convert.ToDateTime(saleRow["SaleDate"]):yyyy/MM/dd hh:mm tt}");
-            sb.AppendLine($"👤 *العميل:* {saleRow["ClientName"]}");
+            string cName = (saleRow.Table.Columns.Contains("CustomClientName") && saleRow["CustomClientName"] != DBNull.Value && !string.IsNullOrWhiteSpace(saleRow["CustomClientName"].ToString()))
+                ? saleRow["CustomClientName"].ToString()
+                : (saleRow["ClientName"]?.ToString() ?? "عميل نقدي");
+            sb.AppendLine($"👤 *العميل:* {cName}");
             sb.AppendLine("━━━━━━━━━━━━━━━━");
             sb.AppendLine("📦 *تفاصيل الأصناف والبنود:*");
             if (saleItems != null)
@@ -424,13 +430,17 @@ namespace ChickenDist.Forms
             }
             sb.AppendLine($"⚖️ *الرصيد السابق:* {prevBalance:N2} ج.م");
             sb.AppendLine($"🔴 *إجمالي الرصيد الحالي المستحق:* {actualCurrentBalance:N2} ج.م");
+            if (lastPaymentAmt > 0)
+            {
+                string dStr = lastPaymentDate > DateTime.MinValue ? $" بتاريخ {lastPaymentDate:yyyy/MM/dd}" : "";
+                sb.AppendLine($"📥 *آخر توريد / سداد للعميل:* {lastPaymentAmt:N2} ج.م{dStr}");
+            }
             try
             {
                 sb.AppendLine($"📝 *فقط {TafqeetHelper.ConvertToArabicWords(net)} لا غير.*");
             }
             catch { }
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            sb.AppendLine("🙏 *شكراً لتعاملكم معنا ونسعد بخدمتكم دائماً!*");
             return sb.ToString();
         }
 
