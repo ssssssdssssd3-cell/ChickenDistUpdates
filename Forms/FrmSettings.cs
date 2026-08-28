@@ -566,15 +566,16 @@ namespace ChickenDist.Forms
             };
             cboA5Shift.Items.AddRange(new object[]
             {
-                "مقاس 1: إزاحة 3.5 سم (138 نقطة - الأنسب لدرج الليزر الحالي)",
-                "مقاس 2: إزاحة 3.0 سم (118 نقطة)",
-                "مقاس 3: إزاحة 2.5 سم (98 نقطة - دفاتر الفواتير القياسية)",
-                "مقاس 4: إزاحة 4.0 سم (157 نقطة)",
-                "مقاس 5: إزاحة 4.5 سم (175 نقطة - أقصى إزاحة لليمين)",
-                "مقاس 6: إزاحة 2.0 سم (78 نقطة)",
-                "مقاس 7: إزاحة 1.5 سم (59 نقطة)",
-                "مقاس 8: إزاحة 1.0 سم (39 نقطة)",
-                "مقاس 9: بدون إزاحة 0 سم (توسيط قياسي / طابعة A5 متخصصة)",
+                "مقاس 1: إزاحة 3.0 سم (118 نقطة - الموصى به والمضبوط حالياً)",
+                "مقاس 2: إزاحة 2.8 سم (110 نقطة - سنة إضافية للشمال)",
+                "مقاس 3: إزاحة 3.2 سم (126 نقطة)",
+                "مقاس 4: إزاحة 3.5 سم (138 نقطة)",
+                "مقاس 5: إزاحة 2.5 سم (98 نقطة - دفاتر الفواتير القياسية)",
+                "مقاس 6: إزاحة 4.0 سم (157 نقطة)",
+                "مقاس 7: إزاحة 4.5 سم (175 نقطة)",
+                "مقاس 8: إزاحة 2.0 سم (78 نقطة)",
+                "مقاس 9: إزاحة 1.0 سم (39 نقطة)",
+                "مقاس 10: بدون إزاحة 0 سم (توسيط قياسي / طابعة A5 متخصصة)",
                 "مقاس مخصص يدوي (بالسنتيمتر)"
             });
 
@@ -584,7 +585,7 @@ namespace ChickenDist.Forms
                 Width = 130,
                 Height = 32,
                 DecimalPlaces = 1,
-                Increment = 0.5m,
+                Increment = 0.2m,
                 Minimum = 0.0m,
                 Maximum = 15.0m,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -598,30 +599,32 @@ namespace ChickenDist.Forms
             if (curCm > 15m) curCm = 15m;
             numA5ShiftCm.Value = curCm;
 
-            if (Math.Abs(curCm - 3.5m) <= 0.1m) cboA5Shift.SelectedIndex = 0;
-            else if (Math.Abs(curCm - 3.0m) <= 0.1m) cboA5Shift.SelectedIndex = 1;
-            else if (Math.Abs(curCm - 2.5m) <= 0.1m) cboA5Shift.SelectedIndex = 2;
-            else if (Math.Abs(curCm - 4.0m) <= 0.1m) cboA5Shift.SelectedIndex = 3;
-            else if (Math.Abs(curCm - 4.5m) <= 0.1m) cboA5Shift.SelectedIndex = 4;
-            else if (Math.Abs(curCm - 2.0m) <= 0.1m) cboA5Shift.SelectedIndex = 5;
-            else if (Math.Abs(curCm - 1.5m) <= 0.1m) cboA5Shift.SelectedIndex = 6;
-            else if (Math.Abs(curCm - 1.0m) <= 0.1m) cboA5Shift.SelectedIndex = 7;
-            else if (curCm == 0m) cboA5Shift.SelectedIndex = 8;
-            else cboA5Shift.SelectedIndex = 9;
+            if (Math.Abs(curCm - 3.0m) <= 0.1m) cboA5Shift.SelectedIndex = 0;
+            else if (Math.Abs(curCm - 2.8m) <= 0.1m) cboA5Shift.SelectedIndex = 1;
+            else if (Math.Abs(curCm - 3.2m) <= 0.1m) cboA5Shift.SelectedIndex = 2;
+            else if (Math.Abs(curCm - 3.5m) <= 0.1m) cboA5Shift.SelectedIndex = 3;
+            else if (Math.Abs(curCm - 2.5m) <= 0.1m) cboA5Shift.SelectedIndex = 4;
+            else if (Math.Abs(curCm - 4.0m) <= 0.1m) cboA5Shift.SelectedIndex = 5;
+            else if (Math.Abs(curCm - 4.5m) <= 0.1m) cboA5Shift.SelectedIndex = 6;
+            else if (Math.Abs(curCm - 2.0m) <= 0.1m) cboA5Shift.SelectedIndex = 7;
+            else if (Math.Abs(curCm - 1.0m) <= 0.1m) cboA5Shift.SelectedIndex = 8;
+            else if (curCm == 0m) cboA5Shift.SelectedIndex = 9;
+            else cboA5Shift.SelectedIndex = 10;
 
             cboA5Shift.SelectedIndexChanged += (s, e) =>
             {
                 switch (cboA5Shift.SelectedIndex)
                 {
-                    case 0: numA5ShiftCm.Value = 3.5m; break;
-                    case 1: numA5ShiftCm.Value = 3.0m; break;
-                    case 2: numA5ShiftCm.Value = 2.5m; break;
-                    case 3: numA5ShiftCm.Value = 4.0m; break;
-                    case 4: numA5ShiftCm.Value = 4.5m; break;
-                    case 5: numA5ShiftCm.Value = 2.0m; break;
-                    case 6: numA5ShiftCm.Value = 1.5m; break;
-                    case 7: numA5ShiftCm.Value = 1.0m; break;
-                    case 8: numA5ShiftCm.Value = 0.0m; break;
+                    case 0: numA5ShiftCm.Value = 3.0m; break;
+                    case 1: numA5ShiftCm.Value = 2.8m; break;
+                    case 2: numA5ShiftCm.Value = 3.2m; break;
+                    case 3: numA5ShiftCm.Value = 3.5m; break;
+                    case 4: numA5ShiftCm.Value = 2.5m; break;
+                    case 5: numA5ShiftCm.Value = 4.0m; break;
+                    case 6: numA5ShiftCm.Value = 4.5m; break;
+                    case 7: numA5ShiftCm.Value = 2.0m; break;
+                    case 8: numA5ShiftCm.Value = 1.0m; break;
+                    case 9: numA5ShiftCm.Value = 0.0m; break;
                 }
             };
 
