@@ -25,6 +25,8 @@ namespace ChickenDist.Forms
         private ComboBox cboPrintBehavior;
         private ComboBox cboReceiptTemplate;
         private ComboBox cboA4Template;
+        private ComboBox cboA5Shift;
+        private NumericUpDown numA5ShiftCm;
         private ComboBox cboPrepTemplate;
         private ComboBox cboPrepPaperSize;
         private ComboBox cboBarcodeTemplate;
@@ -551,8 +553,84 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboA4Template);
             y += 35;
 
-            // زر معاينة قالب ورق A4/A5
-            var btnPreviewA4 = Theme.MakeButton("📄 معاينة قالب ورق A4/A5", 20, y, 220, 36, Color.FromArgb(40, 120, 180));
+            // ── إعدادات مقاس ومحاذاة ورق A5 ───────────────────
+            AddLabel("📐 مقاس ومحاذاة ورق A5 (إزاحة درج الطابعة / دفاتر الفواتير):", 20, ref y, 10);
+            cboA5Shift = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 360,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10.5f)
+            };
+            cboA5Shift.Items.AddRange(new object[]
+            {
+                "مقاس 1: إزاحة 3.5 سم (138 نقطة - الأنسب لدرج الليزر الحالي)",
+                "مقاس 2: إزاحة 3.0 سم (118 نقطة)",
+                "مقاس 3: إزاحة 2.5 سم (98 نقطة - دفاتر الفواتير القياسية)",
+                "مقاس 4: إزاحة 4.0 سم (157 نقطة)",
+                "مقاس 5: إزاحة 4.5 سم (175 نقطة - أقصى إزاحة لليمين)",
+                "مقاس 6: إزاحة 2.0 سم (78 نقطة)",
+                "مقاس 7: إزاحة 1.5 سم (59 نقطة)",
+                "مقاس 8: إزاحة 1.0 سم (39 نقطة)",
+                "مقاس 9: بدون إزاحة 0 سم (توسيط قياسي / طابعة A5 متخصصة)",
+                "مقاس مخصص يدوي (بالسنتيمتر)"
+            });
+
+            numA5ShiftCm = new NumericUpDown
+            {
+                Location = new Point(390, y),
+                Width = 130,
+                Height = 32,
+                DecimalPlaces = 1,
+                Increment = 0.5m,
+                Minimum = 0.0m,
+                Maximum = 15.0m,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+
+            // Set current value from AppConfig
+            decimal curCm = Math.Round((decimal)(AppConfig.A5ShiftRight * 0.0254), 1);
+            if (curCm < 0m) curCm = 0m;
+            if (curCm > 15m) curCm = 15m;
+            numA5ShiftCm.Value = curCm;
+
+            if (Math.Abs(curCm - 3.5m) <= 0.1m) cboA5Shift.SelectedIndex = 0;
+            else if (Math.Abs(curCm - 3.0m) <= 0.1m) cboA5Shift.SelectedIndex = 1;
+            else if (Math.Abs(curCm - 2.5m) <= 0.1m) cboA5Shift.SelectedIndex = 2;
+            else if (Math.Abs(curCm - 4.0m) <= 0.1m) cboA5Shift.SelectedIndex = 3;
+            else if (Math.Abs(curCm - 4.5m) <= 0.1m) cboA5Shift.SelectedIndex = 4;
+            else if (Math.Abs(curCm - 2.0m) <= 0.1m) cboA5Shift.SelectedIndex = 5;
+            else if (Math.Abs(curCm - 1.5m) <= 0.1m) cboA5Shift.SelectedIndex = 6;
+            else if (Math.Abs(curCm - 1.0m) <= 0.1m) cboA5Shift.SelectedIndex = 7;
+            else if (curCm == 0m) cboA5Shift.SelectedIndex = 8;
+            else cboA5Shift.SelectedIndex = 9;
+
+            cboA5Shift.SelectedIndexChanged += (s, e) =>
+            {
+                switch (cboA5Shift.SelectedIndex)
+                {
+                    case 0: numA5ShiftCm.Value = 3.5m; break;
+                    case 1: numA5ShiftCm.Value = 3.0m; break;
+                    case 2: numA5ShiftCm.Value = 2.5m; break;
+                    case 3: numA5ShiftCm.Value = 4.0m; break;
+                    case 4: numA5ShiftCm.Value = 4.5m; break;
+                    case 5: numA5ShiftCm.Value = 2.0m; break;
+                    case 6: numA5ShiftCm.Value = 1.5m; break;
+                    case 7: numA5ShiftCm.Value = 1.0m; break;
+                    case 8: numA5ShiftCm.Value = 0.0m; break;
+                }
+            };
+
+            this.Controls.Add(cboA5Shift);
+            this.Controls.Add(numA5ShiftCm);
+            y += 40;
+
+            // زر معاينة قالب ورق A4
+            var btnPreviewA4 = Theme.MakeButton("📄 معاينة A4", 20, y, 160, 36, Color.FromArgb(40, 120, 180));
             btnPreviewA4.Click += (s, e) =>
             {
                 // حفظ قالب A4 الحالي مؤقتاً للمعاينة
@@ -591,6 +669,47 @@ namespace ChickenDist.Forms
                 }
             };
             this.Controls.Add(btnPreviewA4);
+
+            // زر معاينة قالب ورق A5 بالمقاس المختار
+            var btnPreviewA5 = Theme.MakeButton("📑 معاينة A5 بالمقاس الحالي", 190, y, 230, 36, Color.FromArgb(46, 125, 50));
+            btnPreviewA5.Click += (s, e) =>
+            {
+                int pts = (int)Math.Round(((double)numA5ShiftCm.Value / 2.54) * 100);
+                AppConfig.A5ShiftRight = pts;
+                AppConfig.A4Template = cboA4Template.SelectedIndex switch
+                {
+                    0 => "CommercialGrid",
+                    1 => "CommercialGridNoDiscount",
+                    2 => "AlTarekGrid",
+                    3 => "AlTarekNoDiscount",
+                    4 => "Classic",
+                    5 => "Modern",
+                    6 => "Official",
+                    7 => "Simple",
+                    8 => "SparePartsGrid",
+                    9 => "SupermarketA4",
+                    10 => "ElegantClassic",
+                    11 => "CorporateModern",
+                    _ => "AlTarekGrid"
+                };
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                if (!string.IsNullOrWhiteSpace(txtCompanyName.Text)) AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
+
+                var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
+                if (dtPreview != null && dtPreview.Rows.Count > 0)
+                {
+                    int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
+                    new FrmPrintSale(previewSaleID, "A5", true);
+                }
+                else
+                {
+                    MessageBox.Show("لا توجد فواتير مبيعات مسجلة حالياً للمعاينة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                        MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+            };
+            this.Controls.Add(btnPreviewA5);
             y += 45;
 
             // ── نماذج إذن التحضير وصرف البضاعة بالمخزن ───────────────────
@@ -1398,6 +1517,13 @@ namespace ChickenDist.Forms
                     11 => "CorporateModern",
                     _ => "AlTarekGrid"
                 };
+
+                if (numA5ShiftCm != null)
+                {
+                    int pts = (int)Math.Round(((double)numA5ShiftCm.Value / 2.54) * 100);
+                    AppConfig.A5ShiftRight = pts;
+                }
+
                 if (cboPrepTemplate != null)
                 {
                     AppConfig.PreparationSlipTemplate = cboPrepTemplate.SelectedIndex switch
