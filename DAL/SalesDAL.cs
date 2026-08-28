@@ -107,6 +107,7 @@ namespace ChickenDist.DAL
                       SELECT r.SaleID, SUM(ri.Quantity * ri.UnitPrice) AS ReturnAmount
                       FROM SalesReturns r
                       JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
+                      WHERE r.SaleID IN (SELECT SaleID FROM Sales WHERE SaleDate BETWEEN @f AND @t)
                       GROUP BY r.SaleID
                   ) ret ON ret.SaleID = s.SaleID
                   LEFT JOIN (
@@ -117,6 +118,7 @@ namespace ChickenDist.DAL
                                  NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
                       FROM SaleItems si
                       JOIN Products p ON si.ProductID = p.ProductID
+                      WHERE si.SaleID IN (SELECT SaleID FROM Sales WHERE SaleDate BETWEEN @f AND @t)
                       GROUP BY si.SaleID
                   ) costs ON costs.SaleID = s.SaleID
                   WHERE s.SaleDate BETWEEN @f AND @t

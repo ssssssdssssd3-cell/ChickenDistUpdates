@@ -23,6 +23,8 @@ namespace ChickenDist.Forms
         private Control _pnlFrom, _pnlTo, _pnlSearch, _pnlBarcode, _pnlEmp;
         private DataTable _salesDt;
         private bool _isFilteringCombo = false;
+        private bool _isLoadingSales = false;
+        private System.Windows.Forms.Timer _searchDebounceTimer;
         private decimal _selectedSaleTotalAmount = 0m;
         private decimal _selectedSaleShippingCharge = 0m;
         private decimal _selectedSalePrevReturnedAmount = 0m;
@@ -63,7 +65,8 @@ namespace ChickenDist.Forms
             DataTable dtProducts = ProductDAL.GetAll(true);
             if (cboProductFilter != null)
             {
-                cboProductFilter.SelectedIndexChanged -= (s, e) => LoadSales();
+                cboProductFilter.SelectedIndexChanged -= CboProductFilter_SelectedIndexChanged;
+                cboProductFilter.Tag = null;
                 cboProductFilter.Items.Clear();
                 cboProductFilter.Items.Add(new ComboItem(0, "الكل (جميع الأصناف)"));
                 foreach (DataRow r in dtProducts.Rows)
@@ -72,7 +75,7 @@ namespace ChickenDist.Forms
                 }
                 cboProductFilter.DisplayMember = "Text";
                 if (cboProductFilter.Items.Count > 0) cboProductFilter.SelectedIndex = 0;
-                cboProductFilter.SelectedIndexChanged += (s, e) => LoadSales();
+                cboProductFilter.SelectedIndexChanged += CboProductFilter_SelectedIndexChanged;
             }
 
             if (cboAllProducts != null)
@@ -110,7 +113,8 @@ namespace ChickenDist.Forms
             // الموظفون (فلتر البحث بالموظف)
             if (cboEmployeeFilter != null)
             {
-                cboEmployeeFilter.SelectedIndexChanged -= (s, e) => LoadSales();
+                cboEmployeeFilter.SelectedIndexChanged -= CboEmployeeFilter_SelectedIndexChanged;
+                cboEmployeeFilter.Tag = null;
                 cboEmployeeFilter.Items.Clear();
 
                 bool canReturnAll = Session.IsAdmin || Session.CanReturnAllSales();
@@ -151,7 +155,7 @@ namespace ChickenDist.Forms
                     if (cboEmployeeFilter.Items.Count > 0) cboEmployeeFilter.SelectedIndex = 0;
                     cboEmployeeFilter.Enabled = true;
                 }
-                cboEmployeeFilter.SelectedIndexChanged += (s, e) => LoadSales();
+                cboEmployeeFilter.SelectedIndexChanged += CboEmployeeFilter_SelectedIndexChanged;
             }
         }
 
@@ -374,7 +378,7 @@ namespace ChickenDist.Forms
             };
             cboSaleTypeFilter.Items.AddRange(new object[] { "الكل", "💵 نقدي", "💳 فيزا", "📋 آجل", "📅 تقسيط", "🚚 حمولة مندوب" });
             cboSaleTypeFilter.SelectedIndex = 0;
-            cboSaleTypeFilter.SelectedIndexChanged += (s, e) => LoadSales();
+            cboSaleTypeFilter.SelectedIndexChanged += CboSaleTypeFilter_SelectedIndexChanged;
             StyleSearchInput(cboSaleTypeFilter);
             var pnlSaleType = MakeFilterPanel("نوع الفاتورة:", cboSaleTypeFilter, 125);
 
@@ -392,12 +396,11 @@ namespace ChickenDist.Forms
             cboEmployeeFilter = new ComboBox
             {
                 Width = 140, Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDown,
-                AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                AutoCompleteSource = AutoCompleteSource.ListItems
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular)
             };
             StyleSearchInput(cboEmployeeFilter);
-            SetupSearchableCombo(cboEmployeeFilter);
             _pnlEmp = MakeFilterPanel("الموظف:", cboEmployeeFilter, 140);
 
             cboReturnType = new ComboBox
@@ -422,16 +425,26 @@ namespace ChickenDist.Forms
             var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 120);
 
             dtpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
-            dtpFrom.ValueChanged += (s, e) => LoadSales();
+            dtpFrom.ValueChanged += (s, e) => { if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
             _pnlFrom = MakeFilterPanel("من:", dtpFrom, 180);
 
             dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
-            dtpTo.ValueChanged += (s, e) => LoadSales();
+            dtpTo.ValueChanged += (s, e) => { if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
             _pnlTo = MakeFilterPanel("إلى:", dtpTo, 180);
 
             txtSearch = new TextBox { Width = 110, RightToLeft = RightToLeft.Yes };
             StyleSearchInput(txtSearch);
-            txtSearch.TextChanged += (s, e) => LoadSales();
+            _searchDebounceTimer = new System.Windows.Forms.Timer { Interval = 350 };
+            _searchDebounceTimer.Tick += (s, e) =>
+            {
+                _searchDebounceTimer.Stop();
+                if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales();
+            };
+            txtSearch.TextChanged += (s, e) =>
+            {
+                _searchDebounceTimer.Stop();
+                _searchDebounceTimer.Start();
+            };
             _pnlSearch = MakeFilterPanel("بحث كود/ملاحظات:", txtSearch, 110);
 
             txtInvoiceBarcode = new TextBox { Width = 110, RightToLeft = RightToLeft.No };
@@ -1030,11 +1043,31 @@ namespace ChickenDist.Forms
             return 0m;
         }
 
+        private void CboEmployeeFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboMode != null && cboMode.SelectedIndex == 0)
+                LoadSales();
+        }
+
+        private void CboProductFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboMode != null && cboMode.SelectedIndex == 0)
+                LoadSales();
+        }
+
+        private void CboSaleTypeFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboMode != null && cboMode.SelectedIndex == 0)
+                LoadSales();
+        }
+
         private void LoadSales()
         {
+            if (_isLoadingSales || _isFilteringCombo) return;
             if (cboMode != null && cboMode.SelectedIndex != 0) return;
             try
             {
+                _isLoadingSales = true;
                 int? clientID = null;
                 if (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
                     clientID = ci.ID;
@@ -1071,11 +1104,6 @@ namespace ChickenDist.Forms
                 {
                     if (cboEmployeeFilter != null && cboEmployeeFilter.SelectedItem is ComboItem cei && cei.ID > 0)
                         empID = cei.ID;
-                    else if (cboEmployeeFilter != null && !string.IsNullOrWhiteSpace(cboEmployeeFilter.Text) && cboEmployeeFilter.Text.Trim() != "الكل" && !cboEmployeeFilter.Text.Trim().StartsWith("الكل"))
-                    {
-                        if (cboEmployeeFilter.SelectedItem is ComboItem cItem && cItem.ID > 0)
-                            empID = cItem.ID;
-                    }
                 }
 
                 _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType, empID);
@@ -1084,6 +1112,10 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("خطأ أثناء تحميل فواتير البيع للمرتجع", ex, "FrmReturn.LoadSales");
+            }
+            finally
+            {
+                _isLoadingSales = false;
             }
         }
 
@@ -1718,6 +1750,7 @@ namespace ChickenDist.Forms
             cbo.AutoCompleteMode = AutoCompleteMode.None;
             cbo.TextUpdate += delegate
             {
+                if (_isFilteringCombo) return;
                 _isFilteringCombo = true;
                 try
                 {
@@ -1735,7 +1768,6 @@ namespace ChickenDist.Forms
                     if (allList == null) return;
 
                     string filter = cbo.Text.Trim();
-                    string currentText = cbo.Text;
                     int selStart = cbo.SelectionStart;
 
                     cbo.BeginUpdate();
@@ -1751,11 +1783,14 @@ namespace ChickenDist.Forms
                         cbo.Items.AddRange(filtered);
                     }
 
-                    cbo.Text = currentText;
+                    cbo.EndUpdate();
                     cbo.SelectionStart = selStart;
                     cbo.SelectionLength = 0;
-                    cbo.DroppedDown = true;
-                    cbo.EndUpdate();
+                    if (!cbo.DroppedDown)
+                    {
+                        cbo.DroppedDown = true;
+                        Cursor.Current = Cursors.Default;
+                    }
                 }
                 finally
                 {
