@@ -21,6 +21,8 @@ namespace ChickenDist.Forms
         private Label lblInventoryPurchase;
         private Label lblClientReceivables;
         private Label lblSupplierPayables;
+        private Label lblTotalFixedAssets;
+        private Label lblTotalAssets;
         private Label lblWorkingCapital;
         private Label lblNetProfitDashboard;
 
@@ -33,6 +35,7 @@ namespace ChickenDist.Forms
 
         // جداول التبويب الأول
         private DataGridView dgSafes;
+        private DataGridView dgFixedAssetsSummary;
         private DataGridView dgTopClients;
         private DataGridView dgTopSuppliers;
 
@@ -70,16 +73,16 @@ namespace ChickenDist.Forms
 
         private readonly List<AdjustmentAccount> adjustmentDefinitions = new List<AdjustmentAccount>
         {
-            // الأصول غير المتداولة
-            new AdjustmentAccount("Land", "الأراضي", "أصول غير متداولة"),
-            new AdjustmentAccount("Buildings", "المباني", "أصول غير متداولة"),
-            new AdjustmentAccount("Machinery", "الآلات والمعدات", "أصول غير متداولة"),
-            new AdjustmentAccount("Vehicles", "السيارات", "أصول غير متداولة"),
-            new AdjustmentAccount("Furniture", "الأثاث والتجهيزات", "أصول غير متداولة"),
-            new AdjustmentAccount("Computers", "أجهزة الحاسب", "أصول غير متداولة"),
+            // الأصول غير المتداولة (أرصدة افتتاحية / تسويات إضافية)
+            new AdjustmentAccount("Land", "الأراضي (تسوية / رصيد إضافي)", "أصول غير متداولة"),
+            new AdjustmentAccount("Buildings", "المباني (تسوية / رصيد إضافي)", "أصول غير متداولة"),
+            new AdjustmentAccount("Machinery", "الآلات والمعدات (تسوية / رصيد إضافي)", "أصول غير متداولة"),
+            new AdjustmentAccount("Vehicles", "السيارات (تسوية / رصيد إضافي)", "أصول غير متداولة"),
+            new AdjustmentAccount("Furniture", "الأثاث والتجهيزات (تسوية / رصيد إضافي)", "أصول غير متداولة"),
+            new AdjustmentAccount("Computers", "أجهزة الحاسب (تسوية / رصيد إضافي)", "أصول غير متداولة"),
             new AdjustmentAccount("Investments", "الاستثمارات طويلة الأجل", "أصول غير متداولة"),
-            new AdjustmentAccount("Intangibles", "الأصول غير الملموسة", "أصول غير متداولة"),
-            new AdjustmentAccount("AccumulatedDepreciation", "مجمع الإهلاك (-)", "أصول غير متداولة"),
+            new AdjustmentAccount("Intangibles", "الأصول غير الملموسة (تسوية / إضافي)", "أصول غير متداولة"),
+            new AdjustmentAccount("AccumulatedDepreciation", "مجمع الإهلاك السابق الإضافي (-)", "أصول غير متداولة"),
 
             // الأصول المتداولة الدفترية
             new AdjustmentAccount("NotesReceivable", "أوراق القبض", "أصول متداولة"),
@@ -203,22 +206,29 @@ namespace ChickenDist.Forms
                 RowCount = 3,
                 Padding = new Padding(10)
             };
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 110f)); // الكروت الإحصائية الرئيسية
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 90f));  // نسب السيولة والدوران
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 185f)); // الكروت الإحصائية الرئيسية (8 كروت في صفين)
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 85f));  // نسب السيولة والدوران
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // التفاصيل والجداول
             tabDashboard.Controls.Add(mainLayout);
 
-            // ── صف 1: الكروت الإحصائية الرئيسية ──
-            TableLayoutPanel pnlCards = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 6, RowCount = 1 };
-            for (int i = 0; i < 6; i++) pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
+            // ── صف 1: الكروت الإحصائية الرئيسية (8 كروت في شبكة 4 × 2) ──
+            TableLayoutPanel pnlCards = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 2 };
+            for (int i = 0; i < 4; i++) pnlCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlCards.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+            pnlCards.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             mainLayout.Controls.Add(pnlCards, 0, 0);
 
-            pnlCards.Controls.Add(CreateMiniCard("💵 النقدية بالخزائن", "0.00 ج", Theme.Primary, out lblTotalCash), 0, 0);
+            // صف كروت 1: سيولة وتشغيل
+            pnlCards.Controls.Add(CreateMiniCard("💵 النقدية بالخزائن والبنوك", "0.00 ج", Theme.Primary, out lblTotalCash), 0, 0);
             pnlCards.Controls.Add(CreateMiniCard("📦 قيمة المخزون بالشراء", "0.00 ج", Theme.Accent, out lblInventoryPurchase), 1, 0);
             pnlCards.Controls.Add(CreateMiniCard("👥 مديونيات العملاء طرفنا", "0.00 ج", Theme.Success, out lblClientReceivables), 2, 0);
             pnlCards.Controls.Add(CreateMiniCard("🏢 مطلوبات الموردين منا", "0.00 ج", Theme.Danger, out lblSupplierPayables), 3, 0);
-            pnlCards.Controls.Add(CreateMiniCard("⚖️ رأس المال العامل", "0.00 ج", Color.FromArgb(23, 162, 184), out lblWorkingCapital), 4, 0);
-            pnlCards.Controls.Add(CreateMiniCard("📈 صافي أرباح الفترة", "0.00 ج", Color.FromArgb(111, 66, 193), out lblNetProfitDashboard), 5, 0);
+
+            // صف كروت 2: أصول ورأس مال وربحية
+            pnlCards.Controls.Add(CreateMiniCard("🏛️ صافي الأصول الثابتة الدفترية", "0.00 ج", Color.FromArgb(30, 64, 175), out lblTotalFixedAssets), 0, 1);
+            pnlCards.Controls.Add(CreateMiniCard("🏆 إجمالي أصول النشاط الكلية", "0.00 ج", Color.FromArgb(15, 23, 42), out lblTotalAssets), 1, 1);
+            pnlCards.Controls.Add(CreateMiniCard("⚖️ رأس المال العامل", "0.00 ج", Color.FromArgb(23, 162, 184), out lblWorkingCapital), 2, 1);
+            pnlCards.Controls.Add(CreateMiniCard("📈 صافي أرباح الفترة", "0.00 ج", Color.FromArgb(111, 66, 193), out lblNetProfitDashboard), 3, 1);
 
             // ── صف 2: المؤشرات المالية ونسب السيولة ──
             var grpRatios = new GroupBox
@@ -246,17 +256,18 @@ namespace ChickenDist.Forms
             pnlRatios.Controls.Add(CreateRatioLabel("دوران العملاء (مرة):", out lblClientTurnover), 3, 0);
             pnlRatios.Controls.Add(CreateRatioLabel("دوران الموردين (مرة):", out lblSupplierTurnover), 4, 0);
 
-            // ── صف 3: لوحة التفاصيل والجداول ──
+            // ── صف 3: لوحة التفاصيل والجداول (4 أقسام تفصيلية متوازنة) ──
             TableLayoutPanel pnlDetails = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 3,
+                ColumnCount = 4,
                 RowCount = 1,
-                Margin = new Padding(0, 10, 0, 0)
+                Margin = new Padding(0, 8, 0, 0)
             };
-            pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f)); // الخزائن
-            pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f)); // العملاء
-            pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f)); // الموردين
+            pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // الخزائن
+            pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // الأصول الثابتة
+            pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // العملاء
+            pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // الموردين
             mainLayout.Controls.Add(pnlDetails, 0, 2);
 
             pnlDetails.Controls.Add(BuildDetailSection("🏦 أرصدة الخزائن والبنوك الحالية", out dgSafes, new[] {
@@ -265,17 +276,23 @@ namespace ChickenDist.Forms
                 ("Balance", "الرصيد الحالي", 90)
             }), 0, 0);
 
+            pnlDetails.Controls.Add(BuildDetailSection("🏛️ ملخص الأصول الثابتة بالتصنيف", out dgFixedAssetsSummary, new[] {
+                ("CatName", "تصنيف الأصل", 110),
+                ("AssetCount", "العدد", 40),
+                ("BookValue", "صافي القيمة", 80)
+            }), 1, 0);
+
             pnlDetails.Controls.Add(BuildDetailSection("👥 كبار العملاء (مدينون)", out dgTopClients, new[] {
                 ("ClientName", "اسم العميل", 120),
                 ("Phone", "الهاتف", 90),
                 ("Balance", "المبلغ المستحق", 90)
-            }), 1, 0);
+            }), 2, 0);
 
             pnlDetails.Controls.Add(BuildDetailSection("🏢 كبار الموردين (دائنون)", out dgTopSuppliers, new[] {
                 ("SupplierName", "اسم المورد", 120),
                 ("Phone", "الهاتف", 90),
                 ("Balance", "المطلوب سداده", 90)
-            }), 2, 0);
+            }), 3, 0);
         }
 
         private void InitPLTab()
@@ -418,10 +435,10 @@ namespace ChickenDist.Forms
 
             var lblNotice = new Label
             {
-                Text = "💡 قم بإدخال الأرصدة الافتتاحية الدفترية للأصول الثابتة، رأس المال، القروض والتسويات والضرائب لتتزن ميزانيتك وقائمة الدخل بشكل احترافي.",
+                Text = "💡 ملاحظة محاسبية: الأصول الثابتة المسجلة في دليل الأصول (وكذلك أقساط إهلاكها) تُربط وتُحسب تلقائياً في الميزانية وقائمة الدخل دون الحاجة لإدخالها هنا. الأسطر أدناه مخصصة فقط للأرصدة الافتتاحية السابقة أو التسويات اليدوية وتُضاف تلقائياً للأصول.",
                 Dock = DockStyle.Fill,
-                ForeColor = Theme.TextSub,
-                Font = Theme.FontNormal,
+                ForeColor = Color.FromArgb(30, 64, 175),
+                Font = Theme.FontBold,
                 TextAlign = ContentAlignment.MiddleLeft
             };
             layout.Controls.Add(lblNotice, 0, 0);
@@ -674,7 +691,39 @@ namespace ChickenDist.Forms
                 decimal workingCapital = currentAssets - currentLiabilities;
                 lblWorkingCapital.Text = $"{workingCapital:N2} ج";
 
-                // 6. صافي الأرباح (اليوم/الفترة الحالية)
+                // 6. الأصول الثابتة الدفترية الحية (من دليل الأصول المسجلة + التسويات الافتتاحية)
+                var dtAssetCats = DbHelper.Query(@"
+                    SELECT 
+                        ISNULL(fac.CategoryName, N'أصول وتجهيزات أخرى') AS CatName,
+                        COUNT(fa.AssetID) AS AssetCount,
+                        ISNULL(SUM(fa.PurchaseCost), 0) AS TotalCost,
+                        ISNULL(SUM(fa.TotalAccumulatedDepreciation), 0) AS TotalDep,
+                        ISNULL(SUM(fa.CurrentBookValue), 0) AS TotalBookValue
+                    FROM FixedAssets fa
+                    LEFT JOIN FixedAssetCategories fac ON fa.CategoryID = fac.CategoryID
+                    WHERE fa.Status NOT IN ('Sold', 'Scrapped')
+                    GROUP BY fac.CategoryName
+                    ORDER BY TotalBookValue DESC");
+
+                dgFixedAssetsSummary.Rows.Clear();
+                decimal liveAssetsBookValueTotal = 0m;
+
+                foreach (DataRow r in dtAssetCats.Rows)
+                {
+                    decimal bVal = Convert.ToDecimal(r["TotalBookValue"]);
+                    liveAssetsBookValueTotal += bVal;
+                    dgFixedAssetsSummary.Rows.Add(r["CatName"], r["AssetCount"], bVal.ToString("N2") + " ج");
+                }
+
+                decimal adjFixedAssets = GetAdj("Land") + GetAdj("Buildings") + GetAdj("Machinery") + GetAdj("Vehicles") + GetAdj("Furniture") + GetAdj("Computers") + GetAdj("Investments") + GetAdj("Intangibles") - GetAdj("AccumulatedDepreciation");
+                decimal totalFixedAssets = liveAssetsBookValueTotal + adjFixedAssets;
+                lblTotalFixedAssets.Text = $"{totalFixedAssets:N2} ج";
+
+                // 7. إجمالي أصول النشاط الكلية (الأصول المتداولة + الأصول الثابتة)
+                decimal totalAssets = currentAssets + totalFixedAssets;
+                lblTotalAssets.Text = $"{totalAssets:N2} ج";
+
+                // 8. صافي الأرباح (اليوم/الفترة الحالية)
                 DataTable dtPL = GetCalculatedPL(DateTime.Today, DateTime.Now);
                 decimal netProfit = 0m;
                 if (dtPL.Rows.Count > 0)
@@ -859,32 +908,61 @@ namespace ChickenDist.Forms
                 totalOperatingExpenses += amt;
             }
 
+            // قسط إهلاك الأصول الثابتة للفترة (محسوب آلياً من سجل إهلاكات الأصول)
+            object depObj = DbHelper.Scalar(@"
+                SELECT ISNULL(SUM(Amount), 0) 
+                FROM FixedAssetDepreciations 
+                WHERE CAST(DepreciationDate AS DATE) BETWEEN @f AND @t", 
+                DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+            decimal periodDepreciation = depObj != null ? Convert.ToDecimal(depObj) : 0m;
+
+            if (periodDepreciation > 0)
+            {
+                dt.Rows.Add("   🔻 إهلاك الأصول الثابتة للفترة", periodDepreciation, 0, -periodDepreciation);
+                totalOperatingExpenses += periodDepreciation;
+            }
+
             decimal operatingProfit = grossProfit + otherOpRevenues - totalOperatingExpenses;
             dt.Rows.Add("⚖️ الربح (الخسارة) التشغيلي", 0, operatingProfit, operatingProfit);
 
-            // الإيرادات الأخرى (غير تشغيلية) من التسويات
-            decimal gainAssetSale = GetAdj("GainOnAssetSale");
+            // أرباح وخسائر بيع وتخريد الأصول الثابتة من سجل العمليات الفعلي
+            object opGainObj = DbHelper.Scalar(@"
+                SELECT ISNULL(SUM(GainLossAmount), 0) 
+                FROM FixedAssetOperations 
+                WHERE OpType = 'Sale' AND GainLossAmount > 0 AND CAST(OpDate AS DATE) BETWEEN @f AND @t", 
+                DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+            decimal liveGainAssetSale = opGainObj != null ? Convert.ToDecimal(opGainObj) : 0m;
+
+            object opLossObj = DbHelper.Scalar(@"
+                SELECT ISNULL(SUM(ABS(GainLossAmount)), 0) 
+                FROM FixedAssetOperations 
+                WHERE (OpType = 'Sale' OR OpType = 'Scrap') AND GainLossAmount < 0 AND CAST(OpDate AS DATE) BETWEEN @f AND @t", 
+                DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+            decimal liveLossAssetSale = opLossObj != null ? Convert.ToDecimal(opLossObj) : 0m;
+
+            // الإيرادات الأخرى (غير تشغيلية) من العمليات والتسويات
+            decimal gainAssetSale = liveGainAssetSale + GetAdj("GainOnAssetSale");
             decimal interestEarned = GetAdj("InterestEarned");
             decimal fxGain = GetAdj("FXGain");
             decimal otherRevenues = GetAdj("OtherRevenues");
             decimal totalOtherRevenues = gainAssetSale + interestEarned + fxGain + otherRevenues;
 
-            dt.Rows.Add("   ➕ أرباح بيع أصول", 0, gainAssetSale, gainAssetSale);
+            dt.Rows.Add("   ➕ أرباح بيع أصول رأسمالية", 0, gainAssetSale, gainAssetSale);
             dt.Rows.Add("   ➕ فوائد دائنة محصلة", 0, interestEarned, interestEarned);
             dt.Rows.Add("   ➕ أرباح فروق العملة", 0, fxGain, fxGain);
             dt.Rows.Add("   ➕ إيرادات غير تشغيلية أخرى", 0, otherRevenues, otherRevenues);
 
-            // المصروفات الأخرى (غير تشغيلية) من التسويات
+            // المصروفات الأخرى (غير تشغيلية) من العمليات والتسويات
             decimal interestPaid = GetAdj("InterestPaid");
             decimal fxLoss = GetAdj("FXLoss");
-            decimal lossAssetSale = GetAdj("LossOnAssetSale");
+            decimal lossAssetSale = liveLossAssetSale + GetAdj("LossOnAssetSale");
             decimal finesPenalties = GetAdj("FinesPenalties");
             decimal otherExpenses = GetAdj("OtherExpenses");
             decimal totalOtherExpenses = interestPaid + fxLoss + lossAssetSale + finesPenalties + otherExpenses;
 
             dt.Rows.Add("   ➖ فوائد مدينة مدفوعة", interestPaid, 0, -interestPaid);
             dt.Rows.Add("   ➖ خسائر فروق العملة", fxLoss, 0, -fxLoss);
-            dt.Rows.Add("   ➖ خسائر بيع أصول", lossAssetSale, 0, -lossAssetSale);
+            dt.Rows.Add("   ➖ خسائر بيع/تخريد أصول", lossAssetSale, 0, -lossAssetSale);
             dt.Rows.Add("   ➖ غرامات وجزاءات حكومية", finesPenalties, 0, -finesPenalties);
             dt.Rows.Add("   ➖ مصروفات غير تشغيلية أخرى", otherExpenses, 0, -otherExpenses);
 
@@ -1003,19 +1081,82 @@ namespace ChickenDist.Forms
                 decimal totalCurrentAssets = liveCash + liveClients + GetAdj("NotesReceivable") + liveInventory + GetAdj("PrepaidExpenses") + GetAdj("AccruedRevenues") + GetAdj("CustodiesAdvances");
                 assets.Add(new KeyValuePair<string, decimal>("👉 إجمالي الأصول المتداولة", totalCurrentAssets));
 
-                assets.Add(new KeyValuePair<string, decimal>("🟢 الأصول غير المتداولة (الثابتة)", 0m));
-                assets.Add(new KeyValuePair<string, decimal>("   الأراضي", GetAdj("Land")));
-                assets.Add(new KeyValuePair<string, decimal>("   المباني والإنشاءات", GetAdj("Buildings")));
-                assets.Add(new KeyValuePair<string, decimal>("   الآلات والمعدات", GetAdj("Machinery")));
-                assets.Add(new KeyValuePair<string, decimal>("   السيارات ووسائل النقل", GetAdj("Vehicles")));
-                assets.Add(new KeyValuePair<string, decimal>("   الأثاث والتجهيزات", GetAdj("Furniture")));
-                assets.Add(new KeyValuePair<string, decimal>("   أجهزة الحاسب الآلي والشبكات", GetAdj("Computers")));
-                assets.Add(new KeyValuePair<string, decimal>("   الاستثمارات طويلة الأجل", GetAdj("Investments")));
-                assets.Add(new KeyValuePair<string, decimal>("   الأصول غير الملموسة", GetAdj("Intangibles")));
-                assets.Add(new KeyValuePair<string, decimal>("   مجمع الإهلاك للاستقطاع (-)", GetAdj("AccumulatedDepreciation")));
+                // حساب الأصول الثابتة الحية حسب التصنيفات المحاسبية الفعلية
+                decimal catLand = 0m;
+                decimal catBuildings = 0m;
+                decimal catMachinery = 0m;
+                decimal catVehicles = 0m;
+                decimal catFurniture = 0m;
+                decimal catComputers = 0m;
+                decimal catIntangibles = 0m;
+                decimal catOther = 0m;
+                decimal liveTotalDep = 0m;
 
-                decimal totalFixedAssets = GetAdj("Land") + GetAdj("Buildings") + GetAdj("Machinery") + GetAdj("Vehicles") + GetAdj("Furniture") + GetAdj("Computers") + GetAdj("Investments") + GetAdj("Intangibles") - GetAdj("AccumulatedDepreciation");
-                assets.Add(new KeyValuePair<string, decimal>("👉 إجمالي الأصول غير المتداولة", totalFixedAssets));
+                var dtAssetDetails = DbHelper.Query(@"
+                    SELECT 
+                        ISNULL(fac.CategoryName, N'أصول وتجهيزات أخرى') AS CatName,
+                        ISNULL(SUM(fa.PurchaseCost), 0) AS TotalCost,
+                        ISNULL(SUM(fa.TotalAccumulatedDepreciation), 0) AS TotalDep,
+                        ISNULL(SUM(fa.CurrentBookValue), 0) AS TotalBookValue
+                    FROM FixedAssets fa
+                    LEFT JOIN FixedAssetCategories fac ON fa.CategoryID = fac.CategoryID
+                    WHERE fa.Status NOT IN ('Sold', 'Scrapped')
+                    GROUP BY fac.CategoryName");
+
+                foreach (DataRow r in dtAssetDetails.Rows)
+                {
+                    string cname = r["CatName"].ToString();
+                    decimal cost = Convert.ToDecimal(r["TotalCost"]);
+                    decimal dep = Convert.ToDecimal(r["TotalDep"]);
+                    liveTotalDep += dep;
+
+                    if (cname.Contains("أراض") || cname.ToLower().Contains("land"))
+                        catLand += cost;
+                    else if (cname.Contains("مبان") || cname.ToLower().Contains("building"))
+                        catBuildings += cost;
+                    else if (cname.Contains("آلات") || cname.Contains("معدات") || cname.Contains("ماكين") || cname.ToLower().Contains("machin"))
+                        catMachinery += cost;
+                    else if (cname.Contains("سيار") || cname.Contains("مركب") || cname.Contains("نقل") || cname.ToLower().Contains("vehic"))
+                        catVehicles += cost;
+                    else if (cname.Contains("أثاث") || cname.Contains("ديكور") || cname.Contains("تجهيز") || cname.ToLower().Contains("furnit"))
+                        catFurniture += cost;
+                    else if (cname.Contains("حاسب") || cname.Contains("كمبيوتر") || cname.Contains("طابع") || cname.Contains("شبك") || cname.ToLower().Contains("computer"))
+                        catComputers += cost;
+                    else if (cname.Contains("غير ملموس") || cname.Contains("برمج") || cname.ToLower().Contains("intang"))
+                        catIntangibles += cost;
+                    else
+                        catOther += cost;
+                }
+
+                assets.Add(new KeyValuePair<string, decimal>("🟢 الأصول غير المتداولة (الثابتة)", 0m));
+                assets.Add(new KeyValuePair<string, decimal>("   الأراضي", catLand + GetAdj("Land")));
+                assets.Add(new KeyValuePair<string, decimal>("   المباني والإنشاءات", catBuildings + GetAdj("Buildings")));
+                assets.Add(new KeyValuePair<string, decimal>("   الآلات والمعدات والماكينات", catMachinery + GetAdj("Machinery")));
+                assets.Add(new KeyValuePair<string, decimal>("   السيارات ووسائل النقل", catVehicles + GetAdj("Vehicles")));
+                assets.Add(new KeyValuePair<string, decimal>("   الأثاث والتجهيزات والديكور", catFurniture + GetAdj("Furniture")));
+                assets.Add(new KeyValuePair<string, decimal>("   أجهزة الحاسب الآلي والشبكات", catComputers + GetAdj("Computers")));
+                assets.Add(new KeyValuePair<string, decimal>("   الاستثمارات طويلة الأجل", GetAdj("Investments")));
+                assets.Add(new KeyValuePair<string, decimal>("   الأصول غير الملموسة والبرمجيات", catIntangibles + GetAdj("Intangibles")));
+                if (catOther > 0)
+                {
+                    assets.Add(new KeyValuePair<string, decimal>("   أصول وتجهيزات رأسمالية أخرى", catOther));
+                }
+
+                decimal totalAccumDep = liveTotalDep + GetAdj("AccumulatedDepreciation");
+                assets.Add(new KeyValuePair<string, decimal>("   مجمع الإهلاك المتراكم للأصول (-)", totalAccumDep));
+
+                decimal totalFixedAssets = (catLand + GetAdj("Land"))
+                                         + (catBuildings + GetAdj("Buildings"))
+                                         + (catMachinery + GetAdj("Machinery"))
+                                         + (catVehicles + GetAdj("Vehicles"))
+                                         + (catFurniture + GetAdj("Furniture"))
+                                         + (catComputers + GetAdj("Computers"))
+                                         + GetAdj("Investments")
+                                         + (catIntangibles + GetAdj("Intangibles"))
+                                         + catOther
+                                         - totalAccumDep;
+
+                assets.Add(new KeyValuePair<string, decimal>("👉 إجمالي الأصول غير المتداولة (الصافي)", totalFixedAssets));
 
                 decimal totalAssets = totalCurrentAssets + totalFixedAssets;
                 assets.Add(new KeyValuePair<string, decimal>("🏆 إجمالي الأصول الكلية", totalAssets));
@@ -1041,15 +1182,25 @@ namespace ChickenDist.Forms
                 decimal totalLongTermLiabilities = GetAdj("LongTermLoans") + GetAdj("LongTermLiabilities");
                 liabilities.Add(new KeyValuePair<string, decimal>("👉 إجمالي الخصوم غير المتداولة", totalLongTermLiabilities));
 
+                // جلب رأس مال الشركاء والمساهمين والمسحوبات الحية إن وجدت
+                object partnerCapObj = DbHelper.Scalar("SELECT ISNULL(SUM(CapitalContribution), 0) FROM Partners WHERE IsActive = 1");
+                decimal livePartnerCapital = partnerCapObj != null ? Convert.ToDecimal(partnerCapObj) : 0m;
+
+                object partnerDrawObj = DbHelper.Scalar("SELECT ISNULL(SUM(Debit), 0) FROM PartnerTransactions WHERE TransType = 'Drawing'");
+                decimal livePartnerDrawings = partnerDrawObj != null ? Convert.ToDecimal(partnerDrawObj) : 0m;
+
+                decimal totalCapital = livePartnerCapital + GetAdj("Capital");
+                decimal totalDrawings = livePartnerDrawings + GetAdj("Drawings");
+
                 liabilities.Add(new KeyValuePair<string, decimal>("🔵 حقوق الملكية (رأس المال والاحتياطيات)", 0m));
-                liabilities.Add(new KeyValuePair<string, decimal>("   رأس المال الافتتاحي للشركاء", GetAdj("Capital")));
+                liabilities.Add(new KeyValuePair<string, decimal>("   رأس المال الافتتاحي للشركاء", totalCapital));
                 liabilities.Add(new KeyValuePair<string, decimal>("   الاحتياطي القانوني", GetAdj("LegalReserve")));
                 liabilities.Add(new KeyValuePair<string, decimal>("   الاحتياطي العام للمكان", GetAdj("GeneralReserve")));
                 liabilities.Add(new KeyValuePair<string, decimal>("   الأرباح المحتجزة / المدورة", GetAdj("RetainedEarnings")));
                 liabilities.Add(new KeyValuePair<string, decimal>("   صافي أرباح (خسائر) الفترة الحالية", netPeriodProfit));
-                liabilities.Add(new KeyValuePair<string, decimal>("   المسحوبات الشخصية للشركاء (-)", GetAdj("Drawings")));
+                liabilities.Add(new KeyValuePair<string, decimal>("   المسحوبات الشخصية للشركاء (-)", totalDrawings));
 
-                decimal totalEquity = GetAdj("Capital") + GetAdj("LegalReserve") + GetAdj("GeneralReserve") + GetAdj("RetainedEarnings") + netPeriodProfit - GetAdj("Drawings");
+                decimal totalEquity = totalCapital + GetAdj("LegalReserve") + GetAdj("GeneralReserve") + GetAdj("RetainedEarnings") + netPeriodProfit - totalDrawings;
                 liabilities.Add(new KeyValuePair<string, decimal>("👉 إجمالي حقوق الملكية الكلية", totalEquity));
 
                 decimal totalLiabilitiesAndEquity = totalCurrentLiabilities + totalLongTermLiabilities + totalEquity;
@@ -1152,28 +1303,30 @@ namespace ChickenDist.Forms
                     g.DrawString("📌 أولاً: ملخص السيولة والموجودات والمطلوبات النقدية والمخزونية", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
                     y += 26;
 
-                    int cardWidth = (tableWidth - 10) / 3;
+                    int cardWidth = (tableWidth - 15) / 4;
                     int cardHeight = 44;
 
                     string[,] cards = {
                         { "💵 إجمالي السيولة بالخزن", lblTotalCash.Text, "0" },
-                        { "📦 قيمة المخزون الحالي (شراء)", lblInventoryPurchase.Text, "1" },
-                        { "👥 مديونيات ومستحقات العملاء", lblClientReceivables.Text, "2" },
-                        { "🏢 مطلوبات وديون الموردين", lblSupplierPayables.Text, "3" },
-                        { "⚖️ رأس المال العامل الصافي", lblWorkingCapital.Text, "4" },
-                        { "📈 صافي أرباح الفترة الحالية", lblNetProfitDashboard.Text, "5" }
+                        { "📦 قيمة المخزون بالشراء", lblInventoryPurchase.Text, "1" },
+                        { "👥 مستحقات العملاء", lblClientReceivables.Text, "2" },
+                        { "🏢 ديون الموردين", lblSupplierPayables.Text, "3" },
+                        { "🏛️ صافي الأصول الثابتة", lblTotalFixedAssets.Text, "4" },
+                        { "🏆 إجمالي أصول النشاط", lblTotalAssets.Text, "5" },
+                        { "⚖️ رأس المال العامل", lblWorkingCapital.Text, "6" },
+                        { "📈 صافي أرباح الفترة", lblNetProfitDashboard.Text, "7" }
                     };
 
-                    for (int i = 0; i < 6; i++)
+                    for (int i = 0; i < 8; i++)
                     {
-                        int row = i / 3;
-                        int col = i % 3;
-                        int cx = leftMargin + (2 - col) * (cardWidth + 5);
+                        int row = i / 4;
+                        int col = i % 4;
+                        int cx = leftMargin + (3 - col) * (cardWidth + 5);
                         int cy = y + row * (cardHeight + 6);
 
                         Color bgCol = (i == 0 || i == 4) ? Color.FromArgb(235, 245, 255) :
                                       (i == 1 || i == 5) ? Color.FromArgb(235, 250, 240) :
-                                      (i == 2) ? Color.FromArgb(240, 248, 255) : Color.FromArgb(255, 240, 240);
+                                      (i == 2 || i == 6) ? Color.FromArgb(240, 248, 255) : Color.FromArgb(255, 240, 240);
 
                         g.FillRectangle(new SolidBrush(bgCol), cx, cy, cardWidth, cardHeight);
                         g.DrawRectangle(Pens.SteelBlue, cx, cy, cardWidth, cardHeight);
