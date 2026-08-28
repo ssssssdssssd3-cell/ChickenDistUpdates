@@ -147,8 +147,9 @@ namespace ChickenDist.Core
         {
             get
             {
-                string val = Get("A5ShiftRight", "55");
-                return int.TryParse(val, out int s) ? s : 55;
+                // إزاحة طباعة A5 لليمين: 4.5 سم = 177 نقطة (الافتراضي: 175)
+                string val = Get("A5ShiftRight", "175");
+                return int.TryParse(val, out int s) ? s : 175;
             }
             set => Set("A5ShiftRight", value.ToString());
         }

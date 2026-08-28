@@ -90,8 +90,9 @@ namespace ChickenDist.Forms
             }
             else
             {
-                bool isA4 = string.Equals(_printFormat, "A4", StringComparison.OrdinalIgnoreCase) ||
-                            (string.Equals(AppConfig.DefaultInvoiceFormat, "A4", StringComparison.OrdinalIgnoreCase) && !string.Equals(_printFormat, "A5", StringComparison.OrdinalIgnoreCase));
+                bool isA5 = string.Equals(_printFormat, "A5", StringComparison.OrdinalIgnoreCase);
+                bool isA4 = !isA5 && (string.Equals(_printFormat, "A4", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(AppConfig.DefaultInvoiceFormat, "A4", StringComparison.OrdinalIgnoreCase));
                 if (isA4)
                 {
                     pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
@@ -99,8 +100,9 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
-                    pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
+                    // طباعة A5 على طابعات الليزر (عبر درج A4): نحدد أبعاد الصفحة A4 لمنع درايفر الطابعة من قص الإزاحة الأفقية
+                    pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+                    pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
                 }
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
@@ -128,19 +130,19 @@ namespace ChickenDist.Forms
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
-                int pageW = e.PageBounds.Width;
-                bool isA4Page = !isReceipt && pageW > 700;
+                bool isA5 = string.Equals(_printFormat, "A5", StringComparison.OrdinalIgnoreCase);
+                bool isA4Page = !isReceipt && !isA5;
+                int pageW = isA5 ? 583 : e.PageBounds.Width;
 
-                // إزاحة نموذج A5 ناحية اليمين بمقدار محسوب بدقة لمعادلة هوامش الطابعة وسحب المحتوى بالكامل داخل الصفحة
-                int a5Shift = (!isReceipt && !isA4Page) ? AppConfig.A5ShiftRight : 0;
+                // إزاحة نموذج A5 ناحية اليمين (حوالي 4.5 سم = 175 نقطة) لضبطه داخل الصفحة ودفتر الفواتير
+                int a5Shift = isA5 ? AppConfig.A5ShiftRight : 0;
                 if (a5Shift != 0)
                 {
                     g.TranslateTransform(a5Shift, 0);
-                    pageW -= a5Shift;
                 }
 
-                int lMargin = isReceipt ? 12 : (isA4Page ? 30 : 22);
-                int rMargin = isReceipt ? 28 : (isA4Page ? 30 : 22);
+                int lMargin = isReceipt ? 12 : (isA4Page ? 30 : 24);
+                int rMargin = isReceipt ? 28 : (isA4Page ? 30 : 24);
                 int printableW = pageW - lMargin - rMargin;
                 int margin = lMargin;
                 int y = isReceipt ? 5 : (isA4Page ? 20 : 15);
@@ -2188,8 +2190,8 @@ namespace ChickenDist.Forms
             }
             else if (isA5)
             {
-                pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827);
-                pd.DefaultPageSettings.Margins = new Margins(28, 28, 28, 28);
+                pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
+                pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
                 AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
             }
             else
@@ -2213,7 +2215,7 @@ namespace ChickenDist.Forms
             pd.PrintPage += (s, e) =>
             {
                 var g = e.Graphics;
-                int pageW = e.PageBounds.Width;
+                int pageW = isA5 ? 583 : e.PageBounds.Width;
                 bool isA4Page = isA4;
                 float titleSize  = isReceipt ? 12f : (isA4Page ? 16f : 13f);
                 float headerSize = isReceipt ? 9f  : (isA4Page ? 11f : 9.5f);
@@ -2239,7 +2241,7 @@ namespace ChickenDist.Forms
                 }
 
                 int margin = isReceipt ? 10 : (isA5 ? 20 : 30);
-                int pageWidth = e.PageBounds.Width - a5Shift;
+                int pageWidth = isA5 ? 583 : e.PageBounds.Width;
                 int left  = margin;
                 int right = pageWidth - margin;
                 int width = right - left;
