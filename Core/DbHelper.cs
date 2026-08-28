@@ -3735,61 +3735,108 @@ namespace ChickenDist.Core
                     IF EXISTS (SELECT * FROM sys.tables WHERE name='versions')
                     BEGIN
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('versions') AND name = 'UpdatedBy')
-                        BEGIN
                             ALTER TABLE [versions] ADD [UpdatedBy] NVARCHAR(100) NULL;
-                        END
                         IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('versions') AND name = 'UpdatedAt')
-                        BEGIN
                             ALTER TABLE [versions] ADD [UpdatedAt] DATETIME DEFAULT GETDATE();
-                        END
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('versions') AND name = 'AppBinary')
+                            ALTER TABLE [versions] ADD [AppBinary] VARBINARY(MAX) NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('versions') AND name = 'BinaryLength')
+                            ALTER TABLE [versions] ADD [BinaryLength] BIGINT NULL;
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('versions') AND name = 'BinarySha256')
+                            ALTER TABLE [versions] ADD [BinarySha256] NVARCHAR(100) NULL;
                     END");
 
-                // قراءة الإصدار المسجل في السيكول من جدول versions
-                object dbVerObj = Scalar("SELECT TOP 1 [version] FROM [versions] ORDER BY [UpdatedAt] DESC");
-                if (dbVerObj == null || dbVerObj == DBNull.Value || string.IsNullOrWhiteSpace(dbVerObj.ToString()))
+                // قراءة الإصدار المسجل في السيكول من جدول versions مع بيانات الملف التنفيذي
+                var dtVer = Query(@"
+                    SELECT TOP 1 [version], [UpdatedAt], [UpdatedBy], 
+                           CASE WHEN [AppBinary] IS NOT NULL AND DATALENGTH([AppBinary]) > 500000 THEN 1 ELSE 0 END AS HasBinary 
+                    FROM [versions] 
+                    ORDER BY [UpdatedAt] DESC");
+
+                if (dtVer.Rows.Count == 0 || dtVer.Rows[0]["version"] == DBNull.Value || string.IsNullOrWhiteSpace(dtVer.Rows[0]["version"].ToString()))
                 {
-                    // إذا كان الجدول فارغاً، نسجل الإصدار الحالي كإصدار رئيسي معتمد
+                    // إذا كان الجدول فارغاً، نسجل الإصدار الحالي كإصدار رئيسي معتمد ونرفع الـ EXE
                     Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
                         P("@ver", currentAppVersion), P("@by", Environment.MachineName));
+                    TrySyncLocalBinaryToDatabase(currentAppVersion);
                     return true;
                 }
 
-                string dbVersionStr = dbVerObj.ToString().Trim();
+                var rowVer = dtVer.Rows[0];
+                string dbVersionStr = rowVer["version"].ToString().Trim();
+                string serverMachine = rowVer["UpdatedBy"] != DBNull.Value ? rowVer["UpdatedBy"].ToString() : "السيرفر الرئيسي";
+                DateTime updatedAt = rowVer["UpdatedAt"] != DBNull.Value ? Convert.ToDateTime(rowVer["UpdatedAt"]) : DateTime.Now;
+                bool hasBinary = Convert.ToInt32(rowVer["HasBinary"]) == 1;
+
                 int cmp = CompareVersions(currentAppVersion, dbVersionStr);
 
                 if (cmp >= 0)
                 {
-                    // إذا كان هذا الجهاز أحدث (الجهاز الرئيسي تم تحديثه مانويل)، نحدث جدول versions برقم الإصدار الجديد بالسيكول فوراً
+                    // إذا كان هذا الجهاز أحدث (الجهاز الرئيسي تم تحديثه)، نحدث جدول versions برقم الإصدار الجديد بالسيكول فوراً
                     if (cmp > 0)
                     {
                         Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
                             P("@ver", currentAppVersion), P("@by", Environment.MachineName));
                     }
+                    // رفع نسخة البرنامج الحالية لقاعدة البيانات لتمكين الأجهزة الفرعية من تحميلها
+                    TrySyncLocalBinaryToDatabase(currentAppVersion);
                     return true;
                 }
                 else
                 {
-                    // إذا كان إصدار البرنامج على هذا الجهاز أقدم من المسجل في السيكول (جهاز فرعي لم يتم تحديثه مانويل)
-                    string errorMsg = $"⛔ تم منع تشغيل البرنامج - مطلوب تحديث إصدار هذا الجهاز!\n\n" +
-                                      $"• إصدار هذا الجهاز (القديم):            [ v{currentAppVersion} ]\n" +
-                                      $"• إصدار السيرفر الرئيسي المعتمد بالسيكول: [ v{dbVersionStr} ]\n\n" +
-                                      $"تم تحديث السيرفر الرئيسي وقاعدة البيانات إلى الإصدار الأحدث (v{dbVersionStr}).\n" +
-                                      $"تم حظر فتح البرنامج من هذا الجهاز منعاً لتلف البيانات وتضارب الفواتير والعمليات.\n\n" +
-                                      $"يرجى استبدال ملف البرنامج (الأيقونة) على هذا الجهاز بالإصدار الحديث (v{dbVersionStr}).";
-
-                    MessageBox.Show(errorMsg, "⛔ تم حظر التشغيل - إصدار البرنامج غير مطابق للسيرفر",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Stop,
-                        MessageBoxDefaultButton.Button1,
-                        MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-
-                    return false;
+                    // جهاز فرعي يحمل إصدار أقدم من السيرفر الرئيسي!
+                    // فتح نافذة التحديث التفاعلية المخصصة للأجهزة الفرعية
+                    return Forms.FrmClientUpdatePrompt.ShowUpdateDialog(currentAppVersion, dbVersionStr, serverMachine, updatedAt, hasBinary);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Error("CheckAndEnforceVersion failed", ex, "DbHelper");
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// رفع نسخة البرنامج التنفيذية الحالية (ProSoft.exe) إلى جدول versions في السيكول
+        /// لتمكين كافة الأجهزة الفرعية من تحميلها مباشرة عبر الشبكة المحلية في ثوانٍ معدودة
+        /// </summary>
+        public static void TrySyncLocalBinaryToDatabase(string version)
+        {
+            try
+            {
+                object hasBin = Scalar("SELECT COUNT(*) FROM [versions] WHERE [version] = @ver AND [AppBinary] IS NOT NULL AND DATALENGTH([AppBinary]) > 500000", P("@ver", version));
+                if (Convert.ToInt32(hasBin) == 0)
+                {
+                    string runningExe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                    if (System.IO.File.Exists(runningExe))
+                    {
+                        byte[] bytes = System.IO.File.ReadAllBytes(runningExe);
+                        if (bytes.Length > 500000)
+                        {
+                            string sha = UpdateManager.ComputeSha256(runningExe);
+                            using (var conn = GetConnection())
+                            {
+                                conn.Open();
+                                using (var cmd = new SqlCommand(@"
+                                    UPDATE [versions] 
+                                    SET [AppBinary] = @bin, [BinaryLength] = @len, [BinarySha256] = @sha, [UpdatedAt] = GETDATE(), [UpdatedBy] = @by 
+                                    WHERE [version] = @ver", conn))
+                                {
+                                    cmd.Parameters.Add("@bin", SqlDbType.VarBinary, -1).Value = bytes;
+                                    cmd.Parameters.AddWithValue("@len", bytes.Length);
+                                    cmd.Parameters.AddWithValue("@sha", sha ?? "");
+                                    cmd.Parameters.AddWithValue("@by", Environment.MachineName);
+                                    cmd.Parameters.AddWithValue("@ver", version);
+                                    cmd.ExecuteNonQuery();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("TrySyncLocalBinaryToDatabase failed", ex, "DbHelper");
             }
         }
 

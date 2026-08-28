@@ -174,33 +174,63 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(150, 180, 210),
                 AutoSize = false,
-                Size = new Size(480, 24),
+                Size = new Size(480, 20),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(0, 520)
+                Location = new Point(0, 510)
             };
 
             // ── شريط عرض الإصدار الحالي ─────────────────────────────────────
             lblUpdateStatus = new Label
             {
-                Text = $"🎯 إصدار البرنامج: v{UpdateManager.CurrentVersion}",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(160, 210, 255),
+                Text = $"🎯 إصدار البرنامج: v{UpdateManager.CurrentVersion} (انقر للفحص أو التحديث)",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(125, 211, 252),
                 AutoSize = false,
-                Size = new Size(480, 24),
+                Size = new Size(480, 22),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(0, 546),
+                Location = new Point(0, 532),
                 Cursor = Cursors.Hand
             };
-            lblUpdateStatus.Click += delegate { UpdateManager.CheckForUpdates(showNoUpdateMsg: true); };
+            lblUpdateStatus.MouseEnter += (s, e) => { lblUpdateStatus.ForeColor = Color.FromArgb(56, 189, 248); };
+            lblUpdateStatus.MouseLeave += (s, e) => { lblUpdateStatus.ForeColor = Color.FromArgb(125, 211, 252); };
+            lblUpdateStatus.Click += delegate
+            {
+                if (!DbHelper.CheckAndEnforceVersion(UpdateManager.CurrentVersion))
+                {
+                    return;
+                }
+                UpdateManager.CheckForUpdates(showNoUpdateMsg: true);
+            };
+
+            var btnUpdateFromMain = new Button
+            {
+                Text = "🔄 فحص وتحديث الإصدار من السيرفر الرئيسي",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(16, 185, 129),
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(260, 28),
+                Location = new Point(110, 556),
+                Cursor = Cursors.Hand
+            };
+            btnUpdateFromMain.FlatAppearance.BorderSize = 0;
+            btnUpdateFromMain.Click += delegate
+            {
+                if (!DbHelper.CheckAndEnforceVersion(UpdateManager.CurrentVersion))
+                {
+                    return;
+                }
+                UpdateManager.CheckForUpdates(showNoUpdateMsg: true);
+            };
 
             pbUpdate = new ProgressBar
             {
-                Location = new Point(0, 570),
+                Location = new Point(0, 586),
                 Size = new Size(480, 4),
                 Visible = false
             };
 
-            this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter, lblUpdateStatus, pbUpdate });
+            this.Controls.AddRange(new Control[] { pnlTop, pnlCard, lblFooter, lblUpdateStatus, btnUpdateFromMain, pbUpdate });
         }
 
         private int _failedAttempts = 0;

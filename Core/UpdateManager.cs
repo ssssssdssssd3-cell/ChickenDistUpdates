@@ -6,13 +6,14 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.ComponentModel;
+using System.Data;
 
 namespace ChickenDist.Core
 {
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "2.2.2";
+        public const string CurrentVersion = "2.2.3";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -107,7 +108,7 @@ namespace ChickenDist.Core
         }
 
         // ─── التحقق من سلامة الملف عبر SHA-256 ───
-        private static string ComputeSha256(string filePath)
+        public static string ComputeSha256(string filePath)
         {
             using (var sha = SHA256.Create())
             using (var stream = File.OpenRead(filePath))
@@ -408,6 +409,205 @@ del /f /q ""{newExePath}"" > nul 2>&1
                 AppLogger.Error("ApplyAndReplaceExe failed", ex, "UpdateManager");
                 MessageBox.Show("فشل استبدال ملف البرنامج تلقائياً:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        /// <summary>
+        /// تحميل ملف البرنامج المعتمد مباشرة من قاعدة بيانات السيرفر الرئيسي عبر الشبكة المحلية LAN
+        /// </summary>
+        public static bool DownloadFromDatabase(string targetVersion, string destinationExePath, Action<int, string> onProgress, out string error)
+        {
+            error = "";
+            try
+            {
+                onProgress?.Invoke(10, "جاري الاستعلام عن ملف التحديث من السيرفر الرئيسي...");
+                byte[] bytes = null;
+                string expectedSha = null;
+
+                using (var conn = DbHelper.GetConnection())
+                {
+                    conn.Open();
+                    using (var cmd = new System.Data.SqlClient.SqlCommand(
+                        "SELECT TOP 1 [AppBinary], [BinarySha256], [BinaryLength] FROM [versions] WHERE [version] = @ver AND [AppBinary] IS NOT NULL", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@ver", targetVersion);
+                        using (var r = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
+                        {
+                            if (r.Read() && r["AppBinary"] != DBNull.Value)
+                            {
+                                bytes = (byte[])r["AppBinary"];
+                                expectedSha = r["BinarySha256"] != DBNull.Value ? r["BinarySha256"].ToString() : null;
+                            }
+                        }
+                    }
+                }
+
+                if (bytes == null || bytes.Length < 500000)
+                {
+                    error = "لم يتم العثور على ملف البرنامج في قاعدة البيانات، أو حجم الملف غير صالح.";
+                    return false;
+                }
+
+                onProgress?.Invoke(60, "جاري حفظ ملف التحديث على هذا الجهاز...");
+                string dir = Path.GetDirectoryName(destinationExePath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                File.WriteAllBytes(destinationExePath, bytes);
+
+                onProgress?.Invoke(90, "جاري التحقق من سلامة الملف...");
+                if (!string.IsNullOrEmpty(expectedSha))
+                {
+                    string actualSha = ComputeSha256(destinationExePath);
+                    if (!string.Equals(actualSha, expectedSha, StringComparison.OrdinalIgnoreCase))
+                    {
+                        try { File.Delete(destinationExePath); } catch { }
+                        error = "فشل التحقق من صحة الملف المحمل (SHA-256 غير مطابق).";
+                        return false;
+                    }
+                }
+
+                onProgress?.Invoke(100, "تم استلام الملف بنجاح!");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                AppLogger.Error("UpdateManager.DownloadFromDatabase", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// تحميل ملف البرنامج المعتمد من السيرفر السحابي (GitHub CDN) كخيار بديل
+        /// </summary>
+        public static bool DownloadFromWeb(string targetVersion, string destinationExePath, Action<int, string> onProgress, out string error)
+        {
+            error = "";
+            try
+            {
+                onProgress?.Invoke(15, "جاري فحص خادم التحديثات السحابي...");
+                string dlUrl = "";
+                string expectedSha = "";
+
+                using (var client = new WebClient())
+                {
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | (SecurityProtocolType)12288;
+                    client.Encoding = Encoding.UTF8;
+                    client.Headers.Add("User-Agent", "Mozilla/5.0 ProSoftAutoUpdater");
+
+                    string cacheBustedUrl = UpdateUrl + (UpdateUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
+                    string rawData = client.DownloadString(cacheBustedUrl).TrimStart('\uFEFF');
+                    string[] lines = rawData.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string line in lines)
+                    {
+                        int idx = line.IndexOf('=');
+                        if (idx > 0)
+                        {
+                            string k = line.Substring(0, idx).Trim().ToLower();
+                            string v = line.Substring(idx + 1).Trim();
+                            if (k == "url" || k == "download") dlUrl = v;
+                            if (k == "sha256") expectedSha = v;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(dlUrl))
+                {
+                    error = "تعذر الحصول على رابط التحديث من السيرفر السحابي.";
+                    return false;
+                }
+
+                onProgress?.Invoke(30, "جاري تنزيل التحديث السحابي...");
+                string dir = Path.GetDirectoryName(destinationExePath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                using (var client = new WebClient())
+                {
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | (SecurityProtocolType)12288;
+                    client.Headers.Add("User-Agent", "Mozilla/5.0 ProSoftAutoUpdater");
+
+                    client.DownloadProgressChanged += (s, e) =>
+                    {
+                        int p = 30 + (int)(e.ProgressPercentage * 0.60);
+                        onProgress?.Invoke(p, $"جاري التحميل: {e.ProgressPercentage}% ({e.BytesReceived / 1024 / 1024:0.#} ميجابايت)...");
+                    };
+
+                    using (var done = new System.Threading.AutoResetEvent(false))
+                    {
+                        Exception dlEx = null;
+                        client.DownloadFileCompleted += (s, e) =>
+                        {
+                            dlEx = e.Error;
+                            done.Set();
+                        };
+                        string finalDlUrl = dlUrl + (dlUrl.Contains("?") ? "&" : "?") + "t=" + DateTime.Now.Ticks;
+                        client.DownloadFileAsync(new Uri(finalDlUrl), destinationExePath);
+                        done.WaitOne();
+
+                        if (dlEx != null) throw dlEx;
+                    }
+                }
+
+                onProgress?.Invoke(92, "جاري التحقق من سلامة الملف المحمل...");
+                FileInfo fi = new FileInfo(destinationExePath);
+                if (!fi.Exists || fi.Length < 500000)
+                {
+                    error = "الملف المحمل غير صالح أو تالف.";
+                    return false;
+                }
+
+                if (!string.IsNullOrEmpty(expectedSha))
+                {
+                    string actualSha = ComputeSha256(destinationExePath);
+                    if (!string.Equals(actualSha, expectedSha, StringComparison.OrdinalIgnoreCase))
+                    {
+                        try { File.Delete(destinationExePath); } catch { }
+                        error = "فشل التحقق من صحة الملف المحمل (SHA-256 غير مطابق).";
+                        return false;
+                    }
+                }
+
+                onProgress?.Invoke(100, "اكتمل التحميل بنجاح!");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                AppLogger.Error("UpdateManager.DownloadFromWeb", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// تحميل وتثبيت التحديث للأجهزة الفرعية تلقائياً (يحاول من السيرفر المحلي أولاً ثم السحابي)
+        /// </summary>
+        public static bool DownloadAndInstallClientUpdate(string targetVersion, Action<int, string> onProgress, out string error)
+        {
+            error = "";
+            string currentExe = Process.GetCurrentProcess().MainModule.FileName;
+            string currentDir = Path.GetDirectoryName(currentExe);
+            string updatesDir = Path.Combine(currentDir, "Updates");
+            if (!Directory.Exists(updatesDir)) Directory.CreateDirectory(updatesDir);
+
+            string destPath = Path.Combine(updatesDir, $"ProSoft_v{targetVersion}.exe");
+
+            onProgress?.Invoke(5, "جاري محاولة التحميل المباشر من السيرفر الرئيسي (LAN)...");
+            bool ok = DownloadFromDatabase(targetVersion, destPath, onProgress, out string dbErr);
+
+            if (!ok)
+            {
+                onProgress?.Invoke(15, "جاري محاولة التحميل من خادم التحديثات السحابي...");
+                ok = DownloadFromWeb(targetVersion, destPath, onProgress, out string webErr);
+                if (!ok)
+                {
+                    error = $"فشل التحميل من السيرفر المحلي: {dbErr}\n\nوفشل التحميل السحابي: {webErr}";
+                    return false;
+                }
+            }
+
+            onProgress?.Invoke(98, "تم التحميل بنجاح! جاري تثبيت الإصدار وإعادة التشغيل...");
+            System.Threading.Thread.Sleep(500);
+            ApplyAndReplaceExe(destPath);
+            return true;
         }
     }
 }
