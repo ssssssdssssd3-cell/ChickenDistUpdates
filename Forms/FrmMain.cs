@@ -354,6 +354,12 @@ namespace ChickenDist.Forms
                 case "FrmShortageNotebook":
                     targetGroup = "المخازن";
                     break;
+                case "FrmBOM":
+                case "FrmFixedProduction":
+                case "FrmCustomProduction":
+                case "FrmProductionReports":
+                    targetGroup = "التصنيع";
+                    break;
                 case "FrmClients":
                 case "FrmInactiveClients":
                 case "FrmVehicles":
@@ -519,6 +525,13 @@ namespace ChickenDist.Forms
                     ("🔍 دليل الموديلات والأجهزة", "ModelLookup", (Action)(() => new FrmModelLookup().ShowDialog())),
                     ("👗 مصفوفة المقاسات والألوان", "ClothingMatrix", (Action)(() => NavigateTo(new FrmClothingMatrix()))),
                     ("📊 تقارير المخازن",   "RepStores",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
+                }),
+
+                ("🏭", "التصنيع", Color.FromArgb(180, 83, 9), new[] {
+                    ("🌿 شجرة ومواد التصنيع (BOM)", "BOM", (Action)(() => NavigateTo(new FrmBOM()))),
+                    ("🏭 أمر تصنيع ثابت (معياري)", "FixedProduction", (Action)(() => NavigateTo(new FrmFixedProduction()))),
+                    ("🛠️ أمر تصنيع مخصص (مباشر)", "CustomProduction", (Action)(() => NavigateTo(new FrmCustomProduction()))),
+                    ("📊 سجل وتقارير حركات التصنيع", "ProductionReports", (Action)(() => NavigateTo(new FrmProductionReports()))),
                 }),
 
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
@@ -1102,7 +1115,7 @@ namespace ChickenDist.Forms
         {
             if (form is FrmDashboard) return null;
 
-            bool allowMultiInstance = (form is FrmSale || form is FrmPurchase || form is FrmPOS || form is FrmPriceQuote || form is FrmReturn || form is FrmPurchaseReturn || form is FrmReceiptVoucher);
+            bool allowMultiInstance = (form is FrmSale || form is FrmPurchase || form is FrmPOS || form is FrmPriceQuote || form is FrmReturn || form is FrmPurchaseReturn || form is FrmReceiptVoucher || form is FrmFixedProduction || form is FrmCustomProduction);
 
             if (!allowMultiInstance)
             {

@@ -3401,6 +3401,89 @@ namespace ChickenDist.Core
                     );
                 END");
 
+                SafeMigrate("Production.Tables", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BOMHeader')
+                BEGIN
+                    CREATE TABLE BOMHeader (
+                        BOMID INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductID INT NOT NULL,
+                        OutputQty DECIMAL(18,4) NOT NULL DEFAULT 1,
+                        UnitName NVARCHAR(50) NULL,
+                        Notes NVARCHAR(500) NULL,
+                        CreatedDate DATETIME DEFAULT GETDATE(),
+                        LastUpdated DATETIME DEFAULT GETDATE(),
+                        IsActive BIT DEFAULT 1
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BOMItems')
+                BEGIN
+                    CREATE TABLE BOMItems (
+                        BOMItemID INT IDENTITY(1,1) PRIMARY KEY,
+                        BOMID INT NOT NULL,
+                        RawProductID INT NOT NULL,
+                        Quantity DECIMAL(18,4) NOT NULL,
+                        UnitName NVARCHAR(50) NULL,
+                        Factor DECIMAL(18,4) DEFAULT 1,
+                        Notes NVARCHAR(200) NULL
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductionOrders')
+                BEGIN
+                    CREATE TABLE ProductionOrders (
+                        ProductionID INT IDENTITY(1,1) PRIMARY KEY,
+                        OrderCode NVARCHAR(50) NOT NULL,
+                        ProductionType NVARCHAR(20) NOT NULL DEFAULT 'Fixed',
+                        BOMID INT NULL,
+                        FinishedProductID INT NOT NULL,
+                        ProducedQty DECIMAL(18,4) NOT NULL,
+                        UnitName NVARCHAR(50) NULL,
+                        WarehouseID INT NOT NULL DEFAULT 1,
+                        RawMaterialsCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                        ExtraExpenses DECIMAL(18,4) NOT NULL DEFAULT 0,
+                        ExpensesNotes NVARCHAR(300) NULL,
+                        TotalCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                        UnitCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                        Status NVARCHAR(30) NOT NULL DEFAULT 'InPreparation',
+                        StockDeducted BIT NOT NULL DEFAULT 0,
+                        StockAdded BIT NOT NULL DEFAULT 0,
+                        CreatedDate DATETIME DEFAULT GETDATE(),
+                        UpdatedDate DATETIME DEFAULT GETDATE(),
+                        CompletedDate DATETIME NULL,
+                        CreatedBy INT NULL,
+                        UpdatedBy INT NULL,
+                        Notes NVARCHAR(500) NULL
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductionOrderItems')
+                BEGIN
+                    CREATE TABLE ProductionOrderItems (
+                        ItemID INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductionID INT NOT NULL,
+                        RawProductID INT NOT NULL,
+                        Quantity DECIMAL(18,4) NOT NULL,
+                        UnitCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                        TotalCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                        UnitName NVARCHAR(50) NULL,
+                        Factor DECIMAL(18,4) DEFAULT 1,
+                        Notes NVARCHAR(200) NULL
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductionOrderHistory')
+                BEGIN
+                    CREATE TABLE ProductionOrderHistory (
+                        HistoryID INT IDENTITY(1,1) PRIMARY KEY,
+                        ProductionID INT NOT NULL,
+                        ActionType NVARCHAR(50) NOT NULL,
+                        ActionDate DATETIME DEFAULT GETDATE(),
+                        ActionBy NVARCHAR(100) NULL,
+                        Details NVARCHAR(MAX) NULL
+                    );
+                END");
+
                 // Save version number so we don't repeat inspection on next startup
                 try
                 {

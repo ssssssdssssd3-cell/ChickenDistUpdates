@@ -1177,6 +1177,37 @@ namespace ChickenDist.Forms
                 Key = "CloudSync", Name = "ربط الموبايل والتزامن السحابي", Category = "🚚 المناديب والصيانة والإدارة", Icon = "☁️",
                 Description = "إعدادات مزامنة بيانات المالك مع Firebase وتطبيق الموبايل.",
                 HasEdit = true
+            },
+
+            // ── 🏭 8. التصنيع والإنتاج ─────────────────────────────────────
+            new ScreenDef {
+                Key = "BOM", Name = "تحديد مواد التصنيع (شجرة المنتج BOM)", Category = "🏭 التصنيع والإنتاج", Icon = "🌿",
+                Description = "تحديد وتعديل نسب ومكونات المواد الخام للمنتج النهائي وحساب التكلفة المعيارية.",
+                HasAdd = true, HasEdit = true, HasDelete = true,
+                AddLabel = "➕ إضافة شجرة ومكونات تصنيع جديدة",
+                EditLabel = "✏️ تعديل شجرة التصنيع والمكونات",
+                DeleteLabel = "🗑️ حذف شجرة تصنيع"
+            },
+            new ScreenDef {
+                Key = "FixedProduction", Name = "التصنيع الثابت (وفق الوصفة المعيارية)", Category = "🏭 التصنيع والإنتاج", Icon = "🏭",
+                Description = "إصدار أوامر التصنيع الثابتة، تنزيل المكونات تلقائياً، مصاريف التشغيل، وتعليق الأوامر (تحت التحضير).",
+                HasAdd = true, HasEdit = true, HasDelete = true,
+                AddLabel = "➕ إصدار وحفظ أمر تصنيع جديد",
+                EditLabel = "✏️ استرجاع وتعديل الأوامر المعلقة",
+                DeleteLabel = "❌ إلغاء أمر تصنيع واسترجاع الخامات"
+            },
+            new ScreenDef {
+                Key = "CustomProduction", Name = "التصنيع المخصص (إدخال حر للمكونات)", Category = "🏭 التصنيع والإنتاج", Icon = "🛠️",
+                Description = "إصدار أوامر تصنيع مرنة مع اختيار حر للمواد المستهلكة والمصروفات الإضافية والتعليق.",
+                HasAdd = true, HasEdit = true, HasDelete = true,
+                AddLabel = "➕ إصدار وحفظ أمر تصنيع مخصص جديد",
+                EditLabel = "✏️ استرجاع وتعديل الأوامر المعلقة",
+                DeleteLabel = "❌ إلغاء أمر تصنيع واسترجاع الخامات"
+            },
+            new ScreenDef {
+                Key = "ProductionReports", Name = "سجل وتقارير حركات التصنيع", Category = "🏭 التصنيع والإنتاج", Icon = "📊",
+                Description = "استعراض والبحث في كافة حركات التصنيع وسجل التعديلات والتعليق وطباعة التقارير.",
+                HasViewDetails = true
             }
         };
 
