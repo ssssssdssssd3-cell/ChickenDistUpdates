@@ -493,11 +493,15 @@ namespace ChickenDist.Forms
 
         private void SelectFinishedProduct()
         {
-            using (var frm = new FrmProductSearch())
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
-                    var dt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, UnitName, CostPrice FROM Products WHERE ProductID = @id",
+                    var dt = DbHelper.Query(@"
+                        SELECT ProductID, ProductCode, ProductName, 
+                               COALESCE(CostPrice, PurchasePrice, 0) AS CostPrice, 
+                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                        FROM Products WHERE ProductID = @id",
                         DbHelper.P("@id", frm.SelectedProductID));
 
                     if (dt != null && dt.Rows.Count > 0)
@@ -515,7 +519,7 @@ namespace ChickenDist.Forms
 
         private void SelectRawProduct()
         {
-            using (var frm = new FrmProductSearch())
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
@@ -525,7 +529,11 @@ namespace ChickenDist.Forms
                         return;
                     }
 
-                    var dt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, CostPrice, UnitName FROM Products WHERE ProductID = @id",
+                    var dt = DbHelper.Query(@"
+                        SELECT ProductID, ProductCode, ProductName, 
+                               COALESCE(CostPrice, PurchasePrice, 0) AS CostPrice, 
+                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                        FROM Products WHERE ProductID = @id",
                         DbHelper.P("@id", frm.SelectedProductID));
 
                     if (dt != null && dt.Rows.Count > 0)

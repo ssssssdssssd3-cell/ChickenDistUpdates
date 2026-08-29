@@ -29,6 +29,7 @@ namespace ChickenDist.Forms
         private ComboBox cboWarehouse;
         private TextBox txtFinishedProduct;
         private Button btnBrowseFinished;
+        private Button btnBrowseBOM;
         private NumericUpDown numProducedQty;
         private TextBox txtUnitName;
         private TextBox txtNotes;
@@ -170,7 +171,7 @@ namespace ChickenDist.Forms
             txtFinishedProduct = new TextBox
             {
                 Location = new Point(12, 78),
-                Width = 320,
+                Width = 270,
                 Height = 32,
                 ReadOnly = true,
                 BackColor = Theme.BgInput,
@@ -179,17 +180,21 @@ namespace ChickenDist.Forms
             };
             pnlHeader.Controls.Add(txtFinishedProduct);
 
-            btnBrowseFinished = Theme.MakeButton("🔍 اختيار منتج", 340, 76, 120, 34, Theme.Primary);
+            btnBrowseFinished = Theme.MakeButton("🔍 بحث بالأصناف", 288, 76, 115, 34, Theme.Primary);
             btnBrowseFinished.Click += (s, e) => SelectFinishedProduct();
             pnlHeader.Controls.Add(btnBrowseFinished);
 
-            var lblQtyTitle = new Label { Text = "الكمية المراد إنتاجها:", Location = new Point(480, 55), AutoSize = true, ForeColor = Color.Silver };
+            btnBrowseBOM = Theme.MakeButton("📋 الوصفات الجاهزة", 408, 76, 125, 34, Color.FromArgb(14, 116, 144));
+            btnBrowseBOM.Click += (s, e) => SelectFromRegisteredBOMs();
+            pnlHeader.Controls.Add(btnBrowseBOM);
+
+            var lblQtyTitle = new Label { Text = "الكمية المراد إنتاجها:", Location = new Point(545, 55), AutoSize = true, ForeColor = Color.Silver };
             pnlHeader.Controls.Add(lblQtyTitle);
 
             numProducedQty = new NumericUpDown
             {
-                Location = new Point(480, 78),
-                Width = 120,
+                Location = new Point(545, 78),
+                Width = 110,
                 Height = 32,
                 DecimalPlaces = 2,
                 Minimum = 0.01m,
@@ -202,12 +207,12 @@ namespace ChickenDist.Forms
             numProducedQty.ValueChanged += (s, e) => OnProducedQtyChanged();
             pnlHeader.Controls.Add(numProducedQty);
 
-            var lblUnit = new Label { Text = "الوحدة:", Location = new Point(615, 55), AutoSize = true, ForeColor = Color.Silver };
+            var lblUnit = new Label { Text = "الوحدة:", Location = new Point(665, 55), AutoSize = true, ForeColor = Color.Silver };
             pnlHeader.Controls.Add(lblUnit);
 
             txtUnitName = new TextBox
             {
-                Location = new Point(615, 78),
+                Location = new Point(665, 78),
                 Width = 80,
                 Height = 32,
                 Text = "قطعة",
@@ -217,12 +222,12 @@ namespace ChickenDist.Forms
             };
             pnlHeader.Controls.Add(txtUnitName);
 
-            var lblNotesTitle = new Label { Text = "ملاحظات أمر التشغيل:", Location = new Point(710, 55), AutoSize = true, ForeColor = Color.Silver };
+            var lblNotesTitle = new Label { Text = "ملاحظات أمر التشغيل:", Location = new Point(755, 55), AutoSize = true, ForeColor = Color.Silver };
             pnlHeader.Controls.Add(lblNotesTitle);
 
             txtNotes = new TextBox
             {
-                Location = new Point(710, 78),
+                Location = new Point(755, 78),
                 Width = 280,
                 Height = 32,
                 Font = Theme.FontMain,
@@ -416,7 +421,7 @@ namespace ChickenDist.Forms
 
         private void SelectFinishedProduct()
         {
-            using (var frm = new FrmProductSearch())
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
@@ -425,9 +430,128 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void SelectFromRegisteredBOMs()
+        {
+            var dtBOMs = ProductionDAL.GetAllBOMs();
+            if (dtBOMs == null || dtBOMs.Rows.Count == 0)
+            {
+                var ask = MessageBox.Show(
+                    "لا توجد وصفات أو شجر تصنيع (BOM) مسجلة في النظام حتى الآن!\nهل تريد فتح شاشة شجرة التصنيع لإضافة وصفة ومكونات تصنيع جديدة؟",
+                    "تنبيه - لا توجد وصفات مسجلة", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+                if (ask == DialogResult.Yes)
+                {
+                    using (var frm = new FrmBOM())
+                    {
+                        frm.ShowDialog();
+                    }
+                }
+                return;
+            }
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "📋 اختيار من شجر ووصفات التصنيع المسجلة";
+                dlg.Size = new Size(780, 480);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.BackColor = Theme.BgMain;
+                dlg.Font = Theme.FontMain;
+
+                var pnlTop = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Theme.BgCard, Padding = new Padding(10, 8, 10, 8) };
+                var lblSearch = new Label { Text = "🔍 بحث في الوصفات:", AutoSize = true, Location = new Point(10, 14), ForeColor = Theme.TextMain };
+                pnlTop.Controls.Add(lblSearch);
+
+                var txtFilter = new TextBox { Location = new Point(150, 10), Width = 300, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+                pnlTop.Controls.Add(txtFilter);
+
+                dlg.Controls.Add(pnlTop);
+
+                var dg = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    BackgroundColor = Theme.BgCard,
+                    BorderStyle = BorderStyle.None,
+                    RowHeadersVisible = false,
+                    AllowUserToAddRows = false,
+                    AllowUserToDeleteRows = false,
+                    ReadOnly = true,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    MultiSelect = false,
+                    RightToLeft = RightToLeft.Yes,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                };
+
+                dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
+                dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود المنتج", FillWeight = 20 });
+                dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم المنتج النهائي المصنع", FillWeight = 45 });
+                dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "OutputQty", HeaderText = "الكمية المعيارية", FillWeight = 15 });
+                dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 10 });
+                dg.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemsCount", HeaderText = "عدد الخامات", FillWeight = 12 });
+
+                Action populate = () =>
+                {
+                    dg.Rows.Clear();
+                    string filter = txtFilter.Text.Trim().ToLower();
+                    foreach (DataRow r in dtBOMs.Rows)
+                    {
+                        string code = r["ProductCode"]?.ToString() ?? "";
+                        string name = r["ProductName"]?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(filter) && !code.ToLower().Contains(filter) && !name.ToLower().Contains(filter))
+                            continue;
+
+                        dg.Rows.Add(
+                            r["ProductID"],
+                            code,
+                            name,
+                            Convert.ToDecimal(r["OutputQty"]).ToString("N2"),
+                            r["UnitName"]?.ToString() ?? "قطعة",
+                            r["ItemsCount"]
+                        );
+                    }
+                };
+
+                txtFilter.TextChanged += (s, e) => populate();
+                populate();
+                dlg.Controls.Add(dg);
+                dg.BringToFront();
+
+                var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
+                var btnSelect = Theme.MakeButton("✅ اختيار وتحميل المكونات", 10, 10, 190, 36, Theme.Primary);
+                var btnClose = Theme.MakeButton("إلغاء", 210, 10, 100, 36, Color.FromArgb(100, 116, 139));
+
+                Action selectRow = () =>
+                {
+                    if (dg.SelectedRows.Count > 0 && dg.SelectedRows[0].Cells["ProductID"].Value != null)
+                    {
+                        int pid = Convert.ToInt32(dg.SelectedRows[0].Cells["ProductID"].Value);
+                        dlg.DialogResult = DialogResult.OK;
+                        LoadFinishedProduct(pid);
+                    }
+                };
+
+                btnSelect.Click += (s, e) => selectRow();
+                dg.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) selectRow(); };
+                btnClose.Click += (s, e) => dlg.Close();
+
+                pnlBottom.Controls.Add(btnSelect);
+                pnlBottom.Controls.Add(btnClose);
+                dlg.Controls.Add(pnlBottom);
+
+                dlg.ShowDialog(this);
+            }
+        }
+
         private void LoadFinishedProduct(int productId)
         {
-            var dt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, UnitName, CostPrice FROM Products WHERE ProductID = @id",
+            var dt = DbHelper.Query(@"
+                SELECT ProductID, ProductCode, ProductName, 
+                       COALESCE(CostPrice, PurchasePrice, 0) AS CostPrice, 
+                       COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                FROM Products WHERE ProductID = @id",
                 DbHelper.P("@id", productId));
 
             if (dt != null && dt.Rows.Count > 0)
@@ -448,10 +572,15 @@ namespace ChickenDist.Forms
 
                     if (ask == DialogResult.Yes)
                     {
-                        var frmBom = new FrmBOM(_selectedFinishedProductID);
-                        frmBom.ShowDialog();
+                        using (var frmBom = new FrmBOM(_selectedFinishedProductID))
+                        {
+                            frmBom.ShowDialog();
+                        }
                         _currentBOM = ProductionDAL.GetBOMByProductID(_selectedFinishedProductID);
-                        if (_currentBOM != null) PopulateGridFromBOM();
+                        if (_currentBOM != null && _currentBOM.Items.Count > 0)
+                        {
+                            PopulateGridFromBOM();
+                        }
                     }
                     else
                     {
@@ -529,7 +658,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            using (var frm = new FrmProductSearch())
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
@@ -540,7 +669,11 @@ namespace ChickenDist.Forms
                         return;
                     }
 
-                    var dt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, CostPrice, UnitName FROM Products WHERE ProductID = @id",
+                    var dt = DbHelper.Query(@"
+                        SELECT ProductID, ProductCode, ProductName, 
+                               COALESCE(CostPrice, PurchasePrice, 0) AS CostPrice, 
+                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                        FROM Products WHERE ProductID = @id",
                         DbHelper.P("@id", pid));
 
                     if (dt != null && dt.Rows.Count > 0)
