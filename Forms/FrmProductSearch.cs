@@ -202,9 +202,42 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", FillWeight = 16 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة الرئيسية", FillWeight = 18 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف", FillWeight = 22 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 20 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastClientPrice", HeaderText = "آخر سعر للعميل 🏷️", FillWeight = 24 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد الفعلي", FillWeight = 22 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "SalePrice", 
+                HeaderText = "سعر البيع", 
+                FillWeight = 32, 
+                MinimumWidth = 110,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                } 
+            });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "LastClientPrice", 
+                HeaderText = "آخر سعر للعميل 🏷️", 
+                FillWeight = 36, 
+                MinimumWidth = 120,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(230, 126, 34)
+                } 
+            });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "StockQty", 
+                HeaderText = "الرصيد الفعلي", 
+                FillWeight = 26,
+                MinimumWidth = 90,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                } 
+            });
             
             dgProducts.DoubleClick += DgProducts_DoubleClick;
             dgProducts.KeyDown += DgProducts_KeyDown;
@@ -223,8 +256,8 @@ namespace ChickenDist.Forms
             var lblUnitSelect = new Label { Text = "📐 الوحدة:", Location = new Point(915, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             cboUnits = new ComboBox
             {
-                Location = new Point(690, 9),
-                Width = 220,
+                Location = new Point(715, 9),
+                Width = 195,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.White,
                 ForeColor = labelDark,
@@ -233,26 +266,26 @@ namespace ChickenDist.Forms
             };
             cboUnits.SelectedIndexChanged += CboUnits_SelectedIndexChanged;
 
-            var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(610, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedQty = new TextBox { Location = new Point(525, 9), Width = 80, Text = "1.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(635, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedQty = new TextBox { Location = new Point(555, 9), Width = 75, Text = "1.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
             bool showPurchasePrice = _isPurchaseMode && Session.CanViewCost("Purchases");
-            var lblPurchasePrice = new Label { Text = "💰 الشراء:", Location = new Point(435, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Visible = showPurchasePrice };
-            txtSelectedPurchasePrice = new TextBox { Location = new Point(345, 9), Width = 85, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = showPurchasePrice };
+            var lblPurchasePrice = new Label { Text = "💰 الشراء:", Location = new Point(475, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Visible = showPurchasePrice };
+            txtSelectedPurchasePrice = new TextBox { Location = new Point(365, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = showPurchasePrice };
 
-            int salePriceLabelX = showPurchasePrice ? 260 : 435;
-            int salePriceTxtX = showPurchasePrice ? 175 : 345;
+            int salePriceLabelX = showPurchasePrice ? 285 : 465;
+            int salePriceTxtX = showPurchasePrice ? 175 : 355;
 
             var lblSalePrice = new Label { Text = "🏷️ البيع:", Location = new Point(salePriceLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedSalePrice = new TextBox { Location = new Point(salePriceTxtX, 9), Width = 85, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            txtSelectedSalePrice = new TextBox { Location = new Point(salePriceTxtX, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            int discLabelX = showPurchasePrice ? 100 : 255;
-            int discTxtX = showPurchasePrice ? 15 : 170;
+            int discLabelX = showPurchasePrice ? 100 : 265;
+            int discTxtX = showPurchasePrice ? 15 : 180;
 
             var lblDiscount = new Label { Text = "🎁 الخصم %:", Location = new Point(discLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             txtSelectedDiscount = new TextBox { Location = new Point(discTxtX, 9), Width = 80, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            int permNoticeX = showPurchasePrice ? 175 : 345;
+            int permNoticeX = showPurchasePrice ? 175 : 355;
             lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
 
             bool canEditPrice = _isPurchaseMode 

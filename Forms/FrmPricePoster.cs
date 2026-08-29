@@ -408,31 +408,47 @@ namespace ChickenDist.Forms
 
             if (showQty && showPrice)
             {
-                colNameX = 290; colNameW = 380;
-                colUnitX = 200; colUnitW = 90;
-                colQtyX  = 120; colQtyW  = 80;
-                colPriceX = 40; colPriceW = 80;
+                colPriceW = 140;
+                colQtyW   = 75;
+                colUnitW  = 75;
+                colNameW  = (totalW - 80 - colSerialW) - (colPriceW + colQtyW + colUnitW);
+                colNameX  = colSerialX - colNameW;
+                colUnitX  = colNameX - colUnitW;
+                colQtyX   = colUnitX - colQtyW;
+                colPriceX = colQtyX - colPriceW;
             }
             else if (showQty && !showPrice)
             {
-                colNameX = 230; colNameW = 440;
-                colUnitX = 130; colUnitW = 100;
-                colQtyX  = 40;  colQtyW  = 90;
-                colPriceX = 0;  colPriceW = 0;
+                colPriceW = 0;
+                colQtyW   = 90;
+                colUnitW  = 90;
+                colNameW  = (totalW - 80 - colSerialW) - (colQtyW + colUnitW);
+                colNameX  = colSerialX - colNameW;
+                colUnitX  = colNameX - colUnitW;
+                colQtyX   = colUnitX - colQtyW;
+                colPriceX = 0;
             }
             else if (!showQty && showPrice)
             {
-                colNameX = 260; colNameW = 410;
-                colUnitX = 140; colUnitW = 120;
-                colQtyX  = 0;   colQtyW  = 0;
-                colPriceX = 40; colPriceW = 100;
+                colPriceW = 155;
+                colQtyW   = 0;
+                colUnitW  = 85;
+                colNameW  = (totalW - 80 - colSerialW) - (colPriceW + colUnitW);
+                colNameX  = colSerialX - colNameW;
+                colUnitX  = colNameX - colUnitW;
+                colQtyX   = 0;
+                colPriceX = colUnitX - colPriceW;
             }
             else
             {
-                colNameX = 40;  colNameW = 630;
-                colUnitX = 0;   colUnitW = 0;
-                colQtyX  = 0;   colQtyW  = 0;
-                colPriceX = 0;  colPriceW = 0;
+                colPriceW = 0;
+                colQtyW   = 0;
+                colUnitW  = 0;
+                colNameW  = totalW - 80 - colSerialW;
+                colNameX  = 40;
+                colUnitX  = 0;
+                colQtyX   = 0;
+                colPriceX = 0;
             }
 
             // Pre-calculate dynamic row height for each item (allowing long names to wrap cleanly onto 2 lines)
@@ -475,6 +491,7 @@ namespace ChickenDist.Forms
                 var fSub = new Font("Arial", 9.5f);
                 var fBold = new Font("Arial", 10.5f, FontStyle.Bold);
                 var fRegular = new Font("Arial", 10f);
+                var fSmall = new Font("Arial", 8.5f, FontStyle.Bold);
 
                 var center = new StringFormat { Alignment = StringAlignment.Center };
                 var rtlNear = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
@@ -608,7 +625,13 @@ namespace ChickenDist.Forms
                         if (showQty && colQtyW > 0)
                             g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur, colQtyW, thisRowH), rtlCenter);
                         if (showPrice && colPriceW > 0)
-                            g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur, colPriceW, thisRowH), rtlCenter);
+                        {
+                            string priceText = item.Price.ToString("N2") + " ج";
+                            Font fP = fBold;
+                            if (priceText.Length > 13) fP = fSmall;
+                            else if (priceText.Length > 10) fP = fRegular;
+                            g.DrawString(priceText, fP, Brushes.Crimson, new RectangleF(colPriceX + 2, yCur, colPriceW - 4, thisRowH), rtlCenter);
+                        }
 
                         // Draw Grid Lines
                         g.DrawLine(penGrid, 40, yCur + thisRowH, totalW - 40, yCur + thisRowH);
@@ -799,6 +822,7 @@ namespace ChickenDist.Forms
             var fSub = new Font("Arial", 9f);
             var fBold = new Font("Arial", 10f, FontStyle.Bold);
             var fRegular = new Font("Arial", 9.5f);
+            var fSmall = new Font("Arial", 8f, FontStyle.Bold);
 
             var center = new StringFormat { Alignment = StringAlignment.Center };
             var rtlNear = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
@@ -878,10 +902,10 @@ namespace ChickenDist.Forms
             }
 
             // Columns sizing based on pageWidth
-            float colSerialW  = 45;
-            float colPriceW   = (showPrice) ? 70 : 0;
-            float colQtyW     = (showQty)   ? 75 : 0;
-            float colUnitW    = 85;
+            float colSerialW  = 35;
+            float colPriceW   = (showPrice) ? 120 : 0;
+            float colQtyW     = (showQty)   ? 70 : 0;
+            float colUnitW    = 70;
             float colNameW    = pageWidth - colSerialW - colUnitW - colQtyW - colPriceW;
 
             float colSerialX  = xStart + pageWidth - colSerialW;
@@ -949,7 +973,13 @@ namespace ChickenDist.Forms
                     if (showQty && colQtyW > 0)
                         g.DrawString(item.Qty.ToString("N0"), fBold, brushBlack, new RectangleF(colQtyX, yCur, colQtyW, thisRowH), rtlCenter);
                     if (showPrice && colPriceW > 0)
-                        g.DrawString(item.Price.ToString("N2") + " ج", fBold, Brushes.Crimson, new RectangleF(colPriceX, yCur, colPriceW, thisRowH), rtlCenter);
+                    {
+                        string priceText = item.Price.ToString("N2") + " ج";
+                        Font fP = fBold;
+                        if (priceText.Length > 13) fP = fSmall;
+                        else if (priceText.Length > 10) fP = fRegular;
+                        g.DrawString(priceText, fP, Brushes.Crimson, new RectangleF(colPriceX + 2, yCur, colPriceW - 4, thisRowH), rtlCenter);
+                    }
 
                     // Draw Grid Lines
                     g.DrawLine(penGrid, xStart, yCur + thisRowH, xStart + pageWidth, yCur + thisRowH);

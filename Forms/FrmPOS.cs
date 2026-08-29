@@ -202,7 +202,14 @@ namespace ChickenDist.Forms
             minusCol.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgItems.Columns.Add(minusCol);
 
-            dgItems.Columns.Add("Price", "السعر");
+            var colPrice = new DataGridViewTextBoxColumn
+            {
+                Name = "Price",
+                HeaderText = "السعر",
+                MinimumWidth = 95,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
+            };
+            dgItems.Columns.Add(colPrice);
             
             var colLastPrice = new DataGridViewTextBoxColumn
             {
@@ -210,7 +217,9 @@ namespace ChickenDist.Forms
                 HeaderText = "آخر سعر للعميل 🏷️",
                 Visible = false,
                 ReadOnly = true,
-                Width = 110
+                Width = 115,
+                MinimumWidth = 115,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) }
             };
             dgItems.Columns.Add(colLastPrice);
 
@@ -225,7 +234,14 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(colIMEI);
 
             dgItems.Columns.Add("Discount", "الخصم");
-            dgItems.Columns.Add("Total", "الإجمالي");
+            var colTotal = new DataGridViewTextBoxColumn
+            {
+                Name = "Total",
+                HeaderText = "الإجمالي",
+                MinimumWidth = 105,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
+            };
+            dgItems.Columns.Add(colTotal);
             if (AppConfig.IsRestaurant)
             {
                 var colKn = new DataGridViewTextBoxColumn
@@ -2647,12 +2663,13 @@ namespace ChickenDist.Forms
                 string priceText = price > 0 ? $"{price:N2} ج" : "⚠️ بدون سعر";
                 if (price == 0) btnColor = Color.FromArgb(108, 117, 125); // رمادي للتحذير
 
+                float fSize = priceText.Length > 12 ? 7.5f : (priceText.Length > 9 ? 8.0f : 8.5f);
                 var btn = new Button
                 {
                     Text = $"{name}\n{priceText}",
-                    Size = new Size(110, 90), FlatStyle = FlatStyle.Flat,
+                    Size = new Size(118, 92), FlatStyle = FlatStyle.Flat,
                     BackColor = btnColor, ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Font = new Font("Segoe UI", fSize, FontStyle.Bold),
                     Cursor = Cursors.Hand, Margin = new Padding(4),
                     Tag = pid
                 };

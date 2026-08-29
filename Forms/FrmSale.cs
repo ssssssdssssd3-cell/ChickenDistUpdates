@@ -979,11 +979,11 @@ namespace ChickenDist.Forms
 			});
 			dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", ReadOnly = false, FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", ReadOnly = !Session.CanEditPrice(), FillWeight = 40f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastClientPrice", HeaderText = "آخر سعر للعميل 🏷️", ReadOnly = true, FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر", ReadOnly = !Session.CanEditPrice(), FillWeight = 40f, MinimumWidth = 95 });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "LastClientPrice", HeaderText = "آخر سعر للعميل 🏷️", ReadOnly = true, FillWeight = 40f, MinimumWidth = 110, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "خصم %", ReadOnly = false, FillWeight = 30f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f, MinimumWidth = 105 });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 55f, Visible = true });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });

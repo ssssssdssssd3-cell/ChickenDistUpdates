@@ -446,10 +446,31 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Brand", HeaderText = "الشركة / الماركة", FillWeight = 38 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "الرف", FillWeight = 24 });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 20 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice", HeaderText = "سعر البيع", FillWeight = 28 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalStock", HeaderText = "الرصيد", FillWeight = 26 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "DealStatus", HeaderText = "حركة التعامل", FillWeight = 32 });
-            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 16 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "SalePrice", 
+                HeaderText = "سعر البيع", 
+                FillWeight = 42, 
+                MinimumWidth = 115,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter, 
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) 
+                } 
+            });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "TotalStock", 
+                HeaderText = "الرصيد", 
+                FillWeight = 28, 
+                MinimumWidth = 85,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                } 
+            });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "DealStatus", HeaderText = "حركة التعامل", FillWeight = 32, MinimumWidth = 90 });
+            dgProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsActive", HeaderText = "نشط", FillWeight = 16, MinimumWidth = 50 });
             
             Theme.AdjustGridHeaders(dgProducts);
 
