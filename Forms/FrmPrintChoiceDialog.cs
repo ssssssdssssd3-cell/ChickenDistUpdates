@@ -221,5 +221,82 @@ namespace ChickenDist.Forms
                 }
             }
         }
+
+        /// <summary>
+        /// يُظهر نافذة اختيار طباعة وإرسال إيصال المرتجع (حراري 80mm / A4 / A5 / واتساب نموذج الطارق)
+        /// </summary>
+        public static void PromptAndPrintReturn(IWin32Window owner, int returnID, string customTitle = null)
+        {
+            if (returnID <= 0) return;
+
+            string msg = customTitle != null
+                ? $"{customTitle}\nاختر طريقة الطباعة أو الإرسال المطلوبة:"
+                : $"تم حفظ المرتجع بنجاح رقم [RET-{returnID}]!\nاختر طريقة الطباعة أو الإرسال المطلوبة:";
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "🖨️ طباعة وإرسال إيصال المرتجع";
+                dlg.Size = new Size(540, 440);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.BackColor = Theme.BgCard;
+                dlg.Font = Theme.FontMain;
+
+                var pnlTop = new Panel { Dock = DockStyle.Top, Height = 80, Padding = new Padding(15, 10, 15, 10), BackColor = Color.FromArgb(20, 35, 60) };
+                var lblIcon = new Label { Text = "↩️", Font = new Font("Segoe UI", 26f), AutoSize = true, Location = new Point(450, 15), ForeColor = Color.Gold };
+                var lblMsg = new Label { Text = msg, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.White, Location = new Point(15, 12), Size = new Size(425, 56), TextAlign = ContentAlignment.MiddleRight };
+                pnlTop.Controls.AddRange(new Control[] { lblIcon, lblMsg });
+
+                var pnlButtons = new Panel { Dock = DockStyle.Fill, Padding = new Padding(25, 10, 25, 10), BackColor = Theme.BgCard };
+                int btnY = 12, btnHeight = 44, btnSpacing = 10, btnWidth = 470, btnX = 25;
+
+                // 1. Receipt
+                var btnReceipt = Theme.MakeButton("🧾 طباعة ريسيت حراري (Receipt 80mm)", Color.FromArgb(30, 90, 160));
+                btnReceipt.Location = new Point(btnX, btnY); btnReceipt.Size = new Size(btnWidth, btnHeight);
+                btnReceipt.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+                btnReceipt.Click += (s, e) => { dlg.Close(); try { new FrmPrintReturn(returnID, "Receipt", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
+                pnlButtons.Controls.Add(btnReceipt);
+                btnY += btnHeight + btnSpacing;
+
+                // 2. A4
+                var btnA4 = Theme.MakeButton("📄 طباعة إيصال A4 كامل (A4 Sheet)", Color.FromArgb(35, 120, 75));
+                btnA4.Location = new Point(btnX, btnY); btnA4.Size = new Size(btnWidth, btnHeight);
+                btnA4.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+                btnA4.Click += (s, e) => { dlg.Close(); try { new FrmPrintReturn(returnID, "A4", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
+                pnlButtons.Controls.Add(btnA4);
+                btnY += btnHeight + btnSpacing;
+
+                // 3. A5
+                var btnA5 = Theme.MakeButton("📑 طباعة إيصال A5 نصف صفحة (A5 Sheet)", Color.FromArgb(140, 85, 25));
+                btnA5.Location = new Point(btnX, btnY); btnA5.Size = new Size(btnWidth, btnHeight);
+                btnA5.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+                btnA5.Click += (s, e) => { dlg.Close(); try { new FrmPrintReturn(returnID, "A5", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
+                pnlButtons.Controls.Add(btnA5);
+                btnY += btnHeight + btnSpacing;
+
+                // 4. WhatsApp Al-Tareq
+                var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب (نموذج الطارق الفاخر)", Color.FromArgb(37, 211, 102));
+                btnWhatsApp.Location = new Point(btnX, btnY); btnWhatsApp.Size = new Size(btnWidth, btnHeight);
+                btnWhatsApp.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+                btnWhatsApp.Click += (s, e) => { dlg.Close(); WhatsAppSender.SendReturnReceipt(owner as Form, returnID); };
+                pnlButtons.Controls.Add(btnWhatsApp);
+                btnY += btnHeight + btnSpacing;
+
+                // 5. Cancel
+                var btnCancel = Theme.MakeButton("❌ إلغاء", Color.FromArgb(75, 85, 99));
+                btnCancel.Location = new Point(btnX, btnY); btnCancel.Size = new Size(btnWidth, btnHeight - 4);
+                btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                btnCancel.Click += (s, e) => { dlg.Close(); };
+                pnlButtons.Controls.Add(btnCancel);
+
+                dlg.Controls.Add(pnlButtons);
+                dlg.Controls.Add(pnlTop);
+                dlg.ShowDialog(owner);
+            }
+        }
     }
 }

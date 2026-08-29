@@ -1837,6 +1837,264 @@ namespace ChickenDist.Core
             return pages;
         }
 
+        /// <summary>
+        /// توليد كارت صورة عالي الدقة لإيصال مرتجع المبيعات بنموذج الطارق المعتمد
+        /// </summary>
+        public static Bitmap GenerateReturnReceiptImage(int returnID, string templateName = null)
+        {
+            try
+            {
+                var dt = DbHelper.Query(@"
+                    SELECT sr.ReturnID, sr.ReturnDate, sr.TotalAmount, sr.Notes, sr.ReturnType,
+                           ISNULL(sr.PaymentType, N'Cash') AS PaymentType,
+                           ISNULL(s.SaleCode, N'مرتجع عام') AS SaleCode,
+                           s.SaleDate AS OriginalSaleDate,
+                           ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
+                           ISNULL(c.Phone, N'') AS ClientPhone,
+                           ISNULL(c.Address, N'') AS ClientAddress,
+                           ISNULL(e.EmpName, N'كاشير') AS CashierName,
+                           ISNULL(w.WarehouseName, N'المخزن الرئيسي') AS WarehouseName
+                    FROM SalesReturns sr
+                    LEFT JOIN Sales s ON sr.SaleID = s.SaleID
+                    LEFT JOIN Clients c ON sr.ClientID = c.ClientID
+                    LEFT JOIN Employees e ON sr.CreatedBy = e.EmpID
+                    LEFT JOIN Warehouses w ON sr.WarehouseID = w.WarehouseID
+                    WHERE sr.ReturnID = @id", DbHelper.P("@id", returnID));
+
+                if (dt.Rows.Count == 0) return null;
+                var retRow = dt.Rows[0];
+
+                var dtItems = DbHelper.Query(@"
+                    SELECT ISNULL(p.ProductName, N'صنف عام') AS ProductName, 
+                           ISNULL(p.ProductCode, N'') AS ProductCode,
+                           ISNULL(ri.UnitName, ISNULL(p.Unit, N'')) AS UnitName,
+                           ri.Quantity, ri.UnitPrice, 
+                           ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice,
+                           ri.ProductID
+                    FROM ReturnItems ri
+                    LEFT JOIN Products p ON ri.ProductID = p.ProductID
+                    WHERE ri.ReturnID = @id", DbHelper.P("@id", returnID));
+
+                int itemCount = dtItems.Rows.Count;
+                int width = 680;
+                int rowH = 28;
+                int headerH = 130;
+                int metaH = 88;
+                int tableHeaderH = 34;
+                int itemsH = Math.Max(itemCount, 1) * rowH;
+                string notes = retRow["Notes"]?.ToString() ?? "";
+                int summaryH = 32 + 28 + (string.IsNullOrWhiteSpace(notes) ? 0 : 28) + 24 + 48;
+                int totalH = headerH + metaH + tableHeaderH + itemsH + summaryH + 40;
+
+                var bmp = new Bitmap(width, totalH);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    g.Clear(Color.White);
+
+                    // Al-Tarek Colors
+                    Color cPrimary   = Color.FromArgb(24, 34, 53);
+                    Color cSecondary = Color.FromArgb(37, 52, 78);
+                    Color cAccent    = Color.FromArgb(220, 38, 38);
+                    Color cAltBg     = Color.FromArgb(248, 250, 253);
+
+                    using (var pThick = new Pen(cPrimary, 2.5f))
+                    using (var pThin = new Pen(Color.FromArgb(203, 213, 225), 1f))
+                    using (var pBlack = new Pen(Color.Black, 1f))
+                    using (var pAccent = new Pen(cAccent, 1.5f))
+                    using (var brPrimary = new SolidBrush(cPrimary))
+                    using (var brSecondary = new SolidBrush(cSecondary))
+                    using (var brAccent = new SolidBrush(cAccent))
+                    using (var brAlt = new SolidBrush(cAltBg))
+                    using (var fBig = new Font("Arial", 16f, FontStyle.Bold))
+                    using (var fSub = new Font("Arial", 11f, FontStyle.Bold))
+                    using (var fBold = new Font("Arial", 9.5f, FontStyle.Bold))
+                    using (var fNorm = new Font("Arial", 9f, FontStyle.Regular))
+                    using (var fSmall = new Font("Arial", 8.5f, FontStyle.Regular))
+                    {
+                        // Outer Frame (Al-Tarek double border)
+                        g.DrawRectangle(pThick, 4, 4, width - 8, totalH - 8);
+                        g.DrawRectangle(pAccent, 8, 8, width - 16, totalH - 16);
+
+                        int y = 16;
+                        string compName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة التجارية";
+                        string compPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
+
+                        // ── 1. HEADER SECTION ──
+                        int logoW = 0;
+                        if (!string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
+                        {
+                            try
+                            {
+                                using (var logoImg = Image.FromFile(AppConfig.ShopLogoPath))
+                                {
+                                    int maxLogoW = 140;
+                                    int maxLogoH = 70;
+                                    double ratio = Math.Min((double)maxLogoW / logoImg.Width, (double)maxLogoH / logoImg.Height);
+                                    int lw = (int)(logoImg.Width * ratio);
+                                    int lh = (int)(logoImg.Height * ratio);
+                                    g.DrawImage(logoImg, 20, y, lw, lh);
+                                    logoW = lw + 15;
+                                }
+                            }
+                            catch { }
+                        }
+
+                        float headerRightW = width - 40 - logoW;
+                        g.DrawString(compName, fBig, brPrimary, new RectangleF(20 + logoW, y, headerRightW, 32), SfRtlRight);
+                        y += 32;
+                        if (!string.IsNullOrEmpty(compPhone))
+                        {
+                            string addrStr = !string.IsNullOrEmpty(AppConfig.CompanyAddress) ? $"  |  العنوان: {AppConfig.CompanyAddress}" : "";
+                            g.DrawString($"هاتف: {compPhone}{addrStr}", fSmall, Brushes.DarkSlateGray, new RectangleF(20 + logoW, y, headerRightW, 20), SfRtlRight);
+                        }
+                        y += 22;
+                        g.DrawString("🧾 إيصال مرتجع مبيعات معتمد", fSub, brAccent, new RectangleF(15, y, width - 30, 24), SfCenter);
+                        y += 26;
+                        g.DrawLine(pThick, 20, y, width - 20, y);
+                        y += 8;
+
+                        // ── 2. METADATA CARD (Al-Tarek) ──
+                        string returnCode = "RET-" + returnID;
+                        DateTime returnDate = Convert.ToDateTime(retRow["ReturnDate"]);
+                        string saleCode = retRow["SaleCode"]?.ToString() ?? "مرتجع عام";
+                        string clientName = retRow["ClientName"]?.ToString() ?? "عميل نقدي / عام";
+                        string clientPhone = retRow["ClientPhone"]?.ToString() ?? "";
+                        string payType = retRow["PaymentType"]?.ToString() ?? "Cash";
+                        string cashier = retRow["CashierName"]?.ToString() ?? "كاشير";
+                        string formattedPayType = FormatReturnPaymentType(payType);
+
+                        g.FillRectangle(brAlt, 20, y, width - 40, metaH);
+                        g.DrawRectangle(pThin, 20, y, width - 40, metaH);
+                        g.DrawLine(pThin, width / 2, y, width / 2, y + metaH);
+
+                        string cDisplay = !string.IsNullOrWhiteSpace(clientPhone) ? $"{clientName} ({clientPhone})" : clientName;
+                        g.DrawString($"العميل:  {cDisplay}", fBold, Brushes.Black, new RectangleF(width / 2 + 10, y + 8, width / 2 - 25, 22), SfRtlRight);
+                        g.DrawString($"رقم المرتجع:  #{returnCode}", fBold, brAccent, new RectangleF(width / 2 + 10, y + 32, width / 2 - 25, 22), SfRtlRight);
+                        g.DrawString($"الفاتورة الأصلية:  {saleCode}", fNorm, Brushes.Black, new RectangleF(width / 2 + 10, y + 56, width / 2 - 25, 22), SfRtlRight);
+
+                        g.DrawString($"التاريخ:  {returnDate:yyyy/MM/dd hh:mm tt}", fNorm, Brushes.DarkSlateGray, new RectangleF(25, y + 8, width / 2 - 35, 22), SfRtlRight);
+                        g.DrawString($"طريقة رد القيمة:  {formattedPayType}", fBold, brPrimary, new RectangleF(25, y + 32, width / 2 - 35, 22), SfRtlRight);
+                        g.DrawString($"الكاشير:  {cashier}", fNorm, Brushes.DarkSlateGray, new RectangleF(25, y + 56, width / 2 - 35, 22), SfRtlRight);
+
+                        y += metaH + 10;
+
+                        // ── 3. ITEMS TABLE (Al-Tarek Style) ──
+                        int tLeft = 20;
+                        int tWidth = width - 40;
+                        int wTot = 95, wPrice = 75, wQty = 65, wUnit = 55, wCode = 70, wIdx = 30;
+                        int wName = tWidth - (wTot + wPrice + wQty + wUnit + wCode + wIdx);
+
+                        // Header
+                        g.FillRectangle(brSecondary, tLeft, y, tWidth, tableHeaderH);
+                        g.DrawRectangle(pBlack, tLeft, y, tWidth, tableHeaderH);
+
+                        int curX = width - 20;
+                        curX -= wIdx; g.DrawRectangle(pBlack, curX, y, wIdx, tableHeaderH); g.DrawString("م", fBold, Brushes.White, new RectangleF(curX, y + 6, wIdx, tableHeaderH - 6), SfCenter);
+                        curX -= wCode; g.DrawRectangle(pBlack, curX, y, wCode, tableHeaderH); g.DrawString("كود الصنف", fBold, Brushes.White, new RectangleF(curX, y + 6, wCode, tableHeaderH - 6), SfCenter);
+                        curX -= wName; g.DrawRectangle(pBlack, curX, y, wName, tableHeaderH); g.DrawString("اسم الصنف المرتجع", fBold, Brushes.White, new RectangleF(curX, y + 6, wName, tableHeaderH - 6), SfCenter);
+                        curX -= wUnit; g.DrawRectangle(pBlack, curX, y, wUnit, tableHeaderH); g.DrawString("الوحدة", fBold, Brushes.White, new RectangleF(curX, y + 6, wUnit, tableHeaderH - 6), SfCenter);
+                        curX -= wQty; g.DrawRectangle(pBlack, curX, y, wQty, tableHeaderH); g.DrawString("الكمية المرتجعة", fBold, Brushes.White, new RectangleF(curX, y + 6, wQty, tableHeaderH - 6), SfCenter);
+                        curX -= wPrice; g.DrawRectangle(pBlack, curX, y, wPrice, tableHeaderH); g.DrawString("سعر الوحدة", fBold, Brushes.White, new RectangleF(curX, y + 6, wPrice, tableHeaderH - 6), SfCenter);
+                        curX -= wTot; g.DrawRectangle(pBlack, curX, y, wTot, tableHeaderH); g.DrawString("إجمالي المرتجع", fBold, Brushes.White, new RectangleF(curX, y + 6, wTot, tableHeaderH - 6), SfCenter);
+
+                        y += tableHeaderH;
+
+                        int itemIdx = 1;
+                        decimal totalQty = 0m;
+                        decimal calcTotal = 0m;
+
+                        if (itemCount > 0)
+                        {
+                            foreach (DataRow ir in dtItems.Rows)
+                            {
+                                string pName = ir["ProductName"]?.ToString() ?? "صنف";
+                                string pCode = ir["ProductCode"]?.ToString() ?? "";
+                                string pUnit = ir["UnitName"]?.ToString() ?? "";
+                                decimal q = ir["Quantity"] != DBNull.Value ? Convert.ToDecimal(ir["Quantity"]) : 0m;
+                                decimal p = ir["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(ir["UnitPrice"]) : 0m;
+                                decimal t = ir["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(ir["TotalPrice"]) : (q * p);
+
+                                totalQty += q;
+                                calcTotal += t;
+
+                                curX = width - 20;
+                                if (itemIdx % 2 == 0) g.FillRectangle(brAlt, tLeft, y, tWidth, rowH);
+
+                                curX -= wIdx; g.DrawRectangle(pThin, curX, y, wIdx, rowH); g.DrawString(itemIdx.ToString(), fSmall, Brushes.Black, new RectangleF(curX, y + 4, wIdx, rowH - 4), SfCenter);
+                                curX -= wCode; g.DrawRectangle(pThin, curX, y, wCode, rowH); g.DrawString(pCode, fSmall, Brushes.DarkSlateGray, new RectangleF(curX, y + 4, wCode, rowH - 4), SfCenter);
+                                curX -= wName; g.DrawRectangle(pThin, curX, y, wName, rowH); g.DrawString(pName, fBold, Brushes.Black, new RectangleF(curX + 6, y + 4, wName - 12, rowH - 4), SfRtlRight);
+                                curX -= wUnit; g.DrawRectangle(pThin, curX, y, wUnit, rowH); g.DrawString(pUnit, fSmall, Brushes.Black, new RectangleF(curX, y + 4, wUnit, rowH - 4), SfCenter);
+                                curX -= wQty; g.DrawRectangle(pThin, curX, y, wQty, rowH); g.DrawString(q.ToString("0.##"), fBold, Brushes.DarkBlue, new RectangleF(curX, y + 4, wQty, rowH - 4), SfCenter);
+                                curX -= wPrice; g.DrawRectangle(pThin, curX, y, wPrice, rowH); g.DrawString(p.ToString("N2"), fNorm, Brushes.Black, new RectangleF(curX, y + 4, wPrice, rowH - 4), SfCenter);
+                                curX -= wTot; g.DrawRectangle(pThin, curX, y, wTot, rowH); g.DrawString(t.ToString("N2"), fBold, brAccent, new RectangleF(curX, y + 4, wTot, rowH - 4), SfCenter);
+
+                                y += rowH;
+                                itemIdx++;
+                            }
+                        }
+
+                        // ── 4. TOTALS & SUMMARY SECTION ──
+                        decimal returnTotalAmount = Convert.ToDecimal(retRow["TotalAmount"]);
+                        if (returnTotalAmount <= 0 && calcTotal > 0) returnTotalAmount = calcTotal;
+
+                        y += 8;
+                        int totalBoxH = 34;
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(254, 242, 242)), tLeft, y, tWidth, totalBoxH);
+                        g.DrawRectangle(new Pen(cAccent, 1.8f), tLeft, y, tWidth, totalBoxH);
+                        g.DrawString($"💰 إجمالي قيمة المرتجع المسترد:  {returnTotalAmount:N2} جنيه", fBig, brAccent, new RectangleF(tLeft + 10, y + 2, tWidth - 20, totalBoxH - 4), SfRtlRight);
+
+                        y += totalBoxH + 6;
+                        g.DrawString($"عدد الأصناف المرتجعة: {itemCount} صنف  |  إجمالي كميات المرتجع: {totalQty:0.##}", fBold, Brushes.DarkSlateGray, new RectangleF(tLeft, y, tWidth, 22), SfCenter);
+
+                        string tafqeet = TafqeetHelper.ConvertToArabicWords(returnTotalAmount);
+                        y += 24;
+                        g.DrawString($"فقط وقدره: {tafqeet} لا غير", fNorm, Brushes.DimGray, new RectangleF(tLeft, y, tWidth, 22), SfCenter);
+
+                        if (!string.IsNullOrWhiteSpace(notes))
+                        {
+                            y += 26;
+                            g.FillRectangle(brAlt, tLeft, y, tWidth, 26);
+                            g.DrawRectangle(pThin, tLeft, y, tWidth, 26);
+                            g.DrawString($"ملاحظات: {notes}", fNorm, Brushes.DarkSlateGray, new RectangleF(tLeft + 8, y + 3, tWidth - 16, 20), SfRtlRight);
+                        }
+
+                        // ── 5. SIGNATURES & FOOTER ──
+                        y += 30;
+                        g.DrawLine(pThin, 20, y, width - 20, y);
+                        y += 8;
+
+                        g.DrawString("توقيع العميل / المستلم: ....................", fNorm, Brushes.Black, new RectangleF(width / 2 + 10, y, width / 2 - 30, 22), SfRtlRight);
+                        g.DrawString("توقيع الكاشير / المسؤول: ....................", fNorm, Brushes.Black, new RectangleF(25, y, width / 2 - 30, 22), SfRtlRight);
+
+                        y += 24;
+                        g.DrawString("شكراً لتعاملكم معنا", fBold, brPrimary, new RectangleF(20, y, width - 40, 22), SfCenter);
+                    }
+
+                    return bmp;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GenerateReturnReceiptImage", ex);
+                return null;
+            }
+        }
+
+        private static string FormatReturnPaymentType(string payType)
+        {
+            if (string.IsNullOrEmpty(payType)) return "نقدي (كاش - من الدرج)";
+            switch (payType.Trim())
+            {
+                case "Cash": return "نقدي (كاش - من الدرج)";
+                case "Visa": return "فيزا (إلكتروني / بنك)";
+                case "Credit": return "آجل (خصم من رصيد العميل)";
+                case "Mixed": return "مختلط (كاش + فيزا)";
+                default: return payType;
+            }
+        }
+
         private static string CleanEmoji(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;

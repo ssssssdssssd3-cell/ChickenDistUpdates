@@ -29,6 +29,19 @@ namespace ChickenDist.Forms
         private decimal _selectedSaleTotalAmount = 0m;
         private decimal _selectedSaleShippingCharge = 0m;
         private decimal _selectedSalePrevReturnedAmount = 0m;
+        private int _lastSavedReturnID = 0;
+
+        private int GetSelectedReturnID()
+        {
+            if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
+            {
+                int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
+                var dtRet = DbHelper.Query("SELECT TOP 1 ReturnID FROM SalesReturns WHERE SaleID = @id ORDER BY ReturnID DESC", DbHelper.P("@id", saleID));
+                if (dtRet.Rows.Count > 0)
+                    return Convert.ToInt32(dtRet.Rows[0]["ReturnID"]);
+            }
+            return _lastSavedReturnID;
+        }
 
         public FrmReturn()
         {
@@ -641,25 +654,33 @@ namespace ChickenDist.Forms
             };
 
             var ctxSales = new ContextMenuStrip();
-            var miPrintRet = new ToolStripMenuItem("🖨️ طباعة إيصال مرتجع هذه الفاتورة");
+            var miPrintRet = new ToolStripMenuItem("🖨️ طباعة إيصال مرتجع هذه الفاتورة (اختيار المقاس)");
             miPrintRet.Click += (s, e) =>
             {
-                if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
+                int retID = GetSelectedReturnID();
+                if (retID > 0)
                 {
-                    int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
-                    var dtRet = DbHelper.Query("SELECT TOP 1 ReturnID FROM SalesReturns WHERE SaleID = @id ORDER BY ReturnID DESC", DbHelper.P("@id", saleID));
-                    if (dtRet.Rows.Count > 0)
-                    {
-                        int retID = Convert.ToInt32(dtRet.Rows[0]["ReturnID"]);
-                        new FrmPrintReturn(retID, null, true);
-                    }
-                    else
-                    {
-                        MessageBox.Show("لا يوجد مرتجع مسجل لهذه الفاتورة بعد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
+                    FrmPrintChoiceDialog.PromptAndPrintReturn(this, retID);
+                }
+                else
+                {
+                    MessageBox.Show("لا يوجد مرتجع مسجل لهذه الفاتورة بعد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
-            ctxSales.Items.Add(miPrintRet);
+            var miWhatsAppRet = new ToolStripMenuItem("📱 إرسال إيصال المرتجع واتساب (نموذج الطارق)");
+            miWhatsAppRet.Click += (s, e) =>
+            {
+                int retID = GetSelectedReturnID();
+                if (retID > 0)
+                {
+                    WhatsAppSender.SendReturnReceipt(this, retID);
+                }
+                else
+                {
+                    MessageBox.Show("لا يوجد مرتجع مسجل لهذه الفاتورة بعد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+            ctxSales.Items.AddRange(new ToolStripItem[] { miPrintRet, miWhatsAppRet });
             dgSales.ContextMenuStrip = ctxSales;
 
             dgSales.SelectionChanged += DgSales_SelectionChanged;
@@ -817,33 +838,42 @@ namespace ChickenDist.Forms
             btnSave.Font = Theme.FontBold;
             btnSave.Click += BtnSave_Click;
 
-            var btnReprint = Theme.MakeButton("🖨️ طباعة إيصال المرتجع", Color.FromArgb(70, 70, 95));
-            btnReprint.Width = 160;
+            var btnReprint = Theme.MakeButton("🖨️ طباعة المرتجع", Color.FromArgb(70, 70, 95));
+            btnReprint.Width = 150;
             btnReprint.Height = 38;
-            btnReprint.Margin = new Padding(10, 0, 0, 0);
+            btnReprint.Margin = new Padding(8, 0, 0, 0);
             btnReprint.Click += (s, e) =>
             {
-                if (dgSales.CurrentRow != null && dgSales.CurrentRow.Cells["SaleID"].Value != null)
+                int retID = GetSelectedReturnID();
+                if (retID > 0)
                 {
-                    int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
-                    var dtRet = DbHelper.Query("SELECT TOP 1 ReturnID FROM SalesReturns WHERE SaleID = @id ORDER BY ReturnID DESC", DbHelper.P("@id", saleID));
-                    if (dtRet.Rows.Count > 0)
-                    {
-                        int retID = Convert.ToInt32(dtRet.Rows[0]["ReturnID"]);
-                        new FrmPrintReturn(retID, null, true);
-                    }
-                    else
-                    {
-                        MessageBox.Show("لا يوجد مرتجع مسجل لهذه الفاتورة المختارة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
+                    FrmPrintChoiceDialog.PromptAndPrintReturn(this, retID);
                 }
                 else
                 {
-                    MessageBox.Show("يرجى اختيار فاتورة من الجدول أعلى للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى اختيار فاتورة مسجل لها مرتجع أو حفظ مرتجع جديد أولاً للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+
+            var btnWhatsApp = Theme.MakeButton("📱 واتساب (نموذج الطارق)", Color.FromArgb(37, 211, 102));
+            btnWhatsApp.Width = 175;
+            btnWhatsApp.Height = 38;
+            btnWhatsApp.Margin = new Padding(8, 0, 0, 0);
+            btnWhatsApp.Font = Theme.FontBold;
+            btnWhatsApp.Click += (s, e) =>
+            {
+                int retID = GetSelectedReturnID();
+                if (retID > 0)
+                {
+                    WhatsAppSender.SendReturnReceipt(this, retID);
+                }
+                else
+                {
+                    MessageBox.Show("يرجى اختيار فاتورة مسجل لها مرتجع أو حفظ مرتجع جديد أولاً لإرسال الإيصال عبر الواتساب.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
             
-            pnlFoot.Controls.AddRange(new Control[] { lblNotesL, txtNotes, lblExchangeSummary, lblTotal, btnSave, btnReprint });
+            pnlFoot.Controls.AddRange(new Control[] { lblNotesL, txtNotes, lblExchangeSummary, lblTotal, btnSave, btnReprint, btnWhatsApp });
 
             // ===== 4. Add controls =====
             this.Controls.Add(_mainSplit);
@@ -1471,11 +1501,8 @@ namespace ChickenDist.Forms
                     int id = ReturnDAL.SaveReturn(saleID, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType, shiftID);
                     if (id > 0) 
                     { 
-                        var askPrint = MessageBox.Show("✅ تم حفظ مرتجع البيع بنجاح!\n\nهل ترغب في طباعة إيصال المرتجع الآن؟", "نجاح العملية", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1); 
-                        if (askPrint == DialogResult.Yes)
-                        {
-                            try { new FrmPrintReturn(id, null, false); } catch { }
-                        }
+                        _lastSavedReturnID = id;
+                        FrmPrintChoiceDialog.PromptAndPrintReturn(this, id, "✅ تم حفظ مرتجع البيع بنجاح!");
                         txtNotes.Text = "";
                         LoadSales();
                     }
@@ -1552,11 +1579,8 @@ namespace ChickenDist.Forms
                     int id = ReturnDAL.SaveReturn(0, clientID, totalReturnAmount, txtNotes.Text, returnItems, warehouseID, returnType, shiftID);
                     if (id > 0)
                     {
-                        var askPrint = MessageBox.Show("✅ تم حفظ مرتجع البيع العام بنجاح!\n\nهل ترغب في طباعة إيصال المرتجع الآن؟", "نجاح", MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
-                        if (askPrint == DialogResult.Yes)
-                        {
-                            try { new FrmPrintReturn(id, null, false); } catch { }
-                        }
+                        _lastSavedReturnID = id;
+                        FrmPrintChoiceDialog.PromptAndPrintReturn(this, id, "✅ تم حفظ مرتجع البيع العام بنجاح!");
                         txtNotes.Text = "";
                         dgItems.Rows.Clear();
                         RecalcTotals();

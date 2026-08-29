@@ -73,15 +73,15 @@ namespace ChickenDist.Forms
                 _returnRow = dt.Rows[0];
 
             _items = DbHelper.Query(@"
-                SELECT ri.ReturnItemID, ri.ProductID, ri.Quantity, ri.UnitPrice, 
-                       ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice,
+                SELECT ISNULL(p.ProductName, N'صنف عام') AS ProductName, 
+                       ISNULL(p.ProductCode, N'') AS ProductCode,
                        ISNULL(ri.UnitName, ISNULL(p.Unit, N'')) AS UnitName,
-                       ISNULL(p.ProductName, N'صنف عام') AS ProductName, 
-                       ISNULL(p.ProductCode, N'') AS ProductCode
+                       ri.Quantity, ri.UnitPrice, 
+                       ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice,
+                       ri.ProductID
                 FROM ReturnItems ri
                 LEFT JOIN Products p ON ri.ProductID = p.ProductID
-                WHERE ri.ReturnID = @id
-                ORDER BY ri.ReturnItemID", DbHelper.P("@id", _returnID));
+                WHERE ri.ReturnID = @id", DbHelper.P("@id", _returnID));
         }
 
         private void DoPrint()

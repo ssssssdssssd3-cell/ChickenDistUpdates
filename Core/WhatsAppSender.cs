@@ -1,10 +1,13 @@
 using System;
+using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using ChickenDist.Forms;
 
 namespace ChickenDist.Core
 {
@@ -553,6 +556,98 @@ namespace ChickenDist.Core
                 }
 
                 dlg.ShowDialog(parentForm);
+            }
+        }
+
+        /// <summary>
+        /// إرسال إيصال مرتجع المبيعات عبر الواتساب بنموذج الطارق المعتمد
+        /// </summary>
+        public static void SendReturnReceipt(Form parentForm, int returnID, string overridePhone = null)
+        {
+            try
+            {
+                var dt = DbHelper.Query(@"
+                    SELECT sr.ReturnID, sr.ReturnDate, sr.TotalAmount, sr.Notes,
+                           ISNULL(sr.PaymentType, N'Cash') AS PaymentType,
+                           ISNULL(s.SaleCode, N'مرتجع عام') AS SaleCode,
+                           ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
+                           ISNULL(c.Phone, N'') AS ClientPhone
+                    FROM SalesReturns sr
+                    LEFT JOIN Sales s ON sr.SaleID = s.SaleID
+                    LEFT JOIN Clients c ON sr.ClientID = c.ClientID
+                    WHERE sr.ReturnID = @id", DbHelper.P("@id", returnID));
+
+                if (dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("لم يتم العثور على بيانات المرتجع المطلوب!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var row = dt.Rows[0];
+                string clientName = row["ClientName"]?.ToString() ?? "العميل الكريم";
+                string phone = !string.IsNullOrWhiteSpace(overridePhone) ? overridePhone : (row["ClientPhone"]?.ToString() ?? "");
+                decimal totalAmount = Convert.ToDecimal(row["TotalAmount"]);
+                string saleCode = row["SaleCode"]?.ToString() ?? "مرتجع عام";
+                string returnCode = "RET-" + returnID;
+                string payTypeFormatted = FrmPrintReturn.FormatPaymentType(row["PaymentType"]?.ToString());
+
+                // تجهيز نص رسالة المرتجع
+                var sb = new StringBuilder();
+                sb.AppendLine($"🧾 *إشعار مرتجع مبيعات* ↩️");
+                sb.AppendLine($"🏢 *{AppConfig.CompanyName}*");
+                if (!string.IsNullOrEmpty(AppConfig.CompanyPhone))
+                    sb.AppendLine($"📞 هاتف: {AppConfig.CompanyPhone}");
+                sb.AppendLine("───────────────────");
+                sb.AppendLine($"👤 العميل: *{clientName}*");
+                sb.AppendLine($"🔢 رقم المرتجع: *#{returnCode}*");
+                sb.AppendLine($"📄 الفاتورة الأصلية: *#{saleCode}*");
+                sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(row["ReturnDate"]):yyyy/MM/dd hh:mm tt}");
+                sb.AppendLine($"💳 طريقة رد القيمة: *{payTypeFormatted}*");
+                sb.AppendLine("───────────────────");
+
+                var dtItems = DbHelper.Query(@"
+                    SELECT ISNULL(p.ProductName, N'صنف عام') AS ProductName, 
+                           ISNULL(ri.UnitName, ISNULL(p.Unit, N'')) AS UnitName,
+                           ri.Quantity, ri.UnitPrice, 
+                           ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice
+                    FROM ReturnItems ri
+                    LEFT JOIN Products p ON ri.ProductID = p.ProductID
+                    WHERE ri.ReturnID = @id", DbHelper.P("@id", returnID));
+
+                if (dtItems.Rows.Count > 0)
+                {
+                    sb.AppendLine("📦 *الأصناف المرتجعة:*");
+                    foreach (DataRow ir in dtItems.Rows)
+                    {
+                        string pName = ir["ProductName"]?.ToString();
+                        string u = ir["UnitName"]?.ToString();
+                        decimal q = Convert.ToDecimal(ir["Quantity"]);
+                        decimal p = Convert.ToDecimal(ir["UnitPrice"]);
+                        decimal t = Convert.ToDecimal(ir["TotalPrice"]);
+                        string uStr = !string.IsNullOrEmpty(u) ? $" {u}" : "";
+                        sb.AppendLine($"▫️ {pName}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*");
+                    }
+                    sb.AppendLine("───────────────────");
+                }
+
+                sb.AppendLine($"💰 *إجمالي قيمة المرتجع:* *{totalAmount:N2} جنيه*");
+                string notes = row["Notes"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(notes))
+                    sb.AppendLine($"📝 ملاحظات: {notes}");
+                sb.AppendLine("✨ شكراً لتعاملكم معنا!");
+
+                ShowWhatsAppSendOptionsDialog(
+                    parentForm,
+                    phone,
+                    sb.ToString(),
+                    () => ReceiptImageGenerator.GenerateReturnReceiptImage(returnID, "الطارق"),
+                    "📱 إرسال إيصال المرتجع عبر الواتساب (نموذج الطارق)"
+                );
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("WhatsAppSender.SendReturnReceipt", ex);
+                MessageBox.Show("فشل إرسال إيصال المرتجع: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

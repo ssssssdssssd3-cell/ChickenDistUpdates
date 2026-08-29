@@ -1940,7 +1940,7 @@ namespace ChickenDist.DAL
                   LEFT JOIN Clients c ON sr.ClientID=c.ClientID
                   LEFT JOIN Clients c2 ON s.ClientID=c2.ClientID
                   LEFT JOIN (
-                      SELECT ReturnID, COUNT(ReturnItemID) AS ItemsCount
+                      SELECT ReturnID, COUNT(*) AS ItemsCount
                       FROM ReturnItems
                       GROUP BY ReturnID
                   ) retItems ON retItems.ReturnID = sr.ReturnID
