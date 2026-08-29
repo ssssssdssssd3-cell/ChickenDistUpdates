@@ -100,9 +100,117 @@ namespace ChickenDist.Core
 
     public static class ProductionDAL
     {
+        private static bool _tablesEnsured = false;
+        private static readonly object _lock = new object();
+
+        static ProductionDAL()
+        {
+            EnsureProductionTables();
+        }
+
+        public static void EnsureProductionTables()
+        {
+            if (_tablesEnsured) return;
+            lock (_lock)
+            {
+                if (_tablesEnsured) return;
+                try
+                {
+                    DbHelper.Execute(@"
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BOMHeader')
+                    BEGIN
+                        CREATE TABLE BOMHeader (
+                            BOMID INT IDENTITY(1,1) PRIMARY KEY,
+                            ProductID INT NOT NULL,
+                            OutputQty DECIMAL(18,4) NOT NULL DEFAULT 1,
+                            UnitName NVARCHAR(50) NULL,
+                            Notes NVARCHAR(500) NULL,
+                            CreatedDate DATETIME DEFAULT GETDATE(),
+                            LastUpdated DATETIME DEFAULT GETDATE(),
+                            IsActive BIT DEFAULT 1
+                        );
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BOMItems')
+                    BEGIN
+                        CREATE TABLE BOMItems (
+                            BOMItemID INT IDENTITY(1,1) PRIMARY KEY,
+                            BOMID INT NOT NULL,
+                            RawProductID INT NOT NULL,
+                            Quantity DECIMAL(18,4) NOT NULL,
+                            UnitName NVARCHAR(50) NULL,
+                            Factor DECIMAL(18,4) DEFAULT 1,
+                            Notes NVARCHAR(200) NULL
+                        );
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductionOrders')
+                    BEGIN
+                        CREATE TABLE ProductionOrders (
+                            ProductionID INT IDENTITY(1,1) PRIMARY KEY,
+                            OrderCode NVARCHAR(50) NOT NULL,
+                            ProductionType NVARCHAR(20) NOT NULL DEFAULT 'Fixed',
+                            BOMID INT NULL,
+                            FinishedProductID INT NOT NULL,
+                            ProducedQty DECIMAL(18,4) NOT NULL,
+                            UnitName NVARCHAR(50) NULL,
+                            WarehouseID INT NOT NULL DEFAULT 1,
+                            RawMaterialsCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            ExtraExpenses DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            ExpensesNotes NVARCHAR(300) NULL,
+                            TotalCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            UnitCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            Status NVARCHAR(30) NOT NULL DEFAULT 'InPreparation',
+                            StockDeducted BIT NOT NULL DEFAULT 0,
+                            StockAdded BIT NOT NULL DEFAULT 0,
+                            CreatedDate DATETIME DEFAULT GETDATE(),
+                            UpdatedDate DATETIME DEFAULT GETDATE(),
+                            CompletedDate DATETIME NULL,
+                            CreatedBy INT NULL,
+                            UpdatedBy INT NULL,
+                            Notes NVARCHAR(500) NULL
+                        );
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductionOrderItems')
+                    BEGIN
+                        CREATE TABLE ProductionOrderItems (
+                            ItemID INT IDENTITY(1,1) PRIMARY KEY,
+                            ProductionID INT NOT NULL,
+                            RawProductID INT NOT NULL,
+                            Quantity DECIMAL(18,4) NOT NULL,
+                            UnitCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            TotalCost DECIMAL(18,4) NOT NULL DEFAULT 0,
+                            UnitName NVARCHAR(50) NULL,
+                            Factor DECIMAL(18,4) DEFAULT 1,
+                            Notes NVARCHAR(200) NULL
+                        );
+                    END
+
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductionOrderHistory')
+                    BEGIN
+                        CREATE TABLE ProductionOrderHistory (
+                            HistoryID INT IDENTITY(1,1) PRIMARY KEY,
+                            ProductionID INT NOT NULL,
+                            ActionType NVARCHAR(50) NOT NULL,
+                            ActionDate DATETIME DEFAULT GETDATE(),
+                            ActionBy NVARCHAR(100) NULL,
+                            Details NVARCHAR(MAX) NULL
+                        );
+                    END");
+                    _tablesEnsured = true;
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("ProductionDAL.EnsureProductionTables", ex);
+                }
+            }
+        }
+
         #region BOM Methods (شجرة مواد التصنيع)
         public static BOMModel GetBOMByProductID(int productId)
         {
+            EnsureProductionTables();
             try
             {
                 var dt = DbHelper.Query(@"
@@ -146,6 +254,7 @@ namespace ChickenDist.Core
 
         public static DataTable GetAllBOMs(string search = "")
         {
+            EnsureProductionTables();
             try
             {
                 string sql = @"
@@ -223,6 +332,7 @@ namespace ChickenDist.Core
 
         public static int SaveBOM(BOMModel bom)
         {
+            EnsureProductionTables();
             using (var conn = DbHelper.GetConnection())
             {
                 conn.Open();
@@ -313,6 +423,7 @@ namespace ChickenDist.Core
         #region Production Orders Methods (أوامر التصنيع الثابت والمخصص)
         public static string GenerateOrderCode(string prefix = "PRD")
         {
+            EnsureProductionTables();
             try
             {
                 string dateStr = DateTime.Now.ToString("yyMMdd");

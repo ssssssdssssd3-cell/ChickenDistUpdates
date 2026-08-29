@@ -455,7 +455,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 33;
+        private const int CurrentSchemaVersion = 35;
 
         public static void EnsureAppSettingsTable()
         {
@@ -511,6 +511,7 @@ namespace ChickenDist.Core
         public static void EnsurePurchaseColumnsExist()
         {
             EnsureAppSettingsTable();
+            ProductionDAL.EnsureProductionTables();
 
             SafeMigrate("DecimalExpansion.Safety", @"
             IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
@@ -550,14 +551,17 @@ namespace ChickenDist.Core
                     DROP INDEX IX_Products_Search ON Products;
 
                 DECLARE @dropIdxSql NVARCHAR(MAX) = N'';
-                SELECT @dropIdxSql = @dropIdxSql + N'DROP INDEX ' + QUOTENAME(i.name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(i.object_id)) + N'.' + QUOTENAME(OBJECT_NAME(i.object_id)) + N'; '
-                FROM sys.indexes i
-                JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                WHERE i.object_id = OBJECT_ID('Products')
-                  AND i.is_primary_key = 0 
-                  AND i.is_unique_constraint = 0
-                  AND c.name IN ('SalePrice', 'PurchasePrice', 'WholesalePrice', 'SemiWholesalePrice', 'CostPrice', 'PendingSalePrice', 'MinStockLimit', 'PendingQtyThreshold', 'Unit2Factor', 'Unit3Factor');
+                SELECT @dropIdxSql = @dropIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('Products')
+                      AND i.is_primary_key = 0 
+                      AND i.is_unique_constraint = 0
+                      AND c.name IN ('SalePrice', 'PurchasePrice', 'WholesalePrice', 'SemiWholesalePrice', 'CostPrice', 'PendingSalePrice', 'MinStockLimit', 'PendingQtyThreshold', 'Unit2Factor', 'Unit3Factor')
+                ) t;
 
                 IF LEN(@dropIdxSql) > 0
                     EXEC sp_executesql @dropIdxSql;
@@ -590,14 +594,17 @@ namespace ChickenDist.Core
                     DROP INDEX IX_PurchaseItems_Opt ON PurchaseItems;
 
                 DECLARE @dropPiIdxSql NVARCHAR(MAX) = N'';
-                SELECT @dropPiIdxSql = @dropPiIdxSql + N'DROP INDEX ' + QUOTENAME(i.name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(i.object_id)) + N'.' + QUOTENAME(OBJECT_NAME(i.object_id)) + N'; '
-                FROM sys.indexes i
-                JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                WHERE i.object_id = OBJECT_ID('PurchaseItems')
-                  AND i.is_primary_key = 0 
-                  AND i.is_unique_constraint = 0
-                  AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor');
+                SELECT @dropPiIdxSql = @dropPiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('PurchaseItems')
+                      AND i.is_primary_key = 0 
+                      AND i.is_unique_constraint = 0
+                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
+                ) t;
 
                 IF LEN(@dropPiIdxSql) > 0
                     EXEC sp_executesql @dropPiIdxSql;
@@ -614,14 +621,17 @@ namespace ChickenDist.Core
             IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
             BEGIN
                 DECLARE @dropSiIdxSql NVARCHAR(MAX) = N'';
-                SELECT @dropSiIdxSql = @dropSiIdxSql + N'DROP INDEX ' + QUOTENAME(i.name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(i.object_id)) + N'.' + QUOTENAME(OBJECT_NAME(i.object_id)) + N'; '
-                FROM sys.indexes i
-                JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                WHERE i.object_id = OBJECT_ID('SaleItems')
-                  AND i.is_primary_key = 0 
-                  AND i.is_unique_constraint = 0
-                  AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor');
+                SELECT @dropSiIdxSql = @dropSiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('SaleItems')
+                      AND i.is_primary_key = 0 
+                      AND i.is_unique_constraint = 0
+                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
+                ) t;
 
                 IF LEN(@dropSiIdxSql) > 0
                     EXEC sp_executesql @dropSiIdxSql;
@@ -655,6 +665,22 @@ namespace ChickenDist.Core
 
             IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
             BEGIN
+                DECLARE @dropRiIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropRiIdxSql = @dropRiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('ReturnItems')
+                      AND i.is_primary_key = 0 
+                      AND i.is_unique_constraint = 0
+                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
+                ) t;
+
+                IF LEN(@dropRiIdxSql) > 0
+                    EXEC sp_executesql @dropRiIdxSql;
+
                 ALTER TABLE ReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('ReturnItems', 'UnitPrice') IS NOT NULL
                     ALTER TABLE ReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
@@ -666,6 +692,22 @@ namespace ChickenDist.Core
 
             IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
             BEGIN
+                DECLARE @dropPriIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropPriIdxSql = @dropPriIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('PurchaseReturnItems')
+                      AND i.is_primary_key = 0 
+                      AND i.is_unique_constraint = 0
+                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
+                ) t;
+
+                IF LEN(@dropPriIdxSql) > 0
+                    EXEC sp_executesql @dropPriIdxSql;
+
                 ALTER TABLE PurchaseReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('PurchaseReturnItems', 'UnitPrice') IS NOT NULL
                     ALTER TABLE PurchaseReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
@@ -681,6 +723,26 @@ namespace ChickenDist.Core
                 BEGIN
                     CREATE NONCLUSTERED INDEX IX_Products_Search ON Products(ProductName, ProductCode, Barcode) INCLUDE (SalePrice, PurchasePrice, Quantity);
                 END
+            END
+
+            IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_SaleID' AND object_id = OBJECT_ID('SaleItems'))
+                    CREATE NONCLUSTERED INDEX IX_SaleItems_SaleID ON SaleItems(SaleID) INCLUDE (ProductID, Quantity, UnitPrice, TotalPrice, Factor);
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_Opt' AND object_id = OBJECT_ID('SaleItems')) AND COL_LENGTH('SaleItems', 'Factor') IS NOT NULL
+                    CREATE NONCLUSTERED INDEX IX_SaleItems_Opt ON SaleItems(ProductID, SaleID) INCLUDE (Quantity, Factor);
+            END
+
+            IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_ReturnID' AND object_id = OBJECT_ID('ReturnItems'))
+                    CREATE NONCLUSTERED INDEX IX_ReturnItems_ReturnID ON ReturnItems(ReturnID) INCLUDE (Quantity, UnitPrice);
+            END
+
+            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
+                    CREATE NONCLUSTERED INDEX IX_PurchaseItems_Opt ON PurchaseItems(PurchaseID) INCLUDE (ProductID, Quantity, UnitPrice);
             END");
 
             SafeMigrate("HR.CompleteModule", @"
@@ -1058,7 +1120,9 @@ namespace ChickenDist.Core
                         var postExists     = Scalar("SELECT COL_LENGTH('Sales', 'IsPosted')");
                         var visaPaidExists = Scalar("SELECT COL_LENGTH('Sales', 'VisaPaid')");
                         var visaAccExists  = Scalar("SELECT COL_LENGTH('Sales', 'VisaAccountID')");
-                        // Only skip migrations if ALL critical columns are present
+                        var bomExists      = Scalar("SELECT OBJECT_ID('BOMHeader', 'U')");
+                        var prodOrdersExists = Scalar("SELECT OBJECT_ID('ProductionOrders', 'U')");
+                        // Only skip migrations if ALL critical columns and production tables are present
                         if (colExists      != null && colExists      != DBNull.Value &&
                             sinvExists     != null && sinvExists     != DBNull.Value &&
                             shipExists     != null && shipExists     != DBNull.Value &&
@@ -1067,7 +1131,9 @@ namespace ChickenDist.Core
                             balSpExists    != null && balSpExists    != DBNull.Value &&
                             postExists     != null && postExists     != DBNull.Value &&
                             visaPaidExists != null && visaPaidExists != DBNull.Value &&
-                            visaAccExists  != null && visaAccExists  != DBNull.Value)
+                            visaAccExists  != null && visaAccExists  != DBNull.Value &&
+                            bomExists      != null && bomExists      != DBNull.Value &&
+                            prodOrdersExists != null && prodOrdersExists != DBNull.Value)
                         {
                             return;
                         }
