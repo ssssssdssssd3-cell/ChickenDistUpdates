@@ -33,33 +33,67 @@ namespace ChickenDist.DAL
         /// </summary>
         public static DataTable GetDuplicateProductsReport(string filterType = "All", string searchKeyword = null)
         {
-            string sql = @"
+            bool hasProductStock = DbHelper.TableExists("ProductStock");
+            bool hasWarehouseStock = !hasProductStock && DbHelper.TableExists("WarehouseStock");
+            string stockSubquery = hasProductStock 
+                ? "ISNULL((SELECT SUM(Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID), 0)" 
+                : (hasWarehouseStock ? "ISNULL((SELECT SUM(Quantity) FROM WarehouseStock ws WHERE ws.ProductID = p.ProductID), 0)" : "0");
+
+            bool hasSales = DbHelper.TableExists("SaleItems");
+            string salesSubquery = hasSales ? "ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0)" : "0";
+
+            bool hasPurchases = DbHelper.TableExists("PurchaseItems");
+            string purchasesSubquery = hasPurchases ? "ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0)" : "0";
+
+            bool hasReturns = DbHelper.TableExists("ReturnItems");
+            string returnsSubquery = hasReturns ? "ISNULL((SELECT COUNT(*) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0)" : "0";
+
+            bool hasProdItems = DbHelper.TableExists("ProductionOrderItems");
+            string prodItemsSubquery = hasProdItems ? "ISNULL((SELECT COUNT(*) FROM ProductionOrderItems poi WHERE poi.RawProductID = p.ProductID), 0)" : "0";
+
+            bool hasProdOrders = DbHelper.TableExists("ProductionOrders");
+            string prodOrdersSubquery = hasProdOrders ? "ISNULL((SELECT COUNT(*) FROM ProductionOrders po WHERE po.FinishedProductID = p.ProductID), 0)" : "0";
+
+            bool hasBarcode1 = DbHelper.ColumnExists("Products", "Unit1Barcode");
+            bool hasBarcode2 = DbHelper.ColumnExists("Products", "Unit2Barcode");
+            bool hasScalePLU = DbHelper.ColumnExists("Products", "ScalePLU");
+            bool hasPartNumber = DbHelper.ColumnExists("Products", "PartNumber");
+            bool hasCategory = DbHelper.TableExists("Categories") && DbHelper.ColumnExists("Products", "CategoryID");
+
+            string colBarcode1 = hasBarcode1 ? "p.Unit1Barcode" : "CAST(NULL AS NVARCHAR(50)) AS Unit1Barcode";
+            string colBarcode2 = hasBarcode2 ? "p.Unit2Barcode" : "CAST(NULL AS NVARCHAR(50)) AS Unit2Barcode";
+            string colScalePLU = hasScalePLU ? "p.ScalePLU" : "CAST(NULL AS NVARCHAR(50)) AS ScalePLU";
+            string colPartNum = hasPartNumber ? "p.PartNumber" : "CAST(NULL AS NVARCHAR(50)) AS PartNumber";
+            string colCategory = hasCategory ? "c.CategoryName" : "N'عام' AS CategoryName";
+            string joinCategory = hasCategory ? "LEFT JOIN Categories c ON p.CategoryID = c.CategoryID" : "";
+
+            string sql = $@"
                 WITH DuplicateCodes AS (
-                    SELECT ProductCode 
+                    SELECT LTRIM(RTRIM(ProductCode)) AS ProductCode 
                     FROM Products 
                     WHERE IsActive = 1 AND ProductCode IS NOT NULL AND LTRIM(RTRIM(ProductCode)) <> '' AND ProductCode <> 'AUTO'
-                    GROUP BY ProductCode 
+                    GROUP BY LTRIM(RTRIM(ProductCode)) 
                     HAVING COUNT(*) > 1
                 ),
                 DuplicateBarcodes1 AS (
-                    SELECT Unit1Barcode AS Barcode 
+                    SELECT {(hasBarcode1 ? "Unit1Barcode" : "NULL")} AS Barcode 
                     FROM Products 
-                    WHERE IsActive = 1 AND Unit1Barcode IS NOT NULL AND LTRIM(RTRIM(Unit1Barcode)) <> ''
-                    GROUP BY Unit1Barcode 
+                    WHERE IsActive = 1 AND {(hasBarcode1 ? "Unit1Barcode IS NOT NULL AND LTRIM(RTRIM(Unit1Barcode)) <> ''" : "1 = 0")}
+                    GROUP BY {(hasBarcode1 ? "Unit1Barcode" : "NULL")} 
                     HAVING COUNT(*) > 1
                 ),
                 DuplicateBarcodes2 AS (
-                    SELECT Unit2Barcode AS Barcode 
+                    SELECT {(hasBarcode2 ? "Unit2Barcode" : "NULL")} AS Barcode 
                     FROM Products 
-                    WHERE IsActive = 1 AND Unit2Barcode IS NOT NULL AND LTRIM(RTRIM(Unit2Barcode)) <> ''
-                    GROUP BY Unit2Barcode 
+                    WHERE IsActive = 1 AND {(hasBarcode2 ? "Unit2Barcode IS NOT NULL AND LTRIM(RTRIM(Unit2Barcode)) <> ''" : "1 = 0")}
+                    GROUP BY {(hasBarcode2 ? "Unit2Barcode" : "NULL")} 
                     HAVING COUNT(*) > 1
                 ),
                 DuplicatePLU AS (
-                    SELECT ScalePLU 
+                    SELECT {(hasScalePLU ? "ScalePLU" : "NULL")} AS ScalePLU 
                     FROM Products 
-                    WHERE IsActive = 1 AND ScalePLU IS NOT NULL AND LTRIM(RTRIM(ScalePLU)) <> ''
-                    GROUP BY ScalePLU 
+                    WHERE IsActive = 1 AND {(hasScalePLU ? "ScalePLU IS NOT NULL AND LTRIM(RTRIM(ScalePLU)) <> ''" : "1 = 0")}
+                    GROUP BY {(hasScalePLU ? "ScalePLU" : "NULL")} 
                     HAVING COUNT(*) > 1
                 ),
                 DuplicateNames AS (
@@ -69,68 +103,64 @@ namespace ChickenDist.DAL
                     GROUP BY ProductName 
                     HAVING COUNT(*) > 1
                 )
-                SELECT 
-                    p.ProductID,
-                    p.ProductCode,
-                    p.ProductName,
-                    p.Unit1Barcode,
-                    p.Unit2Barcode,
-                    p.ScalePLU,
-                    p.PartNumber,
-                    c.CategoryName,
-                    p.PurchasePrice,
-                    p.SalePrice,
-                    p.IsActive,
-                    ISNULL((SELECT SUM(Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID), 0) AS CurrentStock,
-                    ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0) AS SalesCount,
-                    ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0) AS PurchasesCount,
-                    ISNULL((SELECT COUNT(*) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0) AS ReturnsCount,
-                    (ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0) + 
-                     ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0) + 
-                     ISNULL((SELECT COUNT(*) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0) + 
-                     ISNULL((SELECT COUNT(*) FROM ProductionOrderItems poi WHERE poi.RawProductID = p.ProductID), 0) + 
-                     ISNULL((SELECT COUNT(*) FROM ProductionOrders po WHERE po.FinishedProductID = p.ProductID), 0)) AS TotalTransactions,
-                    CASE 
-                        WHEN (ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0) + 
-                              ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0) + 
-                              ISNULL((SELECT COUNT(*) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0) + 
-                              ISNULL((SELECT COUNT(*) FROM ProductionOrderItems poi WHERE poi.RawProductID = p.ProductID), 0) + 
-                              ISNULL((SELECT COUNT(*) FROM ProductionOrders po WHERE po.FinishedProductID = p.ProductID), 0)) > 0
-                             OR ABS(ISNULL((SELECT SUM(Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID), 0)) > 0.0001 THEN 1
-                        ELSE 0
-                    END AS HasTransactions,
-                    CASE 
-                        WHEN p.ProductCode IN (SELECT ProductCode FROM DuplicateCodes) THEN N'كود الصنف مكرر [' + ISNULL(p.ProductCode, '') + N']'
-                        WHEN p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1) THEN N'باركود الوحدة 1 مكرر [' + ISNULL(p.Unit1Barcode, '') + N']'
-                        WHEN p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2) THEN N'باركود الوحدة 2 مكرر [' + ISNULL(p.Unit2Barcode, '') + N']'
-                        WHEN p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU) THEN N'كود الميزان مكرر [' + ISNULL(p.ScalePLU, '') + N']'
-                        WHEN p.ProductName IN (SELECT ProductName FROM DuplicateNames) THEN N'اسم الصنف مكرر بالكامل'
-                        ELSE N'تكرار عام'
-                    END AS DuplicateReason,
-                    CASE 
-                        WHEN p.ProductCode IN (SELECT ProductCode FROM DuplicateCodes) THEN p.ProductCode
-                        WHEN p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1) THEN p.Unit1Barcode
-                        WHEN p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2) THEN p.Unit2Barcode
-                        WHEN p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU) THEN p.ScalePLU
-                        WHEN p.ProductName IN (SELECT ProductName FROM DuplicateNames) THEN p.ProductName
-                        ELSE CAST(p.ProductID AS NVARCHAR(50))
-                    END AS GroupKey
-                FROM Products p
-                LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
-                WHERE p.IsActive = 1 AND (
-            ";
+                SELECT * FROM (
+                    SELECT 
+                        p.ProductID,
+                        LTRIM(RTRIM(p.ProductCode)) AS ProductCode,
+                        p.ProductName,
+                        {colBarcode1},
+                        {colBarcode2},
+                        {colScalePLU},
+                        {colPartNum},
+                        {colCategory},
+                        p.PurchasePrice,
+                        p.SalePrice,
+                        p.IsActive,
+                        {stockSubquery} AS CurrentStock,
+                        {salesSubquery} AS SalesCount,
+                        {purchasesSubquery} AS PurchasesCount,
+                        {returnsSubquery} AS ReturnsCount,
+                        ({salesSubquery} + {purchasesSubquery} + {returnsSubquery} + {prodItemsSubquery} + {prodOrdersSubquery}) AS TotalTransactions,
+                        CASE 
+                            WHEN ({salesSubquery} + {purchasesSubquery} + {returnsSubquery} + {prodItemsSubquery} + {prodOrdersSubquery}) > 0
+                                 OR ABS({stockSubquery}) > 0.0001 THEN 1
+                            ELSE 0
+                        END AS HasTransactions,
+                        CASE 
+                            WHEN LTRIM(RTRIM(p.ProductCode)) IN (SELECT ProductCode FROM DuplicateCodes) THEN N'كود الصنف مكرر [' + ISNULL(LTRIM(RTRIM(p.ProductCode)), '') + N']'
+                            WHEN {(hasBarcode1 ? "p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1)" : "1=0")} THEN N'باركود الوحدة 1 مكرر [' + ISNULL({(hasBarcode1 ? "p.Unit1Barcode" : "''")}, '') + N']'
+                            WHEN {(hasBarcode2 ? "p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2)" : "1=0")} THEN N'باركود الوحدة 2 مكرر [' + ISNULL({(hasBarcode2 ? "p.Unit2Barcode" : "''")}, '') + N']'
+                            WHEN {(hasScalePLU ? "p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU)" : "1=0")} THEN N'كود الميزان مكرر [' + ISNULL({(hasScalePLU ? "p.ScalePLU" : "''")}, '') + N']'
+                            WHEN p.ProductName IN (SELECT ProductName FROM DuplicateNames) THEN N'اسم الصنف مكرر بالكامل'
+                            ELSE N'تكرار عام'
+                        END AS DuplicateReason,
+                        CASE 
+                            WHEN LTRIM(RTRIM(p.ProductCode)) IN (SELECT ProductCode FROM DuplicateCodes) THEN LTRIM(RTRIM(p.ProductCode))
+                            WHEN {(hasBarcode1 ? "p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1)" : "1=0")} THEN {(hasBarcode1 ? "p.Unit1Barcode" : "''")}
+                            WHEN {(hasBarcode2 ? "p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2)" : "1=0")} THEN {(hasBarcode2 ? "p.Unit2Barcode" : "''")}
+                            WHEN {(hasScalePLU ? "p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU)" : "1=0")} THEN {(hasScalePLU ? "p.ScalePLU" : "''")}
+                            WHEN p.ProductName IN (SELECT ProductName FROM DuplicateNames) THEN p.ProductName
+                            ELSE CAST(p.ProductID AS NVARCHAR(50))
+                        END AS GroupKey
+                    FROM Products p
+                    {joinCategory}
+                    WHERE p.IsActive = 1 AND (
+                ";
 
             if (filterType == "ProductCode")
             {
-                sql += " p.ProductCode IN (SELECT ProductCode FROM DuplicateCodes) ";
+                sql += " LTRIM(RTRIM(p.ProductCode)) IN (SELECT ProductCode FROM DuplicateCodes) ";
             }
             else if (filterType == "Barcode")
             {
-                sql += " (p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1) OR p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2)) ";
+                string bCond = " 1 = 0 ";
+                if (hasBarcode1) bCond += " OR p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1) ";
+                if (hasBarcode2) bCond += " OR p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2) ";
+                sql += $" ({bCond}) ";
             }
             else if (filterType == "ScalePLU")
             {
-                sql += " p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU) ";
+                sql += hasScalePLU ? " p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU) " : " 1 = 0 ";
             }
             else if (filterType == "ProductName")
             {
@@ -138,10 +168,11 @@ namespace ChickenDist.DAL
             }
             else // All
             {
-                sql += @" (p.ProductCode IN (SELECT ProductCode FROM DuplicateCodes)
-                           OR p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1)
-                           OR p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2)
-                           OR p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU)) ";
+                sql += @" (LTRIM(RTRIM(p.ProductCode)) IN (SELECT ProductCode FROM DuplicateCodes) ";
+                if (hasBarcode1) sql += " OR p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1) ";
+                if (hasBarcode2) sql += " OR p.Unit2Barcode IN (SELECT Barcode FROM DuplicateBarcodes2) ";
+                if (hasScalePLU) sql += " OR p.ScalePLU IN (SELECT ScalePLU FROM DuplicatePLU) ";
+                sql += ") ";
             }
 
             sql += " ) ";
@@ -149,15 +180,20 @@ namespace ChickenDist.DAL
             var pars = new List<SqlParameter>();
             if (!string.IsNullOrWhiteSpace(searchKeyword))
             {
-                sql += " AND (p.ProductName LIKE @q OR p.ProductCode LIKE @q OR p.Unit1Barcode LIKE @q) ";
-                pars.Add(DbHelper.P("@q", "%" + searchKeyword.Trim() + "%"));
+                string trimmedSearch = searchKeyword.Trim();
+                sql += " AND (p.ProductName LIKE @q OR LTRIM(RTRIM(p.ProductCode)) LIKE @q OR LTRIM(RTRIM(p.ProductCode)) = @exactQ ";
+                if (hasBarcode1) sql += " OR p.Unit1Barcode LIKE @q ";
+                sql += ") ";
+                pars.Add(DbHelper.P("@q", "%" + trimmedSearch + "%"));
+                pars.Add(DbHelper.P("@exactQ", trimmedSearch));
             }
 
-            sql += @" ORDER BY GroupKey ASC, 
-                              HasTransactions DESC, 
-                              TotalTransactions DESC, 
-                              (CASE WHEN CurrentStock > 0 THEN 1 ELSE 0 END) DESC, 
-                              p.ProductID ASC";
+            sql += @" ) t 
+                      ORDER BY GroupKey ASC, 
+                               HasTransactions DESC, 
+                               TotalTransactions DESC, 
+                               (CASE WHEN CurrentStock > 0 THEN 1 ELSE 0 END) DESC, 
+                               ProductID ASC";
 
             return DbHelper.Query(sql, pars.ToArray());
         }
@@ -361,38 +397,41 @@ namespace ChickenDist.DAL
             {
                 DbHelper.RunInTransaction((con, trans) =>
                 {
-                    // 1. تحويل كميات المخزون في WarehouseStock
-                    var dtSourceStock = DbHelper.QueryTrans(trans,
-                        "SELECT WarehouseID, Quantity FROM WarehouseStock WHERE ProductID = @pid",
-                        DbHelper.P("@pid", sourceProductID));
-
-                    foreach (DataRow sr in dtSourceStock.Rows)
+                    // 1. تحويل كميات المخزون في ProductStock / WarehouseStock
+                    string stockTable = TableExistsTrans(trans, "ProductStock") ? "ProductStock" : (TableExistsTrans(trans, "WarehouseStock") ? "WarehouseStock" : null);
+                    if (stockTable != null)
                     {
-                        int wid = Convert.ToInt32(sr["WarehouseID"]);
-                        decimal qty = Convert.ToDecimal(sr["Quantity"]);
+                        var dtSourceStock = DbHelper.QueryTrans(trans,
+                            $"SELECT WarehouseID, Quantity FROM {stockTable} WHERE ProductID = @pid",
+                            DbHelper.P("@pid", sourceProductID));
 
-                        if (qty != 0)
+                        foreach (DataRow sr in dtSourceStock.Rows)
                         {
-                            // فحص هل الصنف الهدف له سجل في هذا المخزن؟
-                            var exists = DbHelper.ScalarTrans(trans,
-                                "SELECT COUNT(*) FROM WarehouseStock WHERE ProductID = @pid AND WarehouseID = @wid",
-                                DbHelper.P("@pid", targetProductID), DbHelper.P("@wid", wid));
+                            int wid = Convert.ToInt32(sr["WarehouseID"]);
+                            decimal qty = Convert.ToDecimal(sr["Quantity"]);
 
-                            if (exists != null && Convert.ToInt32(exists) > 0)
+                            if (qty != 0)
                             {
-                                DbHelper.ExecuteTrans(trans,
-                                    "UPDATE WarehouseStock SET Quantity = Quantity + @q WHERE ProductID = @pid AND WarehouseID = @wid",
-                                    DbHelper.P("@q", qty), DbHelper.P("@pid", targetProductID), DbHelper.P("@wid", wid));
-                            }
-                            else
-                            {
-                                DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO WarehouseStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @q)",
-                                    DbHelper.P("@pid", targetProductID), DbHelper.P("@wid", wid), DbHelper.P("@q", qty));
+                                var exists = DbHelper.ScalarTrans(trans,
+                                    $"SELECT COUNT(*) FROM {stockTable} WHERE ProductID = @pid AND WarehouseID = @wid",
+                                    DbHelper.P("@pid", targetProductID), DbHelper.P("@wid", wid));
+
+                                if (exists != null && Convert.ToInt32(exists) > 0)
+                                {
+                                    DbHelper.ExecuteTrans(trans,
+                                        $"UPDATE {stockTable} SET Quantity = Quantity + @q WHERE ProductID = @pid AND WarehouseID = @wid",
+                                        DbHelper.P("@q", qty), DbHelper.P("@pid", targetProductID), DbHelper.P("@wid", wid));
+                                }
+                                else
+                                {
+                                    DbHelper.ExecuteTrans(trans,
+                                        $"INSERT INTO {stockTable} (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @q)",
+                                        DbHelper.P("@pid", targetProductID), DbHelper.P("@wid", wid), DbHelper.P("@q", qty));
+                                }
                             }
                         }
+                        DbHelper.ExecuteTrans(trans, $"DELETE FROM {stockTable} WHERE ProductID = @pid", DbHelper.P("@pid", sourceProductID));
                     }
-                    DbHelper.ExecuteTrans(trans, "DELETE FROM WarehouseStock WHERE ProductID = @pid", DbHelper.P("@pid", sourceProductID));
 
                     // 2. تحويل فواتير المبيعات
                     DbHelper.ExecuteTrans(trans, "UPDATE SaleItems SET ProductID = @target WHERE ProductID = @src",

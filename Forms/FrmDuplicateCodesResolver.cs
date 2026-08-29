@@ -212,77 +212,85 @@ namespace ChickenDist.Forms
 
         private void RunScan()
         {
-            string mode = GetSelectedFilterMode();
-            string q = txtSearch?.Text?.Trim();
-
-            DataTable dt = ProductDuplicateDAL.GetDuplicateProductsReport(mode, q);
-            dgDuplicates.Rows.Clear();
-
-            if (dt.Rows.Count == 0)
+            try
             {
-                lblStats.Text = "✅ لا توجد أي أكواد أو باركودات مكررة في قاعدة البيانات!";
-                lblStats.ForeColor = Color.DarkGreen;
-                btnAutoFixCodes.Enabled = false;
-                btnAutoFixBarcodes.Enabled = false;
-                btnMergeSelected.Enabled = false;
-                return;
-            }
+                string mode = GetSelectedFilterMode();
+                string q = txtSearch?.Text?.Trim();
 
-            btnAutoFixCodes.Enabled = true;
-            btnAutoFixBarcodes.Enabled = true;
-            btnMergeSelected.Enabled = true;
+                DataTable dt = ProductDuplicateDAL.GetDuplicateProductsReport(mode, q);
+                dgDuplicates.Rows.Clear();
 
-            // حساب عدد المجموعات
-            var groupsCount = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            string lastGroupKey = "";
-            int colorIdx = 0;
-
-            foreach (DataRow r in dt.Rows)
-            {
-                string groupKey = r["GroupKey"].ToString().Trim();
-                groupsCount.Add(groupKey);
-
-                if (groupKey != lastGroupKey)
+                if (dt.Rows.Count == 0)
                 {
-                    colorIdx = (colorIdx + 1) % _groupColors.Length;
-                    lastGroupKey = groupKey;
+                    lblStats.Text = "✅ لا توجد أي أكواد أو باركودات مكررة مطابقة في قاعدة البيانات!";
+                    lblStats.ForeColor = Color.DarkGreen;
+                    btnAutoFixCodes.Enabled = false;
+                    btnAutoFixBarcodes.Enabled = false;
+                    btnMergeSelected.Enabled = false;
+                    return;
                 }
 
-                int hasT = r.Table.Columns.Contains("HasTransactions") ? Convert.ToInt32(r["HasTransactions"]) : 0;
-                int totalT = r.Table.Columns.Contains("TotalTransactions") ? Convert.ToInt32(r["TotalTransactions"]) : 0;
-                string statusText = hasT == 1 ? $"🔒 له حركات ({totalT})" : "⚡ بدون حركات";
+                btnAutoFixCodes.Enabled = true;
+                btnAutoFixBarcodes.Enabled = true;
+                btnMergeSelected.Enabled = true;
 
-                int rowIdx = dgDuplicates.Rows.Add(
-                    r["ProductID"],
-                    r["ProductCode"],
-                    r["ProductName"],
-                    r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "—",
-                    r["ScalePLU"] != DBNull.Value ? r["ScalePLU"].ToString() : "—",
-                    r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "عام",
-                    Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
-                    Convert.ToDecimal(r["CurrentStock"]).ToString("N2"),
-                    r["SalesCount"],
-                    r["PurchasesCount"],
-                    statusText,
-                    r["DuplicateReason"],
-                    groupKey
-                );
+                // حساب عدد المجموعات
+                var groupsCount = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                string lastGroupKey = "";
+                int colorIdx = 0;
 
-                dgDuplicates.Rows[rowIdx].DefaultCellStyle.BackColor = _groupColors[colorIdx];
-            }
-
-            int withTransCount = 0;
-            if (dt.Columns.Contains("HasTransactions"))
-            {
-                foreach (DataRow dr in dt.Rows)
+                foreach (DataRow r in dt.Rows)
                 {
-                    if (Convert.ToInt32(dr["HasTransactions"]) == 1) withTransCount++;
-                }
-            }
-            int withoutTransCount = dt.Rows.Count - withTransCount;
+                    string groupKey = r["GroupKey"].ToString().Trim();
+                    groupsCount.Add(groupKey);
 
-            lblStats.Text = $"⚠️ تم اكتشاف [{dt.Rows.Count}] صنف مكرر: [{withTransCount}] محمي (له حركات/رصيد) و [{withoutTransCount}] قابل للتعديل (بدون أي حركات)!";
-            lblStats.ForeColor = Color.FromArgb(185, 28, 28);
+                    if (groupKey != lastGroupKey)
+                    {
+                        colorIdx = (colorIdx + 1) % _groupColors.Length;
+                        lastGroupKey = groupKey;
+                    }
+
+                    int hasT = r.Table.Columns.Contains("HasTransactions") ? Convert.ToInt32(r["HasTransactions"]) : 0;
+                    int totalT = r.Table.Columns.Contains("TotalTransactions") ? Convert.ToInt32(r["TotalTransactions"]) : 0;
+                    string statusText = hasT == 1 ? $"🔒 له حركات ({totalT})" : "⚡ بدون حركات";
+
+                    int rowIdx = dgDuplicates.Rows.Add(
+                        r["ProductID"],
+                        r["ProductCode"],
+                        r["ProductName"],
+                        r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "—",
+                        r["ScalePLU"] != DBNull.Value ? r["ScalePLU"].ToString() : "—",
+                        r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "عام",
+                        Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
+                        Convert.ToDecimal(r["CurrentStock"]).ToString("N2"),
+                        r["SalesCount"],
+                        r["PurchasesCount"],
+                        statusText,
+                        r["DuplicateReason"],
+                        groupKey
+                    );
+
+                    dgDuplicates.Rows[rowIdx].DefaultCellStyle.BackColor = _groupColors[colorIdx];
+                }
+
+                int withTransCount = 0;
+                if (dt.Columns.Contains("HasTransactions"))
+                {
+                    foreach (DataRow dr in dt.Rows)
+                    {
+                        if (Convert.ToInt32(dr["HasTransactions"]) == 1) withTransCount++;
+                    }
+                }
+                int withoutTransCount = dt.Rows.Count - withTransCount;
+
+                lblStats.Text = $"⚠️ تم اكتشاف [{dt.Rows.Count}] صنف مكرر: [{withTransCount}] محمي (له حركات/رصيد) و [{withoutTransCount}] قابل للتعديل (بدون أي حركات)!";
+                lblStats.ForeColor = Color.FromArgb(185, 28, 28);
+            }
+            catch (Exception ex)
+            {
+                lblStats.Text = "❌ خطأ أثناء فحص وتجميع الأكواد المكررة: " + ex.Message;
+                lblStats.ForeColor = Color.Red;
+            }
         }
 
         private void BtnAutoFixCodes_Click(object sender, EventArgs e)
