@@ -18,7 +18,8 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private Button btnSearch, btnRefresh;
 
-        // Master Grid
+        // Master Grid & Splitter
+        private SplitContainer split;
         private DataGridView dgOrders;
 
         // Details Panel (Tabs: Items & History)
@@ -46,137 +47,147 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "📊 سجل وتقارير حركات التصنيع والتشغيل الشامل";
-            this.Size = new Size(1220, 780);
-            this.MinimumSize = new Size(1020, 680);
+            this.Size = new Size(1220, 750);
+            this.MinimumSize = new Size(950, 520);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
-            this.Font = Theme.FontMain;
+            this.Font = new Font("Segoe UI", 9f);
 
-            // ── Top Filters Panel ──
+            // ── Top Filters Panel (شريط فلاتر مدمج ومضغوط للنصف) ──
             var pnlFilters = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
+                Height = 56,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12)
+                Padding = new Padding(8, 4, 8, 4),
+                RightToLeft = RightToLeft.Yes
             };
             this.Controls.Add(pnlFilters);
 
+            var flowFilters = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true,
+                BackColor = Color.Transparent,
+                RightToLeft = RightToLeft.Yes,
+                AutoScroll = false
+            };
+            pnlFilters.Controls.Add(flowFilters);
+
             var lblTitle = new Label
             {
-                Text = "📊 سجل حركات التصنيع والتعديلات والتعليق",
-                Location = new Point(12, 10),
+                Text = "📊 حركات التصنيع:",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
-                ForeColor = Theme.Accent
+                Font = Theme.FontBold,
+                ForeColor = Theme.Accent,
+                Margin = new Padding(0, 6, 8, 0)
             };
-            pnlFilters.Controls.Add(lblTitle);
+            flowFilters.Controls.Add(lblTitle);
 
-            // Row 1 Filters: Dates, Type, Status
-            var lblFrom = new Label { Text = "من تاريخ:", Location = new Point(12, 42), AutoSize = true };
-            pnlFilters.Controls.Add(lblFrom);
-
+            // من تاريخ
+            flowFilters.Controls.Add(new Label { Text = "من:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
             dtpFrom = new DateTimePicker
             {
-                Location = new Point(75, 39),
-                Width = 120,
+                Width = 95,
+                Height = 25,
                 Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today.AddDays(-30)
+                Value = DateTime.Today.AddDays(-30),
+                Margin = new Padding(0, 3, 6, 0)
             };
-            pnlFilters.Controls.Add(dtpFrom);
+            flowFilters.Controls.Add(dtpFrom);
 
-            var lblTo = new Label { Text = "إلى تاريخ:", Location = new Point(205, 42), AutoSize = true };
-            pnlFilters.Controls.Add(lblTo);
-
+            // إلى تاريخ
+            flowFilters.Controls.Add(new Label { Text = "إلى:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
             dtpTo = new DateTimePicker
             {
-                Location = new Point(265, 39),
-                Width = 120,
+                Width = 95,
+                Height = 25,
                 Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today
+                Value = DateTime.Today,
+                Margin = new Padding(0, 3, 6, 0)
             };
-            pnlFilters.Controls.Add(dtpTo);
+            flowFilters.Controls.Add(dtpTo);
 
-            var lblType = new Label { Text = "نوع التصنيع:", Location = new Point(395, 42), AutoSize = true };
-            pnlFilters.Controls.Add(lblType);
-
+            // نوع التصنيع
+            flowFilters.Controls.Add(new Label { Text = "النوع:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
             cboTypeFilter = new ComboBox
             {
-                Location = new Point(475, 39),
-                Width = 140,
+                Width = 95,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 3, 6, 0)
             };
             cboTypeFilter.Items.AddRange(new object[] { "الكل", "تصنيع ثابت", "تصنيع مخصص" });
             cboTypeFilter.SelectedIndex = 0;
-            pnlFilters.Controls.Add(cboTypeFilter);
+            flowFilters.Controls.Add(cboTypeFilter);
 
-            var lblStatus = new Label { Text = "الحالة:", Location = new Point(625, 42), AutoSize = true };
-            pnlFilters.Controls.Add(lblStatus);
-
+            // الحالة
+            flowFilters.Controls.Add(new Label { Text = "الحالة:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
             cboStatusFilter = new ComboBox
             {
-                Location = new Point(670, 39),
-                Width = 150,
+                Width = 115,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 3, 6, 0)
             };
-            cboStatusFilter.Items.AddRange(new object[] { "الكل", "تحت التحضير (معلقة)", "مكتمل ومرحل", "ملغي" });
+            cboStatusFilter.Items.AddRange(new object[] { "الكل", "تحت التحضير", "مكتمل ومرحل", "ملغي" });
             cboStatusFilter.SelectedIndex = 0;
-            pnlFilters.Controls.Add(cboStatusFilter);
+            flowFilters.Controls.Add(cboStatusFilter);
 
-            var lblWh = new Label { Text = "المخزن:", Location = new Point(830, 42), AutoSize = true };
-            pnlFilters.Controls.Add(lblWh);
-
+            // المخزن
+            flowFilters.Controls.Add(new Label { Text = "المخزن:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
             cboWarehouseFilter = new ComboBox
             {
-                Location = new Point(885, 39),
-                Width = 140,
+                Width = 110,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 3, 6, 0)
             };
-            pnlFilters.Controls.Add(cboWarehouseFilter);
+            flowFilters.Controls.Add(cboWarehouseFilter);
 
-            // Row 2: Search Box & Buttons
-            var lblSearch = new Label { Text = "🔍 بحث برقم الأمر أو المنتج:", Location = new Point(12, 75), AutoSize = true };
-            pnlFilters.Controls.Add(lblSearch);
-
+            // البحث
+            flowFilters.Controls.Add(new Label { Text = "🔍", AutoSize = true, Margin = new Padding(0, 6, 2, 0) });
             txtSearch = new TextBox
             {
-                Location = new Point(180, 72),
-                Width = 320,
-                Height = 30,
+                Width = 150,
+                Height = 25,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 3, 4, 0)
             };
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyFilters(); };
-            pnlFilters.Controls.Add(txtSearch);
+            flowFilters.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("بحث", 510, 70, 100, 32, Theme.Primary);
+            btnSearch = Theme.MakeButton("بحث", 0, 0, 65, 27, Theme.Primary);
+            btnSearch.Margin = new Padding(0, 2, 4, 0);
             btnSearch.Click += (s, e) => ApplyFilters();
-            pnlFilters.Controls.Add(btnSearch);
+            flowFilters.Controls.Add(btnSearch);
 
-            btnRefresh = Theme.MakeButton("تحديث الكل", 620, 70, 110, 32, Color.FromArgb(51, 65, 85));
+            btnRefresh = Theme.MakeButton("تحديث", 0, 0, 70, 27, Color.FromArgb(51, 65, 85));
+            btnRefresh.Margin = new Padding(0, 2, 4, 0);
             btnRefresh.Click += (s, e) => { txtSearch.Clear(); ApplyFilters(); };
-            pnlFilters.Controls.Add(btnRefresh);
+            flowFilters.Controls.Add(btnRefresh);
 
-            // ── Splitter / SplitContainer for Master Grid & Detail Tabs ──
-            var split = new SplitContainer
+            // ── Splitter / SplitContainer for Master Grid & Detail Tabs (متوازن ديناميكياً) ──
+            split = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 380,
-                BackColor = Theme.BgMain
+                BackColor = Theme.BgMain,
+                Panel1MinSize = 120,
+                Panel2MinSize = 90,
+                SplitterWidth = 5
             };
             this.Controls.Add(split);
             split.BringToFront();
 
-            // ── Master Grid (Orders) ──
+            // ── Master Grid (Orders) - خط وصفوف مدمجة لعرض بيانات أكثر ──
             dgOrders = new DataGridView
             {
                 Dock = DockStyle.Fill,
@@ -188,8 +199,16 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                RightToLeft = RightToLeft.Yes,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
             };
+            Theme.StyleGrid(dgOrders);
+            Theme.StyleGridHeader(dgOrders);
+            dgOrders.RowTemplate.Height = 24;
+            dgOrders.ColumnHeadersHeight = 26;
+            dgOrders.Font = new Font("Segoe UI", 8.75f);
+            dgOrders.DefaultCellStyle.Font = new Font("Segoe UI", 8.75f);
+
             dgOrders.SelectionChanged += (s, e) => LoadSelectedOrderDetails();
             dgOrders.CellDoubleClick += (s, e) => OpenSelectedOrderForm();
             split.Panel1.Controls.Add(dgOrders);
@@ -198,7 +217,9 @@ namespace ChickenDist.Forms
             tabDetails = new TabControl
             {
                 Dock = DockStyle.Fill,
-                Font = Theme.FontMain
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true
             };
             split.Panel2.Controls.Add(tabDetails);
 
@@ -214,8 +235,15 @@ namespace ChickenDist.Forms
                 AllowUserToAddRows = false,
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                RightToLeft = RightToLeft.Yes,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+            Theme.StyleGrid(dgItemsDetail);
+            Theme.StyleGridHeader(dgItemsDetail);
+            dgItemsDetail.RowTemplate.Height = 23;
+            dgItemsDetail.ColumnHeadersHeight = 25;
+            dgItemsDetail.Font = new Font("Segoe UI", 8.75f);
+            dgItemsDetail.DefaultCellStyle.Font = new Font("Segoe UI", 8.75f);
             tabItems.Controls.Add(dgItemsDetail);
             tabDetails.TabPages.Add(tabItems);
 
@@ -231,63 +259,93 @@ namespace ChickenDist.Forms
                 AllowUserToAddRows = false,
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                RightToLeft = RightToLeft.Yes,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+            Theme.StyleGrid(dgHistoryDetail);
+            Theme.StyleGridHeader(dgHistoryDetail);
+            dgHistoryDetail.RowTemplate.Height = 23;
+            dgHistoryDetail.ColumnHeadersHeight = 25;
+            dgHistoryDetail.Font = new Font("Segoe UI", 8.75f);
+            dgHistoryDetail.DefaultCellStyle.Font = new Font("Segoe UI", 8.75f);
             tabHistory.Controls.Add(dgHistoryDetail);
             tabDetails.TabPages.Add(tabHistory);
             Theme.StyleTabControl(tabDetails);
 
-            // ── Bottom Summary & Action Bar ──
+            // ── Bottom Summary & Action Bar (شريط سفلي مدمج) ──
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 65,
+                Height = 40,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12)
+                Padding = new Padding(8, 2, 8, 2),
+                RightToLeft = RightToLeft.Yes
             };
             this.Controls.Add(pnlBottom);
+
+            var flowBottom = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                RightToLeft = RightToLeft.Yes
+            };
+            pnlBottom.Controls.Add(flowBottom);
 
             lblTotalOrdersCount = new Label
             {
                 Text = "عدد الأوامر: 0",
-                Location = new Point(12, 10),
                 AutoSize = true,
                 Font = Theme.FontBold,
-                ForeColor = Theme.TextMain
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 8, 16, 0)
             };
-            pnlBottom.Controls.Add(lblTotalOrdersCount);
+            flowBottom.Controls.Add(lblTotalOrdersCount);
 
             lblTotalCostSum = new Label
             {
                 Text = "إجمالي التكلفة: 0.00 ج.م",
-                Location = new Point(160, 10),
                 AutoSize = true,
                 Font = Theme.FontBold,
-                ForeColor = Color.FromArgb(243, 198, 35)
+                ForeColor = Color.FromArgb(243, 198, 35),
+                Margin = new Padding(0, 8, 16, 0)
             };
-            pnlBottom.Controls.Add(lblTotalCostSum);
+            flowBottom.Controls.Add(lblTotalCostSum);
 
             lblExtraExpensesSum = new Label
             {
-                Text = "إجمالي مصاريف التشغيل: 0.00 ج.م",
-                Location = new Point(410, 10),
+                Text = "مصاريف التشغيل: 0.00 ج.م",
                 AutoSize = true,
                 Font = Theme.FontBold,
-                ForeColor = Color.Orange
+                ForeColor = Color.Orange,
+                Margin = new Padding(0, 8, 20, 0)
             };
-            pnlBottom.Controls.Add(lblExtraExpensesSum);
+            flowBottom.Controls.Add(lblExtraExpensesSum);
 
-            btnOpenOrder = Theme.MakeButton("📂 فتح أمر التصنيع المختار", 680, 12, 180, 38, Theme.Primary);
+            btnOpenOrder = Theme.MakeButton("📂 فتح أمر التصنيع", 0, 0, 135, 29, Theme.Primary);
+            btnOpenOrder.Margin = new Padding(0, 4, 8, 0);
             btnOpenOrder.Click += (s, e) => OpenSelectedOrderForm();
-            pnlBottom.Controls.Add(btnOpenOrder);
+            flowBottom.Controls.Add(btnOpenOrder);
 
-            btnPrintReport = Theme.MakeButton("🖨️ طباعة التقرير", 870, 12, 140, 38, Color.FromArgb(40, 120, 180));
+            btnPrintReport = Theme.MakeButton("🖨️ طباعة التقرير", 0, 0, 110, 29, Color.FromArgb(40, 120, 180));
+            btnPrintReport.Margin = new Padding(0, 4, 8, 0);
             btnPrintReport.Click += (s, e) => PrintReport();
-            pnlBottom.Controls.Add(btnPrintReport);
+            flowBottom.Controls.Add(btnPrintReport);
 
-            btnExportExcel = Theme.MakeButton("📊 تصدير Excel", 1020, 12, 140, 38, Color.FromArgb(22, 163, 74));
+            btnExportExcel = Theme.MakeButton("📊 تصدير Excel", 0, 0, 110, 29, Color.FromArgb(22, 163, 74));
+            btnExportExcel.Margin = new Padding(0, 4, 8, 0);
             btnExportExcel.Click += (s, e) => ExportToCsv();
-            pnlBottom.Controls.Add(btnExportExcel);
+            flowBottom.Controls.Add(btnExportExcel);
+
+            this.Resize += (s, e) =>
+            {
+                if (split != null && split.Height > 220)
+                {
+                    split.SplitterDistance = Math.Max(120, (int)(split.Height * 0.55));
+                }
+            };
+            split.SplitterDistance = 210;
         }
 
         private void LoadWarehousesFilter()
@@ -357,22 +415,29 @@ namespace ChickenDist.Forms
             if (dgOrders.Columns["ProductionType"] != null) dgOrders.Columns["ProductionType"].Visible = false;
             if (dgOrders.Columns["Status"] != null) dgOrders.Columns["Status"].Visible = false;
 
-            SetCol(dgOrders, "OrderCode", "كود الأمر", 120);
-            SetCol(dgOrders, "ProductionTypeName", "نوع التصنيع", 100);
-            SetCol(dgOrders, "FinishedProductCode", "كود المنتج", 100);
-            SetCol(dgOrders, "FinishedProductName", "المنتج المصنع", 180);
-            SetCol(dgOrders, "ProducedQty", "الكمية", 70);
-            SetCol(dgOrders, "UnitName", "الوحدة", 60);
-            SetCol(dgOrders, "RawMaterialsCost", "تكلفة الخامات", 100);
-            SetCol(dgOrders, "ExtraExpenses", "مصاريف تشغيل", 100);
-            SetCol(dgOrders, "TotalCost", "إجمالي التكلفة", 100);
-            SetCol(dgOrders, "UnitCost", "تكلفة القطعة", 100);
-            SetCol(dgOrders, "StatusName", "الحالة", 110);
-            SetCol(dgOrders, "CreatedDate", "تاريخ الإنشاء", 110);
-            SetCol(dgOrders, "UpdatedDate", "آخر تعديل", 110);
-            SetCol(dgOrders, "CompletedDate", "تاريخ الإتمام", 110);
-            SetCol(dgOrders, "WarehouseName", "المخزن", 110);
-            SetCol(dgOrders, "CreatedByName", "المستخدم", 100);
+            SetCol(dgOrders, "OrderCode", "كود الأمر", 95);
+            SetCol(dgOrders, "ProductionTypeName", "نوع التصنيع", 85);
+            SetCol(dgOrders, "FinishedProductCode", "كود المنتج", 85);
+            SetCol(dgOrders, "FinishedProductName", "المنتج المصنع", 150);
+            SetCol(dgOrders, "ProducedQty", "الكمية", 60);
+            SetCol(dgOrders, "UnitName", "الوحدة", 48);
+            SetCol(dgOrders, "RawMaterialsCost", "تكلفة الخامات", 85);
+            SetCol(dgOrders, "ExtraExpenses", "مصاريف تشغيل", 85);
+            SetCol(dgOrders, "TotalCost", "إجمالي التكلفة", 90);
+            SetCol(dgOrders, "UnitCost", "تكلفة القطعة", 85);
+            SetCol(dgOrders, "StatusName", "الحالة", 90);
+            SetCol(dgOrders, "CreatedDate", "تاريخ الإنشاء", 100);
+            SetCol(dgOrders, "UpdatedDate", "آخر تعديل", 100);
+            SetCol(dgOrders, "CompletedDate", "تاريخ الإتمام", 100);
+            SetCol(dgOrders, "WarehouseName", "المخزن", 90);
+            SetCol(dgOrders, "CreatedByName", "المستخدم", 85);
+
+            // Format numbers & dates
+            if (dgOrders.Columns["RawMaterialsCost"] != null) dgOrders.Columns["RawMaterialsCost"].DefaultCellStyle.Format = "N2";
+            if (dgOrders.Columns["ExtraExpenses"] != null) dgOrders.Columns["ExtraExpenses"].DefaultCellStyle.Format = "N2";
+            if (dgOrders.Columns["TotalCost"] != null) dgOrders.Columns["TotalCost"].DefaultCellStyle.Format = "N2";
+            if (dgOrders.Columns["UnitCost"] != null) dgOrders.Columns["UnitCost"].DefaultCellStyle.Format = "N2";
+            if (dgOrders.Columns["ProducedQty"] != null) dgOrders.Columns["ProducedQty"].DefaultCellStyle.Format = "N2";
 
             // Row Coloring
             foreach (DataGridViewRow r in dgOrders.Rows)
