@@ -188,7 +188,8 @@ namespace ChickenDist.Forms
             dgDuplicates.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentStock", HeaderText = "رصيد المخزن", FillWeight = 45 });
             dgDuplicates.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalesCount", HeaderText = "فواتير البيع", FillWeight = 40 });
             dgDuplicates.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasesCount", HeaderText = "فواتير الشراء", FillWeight = 40 });
-            dgDuplicates.Columns.Add(new DataGridViewTextBoxColumn { Name = "DuplicateReason", HeaderText = "سبب التكرار", FillWeight = 85 });
+            dgDuplicates.Columns.Add(new DataGridViewTextBoxColumn { Name = "StatusTrans", HeaderText = "حالة الحركة", FillWeight = 55 });
+            dgDuplicates.Columns.Add(new DataGridViewTextBoxColumn { Name = "DuplicateReason", HeaderText = "سبب التكرار", FillWeight = 80 });
             dgDuplicates.Columns.Add(new DataGridViewTextBoxColumn { Name = "GroupKey", Visible = false });
 
             this.Controls.Add(dgDuplicates);
@@ -247,6 +248,10 @@ namespace ChickenDist.Forms
                     lastGroupKey = groupKey;
                 }
 
+                int hasT = r.Table.Columns.Contains("HasTransactions") ? Convert.ToInt32(r["HasTransactions"]) : 0;
+                int totalT = r.Table.Columns.Contains("TotalTransactions") ? Convert.ToInt32(r["TotalTransactions"]) : 0;
+                string statusText = hasT == 1 ? $"🔒 له حركات ({totalT})" : "⚡ بدون حركات";
+
                 int rowIdx = dgDuplicates.Rows.Add(
                     r["ProductID"],
                     r["ProductCode"],
@@ -258,6 +263,7 @@ namespace ChickenDist.Forms
                     Convert.ToDecimal(r["CurrentStock"]).ToString("N2"),
                     r["SalesCount"],
                     r["PurchasesCount"],
+                    statusText,
                     r["DuplicateReason"],
                     groupKey
                 );
@@ -265,21 +271,32 @@ namespace ChickenDist.Forms
                 dgDuplicates.Rows[rowIdx].DefaultCellStyle.BackColor = _groupColors[colorIdx];
             }
 
-            lblStats.Text = $"⚠️ تم اكتشاف [{dt.Rows.Count}] صنف مكرر موزعة على [{groupsCount.Count}] مجموعة!";
+            int withTransCount = 0;
+            if (dt.Columns.Contains("HasTransactions"))
+            {
+                foreach (DataRow dr in dt.Rows)
+                {
+                    if (Convert.ToInt32(dr["HasTransactions"]) == 1) withTransCount++;
+                }
+            }
+            int withoutTransCount = dt.Rows.Count - withTransCount;
+
+            lblStats.Text = $"⚠️ تم اكتشاف [{dt.Rows.Count}] صنف مكرر: [{withTransCount}] محمي (له حركات/رصيد) و [{withoutTransCount}] قابل للتعديل (بدون أي حركات)!";
             lblStats.ForeColor = Color.FromArgb(185, 28, 28);
         }
 
         private void BtnAutoFixCodes_Click(object sender, EventArgs e)
         {
-            string msg = "⚡ هل ترغب في المعالجة التلقائية الذكية لجميع الأكواد المكررة؟\n\n" +
-                         "• سيتم الاحتفاظ بالكود الأصلي للصنف الأساسي (الأعلى مبيعات أو أقدمية).\n" +
-                         "• سيتم توليد أكواد جديدة فريدة تسلسلية للأصناف المكررة الأخرى تلقائياً.\n" +
-                         "• لن يتم فقد أي رصيد أو فواتير، بل سيتم تصحيح الأكواد لمنع التضارب نهائياً.";
+            string msg = "⚡ هل ترغب في المعالجة التلقائية الذكية للأكواد المكررة؟\n\n" +
+                         "📌 شرط الأمان المعتمد:\n" +
+                         "• سيتم تعديل الكود فقط للأصناف التي ليس لها أي حركات على البرنامج (0 مبيعات، 0 مشتريات، 0 رصيد).\n" +
+                         "• سيتم الاحتفاظ بكود الصنف الأصلي كاملاً لأي صنف مسجل عليه حركات أو رصيد ولن يتم المساس به إطلاقاً.\n" +
+                         "• إذا كانت كل الأصناف المشتركة في الكود بدون حركات، سيتم الإبقاء على الأقدم وتعديل الآخرين بأكواد فريدة جديدة.";
 
-            if (MessageBox.Show(msg, "تأكيد الحل التلقائي", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show(msg, "تأكيد معالجة الأكواد المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                var result = ProductDuplicateDAL.AutoFixDuplicateProductCodes("ProductCode");
-                MessageBox.Show($"✅ تمت معالجة وتصحيح [{result.totalFixed}] صنف مكرر بنجاح وتوليد أكواد فريدة لها.", "تمت المعالجة بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var result = ProductDuplicateDAL.AutoFixDuplicateProductCodes("ProductCode", onlyModifyZeroTransactions: true);
+                MessageBox.Show($"✅ تمت معالجة وتصحيح [{result.totalFixed}] صنف مكرر بنجاح (فقط للأصناف التي ليس لها حركات).\nتمت حماية جميع الأصناف ذات الحركات والأرصدة!", "تمت المعالجة بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 RunScan();
             }
         }

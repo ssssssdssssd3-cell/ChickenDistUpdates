@@ -588,19 +588,33 @@ namespace ChickenDist.Forms
                 }
 
                 int dupCount = dtDups.Rows.Count;
+                int withTrans = 0;
+                if (dtDups.Columns.Contains("HasTransactions"))
+                {
+                    foreach (DataRow dr in dtDups.Rows)
+                    {
+                        if (Convert.ToInt32(dr["HasTransactions"]) == 1) withTrans++;
+                    }
+                }
+                int withoutTrans = dupCount - withTrans;
+
                 var res = MessageBox.Show(
                     $"⚠️ تم اكتشاف ({dupCount}) سجل عملاء يشتركون في أكواد مكررة داخل قاعدة البيانات!\n\n" +
-                    "هل ترغب في تصحيح الأكواد المكررة تلقائياً الآن؟\n" +
-                    "(سيتم الإبقاء على كود العميل الأصلي الأساسي، وتوليد أكواد جديدة فريدة للعملاء المكررين بأمان تام)",
-                    "معالجة أكواد العملاء المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    $"• عملاء لهم حركات وفواتير مسجلة (محميون من التعديل): {withTrans}\n" +
+                    $"• عملاء ليس لهم أي حركات على البرنامج (سيتم تعديل أكوادهم فقط): {withoutTrans}\n\n" +
+                    "📌 شرط الأمان المعتمد:\n" +
+                    "سيتم تعديل كود العميل فقط للعملاء الذين ليس لهم أي حركات على البرنامج، والاحتفاظ التام بكود العميل الذي له حركات مسجلة ولن يتم المساس به إطلاقاً.\n\n" +
+                    "هل ترغب في البدء في تصحيح الأكواد الآن؟",
+                    "معالجة أكواد العملاء المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (res == DialogResult.Yes)
                 {
-                    var (totalFixed, fixLog) = ClientDuplicateDAL.AutoFixDuplicateClientCodes();
+                    var (totalFixed, fixLog) = ClientDuplicateDAL.AutoFixDuplicateClientCodes(onlyModifyZeroTransactions: true);
                     ClientCache.Refresh();
                     LoadClients();
                     MessageBox.Show(
-                        $"✅ تم بنجاح معالجة وتصحيح ({totalFixed}) عميل!\n\nأصبحت الآن جميع أكواد العملاء فريدة وغير مكررة في قاعدة البيانات.",
+                        $"✅ تم بنجاح معالجة وتصحيح ({totalFixed}) عميل من الذين ليس لهم أي حركات!\n\n" +
+                        "تمت حماية جميع العملاء ذوي الحركات المحاسبية وبقيت أكوادهم الأصلية كما هي تماماً.",
                         "اكتمال المعالجة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }

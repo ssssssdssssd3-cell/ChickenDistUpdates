@@ -20,6 +20,8 @@ namespace ChickenDist.DAL
         public decimal CurrentStock { get; set; }
         public int SalesCount { get; set; }
         public int PurchasesCount { get; set; }
+        public int TotalTransactions { get; set; }
+        public bool HasTransactions { get; set; }
         public string DuplicateReason { get; set; }
         public bool IsPrimary { get; set; }
     }
@@ -79,9 +81,24 @@ namespace ChickenDist.DAL
                     p.PurchasePrice,
                     p.SalePrice,
                     p.IsActive,
-                    ISNULL((SELECT SUM(Quantity) FROM WarehouseStock ws WHERE ws.ProductID = p.ProductID), 0) AS CurrentStock,
+                    ISNULL((SELECT SUM(Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID), 0) AS CurrentStock,
                     ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0) AS SalesCount,
                     ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0) AS PurchasesCount,
+                    ISNULL((SELECT COUNT(*) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0) AS ReturnsCount,
+                    (ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0) + 
+                     ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0) + 
+                     ISNULL((SELECT COUNT(*) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0) + 
+                     ISNULL((SELECT COUNT(*) FROM ProductionOrderItems poi WHERE poi.RawProductID = p.ProductID), 0) + 
+                     ISNULL((SELECT COUNT(*) FROM ProductionOrders po WHERE po.FinishedProductID = p.ProductID), 0)) AS TotalTransactions,
+                    CASE 
+                        WHEN (ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0) + 
+                              ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0) + 
+                              ISNULL((SELECT COUNT(*) FROM ReturnItems ri WHERE ri.ProductID = p.ProductID), 0) + 
+                              ISNULL((SELECT COUNT(*) FROM ProductionOrderItems poi WHERE poi.RawProductID = p.ProductID), 0) + 
+                              ISNULL((SELECT COUNT(*) FROM ProductionOrders po WHERE po.FinishedProductID = p.ProductID), 0)) > 0
+                             OR ABS(ISNULL((SELECT SUM(Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID), 0)) > 0.0001 THEN 1
+                        ELSE 0
+                    END AS HasTransactions,
                     CASE 
                         WHEN p.ProductCode IN (SELECT ProductCode FROM DuplicateCodes) THEN N'كود الصنف مكرر [' + ISNULL(p.ProductCode, '') + N']'
                         WHEN p.Unit1Barcode IN (SELECT Barcode FROM DuplicateBarcodes1) THEN N'باركود الوحدة 1 مكرر [' + ISNULL(p.Unit1Barcode, '') + N']'
@@ -136,7 +153,11 @@ namespace ChickenDist.DAL
                 pars.Add(DbHelper.P("@q", "%" + searchKeyword.Trim() + "%"));
             }
 
-            sql += " ORDER BY GroupKey ASC, (ISNULL((SELECT COUNT(*) FROM SaleItems si WHERE si.ProductID = p.ProductID), 0) + ISNULL((SELECT COUNT(*) FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID), 0)) DESC, p.ProductID ASC";
+            sql += @" ORDER BY GroupKey ASC, 
+                              HasTransactions DESC, 
+                              TotalTransactions DESC, 
+                              (CASE WHEN CurrentStock > 0 THEN 1 ELSE 0 END) DESC, 
+                              p.ProductID ASC";
 
             return DbHelper.Query(sql, pars.ToArray());
         }
@@ -145,7 +166,7 @@ namespace ChickenDist.DAL
         /// حل تلقائي ذكي لجميع الأكواد المكررة:
         /// الاحتفاظ بأول صنف (الأكثر حركة أو أقدمية) وإعادة ترقيم الأصناف المكررة الأخرى بأكواد فريدة جديدة
         /// </summary>
-        public static (int totalFixed, List<string> fixLog) AutoFixDuplicateProductCodes(string scope = "ProductCode")
+        public static (int totalFixed, List<string> fixLog) AutoFixDuplicateProductCodes(string scope = "ProductCode", bool onlyModifyZeroTransactions = true)
         {
             DataTable dt = GetDuplicateProductsReport(scope);
             var fixLog = new List<string>();
@@ -168,30 +189,98 @@ namespace ChickenDist.DAL
                 {
                     var rows = kvp.Value;
                     if (rows.Count <= 1) continue;
+                    string origCode = kvp.Key;
 
-                    // الصنف الأول في المجموعة (الأعلى مبيعات أو أقدمية) يظل كما هو
-                    var primaryRow = rows[0];
-                    int primaryID = Convert.ToInt32(primaryRow["ProductID"]);
-                    string primaryName = primaryRow["ProductName"].ToString();
-                    string origCode = primaryRow["ProductCode"].ToString();
+                    var withTrans = new List<DataRow>();
+                    var withoutTrans = new List<DataRow>();
 
-                    fixLog.Add($"📌 الكود الأصلي [{origCode}]: تم الاحتفاظ به للصنف الأساسي [ID: {primaryID} - {primaryName}]");
-
-                    // باقي الأصناف المكررة يتم توليد كود جديد فريد لها
-                    for (int i = 1; i < rows.Count; i++)
+                    foreach (var r in rows)
                     {
-                        var dupRow = rows[i];
-                        int dupID = Convert.ToInt32(dupRow["ProductID"]);
-                        string dupName = dupRow["ProductName"].ToString();
+                        int hasT = Convert.ToInt32(r["HasTransactions"]);
+                        if (hasT == 1) withTrans.Add(r);
+                        else withoutTrans.Add(r);
+                    }
 
-                        string newCode = GenerateUniqueProductCodeTrans(trans, origCode, i);
+                    // الحالة 1: يوجد صنف له حركات أو رصيد
+                    if (withTrans.Count > 0)
+                    {
+                        var primaryRow = withTrans[0];
+                        int primaryID = Convert.ToInt32(primaryRow["ProductID"]);
+                        string primaryName = primaryRow["ProductName"].ToString();
+                        int pTrans = Convert.ToInt32(primaryRow["TotalTransactions"]);
+                        decimal pStock = Convert.ToDecimal(primaryRow["CurrentStock"]);
 
-                        DbHelper.ExecuteTrans(trans,
-                            "UPDATE Products SET ProductCode = @nc WHERE ProductID = @id",
-                            DbHelper.P("@nc", newCode), DbHelper.P("@id", dupID));
+                        fixLog.Add($"📌 كود الصنف [{origCode}]: تم الاحتفاظ به للصنف [ID: {primaryID} - {primaryName}] لوجود حركات/رصيد مسجل ({pTrans} حركة، رصيد: {pStock:N2}).");
 
-                        fixLog.Add($"   ⚡ تم تعديل كود الصنف [ID: {dupID} - {dupName}] من [{origCode}] إلى الكود الجديد الفريد [{newCode}]");
-                        fixedCount++;
+                        // تعديل كود الأصناف التي ليس لها أي حركات فقط
+                        for (int i = 0; i < withoutTrans.Count; i++)
+                        {
+                            var dupRow = withoutTrans[i];
+                            int dupID = Convert.ToInt32(dupRow["ProductID"]);
+                            string dupName = dupRow["ProductName"].ToString();
+
+                            string newCode = GenerateUniqueProductCodeTrans(trans, origCode, i + 1);
+
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE Products SET ProductCode = @nc WHERE ProductID = @id",
+                                DbHelper.P("@nc", newCode), DbHelper.P("@id", dupID));
+
+                            fixLog.Add($"   ⚡ تم تعديل كود الصنف [ID: {dupID} - {dupName}] (بدون أي حركات أو رصيد) من [{origCode}] إلى الكود الجديد الفريد [{newCode}]");
+                            fixedCount++;
+                        }
+
+                        // إذا كان هناك أصناف أخرى لها حركات أيضاً
+                        if (withTrans.Count > 1)
+                        {
+                            for (int i = 1; i < withTrans.Count; i++)
+                            {
+                                var otherRow = withTrans[i];
+                                int oID = Convert.ToInt32(otherRow["ProductID"]);
+                                string oName = otherRow["ProductName"].ToString();
+                                int oTrans = Convert.ToInt32(otherRow["TotalTransactions"]);
+                                decimal oStock = Convert.ToDecimal(otherRow["CurrentStock"]);
+
+                                if (onlyModifyZeroTransactions)
+                                {
+                                    fixLog.Add($"   🛡️ الصنف [ID: {oID} - {oName}]: تم تخطيه وحمايته من تعديل الكود لأن له حركات/رصيد مسجل ({oTrans} حركة، رصيد: {oStock:N2}).");
+                                }
+                                else
+                                {
+                                    string newCode = GenerateUniqueProductCodeTrans(trans, origCode, i + 10);
+                                    DbHelper.ExecuteTrans(trans,
+                                        "UPDATE Products SET ProductCode = @nc WHERE ProductID = @id",
+                                        DbHelper.P("@nc", newCode), DbHelper.P("@id", oID));
+
+                                    fixLog.Add($"   ⚡ تم تعديل كود الصنف [ID: {oID} - {oName}] من [{origCode}] إلى [{newCode}]");
+                                    fixedCount++;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // الحالة 2: جميع الأصناف المشتركة في الكود ليس لها أي حركات على الإطلاق (0 حركات)
+                        var primaryRow = withoutTrans[0];
+                        int primaryID = Convert.ToInt32(primaryRow["ProductID"]);
+                        string primaryName = primaryRow["ProductName"].ToString();
+
+                        fixLog.Add($"📌 كود الصنف [{origCode}]: تم الاحتفاظ به للصنف الأقدم [ID: {primaryID} - {primaryName}] (بدون حركات).");
+
+                        for (int i = 1; i < withoutTrans.Count; i++)
+                        {
+                            var dupRow = withoutTrans[i];
+                            int dupID = Convert.ToInt32(dupRow["ProductID"]);
+                            string dupName = dupRow["ProductName"].ToString();
+
+                            string newCode = GenerateUniqueProductCodeTrans(trans, origCode, i);
+
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE Products SET ProductCode = @nc WHERE ProductID = @id",
+                                DbHelper.P("@nc", newCode), DbHelper.P("@id", dupID));
+
+                            fixLog.Add($"   ⚡ تم تعديل كود الصنف [ID: {dupID} - {dupName}] (بدون أي حركات) من [{origCode}] إلى الكود الجديد الفريد [{newCode}]");
+                            fixedCount++;
+                        }
                     }
                 }
             });
@@ -429,6 +518,43 @@ namespace ChickenDist.DAL
 
         private static string GenerateUniqueProductCodeTrans(SqlTransaction trans, string baseCode, int suffix)
         {
+            // إذا كان الكود الأصلي رقماً خالصاً، نولد كوداً رقمياً متسلسلاً نظيفاً
+            if (long.TryParse(baseCode, out long _))
+            {
+                int maxCode = 0;
+                try
+                {
+                    var resCode = DbHelper.ScalarTrans(trans, @"
+                        SELECT COALESCE(MAX(CASE 
+                            WHEN ISNUMERIC(ProductCode) = 1 AND LEN(ProductCode) <= 9 AND ProductCode NOT LIKE '%.%' AND ProductCode NOT LIKE '%-%' AND ProductCode NOT LIKE '%+%'
+                            THEN CAST(ProductCode AS INT) 
+                            ELSE 0 
+                        END), 0) FROM Products");
+                    if (resCode != null && resCode != DBNull.Value) maxCode = Convert.ToInt32(resCode);
+                }
+                catch { }
+
+                try
+                {
+                    var resId = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(ProductID), 0) FROM Products");
+                    if (resId != null && resId != DBNull.Value)
+                    {
+                        int maxId = Convert.ToInt32(resId);
+                        if (maxId > maxCode) maxCode = maxId;
+                    }
+                }
+                catch { }
+
+                int nextNum = Math.Max(maxCode + 1, 1001);
+                string candidateNum = nextNum.ToString();
+                while (Convert.ToInt32(DbHelper.ScalarTrans(trans, "SELECT COUNT(1) FROM Products WHERE ProductCode = @c", DbHelper.P("@c", candidateNum))) > 0)
+                {
+                    nextNum++;
+                    candidateNum = nextNum.ToString();
+                }
+                return candidateNum;
+            }
+
             string candidate = $"{baseCode}-{suffix}";
 
             // التحقق من أن الكود المقترح غير موجود في قاعدة البيانات
