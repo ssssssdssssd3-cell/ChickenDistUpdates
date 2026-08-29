@@ -1195,7 +1195,7 @@ namespace ChickenDist.Forms
 
             // Sales Total & COGS
             var dtSales = DbHelper.Query(
-                @"SELECT ISNULL(SUM(si.Quantity * COALESCE(si.CostPrice, p.PurchasePrice, si.UnitPrice*0.7)), 0) AS Cogs,
+                @"SELECT ISNULL(SUM(si.Quantity * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.PurchasePrice, 0), si.UnitPrice*0.7)), 0) AS Cogs,
                          ISNULL(SUM(si.TotalPrice), 0) AS TotalSales
                   FROM SaleItems si
                   JOIN Sales s ON si.SaleID = s.SaleID

@@ -24,6 +24,7 @@ namespace ChickenDist.Forms
         private DataTable _salesDt;
         private bool _isFilteringCombo = false;
         private bool _isLoadingSales = false;
+        private bool _isLoadingSaleItems = false;
         private System.Windows.Forms.Timer _searchDebounceTimer;
         private decimal _selectedSaleTotalAmount = 0m;
         private decimal _selectedSaleShippingCharge = 0m;
@@ -165,13 +166,16 @@ namespace ChickenDist.Forms
             {
                 txtGenPrice.Text = ci.Extra.ToString("N2");
                 BtnAddGenItem_Click(sender, e);
-                this.BeginInvoke(new Action(() =>
+                if (this.IsHandleCreated && !this.IsDisposed)
                 {
-                    cboAllProducts.SelectedIndexChanged -= CboAllProducts_SelectedIndexChanged;
-                    cboAllProducts.SelectedIndex = 0;
-                    cboAllProducts.SelectedIndexChanged += CboAllProducts_SelectedIndexChanged;
-                    cboAllProducts.Focus();
-                }));
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        cboAllProducts.SelectedIndexChanged -= CboAllProducts_SelectedIndexChanged;
+                        cboAllProducts.SelectedIndex = 0;
+                        cboAllProducts.SelectedIndexChanged += CboAllProducts_SelectedIndexChanged;
+                        cboAllProducts.Focus();
+                    }));
+                }
             }
         }
 
@@ -181,13 +185,16 @@ namespace ChickenDist.Forms
             {
                 txtNewGenPrice.Text = ci.Extra.ToString("N2");
                 BtnAddNewGenItem_Click(sender, e);
-                this.BeginInvoke(new Action(() =>
+                if (this.IsHandleCreated && !this.IsDisposed)
                 {
-                    cboNewExchangeProducts.SelectedIndexChanged -= CboNewExchangeProducts_SelectedIndexChanged;
-                    cboNewExchangeProducts.SelectedIndex = 0;
-                    cboNewExchangeProducts.SelectedIndexChanged += CboNewExchangeProducts_SelectedIndexChanged;
-                    cboNewExchangeProducts.Focus();
-                }));
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        cboNewExchangeProducts.SelectedIndexChanged -= CboNewExchangeProducts_SelectedIndexChanged;
+                        cboNewExchangeProducts.SelectedIndex = 0;
+                        cboNewExchangeProducts.SelectedIndexChanged += CboNewExchangeProducts_SelectedIndexChanged;
+                        cboNewExchangeProducts.Focus();
+                    }));
+                }
             }
         }
 
@@ -1138,7 +1145,10 @@ namespace ChickenDist.Forms
             if (dgSales.CurrentRow == null || dgSales.CurrentRow.Cells["SaleID"].Value == null)
                 return;
 
-            int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
+            _isLoadingSaleItems = true;
+            try
+            {
+                int saleID = Convert.ToInt32(dgSales.CurrentRow.Cells["SaleID"].Value);
             
             // ضبط نوع دفع المرتجع تلقائياً بناءً على نوع الفاتورة الأصلية
             if (dgSales.CurrentRow.Cells["SaleType"] != null && dgSales.CurrentRow.Cells["SaleType"].Value != null)
@@ -1254,6 +1264,11 @@ namespace ChickenDist.Forms
                     dgRow.DefaultCellStyle.SelectionForeColor = Color.Yellow;
                 }
             }
+            }
+            finally
+            {
+                _isLoadingSaleItems = false;
+            }
         }
 
         private void DgItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
@@ -1313,7 +1328,7 @@ namespace ChickenDist.Forms
 
         private void DgItems_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0) return;
+            if (e.RowIndex < 0 || _isLoadingSaleItems) return;
             var row = dgItems.Rows[e.RowIndex];
             var colName = dgItems.Columns[e.ColumnIndex].Name;
 
@@ -1330,11 +1345,14 @@ namespace ChickenDist.Forms
                 if (colName == "UnitPrice")
                 {
                     // تنسيق السعر الجديد
-                    this.BeginInvoke((MethodInvoker)delegate
+                    if (this.IsHandleCreated && !this.IsDisposed)
                     {
-                        if (e.RowIndex < dgItems.Rows.Count)
-                            dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = price.ToString("F2");
-                    });
+                        this.BeginInvoke((MethodInvoker)delegate
+                        {
+                            if (e.RowIndex < dgItems.Rows.Count)
+                                dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = price.ToString("F2");
+                        });
+                    }
                 }
 
                 row.Cells["TotalPrice"].Value = (newQty * price).ToString("F2");

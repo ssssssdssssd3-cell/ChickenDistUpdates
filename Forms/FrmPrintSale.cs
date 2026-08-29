@@ -1823,10 +1823,10 @@ namespace ChickenDist.Forms
                             }
 
                             var dtLastPay = DbHelper.Query(@"
-                                SELECT TOP 1 PaymentAmount, PaymentDate 
-                                FROM ClientPayments 
-                                WHERE ClientID = @cid 
-                                ORDER BY PaymentDate DESC, PaymentID DESC", DbHelper.P("@cid", clientID));
+                                SELECT TOP 1 Credit AS PaymentAmount, TransDate AS PaymentDate 
+                                FROM ClientTransactions 
+                                WHERE ClientID = @cid AND TransType = 'Payment' AND Credit > 0
+                                ORDER BY TransDate DESC, TransID DESC", DbHelper.P("@cid", clientID));
                             if (dtLastPay.Rows.Count > 0)
                             {
                                 lastPaymentAmt = Convert.ToDecimal(dtLastPay.Rows[0]["PaymentAmount"]);

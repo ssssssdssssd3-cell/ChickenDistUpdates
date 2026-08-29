@@ -586,6 +586,22 @@ namespace ChickenDist.Core
 
             IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
             BEGIN
+                IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
+                    DROP INDEX IX_PurchaseItems_Opt ON PurchaseItems;
+
+                DECLARE @dropPiIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropPiIdxSql = @dropPiIdxSql + N'DROP INDEX ' + QUOTENAME(i.name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(i.object_id)) + N'.' + QUOTENAME(OBJECT_NAME(i.object_id)) + N'; '
+                FROM sys.indexes i
+                JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                WHERE i.object_id = OBJECT_ID('PurchaseItems')
+                  AND i.is_primary_key = 0 
+                  AND i.is_unique_constraint = 0
+                  AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor');
+
+                IF LEN(@dropPiIdxSql) > 0
+                    EXEC sp_executesql @dropPiIdxSql;
+
                 ALTER TABLE PurchaseItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('PurchaseItems', 'UnitPrice') IS NOT NULL
                     ALTER TABLE PurchaseItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
@@ -597,6 +613,19 @@ namespace ChickenDist.Core
 
             IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
             BEGIN
+                DECLARE @dropSiIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropSiIdxSql = @dropSiIdxSql + N'DROP INDEX ' + QUOTENAME(i.name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(i.object_id)) + N'.' + QUOTENAME(OBJECT_NAME(i.object_id)) + N'; '
+                FROM sys.indexes i
+                JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                WHERE i.object_id = OBJECT_ID('SaleItems')
+                  AND i.is_primary_key = 0 
+                  AND i.is_unique_constraint = 0
+                  AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor');
+
+                IF LEN(@dropSiIdxSql) > 0
+                    EXEC sp_executesql @dropSiIdxSql;
+
                 ALTER TABLE SaleItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('SaleItems', 'UnitPrice') IS NOT NULL
                     ALTER TABLE SaleItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
@@ -1989,6 +2018,21 @@ namespace ChickenDist.Core
                 FROM Clients c
                 LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
                 GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance');");
+
+                // ===== عرض مدفوعات العملاء ClientPayments (لتفادي أي استعلامات سابقة تبحث عن ClientPayments) =====
+                SafeMigrate("ClientPayments.Drop",
+                    "IF EXISTS (SELECT * FROM sys.views WHERE name = 'ClientPayments') DROP VIEW ClientPayments;");
+                SafeMigrate("ClientPayments.Create", @"
+                EXEC('CREATE VIEW ClientPayments AS
+                SELECT
+                    ct.TransID AS PaymentID,
+                    ct.ClientID,
+                    ct.Credit AS PaymentAmount,
+                    ct.TransDate AS PaymentDate,
+                    ct.Notes,
+                    ct.CreatedBy
+                FROM ClientTransactions ct
+                WHERE ct.TransType = ''Payment'' AND ct.Credit > 0');");
 
                 // ===== عرض رصيد الخزنة vw_CashBalance =====
                 SafeMigrate("vw_CashBalance.Drop",

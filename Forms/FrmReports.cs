@@ -298,14 +298,14 @@ namespace ChickenDist.Forms
 		{
 			try
 			{
-				DataTable dt = DbHelper.Query("SELECT EmployeeID, Name FROM Employees WHERE IsActive=1 ORDER BY Name");
+				DataTable dt = DbHelper.Query("SELECT EmpID, EmpName FROM Employees WHERE IsActive=1 ORDER BY EmpName");
 				cboEmployee.Items.Clear();
 				cboEmployee.Items.Add(new ComboItem(0, "كل المناديب والمستخدمين"));
 				if (dt != null)
 				{
 					foreach (DataRow r in dt.Rows)
 					{
-						cboEmployee.Items.Add(new ComboItem(Convert.ToInt32(r["EmployeeID"]), r["Name"].ToString()));
+						cboEmployee.Items.Add(new ComboItem(Convert.ToInt32(r["EmpID"]), r["EmpName"].ToString()));
 					}
 				}
 				cboEmployee.DisplayMember = "Text";
