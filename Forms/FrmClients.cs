@@ -115,7 +115,13 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var btnFixDuplicates = Theme.MakeButton("🔍 الأكواد المكررة", Color.FromArgb(180, 83, 9));
+            btnFixDuplicates.Dock = DockStyle.Left;
+            btnFixDuplicates.Width = 145;
+            btnFixDuplicates.Click += (s, e) => FixDuplicateClientCodes();
+
             pnlSearch.Controls.Add(lblSummary);
+            pnlSearch.Controls.Add(btnFixDuplicates);
             pnlSearch.Controls.Add(btnSearch);
             pnlSearch.Controls.Add(txtSearch);
             pnlSearch.Controls.Add(lblSearch);
@@ -537,6 +543,28 @@ namespace ChickenDist.Forms
                 }
             }
 
+            // ─── فحص كود العميل وتوليده إن كان فارغاً ومنع التكرار ───
+            if (string.IsNullOrWhiteSpace(txtCode.Text))
+            {
+                txtCode.Text = ClientDAL.GetNextClientCode();
+            }
+            if (ClientDAL.IsDuplicateCode(txtCode.Text.Trim(), _selectedID))
+            {
+                string suggestedCode = ClientDAL.GetNextClientCode();
+                var dr = MessageBox.Show(
+                    $"⚠️ كود العميل \"{txtCode.Text.Trim()}\" مسجَّل لعميل آخر بالفعل!\n\nهل تريد استخدام الكود المقترح تلقائياً: ({suggestedCode})؟",
+                    "تكرار كود العميل", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (dr == DialogResult.Yes)
+                {
+                    txtCode.Text = suggestedCode;
+                }
+                else
+                {
+                    txtCode.Focus();
+                    return;
+                }
+            }
+
             int? driverID = null;
             if (cmbDriver.SelectedValue != null && cmbDriver.SelectedValue != DBNull.Value)
                 driverID = Convert.ToInt32(cmbDriver.SelectedValue);
@@ -545,6 +573,41 @@ namespace ChickenDist.Forms
                 txtAddress.Text, nudOpening.Value, chkActive.Checked, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text, (int)nudOpeningCrates.Value, GetSelectedPaymentType());
             if (id > 0) { ClientCache.Refresh(); MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadClients(); }
             else MessageBox.Show("❌ فشل الحفظ");
+        }
+
+        private void FixDuplicateClientCodes()
+        {
+            try
+            {
+                DataTable dtDups = ClientDuplicateDAL.GetDuplicateClientsReport();
+                if (dtDups == null || dtDups.Rows.Count == 0)
+                {
+                    MessageBox.Show("✅ ممتاز: لا توجد أي أكواد عملاء مكررة في قاعدة البيانات، جميع الأكواد فريدة 100%!",
+                        "فحص أكواد العملاء", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                int dupCount = dtDups.Rows.Count;
+                var res = MessageBox.Show(
+                    $"⚠️ تم اكتشاف ({dupCount}) سجل عملاء يشتركون في أكواد مكررة داخل قاعدة البيانات!\n\n" +
+                    "هل ترغب في تصحيح الأكواد المكررة تلقائياً الآن؟\n" +
+                    "(سيتم الإبقاء على كود العميل الأصلي الأساسي، وتوليد أكواد جديدة فريدة للعملاء المكررين بأمان تام)",
+                    "معالجة أكواد العملاء المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+                if (res == DialogResult.Yes)
+                {
+                    var (totalFixed, fixLog) = ClientDuplicateDAL.AutoFixDuplicateClientCodes();
+                    ClientCache.Refresh();
+                    LoadClients();
+                    MessageBox.Show(
+                        $"✅ تم بنجاح معالجة وتصحيح ({totalFixed}) عميل!\n\nأصبحت الآن جميع أكواد العملاء فريدة وغير مكررة في قاعدة البيانات.",
+                        "اكتمال المعالجة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("فشلت عملية فحص أو معالجة الأكواد المكررة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
 

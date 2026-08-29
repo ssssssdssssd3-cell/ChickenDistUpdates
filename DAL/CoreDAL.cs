@@ -368,21 +368,38 @@ namespace ChickenDist.DAL
     {
         public static string GetNextProductCode()
         {
-            var result = DbHelper.Scalar("SELECT COALESCE(MAX(ProductID), 0) FROM Products");
-            int maxId = (result != DBNull.Value && result != null) ? Convert.ToInt32(result) : 0;
+            long maxId = 0;
+            try
+            {
+                var result = DbHelper.Scalar("SELECT COALESCE(MAX(ProductID), 0) FROM Products");
+                if (result != DBNull.Value && result != null) maxId = Convert.ToInt64(result);
+            }
+            catch { }
 
             try
             {
-                var objMaxCode = DbHelper.Scalar("SELECT MAX(CAST(ProductCode AS INT)) FROM Products WHERE ISNUMERIC(ProductCode) = 1");
-                if (objMaxCode != DBNull.Value && objMaxCode != null && int.TryParse(objMaxCode.ToString(), out int maxCodeNum))
+                var objMaxCode = DbHelper.Scalar(@"
+                    SELECT COALESCE(MAX(CASE 
+                        WHEN ISNUMERIC(ProductCode) = 1 AND LEN(ProductCode) <= 9 AND ProductCode NOT LIKE '%.%' AND ProductCode NOT LIKE '%-%' AND ProductCode NOT LIKE '%+%'
+                        THEN CAST(ProductCode AS INT) 
+                        ELSE 0 
+                    END), 0) FROM Products");
+                if (objMaxCode != DBNull.Value && objMaxCode != null)
                 {
-                    if (maxCodeNum > maxId) maxId = maxCodeNum;
+                    long codeVal = Convert.ToInt64(objMaxCode);
+                    if (codeVal > maxId) maxId = codeVal;
                 }
             }
             catch { }
 
-            int nextId = maxId < 1000 ? 1001 : maxId + 1;
-            return nextId.ToString("D8");
+            long nextId = maxId < 1000 ? 1001 : maxId + 1;
+            string code = nextId.ToString("D8");
+            while (IsDuplicateCode(code, 0))
+            {
+                nextId++;
+                code = nextId.ToString("D8");
+            }
+            return code;
         }
 
         public static DataTable GetAll(bool activeOnly = false)
@@ -935,6 +952,15 @@ namespace ChickenDist.DAL
             return Convert.ToInt32(res) > 0;
         }
 
+        /// <summary>هل كود الصنف مسجَّل لصنف آخر بالفعل (لمنع التكرار)</summary>
+        public static bool IsDuplicateCode(string code, int currentProductID = 0)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return false;
+            var res = DbHelper.Scalar("SELECT COUNT(1) FROM Products WHERE ProductCode = @c AND ProductID != @id",
+                DbHelper.P("@c", code.Trim()), DbHelper.P("@id", currentProductID));
+            return Convert.ToInt32(res) > 0;
+        }
+
         public static string GetOwnerOfInternationalBarcode(string barcode, int currentProductID)
         {
             if (string.IsNullOrWhiteSpace(barcode)) return null;
@@ -1346,10 +1372,49 @@ namespace ChickenDist.DAL
             return Convert.ToInt32(res) > 0;
         }
 
+        /// <summary>هل كود العميل مسجَّل لعميل آخر بالفعل (لمنع التكرار)</summary>
+        public static bool IsDuplicateCode(string code, int currentID = 0)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return false;
+            var res = DbHelper.Scalar(
+                "SELECT COUNT(1) FROM Clients WHERE ClientCode = @c AND ClientID != @id",
+                DbHelper.P("@c", code.Trim()), DbHelper.P("@id", currentID));
+            return Convert.ToInt32(res) > 0;
+        }
+
         public static string GetNextClientCode()
         {
-            var result = DbHelper.Scalar("SELECT COALESCE(MAX(ClientID), 0) + 1 FROM Clients");
-            return result != null ? result.ToString() : "1";
+            int maxCode = 0;
+            try
+            {
+                var resCode = DbHelper.Scalar(@"
+                    SELECT COALESCE(MAX(CASE 
+                        WHEN ISNUMERIC(ClientCode) = 1 AND LEN(ClientCode) <= 9 AND ClientCode NOT LIKE '%.%' AND ClientCode NOT LIKE '%-%' AND ClientCode NOT LIKE '%+%'
+                        THEN CAST(ClientCode AS INT) 
+                        ELSE 0 
+                    END), 0) FROM Clients");
+                if (resCode != null && resCode != DBNull.Value)
+                    maxCode = Convert.ToInt32(resCode);
+            }
+            catch { }
+
+            try
+            {
+                var resId = DbHelper.Scalar("SELECT COALESCE(MAX(ClientID), 0) FROM Clients");
+                if (resId != null && resId != DBNull.Value)
+                {
+                    int maxId = Convert.ToInt32(resId);
+                    if (maxId > maxCode) maxCode = maxId;
+                }
+            }
+            catch { }
+
+            int nextCode = maxCode + 1;
+            while (IsDuplicateCode(nextCode.ToString(), 0))
+            {
+                nextCode++;
+            }
+            return nextCode.ToString();
         }
 
         public static int Save(int id, string code, string name, string phone, string phone2, string address, decimal opening, bool active, int? driverID, decimal maxCreditLimit, string notes, string defaultPriceTier = "قطاعي", int openingCrates = 0, string defaultPaymentType = "Any")

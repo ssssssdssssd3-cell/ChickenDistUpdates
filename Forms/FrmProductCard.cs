@@ -922,6 +922,28 @@ namespace ChickenDist.Forms
                 return;
             }
 
+            // ─── فحص كود الصنف وتوليده ومنع التكرار ───
+            if (string.IsNullOrWhiteSpace(txtCode.Text))
+            {
+                txtCode.Text = ProductDAL.GetNextProductCode();
+            }
+            if (ProductDAL.IsDuplicateCode(txtCode.Text.Trim(), _selectedID))
+            {
+                string suggestedCode = ProductDAL.GetNextProductCode();
+                var dr = MessageBox.Show(
+                    $"⚠️ كود الصنف \"{txtCode.Text.Trim()}\" مسجَّل لصنف آخر بالفعل!\n\nهل تريد استخدام الكود المقترح تلقائياً: ({suggestedCode})؟",
+                    "تكرار كود الصنف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (dr == DialogResult.Yes)
+                {
+                    txtCode.Text = suggestedCode;
+                }
+                else
+                {
+                    txtCode.Focus();
+                    return;
+                }
+            }
+
             // تحقق الباركودات
             string barcodesInput = txtInternationalCode.Text.Trim();
             string normalisedIntlBarcodes = null;

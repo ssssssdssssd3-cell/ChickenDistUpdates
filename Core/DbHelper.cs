@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Core
 {
@@ -3598,6 +3599,43 @@ namespace ChickenDist.Core
                 try
                 {
                     AppConfig.Set(SchemaVersionKey, CurrentSchemaVersion.ToString());
+                }
+                catch { }
+
+                // ===== تصحيح ومعالجة تلقائية لأي أكواد عملاء أو أصناف مكررة في قاعدة البيانات =====
+                try
+                {
+                    if (Convert.ToInt32(Scalar(@"
+                        SELECT COUNT(*) FROM (
+                            SELECT ClientCode FROM Clients 
+                            WHERE ClientCode IS NOT NULL AND LTRIM(RTRIM(ClientCode)) <> ''
+                            GROUP BY ClientCode HAVING COUNT(*) > 1
+                        ) t")) > 0)
+                    {
+                        var (fixedClients, _) = ClientDuplicateDAL.AutoFixDuplicateClientCodes();
+                        if (fixedClients > 0)
+                        {
+                            AppLogger.Info($"[AutoFix] Successfully repaired {fixedClients} duplicate client codes in database.");
+                        }
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    if (Convert.ToInt32(Scalar(@"
+                        SELECT COUNT(*) FROM (
+                            SELECT ProductCode FROM Products 
+                            WHERE IsActive = 1 AND ProductCode IS NOT NULL AND LTRIM(RTRIM(ProductCode)) <> '' AND ProductCode <> 'AUTO'
+                            GROUP BY ProductCode HAVING COUNT(*) > 1
+                        ) t")) > 0)
+                    {
+                        var (fixedProds, _) = ProductDuplicateDAL.AutoFixDuplicateProductCodes();
+                        if (fixedProds > 0)
+                        {
+                            AppLogger.Info($"[AutoFix] Successfully repaired {fixedProds} duplicate product codes in database.");
+                        }
+                    }
                 }
                 catch { }
             }
