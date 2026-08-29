@@ -196,7 +196,7 @@ namespace ChickenDist.Core
                 if (c is FlowLayoutPanel flp)
                 {
                     flp.RightToLeft = RightToLeft.Yes;
-                    flp.FlowDirection = FlowDirection.LeftToRight;
+                    flp.FlowDirection = FlowDirection.RightToLeft;
                 }
                 else if (c is StatusStrip ss)
                 {
@@ -213,6 +213,11 @@ namespace ChickenDist.Core
 
                 if (c is TextBox tb)
                 {
+                    tb.RightToLeft = RightToLeft.Yes;
+                    if (tb.TextAlign == HorizontalAlignment.Left)
+                    {
+                        tb.TextAlign = HorizontalAlignment.Right;
+                    }
                     tb.BorderStyle = BorderStyle.FixedSingle;
                     tb.ForeColor = TextDark;
                     tb.BackColor = BgInput;
@@ -234,6 +239,24 @@ namespace ChickenDist.Core
                             tb.FindForm()?.SelectNextControl(tb, true, true, true, true);
                         }
                     };
+                }
+                else if (c is Label lbl)
+                {
+                    lbl.RightToLeft = RightToLeft.Yes;
+                    if (lbl.TextAlign == ContentAlignment.MiddleLeft)
+                        lbl.TextAlign = ContentAlignment.MiddleRight;
+                    else if (lbl.TextAlign == ContentAlignment.TopLeft)
+                        lbl.TextAlign = ContentAlignment.TopRight;
+                    else if (lbl.TextAlign == ContentAlignment.BottomLeft)
+                        lbl.TextAlign = ContentAlignment.BottomRight;
+                }
+                else if (c is CheckBox chk)
+                {
+                    chk.RightToLeft = RightToLeft.Yes;
+                }
+                else if (c is RadioButton rb)
+                {
+                    rb.RightToLeft = RightToLeft.Yes;
                 }
                 else if (c is ComboBox cb)
                 {
@@ -372,15 +395,23 @@ namespace ChickenDist.Core
 
                 if (c is Label lbl)
                 {
+                    lbl.RightToLeft = RightToLeft.Yes;
                     lbl.BackColor = Color.Transparent;
                     if (lbl.ForeColor != Color.Red && lbl.ForeColor != Color.Green && lbl.ForeColor != Color.OrangeRed)
                     {
                         lbl.ForeColor = Color.FromArgb(255, 220, 110);
                     }
                     lbl.Font = FontBold;
+                    if (lbl.TextAlign == ContentAlignment.MiddleLeft)
+                        lbl.TextAlign = ContentAlignment.MiddleRight;
                 }
                 else if (c is TextBox tb)
                 {
+                    tb.RightToLeft = RightToLeft.Yes;
+                    if (tb.TextAlign == HorizontalAlignment.Left)
+                    {
+                        tb.TextAlign = HorizontalAlignment.Right;
+                    }
                     tb.BorderStyle = BorderStyle.FixedSingle;
                     tb.BackColor = Color.White;
                     tb.ForeColor = Color.FromArgb(15, 23, 42);
@@ -627,6 +658,7 @@ namespace ChickenDist.Core
                 Height = 30,
                 Font = FontNormal,
                 RightToLeft = RightToLeft.Yes,
+                TextAlign = HorizontalAlignment.Right,
                 BorderStyle = BorderStyle.FixedSingle
             };
         }

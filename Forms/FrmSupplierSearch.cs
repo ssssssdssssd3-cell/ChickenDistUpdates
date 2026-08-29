@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -39,7 +39,7 @@ namespace ChickenDist.Forms
 
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 65, BackColor = Theme.BgSearchPanel, RightToLeft = RightToLeft.No, Padding = new Padding(12) };
             var lblSearch = new Label { Text = "ابحث بالاسم او الهاتف او الكود:", Location = new Point(590, 22), Width = 210, ForeColor = Color.FromArgb(255, 220, 110), TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold };
-            txtSearch = new TextBox { Location = new Point(20, 18), Width = 560, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 12f) };
+            txtSearch = new TextBox { Location = new Point(20, 18), Width = 560, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 12f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Right };
             txtSearch.TextChanged += (s, e) => ApplyFilter();
             txtSearch.KeyDown += TxtSearch_KeyDown;
             pnlSearch.Controls.Add(lblSearch);

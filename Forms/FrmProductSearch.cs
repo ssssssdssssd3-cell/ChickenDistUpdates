@@ -105,36 +105,36 @@ namespace ChickenDist.Forms
             Color inputFg = Color.FromArgb(15, 23, 42);
 
             // Row 1: Search name/code & Category
-            var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(620, 16), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtSearch = new TextBox { Location = new Point(120, 12), Width = 490, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold), TabIndex = 0 };
+            var lblSearch = new Label { Text = "ابحث بالاسم أو الكود :", Location = new Point(620, 16), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
+            txtSearch = new TextBox { Location = new Point(120, 12), Width = 490, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 11, FontStyle.Bold), TabIndex = 0, RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Right };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
             txtSearch.KeyDown += TxtSearch_KeyDown;
             txtSearch.Enter += (s, e) => txtSearch.SelectAll();
             
-            var lblCat = new Label { Text = "التصنيف:", Location = new Point(620, 48), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            cboCategory = new ComboBox { Location = new Point(120, 44), Width = 490, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = inputBg, ForeColor = inputFg, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10) };
+            var lblCat = new Label { Text = "التصنيف:", Location = new Point(620, 48), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
+            cboCategory = new ComboBox { Location = new Point(120, 44), Width = 490, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = inputBg, ForeColor = inputFg, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10), RightToLeft = RightToLeft.Yes };
             cboCategory.SelectedIndexChanged += (s, e) => ApplyFilter();
 
             // Row 2: Brand, Color & Company
-            var lblBrand = new Label { Text = "الماركة:", Location = new Point(620, 78), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtBrandFilter = new TextBox { Location = new Point(510, 76), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
+            var lblBrand = new Label { Text = "الماركة:", Location = new Point(620, 78), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
+            txtBrandFilter = new TextBox { Location = new Point(510, 76), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Right };
             txtBrandFilter.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
-            var lblColor = new Label { Text = "اللون:", Location = new Point(445, 78), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtColorFilter = new TextBox { Location = new Point(345, 76), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
+            var lblColor = new Label { Text = "اللون:", Location = new Point(445, 78), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
+            txtColorFilter = new TextBox { Location = new Point(345, 76), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Right };
             txtColorFilter.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
-            var lblCompany = new Label { Text = "الشركة المنتجة:", Location = new Point(220, 78), AutoSize = false, Width = 120, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtCompanyFilter = new TextBox { Location = new Point(10, 76), Width = 205, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
+            var lblCompany = new Label { Text = "الشركة المنتجة:", Location = new Point(220, 78), AutoSize = false, Width = 120, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
+            txtCompanyFilter = new TextBox { Location = new Point(10, 76), Width = 205, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Right };
             txtCompanyFilter.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             // Row 3: Price range & Zero Stock checkbox
-            var lblPriceRange = new Label { Text = "السعر من:", Location = new Point(620, 110), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight };
-            txtPriceFrom = new TextBox { Location = new Point(510, 108), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
+            var lblPriceRange = new Label { Text = "السعر من:", Location = new Point(620, 110), AutoSize = false, Width = 140, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes };
+            txtPriceFrom = new TextBox { Location = new Point(510, 108), Width = 100, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Right };
             txtPriceFrom.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
-            var lblPriceTo = new Label { Text = "إلى:", Location = new Point(445, 110), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleCenter };
-            txtPriceTo = new TextBox { Location = new Point(345, 108), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
+            var lblPriceTo = new Label { Text = "إلى:", Location = new Point(445, 110), AutoSize = false, Width = 55, ForeColor = labelColor, Font = Theme.FontBold, TextAlign = ContentAlignment.MiddleCenter, RightToLeft = RightToLeft.Yes };
+            txtPriceTo = new TextBox { Location = new Point(345, 108), Width = 95, BackColor = inputBg, ForeColor = inputFg, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Right };
             txtPriceTo.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
 
             chkShowZeroStock = new CheckBox
@@ -145,6 +145,7 @@ namespace ChickenDist.Forms
                 Height = 24,
                 ForeColor = Color.White,
                 Font = Theme.FontBold,
+                RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
             chkShowZeroStock.CheckedChanged += (s, e) => RefreshGrid();

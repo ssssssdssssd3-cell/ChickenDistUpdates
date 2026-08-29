@@ -61,9 +61,31 @@ namespace ChickenDist
         }
     }
 
-    /// <summary>يضمن RTL لكل الـ MessageBox وDialogs</summary>
+    /// <summary>يضمن تطبيق نظام RTL الكامل لكل شاشات ونوافذ البرنامج ومربعات الحوار تلقائياً</summary>
     internal class RtlMessageFilter : IMessageFilter
     {
-        public bool PreFilterMessage(ref Message m) => false;
+        private static readonly System.Collections.Generic.HashSet<IntPtr> _processedHandles = new System.Collections.Generic.HashSet<IntPtr>();
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            // 0x0018 = WM_SHOWWINDOW, 0x0006 = WM_ACTIVATE
+            if ((m.Msg == 0x0018 && m.WParam != IntPtr.Zero) || m.Msg == 0x0006)
+            {
+                if (!_processedHandles.Contains(m.HWnd))
+                {
+                    _processedHandles.Add(m.HWnd);
+                    try
+                    {
+                        var ctrl = Control.FromHandle(m.HWnd);
+                        if (ctrl is Form form)
+                        {
+                            ChickenDist.Core.Theme.ApplyFormRTL(form);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            return false;
+        }
     }
 }

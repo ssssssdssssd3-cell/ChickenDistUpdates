@@ -69,7 +69,7 @@ namespace ChickenDist.Forms
             var flowFilters = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true,
                 BackColor = Color.Transparent,
                 RightToLeft = RightToLeft.Yes,
@@ -286,7 +286,7 @@ namespace ChickenDist.Forms
             var flowBottom = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 BackColor = Color.Transparent,
                 RightToLeft = RightToLeft.Yes

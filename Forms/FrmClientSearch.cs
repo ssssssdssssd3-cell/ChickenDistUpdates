@@ -65,7 +65,9 @@ namespace ChickenDist.Forms
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Segoe UI", 12f)
+                Font = new Font("Segoe UI", 12f),
+                RightToLeft = RightToLeft.Yes,
+                TextAlign = HorizontalAlignment.Right
             };
             txtSearch.TextChanged += (s, e) => ApplyFilter();
             txtSearch.KeyDown += TxtSearch_KeyDown;

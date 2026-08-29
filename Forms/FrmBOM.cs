@@ -182,7 +182,7 @@ namespace ChickenDist.Forms
                 Height = 82,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 8, 10, 8),
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 RightToLeft = RightToLeft.Yes
             };
@@ -282,7 +282,7 @@ namespace ChickenDist.Forms
                 Height = 72,
                 BackColor = Color.FromArgb(30, 41, 59),
                 Padding = new Padding(10, 6, 10, 6),
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 RightToLeft = RightToLeft.Yes
             };
@@ -448,7 +448,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 32,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 BackColor = Color.Transparent,
                 RightToLeft = RightToLeft.Yes
@@ -490,7 +490,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Bottom,
                 Height = 44,
-                FlowDirection = FlowDirection.RightToLeft,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 BackColor = Color.Transparent,
                 RightToLeft = RightToLeft.Yes

@@ -1267,6 +1267,8 @@ namespace ChickenDist.Forms
             form.Dock = DockStyle.Fill;
             form.FormBorderStyle = FormBorderStyle.None;
             form.RightToLeft = RightToLeft.Yes;
+            form.RightToLeftLayout = true;
+            Theme.ApplyFormRTL(form);
 
             var tab = _AddTab(form);
             if (tab != null && !(form is FrmDashboard))
@@ -1277,7 +1279,10 @@ namespace ChickenDist.Forms
                 };
             }
             Theme.AutoStyleAllTabControls(form);
-            form.Shown += (s, e) => Theme.AutoStyleAllTabControls(form);
+            form.Shown += (s, e) => {
+                Theme.ApplyFormRTL(form);
+                Theme.AutoStyleAllTabControls(form);
+            };
             SwitchToTab(form, tab);
         }
 
