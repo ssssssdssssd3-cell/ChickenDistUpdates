@@ -344,7 +344,12 @@ namespace ChickenDist.Core
                 }
                 else if (c is TabControl tc)
                 {
-                    StyleTabControl(tc);
+                    tc.RightToLeft = RightToLeft.Yes;
+                    tc.RightToLeftLayout = false;
+                    if (tc.Name != "tabReports" && tc.Tag?.ToString() != "CustomTabs" && tc.DrawMode == TabDrawMode.Normal)
+                    {
+                        StyleTabControl(tc);
+                    }
                     foreach (TabPage tp in tc.TabPages)
                     {
                         tp.RightToLeft = RightToLeft.Yes;
@@ -834,15 +839,16 @@ namespace ChickenDist.Core
         public static void StyleTabControl(TabControl tc)
         {
             if (tc == null) return;
+            if (tc.Name == "tabReports" || tc.Tag?.ToString() == "CustomTabs") return;
             try
             {
                 tc.DrawMode = TabDrawMode.OwnerDrawFixed;
                 tc.SizeMode = TabSizeMode.Normal;
-                tc.ItemSize = new Size(0, 42); // ارتفاع مميز وواضح 42px
-                tc.Padding = new Point(22, 10);
-                tc.Font = new Font(FontMain.FontFamily, 10.5f, FontStyle.Bold);
+                tc.ItemSize = new Size(0, 36);
+                tc.Padding = new Point(14, 6);
+                tc.Font = new Font(FontMain.FontFamily, 9.75f, FontStyle.Bold);
                 tc.RightToLeft = RightToLeft.Yes;
-                tc.RightToLeftLayout = true;
+                tc.RightToLeftLayout = false; // عدم تفعيل RightToLeftLayout لتجنب تشوه رسم WinForms
 
                 tc.DrawItem -= TabControl_DrawItem;
                 tc.DrawItem += TabControl_DrawItem;
@@ -876,14 +882,16 @@ namespace ChickenDist.Core
             {
                 if (parent is TabControl tc)
                 {
-                    StyleTabControl(tc);
+                    if (tc.Name != "tabReports" && tc.Tag?.ToString() != "CustomTabs")
+                        StyleTabControl(tc);
                 }
 
                 foreach (Control c in parent.Controls)
                 {
                     if (c is TabControl childTc)
                     {
-                        StyleTabControl(childTc);
+                        if (childTc.Name != "tabReports" && childTc.Tag?.ToString() != "CustomTabs")
+                            StyleTabControl(childTc);
                     }
                     if (c.HasChildren)
                     {
@@ -904,8 +912,7 @@ namespace ChickenDist.Core
                     Rectangle rawRect = tc.GetTabRect(e.Index);
                     bool isSelected = tc.SelectedIndex == e.Index;
 
-                    // Deflate slightly for modern separate button spacing
-                    Rectangle tabRect = new Rectangle(rawRect.X + 2, rawRect.Y + 2, rawRect.Width - 4, rawRect.Height - 3);
+                    Rectangle tabRect = new Rectangle(rawRect.X + 1, rawRect.Y + 1, rawRect.Width - 2, rawRect.Height - 2);
 
                     Color backColor;
                     Color foreColor;
@@ -915,14 +922,14 @@ namespace ChickenDist.Core
 
                     if (isSelected)
                     {
-                        // Selected Tab: Vibrant High-Contrast Royal Blue
-                        backColor = Color.FromArgb(30, 64, 175);
+                        // تبويب محدد: كحلي ملكي فخم وعالي التباين
+                        backColor = isDark ? Color.FromArgb(30, 41, 59) : Color.FromArgb(24, 34, 53);
                         foreColor = Color.White;
-                        borderColor = Color.FromArgb(245, 158, 11); // Golden Amber Indicator
+                        borderColor = Color.FromArgb(245, 158, 11); // ذهبي كهرماني
                     }
                     else
                     {
-                        // Inactive Tab: Highly distinct button look so customers instantly notice it
+                        // تبويب غير محدد: رمادي ناعم وواضح الحدود والبيانات
                         if (isDark)
                         {
                             backColor = Color.FromArgb(45, 55, 72);
@@ -931,56 +938,48 @@ namespace ChickenDist.Core
                         }
                         else
                         {
-                            backColor = Color.FromArgb(226, 232, 240);
-                            foreColor = Color.FromArgb(15, 23, 42);
-                            borderColor = Color.FromArgb(148, 163, 184);
+                            backColor = Color.FromArgb(241, 245, 249);
+                            foreColor = Color.FromArgb(30, 41, 59);
+                            borderColor = Color.FromArgb(203, 213, 225);
                         }
                     }
 
                     e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
                     e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-                    // Fill Tab Background
+                    // تعبئة خلفية التبويب
                     using (var brush = new SolidBrush(backColor))
                     {
                         e.Graphics.FillRectangle(brush, tabRect);
                     }
 
+                    // إطار التبويب
+                    using (var pen = new Pen(borderColor, 1.2f))
+                    {
+                        e.Graphics.DrawRectangle(pen, tabRect);
+                    }
+
                     if (isSelected)
                     {
-                        // Distinct Top & Bottom Accent Bars for maximum visibility
+                        // شريط مؤشر ذهبي علوي بارز للتبويب النشط
                         using (var goldBrush = new SolidBrush(Color.FromArgb(245, 158, 11)))
                         {
-                            // 4px bold golden indicator bar at bottom
-                            e.Graphics.FillRectangle(goldBrush, tabRect.X, tabRect.Bottom - 4, tabRect.Width, 4);
-                            // 2px accent at top
-                            e.Graphics.FillRectangle(goldBrush, tabRect.X, tabRect.Y, tabRect.Width, 2);
-                        }
-
-                        using (var pen = new Pen(Color.FromArgb(37, 99, 235), 1.5f))
-                        {
-                            e.Graphics.DrawRectangle(pen, tabRect);
+                            e.Graphics.FillRectangle(goldBrush, tabRect.X, tabRect.Y, tabRect.Width, 3);
                         }
                     }
-                    else
+
+                    // رسم النص بوضوح وثبات تام
+                    using (var font = new Font(FontMain.FontFamily, 9.5f, FontStyle.Bold))
+                    using (var sf = new StringFormat
                     {
-                        // Distinct border around inactive tab buttons
-                        using (var pen = new Pen(borderColor, 1.5f))
-                        {
-                            e.Graphics.DrawRectangle(pen, tabRect);
-                        }
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center,
+                        FormatFlags = StringFormatFlags.NoWrap
+                    })
+                    using (var brText = new SolidBrush(foreColor))
+                    {
+                        e.Graphics.DrawString(tp.Text, font, brText, tabRect, sf);
                     }
-
-                    // Text rendering with emoji support
-                    var font = new Font(FontMain.FontFamily, isSelected ? 11f : 10f, FontStyle.Bold);
-                    TextRenderer.DrawText(
-                        e.Graphics,
-                        tp.Text,
-                        font,
-                        tabRect,
-                        foreColor,
-                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.RightToLeft
-                    );
                 }
             }
             catch { }
