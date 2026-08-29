@@ -579,6 +579,14 @@ namespace ChickenDist.Forms
             });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", DataPropertyName = "ClientName", HeaderText = "اسم العميل", FillWeight = 105f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "DriverName", DataPropertyName = "DriverName", HeaderText = "اسم المندوب", FillWeight = 75f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ItemsCount", 
+                DataPropertyName = "ItemsCount", 
+                HeaderText = "عدد الأصناف", 
+                FillWeight = 45f,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
+            });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", DataPropertyName = "TotalAmount", HeaderText = "إجمالي الفاتورة", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount", DataPropertyName = "ReturnAmount", HeaderText = "المسترجع سابقاً", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", DataPropertyName = "CreatedByName", HeaderText = "المستخدم", FillWeight = 80f });

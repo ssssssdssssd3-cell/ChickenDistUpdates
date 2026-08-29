@@ -372,9 +372,23 @@ namespace ChickenDist.Forms
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "ClientCode",
+				HeaderText = "كود العميل",
+				FillWeight = 38f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "ClientName",
 				HeaderText = "العميل / المندوب",
 				FillWeight = 85f
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "ItemsCount",
+				HeaderText = "عدد الأصناف",
+				FillWeight = 38f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -431,6 +445,23 @@ namespace ChickenDist.Forms
 				FillWeight = 70f
 			});
 			dgSales.SelectionChanged += DgSales_SelectionChanged;
+			dgSales.CellFormatting += (s, e) =>
+			{
+				if (e.RowIndex >= 0 && dgSales.Columns[e.ColumnIndex].Name == "ClientCode" && e.Value != null)
+				{
+					string cCode = e.Value.ToString();
+					if (cCode == "0" || string.IsNullOrEmpty(cCode))
+					{
+						e.CellStyle.ForeColor = Color.FromArgb(160, 160, 160);
+						e.CellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+					}
+					else
+					{
+						e.CellStyle.ForeColor = Color.FromArgb(16, 185, 129);
+						e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+					}
+				}
+			};
 			SetupSalesGridContextMenu();
 
 			// الصف 1: تفاصيل الأصناف والتحكم (تحت بعض بكامل العرض)
@@ -765,6 +796,9 @@ namespace ChickenDist.Forms
 				if (text5 == "DriverLoad" && text4 != "---")
 					text7 = text4;
 
+				string clientCode = (row.Table.Columns.Contains("ClientCode") && row["ClientCode"] != DBNull.Value) ? row["ClientCode"].ToString() : "0";
+				int itemsCount = (row.Table.Columns.Contains("ItemsCount") && row["ItemsCount"] != DBNull.Value) ? Convert.ToInt32(row["ItemsCount"]) : 0;
+
 				decimal shippingAmt = row.Table.Columns.Contains("ShippingCharge") && row["ShippingCharge"] != DBNull.Value
 				                    ? Convert.ToDecimal(row["ShippingCharge"]) : 0m;
 
@@ -779,7 +813,7 @@ namespace ChickenDist.Forms
 					(text.Contains("تقسيط") && text5 == "Installment") ||
 					(text.Contains("تحميل") && text5 == "DriverLoad");
 
-				if (typeMatch && (string.IsNullOrEmpty(value) || text2.Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
+				if (typeMatch && (string.IsNullOrEmpty(value) || text2.Contains(value) || clientCode.ToLower().Contains(value) || text7.ToLower().Contains(value) || text6.Contains(value)))
 				{
 					decimal discAmt = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value
 					                ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
@@ -817,9 +851,13 @@ namespace ChickenDist.Forms
 					string netStr = netAmt.ToString("N2") + " ج";
 
 					int addedIdx = dgSales.Rows.Add(
-						row["SaleID"], row["SaleCode"],
+						row["SaleID"], 
+						row["SaleCode"],
 						Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"),
-						text8, text7,
+						text8, 
+						clientCode,
+						text7,
+						itemsCount,
 						beforeDiscStr,
 						discStr,
 						afterDiscStr,
@@ -829,9 +867,20 @@ namespace ChickenDist.Forms
 						row.Table.Columns.Contains("CreatedByName") ? row["CreatedByName"].ToString() : "---",
 						row["Notes"]);
 
+					var addedRow = dgSales.Rows[addedIdx];
+					if (clientCode == "0" || string.IsNullOrEmpty(clientCode))
+					{
+						addedRow.Cells["ClientCode"].Style.ForeColor = Color.FromArgb(160, 160, 160);
+						addedRow.Cells["ClientCode"].Style.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+					}
+					else
+					{
+						addedRow.Cells["ClientCode"].Style.ForeColor = Color.FromArgb(16, 185, 129);
+						addedRow.Cells["ClientCode"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+					}
+
 					if (returnAmt > 0)
 					{
-						var addedRow = dgSales.Rows[addedIdx];
 						addedRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // اصفر واضح ومميز للفواتير المرتجعة
 						addedRow.DefaultCellStyle.ForeColor = Color.Black;
 						addedRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);

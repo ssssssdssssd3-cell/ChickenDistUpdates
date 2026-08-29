@@ -96,6 +96,7 @@ namespace ChickenDist.DAL
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
+                         ISNULL(costs.ItemsCount, 0) AS ItemsCount,
                          ISNULL(costs.TotalCost, 0) AS TotalCost,
                          (s.TotalAmount - ISNULL(costs.TotalCost, 0)) AS NetProfit,
                          s.CustomClientName
@@ -112,12 +113,13 @@ namespace ChickenDist.DAL
                   ) ret ON ret.SaleID = s.SaleID
                   LEFT JOIN (
                       SELECT si.SaleID,
+                             COUNT(si.ItemID) AS ItemsCount,
                              SUM(si.Quantity * ISNULL(si.Factor, 1.0) *
                                  COALESCE(NULLIF(p.Unit1PurchasePrice, 0),
                                  ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0),
                                  NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
                       FROM SaleItems si
-                      JOIN Products p ON si.ProductID = p.ProductID
+                      LEFT JOIN Products p ON si.ProductID = p.ProductID
                       WHERE si.SaleID IN (SELECT SaleID FROM Sales WHERE SaleDate BETWEEN @f AND @t)
                       GROUP BY si.SaleID
                   ) costs ON costs.SaleID = s.SaleID
@@ -1915,7 +1917,14 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT sr.ReturnID, sr.ReturnDate,
                           ISNULL(s.SaleCode, N'مرتجع عام') AS SaleCode,
-                          ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
+                          CASE 
+                              WHEN sr.ClientID IS NOT NULL AND sr.ClientID > 0 
+                              THEN COALESCE(NULLIF(c.ClientCode, N''), CAST(c.ClientID AS NVARCHAR(50)))
+                              WHEN s.ClientID IS NOT NULL AND s.ClientID > 0 
+                              THEN COALESCE(NULLIF(c2.ClientCode, N''), CAST(c2.ClientID AS NVARCHAR(50)))
+                              ELSE N'0'
+                          END AS ClientCode,
+                          ISNULL(c.ClientName, ISNULL(c2.ClientName, N'عميل نقدي / عام')) AS ClientName,
                           CASE 
                               WHEN sr.PaymentType = 'Visa' THEN N'💳 فيزا'
                               WHEN sr.PaymentType = 'Credit' THEN N'📋 آجل'
@@ -1924,10 +1933,17 @@ namespace ChickenDist.DAL
                               WHEN s.SaleType = 'Credit' THEN N'📋 آجل'
                               ELSE N'💵 نقدي'
                           END AS PaymentType,
+                          ISNULL(retItems.ItemsCount, 0) AS ItemsCount,
                           sr.TotalAmount, sr.Notes
                   FROM SalesReturns sr
                   LEFT JOIN Sales s ON sr.SaleID=s.SaleID
                   LEFT JOIN Clients c ON sr.ClientID=c.ClientID
+                  LEFT JOIN Clients c2 ON s.ClientID=c2.ClientID
+                  LEFT JOIN (
+                      SELECT ReturnID, COUNT(ReturnItemID) AS ItemsCount
+                      FROM ReturnItems
+                      GROUP BY ReturnID
+                  ) retItems ON retItems.ReturnID = sr.ReturnID
                   WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
                     AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
                   ORDER BY sr.ReturnDate DESC",
