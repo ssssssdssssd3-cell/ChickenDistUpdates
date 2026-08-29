@@ -1599,31 +1599,61 @@ namespace ChickenDist.Forms
                 if (txtDiscount != null) decimal.TryParse(txtDiscount.Text, out disc);
                 string notes = txtNotes != null ? txtNotes.Text.Trim() : "";
 
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"📋 *عرض سعر مقدم من {AppConfig.CompanyName}*");
-                sb.AppendLine($"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}");
-                sb.AppendLine($"👤 *العميل:* {clientName}");
-                if (!string.IsNullOrEmpty(quoteCode)) sb.AppendLine($"🔖 *رقم العرض:* #{quoteCode}");
-                sb.AppendLine();
-                sb.AppendLine("📦 *تفاصيل عرض السعر:*");
+                string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة التجارية";
+                string compPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
 
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"⭐ *{comp}* ⭐");
+                if (!string.IsNullOrWhiteSpace(compPhone))
+                {
+                    sb.AppendLine($"📞 خدمة العملاء: {compPhone}");
+                }
+                sb.AppendLine("━━━━━━━━━━━━━━━━");
+                sb.AppendLine("📋 *بيان أسعار وعرض أسعار معتمد*");
+                if (!string.IsNullOrEmpty(quoteCode)) sb.AppendLine($"🔖 *رقم العرض:* #{quoteCode}");
+                sb.AppendLine($"📅 *التاريخ:* {DateTime.Now:yyyy/MM/dd hh:mm tt}");
+                sb.AppendLine($"👤 *العميل:* {(string.IsNullOrWhiteSpace(clientName) ? "عميل نقدي" : clientName)}");
+                sb.AppendLine($"🏷️ *فئة التسعير:* {tier}");
+                sb.AppendLine("━━━━━━━━━━━━━━━━");
+                sb.AppendLine("📦 *تفاصيل الأصناف والأسعار:*");
+
+                int itemIdx = 1;
+                decimal grossTotal = 0m;
                 foreach (var item in _items)
                 {
-                    sb.AppendLine($"- {item.ProductName} ({item.Quantity} {item.UnitName} × {item.UnitPrice:N2}) = {item.TotalPrice:N2} ج");
+                    decimal lineTot = (item.Quantity * item.UnitPrice) - item.DiscountAmt;
+                    grossTotal += (item.Quantity * item.UnitPrice);
+                    sb.AppendLine($"{itemIdx}. {item.ProductName} ({item.Quantity:0.##} {(!string.IsNullOrWhiteSpace(item.UnitName) ? item.UnitName : "قطعة")} × {item.UnitPrice:N2}) = *{lineTot:N2} ج.م*");
+                    itemIdx++;
                 }
 
-                sb.AppendLine();
-                sb.AppendLine($"💵 *إجمالي عرض السعر:* {lblTotalVal.Text}");
-                if (disc > 0) sb.AppendLine($"✂️ *الخصم:* {disc:N2} ج");
-                if (disc > 0 && lblNetVal != null) sb.AppendLine($"💰 *الصافي المطلوب:* {lblNetVal.Text}");
-                sb.AppendLine("\nنتشرف بخدمتكم دائماً! 🙏");
+                decimal netTotal = Math.Max(0m, grossTotal - disc);
+                sb.AppendLine("━━━━━━━━━━━━━━━━");
+                if (disc > 0)
+                {
+                    sb.AppendLine($"💵 *إجمالي البضاعة:* {grossTotal:N2} ج.م");
+                    sb.AppendLine($"✂️ *قيمة الخصم:* {disc:N2} ج.م");
+                }
+                sb.AppendLine($"💰 *الصافي الإجمالي المطلوب:* {netTotal:N2} ج.م");
+                try
+                {
+                    sb.AppendLine($"📝 *فقط {TafqeetHelper.ConvertToArabicWords(netTotal)} لا غير.*");
+                }
+                catch { }
+
+                if (!string.IsNullOrWhiteSpace(notes))
+                {
+                    sb.AppendLine($"📌 *ملاحظات:* {notes}");
+                }
+                sb.AppendLine("📌 *بيان تقديري استرشادي - أسعار سارية حتى انتهاء الكميات*");
+                sb.AppendLine("🙏 *نشكركم على ثقتكم الغالية ونتشرف بخدمتكم دائماً!*");
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
                     phone,
                     sb.ToString(),
-                    () => ReceiptImageGenerator.GenerateTextCardImage("عرض أسعار", sb.ToString()),
-                    "📱 إرسال عرض السعر عبر الواتساب",
+                    () => ReceiptImageGenerator.GeneratePriceQuoteReceiptImage(clientName, phone, quoteCode, tier, _items, disc, notes),
+                    "📱 إرسال عرض السعر عبر الواتساب (نموذج الطارق)",
                     () => PdfReportHelper.GeneratePriceQuotePdf(clientName, phone, quoteCode, tier, _items, disc, notes),
                     () => ReceiptImageGenerator.GeneratePriceQuoteImages(clientName, phone, quoteCode, tier, _items, disc, notes));
             }

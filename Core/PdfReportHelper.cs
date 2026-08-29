@@ -713,10 +713,16 @@ namespace ChickenDist.Core
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                     g.Clear(Color.White);
 
-                    using (var pBorder = new Pen(Color.FromArgb(6, 78, 59), 3f))
+                    Color cPrimary   = Color.FromArgb(24, 34, 53);
+                    Color cSecondary = Color.FromArgb(37, 52, 78);
+                    Color cAccent    = Color.FromArgb(245, 158, 11);
+                    Color cAltBg     = Color.FromArgb(248, 250, 253);
+
+                    using (var pBorder = new Pen(cPrimary, 3f))
                     using (var pThin = new Pen(Color.FromArgb(203, 213, 225), 1.2f))
-                    using (var brGreenDark = new SolidBrush(Color.FromArgb(6, 78, 59)))
-                    using (var brAlt = new SolidBrush(Color.FromArgb(240, 253, 244)))
+                    using (var brPrimary = new SolidBrush(cPrimary))
+                    using (var brSecondary = new SolidBrush(cSecondary))
+                    using (var brAlt = new SolidBrush(cAltBg))
                     using (var brNavy = new SolidBrush(Color.FromArgb(15, 23, 42)))
                     using (var fTitle = new Font("Arial", 22f, FontStyle.Bold))
                     using (var fSub = new Font("Arial", 13f, FontStyle.Bold))
@@ -729,14 +735,37 @@ namespace ChickenDist.Core
                         int y = 40;
 
                         // Header Bar
-                        using (var brHeaderGrad = new LinearGradientBrush(new Rectangle(25, 25, width - 50, 100), Color.FromArgb(6, 78, 59), Color.FromArgb(16, 185, 129), LinearGradientMode.Vertical))
+                        using (var brHeaderGrad = new LinearGradientBrush(new Rectangle(25, 25, width - 50, 100), cPrimary, cSecondary, LinearGradientMode.Vertical))
                         {
                             g.FillRectangle(brHeaderGrad, 25, 25, width - 50, 100);
                         }
 
-                        string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة للتجارة والتوزيع";
+                        // Logo if exists
+                        if (!string.IsNullOrEmpty(AppConfig.ShopLogoPath) && File.Exists(AppConfig.ShopLogoPath))
+                        {
+                            try
+                            {
+                                using (var logoImg = Image.FromFile(AppConfig.ShopLogoPath))
+                                {
+                                    int maxLogoW = 160;
+                                    int maxLogoH = 80;
+                                    double ratioX = (double)maxLogoW / logoImg.Width;
+                                    double ratioY = (double)maxLogoH / logoImg.Height;
+                                    double ratio = Math.Min(ratioX, ratioY);
+                                    int lw = (int)(logoImg.Width * ratio);
+                                    int lh = (int)(logoImg.Height * ratio);
+                                    g.DrawImage(logoImg, 40, 35, lw, lh);
+                                }
+                            }
+                            catch { }
+                        }
+
+                        string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة التجارية";
                         g.DrawString(comp, fTitle, Brushes.White, new RectangleF(30, y, width - 60, 40), sfCenter);
-                        g.DrawString($"بيان تسعير وعرض أسعار رسمي (Price Quotation)" + (!string.IsNullOrEmpty(quoteCode) ? $" - #{quoteCode}" : ""), fSub, Brushes.LightYellow, new RectangleF(30, y + 44, width - 60, 28), sfCenter);
+                        using (var brGold = new SolidBrush(cAccent))
+                        {
+                            g.DrawString($"📋 بيان أسعار وعرض أسعار معتمد (Price Quotation)" + (!string.IsNullOrEmpty(quoteCode) ? $" - #{quoteCode}" : ""), fSub, brGold, new RectangleF(30, y + 44, width - 60, 28), sfCenter);
+                        }
                         y += 105;
 
                         // Info Meta Card
@@ -744,7 +773,7 @@ namespace ChickenDist.Core
                         g.DrawRectangle(pThin, 40, y, width - 80, 80);
                         g.DrawLine(pThin, width / 2, y, width / 2, y + 80);
 
-                        g.DrawString($"العميل: {clientName}", fBold, brGreenDark, new RectangleF(width / 2 + 20, y + 10, width / 2 - 60, 28), sfRight);
+                        g.DrawString($"العميل: {clientName}", fBold, brPrimary, new RectangleF(width / 2 + 20, y + 10, width / 2 - 60, 28), sfRight);
                         g.DrawString($"فئة السعر: {priceTier}" + (!string.IsNullOrWhiteSpace(clientPhone) ? $" | الهاتف: {clientPhone}" : ""), fNorm, Brushes.Black, new RectangleF(width / 2 + 20, y + 42, width / 2 - 60, 28), sfRight);
 
                         g.DrawString($"تاريخ العرض: {DateTime.Now:yyyy/MM/dd hh:mm tt}", fBold, Brushes.DarkSlateGray, new RectangleF(50, y + 10, width / 2 - 80, 28), sfRight);
@@ -757,7 +786,7 @@ namespace ChickenDist.Core
                         int tWidth = width - 80;
                         int thH = 42;
 
-                        g.FillRectangle(brGreenDark, tLeft, y, tWidth, thH);
+                        g.FillRectangle(brSecondary, tLeft, y, tWidth, thH);
                         g.DrawRectangle(pBorder, tLeft, y, tWidth, thH);
 
                         int[] colW = { 130, 420, 130, 90, 100, 120, 170 };
@@ -800,7 +829,7 @@ namespace ChickenDist.Core
                             {
                                 curX -= colW[c];
                                 var sf = (c == 1) ? sfRight : sfCenter;
-                                Brush brush = (c == 6) ? brGreenDark : Brushes.Black;
+                                Brush brush = (c == 6) ? brPrimary : Brushes.Black;
                                 var font = (c == 6 || c == 1) ? fBold : fNorm;
 
                                 g.DrawString(rowVals[c], font, brush, new RectangleF(curX + 4, y + 7, colW[c] - 8, rowH - 7), sf);
@@ -823,7 +852,7 @@ namespace ChickenDist.Core
                             {
                                 g.DrawString($"ملاحظات: {notes}", fSmall, Brushes.DarkSlateGray, new RectangleF(tLeft + 360, y + 18, 420, 28), sfCenter);
                             }
-                            g.DrawString($"الصافي المطلوب: {net:N2} ج", fTitle, brGreenDark, new RectangleF(tLeft + 20, y + 14, 340, 36), sfLeft);
+                            g.DrawString($"الصافي المطلوب: {net:N2} ج", fTitle, brPrimary, new RectangleF(tLeft + 20, y + 14, 340, 36), sfLeft);
                         }
 
                         // Footer Page Number & Sign
