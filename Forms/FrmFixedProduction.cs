@@ -291,7 +291,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductName", HeaderText = "اسم المادة الخام", FillWeight = 38, ReadOnly = true });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المستهلكة", FillWeight = 16 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 12 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitCost", HeaderText = "سعر التكلفة", FillWeight = 15, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitCost", HeaderText = "سعر التكلفة", FillWeight = 15, ReadOnly = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 18, ReadOnly = true });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 20 });
 
@@ -307,7 +307,7 @@ namespace ChickenDist.Forms
 
             dgItems.CellValueChanged += (s, e) =>
             {
-                if (e.RowIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "Quantity")
+                if (e.RowIndex >= 0 && (dgItems.Columns[e.ColumnIndex].Name == "Quantity" || dgItems.Columns[e.ColumnIndex].Name == "UnitCost"))
                 {
                     UpdateRowTotal(e.RowIndex);
                     RecalculateTotals();
@@ -549,7 +549,7 @@ namespace ChickenDist.Forms
         {
             var dt = DbHelper.Query(@"
                 SELECT ProductID, ProductCode, ProductName, 
-                       COALESCE(CostPrice, PurchasePrice, 0) AS CostPrice, 
+                       COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
                        COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
                 FROM Products WHERE ProductID = @id",
                 DbHelper.P("@id", productId));
@@ -605,8 +605,18 @@ namespace ChickenDist.Forms
             int rowNum = 1;
             foreach (var itm in _currentBOM.Items)
             {
+                decimal cost = itm.RawCostPrice;
+                if (cost <= 0)
+                {
+                    var fallbackCostObj = DbHelper.Scalar(
+                        "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = @pid ORDER BY pi2.PurchaseItemID DESC), 0) FROM Products WHERE ProductID = @pid",
+                        DbHelper.P("@pid", itm.RawProductID));
+                    if (fallbackCostObj != null && fallbackCostObj != DBNull.Value)
+                        cost = Convert.ToDecimal(fallbackCostObj);
+                }
+
                 decimal scaledQty = Math.Round(itm.Quantity * multiplier, 4);
-                decimal totCost = scaledQty * itm.RawCostPrice;
+                decimal totCost = scaledQty * cost;
 
                 dgItems.Rows.Add(
                     itm.RawProductID,
@@ -615,7 +625,7 @@ namespace ChickenDist.Forms
                     itm.RawProductName,
                     scaledQty,
                     itm.UnitName,
-                    itm.RawCostPrice.ToString("N2"),
+                    cost.ToString("N2"),
                     totCost.ToString("N2"),
                     itm.Notes,
                     "❌"
@@ -670,9 +680,8 @@ namespace ChickenDist.Forms
                     }
 
                     var dt = DbHelper.Query(@"
-                        SELECT ProductID, ProductCode, ProductName, 
-                               COALESCE(CostPrice, PurchasePrice, 0) AS CostPrice, 
-                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                        SELECT ProductID, ProductCode, ProductName,                                COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
+                                COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
                         FROM Products WHERE ProductID = @id",
                         DbHelper.P("@id", pid));
 
