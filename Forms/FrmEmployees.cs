@@ -217,8 +217,8 @@ namespace ChickenDist.Forms
 
             // شريط أزرار العمليات أسفل البطاقة
             var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Theme.BgCard, Padding = new Padding(0, 6, 0, 0) };
-            btnNew = Theme.MakeButton("🆕 جديد", 380, 6, 85, 36, Color.FromArgb(40, 140, 70));
-            btnSave = Theme.MakeButton("💾 حفظ البيانات", 240, 6, 130, 36, Theme.Primary);
+            btnNew = Theme.MakeButton("➕ إضافة", 380, 6, 85, 36, Color.FromArgb(40, 140, 70));
+            btnSave = Theme.MakeButton("➕ حفظ الموظف", 240, 6, 130, 36, Color.FromArgb(40, 140, 70));
             btnDelete = Theme.MakeButton("🗑 إيقاف", 150, 6, 80, 36, Color.FromArgb(200, 50, 60));
             btnPerms = Theme.MakeButton("🔐 الصلاحيات", 10, 6, 130, 36, Color.FromArgb(75, 45, 140));
 
@@ -700,6 +700,12 @@ namespace ChickenDist.Forms
             chkCanSellInstallment.Checked = dr["CanSellInstallment"] == DBNull.Value || Convert.ToBoolean(dr["CanSellInstallment"]);
             chkCanEditShippingCharge.Checked = dr.Table.Columns.Contains("CanEditShippingCharge") && (dr["CanEditShippingCharge"] == DBNull.Value || Convert.ToBoolean(dr["CanEditShippingCharge"]));
             chkCanSelectDriver.Checked = !dr.Table.Columns.Contains("CanSelectDriver") || dr["CanSelectDriver"] == DBNull.Value || Convert.ToBoolean(dr["CanSelectDriver"]);
+
+            if (btnSave != null)
+            {
+                btnSave.Text = "💾 حفظ البيانات";
+                btnSave.BackColor = Theme.Primary;
+            }
         }
 
         private void ClearDetail()
@@ -729,6 +735,12 @@ namespace ChickenDist.Forms
             chkCanSellInstallment.Checked = true;
             chkCanEditShippingCharge.Checked = true;
             chkCanSelectDriver.Checked = true;
+
+            if (btnSave != null)
+            {
+                btnSave.Text = "➕ حفظ الموظف";
+                btnSave.BackColor = Color.FromArgb(40, 140, 70);
+            }
         }
 
         private void BtnSave_Click(object sender, EventArgs e)

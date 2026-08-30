@@ -282,8 +282,8 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(lblBalance);
             y += 46;
 
-            btnSave = Theme.MakeButton("💾 حفظ التعديل", 215, y, 100, 36, Color.FromArgb(245, 158, 11));
-            btnNew = Theme.MakeButton("🆕 عميل جديد", 115, y, 95, 36, Color.FromArgb(16, 185, 129));
+            btnSave = Theme.MakeButton("➕ حفظ العميل", 215, y, 100, 36, Color.FromArgb(16, 185, 129));
+            btnNew = Theme.MakeButton("➕ إضافة", 115, y, 95, 36, Color.FromArgb(37, 99, 235));
             btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 100, 36, Color.FromArgb(239, 68, 68)); y += 42;
 
             btnPayment = Theme.MakeButton("💵 تحصيل نقدية", 215, y, 100, 34, Color.FromArgb(5, 150, 105));
@@ -448,6 +448,12 @@ namespace ChickenDist.Forms
                 lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value + " | الفوارغ: " + row.Cells["CratesBalance"].Value;
             else
                 lblBalance.Text = "الرصيد المالي: " + row.Cells["Balance"].Value;
+
+            if (btnSave != null)
+            {
+                btnSave.Text = "💾 حفظ التعديل";
+                btnSave.BackColor = Color.FromArgb(245, 158, 11);
+            }
         }
 
         private string GetSelectedPaymentType()
@@ -506,6 +512,12 @@ namespace ChickenDist.Forms
             if (cmbPaymentType != null && cmbPaymentType.Items.Count > 0) cmbPaymentType.SelectedIndex = 0;
             txtNotes.Clear();
             lblBalance.Text = "الرصيد الحالي: ---";
+
+            if (btnSave != null)
+            {
+                btnSave.Text = "➕ حفظ العميل";
+                btnSave.BackColor = Color.FromArgb(16, 185, 129);
+            }
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -522,10 +534,15 @@ namespace ChickenDist.Forms
             }
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم العميل"); return; }
 
-            // ─── فحص تكرار الاسم ───
-            if (ClientDAL.IsDuplicateName(txtName.Text.Trim(), _selectedID))
+            // ─── فحص تكرار الاسم المتقدم بالكامل وبالاسم الثنائي ───
+            if (ClientDAL.CheckDuplicateName(txtName.Text.Trim(), _selectedID, out string dupName, out string dupCode, out string dupReason))
             {
-                MessageBox.Show($"⚠️ يوجد عميل آخر بنفس الاسم: \"{txtName.Text.Trim()}\"\nيرجى استخدام اسم مختلف أو البحث عن العميل الموجود.",
+                MessageBox.Show(
+                    $"⚠️ لا يمكن الحفظ لمنع التكرار والتضارب المحاسبي:\n\n" +
+                    $"يوجد عميل مسجل مسبقاً ({dupReason}):\n" +
+                    $"• الاسم المسجل: \"{dupName}\"\n" +
+                    $"• كود العميل: {dupCode}\n\n" +
+                    $"💡 للتسجيل: يرجى كتابة الاسم ثلاثياً أو إضافة لقب/منطقة لتمييز العميل الجديد.",
                     "تكرار اسم العميل", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtName.Focus();
                 return;

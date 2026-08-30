@@ -153,11 +153,11 @@ namespace ChickenDist.Forms
             bool canEdit = Session.IsAdmin || Session.CanEdit("SafeAccounts");
             bool canDelete = Session.IsAdmin || Session.CanDelete("SafeAccounts");
 
-            btnNew = Theme.MakeButton("🆕 جديد", 20, 280, 80, 38, Color.FromArgb(60, 100, 60));
+            btnNew = Theme.MakeButton("➕ إضافة", 20, 280, 80, 38, Color.FromArgb(60, 100, 60));
             btnNew.Visible = canAdd;
             btnNew.Click += (s, e) => ClearFields();
 
-            btnSave = Theme.MakeButton("💾 حفظ الحساب", 110, 280, 110, 38, Theme.Accent);
+            btnSave = Theme.MakeButton("➕ حفظ الحساب", 110, 280, 110, 38, Theme.Accent);
             btnSave.Visible = canAdd || canEdit;
             btnSave.Click += BtnSave_Click;
 
@@ -257,6 +257,8 @@ namespace ChickenDist.Forms
                     chkActive.Enabled = canEdit;
                     btnDelete.Enabled = canDelete;
                 }
+
+                if (btnSave != null) btnSave.Text = "💾 حفظ الحساب";
             }
         }
 
@@ -280,6 +282,7 @@ namespace ChickenDist.Forms
             chkActive.Checked = true;
             chkActive.Enabled = true;
             btnDelete.Enabled = false;
+            if (btnSave != null) btnSave.Text = "➕ حفظ الحساب";
             txtName.Focus();
         }
 

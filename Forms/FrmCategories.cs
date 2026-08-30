@@ -84,8 +84,8 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(chkActive);
             y += 50;
 
-            btnNew = Theme.MakeButton("🆕 جديد", 175, y, 70, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("💾 حفظ", 95, y, 75, 32, Theme.Accent);
+            btnNew = Theme.MakeButton("➕ إضافة", 175, y, 70, 32, Color.FromArgb(60, 100, 60));
+            btnSave = Theme.MakeButton("➕ حفظ", 95, y, 75, 32, Theme.Accent);
             btnDelete = Theme.MakeButton("🗑️ إيقاف", 15, y, 75, 32, Color.FromArgb(140, 40, 40));
 
             btnNew.Click += (s, e) => ClearDetail();
@@ -162,6 +162,7 @@ namespace ChickenDist.Forms
             txtName.Text = r["CategoryName"].ToString();
             chkActive.Checked = Convert.ToBoolean(r["IsActive"]);
             btnDelete.Enabled = true;
+            if (btnSave != null) btnSave.Text = "💾 حفظ";
         }
 
         private void ClearDetail()
@@ -170,6 +171,7 @@ namespace ChickenDist.Forms
             txtName.Clear();
             chkActive.Checked = true;
             btnDelete.Enabled = false;
+            if (btnSave != null) btnSave.Text = "➕ حفظ";
             txtName.Focus();
         }
 

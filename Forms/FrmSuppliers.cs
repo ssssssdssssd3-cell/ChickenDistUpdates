@@ -230,8 +230,8 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(lblBalance);
             y += 46;
 
-            btnSave = Theme.MakeButton("💾 حفظ التعديل", 215, y, 100, 36, Color.FromArgb(245, 158, 11));
-            btnNew = Theme.MakeButton("🆕 مورد جديد", 115, y, 95, 36, Color.FromArgb(16, 185, 129));
+            btnSave = Theme.MakeButton("➕ حفظ المورد", 215, y, 100, 36, Color.FromArgb(16, 185, 129));
+            btnNew = Theme.MakeButton("➕ إضافة", 115, y, 95, 36, Color.FromArgb(37, 99, 235));
             btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 100, 36, Color.FromArgb(239, 68, 68));
             y += 42;
 
@@ -377,6 +377,12 @@ namespace ChickenDist.Forms
             nudOpening.Value = Convert.ToDecimal(dr["OpeningBalance"]);
             chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
             lblBalance.Text = "الرصيد: " + row.Cells["Balance"].Value;
+
+            if (btnSave != null)
+            {
+                btnSave.Text = "💾 حفظ التعديل";
+                btnSave.BackColor = Color.FromArgb(245, 158, 11);
+            }
         }
 
         private void ClearDetail()
@@ -386,6 +392,12 @@ namespace ChickenDist.Forms
             txtName.Clear(); txtPhone.Clear(); txtAddress.Clear();
             nudOpening.Value = 0; chkActive.Checked = true;
             lblBalance.Text = "الرصيد الحالي: ---";
+
+            if (btnSave != null)
+            {
+                btnSave.Text = "➕ حفظ المورد";
+                btnSave.BackColor = Color.FromArgb(16, 185, 129);
+            }
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -402,10 +414,15 @@ namespace ChickenDist.Forms
             }
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم المورد"); return; }
 
-            // ─── فحص تكرار الاسم ───
-            if (SupplierDAL.IsDuplicateName(txtName.Text.Trim(), _selectedID))
+            // ─── فحص تكرار الاسم المتقدم بالكامل وبالاسم الثنائي ───
+            if (SupplierDAL.CheckDuplicateName(txtName.Text.Trim(), _selectedID, out string dupName, out string dupCode, out string dupReason))
             {
-                MessageBox.Show($"⚠️ يوجد مورد آخر بنفس الاسم: \"{txtName.Text.Trim()}\"\nيرجى استخدام اسم مختلف أو البحث عن المورد الموجود.",
+                MessageBox.Show(
+                    $"⚠️ لا يمكن الحفظ لمنع التكرار والتضارب المحاسبي:\n\n" +
+                    $"يوجد مورد مسجل مسبقاً ({dupReason}):\n" +
+                    $"• الاسم المسجل: \"{dupName}\"\n" +
+                    $"• كود المورد: {dupCode}\n\n" +
+                    $"💡 للتسجيل: يرجى كتابة الاسم ثلاثياً أو إضافة تمييز لاسم المورد الجديد.",
                     "تكرار اسم المورد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtName.Focus();
                 return;

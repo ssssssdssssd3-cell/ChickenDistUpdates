@@ -1005,14 +1005,38 @@ namespace ChickenDist.DAL
 
 
         // ─── فحص التكرار ───
-        /// <summary>هل يوجد مورد آخر بنفس الاسم (لمنع التكرار)</summary>
+        /// <summary>فحص متقدم لمنع تكرار اسم المورد بالكامل أو بالاسم الثنائي</summary>
+        public static bool CheckDuplicateName(string name, int currentID, out string matchedName, out string matchedCode, out string matchReason)
+        {
+            matchedName = "";
+            matchedCode = "";
+            matchReason = "";
+
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var dt = DbHelper.Query(
+                "SELECT SupplierID, SupplierCode, SupplierName FROM Suppliers WHERE SupplierID != @id AND IsActive = 1",
+                DbHelper.P("@id", currentID));
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string existingName = row["SupplierName"]?.ToString() ?? "";
+                if (ArabicNameHelper.IsDuplicate(name, existingName, out string reason))
+                {
+                    matchedName = existingName;
+                    matchedCode = row["SupplierCode"]?.ToString() ?? "";
+                    matchReason = reason;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>هل يوجد مورد آخر بنفس الاسم أو مطابق للاسم الثنائي (لمنع التكرار)</summary>
         public static bool IsDuplicateName(string name, int currentID = 0)
         {
-            if (string.IsNullOrWhiteSpace(name)) return false;
-            var res = DbHelper.Scalar(
-                "SELECT COUNT(1) FROM Suppliers WHERE SupplierName = @n AND SupplierID != @id",
-                DbHelper.P("@n", name.Trim()), DbHelper.P("@id", currentID));
-            return Convert.ToInt32(res) > 0;
+            return CheckDuplicateName(name, currentID, out _, out _, out _);
         }
 
         /// <summary>هل يوجد مورد آخر بنفس رقم الهاتف (لمنع التكرار)</summary>
@@ -1352,14 +1376,38 @@ namespace ChickenDist.DAL
 
 
         // ─── فحص التكرار ───
-        /// <summary>هل يوجد عميل آخر بنفس الاسم (لمنع التكرار)</summary>
+        /// <summary>فحص متقدم لمنع تكرار اسم العميل بالكامل أو بالاسم الثنائي</summary>
+        public static bool CheckDuplicateName(string name, int currentID, out string matchedName, out string matchedCode, out string matchReason)
+        {
+            matchedName = "";
+            matchedCode = "";
+            matchReason = "";
+
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var dt = DbHelper.Query(
+                "SELECT ClientID, ClientCode, ClientName FROM Clients WHERE ClientID != @id AND IsActive = 1",
+                DbHelper.P("@id", currentID));
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string existingName = row["ClientName"]?.ToString() ?? "";
+                if (ArabicNameHelper.IsDuplicate(name, existingName, out string reason))
+                {
+                    matchedName = existingName;
+                    matchedCode = row["ClientCode"]?.ToString() ?? "";
+                    matchReason = reason;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>هل يوجد عميل آخر بنفس الاسم أو مطابق للاسم الثنائي (لمنع التكرار)</summary>
         public static bool IsDuplicateName(string name, int currentID = 0)
         {
-            if (string.IsNullOrWhiteSpace(name)) return false;
-            var res = DbHelper.Scalar(
-                "SELECT COUNT(1) FROM Clients WHERE ClientName = @n AND ClientID != @id",
-                DbHelper.P("@n", name.Trim()), DbHelper.P("@id", currentID));
-            return Convert.ToInt32(res) > 0;
+            return CheckDuplicateName(name, currentID, out _, out _, out _);
         }
 
         /// <summary>هل يوجد عميل آخر بنفس رقم الهاتف (لمنع التكرار)</summary>

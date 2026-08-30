@@ -389,8 +389,8 @@ namespace ChickenDist.Forms
                 Margin = new Padding(0, 6, 0, 0), 
                 Width = 275
             };
-            btnNew    = ActionBtn("🆕 جديد",  Color.FromArgb(40, 120, 60));
-            btnSave   = ActionBtn("💾 حفظ",   Theme.Accent);
+            btnNew    = ActionBtn("➕ إضافة",  Color.FromArgb(40, 120, 60));
+            btnSave   = ActionBtn("➕ حفظ",   Theme.Accent);
             btnDelete = ActionBtn("⛔ إيقاف", Color.FromArgb(170, 45, 45));
             btnNew.Click    += (s, e) => ClearDetail();
             btnSave.Click   += BtnSave_Click;
@@ -456,6 +456,7 @@ namespace ChickenDist.Forms
                 chkActive.Checked = Convert.ToBoolean(r["IsActive"]);
                 lblFormTitle.Text = $"✏ تعديل: {txtName.Text}";
                 btnDelete.Enabled = (_selectedID != 1);
+                if (btnSave != null) btnSave.Text = "💾 حفظ";
             }
 
             // تحميل لوحة الكميات
@@ -571,6 +572,7 @@ namespace ChickenDist.Forms
             chkActive.Checked = true;
             btnDelete.Enabled = false;
             lblFormTitle.Text = "➕ مخزن جديد";
+            if (btnSave != null) btnSave.Text = "➕ حفظ";
             txtName.Focus();
         }
 

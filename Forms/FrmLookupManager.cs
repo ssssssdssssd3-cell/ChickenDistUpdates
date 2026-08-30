@@ -114,8 +114,8 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(txtName);
             y += 70;
 
-            btnNew = Theme.MakeButton("🆕 جديد", 195, y, 70, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("💾 حفظ", 105, y, 80, 32, Theme.Accent);
+            btnNew = Theme.MakeButton("➕ إضافة", 195, y, 70, 32, Color.FromArgb(60, 100, 60));
+            btnSave = Theme.MakeButton("➕ حفظ", 105, y, 80, 32, Theme.Accent);
             btnDelete = Theme.MakeButton("🗑️ حذف", 15, y, 80, 32, Color.FromArgb(140, 40, 40));
 
             btnNew.Click += (s, e) => ClearDetail();
@@ -183,6 +183,7 @@ namespace ChickenDist.Forms
             txtCode.Text = dgItems.SelectedRows[0].Cells["Code"].Value?.ToString() ?? "";
             txtName.Text = dgItems.SelectedRows[0].Cells["Name"].Value?.ToString() ?? "";
             btnDelete.Enabled = true;
+            if (btnSave != null) btnSave.Text = "💾 حفظ";
         }
 
         private void ClearDetail()
@@ -191,6 +192,7 @@ namespace ChickenDist.Forms
             txtCode.Text = "تلقائي";
             txtName.Clear();
             btnDelete.Enabled = false;
+            if (btnSave != null) btnSave.Text = "➕ حفظ";
             txtName.Focus();
         }
 
