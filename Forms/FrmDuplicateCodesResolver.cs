@@ -16,7 +16,7 @@ namespace ChickenDist.Forms
     {
         private ComboBox cboFilterType;
         private TextBox txtSearch;
-        private Button btnScan, btnAutoFixCodes, btnAutoFixBarcodes, btnMergeSelected, btnEditCode, btnPrintReport, btnClose;
+        private Button btnScan, btnAutoFixCodes, btnAutoFixBarcodes, btnMergeSelected, btnEditCode, btnPrintReport, btnModifiedBarcodeReport, btnClose;
         private DataGridView dgDuplicates;
         private Label lblStats;
 
@@ -151,13 +151,16 @@ namespace ChickenDist.Forms
             btnEditCode = Theme.MakeButton("✏️ تعديل كود الصنف", 0, 0, 140, 35, Theme.Accent);
             btnEditCode.Click += BtnEditCode_Click;
 
-            btnPrintReport = Theme.MakeButton("🖨️ طباعة تقرير التكرار", 0, 0, 160, 35, Theme.Secondary);
+            btnModifiedBarcodeReport = Theme.MakeButton("🏷️ تقرير وطباعة باركود الأصناف المعدلة", 0, 0, 240, 35, Color.FromArgb(13, 148, 136));
+            btnModifiedBarcodeReport.Click += BtnModifiedBarcodeReport_Click;
+
+            btnPrintReport = Theme.MakeButton("🖨️ طباعة تقرير التكرار", 0, 0, 150, 35, Theme.Secondary);
             btnPrintReport.Click += BtnPrintReport_Click;
 
-            btnClose = Theme.MakeButton("إغلاق", 0, 0, 90, 35, Color.FromArgb(100, 116, 139));
+            btnClose = Theme.MakeButton("إغلاق", 0, 0, 80, 35, Color.FromArgb(100, 116, 139));
             btnClose.Click += (s, e) => this.Close();
 
-            pnlActions.Controls.AddRange(new Control[] { btnAutoFixCodes, btnAutoFixBarcodes, btnMergeSelected, btnEditCode, btnPrintReport, btnClose });
+            pnlActions.Controls.AddRange(new Control[] { btnAutoFixCodes, btnAutoFixBarcodes, btnMergeSelected, btnEditCode, btnModifiedBarcodeReport, btnPrintReport, btnClose });
 
             // 4. جدول عرض الأصناف المكررة
             dgDuplicates = new DataGridView
@@ -484,6 +487,150 @@ namespace ChickenDist.Forms
 
             using (var dlg = new PrintPreviewDialog { Document = doc, Width = 900, Height = 700 })
             {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private void BtnModifiedBarcodeReport_Click(object sender, EventArgs e)
+        {
+            var dt = DbHelper.Query(@"
+                SELECT p.ProductID, p.ProductCode, p.ProductName, ISNULL(c.CategoryName, 'عام') AS CategoryName, 
+                       p.SalePrice, ISNULL((SELECT SUM(Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID), 0) AS CurrentStock
+                FROM Products p
+                LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
+                WHERE p.IsActive = 1 AND p.CategoryID = 3
+                ORDER BY p.ProductID ASC");
+
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف مسجلة في تصنيف منزلي حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "🏷️ تقرير وطباعة ملصقات الباركود للأصناف المعدلة (تصنيف منزلي)";
+                dlg.Size = new Size(1050, 680);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.BackColor = Theme.BgMain;
+                dlg.Font = Theme.FontMain;
+
+                var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Color.FromArgb(30, 41, 59), Padding = new Padding(15, 10, 15, 10) };
+                var lblT = new Label { Text = $"📦 قائمة الأصناف المعدلة التابعة لتصنيف منزلي (إجمالي {dt.Rows.Count} صنف بأكوادها الجديدة)", ForeColor = Color.White, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), AutoSize = true, Location = new Point(15, 12) };
+                pnlTop.Controls.Add(lblT);
+
+                var pnlBot = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 56, BackColor = Theme.BgCard, Padding = new Padding(10, 9, 10, 9), RightToLeft = RightToLeft.Yes };
+
+                var btnOpenBulk = Theme.MakeButton("🏷️ فتح في شاشة طباعة ملصقات الباركود", 0, 0, 260, 36, Theme.Success);
+                btnOpenBulk.Click += (s2, e2) =>
+                {
+                    var frmBulk = new FrmBulkPrintBarcodes();
+                    frmBulk.Show(this);
+                };
+
+                var btnPrintA4 = Theme.MakeButton("📄 طباعة تقرير جدول A4", 0, 0, 180, 36, Theme.Primary);
+                btnPrintA4.Click += (s2, e2) =>
+                {
+                    PrintDocument doc = new PrintDocument();
+                    int curRow = 0;
+                    doc.PrintPage += (s3, ev) =>
+                    {
+                        var g = ev.Graphics;
+                        float y = 30;
+                        var fontTitle = new Font("Segoe UI", 14f, FontStyle.Bold);
+                        var fontH = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                        var fontB = new Font("Segoe UI", 9f);
+
+                        g.DrawString("تقرير الأصناف المعدلة وتحديث الأكواد (تصنيف منزلي)", fontTitle, Brushes.DarkSlateBlue, new PointF(ev.PageBounds.Width / 2 - 180, y));
+                        y += 30;
+                        g.DrawString($"تاريخ التقرير: {DateTime.Now:yyyy/MM/dd hh:mm tt}   |   إجمالي الأصناف: {dt.Rows.Count} صنف", fontB, Brushes.Gray, new PointF(ev.PageBounds.Width / 2 - 140, y));
+                        y += 28;
+
+                        float[] colW = { 60, 80, 240, 100, 100, 100 };
+                        string[] hdrs = { "ID", "الكود الجديد", "اسم الصنف", "التصنيف", "سعر البيع", "رصيد المخزن" };
+
+                        float x = 40;
+                        for (int i = 0; i < hdrs.Length; i++)
+                        {
+                            g.FillRectangle(Brushes.LightSteelBlue, x, y, colW[i], 24);
+                            g.DrawRectangle(Pens.SlateGray, x, y, colW[i], 24);
+                            g.DrawString(hdrs[i], fontH, Brushes.Black, x + 4, y + 4);
+                            x += colW[i];
+                        }
+                        y += 24;
+
+                        while (curRow < dt.Rows.Count)
+                        {
+                            if (y > ev.PageBounds.Height - 60)
+                            {
+                                ev.HasMorePages = true;
+                                return;
+                            }
+
+                            var r = dt.Rows[curRow];
+                            x = 40;
+                            string[] vals = {
+                                r["ProductID"].ToString(),
+                                r["ProductCode"].ToString(),
+                                r["ProductName"].ToString(),
+                                r["CategoryName"].ToString(),
+                                Convert.ToDecimal(r["SalePrice"]).ToString("N2"),
+                                Convert.ToDecimal(r["CurrentStock"]).ToString("N2")
+                            };
+
+                            for (int i = 0; i < vals.Length; i++)
+                            {
+                                g.DrawRectangle(Pens.LightGray, x, y, colW[i], 20);
+                                g.DrawString(vals[i], fontB, Brushes.Black, x + 4, y + 2);
+                                x += colW[i];
+                            }
+                            y += 20;
+                            curRow++;
+                        }
+                        ev.HasMorePages = false;
+                    };
+
+                    using (var prev = new PrintPreviewDialog { Document = doc, Width = 950, Height = 700 })
+                    {
+                        prev.ShowDialog(dlg);
+                    }
+                };
+
+                var btnCloseDlg = Theme.MakeButton("إغلاق", 0, 0, 90, 36, Color.FromArgb(100, 116, 139));
+                btnCloseDlg.Click += (s2, e2) => dlg.Close();
+
+                pnlBot.Controls.AddRange(new Control[] { btnOpenBulk, btnPrintA4, btnCloseDlg });
+
+                var dg = new DataGridView
+                {
+                    Dock = DockStyle.Fill,
+                    BackgroundColor = Theme.BgCard,
+                    BorderStyle = BorderStyle.None,
+                    RowHeadersVisible = false,
+                    AllowUserToAddRows = false,
+                    ReadOnly = true,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    DataSource = dt,
+                    DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain },
+                    ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) },
+                    EnableHeadersVisualStyles = false,
+                    RowTemplate = { Height = 28 }
+                };
+
+                if (dg.Columns["ProductID"] != null) dg.Columns["ProductID"].HeaderText = "ID";
+                if (dg.Columns["ProductCode"] != null) dg.Columns["ProductCode"].HeaderText = "الكود الجديد";
+                if (dg.Columns["ProductName"] != null) dg.Columns["ProductName"].HeaderText = "اسم الصنف";
+                if (dg.Columns["CategoryName"] != null) dg.Columns["CategoryName"].HeaderText = "التصنيف";
+                if (dg.Columns["SalePrice"] != null) dg.Columns["SalePrice"].HeaderText = "سعر البيع";
+                if (dg.Columns["CurrentStock"] != null) dg.Columns["CurrentStock"].HeaderText = "رصيد المخزن";
+
+                dlg.Controls.Add(dg);
+                dlg.Controls.Add(pnlBot);
+                dlg.Controls.Add(pnlTop);
+
                 dlg.ShowDialog(this);
             }
         }
