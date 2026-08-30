@@ -326,13 +326,24 @@ namespace ChickenDist.Forms
 
 			// زر تقرير الأصناف الراكدة
 			var btnStagnant = Theme.MakeButton("💤 الأصناف الراكدة", Color.FromArgb(140, 60, 160));
-			btnStagnant.Size = new Size(150, 34);
+			btnStagnant.Size = new Size(130, 34);
 			btnStagnant.Margin = new Padding(4, 0, 4, 0);
 			btnStagnant.Click += delegate
 			{
 				new FrmReports("Sales", 0, "StagnantProducts").ShowDialog();
 			};
 			flowLayoutPanel.Controls.Add(btnStagnant);
+
+			// زر تقرير فواتير اليومية المفصل (زي الشيت)
+			var btnDailyInvoicesSheet = Theme.MakeButton("📑 فواتير اليومية (شيت بالأصناف)", Color.FromArgb(14, 165, 233));
+			btnDailyInvoicesSheet.Size = new Size(200, 34);
+			btnDailyInvoicesSheet.Margin = new Padding(4, 0, 4, 0);
+			btnDailyInvoicesSheet.Click += delegate
+			{
+				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value);
+				frm.Show();
+			};
+			flowLayoutPanel.Controls.Add(btnDailyInvoicesSheet);
 			// ─── منطقة المحتوى: صفان بنسب مرنة (الفواتير أعلاه والأصناف أسفله تحت بعض) ───
 			TableLayoutPanel tblContent = new TableLayoutPanel
 			{
@@ -1002,6 +1013,15 @@ namespace ChickenDist.Forms
 			var itemPreviewA5 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A5 نصف صفحة)");
 			itemPreviewA5.Click += (s2, e2) => new FrmPrintSale(saleID, "A5", showPreview: true);
 
+			var itemPrintDailySheet = new ToolStripMenuItem("📑 تقرير فواتير اليومية الشامل (شيت A4 مع كافة الأصناف)");
+			itemPrintDailySheet.Click += (s2, e2) =>
+			{
+				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value);
+				frm.Show();
+			};
+
+			menu.Items.Add(itemPrintDailySheet);
+			menu.Items.Add(new ToolStripSeparator());
 			menu.Items.Add(itemPrintReceipt);
 			menu.Items.Add(itemPreviewReceipt);
 			menu.Items.Add(new ToolStripSeparator());

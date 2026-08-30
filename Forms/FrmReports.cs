@@ -480,7 +480,19 @@ namespace ChickenDist.Forms
 				Margin = new Padding(0),
 				RightToLeft = RightToLeft.Yes
 			};
+
+			var btnDailyInvoicesSheet = Theme.MakeButton("📑 شيت فواتير اليومية", Color.FromArgb(14, 165, 233));
+			btnDailyInvoicesSheet.Size = new Size(160, 36);
+			btnDailyInvoicesSheet.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+			btnDailyInvoicesSheet.Margin = new Padding(3, 2, 3, 2);
+			btnDailyInvoicesSheet.Click += delegate
+			{
+				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value);
+				frm.Show(this);
+			};
+
 			pnlBannerActions.Controls.Add(btnLoad);
+			pnlBannerActions.Controls.Add(btnDailyInvoicesSheet);
 			pnlBannerActions.Controls.Add(btnPrint);
 			pnlBannerActions.Controls.Add(btnExportPdf);
 			pnlBannerActions.Controls.Add(btnExportExcel);

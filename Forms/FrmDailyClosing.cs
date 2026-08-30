@@ -81,12 +81,21 @@ namespace ChickenDist.Forms
             btnLoad.Click += (s, e) => LoadReport();
 
             var btnPrint = Theme.MakeButton("🖨️ طباعة", Theme.Primary);
-            btnPrint.Size   = new Size(110, 34);
+            btnPrint.Size   = new Size(100, 34);
             btnPrint.Dock   = DockStyle.Right;
             btnPrint.Click += BtnPrint_Click;
 
+            var btnDetailedInvoices = Theme.MakeButton("📑 فواتير اليومية (شيت بالأصناف)", Color.FromArgb(14, 165, 233));
+            btnDetailedInvoices.Size = new Size(210, 34);
+            btnDetailedInvoices.Dock = DockStyle.Right;
+            btnDetailedInvoices.Click += (s, e) =>
+            {
+                var frm = new FrmDailyInvoicesSheetReport(_dtpDate.Value);
+                frm.Show(this);
+            };
+
             var btnWhatsApp = Theme.MakeButton("📲 واتساب التقفيل", Theme.Accent);
-            btnWhatsApp.Size   = new Size(140, 34);
+            btnWhatsApp.Size   = new Size(130, 34);
             btnWhatsApp.BackColor = Color.FromArgb(37, 211, 102);
             btnWhatsApp.Dock   = DockStyle.Right;
             btnWhatsApp.Click += BtnWhatsAppClosing_Click;
@@ -101,7 +110,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 8, 10, 0)
             };
 
-            toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnPrint, btnWhatsApp, _lblProductCountInfo });
+            toolbar.Controls.AddRange(new Control[] { lblDate, _dtpDate, btnLoad, btnDetailedInvoices, btnPrint, btnWhatsApp, _lblProductCountInfo });
             Controls.Add(toolbar);
 
             // ── Summary footer ────────────────────────────────────────────────
