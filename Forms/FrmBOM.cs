@@ -1,15 +1,18 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
     /// <summary>
-    /// شاشة تحديد مواد التصنيع (شجرة المنتج - Bill of Materials / BOM)
+    /// Ø´Ø§Ø´Ø© ØªØ­Ø¯ÙŠØ¯ ÙˆØªØ¹Ø¯ÙŠÙ„ Ø´Ø¬Ø±Ø© ÙˆÙ…ÙƒÙˆÙ†Ø§Øª Ø§Ù„ØªØµÙ†ÙŠØ¹ (Bill of Materials / BOM)
+    /// Ø¨ØªØµÙ…ÙŠÙ… Ø°ÙƒÙŠ ÙˆØ¹Ù…Ù„ÙŠ ÙØ§Ø¦Ù‚ Ø§Ù„Ø³Ø±Ø¹Ø© ÙŠØ¯Ø¹Ù… Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ ÙˆØ§Ù„Ø¨Ø­Ø« Ø§Ù„Ù…Ø¨Ø§Ø´Ø±
     /// </summary>
     public class FrmBOM : Form
     {
@@ -24,6 +27,7 @@ namespace ChickenDist.Forms
         private NumericUpDown numOutputQty;
         private TextBox txtUnitName;
         private TextBox txtNotes;
+        private Label lblHeaderUnitCostBadge;
 
         // Controls - Raw Material Quick Add Bar
         private int _selectedRawProductID = 0;
@@ -34,18 +38,19 @@ namespace ChickenDist.Forms
         private Button btnBrowseRaw;
         private NumericUpDown numRawQty;
         private TextBox txtRawUnit;
-        private Label lblRawCost;
+        private NumericUpDown numRawCostPrice;
+        private Label lblRawTotalPreview;
         private Button btnAddRaw;
 
         // Grid
         private DataGridView dgItems;
 
-        // Summary Cards
+        // Summary Badges
         private Label lblTotalRawCost;
         private Label lblUnitCost;
         private Label lblItemsCount;
 
-        // Buttons
+        // Action Buttons
         private Button btnSave;
         private Button btnNew;
         private Button btnDelete;
@@ -53,6 +58,7 @@ namespace ChickenDist.Forms
 
         // Side List of Saved BOMs
         private TextBox txtSearchBOM;
+        private Label lblBOMCount;
         private DataGridView dgBOMList;
 
         public FrmBOM(int preselectedProductID = 0)
@@ -69,346 +75,340 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🏭 شجرة ومكونات التصنيع (BOM) - تحديد وتعديل وصفات الإنتاج";
-            this.Size = new Size(1150, 720);
-            this.MinimumSize = new Size(1000, 650);
+            this.Text = "ðŸŒ¿ Ø´Ø¬Ø±Ø© ÙˆÙ…ÙƒÙˆÙ†Ø§Øª Ø§Ù„ØªØµÙ†ÙŠØ¹ (BOM) - ØªØ­Ø¯ÙŠØ¯ ÙˆØªØ¹Ø¯ÙŠÙ„ ÙˆØµÙØ§Øª Ø§Ù„Ø¥Ù†ØªØ§Ø¬ Ø§Ù„Ù…Ø¹ÙŠØ§Ø±ÙŠØ©";
+            this.Size = new Size(1220, 760);
+            this.MinimumSize = new Size(1060, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
+            this.RightToLeftLayout = false; // Ù„Ù…Ù†Ø¹ ØªØ´ÙˆÙ‡ Ø§Ù„ØªØ®Ø·ÙŠØ· ÙÙŠ ÙˆÙŠÙ†Ø¯ÙˆØ² ÙÙˆØ±Ù…Ø²
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            // Main Layout: Editor on Right (100%), Side List on Left (330px)
-            var pnlMain = new TableLayoutPanel
+            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            // Ø§Ù„Ø­Ø§ÙˆÙŠØ© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©: Ù…Ø­Ø±Ø± Ø§Ù„ÙˆØµÙØ© (ÙŠÙ…ÙŠÙ† 70%) + Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ÙˆØµÙØ§Øª (ÙŠØ³Ø§Ø± 30%)
+            // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            var tblContainer = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 RowCount = 1,
                 RightToLeft = RightToLeft.Yes,
-                BackColor = Theme.BgMain
+                BackColor = Theme.BgMain,
+                Padding = new Padding(8)
             };
-            pnlMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // محرر الوصفة الحالية (على اليمين)
-            pnlMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 330f)); // قائمة الوصفات المحفوظة (على اليسار)
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            this.Controls.Add(pnlMain);
+            tblContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72f)); // 0: Ø§Ù„Ù…Ø­Ø±Ø± (Ø¹Ù„Ù‰ Ø§Ù„ÙŠÙ…ÙŠÙ†)
+            tblContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28f)); // 1: Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¬Ø§Ù†Ø¨ÙŠØ© (Ø¹Ù„Ù‰ Ø§Ù„ÙŠØ³Ø§Ø±)
+            tblContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            this.Controls.Add(tblContainer);
 
-            // ── 1. القائمة الجانبية (الوصفات المحفوظة - على اليسار) ──
-            var pnlSide = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(10),
-                RightToLeft = RightToLeft.Yes
-            };
-            pnlMain.Controls.Add(pnlSide, 1, 0);
-
-            var lblSideTitle = new Label
-            {
-                Text = "📋 الوصفات وشجر الإنتاج المسجلة",
-                Dock = DockStyle.Top,
-                Height = 30,
-                Font = Theme.FontBold,
-                ForeColor = Theme.Accent,
-                TextAlign = ContentAlignment.MiddleRight
-            };
-            pnlSide.Controls.Add(lblSideTitle);
-
-            txtSearchBOM = new TextBox
-            {
-                Dock = DockStyle.Top,
-                Height = 30,
-                Font = Theme.FontMain,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                TextAlign = HorizontalAlignment.Right
-            };
-            txtSearchBOM.TextChanged += (s, e) => LoadSavedBOMsList(txtSearchBOM.Text.Trim());
-            pnlSide.Controls.Add(txtSearchBOM);
-
-            var lblSearchHint = new Label
-            {
-                Text = "🔍 بحث بالاسم أو الكود:",
-                Dock = DockStyle.Top,
-                Height = 22,
-                ForeColor = Color.Gray,
-                Font = Theme.FontSmall,
-                TextAlign = ContentAlignment.MiddleRight
-            };
-            pnlSide.Controls.Add(lblSearchHint);
-
-            dgBOMList = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
-                RowHeadersVisible = false,
-                AllowUserToAddRows = false,
-                AllowUserToDeleteRows = false,
-                ReadOnly = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                MultiSelect = false,
-                RightToLeft = RightToLeft.Yes,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
-            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "BOMID", Visible = false });
-            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "المنتج النهائي", FillWeight = 60 });
-            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "OutputQty", HeaderText = "الكمية", FillWeight = 20 });
-            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemsCount", HeaderText = "الخامات", FillWeight = 20 });
-            dgBOMList.CellClick += (s, e) =>
-            {
-                if (e.RowIndex >= 0)
-                {
-                    int bomId = Convert.ToInt32(dgBOMList.Rows[e.RowIndex].Cells["BOMID"].Value);
-                    LoadBOMByID(bomId);
-                }
-            };
-            pnlSide.Controls.Add(dgBOMList);
-            dgBOMList.BringToFront();
-
-            // ── 2. المحرر الرئيسي للوصفة (على اليمين) ──
+            // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // 1. Ø§Ù„Ù…Ø­Ø±Ø± Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ Ù„Ù„ÙˆØµÙØ© (Ø§Ù„Ø¬Ø§Ù†Ø¨ Ø§Ù„Ø£ÙŠÙ…Ù†)
+            // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             var pnlEditor = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgMain,
-                Padding = new Padding(12, 10, 12, 10),
-                RightToLeft = RightToLeft.Yes
+                Padding = new Padding(4)
             };
-            pnlMain.Controls.Add(pnlEditor, 0, 0);
+            tblContainer.Controls.Add(pnlEditor, 0, 0);
 
-            // Header of Editor: المنتج النهائي المصنع (من اليمين لليسار)
-            var pnlTopHeader = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 82,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(10, 8, 10, 8),
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                RightToLeft = RightToLeft.Yes
-            };
-            pnlEditor.Controls.Add(pnlTopHeader);
+            // â”€â”€ Ø£) Ø¨Ø·Ø§Ù‚Ø© Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ Ø§Ù„Ù…ØµÙ†Ø¹ (Top Card) â”€â”€
+            var pnlFinishedCard = CreateCardPanel(130);
+            pnlFinishedCard.Dock = DockStyle.Top;
+            pnlEditor.Controls.Add(pnlFinishedCard);
 
-            // المجموعة 1: المنتج النهائي المصنع
-            var grpProduct = new Panel { Width = 390, Height = 64, Margin = new Padding(0, 0, 12, 0), BackColor = Color.Transparent };
-            var lblFinishedTitle = new Label
+            // ØªØ±ÙˆÙŠØ³Ø© Ø§Ù„Ø¨Ø·Ø§Ù‚Ø©
+            var pnlFinishedHeader = new Panel { Dock = DockStyle.Top, Height = 28, BackColor = Color.Transparent };
+            var lblFpTitle = new Label
             {
-                Text = "🎯 المنتج النهائي المصنع:",
-                Location = new Point(grpProduct.Width - 250, 2),
-                Width = 250,
-                Height = 22,
-                TextAlign = ContentAlignment.MiddleRight,
-                Font = Theme.FontBold,
+                Text = "ðŸŽ¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ Ø§Ù„Ù…ØµÙ†Ø¹ (Ø§Ù„Ù…Ø¹ÙŠØ§Ø±ÙŠ):",
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Theme.Accent
             };
-            grpProduct.Controls.Add(lblFinishedTitle);
+            pnlFinishedHeader.Controls.Add(lblFpTitle);
 
+            lblHeaderUnitCostBadge = new Label
+            {
+                Text = "ðŸ·ï¸ ØªÙƒÙ„ÙØ© Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ù…ØµÙ†Ø¹Ø©: 0.00 Ø¬.Ù…",
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(16, 185, 129),
+                BackColor = Color.FromArgb(240, 253, 244),
+                Padding = new Padding(8, 3, 8, 3)
+            };
+            pnlFinishedHeader.Controls.Add(lblHeaderUnitCostBadge);
+            pnlFinishedCard.Controls.Add(pnlFinishedHeader);
+
+            // Ø­Ù‚ÙˆÙ„ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ
+            var flowFinished = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 6, 0, 0)
+            };
+            pnlFinishedCard.Controls.Add(flowFinished);
+            flowFinished.BringToFront();
+
+            // 1. Ø­Ù‚Ù„ Ø§Ù„ØµÙ†Ù Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ
+            var pnlFpInput = new Panel { Width = 360, Height = 58, Margin = new Padding(0, 0, 10, 0) };
+            pnlFpInput.Controls.Add(new Label { Text = "Ø§Ù„ØµÙ†Ù Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ (Ø§ÙƒØªØ¨ ÙƒÙˆØ¯/Ø§Ø³Ù… Ø£Ùˆ Ø§Ø¶ØºØ· Ø¨Ø­Ø«):", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
+            
             txtFinishedProduct = new TextBox
             {
-                Location = new Point(122, 26),
-                Width = 268,
+                Location = new Point(90, 22),
+                Width = 270,
                 Height = 32,
-                ReadOnly = true,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                Font = Theme.FontBold,
-                TextAlign = HorizontalAlignment.Right
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
             };
-            txtFinishedProduct.Click += (s, e) => SelectFinishedProduct();
-            grpProduct.Controls.Add(txtFinishedProduct);
+            txtFinishedProduct.KeyDown += TxtFinishedProduct_KeyDown;
+            pnlFpInput.Controls.Add(txtFinishedProduct);
 
-            btnBrowseFinished = Theme.MakeButton("🔍 اختيار صنف", 2, 25, 115, 33, Theme.Primary);
+            btnBrowseFinished = Theme.MakeButton("ðŸ” Ø¨Ø­Ø«", 0, 21, 85, 33, Theme.Primary);
             btnBrowseFinished.Click += (s, e) => SelectFinishedProduct();
-            grpProduct.Controls.Add(btnBrowseFinished);
-            pnlTopHeader.Controls.Add(grpProduct);
+            pnlFpInput.Controls.Add(btnBrowseFinished);
+            flowFinished.Controls.Add(pnlFpInput);
 
-            // المجموعة 2: كمية الإنتاج المعيارية
-            var grpQty = new Panel { Width = 110, Height = 64, Margin = new Padding(0, 0, 12, 0), BackColor = Color.Transparent };
-            grpQty.Controls.Add(new Label { Text = "الكمية المعيارية:", Location = new Point(0, 2), Width = 110, Height = 22, TextAlign = ContentAlignment.MiddleRight });
+            // 2. Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø¹ÙŠØ§Ø±ÙŠØ©
+            var pnlOutputQty = new Panel { Width = 110, Height = 58, Margin = new Padding(0, 0, 10, 0) };
+            pnlOutputQty.Controls.Add(new Label { Text = "Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø¹ÙŠØ§Ø±ÙŠØ©:", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
             numOutputQty = new NumericUpDown
             {
-                Location = new Point(0, 26),
+                Location = new Point(0, 22),
                 Width = 110,
                 Height = 32,
                 DecimalPlaces = 2,
                 Minimum = 0.01m,
                 Maximum = 1000000m,
                 Value = 1m,
-                Font = Theme.FontBold,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 TextAlign = HorizontalAlignment.Center
             };
             numOutputQty.ValueChanged += (s, e) => RecalculateTotals();
-            grpQty.Controls.Add(numOutputQty);
-            pnlTopHeader.Controls.Add(grpQty);
+            pnlOutputQty.Controls.Add(numOutputQty);
+            flowFinished.Controls.Add(pnlOutputQty);
 
-            // المجموعة 3: الوحدة
-            var grpUnit = new Panel { Width = 90, Height = 64, Margin = new Padding(0, 0, 12, 0), BackColor = Color.Transparent };
-            grpUnit.Controls.Add(new Label { Text = "الوحدة:", Location = new Point(0, 2), Width = 90, Height = 22, TextAlign = ContentAlignment.MiddleRight });
+            // 3. Ø§Ù„ÙˆØ­Ø¯Ø©
+            var pnlUnit = new Panel { Width = 95, Height = 58, Margin = new Padding(0, 0, 10, 0) };
+            pnlUnit.Controls.Add(new Label { Text = "Ø§Ù„ÙˆØ­Ø¯Ø©:", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
             txtUnitName = new TextBox
             {
-                Location = new Point(0, 26),
-                Width = 90,
+                Location = new Point(0, 22),
+                Width = 95,
                 Height = 32,
-                Text = "قطعة",
+                Text = "Ù‚Ø·Ø¹Ø©",
                 Font = Theme.FontMain,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 TextAlign = HorizontalAlignment.Center
             };
-            grpUnit.Controls.Add(txtUnitName);
-            pnlTopHeader.Controls.Add(grpUnit);
+            pnlUnit.Controls.Add(txtUnitName);
+            flowFinished.Controls.Add(pnlUnit);
 
-            // المجموعة 4: ملاحظات الوصفة
-            var grpNotes = new Panel { Width = 230, Height = 64, Margin = new Padding(0, 0, 10, 0), BackColor = Color.Transparent };
-            grpNotes.Controls.Add(new Label { Text = "ملاحظات الوصفة المعيارية:", Location = new Point(0, 2), Width = 230, Height = 22, TextAlign = ContentAlignment.MiddleRight });
+            // 4. Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª
+            var pnlNotes = new Panel { Width = 230, Height = 58, Margin = new Padding(0, 0, 0, 0) };
+            pnlNotes.Controls.Add(new Label { Text = "Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„ÙˆØµÙØ© Ø§Ù„Ù…Ø¹ÙŠØ§Ø±ÙŠØ©:", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
             txtNotes = new TextBox
             {
-                Location = new Point(0, 26),
+                Location = new Point(0, 22),
                 Width = 230,
                 Height = 32,
                 Font = Theme.FontMain,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                TextAlign = HorizontalAlignment.Right
+                ForeColor = Theme.TextMain
             };
-            grpNotes.Controls.Add(txtNotes);
-            pnlTopHeader.Controls.Add(grpNotes);
+            pnlNotes.Controls.Add(txtNotes);
+            flowFinished.Controls.Add(pnlNotes);
 
-            // ── Quick Add Raw Material Bar: إضافة المادة الخام السريع (من اليمين لليسار) ──
-            var pnlQuickAdd = new FlowLayoutPanel
+            // â”€â”€ Ø¨) Ø´Ø±ÙŠØ· Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø³Ø±ÙŠØ¹ Ù„Ù„Ù…ÙˆØ§Ø¯ Ø§Ù„Ø®Ø§Ù… (Quick Add Bar - Height 85px) â”€â”€
+            var pnlQuickAdd = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 72,
-                BackColor = Color.FromArgb(30, 41, 59),
+                Height = 84,
+                BackColor = Color.FromArgb(241, 245, 249),
                 Padding = new Padding(10, 6, 10, 6),
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                RightToLeft = RightToLeft.Yes
+                Margin = new Padding(0, 6, 0, 6)
             };
             pnlEditor.Controls.Add(pnlQuickAdd);
             pnlQuickAdd.BringToFront();
 
-            // 1. المادة الخام المطلوبة
-            var grpRaw = new Panel { Width = 370, Height = 58, Margin = new Padding(0, 0, 12, 0), BackColor = Color.Transparent };
-            var lblAddRawTitle = new Label
+            var flowQuick = new FlowLayoutPanel
             {
-                Text = "📦 المادة الخام المطلوبة:",
-                Location = new Point(grpRaw.Width - 250, 2),
-                Width = 250,
-                Height = 20,
-                TextAlign = ContentAlignment.MiddleRight,
-                ForeColor = Color.WhiteSmoke,
-                Font = Theme.FontBold
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent
             };
-            grpRaw.Controls.Add(lblAddRawTitle);
+            pnlQuickAdd.Controls.Add(flowQuick);
 
+            // 1. Ø§Ù„Ù…Ø§Ø¯Ø© Ø§Ù„Ø®Ø§Ù…
+            var pnlRawInput = new Panel { Width = 310, Height = 64, Margin = new Padding(0, 0, 8, 0) };
+            pnlRawInput.Controls.Add(new Label { Text = "ðŸ“¦ Ø§Ù„Ù…Ø§Ø¯Ø© Ø§Ù„Ø®Ø§Ù… (ÙƒÙˆØ¯/Ø§Ø³Ù…/Ø¨Ø§Ø±ÙƒÙˆØ¯):", Dock = DockStyle.Top, Height = 20, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(30, 41, 59) });
+            
             txtRawProduct = new TextBox
             {
-                Location = new Point(112, 24),
-                Width = 258,
+                Location = new Point(80, 24),
+                Width = 230,
                 Height = 30,
-                ReadOnly = true,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                TextAlign = HorizontalAlignment.Right
+                BackColor = Color.White,
+                ForeColor = Color.Black,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            txtRawProduct.Click += (s, e) => SelectRawProduct();
-            grpRaw.Controls.Add(txtRawProduct);
+            txtRawProduct.KeyDown += TxtRawProduct_KeyDown;
+            pnlRawInput.Controls.Add(txtRawProduct);
 
-            btnBrowseRaw = Theme.MakeButton("🔍 بحث خامات", 2, 23, 105, 32, Color.FromArgb(51, 65, 85));
+            btnBrowseRaw = Theme.MakeButton("ðŸ” Ø®Ø§Ù…Ø§Øª", 0, 23, 76, 31, Color.FromArgb(71, 85, 105));
             btnBrowseRaw.Click += (s, e) => SelectRawProduct();
-            grpRaw.Controls.Add(btnBrowseRaw);
-            pnlQuickAdd.Controls.Add(grpRaw);
+            pnlRawInput.Controls.Add(btnBrowseRaw);
+            flowQuick.Controls.Add(pnlRawInput);
 
-            // 2. الكمية المطلوبة
-            var grpRawQty = new Panel { Width = 100, Height = 58, Margin = new Padding(0, 0, 12, 0), BackColor = Color.Transparent };
-            grpRawQty.Controls.Add(new Label { Text = "الكمية:", Location = new Point(0, 2), Width = 100, Height = 20, TextAlign = ContentAlignment.MiddleRight, ForeColor = Color.WhiteSmoke });
+            // 2. Ø§Ù„ÙˆØ­Ø¯Ø©
+            var pnlRawU = new Panel { Width = 75, Height = 64, Margin = new Padding(0, 0, 8, 0) };
+            pnlRawU.Controls.Add(new Label { Text = "Ø§Ù„ÙˆØ­Ø¯Ø©:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontSmall, ForeColor = Color.FromArgb(71, 85, 105) });
+            txtRawUnit = new TextBox
+            {
+                Location = new Point(0, 24),
+                Width = 75,
+                Height = 30,
+                Text = "Ù‚Ø·Ø¹Ø©",
+                Font = Theme.FontMain,
+                BackColor = Color.White,
+                ForeColor = Color.Black,
+                TextAlign = HorizontalAlignment.Center
+            };
+            pnlRawU.Controls.Add(txtRawUnit);
+            flowQuick.Controls.Add(pnlRawU);
+
+            // 3. Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©
+            var pnlRawQ = new Panel { Width = 95, Height = 64, Margin = new Padding(0, 0, 8, 0) };
+            pnlRawQ.Controls.Add(new Label { Text = "Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©:", Dock = DockStyle.Top, Height = 20, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(30, 41, 59) });
             numRawQty = new NumericUpDown
             {
                 Location = new Point(0, 24),
-                Width = 100,
+                Width = 95,
                 Height = 30,
                 DecimalPlaces = 3,
                 Minimum = 0.001m,
                 Maximum = 1000000m,
                 Value = 1m,
-                Font = Theme.FontBold,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BackColor = Color.White,
+                ForeColor = Color.Black,
                 TextAlign = HorizontalAlignment.Center
             };
+            numRawQty.ValueChanged += (s, e) => UpdateRawTotalPreview();
             numRawQty.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; AddCurrentRawToGrid(); } };
-            grpRawQty.Controls.Add(numRawQty);
-            pnlQuickAdd.Controls.Add(grpRawQty);
+            pnlRawQ.Controls.Add(numRawQty);
+            flowQuick.Controls.Add(pnlRawQ);
 
-            // 3. الوحدة
-            var grpRawUnit = new Panel { Width = 80, Height = 58, Margin = new Padding(0, 0, 12, 0), BackColor = Color.Transparent };
-            grpRawUnit.Controls.Add(new Label { Text = "الوحدة:", Location = new Point(0, 2), Width = 80, Height = 20, TextAlign = ContentAlignment.MiddleRight, ForeColor = Color.WhiteSmoke });
-            txtRawUnit = new TextBox
+            // 4. Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ© Ù„Ù„ÙˆØ­Ø¯Ø©
+            var pnlRawC = new Panel { Width = 95, Height = 64, Margin = new Padding(0, 0, 8, 0) };
+            pnlRawC.Controls.Add(new Label { Text = "Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ©:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontSmall, ForeColor = Color.FromArgb(71, 85, 105) });
+            numRawCostPrice = new NumericUpDown
             {
                 Location = new Point(0, 24),
-                Width = 80,
+                Width = 95,
                 Height = 30,
-                Text = "قطعة",
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                DecimalPlaces = 2,
+                Minimum = 0m,
+                Maximum = 1000000m,
+                Value = 0m,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(180, 83, 9),
                 TextAlign = HorizontalAlignment.Center
             };
-            grpRawUnit.Controls.Add(txtRawUnit);
-            pnlQuickAdd.Controls.Add(grpRawUnit);
+            numRawCostPrice.ValueChanged += (s, e) => UpdateRawTotalPreview();
+            numRawCostPrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; AddCurrentRawToGrid(); } };
+            pnlRawC.Controls.Add(numRawCostPrice);
+            flowQuick.Controls.Add(pnlRawC);
 
-            // 4. التكلفة التقديرية
-            var grpRawCost = new Panel { Width = 130, Height = 58, Margin = new Padding(0, 0, 12, 0), BackColor = Color.Transparent };
-            grpRawCost.Controls.Add(new Label { Text = "التكلفة المقدرة:", Location = new Point(0, 2), Width = 130, Height = 20, TextAlign = ContentAlignment.MiddleRight, ForeColor = Color.LightGray });
-            lblRawCost = new Label
+            // 5. Ø¥Ø¬Ù…Ø§Ù„ÙŠ ØªÙƒÙ„ÙØ© Ø§Ù„Ø¨Ù†Ø¯
+            var pnlRawTot = new Panel { Width = 105, Height = 64, Margin = new Padding(0, 0, 8, 0) };
+            pnlRawTot.Controls.Add(new Label { Text = "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙƒÙ„ÙØ©:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontSmall, ForeColor = Color.FromArgb(71, 85, 105) });
+            lblRawTotalPreview = new Label
             {
-                Text = "0.00 ج.م",
-                Location = new Point(0, 26),
-                Width = 130,
-                Height = 26,
-                TextAlign = ContentAlignment.MiddleRight,
-                ForeColor = Color.FromArgb(243, 198, 35),
-                Font = Theme.FontBold
+                Text = "0.00 Ø¬.Ù…",
+                Location = new Point(0, 24),
+                Width = 105,
+                Height = 30,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(217, 119, 6),
+                TextAlign = ContentAlignment.MiddleCenter
             };
-            grpRawCost.Controls.Add(lblRawCost);
-            pnlQuickAdd.Controls.Add(grpRawCost);
+            pnlRawTot.Controls.Add(lblRawTotalPreview);
+            flowQuick.Controls.Add(pnlRawTot);
 
-            // 5. زر الإضافة الكبير
-            btnAddRaw = Theme.MakeButton("➕ إضافة للشجرة", 0, 0, 140, 36, Color.FromArgb(34, 197, 94));
-            btnAddRaw.Margin = new Padding(0, 20, 10, 0);
+            // 6. Ø²Ø± Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙƒØ¨ÙŠØ±
+            btnAddRaw = Theme.MakeButton("âž• Ø¥Ø¶Ø§ÙØ© Ù„Ù„Ø´Ø¬Ø±Ø©", 0, 0, 135, 34, Color.FromArgb(16, 185, 129));
+            btnAddRaw.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnAddRaw.Margin = new Padding(0, 22, 4, 0);
             btnAddRaw.Click += (s, e) => AddCurrentRawToGrid();
-            pnlQuickAdd.Controls.Add(btnAddRaw);
+            flowQuick.Controls.Add(btnAddRaw);
 
-            // ── Grid of Raw Materials ──
+            // â”€â”€ Ø¬) Ø¬Ø¯ÙˆÙ„ Ø¨Ù†ÙˆØ¯ ÙˆØ®Ø§Ù…Ø§Øª Ø§Ù„ÙˆØµÙØ© (DataGrid) â”€â”€
             dgItems = new DataGridView
             {
                 Dock = DockStyle.Fill,
                 BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
+                BorderStyle = BorderStyle.FixedSingle,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RightToLeft = RightToLeft.Yes,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                RowTemplate = { Height = 34 },
+                GridColor = Color.FromArgb(226, 232, 240)
             };
+            dgItems.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Theme.Primary,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Alignment = DataGridViewContentAlignment.MiddleCenter
+            };
+            dgItems.DefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.White,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                SelectionBackColor = Color.FromArgb(224, 242, 254),
+                SelectionForeColor = Color.Black,
+                Alignment = DataGridViewContentAlignment.MiddleCenter
+            };
+            dgItems.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(248, 250, 252)
+            };
+            Theme.EnableDoubleBuffer(dgItems);
+
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductID", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RowNum", HeaderText = "م", FillWeight = 8, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductCode", HeaderText = "كود المادة الخام", FillWeight = 18, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductName", HeaderText = "اسم المادة الخام", FillWeight = 36, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المطلوبة", FillWeight = 16 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 12 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitCost", HeaderText = "سعر التكلفة", FillWeight = 15, ReadOnly = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 18, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 20 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RowNum", HeaderText = "Ù…", FillWeight = 6, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductCode", HeaderText = "ÙƒÙˆØ¯ Ø§Ù„Ø®Ø§Ù…", FillWeight = 14, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductName", HeaderText = "Ø§Ø³Ù… Ø§Ù„Ù…Ø§Ø¯Ø© Ø§Ù„Ø®Ø§Ù…", FillWeight = 34, ReadOnly = true, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "Ø§Ù„ÙƒÙ…ÙŠØ© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©", FillWeight = 14, DefaultCellStyle = { ForeColor = Color.FromArgb(2, 132, 199), Font = new Font("Segoe UI", 10f, FontStyle.Bold) } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "Ø§Ù„ÙˆØ­Ø¯Ø©", FillWeight = 10, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitCost", HeaderText = "Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ©", FillWeight = 14, DefaultCellStyle = { ForeColor = Color.FromArgb(180, 83, 9), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙƒÙ„ÙØ©", FillWeight = 16, ReadOnly = true, DefaultCellStyle = { ForeColor = Color.FromArgb(217, 119, 6), Font = new Font("Segoe UI", 10f, FontStyle.Bold) } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostPercent", HeaderText = "Ø§Ù„Ù…Ø³Ø§Ù‡Ù…Ø© %", FillWeight = 12, ReadOnly = true, DefaultCellStyle = { ForeColor = Color.FromArgb(71, 85, 105) } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "Ù…Ù„Ø§Ø­Ø¸Ø§Øª", FillWeight = 18 });
 
             var colDelete = new DataGridViewButtonColumn
             {
                 Name = "colDelete",
-                HeaderText = "حذف",
-                Text = "❌",
+                HeaderText = "Ø­Ø°Ù",
+                Text = "ðŸ—‘ï¸",
                 UseColumnTextForButtonValue = true,
-                FillWeight = 10
+                FillWeight = 8
             };
             dgItems.Columns.Add(colDelete);
 
@@ -429,98 +429,242 @@ namespace ChickenDist.Forms
                     RecalculateTotals();
                 }
             };
+
             pnlEditor.Controls.Add(dgItems);
             dgItems.BringToFront();
 
-            // ── Bottom Summary & Action Bar (من اليمين لليسار) ──
+            // â”€â”€ Ø¯) Ø´Ø±ÙŠØ· Ø§Ù„Ù…Ù„Ø®Øµ ÙˆØ§Ù„Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„Ø³ÙÙ„ÙŠ (Bottom Bar - Height 75px) â”€â”€
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 90,
+                Height = 74,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12, 8, 12, 8),
-                RightToLeft = RightToLeft.Yes
+                Padding = new Padding(10, 8, 10, 8)
             };
             pnlEditor.Controls.Add(pnlBottom);
 
-            // 1. شريط المؤشرات والملخص (الصف العلوي من اليمين لليسار)
-            var flowSummary = new FlowLayoutPanel
+            // Ø§Ù„Ø¬Ø§Ù†Ø¨ Ø§Ù„Ø£ÙŠÙ…Ù†: Ø§Ù„Ù…Ù„Ø®Øµ Ø§Ù„Ù…Ø§Ù„ÙŠ
+            var pnlSummaryRight = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top,
-                Height = 32,
+                Dock = DockStyle.Right,
+                Width = 520,
+                Height = 58,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent
+            };
+            pnlBottom.Controls.Add(pnlSummaryRight);
+
+            lblItemsCount = CreateBadge("ðŸ“¦ Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª: 0", Color.FromArgb(71, 85, 105), Color.FromArgb(241, 245, 249));
+            pnlSummaryRight.Controls.Add(lblItemsCount);
+
+            lblTotalRawCost = CreateBadge("ðŸ’° Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø®Ø§Ù…Ø§Øª: 0.00 Ø¬.Ù…", Color.FromArgb(217, 119, 6), Color.FromArgb(254, 243, 199));
+            pnlSummaryRight.Controls.Add(lblTotalRawCost);
+
+            lblUnitCost = CreateBadge("ðŸ·ï¸ ØªÙƒÙ„ÙØ© Ø§Ù„ÙˆØ­Ø¯Ø©: 0.00 Ø¬.Ù…", Color.FromArgb(16, 185, 129), Color.FromArgb(236, 253, 245));
+            pnlSummaryRight.Controls.Add(lblUnitCost);
+
+            // Ø§Ù„Ø¬Ø§Ù†Ø¨ Ø§Ù„Ø£ÙŠØ³Ø±: Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª
+            var pnlActionsLeft = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                Width = 460,
+                Height = 58,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
-                BackColor = Color.Transparent,
-                RightToLeft = RightToLeft.Yes
+                BackColor = Color.Transparent
             };
-            pnlBottom.Controls.Add(flowSummary);
+            pnlBottom.Controls.Add(pnlActionsLeft);
 
-            lblUnitCost = new Label
+            btnSave = Theme.MakeButton("ðŸ’¾ Ø­ÙØ¸ Ø´Ø¬Ø±Ø© Ø§Ù„ØªØµÙ†ÙŠØ¹", 0, 0, 160, 42, Color.FromArgb(16, 185, 129));
+            btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnSave.Margin = new Padding(0, 6, 8, 0);
+            btnSave.Click += (s, e) => SaveCurrentBOM();
+            pnlActionsLeft.Controls.Add(btnSave);
+
+            btnNew = Theme.MakeButton("âž• ÙˆØµÙØ© Ø¬Ø¯ÙŠØ¯Ø©", 0, 0, 120, 42, Color.FromArgb(71, 85, 105));
+            btnNew.Font = Theme.FontBold;
+            btnNew.Margin = new Padding(0, 6, 8, 0);
+            btnNew.Click += (s, e) => ResetForm();
+            pnlActionsLeft.Controls.Add(btnNew);
+
+            btnPrint = Theme.MakeButton("ðŸ–¨ï¸ Ø·Ø¨Ø§Ø¹Ø©", 0, 0, 95, 42, Color.FromArgb(2, 132, 199));
+            btnPrint.Font = Theme.FontBold;
+            btnPrint.Margin = new Padding(0, 6, 8, 0);
+            btnPrint.Click += (s, e) => PrintBOM();
+            pnlActionsLeft.Controls.Add(btnPrint);
+
+            btnDelete = Theme.MakeButton("ðŸ—‘ï¸ Ø­Ø°Ù", 0, 0, 85, 42, Color.FromArgb(239, 68, 68));
+            btnDelete.Font = Theme.FontBold;
+            btnDelete.Margin = new Padding(0, 6, 0, 0);
+            btnDelete.Click += (s, e) => DeleteCurrentBOM();
+            pnlActionsLeft.Controls.Add(btnDelete);
+
+
+            // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // 2. Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¬Ø§Ù†Ø¨ÙŠØ© (Ø§Ù„ÙˆØµÙØ§Øª ÙˆØ´Ø¬Ø± Ø§Ù„Ø¥Ù†ØªØ§Ø¬ Ø§Ù„Ù…Ø³Ø¬Ù„Ø© - Ø¹Ù„Ù‰ Ø§Ù„ÙŠØ³Ø§Ø±)
+            // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            var pnlSidebar = CreateCardPanel(0);
+            pnlSidebar.Dock = DockStyle.Fill;
+            pnlSidebar.Padding = new Padding(8);
+            tblContainer.Controls.Add(pnlSidebar, 1, 0);
+
+            var pnlSideTop = new Panel { Dock = DockStyle.Top, Height = 64, BackColor = Color.Transparent };
+            
+            var lblSideTitle = new Label
             {
-                Text = "🏷️ تكلفة الوحدة المعيارية: 0.00 ج.م",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(34, 197, 94),
-                Margin = new Padding(0, 4, 25, 0)
+                Text = "ðŸ“‹ Ø´Ø¬Ø± Ø§Ù„Ø¥Ù†ØªØ§Ø¬ ÙˆØ§Ù„ÙˆØµÙØ§Øª Ø§Ù„Ù…Ø³Ø¬Ù„Ø©",
+                Dock = DockStyle.Top,
+                Height = 26,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Theme.Accent
             };
-            flowSummary.Controls.Add(lblUnitCost);
+            pnlSideTop.Controls.Add(lblSideTitle);
 
-            lblTotalRawCost = new Label
-            {
-                Text = "💰 إجمالي تكلفة الخامات: 0.00 ج.م",
-                AutoSize = true,
-                Font = Theme.FontBold,
-                ForeColor = Color.FromArgb(243, 198, 35),
-                Margin = new Padding(0, 4, 25, 0)
-            };
-            flowSummary.Controls.Add(lblTotalRawCost);
-
-            lblItemsCount = new Label
-            {
-                Text = "📦 عدد المكونات: 0",
-                AutoSize = true,
-                Font = Theme.FontBold,
-                ForeColor = Theme.TextMain,
-                Margin = new Padding(0, 4, 15, 0)
-            };
-            flowSummary.Controls.Add(lblItemsCount);
-
-            // 2. أزرار التحكم والعمليات (الصف السفلي من اليمين لليسار)
-            var flowButtons = new FlowLayoutPanel
+            txtSearchBOM = new TextBox
             {
                 Dock = DockStyle.Bottom,
-                Height = 44,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                BackColor = Color.Transparent,
-                RightToLeft = RightToLeft.Yes
+                Height = 32,
+                Font = Theme.FontMain,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
             };
-            pnlBottom.Controls.Add(flowButtons);
+            txtSearchBOM.TextChanged += (s, e) => LoadSavedBOMsList(txtSearchBOM.Text.Trim());
+            pnlSideTop.Controls.Add(txtSearchBOM);
+            pnlSidebar.Controls.Add(pnlSideTop);
 
-            btnSave = Theme.MakeButton("💾 حفظ شجرة التصنيع", 0, 0, 170, 36, Theme.Accent);
-            btnSave.Margin = new Padding(0, 2, 12, 0);
-            btnSave.Click += (s, e) => SaveCurrentBOM();
-            flowButtons.Controls.Add(btnSave);
+            lblBOMCount = new Label
+            {
+                Text = "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙˆØµÙØ§Øª: 0",
+                Dock = DockStyle.Bottom,
+                Height = 26,
+                Font = Theme.FontSmall,
+                ForeColor = Theme.TextSub,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlSidebar.Controls.Add(lblBOMCount);
 
-            btnNew = Theme.MakeButton("➕ وصفة جديدة", 0, 0, 130, 36, Color.FromArgb(51, 65, 85));
-            btnNew.Margin = new Padding(0, 2, 12, 0);
-            btnNew.Click += (s, e) => ResetForm();
-            flowButtons.Controls.Add(btnNew);
+            dgBOMList = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                ReadOnly = true,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false,
+                RightToLeft = RightToLeft.Yes,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                RowTemplate = { Height = 32 },
+                Margin = new Padding(0, 8, 0, 8)
+            };
+            dgBOMList.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(51, 65, 85),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Alignment = DataGridViewContentAlignment.MiddleCenter
+            };
+            dgBOMList.DefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.White,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                SelectionBackColor = Color.FromArgb(224, 242, 254),
+                SelectionForeColor = Color.Black
+            };
+            Theme.EnableDoubleBuffer(dgBOMList);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة قائمة المكونات", 0, 0, 180, 36, Color.FromArgb(40, 120, 180));
-            btnPrint.Margin = new Padding(0, 2, 12, 0);
-            btnPrint.Click += (s, e) => PrintBOM();
-            flowButtons.Controls.Add(btnPrint);
+            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "BOMID", Visible = false });
+            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "Ø§Ù„ÙƒÙˆØ¯", FillWeight = 25, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ", FillWeight = 45, DefaultCellStyle = { Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemsCount", HeaderText = "Ø§Ù„Ø®Ø§Ù…Ø§Øª", FillWeight = 15, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgBOMList.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalEstCost", HeaderText = "Ø§Ù„ØªÙƒÙ„ÙØ©", FillWeight = 20, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(217, 119, 6) } });
 
-            btnDelete = Theme.MakeButton("🗑️ حذف الوصفة", 0, 0, 130, 36, Color.FromArgb(220, 53, 69));
-            btnDelete.Margin = new Padding(0, 2, 12, 0);
-            btnDelete.Click += (s, e) => DeleteCurrentBOM();
-            flowButtons.Controls.Add(btnDelete);
+            dgBOMList.CellClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0)
+                {
+                    int bomId = Convert.ToInt32(dgBOMList.Rows[e.RowIndex].Cells["BOMID"].Value);
+                    LoadBOMByID(bomId);
+                }
+            };
+            pnlSidebar.Controls.Add(dgBOMList);
+            dgBOMList.BringToFront();
         }
 
-        private void SelectFinishedProduct()
+        private Panel CreateCardPanel(int height)
         {
-            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
+            var pnl = new Panel
+            {
+                Height = height,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(12, 10, 12, 10),
+                Margin = new Padding(0, 0, 0, 8)
+            };
+            pnl.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnl.Width - 1, pnl.Height - 1);
+                }
+            };
+            return pnl;
+        }
+
+        private Label CreateBadge(string text, Color fore, Color back)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = fore,
+                BackColor = back,
+                Padding = new Padding(10, 6, 10, 6),
+                Margin = new Padding(4, 8, 4, 4)
+            };
+        }
+
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        //  Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø®ØªÙŠØ§Ø± ÙˆØ¨Ø­Ø« Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        private void TxtFinishedProduct_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                string query = txtFinishedProduct.Text.Trim();
+                if (string.IsNullOrEmpty(query))
+                {
+                    SelectFinishedProduct();
+                    return;
+                }
+
+                // Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø·Ø§Ø¨Ù‚Ø© ÙƒÙˆØ¯ Ø£Ùˆ Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø£Ùˆ Ø§Ø³Ù…
+                var dt = DbHelper.Query(@"
+                    SELECT TOP 2 ProductID, ProductCode, ProductName 
+                    FROM Products 
+                    WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName = @q",
+                    DbHelper.P("@q", query));
+
+                if (dt != null && dt.Rows.Count == 1)
+                {
+                    int pid = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+                    LoadFinishedProductByID(pid);
+                }
+                else
+                {
+                    SelectFinishedProduct(query);
+                }
+            }
+        }
+
+        private void SelectFinishedProduct(string initialSearch = "")
+        {
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true, initialSearchText: initialSearch))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
@@ -534,7 +678,7 @@ namespace ChickenDist.Forms
             var dt = DbHelper.Query(@"
                 SELECT ProductID, ProductCode, ProductName, 
                        COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
-                       COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                       COALESCE(Unit1Name, Unit, N'Ù‚Ø·Ø¹Ø©') AS UnitName 
                 FROM Products WHERE ProductID = @id",
                 DbHelper.P("@id", productId));
 
@@ -544,9 +688,9 @@ namespace ChickenDist.Forms
                 _selectedFinishedProductCode = dt.Rows[0]["ProductCode"]?.ToString();
                 _selectedFinishedProductName = dt.Rows[0]["ProductName"]?.ToString();
                 txtFinishedProduct.Text = $"{_selectedFinishedProductCode} - {_selectedFinishedProductName}";
-                txtUnitName.Text = dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة";
+                txtUnitName.Text = dt.Rows[0]["UnitName"]?.ToString() ?? "Ù‚Ø·Ø¹Ø©";
 
-                // Check if existing BOM exists
+                // ÙØ­Øµ Ø¥Ø°Ø§ ÙƒØ§Ù† Ù‡Ù†Ø§Ùƒ ÙˆØµÙØ© Ù…Ø³Ø¬Ù„Ø© Ù…Ø³Ø¨Ù‚Ø§Ù‹ Ù„Ù‡Ø°Ø§ Ø§Ù„ØµÙ†Ù
                 var existing = ProductionDAL.GetBOMByProductID(_selectedFinishedProductID);
                 if (existing != null)
                 {
@@ -559,95 +703,174 @@ namespace ChickenDist.Forms
                     numOutputQty.Value = 1m;
                     RecalculateTotals();
                 }
+
+                txtRawProduct.Focus();
+                txtRawProduct.SelectAll();
             }
         }
 
-        private void SelectRawProduct()
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        //  Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø®ØªÙŠØ§Ø± ÙˆØ¨Ø­Ø« Ø§Ù„Ù…Ø§Ø¯Ø© Ø§Ù„Ø®Ø§Ù…
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        private void TxtRawProduct_KeyDown(object sender, KeyEventArgs e)
         {
-            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                string query = txtRawProduct.Text.Trim();
+                if (string.IsNullOrEmpty(query))
+                {
+                    SelectRawProduct();
+                    return;
+                }
+
+                // Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø·Ø§Ø¨Ù‚Ø© ÙƒÙˆØ¯ Ø£Ùˆ Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø£Ùˆ Ø§Ø³Ù…
+                var dt = DbHelper.Query(@"
+                    SELECT TOP 2 ProductID, ProductCode, ProductName,
+                           COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice,
+                           COALESCE(Unit1Name, Unit, N'Ù‚Ø·Ø¹Ø©') AS UnitName
+                    FROM Products 
+                    WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName = @q",
+                    DbHelper.P("@q", query));
+
+                if (dt != null && dt.Rows.Count == 1)
+                {
+                    SetRawProduct(
+                        Convert.ToInt32(dt.Rows[0]["ProductID"]),
+                        dt.Rows[0]["ProductCode"]?.ToString(),
+                        dt.Rows[0]["ProductName"]?.ToString(),
+                        dt.Rows[0]["UnitName"]?.ToString() ?? "Ù‚Ø·Ø¹Ø©",
+                        Convert.ToDecimal(dt.Rows[0]["CostPrice"] ?? 0)
+                    );
+                }
+                else
+                {
+                    SelectRawProduct(query);
+                }
+            }
+        }
+
+        private void SelectRawProduct(string initialSearch = "")
+        {
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true, initialSearchText: initialSearch))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
                     if (frm.SelectedProductID == _selectedFinishedProductID)
                     {
-                        MessageBox.Show("لا يمكن اختيار نفس الصنف النهائي كمادة خام لنفسه!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ø®ØªÙŠØ§Ø± Ù†ÙØ³ Ø§Ù„ØµÙ†Ù Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ ÙƒÙ…Ø§Ø¯Ø© Ø®Ø§Ù… Ù„Ù†ÙØ³Ù‡!", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
                     var dt = DbHelper.Query(@"
                         SELECT ProductID, ProductCode, ProductName, 
                                COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
-                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                               COALESCE(Unit1Name, Unit, N'Ù‚Ø·Ø¹Ø©') AS UnitName 
                         FROM Products WHERE ProductID = @id",
                         DbHelper.P("@id", frm.SelectedProductID));
 
                     if (dt != null && dt.Rows.Count > 0)
                     {
-                        _selectedRawProductID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-                        _selectedRawProductCode = dt.Rows[0]["ProductCode"]?.ToString();
-                        _selectedRawProductName = dt.Rows[0]["ProductName"]?.ToString();
-                        _selectedRawCostPrice = Convert.ToDecimal(dt.Rows[0]["CostPrice"] ?? 0);
+                        string uName = !string.IsNullOrEmpty(frm.SelectedUnitName) ? frm.SelectedUnitName : (dt.Rows[0]["UnitName"]?.ToString() ?? "Ù‚Ø·Ø¹Ø©");
+                        decimal cost = frm.SelectedPurchasePrice > 0 ? frm.SelectedPurchasePrice : Convert.ToDecimal(dt.Rows[0]["CostPrice"] ?? 0);
+                        decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
 
-                        txtRawProduct.Text = $"{_selectedRawProductCode} - {_selectedRawProductName}";
-                        txtRawUnit.Text = !string.IsNullOrEmpty(frm.SelectedUnitName) ? frm.SelectedUnitName : (dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة");
-                        lblRawCost.Text = $"التكلفة: {_selectedRawCostPrice:N2} ج.م";
-
-                        if (frm.SelectedQuantity > 0)
-                            numRawQty.Value = frm.SelectedQuantity;
-                        else
-                            numRawQty.Value = 1m;
-
-                        numRawQty.Focus();
+                        SetRawProduct(
+                            Convert.ToInt32(dt.Rows[0]["ProductID"]),
+                            dt.Rows[0]["ProductCode"]?.ToString(),
+                            dt.Rows[0]["ProductName"]?.ToString(),
+                            uName,
+                            cost,
+                            qty
+                        );
                     }
                 }
             }
+        }
+
+        private void SetRawProduct(int pid, string code, string name, string unit, decimal cost, decimal qty = 1m)
+        {
+            if (pid == _selectedFinishedProductID)
+            {
+                MessageBox.Show("Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ø®ØªÙŠØ§Ø± Ù†ÙØ³ Ø§Ù„ØµÙ†Ù Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ ÙƒÙ…Ø§Ø¯Ø© Ø®Ø§Ù… Ù„Ù†ÙØ³Ù‡!", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _selectedRawProductID = pid;
+            _selectedRawProductCode = code;
+            _selectedRawProductName = name;
+            _selectedRawCostPrice = cost;
+
+            txtRawProduct.Text = $"{_selectedRawProductCode} - {_selectedRawProductName}";
+            txtRawUnit.Text = unit;
+            numRawCostPrice.Value = cost;
+            numRawQty.Value = qty;
+
+            UpdateRawTotalPreview();
+            numRawQty.Focus();
+            numRawQty.Select(0, numRawQty.Text.Length);
+        }
+
+        private void UpdateRawTotalPreview()
+        {
+            decimal qty = numRawQty.Value;
+            decimal cost = numRawCostPrice.Value;
+            lblRawTotalPreview.Text = $"{(qty * cost):N2} Ø¬.Ù…";
         }
 
         private void AddCurrentRawToGrid()
         {
             if (_selectedRawProductID <= 0)
             {
-                MessageBox.Show("يرجى اختيار مادة خام أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ù…Ø§Ø¯Ø© Ø®Ø§Ù… Ø£ÙˆÙ„Ø§Ù‹.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtRawProduct.Focus();
                 return;
             }
 
             decimal qty = numRawQty.Value;
             if (qty <= 0)
             {
-                MessageBox.Show("الكمية يجب أن تكون أكبر من صفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ø§Ù„ÙƒÙ…ÙŠØ© ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† Ø£ÙƒØ¨Ø± Ù…Ù† ØµÙØ±.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                numRawQty.Focus();
                 return;
             }
 
-            // Check if already in grid
+            decimal cost = numRawCostPrice.Value;
+
+            // ÙØ­Øµ Ù‡Ù„ Ø§Ù„Ù…Ø§Ø¯Ø© Ù…Ø¶Ø§ÙØ© Ù…Ø³Ø¨Ù‚Ø§Ù‹ ÙÙŠ Ø§Ù„Ø¬Ø¯ÙˆÙ„
             foreach (DataGridViewRow row in dgItems.Rows)
             {
                 if (Convert.ToInt32(row.Cells["RawProductID"].Value) == _selectedRawProductID)
                 {
                     decimal cur = Convert.ToDecimal(row.Cells["Quantity"].Value);
                     row.Cells["Quantity"].Value = cur + qty;
+                    row.Cells["UnitCost"].Value = cost.ToString("N2");
                     UpdateRowTotal(row.Index);
                     RecalculateTotals();
                     ClearRawInputs();
+                    txtRawProduct.Focus();
                     return;
                 }
             }
 
-            decimal tot = qty * _selectedRawCostPrice;
-            int rIdx = dgItems.Rows.Add(
+            decimal tot = qty * cost;
+            dgItems.Rows.Add(
                 _selectedRawProductID,
                 dgItems.Rows.Count + 1,
                 _selectedRawProductCode,
                 _selectedRawProductName,
-                qty,
+                qty.ToString("N3"),
                 txtRawUnit.Text.Trim(),
-                _selectedRawCostPrice.ToString("N2"),
+                cost.ToString("N2"),
                 tot.ToString("N2"),
+                "0.0%",
                 "",
-                "❌"
+                "ðŸ—‘ï¸"
             );
 
             ClearRawInputs();
             RecalculateTotals();
+            txtRawProduct.Focus();
         }
 
         private void ClearRawInputs()
@@ -657,8 +880,10 @@ namespace ChickenDist.Forms
             _selectedRawProductName = "";
             _selectedRawCostPrice = 0;
             txtRawProduct.Clear();
+            txtRawUnit.Text = "Ù‚Ø·Ø¹Ø©";
             numRawQty.Value = 1m;
-            lblRawCost.Text = "التكلفة: 0.00 ج.م";
+            numRawCostPrice.Value = 0m;
+            lblRawTotalPreview.Text = "0.00 Ø¬.Ù…";
         }
 
         private void UpdateRowTotal(int rowIndex)
@@ -689,25 +914,39 @@ namespace ChickenDist.Forms
                 totalCost += tot;
             }
 
+            // ØªØ­Ø¯ÙŠØ« Ù†Ø³Ø¨ Ø§Ù„Ù…Ø³Ø§Ù‡Ù…Ø© Ù„ÙƒÙ„ Ù…Ø§Ø¯Ø© Ø®Ø§Ù…
+            foreach (DataGridViewRow row in dgItems.Rows)
+            {
+                decimal tot = Convert.ToDecimal(row.Cells["TotalCost"].Value ?? 0);
+                decimal pct = totalCost > 0 ? (tot / totalCost) * 100m : 0m;
+                row.Cells["CostPercent"].Value = $"{pct:N1}%";
+            }
+
             decimal outQty = numOutputQty.Value > 0 ? numOutputQty.Value : 1m;
             decimal unitCost = totalCost / outQty;
 
-            lblItemsCount.Text = $"📦 عدد المكونات: {count}";
-            lblTotalRawCost.Text = $"💰 إجمالي تكلفة الخامات: {totalCost:N2} ج.م";
-            lblUnitCost.Text = $"🏷️ تكلفة الوحدة المعيارية: {unitCost:N2} ج.م";
+            lblItemsCount.Text = $"ðŸ“¦ Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª: {count} ØµÙ†Ù";
+            lblTotalRawCost.Text = $"ðŸ’° Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø®Ø§Ù…Ø§Øª: {totalCost:N2} Ø¬.Ù…";
+            lblUnitCost.Text = $"ðŸ·ï¸ ØªÙƒÙ„ÙØ© Ø§Ù„ÙˆØ­Ø¯Ø©: {unitCost:N2} Ø¬.Ù…";
+            lblHeaderUnitCostBadge.Text = $"ðŸ·ï¸ ØªÙƒÙ„ÙØ© Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ù…ØµÙ†Ø¹Ø©: {unitCost:N2} Ø¬.Ù…";
         }
 
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        //  Ø­ÙØ¸ ÙˆØ­Ø°Ù ÙˆØ·Ø¨Ø§Ø¹Ø© ÙˆØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙˆØµÙØ§Øª
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         private void SaveCurrentBOM()
         {
             if (_selectedFinishedProductID <= 0)
             {
-                MessageBox.Show("يرجى اختيار المنتج النهائي المراد تحديد مواد تصنيعه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ Ø§Ù„Ù…Ø±Ø§Ø¯ ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆØ§Ø¯ ØªØµÙ†ÙŠØ¹Ù‡ Ø£ÙˆÙ„Ø§Ù‹.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtFinishedProduct.Focus();
                 return;
             }
 
             if (dgItems.Rows.Count == 0)
             {
-                MessageBox.Show("يجب إضافة مادة خام واحدة على الأقل في شجرة التصنيع.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ÙŠØ¬Ø¨ Ø¥Ø¶Ø§ÙØ© Ù…Ø§Ø¯Ø© Ø®Ø§Ù… ÙˆØ§Ø­Ø¯Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„ ÙÙŠ Ø´Ø¬Ø±Ø© ÙˆÙ…ÙƒÙˆÙ†Ø§Øª Ø§Ù„ØªØµÙ†ÙŠØ¹.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtRawProduct.Focus();
                 return;
             }
 
@@ -734,12 +973,12 @@ namespace ChickenDist.Forms
             try
             {
                 _currentBOMID = ProductionDAL.SaveBOM(bom);
-                MessageBox.Show("تم حفظ شجرة ومكونات التصنيع بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("âœ… ØªÙ… Ø­ÙØ¸ Ø´Ø¬Ø±Ø© ÙˆÙ…ÙƒÙˆÙ†Ø§Øª Ø§Ù„ØªØµÙ†ÙŠØ¹ Ø¨Ù†Ø¬Ø§Ø­!", "ØªÙ… Ø§Ù„Ø­ÙØ¸", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadSavedBOMsList();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"فشل حفظ شجرة التصنيع: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"âŒ ÙØ´Ù„ Ø­ÙØ¸ Ø´Ø¬Ø±Ø© Ø§Ù„ØªØµÙ†ÙŠØ¹:\n{ex.Message}", "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -753,13 +992,16 @@ namespace ChickenDist.Forms
                 {
                     foreach (DataRow r in dt.Rows)
                     {
+                        decimal estCost = r["TotalEstCost"] != DBNull.Value ? Convert.ToDecimal(r["TotalEstCost"]) : 0m;
                         dgBOMList.Rows.Add(
                             r["BOMID"],
-                            $"{r["ProductCode"]} - {r["ProductName"]}",
-                            $"{r["OutputQty"]} {r["UnitName"]}",
-                            $"{r["ItemsCount"]} صنف"
+                            r["ProductCode"],
+                            r["ProductName"],
+                            $"{r["ItemsCount"]} ØµÙ†Ù",
+                            $"{estCost:N2} Ø¬"
                         );
                     }
+                    lblBOMCount.Text = $"Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙˆØµÙØ§Øª Ø§Ù„Ù…Ø³Ø¬Ù„Ø©: {dt.Rows.Count}";
                 }
             }
             catch (Exception ex)
@@ -786,7 +1028,7 @@ namespace ChickenDist.Forms
 
             txtFinishedProduct.Text = $"{bom.ProductCode} - {bom.ProductName}";
             numOutputQty.Value = bom.OutputQty > 0 ? bom.OutputQty : 1m;
-            txtUnitName.Text = bom.UnitName ?? "قطعة";
+            txtUnitName.Text = bom.UnitName ?? "Ù‚Ø·Ø¹Ø©";
             txtNotes.Text = bom.Notes ?? "";
 
             dgItems.Rows.Clear();
@@ -798,12 +1040,13 @@ namespace ChickenDist.Forms
                     rowNum++,
                     itm.RawProductCode,
                     itm.RawProductName,
-                    itm.Quantity,
+                    itm.Quantity.ToString("N3"),
                     itm.UnitName,
                     itm.RawCostPrice.ToString("N2"),
                     itm.TotalCost.ToString("N2"),
+                    "0.0%",
                     itm.Notes,
-                    "❌"
+                    "ðŸ—‘ï¸"
                 );
             }
 
@@ -818,29 +1061,30 @@ namespace ChickenDist.Forms
             _selectedFinishedProductName = "";
             txtFinishedProduct.Clear();
             numOutputQty.Value = 1m;
-            txtUnitName.Text = "قطعة";
+            txtUnitName.Text = "Ù‚Ø·Ø¹Ø©";
             txtNotes.Clear();
             dgItems.Rows.Clear();
             ClearRawInputs();
             RecalculateTotals();
+            txtFinishedProduct.Focus();
         }
 
         private void DeleteCurrentBOM()
         {
             if (_currentBOMID <= 0)
             {
-                MessageBox.Show("لا توجد وصفة محفوظة محددة حالياً للحذف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ù„Ø§ ØªÙˆØ¬Ø¯ ÙˆØµÙØ© Ù…Ø­ÙÙˆØ¸Ø© Ù…Ø­Ø¯Ø¯Ø© Ø­Ø§Ù„ÙŠØ§Ù‹ Ù„Ù„Ø­Ø°Ù.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var res = MessageBox.Show("هل أنت متأكد من رغبتك في حذف شجرة التصنيع المحددة؟", "تأكيد الحذف",
+            var res = MessageBox.Show("Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø±ØºØ¨ØªÙƒ ÙÙŠ Ø­Ø°Ù Ø´Ø¬Ø±Ø© ÙˆÙ…ÙƒÙˆÙ†Ø§Øª Ø§Ù„ØªØµÙ†ÙŠØ¹ Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©ØŸ", "ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø°Ù",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (res == DialogResult.Yes)
             {
                 if (ProductionDAL.DeleteBOM(_currentBOMID))
                 {
-                    MessageBox.Show("تم حذف شجرة التصنيع بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("âœ… ØªÙ… Ø­Ø°Ù Ø´Ø¬Ø±Ø© Ø§Ù„ØªØµÙ†ÙŠØ¹ Ø¨Ù†Ø¬Ø§Ø­.", "ØªÙ… Ø§Ù„Ø­Ø°Ù", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     ResetForm();
                     LoadSavedBOMsList();
                 }
@@ -851,67 +1095,87 @@ namespace ChickenDist.Forms
         {
             if (_selectedFinishedProductID <= 0 || dgItems.Rows.Count == 0)
             {
-                MessageBox.Show("لا توجد بيانات وصفة للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª ÙˆØµÙØ© Ù„Ù„Ø·Ø¨Ø§Ø¹Ø©.", "ØªÙ†Ø¨ÙŠÙ‡", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            var pd = new PrintDocument();
-            pd.PrintPage += (s, e) =>
+            try
             {
-                var g = e.Graphics;
-                float y = 40;
-                var fontTitle = new Font("Segoe UI", 16f, FontStyle.Bold);
-                var fontHeader = new Font("Segoe UI", 12f, FontStyle.Bold);
-                var fontBody = new Font("Segoe UI", 10f);
-                var fontBold = new Font("Segoe UI", 10f, FontStyle.Bold);
-
-                g.DrawString("بطاقة شجرة التصنيع والمعايير الفنية (BOM)", fontTitle, Brushes.DarkBlue, new PointF(220, y));
-                y += 40;
-
-                g.DrawString($"المنتج النهائي: {_selectedFinishedProductCode} - {_selectedFinishedProductName}", fontHeader, Brushes.Black, new PointF(40, y));
-                y += 25;
-                g.DrawString($"كمية الإنتاج المعيارية: {numOutputQty.Value} {txtUnitName.Text.Trim()} | تاريخ التحديث: {DateTime.Now:yyyy-MM-dd HH:mm}", fontBody, Brushes.DarkSlateGray, new PointF(40, y));
-                y += 35;
-
-                // Table Header
-                g.FillRectangle(Brushes.LightGray, 40, y, 740, 26);
-                g.DrawRectangle(Pens.Gray, 40, y, 740, 26);
-                g.DrawString("م", fontBold, Brushes.Black, 50, y + 4);
-                g.DrawString("كود الخام", fontBold, Brushes.Black, 90, y + 4);
-                g.DrawString("اسم المادة الخام", fontBold, Brushes.Black, 220, y + 4);
-                g.DrawString("الكمية", fontBold, Brushes.Black, 470, y + 4);
-                g.DrawString("الوحدة", fontBold, Brushes.Black, 540, y + 4);
-                g.DrawString("التكلفة", fontBold, Brushes.Black, 610, y + 4);
-                g.DrawString("الإجمالي", fontBold, Brushes.Black, 680, y + 4);
-                y += 26;
-
-                int num = 1;
-                decimal total = 0;
-                foreach (DataGridViewRow row in dgItems.Rows)
+                var pd = new PrintDocument();
+                pd.PrintPage += (s, e) =>
                 {
-                    g.DrawRectangle(Pens.LightGray, 40, y, 740, 24);
-                    g.DrawString(num++.ToString(), fontBody, Brushes.Black, 50, y + 3);
-                    g.DrawString(row.Cells["RawProductCode"].Value?.ToString() ?? "", fontBody, Brushes.Black, 90, y + 3);
-                    g.DrawString(row.Cells["RawProductName"].Value?.ToString() ?? "", fontBody, Brushes.Black, 220, y + 3);
-                    g.DrawString(row.Cells["Quantity"].Value?.ToString() ?? "", fontBody, Brushes.Black, 470, y + 3);
-                    g.DrawString(row.Cells["UnitName"].Value?.ToString() ?? "", fontBody, Brushes.Black, 540, y + 3);
-                    g.DrawString(row.Cells["UnitCost"].Value?.ToString() ?? "", fontBody, Brushes.Black, 610, y + 3);
-                    g.DrawString(row.Cells["TotalCost"].Value?.ToString() ?? "", fontBody, Brushes.Black, 680, y + 3);
+                    var g = e.Graphics;
+                    float y = 40;
+                    var fontTitle = new Font("Segoe UI", 16f, FontStyle.Bold);
+                    var fontHeader = new Font("Segoe UI", 11.5f, FontStyle.Bold);
+                    var fontBody = new Font("Segoe UI", 10f);
+                    var fontBold = new Font("Segoe UI", 10f, FontStyle.Bold);
 
-                    total += Convert.ToDecimal(row.Cells["TotalCost"].Value ?? 0);
-                    y += 24;
+                    // ØªØ±ÙˆÙŠØ³Ø© Ø§Ù„ØµÙØ­Ø©
+                    g.DrawString("Ø¨Ø·Ø§Ù‚Ø© Ø´Ø¬Ø±Ø© Ø§Ù„ØªØµÙ†ÙŠØ¹ ÙˆØ§Ù„Ù…Ø¹Ø§ÙŠÙŠØ± Ø§Ù„ÙÙ†ÙŠØ© (BOM)", fontTitle, Brushes.DarkBlue, new PointF(200, y));
+                    y += 40;
+
+                    g.DrawString($"Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ: {_selectedFinishedProductCode} - {_selectedFinishedProductName}", fontHeader, Brushes.Black, new PointF(40, y));
+                    y += 25;
+                    g.DrawString($"ÙƒÙ…ÙŠØ© Ø§Ù„Ø¥Ù†ØªØ§Ø¬ Ø§Ù„Ù…Ø¹ÙŠØ§Ø±ÙŠØ©: {numOutputQty.Value} {txtUnitName.Text.Trim()} | ØªØ§Ø±ÙŠØ® Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©: {DateTime.Now:yyyy-MM-dd HH:mm}", fontBody, Brushes.DarkSlateGray, new PointF(40, y));
+                    y += 35;
+
+                    // Table Header
+                    g.FillRectangle(Brushes.LightGray, 40, y, 740, 28);
+                    g.DrawRectangle(Pens.Gray, 40, y, 740, 28);
+                    g.DrawString("Ù…", fontBold, Brushes.Black, 50, y + 5);
+                    g.DrawString("ÙƒÙˆØ¯ Ø§Ù„Ø®Ø§Ù…", fontBold, Brushes.Black, 85, y + 5);
+                    g.DrawString("Ø§Ø³Ù… Ø§Ù„Ù…Ø§Ø¯Ø© Ø§Ù„Ø®Ø§Ù…", fontBold, Brushes.Black, 190, y + 5);
+                    g.DrawString("Ø§Ù„ÙƒÙ…ÙŠØ©", fontBold, Brushes.Black, 450, y + 5);
+                    g.DrawString("Ø§Ù„ÙˆØ­Ø¯Ø©", fontBold, Brushes.Black, 520, y + 5);
+                    g.DrawString("Ø³Ø¹Ø± Ø§Ù„ØªÙƒÙ„ÙØ©", fontBold, Brushes.Black, 585, y + 5);
+                    g.DrawString("Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙƒÙ„ÙØ©", fontBold, Brushes.Black, 675, y + 5);
+                    y += 28;
+
+                    int num = 1;
+                    decimal total = 0;
+                    foreach (DataGridViewRow row in dgItems.Rows)
+                    {
+                        g.DrawRectangle(Pens.LightGray, 40, y, 740, 24);
+                        g.DrawString(num++.ToString(), fontBody, Brushes.Black, 50, y + 3);
+                        g.DrawString(row.Cells["RawProductCode"].Value?.ToString() ?? "", fontBody, Brushes.Black, 85, y + 3);
+                        g.DrawString(row.Cells["RawProductName"].Value?.ToString() ?? "", fontBody, Brushes.Black, 190, y + 3);
+                        g.DrawString(row.Cells["Quantity"].Value?.ToString() ?? "", fontBody, Brushes.Black, 450, y + 3);
+                        g.DrawString(row.Cells["UnitName"].Value?.ToString() ?? "", fontBody, Brushes.Black, 520, y + 3);
+                        g.DrawString(row.Cells["UnitCost"].Value?.ToString() ?? "", fontBody, Brushes.Black, 585, y + 3);
+                        
+                        string totStr = row.Cells["TotalCost"].Value?.ToString() ?? "0";
+                        g.DrawString(totStr, fontBody, Brushes.Black, 675, y + 3);
+                        
+                        decimal.TryParse(totStr, out decimal rTot);
+                        total += rTot;
+                        y += 24;
+
+                        if (y > e.MarginBounds.Bottom - 60)
+                        {
+                            e.HasMorePages = true;
+                            return;
+                        }
+                    }
+
+                    y += 10;
+                    g.DrawLine(new Pen(Color.DarkBlue, 2), 40, y, 780, y);
+                    y += 10;
+                    decimal outQ = numOutputQty.Value > 0 ? numOutputQty.Value : 1m;
+                    decimal uCost = total / outQ;
+
+                    g.DrawString($"Ø¥Ø¬Ù…Ø§Ù„ÙŠ ØªÙƒÙ„ÙØ© Ø§Ù„Ø®Ø§Ù…Ø§Øª Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©: {total:N2} Ø¬.Ù…", fontBold, Brushes.DarkBlue, new PointF(40, y));
+                    g.DrawString($"ØªÙƒÙ„ÙØ© Ø§Ù„ÙˆØ­Ø¯Ø© Ø§Ù„Ù…Ø¹ÙŠØ§Ø±ÙŠØ© Ø§Ù„ÙˆØ§Ø­Ø¯Ø©: {uCost:N2} Ø¬.Ù…", fontBold, Brushes.DarkGreen, new PointF(440, y));
+                };
+
+                using (var ppd = new PrintPreviewDialog { Document = pd, Width = 950, Height = 700 })
+                {
+                    ppd.ShowDialog();
                 }
-
-                y += 15;
-                decimal uCost = numOutputQty.Value > 0 ? total / numOutputQty.Value : total;
-                g.DrawString($"إجمالي تكلفة المواد الخام: {total:N2} ج.م", fontBold, Brushes.Black, 450, y);
-                y += 25;
-                g.DrawString($"تكلفة الوحدة المعيارية: {uCost:N2} ج.م", fontHeader, Brushes.DarkGreen, 450, y);
-            };
-
-            using (var ppd = new PrintPreviewDialog { Document = pd, Width = 900, Height = 700 })
+            }
+            catch (Exception ex)
             {
-                ppd.ShowDialog();
+                MessageBox.Show("ÙØ´Ù„ Ø¥Ø¹Ø¯Ø§Ø¯ Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©:\n" + ex.Message, "Ø®Ø·Ø£", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
