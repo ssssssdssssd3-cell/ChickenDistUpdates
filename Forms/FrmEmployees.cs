@@ -907,8 +907,8 @@ namespace ChickenDist.Forms
             new ScreenDef {
                 Key = "Sales", Name = "فاتورة المبيعات الرئيسية", Category = "🛒 المبيعات والعملاء", Icon = "🛒",
                 Description = "شاشة إصدار فواتير البيع للعملاء وإدارة الحسابات النقدية والآجلة.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasEditPrice = true, HasEditSalesInvoice = true,
-                HasDeleteSalesInvoice = true, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
+                HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
+                HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
                 HasViewQuickItems = true, HasOrderColumns = true,
                 AddLabel = "➕ إصدار وحفظ فواتير بيع جديدة",
                 AddHint = "السماح للموظف بحفظ فواتير البيع وإتمام عملية البيع.",
@@ -920,8 +920,8 @@ namespace ChickenDist.Forms
             new ScreenDef {
                 Key = "POS", Name = "شاشة الكاشير السريع (POS)", Category = "🛒 المبيعات والعملاء", Icon = "⚡",
                 Description = "شاشة البيع السريعة المخصصة لنقاط البيع وطباعة الريسيت الحراري.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasEditPrice = true, HasEditSalesInvoice = true,
-                HasDeleteSalesInvoice = true, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
+                HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
+                HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
                 HasViewQuickItems = true, HasOrderColumns = true,
                 AddLabel = "➕ حفظ وإتمام فواتير الكاشير",
                 AddHint = "السماح للموظف بإنهاء وحفظ فواتير نقاط البيع السريعة."
@@ -929,7 +929,7 @@ namespace ChickenDist.Forms
             new ScreenDef {
                 Key = "Returns", Name = "مرتجع المبيعات واستبدال الأصناف", Category = "🛒 المبيعات والعملاء", Icon = "↩️",
                 Description = "شاشة إرجاع بضاعة وفواتير مبيعات للعملاء وإعادة الأصناف للمخزن.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasEditPrice = true, HasEditSalesInvoice = true,
+                HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasCopySalesInvoice = true, HasChangeSafe = true,
                 AddLabel = "➕ حفظ وإتمام عمليات المرتجع",
                 AddHint = "السماح للموظف بحفظ وإتمام مرتجعات المبيعات (يجب تفعيلها ليتمكن من حفظ المرتجع).",
@@ -941,14 +941,14 @@ namespace ChickenDist.Forms
             new ScreenDef {
                 Key = "PriceQuote", Name = "بيان تسعير وعروض الأسعار", Category = "🛒 المبيعات والعملاء", Icon = "📋",
                 Description = "شاشة تحرير عروض وبيانات أسعار للعملاء دون التأثير على رصيد المخزن.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasEditPrice = true, HasCopySalesInvoice = true, HasViewCost = true,
+                HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasCopySalesInvoice = true, HasViewCost = true,
                 AddLabel = "➕ إنشاء وحفظ بيان تسعير جديد",
                 AddHint = "السماح للموظف بحفظ عروض وبيانات الأسعار للعملاء."
             },
             new ScreenDef {
                 Key = "SalesList", Name = "سجل الفواتير والمبيعات السابقة", Category = "🛒 المبيعات والعملاء", Icon = "📋",
                 Description = "استعراض والبحث في كافة فواتير المبيعات الصادرة وإعادة طباعتها وتصديرها.",
-                HasEdit = true, HasDelete = true, HasEditSalesInvoice = true, HasDeleteSalesInvoice = true,
+                HasEdit = true, HasDelete = false, HasEditSalesInvoice = true, HasDeleteSalesInvoice = false,
                 HasCopySalesInvoice = true, HasViewCost = true, HasViewSalesTotals = true,
                 OtherSalesLabel = "📝 تعديل فواتير الغير من السجل",
                 OtherSalesHint = "السماح بفتح وتعديل فواتير مسجلة بأسماء موظفين آخرين من السجل."
@@ -985,24 +985,23 @@ namespace ChickenDist.Forms
             new ScreenDef {
                 Key = "Purchases", Name = "فاتورة المشتريات (وارد بضاعة)", Category = "📥 المشتريات والموردين", Icon = "📥",
                 Description = "شاشة إدخال فواتير الشراء من الموردين وزيادة رصيد المخزن وتكلفة الأصناف.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasEditPrice = true, HasCopySalesInvoice = true,
+                HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasCopySalesInvoice = true,
                 HasChangeSafe = true, HasOrderColumns = true,
                 AddLabel = "➕ حفظ وإصدار فواتير شراء جديدة",
                 AddHint = "السماح للموظف بحفظ فواتير الشراء من الموردين.",
-                EditLabel = "✏️ تعديل فواتير الشراء السابقة",
-                DeleteLabel = "🗑️ حذف فاتورة شراء"
+                EditLabel = "✏️ تعديل فواتير الشراء السابقة"
             },
             new ScreenDef {
                 Key = "PurchaseReturn", Name = "مرتجع المشتريات للموردين", Category = "📥 المشتريات والموردين", Icon = "↩️",
                 Description = "شاشة إرجاع بضاعة لمورد وخصم قيمتها من حسابه وخصم الرصيد من المخزن.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasEditPrice = true, HasChangeSafe = true,
+                HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasChangeSafe = true,
                 AddLabel = "➕ حفظ وإتمام مرتجع مشتريات",
                 AddHint = "السماح للموظف بحفظ وإتمام مرتجع الشراء للمورد."
             },
             new ScreenDef {
                 Key = "PurchasesList", Name = "سجل فواتير المشتريات", Category = "📥 المشتريات والموردين", Icon = "📋",
                 Description = "استعراض سجل فواتير الشراء والبحث فيها ومراجعة بنودها.",
-                HasEdit = true, HasDelete = true, HasCopySalesInvoice = true, HasViewSalesTotals = true
+                HasEdit = true, HasDelete = false, HasCopySalesInvoice = true, HasViewSalesTotals = true
             },
             new ScreenDef {
                 Key = "Suppliers", Name = "إدارة بيانات الموردين", Category = "📥 المشتريات والموردين", Icon = "🏢",
@@ -1020,12 +1019,12 @@ namespace ChickenDist.Forms
             new ScreenDef {
                 Key = "SupplierPayment", Name = "سند صرف نقدي لمورد", Category = "📥 المشتريات والموردين", Icon = "💵",
                 Description = "تسجيل دفعات نقدية أو شيكات للموردين وخصمها من الخزنة.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasChangeSafe = true, HasViewBalance = true
+                HasAdd = true, HasEdit = true, HasDelete = false, HasChangeSafe = true, HasViewBalance = true
             },
             new ScreenDef {
                 Key = "SupplierAdjustment", Name = "تسوية أرصدة الموردين", Category = "📥 المشتريات والموردين", Icon = "⚖️",
                 Description = "تسوية الفروق الحسابية والخصومات المكتسبة مع الموردين.",
-                HasAdd = true, HasEdit = true, HasDelete = true
+                HasAdd = true, HasEdit = true, HasDelete = false
             },
 
             // ── 📦 3. المخازن والأصناف ───────────────────────────────────
@@ -1088,15 +1087,14 @@ namespace ChickenDist.Forms
             new ScreenDef {
                 Key = "CashBox", Name = "الخزنة والمصروفات والإيرادات", Category = "💰 المالية والخزائن والورديات", Icon = "💰",
                 Description = "تسجيل حركات النقدية والمصروفات اليومية والإيرادات المتنوعة.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasChangeSafe = true, HasViewBalance = true,
+                HasAdd = true, HasEdit = true, HasDelete = false, HasChangeSafe = true, HasViewBalance = true,
                 AddLabel = "➕ تسجيل حركة قبض أو صرف جديدة",
-                EditLabel = "✏️ تعديل حركة نقدية سابقة",
-                DeleteLabel = "🗑️ حذف حركة نقدية"
+                EditLabel = "✏️ تعديل حركة نقدية سابقة"
             },
             new ScreenDef {
                 Key = "ReceiptVoucher", Name = "سندات القبض والصرف الرسمية", Category = "💰 المالية والخزائن والورديات", Icon = "📄",
                 Description = "إصدار وطباعة سندات القبض والدفع المالية للعملاء والموردين.",
-                HasAdd = true, HasEdit = true, HasDelete = true, HasChangeSafe = true, HasViewBalance = true
+                HasAdd = true, HasEdit = true, HasDelete = false, HasChangeSafe = true, HasViewBalance = true
             },
             new ScreenDef {
                 Key = "DailyAccounts", Name = "الحسابات والمالية اليومية الشاملة", Category = "💰 المالية والخزائن والورديات", Icon = "📊",
@@ -1253,7 +1251,7 @@ namespace ChickenDist.Forms
             this.MinimumSize = new Size(1100, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
+            this.RightToLeftLayout = false;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
@@ -1318,6 +1316,7 @@ namespace ChickenDist.Forms
             flowPresets.Controls.Add(MakePresetBtn("🛒 كاشير / بيع", Color.FromArgb(41, 128, 185), () => ApplyPreset("Cashier")));
             flowPresets.Controls.Add(MakePresetBtn("📥 مشتريات", Color.FromArgb(142, 68, 173), () => ApplyPreset("Purchases")));
             flowPresets.Controls.Add(MakePresetBtn("📦 أمين مخزن", Color.FromArgb(39, 174, 96), () => ApplyPreset("Inventory")));
+            flowPresets.Controls.Add(MakePresetBtn("🏭 مدير إنتاج", Color.FromArgb(16, 185, 129), () => ApplyPreset("Manufacturing")));
             flowPresets.Controls.Add(MakePresetBtn("💰 محاسب مالي", Color.FromArgb(211, 84, 0), () => ApplyPreset("Accountant")));
             flowPresets.Controls.Add(MakePresetBtn("🧹 تفريغ الكل", Color.FromArgb(108, 122, 137), () => ApplyPreset("Clear")));
 
@@ -1571,7 +1570,7 @@ namespace ChickenDist.Forms
         private void BuildCategoryChips()
         {
             pnlCategories.Controls.Clear();
-            string[] cats = { "الكل", "🛒 المبيعات", "📥 المشتريات", "📦 المخازن", "💰 المالية", "📊 التقارير", "🚚 الإدارة" };
+            string[] cats = { "الكل", "🛒 المبيعات", "📥 المشتريات", "📦 المخازن", "🏭 التصنيع", "💰 المالية", "📊 التقارير", "🚚 الإدارة" };
 
             foreach (var cat in cats)
             {
@@ -1665,7 +1664,7 @@ namespace ChickenDist.Forms
 
             foreach (var def in AllScreens)
             {
-                if (_activeCategoryFilter != "الكل" && !def.Category.Contains(_activeCategoryFilter.Replace("🛒", "").Replace("📥", "").Replace("📦", "").Replace("💰", "").Replace("📊", "").Replace("🚚", "").Trim()))
+                if (_activeCategoryFilter != "الكل" && !def.Category.Contains(_activeCategoryFilter.Replace("🛒", "").Replace("📥", "").Replace("📦", "").Replace("🏭", "").Replace("💰", "").Replace("📊", "").Replace("🚚", "").Trim()))
                     continue;
 
                 if (!string.IsNullOrEmpty(q) && !def.Name.ToLowerInvariant().Contains(q) && !def.Key.ToLowerInvariant().Contains(q) && !def.Category.ToLowerInvariant().Contains(q))
@@ -1865,11 +1864,7 @@ namespace ChickenDist.Forms
             if (def.HasDelete)
                 AddCard(MakeSubPermCard(def.DeleteLabel, def.DeleteHint, st.CanDelete, v => { st.CanDelete = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
 
-            // 6. CanDeleteSalesInvoice
-            if (def.HasDeleteSalesInvoice)
-                AddCard(MakeSubPermCard("❌ حذف وإلغاء فواتير المبيعات الصادرة", "السماح للموظف بحذف فواتير البيع بالكامل وشطبها من السجل.", st.CanDeleteSalesInvoice, v => { st.CanDeleteSalesInvoice = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
-
-            // 7. CanCopySalesInvoice
+            // 6. CanCopySalesInvoice
             if (def.HasCopySalesInvoice)
                 AddCard(MakeSubPermCard("📋 نسخ وإعادة طباعة الفواتير السابقة", "السماح بإعادة طباعة الإيصالات أو نسخ بنود الفاتورة لإنشاء فاتورة جديدة.", st.CanCopySalesInvoice, v => { st.CanCopySalesInvoice = v; OnSubPermChanged(def); }));
 
@@ -2051,7 +2046,8 @@ namespace ChickenDist.Forms
             var salesScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "Returns", "PriceChecker", "ProductSearch", "Clients", "ClientStatement", "Installments", "SalesList" };
             var purchaseScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
             var inventoryScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "ProductCard", "Categories", "Units", "Warehouses", "Inventory", "ShortageNotebook", "Wastage", "WarehouseTransfer", "BulkPrintBarcodes", "RepStores" };
-            var accountantScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "ReceiptVoucher", "DailyAccounts", "SafeAccounts", "ActualBalances", "DailyClosing", "ShiftClose", "FinancialPosition", "Reports", "Financials", "RepDailySales", "RepSalesByProduct", "RepClientBalances", "RepStores" };
+            var mfgScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "BOM", "FixedProduction", "CustomProduction", "ProductionReports", "Products", "ProductCard", "Warehouses", "Inventory" };
+            var accountantScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "ReceiptVoucher", "DailyAccounts", "SafeAccounts", "ActualBalances", "DailyClosing", "ShiftClose", "FinancialPosition", "Reports", "Financials", "RepDailySales", "RepSalesByProduct", "RepClientBalances", "RepStores", "ProductionReports" };
 
             foreach (var def in AllScreens)
             {
@@ -2062,6 +2058,7 @@ namespace ChickenDist.Forms
                 else if (role == "Cashier" && salesScreens.Contains(def.Key)) enable = true;
                 else if (role == "Purchases" && purchaseScreens.Contains(def.Key)) enable = true;
                 else if (role == "Inventory" && inventoryScreens.Contains(def.Key)) enable = true;
+                else if (role == "Manufacturing" && mfgScreens.Contains(def.Key)) enable = true;
                 else if (role == "Accountant" && (accountantScreens.Contains(def.Key) || salesScreens.Contains(def.Key))) enable = true;
 
                 st.CanAccess = enable;
@@ -2077,7 +2074,7 @@ namespace ChickenDist.Forms
                     st.CanDelete = true;
                     st.CanEditPrice = true;
                     st.CanEditSalesInvoice = true;
-                    st.CanDeleteSalesInvoice = true;
+                    st.CanDeleteSalesInvoice = false;
                     st.CanViewCost = true;
                     st.CanViewBalance = true;
                     st.CanChangeSafe = true;
@@ -2087,7 +2084,7 @@ namespace ChickenDist.Forms
                 {
                     st.CanDelete = false;
                     st.CanDeleteSalesInvoice = false;
-                    st.CanViewCost = (role == "Accountant");
+                    st.CanViewCost = (role == "Accountant" || role == "Manufacturing");
                     st.CanEditPrice = (role == "Accountant" || role == "Purchases");
                     st.CanEditSalesInvoice = (role == "Accountant");
                 }
