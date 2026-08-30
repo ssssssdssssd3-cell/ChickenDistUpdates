@@ -295,16 +295,20 @@ namespace ChickenDist.Forms
 
         private void BtnAutoFixCodes_Click(object sender, EventArgs e)
         {
-            string msg = "⚡ هل ترغب في المعالجة التلقائية الذكية للأكواد المكررة؟\n\n" +
-                         "📌 شرط الأمان المعتمد:\n" +
-                         "• سيتم تعديل الكود فقط للأصناف التي ليس لها أي حركات على البرنامج (0 مبيعات، 0 مشتريات، 0 رصيد).\n" +
-                         "• سيتم الاحتفاظ بكود الصنف الأصلي كاملاً لأي صنف مسجل عليه حركات أو رصيد ولن يتم المساس به إطلاقاً.\n" +
-                         "• إذا كانت كل الأصناف المشتركة في الكود بدون حركات، سيتم الإبقاء على الأقدم وتعديل الآخرين بأكواد فريدة جديدة.";
+            string msg = "⚡ هل ترغب في إعادة ترقيم وتصحيح جميع الأكواد المكررة تلقائياً؟\n\n" +
+                         "📌 آلية الترقيم والتصحيح الذكية المعتمدة:\n" +
+                         "1️⃣ سيتم الاحتفاظ بالكود الأصلي للصنف الأساسي (الأكثر حركات ورصيداً على البرنامج).\n" +
+                         "2️⃣ الأصناف المكررة الأخرى (الأقل حركات) سيتم إعادة ترقيمها بأكواد تسلسلية جديدة فريدة تلي آخر كود في قائمة الأصناف.\n" +
+                         "3️⃣ سيتم تعديل وتحديث الكود الجديد في جميع حركات ومبيعات ومشتريات وتقارير الصنف تلقائياً لتعمل بكفاءة 100% وبدون أي تعارض.\n\n" +
+                         "هل تريد البدء في تصحيح وإعادة ترقيم الأكواد المكررة الآن؟";
 
-            if (MessageBox.Show(msg, "تأكيد معالجة الأكواد المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show(msg, "تأكيد تصحيح وإعادة ترقيم الأكواد المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                var result = ProductDuplicateDAL.AutoFixDuplicateProductCodes("ProductCode", onlyModifyZeroTransactions: true);
-                MessageBox.Show($"✅ تمت معالجة وتصحيح [{result.totalFixed}] صنف مكرر بنجاح (فقط للأصناف التي ليس لها حركات).\nتمت حماية جميع الأصناف ذات الحركات والأرصدة!", "تمت المعالجة بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var result = ProductDuplicateDAL.AutoFixDuplicateProductCodes("ProductCode", onlyModifyZeroTransactions: false);
+                MessageBox.Show($"✅ تمت معالجة وإعادة ترقيم [{result.totalFixed}] صنف مكرر بنجاح!\n\n" +
+                                $"• تم إبقاء الكود الأصلي للأصناف الأساسية الأكثر نشاطاً.\n" +
+                                $"• تم توليد أكواد تسلسلية جديدة للأصناف الأقل حركات وتحديث كافة حركاتها وتقاريرها.", 
+                                "تمت المعالجة بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 RunScan();
             }
         }
