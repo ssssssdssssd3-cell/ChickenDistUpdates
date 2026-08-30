@@ -29,6 +29,8 @@ namespace ChickenDist.Forms
         private NumericUpDown numA5ShiftCm;
         private ComboBox cboPrepTemplate;
         private ComboBox cboPrepPaperSize;
+        private ComboBox cboPrepA5Shift;
+        private NumericUpDown numPrepA5ShiftCm;
         private ComboBox cboBarcodeTemplate;
         private ComboBox cboBarcodeEncoding;
         private ComboBox cboBarcodeStickerSize;
@@ -762,9 +764,106 @@ namespace ChickenDist.Forms
             this.Controls.Add(cboPrepPaperSize);
             y += 35;
 
-            // زر معاينة إذن التحضير وصرف البضاعة
-            var btnPreviewPrep = Theme.MakeButton("📋 معاينة إذن التحضير وصرف البضاعة", 20, y, 260, 36, Color.FromArgb(34, 153, 84));
-            btnPreviewPrep.Click += (s, e) =>
+            // ── إعدادات مقاس ومحاذاة ورق إذن التحضير A5 ───────────────────
+            AddLabel("📐 مقاس ومحاذاة إذن التحضير A5 (إزاحة درج الطابعة):", 20, ref y, 10);
+            cboPrepA5Shift = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 360,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10.5f)
+            };
+            cboPrepA5Shift.Items.AddRange(new object[]
+            {
+                "مطابق لمقاس ومحاذاة الفاتورة A5 تلقائياً (موصى به)",
+                "مقاس 1: إزاحة 3.0 سم (118 نقطة - الموصى به والمضبوط حالياً)",
+                "مقاس 2: إزاحة 2.8 سم (110 نقطة - سنة إضافية للشمال)",
+                "مقاس 3: إزاحة 3.2 سم (126 نقطة)",
+                "مقاس 4: إزاحة 3.5 سم (138 نقطة)",
+                "مقاس 5: إزاحة 2.5 سم (98 نقطة - دفاتر الفواتير القياسية)",
+                "مقاس 6: إزاحة 4.0 سم (157 نقطة)",
+                "مقاس 7: إزاحة 4.5 سم (175 نقطة)",
+                "مقاس 8: إزاحة 2.0 سم (78 نقطة)",
+                "مقاس 9: إزاحة 1.0 سم (39 نقطة)",
+                "مقاس 10: بدون إزاحة 0 سم (توسيط قياسي / طابعة A5 متخصصة)",
+                "مقاس مخصص يدوي (بالسنتيمتر)"
+            });
+
+            numPrepA5ShiftCm = new NumericUpDown
+            {
+                Location = new Point(390, y),
+                Width = 130,
+                Height = 32,
+                DecimalPlaces = 1,
+                Increment = 0.2m,
+                Minimum = 0.0m,
+                Maximum = 15.0m,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+
+            decimal prepCurCm = Math.Round((decimal)(AppConfig.GetPreparationA5Shift() * 0.0254), 1);
+            if (prepCurCm < 0m) prepCurCm = 0m;
+            if (prepCurCm > 15m) prepCurCm = 15m;
+            numPrepA5ShiftCm.Value = prepCurCm;
+
+            if (!AppConfig.PreparationA5UseCustomShift)
+            {
+                cboPrepA5Shift.SelectedIndex = 0;
+                numPrepA5ShiftCm.Enabled = false;
+            }
+            else
+            {
+                numPrepA5ShiftCm.Enabled = true;
+                if (Math.Abs(prepCurCm - 3.0m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 1;
+                else if (Math.Abs(prepCurCm - 2.8m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 2;
+                else if (Math.Abs(prepCurCm - 3.2m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 3;
+                else if (Math.Abs(prepCurCm - 3.5m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 4;
+                else if (Math.Abs(prepCurCm - 2.5m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 5;
+                else if (Math.Abs(prepCurCm - 4.0m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 6;
+                else if (Math.Abs(prepCurCm - 4.5m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 7;
+                else if (Math.Abs(prepCurCm - 2.0m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 8;
+                else if (Math.Abs(prepCurCm - 1.0m) <= 0.1m) cboPrepA5Shift.SelectedIndex = 9;
+                else if (prepCurCm == 0m) cboPrepA5Shift.SelectedIndex = 10;
+                else cboPrepA5Shift.SelectedIndex = 11;
+            }
+
+            cboPrepA5Shift.SelectedIndexChanged += (s, e) =>
+            {
+                if (cboPrepA5Shift.SelectedIndex == 0)
+                {
+                    numPrepA5ShiftCm.Enabled = false;
+                    numPrepA5ShiftCm.Value = numA5ShiftCm != null ? numA5ShiftCm.Value : Math.Round((decimal)(AppConfig.A5ShiftRight * 0.0254), 1);
+                }
+                else
+                {
+                    numPrepA5ShiftCm.Enabled = true;
+                    switch (cboPrepA5Shift.SelectedIndex)
+                    {
+                        case 1: numPrepA5ShiftCm.Value = 3.0m; break;
+                        case 2: numPrepA5ShiftCm.Value = 2.8m; break;
+                        case 3: numPrepA5ShiftCm.Value = 3.2m; break;
+                        case 4: numPrepA5ShiftCm.Value = 3.5m; break;
+                        case 5: numPrepA5ShiftCm.Value = 2.5m; break;
+                        case 6: numPrepA5ShiftCm.Value = 4.0m; break;
+                        case 7: numPrepA5ShiftCm.Value = 4.5m; break;
+                        case 8: numPrepA5ShiftCm.Value = 2.0m; break;
+                        case 9: numPrepA5ShiftCm.Value = 1.0m; break;
+                        case 10: numPrepA5ShiftCm.Value = 0.0m; break;
+                    }
+                }
+            };
+
+            this.Controls.Add(cboPrepA5Shift);
+            this.Controls.Add(numPrepA5ShiftCm);
+            y += 40;
+
+            // زر معاينة إذن التحضير وصرف البضاعة A5
+            var btnPreviewPrepA5 = Theme.MakeButton("📋 معاينة إذن التحضير (A5)", 20, y, 240, 36, Color.FromArgb(34, 153, 84));
+            btnPreviewPrepA5.Click += (s, e) =>
             {
                 AppConfig.PreparationSlipTemplate = cboPrepTemplate.SelectedIndex switch
                 {
@@ -772,12 +871,13 @@ namespace ChickenDist.Forms
                     2 => "Modern",
                     _ => "Disbursement"
                 };
-                AppConfig.PreparationPaperSize = cboPrepPaperSize.SelectedIndex switch
+                AppConfig.PreparationPaperSize = "A5";
+                if (cboPrepA5Shift != null && numPrepA5ShiftCm != null)
                 {
-                    1 => "A5",
-                    2 => "Receipt",
-                    _ => "A4"
-                };
+                    AppConfig.PreparationA5UseCustomShift = (cboPrepA5Shift.SelectedIndex != 0);
+                    int pts = (int)Math.Round(((double)numPrepA5ShiftCm.Value / 2.54) * 100);
+                    AppConfig.PreparationA5ShiftRight = pts;
+                }
                 AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
                 AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
                 if (!string.IsNullOrWhiteSpace(txtCompanyName.Text)) AppConfig.CompanyName = txtCompanyName.Text.Trim();
@@ -787,7 +887,7 @@ namespace ChickenDist.Forms
                 if (dtPreview != null && dtPreview.Rows.Count > 0)
                 {
                     int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
-                    FrmPrintSale.PrintPreparationSlip(previewSaleID, AppConfig.PreparationPaperSize, true);
+                    FrmPrintSale.PrintPreparationSlip(previewSaleID, "A5", true);
                 }
                 else
                 {
@@ -795,7 +895,37 @@ namespace ChickenDist.Forms
                         MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                 }
             };
-            this.Controls.Add(btnPreviewPrep);
+            this.Controls.Add(btnPreviewPrepA5);
+
+            // زر معاينة إذن التحضير وصرف البضاعة A4
+            var btnPreviewPrepA4 = Theme.MakeButton("📄 معاينة إذن التحضير (A4)", 270, y, 240, 36, Color.FromArgb(40, 120, 180));
+            btnPreviewPrepA4.Click += (s, e) =>
+            {
+                AppConfig.PreparationSlipTemplate = cboPrepTemplate.SelectedIndex switch
+                {
+                    1 => "Standard",
+                    2 => "Modern",
+                    _ => "Disbursement"
+                };
+                AppConfig.PreparationPaperSize = "A4";
+                AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
+                AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
+                if (!string.IsNullOrWhiteSpace(txtCompanyName.Text)) AppConfig.CompanyName = txtCompanyName.Text.Trim();
+                AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
+
+                var dtPreview = DbHelper.Query("SELECT TOP 1 SaleID FROM Sales WHERE IsPosted=1 ORDER BY SaleID DESC");
+                if (dtPreview != null && dtPreview.Rows.Count > 0)
+                {
+                    int previewSaleID = Convert.ToInt32(dtPreview.Rows[0]["SaleID"]);
+                    FrmPrintSale.PrintPreparationSlip(previewSaleID, "A4", true);
+                }
+                else
+                {
+                    MessageBox.Show("لا توجد فواتير مبيعات مسجلة حالياً لمعاينة إذن التحضير.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information,
+                        MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                }
+            };
+            this.Controls.Add(btnPreviewPrepA4);
             y += 50;
 
             // ── قالب الباركود الافتراضي ───────────────────
@@ -1544,6 +1674,19 @@ namespace ChickenDist.Forms
                         2 => "Receipt",
                         _ => "A4"
                     };
+                }
+                if (cboPrepA5Shift != null && numPrepA5ShiftCm != null)
+                {
+                    if (cboPrepA5Shift.SelectedIndex == 0)
+                    {
+                        AppConfig.PreparationA5UseCustomShift = false;
+                    }
+                    else
+                    {
+                        AppConfig.PreparationA5UseCustomShift = true;
+                        int pts = (int)Math.Round(((double)numPrepA5ShiftCm.Value / 2.54) * 100);
+                        AppConfig.PreparationA5ShiftRight = pts;
+                    }
                 }
                 AppConfig.BarcodeTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
                                           : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"

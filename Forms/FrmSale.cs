@@ -5393,8 +5393,8 @@ namespace ChickenDist.Forms
 			}
 			else if (isA5)
 			{
-				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("A5", 583, 827);
-				pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(28, 28, 28, 28);
+				pd.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("A4", 827, 1169);
+				pd.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(20, 20, 20, 20);
 				AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
 			}
 			else
@@ -5446,7 +5446,8 @@ namespace ChickenDist.Forms
 			pd.PrintPage += (s, e) =>
 			{
 				var g = e.Graphics;
-				int pageW = e.PageBounds.Width;
+				int pageW = isA5 ? 583 : e.PageBounds.Width;
+				int pageHeight = isA5 ? 827 : (isReceipt ? 1000 : e.PageBounds.Height);
 				bool isA4Page = isA4;
 				float titleSize  = isReceipt ? 12f : (isA4Page ? 16f : 13f);
 				float headerSize = isReceipt ? 9f  : (isA4Page ? 11f : 9.5f);
@@ -5465,8 +5466,14 @@ namespace ChickenDist.Forms
 				using var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
 				using var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
 
+				int a5Shift = isA5 ? AppConfig.GetPreparationA5Shift() : 0;
+				if (a5Shift != 0)
+				{
+					g.TranslateTransform(a5Shift, 0);
+				}
+
 				int margin = isReceipt ? 10 : (isA5 ? 20 : 30);
-				int pageWidth = e.PageBounds.Width;
+				int pageWidth = isA5 ? 583 : e.PageBounds.Width;
 				int left  = margin;
 				int right = pageWidth - margin;
 				int width = right - left;
@@ -5769,7 +5776,8 @@ namespace ChickenDist.Forms
 					y += actualRowH;
 					itemIdx++;
 
-					if (y > e.MarginBounds.Bottom - (isReceipt ? 40 : 70) && itemIdx < _items.Count)
+					int footerReserve = isReceipt ? 40 : (isA5 ? 70 : 90);
+					if (y + actualRowH + footerReserve > pageHeight && itemIdx < _items.Count)
 					{
 						e.HasMorePages = true;
 						return;

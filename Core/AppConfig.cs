@@ -154,6 +154,30 @@ namespace ChickenDist.Core
             set => Set("A5ShiftRight", value.ToString());
         }
 
+        public static bool PreparationA5UseCustomShift
+        {
+            get => Get("PreparationA5UseCustomShift", "false") == "true";
+            set => Set("PreparationA5UseCustomShift", value ? "true" : "false");
+        }
+
+        public static int PreparationA5ShiftRight
+        {
+            get
+            {
+                string val = Get("PreparationA5ShiftRight", "118");
+                return int.TryParse(val, out int s) ? s : 118;
+            }
+            set => Set("PreparationA5ShiftRight", value.ToString());
+        }
+
+        /// <summary>
+        /// الحصول على إزاحة إذن التحضير A5 (إما مخصصة أو مطابقة تلقائياً لإزاحة الفاتورة A5)
+        /// </summary>
+        public static int GetPreparationA5Shift()
+        {
+            return PreparationA5UseCustomShift ? PreparationA5ShiftRight : A5ShiftRight;
+        }
+
         public static string BarcodeTemplate
         {
             get => Get("BarcodeTemplate", "Standard");

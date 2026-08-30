@@ -2234,7 +2234,7 @@ namespace ChickenDist.Forms
                 using var penGrid       = new Pen(Color.FromArgb(170, 185, 205), 1f);
                 using var penDark       = new Pen(Color.FromArgb(28, 45, 78), 1.5f);
 
-                int a5Shift = isA5 ? AppConfig.A5ShiftRight : 0;
+                int a5Shift = isA5 ? AppConfig.GetPreparationA5Shift() : 0;
                 if (a5Shift != 0)
                 {
                     g.TranslateTransform(a5Shift, 0);
@@ -2470,8 +2470,9 @@ namespace ChickenDist.Forms
                         if (actualRowH > 65) actualRowH = 65;
 
                         // ── التحقق من المساحة قبل رسم السطر (مش بعده) ──
-                        int footerReserve = isReceipt ? 30 : 90; // مساحة محجوزة للإجماليات والتوقيعات
-                        if (y + actualRowH > e.MarginBounds.Bottom - footerReserve)
+                        int maxPageH = isA5 ? 827 : (isReceipt ? 1000 : e.PageBounds.Height);
+                        int footerReserve = isReceipt ? 30 : (isA5 ? 65 : 85); // مساحة محجوزة للإجماليات والتوقيعات
+                        if (y + actualRowH + footerReserve > maxPageH)
                         {
                             e.HasMorePages = true;
                             return;
