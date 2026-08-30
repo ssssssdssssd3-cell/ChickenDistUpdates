@@ -12,7 +12,7 @@ namespace ChickenDist.Forms
     {
         private DataGridView dgProducts;
         private TextBox txtSearch;
-        private ComboBox cboCategory, cboBrand, cboDealStatus, cboStockStatus, cboStatus, cboShelf;
+        private ComboBox cboSearchType, cboCategory, cboBrand, cboDealStatus, cboStockStatus, cboStatus, cboShelf;
         private Label lblItemCount, lblSearch, lblCat, lblBrand, lblDealStatus, lblStockStatus, lblStatus, lblShelf;
         private Button btnResetFilters;
         private Button btnNew, btnEdit, btnMovement, btnDelete;
@@ -80,15 +80,34 @@ namespace ChickenDist.Forms
             // Row 1 Controls
             lblSearch = new Label 
             { 
-                Text = "🔍 بحث شامل:", 
+                Text = "🔍 نوع البحث:", 
                 AutoSize = true, 
                 ForeColor = Theme.TextSearchLabel, 
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
+
+            cboSearchType = new ComboBox
+            {
+                Width = 145,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            cboSearchType.Items.AddRange(new object[] {
+                "🔍 بحث شامل (الكل)",
+                "🔢 كود الصنف فقط",
+                "🏷️ اسم الصنف فقط",
+                "📦 الباركود / كود الميزان",
+                "⚙️ رقم القطعة (Part No)"
+            });
+            cboSearchType.SelectedIndex = 0;
+            cboSearchType.SelectedIndexChanged += (s, e) => FilterProducts();
             
             txtSearch = new TextBox 
             { 
-                Width = 220, 
+                Width = 200, 
                 BackColor = Color.White, 
                 ForeColor = Color.FromArgb(15, 23, 42), 
                 BorderStyle = BorderStyle.FixedSingle, 
@@ -246,7 +265,7 @@ namespace ChickenDist.Forms
             };
 
             pnlHeader.Controls.AddRange(new Control[] { 
-                lblSearch, txtSearch, 
+                lblSearch, cboSearchType, txtSearch, 
                 lblCat, cboCategory, 
                 lblBrand, cboBrand, 
                 lblShelf, cboShelf, 
@@ -267,6 +286,9 @@ namespace ChickenDist.Forms
 
                 lblSearch.Location = new Point(curX1 - lblSearch.PreferredWidth, 15);
                 curX1 -= (lblSearch.PreferredWidth + 5);
+
+                cboSearchType.Location = new Point(curX1 - cboSearchType.Width, 12);
+                curX1 -= (cboSearchType.Width + 6);
 
                 txtSearch.Location = new Point(curX1 - txtSearch.Width, 12);
                 curX1 -= (txtSearch.Width + 15);
@@ -856,22 +878,50 @@ namespace ChickenDist.Forms
                     // Free-text query
                     string name = r["ProductName"]?.ToString() ?? "";
                     string code = r["ProductCode"]?.ToString() ?? "";
-                    string partNum = r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString() : "";
+                    string partNum = r.Table.Columns.Contains("PartNumber") && r["PartNumber"] != DBNull.Value ? r["PartNumber"].ToString() : "";
                     string barcode = r.Table.Columns.Contains("InternationalCode") && r["InternationalCode"] != DBNull.Value ? r["InternationalCode"].ToString() : "";
                     string model = r.Table.Columns.Contains("CarModel") && r["CarModel"] != DBNull.Value ? r["CarModel"].ToString() : "";
                     string enName = r.Table.Columns.Contains("EnglishName") && r["EnglishName"] != DBNull.Value ? r["EnglishName"].ToString() : "";
 
                     if (!string.IsNullOrEmpty(query))
                     {
-                        bool match = name.ToLower().Contains(query) ||
-                                     code.ToLower().Contains(query) ||
-                                     partNum.ToLower().Contains(query) ||
-                                     barcode.ToLower().Contains(query) ||
-                                     brand.ToLower().Contains(query) ||
-                                     producer.ToLower().Contains(query) ||
-                                     model.ToLower().Contains(query) ||
-                                     shelf.ToLower().Contains(query) ||
-                                     enName.ToLower().Contains(query);
+                        int searchType = cboSearchType != null ? cboSearchType.SelectedIndex : 0;
+                        bool match = false;
+
+                        if (searchType == 1) // 🔢 كود الصنف فقط
+                        {
+                            match = code.Trim().Equals(query, StringComparison.OrdinalIgnoreCase) ||
+                                    code.ToLower().StartsWith(query) ||
+                                    code.ToLower().Contains(query);
+                        }
+                        else if (searchType == 2) // 🏷️ اسم الصنف فقط
+                        {
+                            match = name.ToLower().Contains(query) || enName.ToLower().Contains(query);
+                        }
+                        else if (searchType == 3) // 📦 الباركود / كود الميزان
+                        {
+                            match = barcode.ToLower().Contains(query) || 
+                                    (r.Table.Columns.Contains("Unit1Barcode") && r["Unit1Barcode"] != DBNull.Value && r["Unit1Barcode"].ToString().ToLower().Contains(query)) ||
+                                    (r.Table.Columns.Contains("Unit2Barcode") && r["Unit2Barcode"] != DBNull.Value && r["Unit2Barcode"].ToString().ToLower().Contains(query)) ||
+                                    (r.Table.Columns.Contains("ScalePLU") && r["ScalePLU"] != DBNull.Value && r["ScalePLU"].ToString().ToLower().Contains(query));
+                        }
+                        else if (searchType == 4) // ⚙️ رقم القطعة
+                        {
+                            match = partNum.ToLower().Contains(query);
+                        }
+                        else // 🔍 بحث شامل (في كل الحقول)
+                        {
+                            match = name.ToLower().Contains(query) ||
+                                    code.ToLower().Contains(query) ||
+                                    partNum.ToLower().Contains(query) ||
+                                    barcode.ToLower().Contains(query) ||
+                                    brand.ToLower().Contains(query) ||
+                                    producer.ToLower().Contains(query) ||
+                                    model.ToLower().Contains(query) ||
+                                    shelf.ToLower().Contains(query) ||
+                                    enName.ToLower().Contains(query);
+                        }
+
                         if (!match) continue;
                     }
 

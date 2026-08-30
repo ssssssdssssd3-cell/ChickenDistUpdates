@@ -36,6 +36,7 @@ namespace ChickenDist.Forms
 		private Button btnExportPdf;
 
 		private TextBox txtSearchClient;
+		private ComboBox cboReportSearchType;
 
 		private DataTable _currentDt;
 		private string _targetModule = null;
@@ -394,9 +395,30 @@ namespace ChickenDist.Forms
 			};
 			LoadEmployees();
 
+			cboReportSearchType = new ComboBox
+			{
+				Width = 145,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
+				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Margin = new Padding(0)
+			};
+			cboReportSearchType.Items.AddRange(new object[]
+			{
+				"🔍 بحث شامل (الكل)",
+				"🏷️ اسم الصنف (Name)",
+				"🔢 كود الصنف (Code)",
+				"🧾 رقم الفاتورة (Inv No)",
+				"👥 اسم العميل / المورد"
+			});
+			cboReportSearchType.SelectedIndex = 0;
+			cboReportSearchType.SelectedIndexChanged += (s, e) => ApplyAllFilters();
+
 			txtSearchClient = new TextBox
 			{
-				Width = 190,
+				Width = 170,
 				BackColor = Color.White,
 				ForeColor = Color.FromArgb(30, 41, 59),
 				BorderStyle = BorderStyle.FixedSingle,
@@ -526,7 +548,8 @@ namespace ChickenDist.Forms
 			flowFilters.Controls.Add(MakeFilterPanel("🏢 المخزن:", cboWarehouse, 125));
 			flowFilters.Controls.Add(MakeFilterPanel("💳 طريقة الدفع:", cboPayType, 115));
 			flowFilters.Controls.Add(MakeFilterPanel("👔 الكاشير/المندوب:", cboEmployee, 135));
-			flowFilters.Controls.Add(MakeFilterPanel("🔍 بحث في النتائج:", txtSearchClient, 190, Color.FromArgb(255, 220, 110)));
+			flowFilters.Controls.Add(MakeFilterPanel("🔍 نوع البحث:", cboReportSearchType, 145));
+			flowFilters.Controls.Add(MakeFilterPanel("🔎 نص البحث:", txtSearchClient, 170, Color.FromArgb(255, 220, 110)));
 
 			pnlFiltersBar.Controls.Add(flowFilters);
 
@@ -4115,13 +4138,89 @@ namespace ChickenDist.Forms
 
 					if (hasQuery)
 					{
-						foreach (DataGridViewCell cell in row.Cells)
+						int searchType = cboReportSearchType != null ? cboReportSearchType.SelectedIndex : 0;
+						if (searchType == 1) // 🏷️ اسم الصنف فقط
 						{
-							string val = cell.Value?.ToString();
-							if (val != null && val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+							matchQuery = false;
+							foreach (DataGridViewCell cell in row.Cells)
 							{
-								matchQuery = true;
-								break;
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
+								string cName = dg.Columns[cell.ColumnIndex].Name;
+								if (hText.Contains("صنف") || hText.Contains("بيان") || cName.IndexOf("Product", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Item", StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									string val = cell.Value?.ToString();
+									if (val != null && val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+									{
+										matchQuery = true;
+										break;
+									}
+								}
+							}
+						}
+						else if (searchType == 2) // 🔢 كود الصنف فقط
+						{
+							matchQuery = false;
+							foreach (DataGridViewCell cell in row.Cells)
+							{
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
+								string cName = dg.Columns[cell.ColumnIndex].Name;
+								if (hText.Contains("كود") || cName.IndexOf("Code", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("ProductID", StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									string val = cell.Value?.ToString()?.Trim();
+									if (val != null && (val.Equals(query, StringComparison.OrdinalIgnoreCase) || val.StartsWith(query, StringComparison.OrdinalIgnoreCase) || val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0))
+									{
+										matchQuery = true;
+										break;
+									}
+								}
+							}
+						}
+						else if (searchType == 3) // 🧾 رقم الفاتورة فقط
+						{
+							matchQuery = false;
+							foreach (DataGridViewCell cell in row.Cells)
+							{
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
+								string cName = dg.Columns[cell.ColumnIndex].Name;
+								if (hText.Contains("فاتورة") || hText.Contains("سند") || hText.Contains("رقم") || cName.IndexOf("Sale", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Purchase", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Invoice", StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									string val = cell.Value?.ToString()?.Trim();
+									if (val != null && (val.Equals(query, StringComparison.OrdinalIgnoreCase) || val.StartsWith(query, StringComparison.OrdinalIgnoreCase) || val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0))
+									{
+										matchQuery = true;
+										break;
+									}
+								}
+							}
+						}
+						else if (searchType == 4) // 👥 اسم العميل / المورد
+						{
+							matchQuery = false;
+							foreach (DataGridViewCell cell in row.Cells)
+							{
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
+								string cName = dg.Columns[cell.ColumnIndex].Name;
+								if (hText.Contains("عميل") || hText.Contains("مورد") || cName.IndexOf("Client", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Supplier", StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									string val = cell.Value?.ToString();
+									if (val != null && val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+									{
+										matchQuery = true;
+										break;
+									}
+								}
+							}
+						}
+						else // 🔍 بحث شامل (في كل الحقول)
+						{
+							foreach (DataGridViewCell cell in row.Cells)
+							{
+								string val = cell.Value?.ToString();
+								if (val != null && val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									matchQuery = true;
+									break;
+								}
 							}
 						}
 					}
