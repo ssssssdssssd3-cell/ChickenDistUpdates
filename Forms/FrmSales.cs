@@ -557,44 +557,56 @@ namespace ChickenDist.Forms
 			{
 				Name = "ProductName",
 				HeaderText = "الصنف",
-				FillWeight = 120f
+				FillWeight = 110f
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "Quantity",
-				HeaderText = "الكمية",
-				FillWeight = 45f
+				HeaderText = "الكمية المباعة",
+				FillWeight = 40f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "ReturnedQty",
+				HeaderText = "كمية المرتجع ↩",
+				FillWeight = 42f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(239, 68, 68), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "UnitPrice",
 				HeaderText = "سعر الوحدة",
-				FillWeight = 50f
+				FillWeight = 45f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "LastClientPrice",
 				HeaderText = "آخر سعر للعميل 🏷️",
-				FillWeight = 55f,
-				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold) }
+				FillWeight = 50f,
+				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter }
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "IMEI",
 				HeaderText = "السيريال",
-				FillWeight = 55f
+				FillWeight = 45f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "Discount",
 				HeaderText = "الخصم",
-				FillWeight = 45f
+				FillWeight = 40f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "TotalPrice",
 				HeaderText = "الإجمالي",
-				FillWeight = 55f
+				FillWeight = 50f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
 			});
 
 			tblDetail.Controls.Add(pnlDetailBar, 0, 0);
@@ -972,9 +984,17 @@ namespace ChickenDist.Forms
 				string imeiVal = row.Table.Columns.Contains("IMEI") && row["IMEI"] != DBNull.Value ? row["IMEI"].ToString() : "-";
 				if (string.IsNullOrWhiteSpace(imeiVal)) imeiVal = "-";
 
+				decimal retQty = 0;
+				if (row.Table.Columns.Contains("PrevReturnedQty") && row["PrevReturnedQty"] != DBNull.Value)
+				{
+					retQty = Convert.ToDecimal(row["PrevReturnedQty"]);
+				}
+				string retQtyStr = retQty > 0 ? retQty.ToString("N2") : "-";
+
 				int addedItemIdx = dgItems.Rows.Add(
 					row["ProductName"], 
 					Convert.ToDecimal(row["Quantity"]).ToString("N2"), 
+					retQtyStr,
 					Convert.ToDecimal(row["UnitPrice"]).ToString("N2") + " ج", 
 					lastPriceStr,
 					imeiVal,
@@ -982,13 +1002,15 @@ namespace ChickenDist.Forms
 					Convert.ToDecimal(row["TotalPrice"]).ToString("N2") + " ج"
 				);
 
-				if (row.Table.Columns.Contains("PrevReturnedQty") && row["PrevReturnedQty"] != DBNull.Value && Convert.ToDecimal(row["PrevReturnedQty"]) > 0)
+				if (retQty > 0)
 				{
 					var addedItemRow = dgItems.Rows[addedItemIdx];
-					addedItemRow.DefaultCellStyle.BackColor = Color.FromArgb(70, 80, 95); // رصاصي غامق مميز للأصناف المسترجعة
-					addedItemRow.DefaultCellStyle.ForeColor = Color.White;
-					addedItemRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(45, 55, 70);
-					addedItemRow.DefaultCellStyle.SelectionForeColor = Color.Yellow;
+					addedItemRow.Cells["ReturnedQty"].Style.ForeColor = Color.FromArgb(220, 38, 38);
+					addedItemRow.Cells["ReturnedQty"].Style.BackColor = Color.FromArgb(254, 242, 242);
+					addedItemRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // أصفر مميز للصف الذي به مرتجع
+					addedItemRow.DefaultCellStyle.ForeColor = Color.Black;
+					addedItemRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);
+					addedItemRow.DefaultCellStyle.SelectionForeColor = Color.Black;
 				}
 			}
 		}
