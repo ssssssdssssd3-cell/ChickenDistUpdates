@@ -13,7 +13,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "2.6.7";
+        public const string CurrentVersion = "2.6.8";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -345,7 +345,8 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
-        /// استبدال الملف التنفيذي الحالي للبرنامج (الأيقونة الحالية) بملف جديد وإعادة تشغيله فوراً
+        /// استبدال الملف التنفيذي الحالي للبرنامج (الأيقونة الحالية) بالملف الجديد المحدث مباشرة
+        /// وإعادة تشغيله فوراً من نفس المسار الأصلي مع تنظيف مجلد التحديثات
         /// </summary>
         public static void ApplyAndReplaceExe(string newExePath)
         {
@@ -353,55 +354,133 @@ namespace ChickenDist.Core
             {
                 if (!File.Exists(newExePath))
                 {
-                    MessageBox.Show("ملف التحديث غير موجود:\n" + newExePath, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("ملف التحديث غير موجود:\n" + newExePath, "خطأ في التحديث", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 string currentExePath = Process.GetCurrentProcess().MainModule.FileName;
                 string currentDir     = Path.GetDirectoryName(currentExePath);
-                string batPath        = Path.Combine(currentDir, "apply_update.bat");
+                int currentPid        = Process.GetCurrentProcess().Id;
 
-                string bat = $@"@echo off
+                string ps1Path = Path.Combine(currentDir, "apply_update.ps1");
+                string batPath = Path.Combine(currentDir, "apply_update.bat");
+
+                // 1. إنشاء سكريبت PowerShell المتقدم لضمان الاستبدال وإعادة التشغيل بدقة 100%
+                string psScript = @"
+$ErrorActionPreference = 'SilentlyContinue'
+$targetPid = " + currentPid + @"
+$mainExe = '" + currentExePath.Replace("'", "''") + @"'
+$newExe = '" + newExePath.Replace("'", "''") + @"'
+$appDir = '" + currentDir.Replace("'", "''") + @"'
+
+# 1. انتظار إغلاق البرنامج بالكامل
+for ($i = 0; $i -lt 40; $i++) {
+    $proc = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
+    if (-not $proc) { break }
+    Start-Sleep -Milliseconds 200
+}
+Stop-Process -Id $targetPid -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 300
+
+# 2. إغلاق أي عمليات أخرى تعمل من نفس الملف التنفيذي
+try {
+    $exeName = [System.IO.Path]::GetFileNameWithoutExtension($mainExe)
+    Get-Process -Name $exeName -ErrorAction SilentlyContinue | Where-Object { 
+        try { $_.MainModule.FileName -eq $mainExe } catch { $false }
+    } | Stop-Process -Force -ErrorAction SilentlyContinue
+} catch {}
+
+# 3. إزالة أي حماية للقراءة فقط واستبدال الملف الأصلي مباشرة
+$replaced = $false
+for ($i = 0; $i -lt 30; $i++) {
+    try {
+        if (Test-Path $mainExe) {
+            Set-ItemProperty -Path $mainExe -Name IsReadOnly -Value $false -ErrorAction SilentlyContinue
+            [System.IO.File]::SetAttributes($mainExe, [System.IO.FileAttributes]::Normal)
+        }
+        Copy-Item -Path $newExe -Destination $mainExe -Force -ErrorAction Stop
+        $replaced = $true
+        break
+    } catch {
+        Start-Sleep -Milliseconds 300
+    }
+}
+
+# 4. تنظيف ملف التحديث من مجلد Updates ليبقى ملف تنفيذي واحد فقط
+if ($replaced) {
+    Remove-Item -Path $newExe -Force -ErrorAction SilentlyContinue
+}
+
+# 5. تشغيل البرنامج المحدث مباشرة من مساره الأصلي
+Start-Sleep -Milliseconds 200
+Set-Location -Path $appDir
+Start-Process -FilePath $mainExe -WorkingDirectory $appDir
+
+# 6. حذف سكريبت التحديث المؤقت
+Remove-Item -Path $PSCommandPath -Force -ErrorAction SilentlyContinue
+";
+
+                File.WriteAllText(ps1Path, psScript, Encoding.UTF8);
+
+                // 2. إنشاء سكريبت CMD احتياطي في حال تعذر تشغيل PowerShell
+                string batScript = $@"@echo off
 chcp 65001 > nul
 setlocal enabledelayedexpansion
 
-:: إنهاء العملية الحالية
-taskkill /f /pid {Process.GetCurrentProcess().Id} >nul 2>&1
+:: إيقاف العملية السابقة وانتظار تحرير الملف
+ping 127.0.0.1 -n 2 > nul
+taskkill /f /pid {currentPid} >nul 2>&1
 
-:: حلقة تكرار لضمان تحرير الملف واستبداله مباشرة فوق الملف التنفيذي الأصلي
+:: محاولات استبدال الملف الأصلي
 set /a attempts=0
-:waitloop
-timeout /t 1 /nobreak > nul
+:retry_copy
+attrib -r -s -h ""{currentExePath}"" >nul 2>&1
 copy /y ""{newExePath}"" ""{currentExePath}"" > nul 2>&1
 if errorlevel 1 (
-    taskkill /f /pid {Process.GetCurrentProcess().Id} >nul 2>&1
     set /a attempts+=1
-    if !attempts! lss 20 (
-        goto waitloop
-    )
+    ping 127.0.0.1 -n 2 > nul
+    if !attempts! lss 25 goto retry_copy
 )
 
-:: الانتقال لمجلد البرنامج وتشغيل الملف المحدث فوراً لضمان تحميل الإعدادات وقاعدة البيانات
+:: تشغيل النسخة المحدثة من مسارها الأصلي فوراً
 cd /d ""{currentDir}""
 start """" ""{currentExePath}""
 
-:: تنظيف ملف التحديث المؤقت
+:: تنظيف الملف المؤقت
 del /f /q ""{newExePath}"" > nul 2>&1
-
-:: حذف ملف الباتش الذاتي
 (goto) 2>nul & del ""%~f0""
 ";
-                File.WriteAllText(batPath, bat, Encoding.UTF8);
+                File.WriteAllText(batPath, batScript, Encoding.UTF8);
 
-                var psi = new ProcessStartInfo
+                // 3. إطلاق عملية التحديث في الخلفية بأعلى أولوية
+                try
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c \"{batPath}\"",
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    WindowStyle = ProcessWindowStyle.Hidden
-                };
-                Process.Start(psi);
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "powershell.exe",
+                        Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{ps1Path}\"",
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = currentDir
+                    };
+                    Process.Start(psi);
+                }
+                catch
+                {
+                    // Fallback to cmd batch if powershell is disabled
+                    var psiBat = new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        Arguments = $"/c \"{batPath}\"",
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = currentDir
+                    };
+                    Process.Start(psiBat);
+                }
+
                 Environment.Exit(0);
             }
             catch (Exception ex)
