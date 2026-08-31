@@ -237,9 +237,9 @@ namespace ChickenDist.Services
                     WHERE IsActive = 1");
                 string usersJson = DataTableToJson(dtUsers);
 
-                // 10. سجل آخر فواتير المبيعات
+                // 10. سجل فواتير المبيعات (آخر 90 يوم - لدعم فلترة التاريخ في التطبيق)
                 DataTable dtRecentSales = DbHelper.Query(@"
-                    SELECT TOP 200 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
+                    SELECT TOP 2000 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
                            ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
                            ISNULL(s.TotalAmount, 0) AS TotalAmount,
                            ISNULL(s.PaidAmount, 0) AS PaidAmount,
@@ -248,30 +248,33 @@ namespace ChickenDist.Services
                            ISNULL(s.InvoiceType, N'مبيعات') AS InvoiceType
                     FROM Sales s
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    WHERE s.SaleDate >= DATEADD(DAY, -90, GETDATE())
                     ORDER BY s.SaleID DESC");
                 string recentSalesJson = DataTableToJson(dtRecentSales);
 
-                // 11. سجل آخر فواتير المشتريات
+                // 11. سجل فواتير المشتريات (آخر 90 يوم)
                 DataTable dtRecentPurchases = DbHelper.Query(@"
-                    SELECT TOP 100 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
+                    SELECT TOP 500 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
                            ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
                            ISNULL(p.TotalAmount, 0) AS TotalAmount,
                            ISNULL(p.PaidAmount, 0) AS PaidAmount,
                            ISNULL(p.RemainingAmount, 0) AS RemainingAmount
                     FROM Purchases p
                     LEFT JOIN Suppliers sup ON p.SupplierID = sup.SupplierID
+                    WHERE p.PurchaseDate >= DATEADD(DAY, -90, GETDATE())
                     ORDER BY p.PurchaseID DESC");
                 string recentPurchasesJson = DataTableToJson(dtRecentPurchases);
 
-                // 12. سجل حركات الخزينة
+                // 12. سجل حركات الخزينة (آخر 90 يوم)
                 DataTable dtRecentCash = DbHelper.Query(@"
-                    SELECT TOP 150 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                    SELECT TOP 1000 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
                            ISNULL(cb.AmountIn, 0) AS AmountIn,
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'') AS Notes,
                            ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
                     FROM CashBox cb
                     LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    WHERE cb.TransDate >= DATEADD(DAY, -90, GETDATE())
                     ORDER BY cb.CashID DESC");
                 string recentCashJson = DataTableToJson(dtRecentCash);
 
