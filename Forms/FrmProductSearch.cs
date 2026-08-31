@@ -329,6 +329,7 @@ namespace ChickenDist.Forms
                 {
                     frm.ShowDialog(this);
                 }
+                ProductCache.Invalidate();
                 LoadProducts();
             };
             btnCancel = Theme.MakeButton("❌ إلغاء", 130, 6, 125, 34, Color.FromArgb(120, 40, 40));

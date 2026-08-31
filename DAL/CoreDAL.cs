@@ -580,7 +580,8 @@ namespace ChickenDist.DAL
                 }
             }
             if (id == 0)
-                return DbHelper.ExecuteInsert(
+            {
+                int newId = DbHelper.ExecuteInsert(
                     @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode,IsService,IsQuickItem,
                                            Unit1Name,Unit1Barcode,Unit1SalePrice,Unit1PurchasePrice,Unit2Name,Unit2Factor,Unit2Barcode,Unit2SalePrice,Unit2PurchasePrice,Unit3Factor,ProducerCompany,HasExpiry,DefaultExpiryDays,DefaultSaleUnit,ProductSize,Color,EnglishName,ScalePLU) 
                       VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic,@plb,@srv,@qi,
@@ -604,6 +605,10 @@ namespace ChickenDist.DAL
                     DbHelper.P("@clr", string.IsNullOrEmpty(color) ? (object)DBNull.Value : color),
                     DbHelper.P("@enName", string.IsNullOrEmpty(englishName) ? (object)DBNull.Value : englishName),
                     DbHelper.P("@splu", string.IsNullOrWhiteSpace(scalePLU) ? (object)DBNull.Value : scalePLU.Trim()));
+
+                ProductCache.Invalidate();
+                return newId;
+            }
             else
             {
                 decimal oldPrice = 0m;

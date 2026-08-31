@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -500,6 +500,11 @@ namespace ChickenDist.Forms
             btnDelete.Click += (s, e) => DeleteCurrentBOM();
             pnlActionsLeft.Controls.Add(btnDelete);
 
+            pnlFinishedCard.SendToBack();
+            pnlQuickAdd.SendToBack();
+            pnlBottom.SendToBack();
+            dgItems.BringToFront();
+
 
             // ──────────────────────────────────────────────────────────────
             // 2. القائمة الجانبية (الوصفات وشجر الإنتاج المسجلة - على اليسار)
@@ -822,6 +827,37 @@ namespace ChickenDist.Forms
         {
             if (_selectedRawProductID <= 0)
             {
+                string rawText = txtRawProduct.Text.Trim();
+                if (!string.IsNullOrEmpty(rawText))
+                {
+                    var dt = DbHelper.Query(@"
+                        SELECT TOP 2 ProductID, ProductCode, ProductName,
+                               COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice,
+                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName
+                        FROM Products 
+                        WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName = @q",
+                        DbHelper.P("@q", rawText));
+
+                    if (dt != null && dt.Rows.Count == 1)
+                    {
+                        SetRawProduct(
+                            Convert.ToInt32(dt.Rows[0]["ProductID"]),
+                            dt.Rows[0]["ProductCode"]?.ToString(),
+                            dt.Rows[0]["ProductName"]?.ToString(),
+                            dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة",
+                            Convert.ToDecimal(dt.Rows[0]["CostPrice"] ?? 0)
+                        );
+                    }
+                    else
+                    {
+                        SelectRawProduct(rawText);
+                        return;
+                    }
+                }
+            }
+
+            if (_selectedRawProductID <= 0)
+            {
                 MessageBox.Show("يرجى اختيار مادة خام أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtRawProduct.Focus();
                 return;
@@ -936,6 +972,24 @@ namespace ChickenDist.Forms
         // ══════════════════════════════════════════════════════════════
         private void SaveCurrentBOM()
         {
+            if (_selectedFinishedProductID <= 0)
+            {
+                string fpText = txtFinishedProduct.Text.Trim();
+                if (!string.IsNullOrEmpty(fpText))
+                {
+                    var dt = DbHelper.Query(@"
+                        SELECT TOP 2 ProductID, ProductCode, ProductName 
+                        FROM Products 
+                        WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName = @q",
+                        DbHelper.P("@q", fpText));
+
+                    if (dt != null && dt.Rows.Count == 1)
+                    {
+                        LoadFinishedProductByID(Convert.ToInt32(dt.Rows[0]["ProductID"]));
+                    }
+                }
+            }
+
             if (_selectedFinishedProductID <= 0)
             {
                 MessageBox.Show("يرجى اختيار المنتج النهائي المراد تحديد مواد تصنيعه أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
