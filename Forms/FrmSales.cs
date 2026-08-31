@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
@@ -344,6 +346,13 @@ namespace ChickenDist.Forms
 				frm.Show();
 			};
 			flowLayoutPanel.Controls.Add(btnDailyInvoicesSheet);
+
+			// زر تصدير سجل المبيعات PDF
+			var btnExportPdf = Theme.MakeButton("📤 تصدير PDF", Color.FromArgb(220, 38, 38));
+			btnExportPdf.Size = new Size(120, 34);
+			btnExportPdf.Margin = new Padding(4, 0, 4, 0);
+			btnExportPdf.Click += delegate { ExportSalesListToPdf(); };
+			flowLayoutPanel.Controls.Add(btnExportPdf);
 			// ─── منطقة المحتوى: صفان بنسب مرنة (الفواتير أعلاه والأصناف أسفله تحت بعض) ───
 			TableLayoutPanel tblContent = new TableLayoutPanel
 			{
@@ -1178,6 +1187,446 @@ namespace ChickenDist.Forms
 					}
 				}
 			};
+		}
+
+		// ══════════════════════════════════════════════════════════════
+		//  📤 تصدير سجل المبيعات - PDF شبكي منظم
+		// ══════════════════════════════════════════════════════════════
+		private void ExportSalesListToPdf()
+		{
+			if (dgSales.Rows.Count == 0)
+			{
+				MessageBox.Show("لا توجد فواتير لتصديرها. يرجى تحميل البيانات أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				return;
+			}
+
+			using (var dlg = new SaveFileDialog
+			{
+				Title = "حفظ سجل المبيعات PDF",
+				Filter = "PDF Files (*.pdf)|*.pdf",
+				FileName = $"سجل المبيعات {dtpFrom.Value:yyyy-MM-dd} إلى {dtpTo.Value:yyyy-MM-dd}.pdf",
+				DefaultExt = "pdf"
+			})
+			{
+				if (dlg.ShowDialog() != DialogResult.OK) return;
+
+				try
+				{
+					BuildSalesPdf(dlg.FileName);
+					var res = MessageBox.Show(
+						$"✅ تم تصدير التقرير بنجاح!\n\nالمسار: {dlg.FileName}\n\nهل تريد فتح الملف الآن؟",
+						"تم التصدير",
+						MessageBoxButtons.YesNo,
+						MessageBoxIcon.Information);
+					if (res == DialogResult.Yes)
+						System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show("حدث خطأ أثناء التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
+			}
+		}
+
+		private void BuildSalesPdf(string filePath)
+		{
+			// ─── إعدادات الصفحة A4 أفقي بدقة 96dpi ───
+			const float PAGE_W   = 1122f; // A4 landscape @96dpi = 297mm
+			const float PAGE_H   = 794f;  // 210mm
+			const float MARGIN_X = 30f;
+			const float MARGIN_Y = 28f;
+			const float HEADER_H = 72f;
+			const float FOOTER_H = 40f;
+			const float ROW_H    = 22f;
+
+			// أعمدة الجدول: (عنوان، نسبة العرض)
+			var cols = new (string Title, float Weight)[]
+			{
+				("#",                  0.022f),
+				("رقم الفاتورة",       0.070f),
+				("التاريخ",            0.080f),
+				("النوع",              0.058f),
+				("العميل",             0.160f),
+				("عدد الأصناف",        0.050f),
+				("قبل الخصم",          0.075f),
+				("الخصم ✂",            0.060f),
+				("بعد الخصم",          0.075f),
+				("الشحن",              0.050f),
+				("المرتجع ↩",          0.060f),
+				("الصافي ✔",           0.075f),
+				("الموظف",             0.100f),
+				("الملاحظات",          0.065f),
+			};
+
+			float tableW = PAGE_W - MARGIN_X * 2f;
+
+			// تحويل أعمدة الجدول إلى عرض فعلي
+			float totalWeight = 0; foreach (var c in cols) totalWeight += c.Weight;
+			var colWidths = new float[cols.Length];
+			for (int i = 0; i < cols.Length; i++) colWidths[i] = tableW * (cols[i].Weight / totalWeight);
+
+			// جمع بيانات الصفوف من الـ Grid
+			var rows = new List<string[]>();
+			decimal sumBeforeDisc = 0, sumDisc = 0, sumAfterDisc = 0, sumShipping = 0, sumReturn = 0, sumNet = 0;
+			for (int r = 0; r < dgSales.Rows.Count; r++)
+			{
+				var dgr = dgSales.Rows[r];
+				string beforeDisc = dgr.Cells["TotalBeforeDiscount"].Value?.ToString() ?? "-";
+				string disc       = dgr.Cells["DiscountAmount"].Value?.ToString() ?? "-";
+				string afterDisc  = dgr.Cells["TotalAmount"].Value?.ToString() ?? "-";
+				string shipping   = dgr.Cells["ShippingCharge"].Value?.ToString() ?? "-";
+				string returnAmt  = dgr.Cells["ReturnAmount"].Value?.ToString() ?? "-";
+				string net        = dgr.Cells["NetAmount"].Value?.ToString() ?? "-";
+
+				ParseNum(beforeDisc, ref sumBeforeDisc);
+				ParseNum(disc,       ref sumDisc);
+				ParseNum(afterDisc,  ref sumAfterDisc);
+				ParseNum(shipping,   ref sumShipping);
+				ParseNum(returnAmt,  ref sumReturn);
+				ParseNum(net,        ref sumNet);
+
+				rows.Add(new[]
+				{
+					(r + 1).ToString(),
+					dgr.Cells["SaleCode"].Value?.ToString() ?? "",
+					dgr.Cells["SaleDate"].Value?.ToString() ?? "",
+					dgr.Cells["SaleType"].Value?.ToString() ?? "",
+					dgr.Cells["ClientName"].Value?.ToString() ?? "",
+					dgr.Cells["ItemsCount"].Value?.ToString() ?? "",
+					beforeDisc,
+					disc,
+					afterDisc,
+					shipping,
+					returnAmt,
+					net,
+					dgr.Cells["CreatedByName"].Value?.ToString() ?? "",
+					dgr.Cells["Notes"].Value?.ToString() ?? "",
+				});
+			}
+
+			// ─── رسم الـ PDF صفحة بصفحة كـ Bitmap ثم نكتبها في PDF raw ───
+			float usableH = PAGE_H - MARGIN_Y * 2 - HEADER_H - FOOTER_H;
+			int rowsPerPage = Math.Max(1, (int)(usableH / ROW_H));
+			int totalPages = (int)Math.Ceiling((double)rows.Count / rowsPerPage);
+			if (totalPages == 0) totalPages = 1;
+
+			string company  = AppConfig.CompanyName;
+			string dateRange = $"الفترة: {dtpFrom.Value:dd/MM/yyyy} — {dtpTo.Value:dd/MM/yyyy}";
+			string genDate  = $"تاريخ الإنشاء: {DateTime.Now:dd/MM/yyyy HH:mm}";
+			string typeFilter = cboTypeFilter.SelectedItem?.ToString() ?? "الكل";
+			string clientFilter = (cboClientFilter.SelectedItem is ComboItem cci && cci.ID > 0) ? cci.Text : "الكل";
+
+			// Fonts
+			var fontTitle   = new Font("Arial", 15f, FontStyle.Bold);
+			var fontSub     = new Font("Arial", 9f);
+			var fontHead    = new Font("Arial", 8.5f, FontStyle.Bold);
+			var fontCell    = new Font("Arial", 7.8f);
+			var fontTotal   = new Font("Arial", 8.5f, FontStyle.Bold);
+			var fontFooter  = new Font("Arial", 8f);
+
+			// ألوان
+			Color clrHeader   = Color.FromArgb(30, 50, 80);
+			Color clrRowOdd   = Color.FromArgb(248, 250, 252);
+			Color clrRowEven  = Color.White;
+			Color clrTotalRow = Color.FromArgb(220, 238, 255);
+			Color clrBorder   = Color.FromArgb(180, 200, 220);
+			Color clrNetGreen = Color.FromArgb(21, 128, 61);
+			Color clrRetRed   = Color.FromArgb(185, 28, 28);
+			Color clrDiscOra  = Color.FromArgb(180, 100, 0);
+			Color clrText     = Color.FromArgb(20, 30, 50);
+
+			var pages = new List<Bitmap>();
+
+			for (int p = 0; p < totalPages; p++)
+			{
+				var bmp = new Bitmap((int)PAGE_W, (int)PAGE_H, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+				bmp.SetResolution(96, 96);
+				using (var g = Graphics.FromImage(bmp))
+				{
+					g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+					g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+					g.Clear(Color.White);
+
+					float y = MARGIN_Y;
+					float x = MARGIN_X;
+
+					// ─── رأس الصفحة ───
+					// شريط العنوان
+					using (var hBrush = new System.Drawing.Drawing2D.LinearGradientBrush(
+						new RectangleF(x, y, tableW, 48f),
+						Color.FromArgb(24, 45, 85), Color.FromArgb(37, 99, 235), 0f))
+					{
+						g.FillRectangle(hBrush, x, y, tableW, 48f);
+					}
+
+					// اسم الشركة
+					var sfRtl = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+					var sfLtr = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+					var sfCtr = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+
+					g.DrawString(company, fontTitle, Brushes.White, new RectangleF(x + 8, y, tableW - 16, 48f), sfCtr);
+
+					// شريط التفاصيل
+					using (var sb = new SolidBrush(Color.FromArgb(240, 245, 255)))
+						g.FillRectangle(sb, x, y + 48f, tableW, 24f);
+					using (var sb = new SolidBrush(Color.FromArgb(80, 100, 140)))
+					{
+						string infoLine = $"سجل المبيعات  |  {dateRange}  |  نوع الفاتورة: {typeFilter}  |  العميل: {clientFilter}  |  {genDate}  |  صفحة {p + 1} من {totalPages}";
+						g.DrawString(infoLine, fontSub, sb, new RectangleF(x + 4, y + 48f, tableW - 8, 24f), sfCtr);
+					}
+					// حد أسفل الرأس
+					using (var pen = new Pen(Color.FromArgb(37, 99, 235), 1.5f))
+						g.DrawLine(pen, x, y + 72f, x + tableW, y + 72f);
+
+					y += HEADER_H;
+
+					// ─── رأس أعمدة الجدول ───
+					using (var hb = new SolidBrush(clrHeader))
+						g.FillRectangle(hb, x, y, tableW, ROW_H + 2);
+
+					float cx = x;
+					for (int ci = 0; ci < cols.Length; ci++)
+					{
+						var rect = new RectangleF(cx, y, colWidths[ci], ROW_H + 2);
+						// حدود رأسية
+						using (var p2 = new Pen(Color.FromArgb(60, 80, 120))) g.DrawRectangle(p2, rect.X, rect.Y, rect.Width, rect.Height);
+						var sf2 = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+						g.DrawString(cols[ci].Title, fontHead, Brushes.White, rect, sf2);
+						cx += colWidths[ci];
+					}
+					y += ROW_H + 2;
+
+					// ─── صفوف البيانات ───
+					int startRow = p * rowsPerPage;
+					int endRow   = Math.Min(startRow + rowsPerPage, rows.Count);
+
+					for (int ri = startRow; ri < endRow; ri++)
+					{
+						var rowData = rows[ri];
+						bool isOdd = (ri % 2 == 0);
+						Color rowBg = isOdd ? clrRowOdd : clrRowEven;
+
+						using (var rb = new SolidBrush(rowBg))
+							g.FillRectangle(rb, x, y, tableW, ROW_H);
+
+						cx = x;
+						for (int ci = 0; ci < cols.Length; ci++)
+						{
+							var rect = new RectangleF(cx + 2, y + 1, colWidths[ci] - 4, ROW_H - 2);
+							// اختر لون النص حسب العمود
+							Color cellColor = clrText;
+							if (ci == 7)  cellColor = clrDiscOra;
+							else if (ci == 10) cellColor = clrRetRed;
+							else if (ci == 11) cellColor = clrNetGreen;
+
+							var sf3 = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+							// رقم الصف والأعمدة المحايدة تتوسط
+							if (ci == 0 || ci == 4 || ci == 5 || ci == 12 || ci == 13)
+								sf3.Alignment = StringAlignment.Center;
+
+							using (var cb = new SolidBrush(cellColor))
+								g.DrawString(rowData[ci], fontCell, cb, rect, sf3);
+
+							// حدود الخلية الرأسية
+							using (var bp = new Pen(clrBorder, 0.5f))
+								g.DrawRectangle(bp, cx, y, colWidths[ci], ROW_H);
+							cx += colWidths[ci];
+						}
+						// خط فاصل أفقي
+						using (var bp = new Pen(clrBorder, 0.4f))
+							g.DrawLine(bp, x, y + ROW_H, x + tableW, y + ROW_H);
+						y += ROW_H;
+					}
+
+					// ─── صف الإجماليات (آخر صفحة فقط) ───
+					if (p == totalPages - 1)
+					{
+						using (var tb = new SolidBrush(clrTotalRow))
+							g.FillRectangle(tb, x, y, tableW, ROW_H + 2);
+
+						string[] totals = {
+							"",
+							"الإجمالي",
+							"",
+							"",
+							$"{rows.Count} فاتورة",
+							"",
+							sumBeforeDisc.ToString("N2") + " ج",
+							sumDisc.ToString("N2") + " ج",
+							sumAfterDisc.ToString("N2") + " ج",
+							sumShipping.ToString("N2") + " ج",
+							sumReturn.ToString("N2") + " ج",
+							sumNet.ToString("N2") + " ج",
+							"",
+							""
+						};
+
+						cx = x;
+						for (int ci = 0; ci < cols.Length; ci++)
+						{
+							var rect = new RectangleF(cx + 2, y + 1, colWidths[ci] - 4, ROW_H);
+							Color tc = (ci == 7) ? clrDiscOra : (ci == 10) ? clrRetRed : (ci == 11) ? clrNetGreen : clrText;
+							var sf4 = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+							if (ci == 1 || ci == 4) sf4.Alignment = StringAlignment.Center;
+							using (var cb = new SolidBrush(tc))
+								g.DrawString(totals[ci], fontTotal, cb, rect, sf4);
+							using (var bp = new Pen(clrBorder, 1f))
+								g.DrawRectangle(bp, cx, y, colWidths[ci], ROW_H + 2);
+							cx += colWidths[ci];
+						}
+						y += ROW_H + 4;
+					}
+
+					// ─── إطار خارجي الجدول ───
+					using (var op = new Pen(Color.FromArgb(37, 99, 235), 1.5f))
+						g.DrawRectangle(op, MARGIN_X, MARGIN_Y + HEADER_H, tableW, PAGE_H - MARGIN_Y * 2 - HEADER_H - FOOTER_H);
+
+					// ─── ذيل الصفحة ───
+					float footerY = PAGE_H - MARGIN_Y - FOOTER_H + 8;
+					using (var sp = new Pen(Color.FromArgb(200, 210, 230)))
+						g.DrawLine(sp, x, footerY - 4, x + tableW, footerY - 4);
+
+					using (var fb = new SolidBrush(Color.FromArgb(100, 110, 130)))
+					{
+						g.DrawString($"🏢 {company}  —  ProSoft ERP", fontFooter, fb,
+							new RectangleF(x, footerY, tableW / 2, 20), sfRtl);
+						g.DrawString($"صفحة {p + 1} من {totalPages}  |  إجمالي الفواتير: {rows.Count}  |  الصافي الكلي: {sumNet:N2} ج", fontFooter, fb,
+							new RectangleF(x + tableW / 2, footerY, tableW / 2, 20), sfLtr);
+					}
+				}
+				pages.Add(bmp);
+			}
+
+			// ─── كتابة ملف PDF يدوياً بصيغة PDF raw مع صور JPEG لكل صفحة ───
+			SaveBitmapsAsPdf(filePath, pages, (int)PAGE_W, (int)PAGE_H);
+
+			// تنظيف
+			fontTitle.Dispose(); fontSub.Dispose(); fontHead.Dispose();
+			fontCell.Dispose(); fontTotal.Dispose(); fontFooter.Dispose();
+			foreach (var bmp in pages) bmp.Dispose();
+		}
+
+		private static void ParseNum(string s, ref decimal total)
+		{
+			if (string.IsNullOrEmpty(s) || s == "-") return;
+			string clean = s.Replace(" ج", "").Replace(",", "").Trim();
+			if (decimal.TryParse(clean, out decimal v)) total += v;
+		}
+
+		private static void SaveBitmapsAsPdf(string filePath, List<Bitmap> pages, int pageW, int pageH)
+		{
+			// PDF يدوي بدون مكتبات خارجية:
+			// نحوّل كل صفحة لـ JPEG bytes، ثم نبني هيكل PDF بسيط يضم الصور
+			var jpegBytes = new List<byte[]>();
+			foreach (var bmp in pages)
+			{
+				using (var ms = new System.IO.MemoryStream())
+				{
+					var jpegEncoder = GetJpegEncoder();
+					var encoderParams = new System.Drawing.Imaging.EncoderParameters(1);
+					encoderParams.Param[0] = new System.Drawing.Imaging.EncoderParameter(
+						System.Drawing.Imaging.Encoder.Quality, 90L);
+					bmp.Save(ms, jpegEncoder, encoderParams);
+					jpegBytes.Add(ms.ToArray());
+				}
+			}
+
+			using (var fs = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+			using (var bw = new System.IO.BinaryWriter(fs))
+			{
+				// PDF Header
+				var header = System.Text.Encoding.ASCII.GetBytes("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n");
+				bw.Write(header);
+
+				var offsets = new List<long>();
+				int objCount = 0;
+
+				// Helper لكتابة object وحفظ offset
+				void WriteObj(int objNum, string content)
+				{
+					while (offsets.Count < objNum) offsets.Add(0);
+					offsets[objNum - 1] = fs.Position;
+					var bytes = System.Text.Encoding.ASCII.GetBytes($"{objNum} 0 obj\n{content}\nendobj\n");
+					bw.Write(bytes);
+				}
+
+				int totalObjs = 3 + pages.Count * 2; // catalog + pages + (page + image) * n
+				objCount = totalObjs;
+
+				// Obj 1: Catalog
+				WriteObj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+
+				// Obj 2: Pages (نبنيها بعد معرفة كل pages)
+				// سنكتبها مؤقتاً ونعود لها
+				long pagesOffset = fs.Position;
+				offsets.Add(pagesOffset);
+				string pagesKids = string.Join(" ", Enumerable.Range(0, pages.Count).Select(i => $"{3 + i * 2} 0 R"));
+				var pagesContent = $"<< /Type /Pages /Kids [{pagesKids}] /Count {pages.Count} >>";
+				bw.Write(System.Text.Encoding.ASCII.GetBytes($"2 0 obj\n{pagesContent}\nendobj\n"));
+
+				// Pages + Images
+				float ptW = pageW * 72f / 96f;  // convert px@96dpi to points
+				float ptH = pageH * 72f / 96f;
+
+				for (int i = 0; i < pages.Count; i++)
+				{
+					int pageObjNum  = 3 + i * 2;
+					int imageObjNum = 4 + i * 2;
+
+					// Page object
+					long pageOff = fs.Position;
+					while (offsets.Count < pageObjNum) offsets.Add(0);
+					offsets[pageObjNum - 1] = pageOff;
+					string pageContent = $"<< /Type /Page /Parent 2 0 R " +
+						$"/MediaBox [0 0 {ptW.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)} {ptH.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)}] " +
+						$"/Contents {pageObjNum + pages.Count * 2 + 1 + i} 0 R " +
+						$"/Resources << /XObject << /Im{i} {imageObjNum} 0 R >> >> >>";
+					bw.Write(System.Text.Encoding.ASCII.GetBytes($"{pageObjNum} 0 obj\n{pageContent}\nendobj\n"));
+
+					// Image object
+					long imageOff = fs.Position;
+					while (offsets.Count < imageObjNum) offsets.Add(0);
+					offsets[imageObjNum - 1] = imageOff;
+					var imgBytes = jpegBytes[i];
+					string imgDictStr = $"<< /Type /XObject /Subtype /Image /Width {pageW} /Height {pageH} " +
+						$"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {imgBytes.Length} >>";
+					bw.Write(System.Text.Encoding.ASCII.GetBytes($"{imageObjNum} 0 obj\n{imgDictStr}\nstream\n"));
+					bw.Write(imgBytes);
+					bw.Write(System.Text.Encoding.ASCII.GetBytes("\nendstream\nendobj\n"));
+				}
+
+				// Content streams (رسم الصورة على كل صفحة)
+				int contentBase = 3 + pages.Count * 2;
+				for (int i = 0; i < pages.Count; i++)
+				{
+					int contentObjNum = contentBase + 1 + i;
+					long contentOff = fs.Position;
+					while (offsets.Count < contentObjNum) offsets.Add(0);
+					offsets[contentObjNum - 1] = contentOff;
+					string streamContent = $"q {ptW.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)} 0 0 {ptH.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)} 0 0 cm /Im{i} Do Q";
+					string contentDict = $"<< /Length {streamContent.Length} >>";
+					bw.Write(System.Text.Encoding.ASCII.GetBytes($"{contentObjNum} 0 obj\n{contentDict}\nstream\n{streamContent}\nendstream\nendobj\n"));
+				}
+
+				// Cross-reference table
+				long xrefOffset = fs.Position;
+				int xrefCount = offsets.Count + 1;
+				bw.Write(System.Text.Encoding.ASCII.GetBytes($"xref\n0 {xrefCount}\n"));
+				bw.Write(System.Text.Encoding.ASCII.GetBytes("0000000000 65535 f \n"));
+				foreach (var off in offsets)
+					bw.Write(System.Text.Encoding.ASCII.GetBytes($"{off:0000000000} 00000 n \n"));
+
+				// Trailer
+				string trailer = $"trailer\n<< /Size {xrefCount} /Root 1 0 R >>\nstartxref\n{xrefOffset}\n%%EOF";
+				bw.Write(System.Text.Encoding.ASCII.GetBytes(trailer));
+			}
+		}
+
+		private static System.Drawing.Imaging.ImageCodecInfo GetJpegEncoder()
+		{
+			foreach (var c in System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders())
+				if (c.MimeType == "image/jpeg") return c;
+			return null;
 		}
 	}
 }
