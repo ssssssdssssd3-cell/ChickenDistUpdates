@@ -173,10 +173,22 @@ namespace ChickenDist.Forms
                 Location = new Point(12, 78),
                 Width = 270,
                 Height = 32,
-                ReadOnly = true,
+                ReadOnly = false,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold
+            };
+            txtFinishedProduct.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    string q = txtFinishedProduct.Text.Trim();
+                    if (string.IsNullOrEmpty(q)) { SelectFinishedProduct(); return; }
+                    var dt = DbHelper.Query("SELECT TOP 1 ProductID FROM Products WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName LIKE '%' + @q + '%'", DbHelper.P("@q", q));
+                    if (dt != null && dt.Rows.Count > 0) LoadFinishedProduct(Convert.ToInt32(dt.Rows[0]["ProductID"]));
+                    else SelectFinishedProduct(q);
+                }
             };
             pnlHeader.Controls.Add(txtFinishedProduct);
 
@@ -327,9 +339,6 @@ namespace ChickenDist.Forms
                     RecalculateTotals();
                 }
             };
-            this.Controls.Add(dgItems);
-            dgItems.BringToFront();
-
             // ── Bottom Summary & Action Bar ──
             var pnlBottom = new Panel
             {
@@ -338,7 +347,6 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard,
                 Padding = new Padding(12)
             };
-            this.Controls.Add(pnlBottom);
 
             // Row 1: Cost summaries
             lblRawCost = new Label
@@ -401,6 +409,13 @@ namespace ChickenDist.Forms
             btnPrint = Theme.MakeButton("🖨️ طباعة إذن التشغيل", 885, 50, 170, 42, Color.FromArgb(40, 120, 180));
             btnPrint.Click += (s, e) => PrintOrder();
             pnlBottom.Controls.Add(btnPrint);
+
+            // ── Clean Docking ──
+            this.Controls.Clear();
+            this.Controls.Add(dgItems);
+            this.Controls.Add(pnlHeader);
+            this.Controls.Add(pnlBottom);
+            dgItems.BringToFront();
         }
 
         private void LoadWarehouses()
@@ -419,9 +434,9 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void SelectFinishedProduct()
+        private void SelectFinishedProduct(string initialSearch = "")
         {
-            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true, initialSearchText: initialSearch))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {

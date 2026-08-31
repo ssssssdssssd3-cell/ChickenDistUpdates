@@ -180,10 +180,22 @@ namespace ChickenDist.Forms
                 Location = new Point(12, 78),
                 Width = 320,
                 Height = 32,
-                ReadOnly = true,
+                ReadOnly = false,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold
+            };
+            txtFinishedProduct.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    string q = txtFinishedProduct.Text.Trim();
+                    if (string.IsNullOrEmpty(q)) { SelectFinishedProduct(); return; }
+                    var dt = DbHelper.Query("SELECT TOP 1 ProductID FROM Products WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName LIKE '%' + @q + '%'", DbHelper.P("@q", q));
+                    if (dt != null && dt.Rows.Count > 0) LoadFinishedProduct(Convert.ToInt32(dt.Rows[0]["ProductID"]));
+                    else SelectFinishedProduct(q);
+                }
             };
             pnlHeader.Controls.Add(txtFinishedProduct);
 
@@ -280,8 +292,6 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(30, 41, 59),
                 Padding = new Padding(10)
             };
-            this.Controls.Add(pnlQuickAdd);
-            pnlQuickAdd.BringToFront();
 
             var lblAddRawTitle = new Label { Text = "📦 مادة التصنيع المراد خصمها:", Location = new Point(12, 8), AutoSize = true, ForeColor = Color.WhiteSmoke };
             pnlQuickAdd.Controls.Add(lblAddRawTitle);
@@ -291,14 +301,32 @@ namespace ChickenDist.Forms
                 Location = new Point(12, 28),
                 Width = 270,
                 Height = 30,
-                ReadOnly = true,
+                ReadOnly = false,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain
+            };
+            txtRawProduct.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    string q = txtRawProduct.Text.Trim();
+                    if (string.IsNullOrEmpty(q)) { SelectRawProduct(true); return; }
+                    var dt = DbHelper.Query("SELECT TOP 1 ProductID FROM Products WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName LIKE '%' + @q + '%'", DbHelper.P("@q", q));
+                    if (dt != null && dt.Rows.Count > 0)
+                    {
+                        LoadRawProductByID(Convert.ToInt32(dt.Rows[0]["ProductID"]), true);
+                    }
+                    else
+                    {
+                        SelectRawProduct(true, q);
+                    }
+                }
             };
             pnlQuickAdd.Controls.Add(txtRawProduct);
 
             btnBrowseRaw = Theme.MakeButton("🔍 بحث أصناف", 290, 26, 110, 32, Color.FromArgb(51, 65, 85));
-            btnBrowseRaw.Click += (s, e) => SelectRawProduct();
+            btnBrowseRaw.Click += (s, e) => SelectRawProduct(true);
             pnlQuickAdd.Controls.Add(btnBrowseRaw);
 
             var lblRawQtyTitle = new Label { Text = "الكمية:", Location = new Point(415, 8), AutoSize = true, ForeColor = Color.WhiteSmoke };
@@ -400,9 +428,7 @@ namespace ChickenDist.Forms
                     RecalculateTotals();
                 }
             };
-            this.Controls.Add(dgItems);
-            dgItems.BringToFront();
-
+            
             // ── Bottom Summary & Action Bar ──
             var pnlBottom = new Panel
             {
@@ -411,7 +437,6 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard,
                 Padding = new Padding(12)
             };
-            this.Controls.Add(pnlBottom);
 
             lblRawCostSummary = new Label
             {
@@ -473,6 +498,14 @@ namespace ChickenDist.Forms
             btnPrint = Theme.MakeButton("🖨️ طباعة إذن التشغيل", 885, 50, 170, 42, Color.FromArgb(40, 120, 180));
             btnPrint.Click += (s, e) => PrintOrder();
             pnlBottom.Controls.Add(btnPrint);
+
+            // ── Clean Docking ──
+            this.Controls.Clear();
+            this.Controls.Add(dgItems);
+            this.Controls.Add(pnlQuickAdd);
+            this.Controls.Add(pnlHeader);
+            this.Controls.Add(pnlBottom);
+            dgItems.BringToFront();
         }
 
         private void LoadWarehouses()
@@ -491,71 +524,83 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void SelectFinishedProduct()
+        private void SelectFinishedProduct(string initialSearch = "")
         {
-            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true, initialSearchText: initialSearch))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
-                    var dt = DbHelper.Query(@"
-                        SELECT ProductID, ProductCode, ProductName, 
-                               COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
-                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
-                        FROM Products WHERE ProductID = @id",
-                        DbHelper.P("@id", frm.SelectedProductID));
-
-                    if (dt != null && dt.Rows.Count > 0)
-                    {
-                        _selectedFinishedProductID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-                        _selectedFinishedProductCode = dt.Rows[0]["ProductCode"]?.ToString();
-                        _selectedFinishedProductName = dt.Rows[0]["ProductName"]?.ToString();
-                        txtFinishedProduct.Text = $"{_selectedFinishedProductCode} - {_selectedFinishedProductName}";
-                        txtUnitName.Text = dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة";
-                        RecalculateTotals();
-                    }
+                    LoadFinishedProduct(frm.SelectedProductID);
                 }
             }
         }
 
-        private void SelectRawProduct(bool autoAddToGrid = true)
+        private void LoadFinishedProduct(int productId)
         {
-            using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
+            var dt = DbHelper.Query(@"
+                SELECT ProductID, ProductCode, ProductName, 
+                       COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
+                       COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                FROM Products WHERE ProductID = @id",
+                DbHelper.P("@id", productId));
+
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                _selectedFinishedProductID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+                _selectedFinishedProductCode = dt.Rows[0]["ProductCode"]?.ToString();
+                _selectedFinishedProductName = dt.Rows[0]["ProductName"]?.ToString();
+                txtFinishedProduct.Text = $"{_selectedFinishedProductCode} - {_selectedFinishedProductName}";
+                txtUnitName.Text = dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة";
+                RecalculateTotals();
+                txtRawProduct.Focus();
+            }
+        }
+
+        private void SelectRawProduct(bool autoAddToGrid = true, string initialSearch = "")
+        {
+            using (var frm = new FrmProductSearch(defaultShowZeroStock: true, initialSearchText: initialSearch))
             {
                 if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                 {
-                    if (frm.SelectedProductID == _selectedFinishedProductID)
+                    if (_selectedFinishedProductID > 0 && frm.SelectedProductID == _selectedFinishedProductID)
                     {
                         MessageBox.Show("لا يمكن اختيار نفس الصنف النهائي كمادة خام مستهلكة لنفسه!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
-                    var dt = DbHelper.Query(@"
-                        SELECT ProductID, ProductCode, ProductName, 
-                               COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
-                               COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
-                        FROM Products WHERE ProductID = @id",
-                        DbHelper.P("@id", frm.SelectedProductID));
+                    LoadRawProductByID(frm.SelectedProductID, autoAddToGrid, frm.SelectedUnitName, frm.SelectedPurchasePrice, frm.SelectedQuantity);
+                }
+            }
+        }
 
-                    if (dt != null && dt.Rows.Count > 0)
-                    {
-                        _selectedRawProductID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-                        _selectedRawProductCode = dt.Rows[0]["ProductCode"]?.ToString();
-                        _selectedRawProductName = dt.Rows[0]["ProductName"]?.ToString();
-                        _selectedRawCostPrice = Convert.ToDecimal(dt.Rows[0]["CostPrice"] ?? 0);
+        private void LoadRawProductByID(int productId, bool autoAddToGrid = true, string unitOverride = "", decimal costOverride = 0, decimal qtyOverride = 1m)
+        {
+            var dt = DbHelper.Query(@"
+                SELECT ProductID, ProductCode, ProductName, 
+                       COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
+                       COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
+                FROM Products WHERE ProductID = @id",
+                DbHelper.P("@id", productId));
 
-                        txtRawProduct.Text = $"{_selectedRawProductCode} - {_selectedRawProductName}";
-                        txtRawUnit.Text = dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة";
-                        lblRawCost.Text = $"سعر التكلفة: {_selectedRawCostPrice:N2} ج.م";
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                _selectedRawProductID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+                _selectedRawProductCode = dt.Rows[0]["ProductCode"]?.ToString();
+                _selectedRawProductName = dt.Rows[0]["ProductName"]?.ToString();
+                _selectedRawCostPrice = costOverride > 0 ? costOverride : Convert.ToDecimal(dt.Rows[0]["CostPrice"] ?? 0);
 
-                        if (autoAddToGrid)
-                        {
-                            CommitCurrentRawToGrid();
-                        }
-                        else
-                        {
-                            numRawQty.Focus();
-                        }
-                    }
+                txtRawProduct.Text = $"{_selectedRawProductCode} - {_selectedRawProductName}";
+                txtRawUnit.Text = !string.IsNullOrEmpty(unitOverride) ? unitOverride : (dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة");
+                numRawQty.Value = qtyOverride > 0 ? qtyOverride : 1m;
+                lblRawCost.Text = $"سعر التكلفة: {_selectedRawCostPrice:N2} ج.م";
+
+                if (autoAddToGrid)
+                {
+                    CommitCurrentRawToGrid();
+                }
+                else
+                {
+                    numRawQty.Focus();
                 }
             }
         }

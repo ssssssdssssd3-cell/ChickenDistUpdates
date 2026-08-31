@@ -235,8 +235,6 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 6, 10, 6),
                 Margin = new Padding(0, 6, 0, 6)
             };
-            pnlEditor.Controls.Add(pnlQuickAdd);
-            pnlQuickAdd.BringToFront();
 
             var flowQuick = new FlowLayoutPanel
             {
@@ -493,34 +491,21 @@ namespace ChickenDist.Forms
             btnDelete.Click += (s, e) => DeleteCurrentBOM();
             pnlActionsLeft.Controls.Add(btnDelete);
 
-            // تجميع عناصر المحرر في TableLayoutPanel لضمان ثبات التخطيط وظهور جدول الخامات
-            var tblEditorLayout = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 4,
-                RightToLeft = RightToLeft.Yes,
-                BackColor = Theme.BgMain,
-                Margin = new Padding(0),
-                Padding = new Padding(0)
-            };
-            tblEditorLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 135f)); // 0: Finished Card
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86f));  // 1: Quick Add Bar
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // 2: Items DataGrid (dgItems)
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76f));  // 3: Bottom Summary & Buttons
-
-            pnlFinishedCard.Dock = DockStyle.Fill;
-            pnlQuickAdd.Dock = DockStyle.Fill;
+            // تجميع عناصر المحرر بشكل مباشر لضمان ثبات التخطيط وظهور جدول الخامات
+            pnlFinishedCard.Dock = DockStyle.Top;
+            pnlFinishedCard.Height = 130;
+            pnlQuickAdd.Dock = DockStyle.Top;
+            pnlQuickAdd.Height = 84;
+            pnlBottom.Dock = DockStyle.Bottom;
+            pnlBottom.Height = 74;
             dgItems.Dock = DockStyle.Fill;
-            pnlBottom.Dock = DockStyle.Fill;
 
-            tblEditorLayout.Controls.Add(pnlFinishedCard, 0, 0);
-            tblEditorLayout.Controls.Add(pnlQuickAdd, 0, 1);
-            tblEditorLayout.Controls.Add(dgItems, 0, 2);
-            tblEditorLayout.Controls.Add(pnlBottom, 0, 3);
-            pnlEditor.Controls.Add(tblEditorLayout);
-
+            pnlEditor.Controls.Clear();
+            pnlEditor.Controls.Add(dgItems);
+            pnlEditor.Controls.Add(pnlQuickAdd);
+            pnlEditor.Controls.Add(pnlFinishedCard);
+            pnlEditor.Controls.Add(pnlBottom);
+            dgItems.BringToFront();
 
             // ──────────────────────────────────────────────────────────────
             // 2. القائمة الجانبية (الوصفات وشجر الإنتاج المسجلة - على اليسار)
