@@ -81,7 +81,7 @@ namespace ChickenDist.Forms
             this.MinimumSize = new Size(1020, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
+            this.RightToLeftLayout = false;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 

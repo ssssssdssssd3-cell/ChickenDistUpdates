@@ -88,7 +88,7 @@ namespace ChickenDist.Forms
             this.MinimumSize = new Size(1020, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
+            this.RightToLeftLayout = false;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
@@ -517,7 +517,7 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void SelectRawProduct()
+        private void SelectRawProduct(bool autoAddToGrid = true)
         {
             using (var frm = new FrmProductSearch(defaultShowZeroStock: true))
             {
@@ -546,26 +546,25 @@ namespace ChickenDist.Forms
                         txtRawProduct.Text = $"{_selectedRawProductCode} - {_selectedRawProductName}";
                         txtRawUnit.Text = dt.Rows[0]["UnitName"]?.ToString() ?? "قطعة";
                         lblRawCost.Text = $"سعر التكلفة: {_selectedRawCostPrice:N2} ج.م";
-                        numRawQty.Focus();
+
+                        if (autoAddToGrid)
+                        {
+                            CommitCurrentRawToGrid();
+                        }
+                        else
+                        {
+                            numRawQty.Focus();
+                        }
                     }
                 }
             }
         }
 
-        private void AddCurrentRawToGrid()
+        private void CommitCurrentRawToGrid()
         {
-            if (_selectedRawProductID <= 0)
-            {
-                MessageBox.Show("يرجى اختيار مادة تصنيع أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (_selectedRawProductID <= 0) return;
 
-            decimal qty = numRawQty.Value;
-            if (qty <= 0)
-            {
-                MessageBox.Show("الكمية يجب أن تكون أكبر من صفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            decimal qty = numRawQty.Value > 0 ? numRawQty.Value : 1m;
 
             foreach (DataGridViewRow row in dgItems.Rows)
             {
@@ -596,6 +595,17 @@ namespace ChickenDist.Forms
 
             ClearRawInputs();
             RecalculateTotals();
+        }
+
+        private void AddCurrentRawToGrid()
+        {
+            if (_selectedRawProductID <= 0)
+            {
+                SelectRawProduct(autoAddToGrid: true);
+                return;
+            }
+
+            CommitCurrentRawToGrid();
         }
 
         private void ClearRawInputs()
