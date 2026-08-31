@@ -159,6 +159,17 @@ namespace ChickenDist.Services
                 object purObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(TotalAmount, 0)), 0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayPurchases = purObj != null && purObj != DBNull.Value ? Convert.ToDecimal(purObj) : 0m;
 
+                object purCashObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(PaidAmount, 0)), 0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                decimal todayPaidPurchases = purCashObj != null && purCashObj != DBNull.Value ? Convert.ToDecimal(purCashObj) : 0m;
+                decimal todayCreditPurchases = Math.Max(0, todayPurchases - todayPaidPurchases);
+
+                // عدد فواتير البيع والشراء اليوم
+                object salesCountObj = DbHelper.Scalar("SELECT COUNT(*) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                int todaySalesInvoicesCount = salesCountObj != null && salesCountObj != DBNull.Value ? Convert.ToInt32(salesCountObj) : 0;
+
+                object purCountObj = DbHelper.Scalar("SELECT COUNT(*) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                int todayPurInvoicesCount = purCountObj != null && purCountObj != DBNull.Value ? Convert.ToInt32(purCountObj) : 0;
+
                 // 3. ديون العملاء
                 object clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Clients WHERE Balance > 0");
                 decimal clientDebts = clientDebtsObj != null && clientDebtsObj != DBNull.Value ? Convert.ToDecimal(clientDebtsObj) : 0m;
@@ -167,9 +178,23 @@ namespace ChickenDist.Services
                 object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WHERE Balance > 0");
                 decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
 
+                // مقبوضات ومصروفات اليوم في الخزنة
+                object cbInObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn), 0) FROM CashBox WHERE CAST(OperationDate AS DATE) = CAST(GETDATE() AS DATE)");
+                decimal todayCashIn = cbInObj != null && cbInObj != DBNull.Value ? Convert.ToDecimal(cbInObj) : 0m;
+
+                object cbOutObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountOut), 0) FROM CashBox WHERE CAST(OperationDate AS DATE) = CAST(GETDATE() AS DATE)");
+                decimal todayCashOut = cbOutObj != null && cbOutObj != DBNull.Value ? Convert.ToDecimal(cbOutObj) : 0m;
+
+                // تقييم المخزون الفعلي بسعر التكلفة وبسعر البيع
+                object stockCostObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Quantity, 0) * ISNULL(PurchasePrice, 0)), 0) FROM Products WHERE IsActive = 1");
+                decimal stockCostValue = stockCostObj != null && stockCostObj != DBNull.Value ? Convert.ToDecimal(stockCostObj) : 0m;
+
+                object stockSaleObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Quantity, 0) * ISNULL(SalePrice, 0)), 0) FROM Products WHERE IsActive = 1");
+                decimal stockSaleValue = stockSaleObj != null && stockSaleObj != DBNull.Value ? Convert.ToDecimal(stockSaleObj) : 0m;
+
                 // 5. كشكول النواقص الحقيقي
                 DataTable dtMissing = DbHelper.Query(
-                    "SELECT TOP 40 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(Quantity,0) AS Quantity, ISNULL(MinQuantity,5) AS MinQuantity, ISNULL(Brand,'عام') AS Supplier FROM Products WHERE IsActive=1 AND Quantity <= ISNULL(MinQuantity, 5) ORDER BY Quantity ASC");
+                    "SELECT TOP 50 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(Quantity,0) AS Quantity, ISNULL(MinQuantity,5) AS MinQuantity, ISNULL(Brand,'عام') AS Supplier FROM Products WHERE IsActive=1 AND Quantity <= ISNULL(MinQuantity, 5) ORDER BY Quantity ASC");
                 string missingJson = DataTableToJson(dtMissing);
 
                 // 6. دليل الأصناف
@@ -203,9 +228,17 @@ namespace ChickenDist.Services
                         "\"TodaySalesTotal\": " + dto.TodaySalesTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayCashSales\": " + dto.TodayCashSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayCreditSales\": " + dto.TodayCreditSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodaySalesInvoicesCount\": " + todaySalesInvoicesCount + "," +
                         "\"CashboxBalance\": " + dto.CashboxBalance.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayCashIn\": " + todayCashIn.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayCashOut\": " + todayCashOut.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayNetProfit\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayPurchases\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayPaidPurchases\": " + todayPaidPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayCreditPurchases\": " + todayCreditPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayPurInvoicesCount\": " + todayPurInvoicesCount + "," +
+                        "\"StockCostValue\": " + stockCostValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"StockSaleValue\": " + stockSaleValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"ClientDebts\": " + clientDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"SupplierDebts\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"LowStockCount\": " + dto.LowStockCount + "," +
