@@ -179,10 +179,10 @@ namespace ChickenDist.Services
                 decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
 
                 // مقبوضات ومصروفات اليوم في الخزنة
-                object cbInObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn), 0) FROM CashBox WHERE CAST(OperationDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object cbInObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn), 0) FROM CashBox WHERE CAST(COALESCE(TransDate, Date) AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayCashIn = cbInObj != null && cbInObj != DBNull.Value ? Convert.ToDecimal(cbInObj) : 0m;
 
-                object cbOutObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountOut), 0) FROM CashBox WHERE CAST(OperationDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object cbOutObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountOut), 0) FROM CashBox WHERE CAST(COALESCE(TransDate, Date) AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayCashOut = cbOutObj != null && cbOutObj != DBNull.Value ? Convert.ToDecimal(cbOutObj) : 0m;
 
                 // تقييم المخزون الفعلي بسعر التكلفة وبسعر البيع
