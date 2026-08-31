@@ -78,34 +78,10 @@ namespace ChickenDist.Forms
             };
 
 
-            var btnHelpTop = new Button
-            {
-                Text = "🤖 الدعم الفني",
-                Width = 110,
-                Dock = DockStyle.Left,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(160, 80, 180),
-                ForeColor = Color.White,
-                Font = Theme.FontBold,
-                Cursor = Cursors.Hand,
-                Margin = new Padding(5, 0, 0, 0),
-                Visible = Session.CanAccess("BotManager") || Session.CanAccess("SupportBot")
-            };
-            btnHelpTop.FlatAppearance.BorderSize = 0;
-            btnHelpTop.Click += (s, e) =>
-            {
-                if (!Session.CanAccess("BotManager") && !Session.CanAccess("SupportBot"))
-                {
-                    MessageBox.Show("عذراً، ليس لديك صلاحية الدخول لهذه الشاشة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                new FrmSupportBot().ShowDialog();
-            };
-
             var btnMobileSync = new Button
             {
-                Text = "📱 ربط الموبايل",
-                Width = 120,
+                Text = "📱 تطبيق المالك والسحاب",
+                Width = 170,
                 Dock = DockStyle.Left,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(40, 140, 220),
@@ -138,7 +114,6 @@ namespace ChickenDist.Forms
 
             pnlProfile.Controls.Add(lblUserInfo);
             pnlProfile.Controls.Add(btnMobileSync);
-            pnlProfile.Controls.Add(btnHelpTop);
 
             this.lblTitle = new Label
             {
@@ -590,9 +565,7 @@ namespace ChickenDist.Forms
                 ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
                     ("⚙️ الإعدادات العامة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
-                    ("🤖 إدارة بوت الواتساب", "BotManager", (Action)(() => new FrmBotManager().ShowDialog())),
-                    ("🤖 الدعم الفني والمساعد الذكي", "SupportBot", (Action)(() => new FrmSupportBot().ShowDialog())),
-                    ("📱 ربط الموبايل والتزامن السحابي", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
+                    ("📱 تطبيق المالك وخدمات السحاب (Firebase)", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
                     ("📚 إدارة الجداول المرجعية", "LookupManager", (Action)(() => NavigateTo(new FrmLookupManager()))),
                     ("🔄 تحديث البرنامج", "Settings", (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
