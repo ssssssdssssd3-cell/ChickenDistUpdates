@@ -217,6 +217,44 @@ namespace ChickenDist.Services
                     "SELECT EmpID, EmpName, ISNULL(UserName, '') AS UserName, ISNULL(Password, '') AS Password, ISNULL(Role, 'Admin') AS Role FROM Employees WHERE IsActive = 1");
                 string usersJson = DataTableToJson(dtUsers);
 
+                // 10. سجل آخر فواتير المبيعات
+                DataTable dtRecentSales = DbHelper.Query(@"
+                    SELECT TOP 200 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
+                           ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
+                           ISNULL(s.TotalAmount, 0) AS TotalAmount,
+                           ISNULL(s.PaidAmount, 0) AS PaidAmount,
+                           ISNULL(s.RemainingAmount, 0) AS RemainingAmount,
+                           ISNULL(s.PaymentType, N'نقدي') AS PaymentType,
+                           ISNULL(s.InvoiceType, N'مبيعات') AS InvoiceType
+                    FROM Sales s
+                    LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    ORDER BY s.SaleID DESC");
+                string recentSalesJson = DataTableToJson(dtRecentSales);
+
+                // 11. سجل آخر فواتير المشتريات
+                DataTable dtRecentPurchases = DbHelper.Query(@"
+                    SELECT TOP 100 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
+                           ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
+                           ISNULL(p.TotalAmount, 0) AS TotalAmount,
+                           ISNULL(p.PaidAmount, 0) AS PaidAmount,
+                           ISNULL(p.RemainingAmount, 0) AS RemainingAmount
+                    FROM Purchases p
+                    LEFT JOIN Suppliers sup ON p.SupplierID = sup.SupplierID
+                    ORDER BY p.PurchaseID DESC");
+                string recentPurchasesJson = DataTableToJson(dtRecentPurchases);
+
+                // 12. سجل حركات الخزينة
+                DataTable dtRecentCash = DbHelper.Query(@"
+                    SELECT TOP 150 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                           ISNULL(cb.AmountIn, 0) AS AmountIn,
+                           ISNULL(cb.AmountOut, 0) AS AmountOut,
+                           ISNULL(cb.Notes, N'') AS Notes,
+                           ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
+                    FROM CashBox cb
+                    LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    ORDER BY cb.CashID DESC");
+                string recentCashJson = DataTableToJson(dtRecentCash);
+
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string timeStr = DateTime.Now.ToString("hh:mm tt");
                 string storeName = EscapeJsonString(AppConfig.CompanyName);
@@ -249,7 +287,10 @@ namespace ChickenDist.Services
                         "\"ProductsCatalog\": " + productsJson + "," +
                         "\"SuppliersList\": " + suppliersJson + "," +
                         "\"ClientsList\": " + clientsJson + "," +
-                        "\"UsersList\": " + usersJson +
+                        "\"UsersList\": " + usersJson + "," +
+                        "\"RecentSales\": " + recentSalesJson + "," +
+                        "\"RecentPurchases\": " + recentPurchasesJson + "," +
+                        "\"RecentCashBox\": " + recentCashJson +
                         "}";
 
                     using (var client = new HttpClient())
@@ -288,7 +329,10 @@ namespace ChickenDist.Services
                         "\"ProductsCatalogJson\": {\"stringValue\": \"" + EscapeJsonString(productsJson) + "\"}," +
                         "\"SuppliersListJson\": {\"stringValue\": \"" + EscapeJsonString(suppliersJson) + "\"}," +
                         "\"ClientsListJson\": {\"stringValue\": \"" + EscapeJsonString(clientsJson) + "\"}," +
-                        "\"UsersListJson\": {\"stringValue\": \"" + EscapeJsonString(usersJson) + "\"}" +
+                        "\"UsersListJson\": {\"stringValue\": \"" + EscapeJsonString(usersJson) + "\"}," +
+                        "\"RecentSalesJson\": {\"stringValue\": \"" + EscapeJsonString(recentSalesJson) + "\"}," +
+                        "\"RecentPurchasesJson\": {\"stringValue\": \"" + EscapeJsonString(recentPurchasesJson) + "\"}," +
+                        "\"RecentCashBoxJson\": {\"stringValue\": \"" + EscapeJsonString(recentCashJson) + "\"}" +
                         "}}";
 
                     using (var client = new HttpClient())

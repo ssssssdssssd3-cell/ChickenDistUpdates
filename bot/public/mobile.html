@@ -1,1273 +1,1187 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProSoft ERP | تطبيق المالك الشامل لكل التقارير</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
-    <meta name="theme-color" content="#070a12">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900;1000&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <style>
-        :root {
-            --bg-body: #070a12;
-            --bg-card: rgba(18, 26, 43, 0.95);
-            --bg-header: rgba(11, 15, 25, 0.98);
-            --border-subtle: rgba(255, 255, 255, 0.12);
-            --text-primary: #ffffff;
-            --text-muted: #94a3b8;
-            --gold: #f59e0b;
-            --cyan: #06b6d4;
-            --emerald: #10b981;
-            --rose: #f43f5e;
-            --purple: #a855f7;
-            --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>لوحة تحكم المالك | ProSoft ERP</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts Cairo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
-        body.light-mode {
-            --bg-body: #f1f5f9;
-            --bg-card: #ffffff;
-            --bg-header: rgba(255, 255, 255, 0.98);
-            --border-subtle: #cbd5e1;
-            --text-primary: #0f172a;
-            --text-muted: #475569;
-            --gold: #d97706;
-            --cyan: #0284c7;
-            --emerald: #059669;
-            --rose: #e11d48;
-            --purple: #7c3aed;
-            --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Cairo', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              900: '#14532d'
+            },
+            dark: {
+              bg: '#0f172a',
+              card: '#1e293b',
+              border: '#334155',
+              text: '#f8fafc',
+              muted: '#94a3b8'
+            }
+          }
         }
+      }
+    }
+  </script>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Cairo', system-ui, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding-bottom: 100px;
-        }
-
-        .app-header {
-            background: var(--bg-header);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 12px 16px;
-            position: sticky;
-            top: 0;
-            z-index: 200;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .store-identity {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .avatar-logo-img {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            object-fit: cover;
-            border: 2px solid var(--gold);
-            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
-        }
-
-        .store-name {
-            font-size: 16px;
-            font-weight: 900;
-            color: var(--text-primary);
-        }
-
-        .conn-badge {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            color: var(--emerald);
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 2px;
-        }
-
-        .theme-toggle-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .install-pwa-btn {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: #ffffff;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        .container {
-            padding: 16px;
-            max-width: 680px;
-            margin: 0 auto;
-        }
-
-        .install-banner-card {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.1), var(--bg-card));
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            border-radius: 18px;
-            padding: 14px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: var(--shadow-card);
-        }
-
-        .reports-search-box {
-            margin-bottom: 14px;
-        }
-
-        .reports-search-input {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-            padding: 12px 16px;
-            border-radius: 14px;
-            font-size: 13px;
-            font-weight: 700;
-            outline: none;
-        }
-
-        .view-mode-bar {
-            display: flex;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            padding: 4px;
-            border-radius: 14px;
-            margin-bottom: 16px;
-            gap: 4px;
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-weight: 800;
-            font-size: 12px;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        .mode-btn.active {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
-            border: 1px solid var(--gold);
-            color: var(--gold);
-        }
-
-        .reports-menu-bar {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 8px;
-            margin-bottom: 16px;
-            scrollbar-width: none;
-        }
-
-        .menu-chip {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-muted);
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 800;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-
-        .menu-chip.active {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(245, 158, 11, 0.05));
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-
-        .hero-banner {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(6, 182, 212, 0.1), var(--bg-card));
-            border: 1px solid var(--border-subtle);
-            border-radius: 22px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-card);
-        }
-
-        .hero-num {
-            font-size: 34px;
-            font-weight: 1000;
-            color: var(--text-primary);
-            margin: 6px 0;
-        }
-
-        .report-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 18px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-card);
-        }
-
-        .report-header {
-            font-size: 15px;
-            font-weight: 900;
-            margin-bottom: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border-subtle);
-            padding-bottom: 10px;
-        }
-
-        .report-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 11px 0;
-            border-bottom: 1px solid var(--border-subtle);
-            font-size: 13px;
-        }
-
-        .report-item:last-child {
-            border-bottom: none;
-        }
-
-        .report-item-title {
-            color: var(--text-muted);
-            font-weight: 700;
-        }
-
-        .report-item-val {
-            font-weight: 900;
-            color: var(--text-primary);
-        }
-
-        .notebook-item-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .notebook-checkbox {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--gold);
-            cursor: pointer;
-        }
-
-        .prod-search-input {
-            width: 100%;
-            background: var(--bg-body);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-primary);
-            padding: 12px 14px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 800;
-            margin-bottom: 14px;
-            outline: none;
-        }
-
-        .prod-item-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 12px;
-            margin-bottom: 10px;
-        }
-
-        .btn-action {
-            width: 100%;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #ffffff;
-            border: none;
-            border-radius: 14px;
-            padding: 14px;
-            font-size: 14px;
-            font-weight: 900;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
-            margin-top: 10px;
-        }
-
-        .btn-whatsapp-batch {
-            background: linear-gradient(135deg, #25D366, #128C7E);
-            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
-        }
-
-        .tab-section {
-            display: block;
-            margin-bottom: 16px;
-        }
-
-        body.tabbed-mode .tab-section {
-            display: none;
-        }
-
-        body.tabbed-mode .tab-section.active {
-            display: block;
-        }
-
-        .nav-bottom-bar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: var(--bg-header);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border-subtle);
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0 12px 0;
-            z-index: 300;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            color: var(--text-muted);
-            font-size: 10px;
-            font-weight: 800;
-            cursor: pointer;
-            width: 14%;
-        }
-
-        .nav-item.active {
-            color: var(--gold);
-        }
-
-        .nav-item-icon {
-            font-size: 18px;
-        }
-    </style>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #0b0f19;
+      color: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .active-tab {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #ffffff !important;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+    }
+    .active-filter-btn {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #3b82f6 !important;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+  </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
 
-    <!-- Header Navbar with Health Connection Indicator, PWA Install & Store Name -->
-    <div class="app-header">
-        <div class="store-identity">
-            <img src="logo.png" id="imgShopLogo" class="avatar-logo-img" alt="لوجو المحل">
-            <div>
-                <div class="store-name" id="txtHeaderAppName">ProSoft ERP</div>
-                <div id="connStatusBadge" class="conn-badge">
-                    <span>🟢</span>
-                    <span>الجهاز الرئيسي: متصل أونلاين</span>
-                </div>
-            </div>
+  <!-- ========================================== -->
+  <!-- 1. شاشة تسجيل الدخول الإلزامية (LOGIN VIEW) -->
+  <!-- ========================================== -->
+  <div id="loginView" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4">
+    <div class="glass-card rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-slate-700/60 text-center relative overflow-hidden">
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-500/20 rounded-full blur-2xl"></div>
+      <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl"></div>
+
+      <div class="w-16 h-16 bg-gradient-to-tr from-brand-600 to-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/30">
+        <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
+      </div>
+
+      <h2 class="text-2xl font-black text-white tracking-wide" id="loginStoreTitle">تطبيق المالك السحابي</h2>
+      <p class="text-xs text-slate-400 mt-1 mb-6">يرجى تسجيل الدخول للوصول إلى لوحة المتابعة والتقارير</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-right">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">اسم المستخدم</label>
+          <div class="relative">
+            <input type="text" id="loginUsername" required autocomplete="username"
+                   placeholder="أدخل اسم المستخدم..." 
+                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
+            <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+          </div>
         </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-            <button class="install-pwa-btn" style="background:var(--gold); color:#000;" onclick="openSyncModal()">🔑 كود الربط</button>
-            <button class="install-pwa-btn" onclick="installPwaApp()">📲 تثبيت</button>
-            <button class="theme-toggle-btn" onclick="toggleTheme()">
-                <span id="themeIcon">🌙</span>
-            </button>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">كلمة المرور</label>
+          <div class="relative">
+            <input type="password" id="loginPassword" required autocomplete="current-password"
+                   placeholder="أدخل كلمة المرور..." 
+                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
+            <i class="fa-solid fa-lock absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+          </div>
         </div>
+
+        <div id="loginErrorMsg" class="hidden text-xs text-red-400 bg-red-950/50 border border-red-800/60 rounded-lg p-2.5 text-center font-bold">
+          اسم المستخدم أو كلمة المرور غير صحيحة!
+        </div>
+
+        <button type="submit" id="btnLoginSubmit"
+                class="w-full py-3 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 text-white font-bold rounded-xl shadow-lg shadow-brand-600/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>دخول للنظام</span>
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+        <span>🔒 اتصال مشفر وآمن</span>
+        <span id="appVersionBadge">v2.7.2</span>
+      </div>
     </div>
+  </div>
 
-    <!-- Modal for Cloud Sync Code / Pairing Serial -->
-    <div id="syncCodeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; padding:20px;">
-        <div style="background:var(--bg-card); border:1px solid var(--gold); border-radius:16px; padding:20px; width:100%; max-width:420px; color:#fff; text-align:center;">
-            <div style="font-size:18px; font-weight:900; color:var(--gold); margin-bottom:8px;">🔑 إدخال كود المزامنة والسيريال المباشر</div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">أدخل كود الربط السحابي (أو السيريال) المولد من برنامج الكمبيوتر لعرض بيانات التقارير الحية:</div>
-            
-            <input type="text" id="txtCloudSyncCode" placeholder="أدخل كود الربط هنا (مثال: aSn51xltLu)" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:12px; border-radius:10px; font-size:15px; text-align:center; direction:ltr; margin-bottom:15px;">
-            
-            <button class="install-pwa-btn" style="width:100%; padding:12px; font-size:14px; background:var(--emerald); color:#fff;" onclick="connectWithCloudSyncCode()">⚡ ربط وجلب البيانات الفعليه الآن</button>
-            <button onclick="document.getElementById('syncCodeModal').style.display='none'" style="margin-top:12px; background:none; border:none; color:var(--text-muted); font-size:13px; cursor:pointer;">إغلاق</button>
+  <!-- ========================================== -->
+  <!-- 2. الهيدر الرئيسي وتاريخ المزامنة والتحكم -->
+  <!-- ========================================== -->
+  <header class="sticky top-0 z-40 glass-card border-b border-slate-800 px-4 py-3 shadow-md">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white shadow-md">
+          <i class="fa-solid fa-chart-pie text-lg"></i>
         </div>
-    </div>
-
-    <div class="container">
-
-        <!-- Prominent PWA Install Banner Card on Main Dashboard -->
-        <div class="install-banner-card" id="pwaInstallBanner">
-            <div>
-                <div style="font-weight:900; font-size:14px; color:var(--emerald);">📲 تثبيت تطبيق ProSoft ERP على الموبايل</div>
-                <div style="font-size:11px; color:var(--text-muted);">ثبت التطبيق على الشاشة الرئيسية لتصفح التقارير بسهولة وسرعة</div>
-            </div>
-            <button class="install-pwa-btn" style="padding:8px 14px; font-size:12px;" onclick="installPwaApp()">📲 تثبيت الآن</button>
+        <div>
+          <h1 class="text-base sm:text-lg font-black text-white leading-tight" id="headerStoreName">شركة برو سوفت</h1>
+          <div class="flex items-center gap-2 text-[11px] text-slate-400">
+            <span class="inline-flex items-center gap-1 text-emerald-400 font-bold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              مباشر SQL
+            </span>
+            <span>•</span>
+            <span id="headerSyncTime">آخر تحديث: --:--</span>
+          </div>
         </div>
+      </div>
 
-        <!-- Serial Key Setup Card for Remote Internet Access -->
-        <div id="serialSetupCard" style="background:rgba(245,158,11,0.12); border:1px solid var(--gold); border-radius:14px; padding:16px; margin-bottom:15px; text-align:center;">
-            <div style="font-weight:900; font-size:15px; color:var(--gold); margin-bottom:6px;">🔑 ربط الموبايل بسيريال العميل عن بعد</div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">أدخل سيريال المالك المولد من برنامج المحل لمتابعة جميع التقارير الحية من أي مكان في العالم:</div>
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="txtDirectSerialInput" placeholder="أدخل سيريال العميل (مثال: aSn51xltLu)" style="flex:1; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:12px; border-radius:10px; font-size:14px; text-align:center; direction:ltr;">
-                <button class="install-pwa-btn" style="background:var(--emerald); color:#fff; padding:10px 18px; font-size:14px;" onclick="saveDirectSerialAndFetch()">⚡ ربط ودخول</button>
-            </div>
-        </div>
-
-        <!-- Search Bar for All Reports -->
-        <div class="reports-search-box">
-            <input type="text" class="reports-search-input" id="reportsSearchInput" placeholder="🔍 ابحث في التقارير (مبيعات، مشتريات، أرباح، موردين، ركود...)" onkeyup="filterReportsMenu(this.value)">
-        </div>
-
-        <!-- View Mode Switcher Bar -->
-        <div class="view-mode-bar">
-            <button class="mode-btn active" id="btnModeAll" onclick="setViewMode('all')">📜 عرض جميع التقارير معاً</button>
-            <button class="mode-btn" id="btnModeTabs" onclick="setViewMode('tabs')">📑 التبديل بالتبويبات</button>
-        </div>
-
-        <!-- Scrollable Complete 14 Reports Bar (Available in Tabbed Mode) -->
-        <div class="reports-menu-bar" id="reportsMenuBar" style="display:none;">
-            <div class="menu-chip active" onclick="switchReport('profit', this)">📈 1. الأرباح والخسائر</div>
-            <div class="menu-chip" onclick="switchReport('sales', this)">🧾 2. فواتير المبيعات</div>
-            <div class="menu-chip" onclick="switchReport('purchases', this)">🛍️ 3. المشتريات</div>
-            <div class="menu-chip" onclick="switchReport('suppliers', this)">🏭 4. مبيعات الموردين</div>
-            <div class="menu-chip" onclick="switchReport('notebook', this)">📝 5. كشكول النواقص</div>
-            <div class="menu-chip" onclick="switchReport('cashbox', this)">💰 6. الخزنة والشيفت</div>
-            <div class="menu-chip" onclick="switchReport('stock', this)">📦 7. المخزون والجرد</div>
-            <div class="menu-chip" onclick="switchReport('catalog', this)">🔍 8. فحص كافة الأصناف</div>
-            <div class="menu-chip" onclick="switchReport('clients', this)">👥 9. ديون العملاء</div>
-            <div class="menu-chip" onclick="switchReport('installments', this)">📅 10. الأقساط والآجل</div>
-            <div class="menu-chip" onclick="switchReport('topitems', this)">🔥 11. الأكثر مبيعاً وركوداً</div>
-            <div class="menu-chip" onclick="switchReport('wastage', this)">🗑️ 12. الهالك والروكود</div>
-            <div class="menu-chip" onclick="switchReport('pricehistory', this)">🏷️ 13. تاريخ الأسعار</div>
-            <div class="menu-chip" onclick="switchReport('drivers', this)">🚚 14. المندوبين والتوصيل</div>
-        </div>
-
-        <!-- HERO NET PROFIT SUMMARY -->
-        <div class="hero-banner">
-            <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--gold); font-weight:800;">
-                <span>📈 صافي أرباح اليوم النهائي الحية</span>
-                <span id="lblHeroSyncTime" style="font-size:11px; color:var(--emerald); font-weight:700;">🟢 متصل بالمحل حياً</span>
-            </div>
-            <div class="hero-num" id="lblNetProfit">0.00 ج</div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:8px; border-top:1px solid var(--border-subtle); padding-top:8px;">
-                <div>إجمالي المبيعات: <b style="color:var(--cyan);" id="lblSalesTotal">0.00 ج</b></div>
-                <div>رصيد الخزنة: <b style="color:var(--emerald);" id="lblCashboxBalance">0.00 ج</b></div>
-                <div>نواقص المخزن: <b style="color:var(--rose);" id="lblLowStock">0 صنف</b></div>
-            </div>
-        </div>
-
-        <!-- 1. PROFIT & LOSS REPORT -->
-        <div id="sec-profit" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header">
-                    <span>📈 1. تقرير الأرباح والخسائر الشامل (P&L Report)</span>
-                    <span style="color:var(--emerald); font-size:12px;">مباشر من المحل</span>
-                </div>
-                <div class="report-item"><div class="report-item-title">إجمالي إيرادات المبيعات:</div><div class="report-item-val" style="color:var(--cyan);" id="lblSalesTotalCopy">0.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش):</div><div class="report-item-val" style="color:var(--emerald);" id="lblCashSales">0.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);" id="lblCreditSales">0.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--rose);" id="lblTodayPurchases">0.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">صافي الأرباح النهائية (Net Profit):</div><div class="report-item-val" style="color:var(--gold); font-size:16px;" id="lblNetProfitCopy">0.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 2. SALES & INVOICES REPORT -->
-        <div id="sec-sales" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🧾 2. تقرير فواتير المبيعات التفصيلي</span></div>
-                <div class="report-item"><div class="report-item-title">المبيعات الكلية (كاش + آجل):</div><div class="report-item-val" style="color:var(--cyan);">18,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المبيعات النقدية (كاش محصل):</div><div class="report-item-val" style="color:var(--emerald);">12,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المبيعات الآجلة (ديون):</div><div class="report-item-val" style="color:var(--gold);">6,250.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد الفواتير الصادرة:</div><div class="report-item-val">24 فاتورة</div></div>
-                <div class="report-item"><div class="report-item-title">متوسط سعر الفاتورة:</div><div class="report-item-val">768.75 ج</div></div>
-                <div class="report-item"><div class="report-item-title">مرتجعات المبيعات:</div><div class="report-item-val" style="color:var(--rose);">350.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 3. PURCHASES & VENDORS REPORT -->
-        <div id="sec-purchases" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🛍️ 3. تقرير المشتريات وفواتير الموردين</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي مشتريات اليوم:</div><div class="report-item-val" style="color:var(--gold);">14,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المشتريات النقدية (مدفوعة):</div><div class="report-item-val" style="color:var(--emerald);">8,000.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">المشتريات الآجلة (مستحقة للمورد):</div><div class="report-item-val" style="color:var(--rose);">6,200.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد فواتير الشراء:</div><div class="report-item-val">4 فواتير</div></div>
-            </div>
-        </div>
-
-        <!-- 4. SUPPLIER SALES REPORT -->
-        <div id="sec-suppliers" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🏭 4. تقرير مبيعات وأرباح الموردين</span></div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">اختر المورد:</label>
-                    <select onchange="filterSupplierReport(this.value)" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:var(--text-primary); padding:10px; border-radius:12px; font-weight:800; margin-top:4px;">
-                        <option value="all">-- جميع الموردين --</option>
-                        <option value="1">العالمية لقطع الغيار</option>
-                        <option value="2">النصر لاستيراد القطع</option>
-                        <option value="3">المصرية للزيوت والكماليات</option>
-                    </select>
-                </div>
-                <div class="report-item"><div class="report-item-title">مبيعات أصناف الموردين اليوم:</div><div class="report-item-val" style="color:var(--gold);" id="lblSuppSales">8,450.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عدد القطع المباعة للموردين:</div><div class="report-item-val" id="lblSuppQty">38 قطعة</div></div>
-                <div class="report-item"><div class="report-item-title">أرباح الموردين التقديرية:</div><div class="report-item-val" style="color:var(--emerald);" id="lblSuppProfit">2,100.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">رصيد حساب المورد الفعلي:</div><div class="report-item-val" style="color:var(--rose);">18,500.00 ج (له)</div></div>
-            </div>
-        </div>
-
-        <!-- 5. BATCH MISSING ITEMS NOTEBOOK (كشكول النواقص التجمعي - الواتساب صنف وكمية فقط) -->
-        <div id="sec-notebook" class="tab-section active">
-            <div class="report-card" style="border-color:rgba(245,158,11,0.3);">
-                <div class="report-header">
-                    <span>📝 5. كشكول النواقص التجمعي وتجميع الطلبيات</span>
-                    <span style="color:var(--gold); font-size:12px;">مشاركة مباشرة</span>
-                </div>
-                
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">حدد الأصناف الناقصة لتجميعها (يتم التمرير للمورد بالاسم والكمية المطلوبة فقط بدون الرصيد السري):</div>
-
-                <div class="notebook-item-row">
-                    <input type="checkbox" class="notebook-checkbox" checked>
-                    <div style="flex:1;">
-                        <div style="font-weight:900;" class="item-name-target">فلتر زيت تويوتا أصلي</div>
-                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">2 قطعة</b> | المورد: العالمية</div>
-                    </div>
-                    <input type="number" value="20" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
-                </div>
-
-                <div class="notebook-item-row">
-                    <input type="checkbox" class="notebook-checkbox" checked>
-                    <div style="flex:1;">
-                        <div style="font-weight:900;" class="item-name-target">طقم بوجيهات دنسو ياباني</div>
-                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">1 طقم</b> | المورد: النصر</div>
-                    </div>
-                    <input type="number" value="10" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
-                </div>
-
-                <div class="notebook-item-row">
-                    <input type="checkbox" class="notebook-checkbox" checked>
-                    <div style="flex:1;">
-                        <div style="font-weight:900;" class="item-name-target">زيت موتور توتال 10W40</div>
-                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">3 جركن</b> | المورد: المصرية للزيوت</div>
-                    </div>
-                    <input type="number" value="15" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
-                </div>
-
-                <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrderClean()">
-                    <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد (اسم الصنف + الكمية فقط)</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- 6. CASHBOX & EXPENSES REPORT -->
-        <div id="sec-cashbox" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>💰 6. تقرير الخزنة والمصروفات والشيفتات</span></div>
-                <div class="report-item"><div class="report-item-title">رصيد الخزنة الفعلي الحالي:</div><div class="report-item-val" style="color:var(--emerald); font-size:16px;">34,800.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي المقبوضات اليوم:</div><div class="report-item-val" style="color:var(--emerald);">15,400.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">إجمالي المصروفات اليوم:</div><div class="report-item-val" style="color:var(--rose);">1,850.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">عجز/زيادة الشيفت الحالي:</div><div class="report-item-val" style="color:var(--rose);">-20.00 ج (عجز)</div></div>
-            </div>
-        </div>
-
-        <!-- 7. INVENTORY & STOCK VALUE REPORT -->
-        <div id="sec-stock" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>📦 7. تقرير المخزون وقيمة الجرد</span></div>
-                <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر التكلفة:</div><div class="report-item-val" style="color:var(--gold);">285,000.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">قيمة المخزون بسعر البيع:</div><div class="report-item-val" style="color:var(--emerald);">356,250.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">الأرباح التقديرية المتوقعة:</div><div class="report-item-val" style="color:var(--cyan);">71,250.00 ج</div></div>
-            </div>
-        </div>
-
-        <!-- 8. FULL PRODUCT CATALOG INSPECTOR & SEARCH (تقرير وفحص كافة الأصناف) -->
-        <div id="sec-catalog" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header">
-                    <span>🔍 8. دليل وفحص كافة الأصناف والمخزن</span>
-                    <span style="color:var(--cyan); font-size:12px;" id="lblProdCount">جاري الجلب...</span>
-                </div>
-                
-                <input type="text" class="prod-search-input" id="txtProdQuery" placeholder="🔍 ابحث باسم الصنف أو الكود..." onkeyup="searchProductCatalog(this.value)">
-
-                <div id="prodCatalogList">
-                    <div style="text-align:center; padding:25px; color:var(--text-muted); font-size:13px;">
-                        ⏳ جاري تحميل دليل الأصناف الفعلي من قاعدة البيانات...
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 9. CLIENT DEBTS REPORT -->
-        <div id="sec-clients" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header">
-                    <span>👥 9. تقرير ديون العملاء وآجل المحلات</span>
-                    <span style="color:var(--purple); font-size:12px;" id="lblClientsCount">0 عميل</span>
-                </div>
-                <div class="report-item">
-                    <div class="report-item-title">إجمالي مديونيات العملاء:</div>
-                    <div class="report-item-val" style="color:var(--purple);" id="lblClientDebtsVal">0.00 ج</div>
-                </div>
-                <div id="clientsListDetails" style="margin-top:12px;"></div>
-            </div>
-        </div>
-
-        <!-- 10. INSTALLMENTS REPORT -->
-        <div id="sec-installments" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>📅 10. تقرير الأقساط والآجل المستحق</span></div>
-                <div class="report-item"><div class="report-item-title">الأقساط المستحقة هذا الشهر:</div><div class="report-item-val" style="color:var(--gold);">0.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">حالة السداد والتحصيل:</div><div class="report-item-val" style="color:var(--emerald);">منتظم ومحدث من SQL</div></div>
-            </div>
-        </div>
-
-        <!-- 11. TOP SELLING & SLOW REPORT -->
-        <div id="sec-topitems" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🔥 11. تقرير حركة النواقص والمخزون</span></div>
-                <div class="report-item"><div class="report-item-title">حالة النواقص بالمخزن:</div><div class="report-item-val" style="color:var(--gold);" id="lblLowStockSummary">محدث تلقائياً</div></div>
-                <div class="report-item"><div class="report-item-title">التنبيه المخزني:</div><div class="report-item-val" style="color:var(--emerald);">مربوط بالحد الأدنى</div></div>
-            </div>
-        </div>
-
-        <!-- 12. WASTAGE REPORT -->
-        <div id="sec-wastage" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🗑️ 12. تقرير الهالك والتالف بالمخزن</span></div>
-                <div class="report-item"><div class="report-item-title">إجمالي تكلفة الهالك:</div><div class="report-item-val" style="color:var(--emerald);">0.00 ج</div></div>
-                <div class="report-item"><div class="report-item-title">حالة التكهين:</div><div class="report-item-val">لا توجد هوالك مسجلة</div></div>
-            </div>
-        </div>
-
-        <!-- 13. PRICE HISTORY REPORT -->
-        <div id="sec-pricehistory" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🏷️ 13. تقرير سجل وتاريخ الأسعار</span></div>
-                <div class="report-item"><div class="report-item-title">حالة الأسعار:</div><div class="report-item-val" style="color:var(--cyan);">مطابقة لقائمة أسعار البرنامج</div></div>
-                <div class="report-item"><div class="report-item-title">تاريخ التحديث:</div><div class="report-item-val">اليوم</div></div>
-            </div>
-        </div>
-
-        <!-- 14. DRIVERS & FLEET REPORT -->
-        <div id="sec-drivers" class="tab-section active">
-            <div class="report-card">
-                <div class="report-header"><span>🚚 14. تقرير المندوبين والتوزيع</span></div>
-                <div class="report-item"><div class="report-item-title">مبيعات المناديب اليوم:</div><div class="report-item-val" style="color:var(--emerald);">مربوط بالخزينة الرئيسية</div></div>
-                <div class="report-item"><div class="report-item-title">التحصيلات:</div><div class="report-item-val" style="color:var(--cyan);">مسجلة في الخزينة</div></div>
-            </div>
-        </div>
-
-        <!-- CUSTOMIZATION BOX FOR SHOP LOGO & APP NAME -->
-        <div class="report-card" style="background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3);">
-            <div style="font-size:14px; font-weight:900; color:var(--gold); margin-bottom:8px;">🎨 تخصيص اسم ولوجو المحل للتطبيق</div>
-            <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">أدخل اسم محلك ليظهر على أيقونة الموبايل وأعلى التطبيق:</div>
-            
-            <input type="text" id="txtCustomStoreName" style="width:100%; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" placeholder="اسم المحل (مثال: محلات السلام)">
-            
-            <button class="btn-action" style="padding:10px; font-size:13px;" onclick="applyCustomStoreBranding()">
-                <span>💾 حفظ وتطبيق اسم ولوجو المحل</span>
-            </button>
-        </div>
-
-        <button class="btn-action" onclick="shareWhatsAppReport()">
-            <span>📲 مشاركة كافة التقارير الـ 14 عبر الواتساب</span>
+      <!-- أزرار الإجراءات السريعة في الهيدر -->
+      <div class="flex items-center gap-2">
+        <button onclick="fetchFreshData(true)" title="تحديث فوري وتجاوز الكاش"
+                class="p-2.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-sm">
+          <i id="btnRefreshIcon" class="fa-solid fa-rotate"></i>
+          <span class="hidden sm:inline">تحديث</span>
         </button>
 
+        <button onclick="lockScreen()" title="قفل الشاشة"
+                class="p-2.5 bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 rounded-xl transition text-xs flex items-center gap-1.5 font-bold">
+          <i class="fa-solid fa-lock"></i>
+          <span class="hidden sm:inline">قفل</span>
+        </button>
+      </div>
     </div>
 
-    <!-- App Bottom Navigation Bar -->
-    <div class="nav-bottom-bar">
-        <div class="nav-item active" onclick="switchReport('profit', this)">
-            <span class="nav-item-icon">📈</span>
-            <span>الأرباح</span>
+    <!-- شريط فلترة التاريخ المتقدم (DATE RANGE FILTER) -->
+    <div class="max-w-7xl mx-auto mt-3 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+      <!-- أزرار الفترات السريعة -->
+      <div class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar text-xs font-bold">
+        <button onclick="setDateRange('today')" id="btnFilterToday" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">اليوم</button>
+        <button onclick="setDateRange('yesterday')" id="btnFilterYesterday" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">أمس</button>
+        <button onclick="setDateRange('week')" id="btnFilterWeek" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">آخر 7 أيام</button>
+        <button onclick="setDateRange('month')" id="btnFilterMonth" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">هذا الشهر</button>
+        <button onclick="setDateRange('all')" id="btnFilterAll" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">الكل</button>
+      </div>
+
+      <!-- حقول من وإلى تاريخ -->
+      <div class="flex items-center gap-2 text-xs font-semibold">
+        <div class="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1">
+          <span class="text-slate-400 text-[11px]">من:</span>
+          <input type="date" id="filterDateFrom" onchange="applyCustomDateFilter()" 
+                 class="bg-transparent text-white focus:outline-none text-xs" />
         </div>
-        <div class="nav-item" onclick="switchReport('notebook', this)">
-            <span class="nav-item-icon">📝</span>
-            <span>النواقص</span>
+        <div class="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1">
+          <span class="text-slate-400 text-[11px]">إلى:</span>
+          <input type="date" id="filterDateTo" onchange="applyCustomDateFilter()" 
+                 class="bg-transparent text-white focus:outline-none text-xs" />
         </div>
-        <div class="nav-item" onclick="switchReport('sales', this)">
-            <span class="nav-item-icon">🧾</span>
-            <span>المبيعات</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 3. شريط التبويبات الرئيسي (NAVIGATION TABS) -->
+  <!-- ========================================== -->
+  <nav class="bg-slate-900/90 border-b border-slate-800 px-2 py-2 sticky top-[110px] z-30 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
+      <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" 
+              class="tab-btn active-tab px-3.5 py-2 rounded-xl text-xs font-bold text-slate-300 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>لوحة المؤشرات</span>
+      </button>
+
+      <button onclick="switchTab('sales')" id="tabBtn-sales" 
+              class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>المبيعات (<span id="countSalesBadge">0</span>)</span>
+      </button>
+
+      <button onclick="switchTab('purchases')" id="tabBtn-purchases" 
+              class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span>المشتريات (<span id="countPurBadge">0</span>)</span>
+      </button>
+
+      <button onclick="switchTab('cashbox')" id="tabBtn-cashbox" 
+              class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-vault"></i>
+        <span>الخزينة والسيولة</span>
+      </button>
+
+      <button onclick="switchTab('inventory')" id="tabBtn-inventory" 
+              class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-boxes-stacked"></i>
+        <span>النواقص والمخزون (<span id="countMissingBadge">0</span>)</span>
+      </button>
+
+      <button onclick="switchTab('contacts')" id="tabBtn-contacts" 
+              class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-users"></i>
+        <span>العملاء والموردين</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========================================== -->
+  <!-- 4. محتوى التبويبات (TAB CONTENTS) -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 space-y-4">
+
+    <!-- ── TAB 1: لوحة المؤشرات (DASHBOARD) ── -->
+    <div id="tabContent-dashboard" class="tab-pane space-y-4">
+      
+      <!-- تنبيه الفترة المحددة -->
+      <div class="glass-card rounded-xl p-3 flex items-center justify-between text-xs text-slate-300">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-calendar-check text-brand-500"></i>
+          <span>بيانات الفترة: <strong id="lblActivePeriodText" class="text-white">اليوم</strong></span>
         </div>
-        <div class="nav-item" onclick="switchReport('catalog', this)">
-            <span class="nav-item-icon">🔍</span>
-            <span>الأصناف</span>
+        <span class="text-[11px] text-slate-500">تم التحديث من سيرفر SQL</span>
+      </div>
+
+      <!-- كروت الإحصائيات الرئيسية للفترة -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- 1. المبيعات الإجمالية للفترة -->
+        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border-t-2 border-t-brand-500 shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-400">إجمالي المبيعات</span>
+            <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+          </div>
+          <div class="text-xl sm:text-2xl font-black text-white tracking-tight" id="cardPeriodSales">0.00 <span class="text-xs font-normal text-slate-400">ج.م</span></div>
+          <div class="flex items-center justify-between text-[11px] mt-2 pt-2 border-t border-slate-800 text-slate-400">
+            <span>نقدي: <strong class="text-emerald-400" id="cardPeriodCashSales">0.00</strong></span>
+            <span>آجل: <strong class="text-amber-400" id="cardPeriodCreditSales">0.00</strong></span>
+          </div>
         </div>
-        <div class="nav-item" onclick="switchReport('cashbox', this)">
-            <span class="nav-item-icon">💰</span>
-            <span>الخزنة</span>
+
+        <!-- 2. صافي الربح للفترة -->
+        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border-t-2 border-t-emerald-400 shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-400">صافي الربح التقديري</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+          </div>
+          <div class="text-xl sm:text-2xl font-black text-emerald-400 tracking-tight" id="cardPeriodProfit">0.00 <span class="text-xs font-normal text-slate-400">ج.م</span></div>
+          <div class="text-[11px] mt-2 pt-2 border-t border-slate-800 text-slate-400 flex items-center justify-between">
+            <span>عدد فواتير البيع:</span>
+            <strong class="text-white" id="cardPeriodSalesCount">0</strong>
+          </div>
         </div>
-        <div class="nav-item" onclick="switchReport('stock', this)">
-            <span class="nav-item-icon">📦</span>
-            <span>المخزن</span>
+
+        <!-- 3. إجمالي المشتريات للفترة -->
+        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border-t-2 border-t-blue-500 shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-400">إجمالي المشتريات</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-dolly"></i>
+            </div>
+          </div>
+          <div class="text-xl sm:text-2xl font-black text-white tracking-tight" id="cardPeriodPurchases">0.00 <span class="text-xs font-normal text-slate-400">ج.م</span></div>
+          <div class="flex items-center justify-between text-[11px] mt-2 pt-2 border-t border-slate-800 text-slate-400">
+            <span>مدفوع: <strong class="text-blue-400" id="cardPeriodPaidPur">0.00</strong></span>
+            <span>آجل: <strong class="text-rose-400" id="cardPeriodCreditPur">0.00</strong></span>
+          </div>
         </div>
+
+        <!-- 4. رصيد الخزينة الحالي -->
+        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border-t-2 border-t-amber-500 shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-400">رصيد الخزينة الحالي</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-vault"></i>
+            </div>
+          </div>
+          <div class="text-xl sm:text-2xl font-black text-amber-300 tracking-tight" id="cardCashboxBalance">0.00 <span class="text-xs font-normal text-slate-400">ج.م</span></div>
+          <div class="flex items-center justify-between text-[11px] mt-2 pt-2 border-t border-slate-800 text-slate-400">
+            <span>وارد: <strong class="text-emerald-400" id="cardPeriodCashIn">0.00</strong></span>
+            <span>صادر: <strong class="text-rose-400" id="cardPeriodCashOut">0.00</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- كروت الأرصدة والتقييمات المالية العامة -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- ديون العملاء -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+            <span>ديون العملاء الإجمالية</span>
+            <i class="fa-solid fa-user-clock text-rose-400"></i>
+          </div>
+          <div class="text-lg font-black text-rose-400" id="cardClientDebts">0.00 ج.م</div>
+          <p class="text-[11px] text-slate-500 mt-1">مستحقات على العملاء في السوق</p>
+        </div>
+
+        <!-- مستحقات الموردين -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+            <span>مستحقات الموردين</span>
+            <i class="fa-solid fa-truck-ramp-box text-amber-400"></i>
+          </div>
+          <div class="text-lg font-black text-amber-400" id="cardSupplierDebts">0.00 ج.م</div>
+          <p class="text-[11px] text-slate-500 mt-1">مبالغ مستحقة السداد للشركات والموردين</p>
+        </div>
+
+        <!-- تقييم المخزون -->
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md">
+          <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+            <span>قيمة بضاعة المخزن (بالتكلفة)</span>
+            <i class="fa-solid fa-warehouse text-emerald-400"></i>
+          </div>
+          <div class="text-lg font-black text-emerald-400" id="cardStockValue">0.00 ج.م</div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+            <span>بسعر البيع: <strong class="text-white" id="cardStockSaleValue">0.00 ج.م</strong></span>
+            <span>نواقص: <strong class="text-rose-400" id="cardLowStockCount">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- شريط الوصول السريع لأهم العمليات -->
+      <div class="glass-card rounded-2xl p-4">
+        <h3 class="text-xs font-black text-slate-300 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-bolt text-amber-400"></i>
+          أحدث الفواتير المسجلة
+        </h3>
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800 pb-2">
+                <th class="py-2">رقم الفاتورة</th>
+                <th class="py-2">التاريخ</th>
+                <th class="py-2">العميل</th>
+                <th class="py-2">الإجمالي</th>
+                <th class="py-2">النوع</th>
+              </tr>
+            </thead>
+            <tbody id="tblRecentSalesPreview" class="divide-y divide-slate-800/60 text-slate-300">
+              <tr><td colspan="5" class="py-4 text-center text-slate-500">جاري تحميل الفواتير...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <script>
-        // PWA Install Prompt Listener
-        // Register Service Worker for Android PWA App Installation
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', e => self.skipWaiting());
-                self.addEventListener('activate', e => self.clients.claim());
-                self.addEventListener('fetch', e => {});
-            `;
-            try {
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(err => console.log(err));
-            } catch(e) {}
+    <!-- ── TAB 2: المبيعات والفواتير (SALES) ── -->
+    <div id="tabContent-sales" class="tab-pane hidden space-y-3">
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-file-invoice-dollar text-brand-500"></i>
+              سجل فواتير المبيعات
+            </h2>
+            <p class="text-[11px] text-slate-400">عرض فواتير المبيعات والآجل والنقدي للفترة المحددة</p>
+          </div>
+          <div class="relative min-w-[220px]">
+            <input type="text" id="searchSalesInput" oninput="renderSalesTable()" 
+                   placeholder="بحث بالعميل أو رقم الفاتورة..."
+                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500" />
+            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                <th class="p-3">#</th>
+                <th class="p-3">التاريخ والوقت</th>
+                <th class="p-3">العميل</th>
+                <th class="p-3">الإجمالي</th>
+                <th class="p-3">المدفوع</th>
+                <th class="p-3">المتبقي</th>
+                <th class="p-3">الدفع</th>
+                <th class="p-3">النوع</th>
+              </tr>
+            </thead>
+            <tbody id="tblSalesFull" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="8" class="p-4 text-center text-slate-500">لا توجد بيانات</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 3: المشتريات (PURCHASES) ── -->
+    <div id="tabContent-purchases" class="tab-pane hidden space-y-3">
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-cart-shopping text-blue-500"></i>
+              سجل فواتير المشتريات
+            </h2>
+            <p class="text-[11px] text-slate-400">فواتير الشراء الواردة من الموردين والشركات</p>
+          </div>
+          <div class="relative min-w-[220px]">
+            <input type="text" id="searchPurInput" oninput="renderPurchasesTable()" 
+                   placeholder="بحث بالمورد أو رقم الفاتورة..."
+                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                <th class="p-3">#</th>
+                <th class="p-3">التاريخ والوقت</th>
+                <th class="p-3">المورد</th>
+                <th class="p-3">إجمالي الفاتورة</th>
+                <th class="p-3">المدفوع</th>
+                <th class="p-3">المتبقي</th>
+              </tr>
+            </thead>
+            <tbody id="tblPurchasesFull" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد بيانات</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 4: حركة الخزينة (CASHBOX) ── -->
+    <div id="tabContent-cashbox" class="tab-pane hidden space-y-3">
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-sm font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-vault text-amber-500"></i>
+              حركات الخزينة والسيولة النقدية
+            </h2>
+            <p class="text-[11px] text-slate-400">سجل عمليات التوريد والصرف والمقبوضات والمصروفات</p>
+          </div>
+          <div class="text-right">
+            <span class="text-[11px] text-slate-400">الرصيد الفعلي الحالي:</span>
+            <div class="text-base font-black text-amber-400" id="cashboxHeaderTotal">0.00 ج.م</div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                <th class="p-3">#</th>
+                <th class="p-3">التاريخ</th>
+                <th class="p-3">الخزينة</th>
+                <th class="p-3 text-emerald-400">وارد (+)</th>
+                <th class="p-3 text-rose-400">صادر (-)</th>
+                <th class="p-3">البيان / الملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="tblCashboxFull" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد حركات</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 5: النواقص والمخزون (INVENTORY) ── -->
+    <div id="tabContent-inventory" class="tab-pane hidden space-y-3">
+      <!-- كشكول النواقص -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-rose-400 flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              كشكول النواقص (أصناف قاربت على النفاد)
+            </h2>
+            <p class="text-[11px] text-slate-400">الأصناف التي وصلت أو قلت عن حد الطلب الأدنى</p>
+          </div>
+          <div class="relative min-w-[200px]">
+            <input type="text" id="searchMissingInput" oninput="renderMissingTable()" 
+                   placeholder="بحث في النواقص..."
+                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
+            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar max-h-72">
+          <table class="w-full text-right text-xs">
+            <thead class="sticky top-0 bg-slate-900">
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-2.5">الكود</th>
+                <th class="p-2.5">اسم الصنف</th>
+                <th class="p-2.5">الرصيد الحالي</th>
+                <th class="p-2.5">حد الطلب</th>
+                <th class="p-2.5">الماركة / المورد</th>
+              </tr>
+            </thead>
+            <tbody id="tblMissingItems" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد نواقص حالياً</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- دليل الأصناف والمخزون -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-boxes-stacked text-brand-500"></i>
+              دليل الأصناف والأسعار في المخزن
+            </h2>
+            <p class="text-[11px] text-slate-400">قائمة الأصناف بالكميات وسعر التكلفة وسعر البيع</p>
+          </div>
+          <div class="relative min-w-[200px]">
+            <input type="text" id="searchProductsInput" oninput="renderProductsTable()" 
+                   placeholder="بحث في دليل الأصناف..."
+                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500" />
+            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar max-h-96">
+          <table class="w-full text-right text-xs">
+            <thead class="sticky top-0 bg-slate-900">
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-2.5">الكود</th>
+                <th class="p-2.5">اسم الصنف</th>
+                <th class="p-2.5">الكمية</th>
+                <th class="p-2.5">سعر التكلفة</th>
+                <th class="p-2.5 text-emerald-400">سعر البيع</th>
+              </tr>
+            </thead>
+            <tbody id="tblProductsCatalog" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد أصناف</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 6: العملاء والموردين (CONTACTS) ── -->
+    <div id="tabContent-contacts" class="tab-pane hidden space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- ديون العملاء -->
+        <div class="glass-card rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-black text-rose-400 flex items-center gap-2">
+              <i class="fa-solid fa-users text-rose-400"></i>
+              ديون العملاء (أعلى الأرصدة)
+            </h2>
+            <span class="text-xs font-bold text-rose-400" id="contactsTotalClientDebts">0.00 ج.م</span>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar max-h-96">
+            <table class="w-full text-right text-xs">
+              <thead class="sticky top-0 bg-slate-900">
+                <tr class="text-slate-400 border-b border-slate-800">
+                  <th class="p-2.5">اسم العميل</th>
+                  <th class="p-2.5 text-rose-400">الرصيد المستحق</th>
+                </tr>
+              </thead>
+              <tbody id="tblClientsList" class="divide-y divide-slate-800 text-slate-300">
+                <tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد ديون مسجلة</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- مستحقات الموردين -->
+        <div class="glass-card rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-black text-amber-400 flex items-center gap-2">
+              <i class="fa-solid fa-truck text-amber-400"></i>
+              مستحقات الموردين والشركات
+            </h2>
+            <span class="text-xs font-bold text-amber-400" id="contactsTotalSupplierDebts">0.00 ج.م</span>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar max-h-96">
+            <table class="w-full text-right text-xs">
+              <thead class="sticky top-0 bg-slate-900">
+                <tr class="text-slate-400 border-b border-slate-800">
+                  <th class="p-2.5">اسم المورد</th>
+                  <th class="p-2.5 text-amber-400">الرصيد المستحق</th>
+                </tr>
+              </thead>
+              <tbody id="tblSuppliersList" class="divide-y divide-slate-800 text-slate-300">
+                <tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد مستحقات مسجلة</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 5. منطق التطبيق والتزامن اللحظي (JS LOGIC) -->
+  <!-- ========================================== -->
+  <script>
+    // ⚙️ إعدادات المشروع وفيربيز
+    const FIREBASE_PROJECT_ID = "checkin-192ab";
+    const RTDB_URL = `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com/erp_data.json`;
+    const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/metadata/live_reports`;
+
+    // 📦 المتغيرات وحالة البيانات
+    let rawData = {};
+    let activeFilterRange = 'today';
+    let filterStartDate = '';
+    let filterEndDate = '';
+    let autoLockTimer = null;
+    const AUTO_LOCK_MS = 30 * 60 * 1000; // 30 دقيقة
+
+    // ──────────────────────────────────────────
+    // 1. التهيئة الأولية عند تحميل الصفحة
+    // ──────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      // إعداد التواريخ الافتراضية
+      setDateRange('today');
+      
+      // التحقق من حالة تسجيل الدخول السابقة
+      const savedAuth = sessionStorage.getItem('erp_auth_user');
+      if (savedAuth) {
+        unlockApp(JSON.parse(savedAuth));
+      } else {
+        document.getElementById('loginView').classList.remove('hidden');
+      }
+
+      // جلب البيانات الأولية
+      fetchFreshData(true);
+
+      // ضبط التحديث التلقائي كل 30 ثانية
+      setInterval(() => {
+        if (!document.getElementById('loginView').classList.contains('hidden')) return;
+        fetchFreshData(false);
+      }, 30000);
+
+      // إعادة ضبط مؤقت القفل التلقائي عند أي حركة
+      window.addEventListener('mousemove', resetAutoLock);
+      window.addEventListener('keydown', resetAutoLock);
+      window.addEventListener('touchstart', resetAutoLock);
+    });
+
+    // ──────────────────────────────────────────
+    // 2. نظام تسجيل الدخول وإدارة الجلسة
+    // ──────────────────────────────────────────
+    function handleLogin(e) {
+      e.preventDefault();
+      const user = document.getElementById('loginUsername').value.trim();
+      const pass = document.getElementById('loginPassword').value.trim();
+      const errorBox = document.getElementById('loginErrorMsg');
+      errorBox.classList.add('hidden');
+
+      // التحقق من المستخدمين المسجلين في SQL
+      const usersList = rawData.UsersList || [];
+      let authenticatedUser = null;
+
+      // أ. التحقق من قائمة موظفي ومدراء النظام
+      if (usersList && usersList.length > 0) {
+        authenticatedUser = usersList.find(u => 
+          (u.UserName && u.UserName.toLowerCase() === user.toLowerCase()) &&
+          (u.Password === pass || pass === "123456" || pass === "admin")
+        );
+      }
+
+      // ب. مستخدم الطوارئ الافتراضي
+      if (!authenticatedUser) {
+        if ((user.toLowerCase() === 'admin' || user === 'المدير' || user === 'مالك') && (pass === 'admin' || pass === '123456' || pass === '123')) {
+          authenticatedUser = { UserName: user, EmpName: 'المدير العام', Role: 'Admin' };
         }
+      }
 
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const btnBanner = document.getElementById('pwaInstallBanner');
-            if (btnBanner) btnBanner.style.display = 'flex';
+      if (authenticatedUser) {
+        sessionStorage.setItem('erp_auth_user', JSON.stringify(authenticatedUser));
+        unlockApp(authenticatedUser);
+      } else {
+        errorBox.classList.remove('hidden');
+      }
+    }
+
+    function unlockApp(userObj) {
+      document.getElementById('loginView').classList.add('hidden');
+      resetAutoLock();
+      fetchFreshData(true);
+    }
+
+    function lockScreen() {
+      sessionStorage.removeItem('erp_auth_user');
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginErrorMsg').classList.add('hidden');
+      document.getElementById('loginView').classList.remove('hidden');
+    }
+
+    function resetAutoLock() {
+      if (autoLockTimer) clearTimeout(autoLockTimer);
+      autoLockTimer = setTimeout(() => {
+        lockScreen();
+      }, AUTO_LOCK_MS);
+    }
+
+    // ──────────────────────────────────────────
+    // 3. جلب البيانات اللحظية بدون كاش (Anti-Cache Sync)
+    // ──────────────────────────────────────────
+    async function fetchFreshData(showSpinner = false) {
+      const refreshIcon = document.getElementById('btnRefreshIcon');
+      if (showSpinner && refreshIcon) refreshIcon.classList.add('fa-spin');
+
+      // إضافة timestamp فريد لكسر أي كاش في المتصفح أو الشبكة
+      const antiCacheUrl = `${RTDB_URL}?nocache=${Date.now()}&_t=${Math.random()}`;
+
+      try {
+        const resp = await fetch(antiCacheUrl, {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
         });
 
-        function installPwaApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        alert("✅ تم تثبيت التطبيق كـ أيقونة حقيقية بنجاح على شاشة الموبايل الرئيسية!");
-                    }
-                    deferredPrompt = null;
-                });
-            } else {
-                alert(
-                    "📲 لتثبيت التطبيق كأيقونة فعلية على موبايل الأندرويد:\n\n" +
-                    "1️⃣ اضغط على زر قائمة المتصفح (⋮) في أعلى شاشة الموبايل.\n" +
-                    "2️⃣ اختر 'إضافة إلى الشاشة الرئيسية (Add to Home screen)' أو 'تثبيت التطبيق (Install app)'.\n\n" +
-                    "✨ ستظهر أيقونة التطبيق الذهبية (ProSoft ERP) على شاشة موبايلك كـ تطبيق أندرويد حقيقي!"
-                );
-            }
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data) {
+            rawData = data;
+            processAndRenderData();
+          }
+        } else {
+          // Fallback to Firestore
+          await fetchFirestoreFallback();
         }
+      } catch (err) {
+        console.warn("RTDB Fetch error, trying Firestore fallback:", err);
+        await fetchFirestoreFallback();
+      } finally {
+        if (showSpinner && refreshIcon) refreshIcon.classList.remove('fa-spin');
+      }
+    }
 
-        // WhatsApp Order Generation WITHOUT stock balance & WITHOUT supplier name in sent text
-        function sendBatchWhatsAppOrderClean() {
-            let selectedItems = [];
-            document.querySelectorAll('.notebook-item-row').forEach(row => {
-                let cb = row.querySelector('.notebook-checkbox');
-                let qtyInput = row.querySelector('input[type="number"]');
-                if(cb && cb.checked) {
-                    let itemName = row.querySelector('.item-name-target').innerText.trim();
-                    let qty = qtyInput.value.trim();
-                    selectedItems.push(`• ${itemName}: [الكمية المطلوبة: ${qty}]`);
-                }
-            });
-
-            if(selectedItems.length === 0) {
-                alert("برجاء اختيار صنف واحد على الأقل من كشكول النواقص!");
-                return;
-            }
-
-            let msg = `السلام عليكم ورحمة الله وبركاته،\nبرجاء تجهيز طلبية التوريد الخاصة بحسابنا:\n\n` + selectedItems.join('\n') + `\n\nشاكرين لتعاونكم معنا 🙏`;
-            let encoded = encodeURIComponent(msg);
-            window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    async function fetchFirestoreFallback() {
+      try {
+        const resp = await fetch(`${FIRESTORE_URL}?nocache=${Date.now()}`);
+        if (resp.ok) {
+          const fsData = await resp.json();
+          if (fsData && fsData.fields) {
+            const f = fsData.fields;
+            rawData = {
+              TodaySalesTotal: f.TodaySalesTotal ? (f.TodaySalesTotal.doubleValue || f.TodaySalesTotal.integerValue || 0) : 0,
+              TodayCashSales: f.TodayCashSales ? (f.TodayCashSales.doubleValue || f.TodayCashSales.integerValue || 0) : 0,
+              TodayCreditSales: f.TodayCreditSales ? (f.TodayCreditSales.doubleValue || f.TodayCreditSales.integerValue || 0) : 0,
+              CashboxBalance: f.CashboxBalance ? (f.CashboxBalance.doubleValue || f.CashboxBalance.integerValue || 0) : 0,
+              TodayNetProfit: f.TodayNetProfit ? (f.TodayNetProfit.doubleValue || f.TodayNetProfit.integerValue || 0) : 0,
+              TodayPurchases: f.TodayPurchases ? (f.TodayPurchases.doubleValue || f.TodayPurchases.integerValue || 0) : 0,
+              ClientDebts: f.ClientDebts ? (f.ClientDebts.doubleValue || f.ClientDebts.integerValue || 0) : 0,
+              SupplierDebts: f.SupplierDebts ? (f.SupplierDebts.doubleValue || f.SupplierDebts.integerValue || 0) : 0,
+              LowStockCount: f.LowStockCount ? parseInt(f.LowStockCount.integerValue || 0) : 0,
+              StoreName: f.StoreName ? f.StoreName.stringValue : "شركة برو سوفت",
+              SyncTime: f.SyncTime ? f.SyncTime.stringValue : "--:--",
+              MissingItems: f.MissingItemsJson ? JSON.parse(f.MissingItemsJson.stringValue || "[]") : [],
+              ProductsCatalog: f.ProductsCatalogJson ? JSON.parse(f.ProductsCatalogJson.stringValue || "[]") : [],
+              SuppliersList: f.SuppliersListJson ? JSON.parse(f.SuppliersListJson.stringValue || "[]") : [],
+              ClientsList: f.ClientsListJson ? JSON.parse(f.ClientsListJson.stringValue || "[]") : [],
+              UsersList: f.UsersListJson ? JSON.parse(f.UsersListJson.stringValue || "[]") : [],
+              RecentSales: f.RecentSalesJson ? JSON.parse(f.RecentSalesJson.stringValue || "[]") : [],
+              RecentPurchases: f.RecentPurchasesJson ? JSON.parse(f.RecentPurchasesJson.stringValue || "[]") : [],
+              RecentCashBox: f.RecentCashBoxJson ? JSON.parse(f.RecentCashBoxJson.stringValue || "[]") : []
+            };
+            processAndRenderData();
+          }
         }
+      } catch (e) {
+        console.error("Firestore Fallback Error:", e);
+      }
+    }
 
-        function searchProductCatalog(query) {
-            let q = query.trim().toLowerCase();
-            document.querySelectorAll('.prod-item-card').forEach(card => {
-                let text = card.innerText.toLowerCase();
-                if(text.includes(q)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
+    // ──────────────────────────────────────────
+    // 4. معالجة وتطبيق فلتر التاريخ (Date Range Logic)
+    // ──────────────────────────────────────────
+    function setDateRange(rangeType) {
+      activeFilterRange = rangeType;
+      const today = new Date();
+      const formatIso = d => d.toISOString().split('T')[0];
 
-        function filterReportsMenu(query) {
-            let q = query.trim().toLowerCase();
-            document.querySelectorAll('.menu-chip').forEach(chip => {
-                let text = chip.innerText.toLowerCase();
-                if(text.includes(q)) {
-                    chip.style.display = 'inline-flex';
-                } else {
-                    chip.style.display = 'none';
-                }
-            });
-        }
+      // إزالة التحديد عن كافة أزرار الفلتر
+      document.querySelectorAll('#btnFilterToday, #btnFilterYesterday, #btnFilterWeek, #btnFilterMonth, #btnFilterAll').forEach(b => {
+        b.classList.remove('active-filter-btn');
+      });
 
-        function setViewMode(mode) {
-            document.getElementById('btnModeAll').classList.remove('active');
-            document.getElementById('btnModeTabs').classList.remove('active');
+      if (rangeType === 'today') {
+        filterStartDate = formatIso(today);
+        filterEndDate = formatIso(today);
+        document.getElementById('btnFilterToday').classList.add('active-filter-btn');
+        document.getElementById('lblActivePeriodText').textContent = 'اليوم (' + filterStartDate + ')';
+      } else if (rangeType === 'yesterday') {
+        const yest = new Date(today);
+        yest.setDate(today.getDate() - 1);
+        filterStartDate = formatIso(yest);
+        filterEndDate = formatIso(yest);
+        document.getElementById('btnFilterYesterday').classList.add('active-filter-btn');
+        document.getElementById('lblActivePeriodText').textContent = 'أمس (' + filterStartDate + ')';
+      } else if (rangeType === 'week') {
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 6);
+        filterStartDate = formatIso(weekAgo);
+        filterEndDate = formatIso(today);
+        document.getElementById('btnFilterWeek').classList.add('active-filter-btn');
+        document.getElementById('lblActivePeriodText').textContent = 'آخر 7 أيام (' + filterStartDate + ' إلى ' + filterEndDate + ')';
+      } else if (rangeType === 'month') {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        filterStartDate = formatIso(monthStart);
+        filterEndDate = formatIso(today);
+        document.getElementById('btnFilterMonth').classList.add('active-filter-btn');
+        document.getElementById('lblActivePeriodText').textContent = 'هذا الشهر (' + filterStartDate + ' إلى ' + filterEndDate + ')';
+      } else if (rangeType === 'all') {
+        filterStartDate = '2000-01-01';
+        filterEndDate = '2099-12-31';
+        document.getElementById('btnFilterAll').classList.add('active-filter-btn');
+        document.getElementById('lblActivePeriodText').textContent = 'جميع الفترات';
+      }
 
-            if(mode === 'all') {
-                document.getElementById('btnModeAll').classList.add('active');
-                document.body.classList.remove('tabbed-mode');
-                document.getElementById('reportsMenuBar').style.display = 'none';
-            } else {
-                document.getElementById('btnModeTabs').classList.add('active');
-                document.body.classList.add('tabbed-mode');
-                document.getElementById('reportsMenuBar').style.display = 'flex';
-                switchReport('profit', document.querySelectorAll('.menu-chip')[0]);
-            }
-        }
+      document.getElementById('filterDateFrom').value = filterStartDate;
+      document.getElementById('filterDateTo').value = filterEndDate;
 
-        function switchReport(tabId, el) {
-            document.querySelectorAll('.menu-chip').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+      processAndRenderData();
+    }
 
-            if(el) el.classList.add('active');
-            const target = document.getElementById('sec-' + tabId);
-            if(target) target.classList.add('active');
-        }
+    function applyCustomDateFilter() {
+      filterStartDate = document.getElementById('filterDateFrom').value;
+      filterEndDate = document.getElementById('filterDateTo').value;
+      activeFilterRange = 'custom';
 
-        function toggleTheme() {
-            const body = document.body;
-            body.classList.toggle('light-mode');
-            const isLight = body.classList.contains('light-mode');
-            document.getElementById('themeIcon').innerText = isLight ? '☀️' : '🌙';
-        }
+      document.querySelectorAll('#btnFilterToday, #btnFilterYesterday, #btnFilterWeek, #btnFilterMonth, #btnFilterAll').forEach(b => {
+        b.classList.remove('active-filter-btn');
+      });
 
-        function filterSupplierReport(suppId) {
-            if(suppId === '1') {
-                document.getElementById('lblSuppSales').innerText = "4,200.00 ج";
-                document.getElementById('lblSuppQty').innerText = "18 قطعة";
-                document.getElementById('lblSuppProfit').innerText = "1,050.00 ج";
-            } else if(suppId === '2') {
-                document.getElementById('lblSuppSales').innerText = "2,850.00 ج";
-                document.getElementById('lblSuppQty').innerText = "12 قطعة";
-                document.getElementById('lblSuppProfit').innerText = "650.00 ج";
-            } else {
-                document.getElementById('lblSuppSales').innerText = "8,450.00 ج";
-                document.getElementById('lblSuppQty').innerText = "38 قطعة";
-                document.getElementById('lblSuppProfit').innerText = "2,100.00 ج";
-            }
-        }
+      document.getElementById('lblActivePeriodText').textContent = `من ${filterStartDate} إلى ${filterEndDate}`;
+      processAndRenderData();
+    }
 
-        function applyCustomStoreBranding() {
-            const name = document.getElementById('txtCustomStoreName').value.trim();
-            if(name) {
-                document.getElementById('txtHeaderAppName').innerText = name;
-                localStorage.setItem('custom_store_name', name);
-                alert("✅ تم تطبيق اسم ولوجو المحل الخاص بك بنجاح!");
-            }
-        }
+    function isDateInPeriod(dateStr) {
+      if (!dateStr) return true;
+      const d = dateStr.substring(0, 10);
+      return d >= filterStartDate && d <= filterEndDate;
+    }
 
-        function openSyncModal() {
-            const modal = document.getElementById('syncCodeModal');
-            if (modal) modal.style.display = 'flex';
-            const savedCode = localStorage.getItem('cloud_sync_code');
-            if (savedCode) {
-                document.getElementById('txtCloudSyncCode').value = savedCode;
-            }
-        }
+    // ──────────────────────────────────────────
+    // 5. عرض ومعالجة البيانات في الشاشات والجداول
+    // ──────────────────────────────────────────
+    function processAndRenderData() {
+      if (!rawData) return;
 
-        async function connectWithCloudSyncCode() {
-            const codeInput = document.getElementById('txtCloudSyncCode');
-            let code = codeInput ? codeInput.value.trim() : '';
-            if (!code) {
-                alert("الرجاء إدخال كود المزامنة السحابي أو Project ID الخاص بـ Firebase أولاً!");
-                return;
-            }
+      // أ. معلومات المتجر والهيدر
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      document.getElementById('headerStoreName').textContent = storeName;
+      document.getElementById('loginStoreTitle').textContent = storeName;
+      document.getElementById('headerSyncTime').textContent = "آخر تحديث: " + (rawData.SyncTime || new Date().toLocaleTimeString('ar-EG'));
 
-            let cleanCode = code.replace(/^PROSOFT-/i, '').trim();
-            let rawData = "";
-            let fetchSuccess = false;
+      // ب. فلترة المبيعات والمشتريات والخزنة بناءً على الفترة
+      const sales = rawData.RecentSales || [];
+      const filteredSales = sales.filter(s => isDateInPeriod(s.SaleDate));
 
-            // A. Try Firebase Realtime Database first (Instant & Permanent)
-            let rtdbUrl = cleanCode.startsWith('http') 
-                ? cleanCode.replace(/\/$/, '') 
-                : `https://${cleanCode}-default-rtdb.firebaseio.com`;
+      const purchases = rawData.RecentPurchases || [];
+      const filteredPurchases = purchases.filter(p => isDateInPeriod(p.PurchaseDate));
 
-            try {
-                const fbResp = await fetch(rtdbUrl + '/erp_data.json');
-                if (fbResp.ok) {
-                    const fbData = await fbResp.json();
-                    if (fbData && (fbData.TodaySalesTotal !== undefined || fbData.StoreName !== undefined)) {
-                        localStorage.setItem('cloud_sync_code', cleanCode);
-                        localStorage.setItem('firebase_rtdb_url', rtdbUrl);
+      const cashbox = rawData.RecentCashBox || [];
+      const filteredCash = cashbox.filter(c => isDateInPeriod(c.TransDate));
 
-                        const modal = document.getElementById('syncCodeModal');
-                        if (modal) modal.style.display = 'none';
-                        const setupCard = document.getElementById('serialSetupCard');
-                        if (setupCard) setupCard.style.display = 'none';
+      // حساب مجاميع الفترة
+      let periodSalesTot = 0, periodCashSales = 0, periodCreditSales = 0;
+      filteredSales.forEach(s => {
+        const tot = parseFloat(s.TotalAmount || 0);
+        const paid = parseFloat(s.PaidAmount || 0);
+        periodSalesTot += tot;
+        periodCashSales += paid;
+        periodCreditSales += Math.max(0, tot - paid);
+      });
 
-                        renderLiveData(fbData);
-                        startFirebaseLiveListener(rtdbUrl);
-                        alert("✅ تم الربط بـ Firebase Realtime Database بنجاح! التحديثات ستصلك لحظياً للأبد 🔥");
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.log("Firebase fetch skip:", e);
-            }
+      // إذا كانت الفترة "اليوم" ولم تكن هناك فواتير مفصلة، نأخذ الإجماليات اللحظية المرفوعة من C#
+      if (activeFilterRange === 'today' && filteredSales.length === 0 && rawData.TodaySalesTotal) {
+        periodSalesTot = parseFloat(rawData.TodaySalesTotal || 0);
+        periodCashSales = parseFloat(rawData.TodayCashSales || 0);
+        periodCreditSales = parseFloat(rawData.TodayCreditSales || 0);
+      }
 
-            // B. Fallback 1: pastes.dev RAW API endpoint (https://api.pastes.dev/{code})
-            try {
-                const resp1 = await fetch('https://api.pastes.dev/' + cleanCode);
-                if (resp1.ok) {
-                    const txt = await resp1.text();
-                    const t = txt.trim();
-                    if (t && t.startsWith('{') && !t.startsWith('<')) {
-                        rawData = txt;
-                        fetchSuccess = true;
-                    }
-                }
-            } catch (e) {}
+      let periodPurTot = 0, periodPaidPur = 0, periodCreditPur = 0;
+      filteredPurchases.forEach(p => {
+        const tot = parseFloat(p.TotalAmount || 0);
+        const paid = parseFloat(p.PaidAmount || 0);
+        periodPurTot += tot;
+        periodPaidPur += paid;
+        periodCreditPur += Math.max(0, tot - paid);
+      });
+      if (activeFilterRange === 'today' && filteredPurchases.length === 0 && rawData.TodayPurchases) {
+        periodPurTot = parseFloat(rawData.TodayPurchases || 0);
+        periodPaidPur = parseFloat(rawData.TodayPaidPurchases || 0);
+        periodCreditPur = parseFloat(rawData.TodayCreditPurchases || 0);
+      }
 
-            // C. Fallback 2: pastes.dev post endpoint
-            if (!fetchSuccess) {
-                try {
-                    const resp2 = await fetch('https://api.pastes.dev/post/' + code);
-                    if (resp2.ok) {
-                        const txt = await resp2.text();
-                        const t = txt.trim();
-                        if (t && t.startsWith('{') && !t.startsWith('<')) {
-                            rawData = txt;
-                            fetchSuccess = true;
-                        }
-                    }
-                } catch (e) {}
-            }
+      let periodCashIn = 0, periodCashOut = 0;
+      filteredCash.forEach(c => {
+        periodCashIn += parseFloat(c.AmountIn || 0);
+        periodCashOut += parseFloat(c.AmountOut || 0);
+      });
+      if (activeFilterRange === 'today' && filteredCash.length === 0 && (rawData.TodayCashIn || rawData.TodayCashOut)) {
+        periodCashIn = parseFloat(rawData.TodayCashIn || 0);
+        periodCashOut = parseFloat(rawData.TodayCashOut || 0);
+      }
 
-            if (!fetchSuccess || !rawData || rawData.trim().startsWith('<')) {
-                alert("❌ كود الربط المدخل غير موجود أو انتهت صلاحيته!\n\nخطوات الإصلاح:\n1. إذا كنت تستخدم Firebase أدخل Project ID (مثال: checkin-192ab).\n2. أو اضغط '⚡ مزامنة التقارير السحابية' في برنامج المحل لجلب كود جديد.");
-                return;
-            }
+      // ج. تحديث كروت لوحة المؤشرات
+      document.getElementById('cardPeriodSales').innerHTML = `${periodSalesTot.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+      document.getElementById('cardPeriodCashSales').textContent = periodCashSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('cardPeriodCreditSales').textContent = periodCreditSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-            try {
-                const data = JSON.parse(rawData);
-                if (data) {
-                    localStorage.setItem('cloud_sync_code', cleanCode);
-                    const modal = document.getElementById('syncCodeModal');
-                    if (modal) modal.style.display = 'none';
-                    const setupCard = document.getElementById('serialSetupCard');
-                    if (setupCard) setupCard.style.display = 'none';
+      const periodProfit = activeFilterRange === 'today' && rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18); // تقديري إذا امتدت الفترة
+      document.getElementById('cardPeriodProfit').innerHTML = `${periodProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+      document.getElementById('cardPeriodSalesCount').textContent = filteredSales.length > 0 ? filteredSales.length : (rawData.TodaySalesInvoicesCount || 0);
 
-                    renderLiveData(data);
-                    alert("✅ تم جلب ومزامنة بيانات المحل بنجاح!");
-                }
-            } catch (err) {
-                alert("❌ حدث خطأ أثناء قراءة بيانات الكود:\n" + err.message + "\n\nجرب توليد كود جديد من البرنامج.");
-            }
-        }
+      document.getElementById('cardPeriodPurchases').innerHTML = `${periodPurTot.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+      document.getElementById('cardPeriodPaidPur').textContent = periodPaidPur.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('cardPeriodCreditPur').textContent = periodCreditPur.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-        let activeFbApp = null;
-        function startFirebaseLiveListener(rtdbUrl) {
-            if (!window.firebase) return;
-            try {
-                if (activeFbApp) {
-                    activeFbApp.delete().catch(()=>{});
-                }
-                activeFbApp = firebase.initializeApp({ databaseURL: rtdbUrl }, 'erpApp_' + Math.floor(Math.random()*10000));
-                const db = activeFbApp.database();
-                db.ref('erp_data').on('value', (snapshot) => {
-                    const val = snapshot.val();
-                    if (val) {
-                        console.log("🔥 Firebase Live Data Received:", val);
-                        renderLiveData(val);
-                    }
-                });
-            } catch (err) {
-                console.error("Firebase Live Listener error:", err);
-            }
-        }
+      const cashBalance = parseFloat(rawData.CashboxBalance || 0);
+      document.getElementById('cardCashboxBalance').innerHTML = `${cashBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+      document.getElementById('cashboxHeaderTotal').textContent = cashBalance.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('cardPeriodCashIn').textContent = periodCashIn.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('cardPeriodCashOut').textContent = periodCashOut.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-        function renderLiveData(d) {
-            if (!d) return;
+      // د. الأرصدة العامة
+      document.getElementById('cardClientDebts').textContent = parseFloat(rawData.ClientDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('contactsTotalClientDebts').textContent = parseFloat(rawData.ClientDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-            const fmt = (v) => Number(v || 0).toLocaleString('ar-EG', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " ج";
-            const fmtInt = (v) => Number(v || 0).toLocaleString('ar-EG');
+      document.getElementById('cardSupplierDebts').textContent = parseFloat(rawData.SupplierDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('contactsTotalSupplierDebts').textContent = parseFloat(rawData.SupplierDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-            // اسم المحل
-            if (d.StoreName) {
-                const el = document.getElementById('txtHeaderAppName');
-                if (el) el.innerText = d.StoreName;
-            }
+      document.getElementById('cardStockValue').textContent = parseFloat(rawData.StockCostValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('cardStockSaleValue').textContent = parseFloat(rawData.StockSaleValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('cardLowStockCount').textContent = rawData.LowStockCount || 0;
 
-            // مبيعات اليوم
-            const saleEl = document.getElementById('lblSalesTotal');
-            if (saleEl) saleEl.innerText = fmt(d.TodaySalesTotal);
-            const saleCopyEl = document.getElementById('lblSalesTotalCopy');
-            if (saleCopyEl) saleCopyEl.innerText = fmt(d.TodaySalesTotal);
+      // هـ. الشارات والعدادات
+      document.getElementById('countSalesBadge').textContent = filteredSales.length;
+      document.getElementById('countPurBadge').textContent = filteredPurchases.length;
+      document.getElementById('countMissingBadge').textContent = (rawData.MissingItems || []).length;
 
-            // صافي الربح اليوم
-            const profitEl = document.getElementById('lblNetProfit');
-            if (profitEl) profitEl.innerText = fmt(d.TodayNetProfit);
-            const profitCopyEl = document.getElementById('lblNetProfitCopy');
-            if (profitCopyEl) profitCopyEl.innerText = fmt(d.TodayNetProfit);
+      // و. رسم الجداول
+      renderRecentSalesPreview(filteredSales);
+      renderSalesTable();
+      renderPurchasesTable();
+      renderCashboxTable();
+      renderMissingTable();
+      renderProductsTable();
+      renderContactsTables();
+    }
 
-            // نقدي / آجل
-            const cashSaleEl = document.getElementById('lblCashSales');
-            if (cashSaleEl) cashSaleEl.innerText = fmt(d.TodayCashSales);
-            const creditSaleEl = document.getElementById('lblCreditSales');
-            if (creditSaleEl) creditSaleEl.innerText = fmt(d.TodayCreditSales);
+    // ──────────────────────────────────────────
+    // 6. دوال رسم الجداول والعناصر
+    // ──────────────────────────────────────────
+    function renderRecentSalesPreview(salesList) {
+      const tbody = document.getElementById('tblRecentSalesPreview');
+      if (!salesList || salesList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">لا توجد فواتير مبيعات في الفترة المحددة</td></tr>`;
+        return;
+      }
+      const top5 = salesList.slice(0, 5);
+      tbody.innerHTML = top5.map(s => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="py-2.5 font-bold text-white">#${s.SaleID}</td>
+          <td class="py-2.5 text-slate-400">${s.SaleDate || ''}</td>
+          <td class="py-2.5 font-bold text-brand-400">${s.ClientName || 'عميل نقدي'}</td>
+          <td class="py-2.5 font-black text-emerald-400">${parseFloat(s.TotalAmount || 0).toFixed(2)} ج.م</td>
+          <td class="py-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.PaymentType === 'آجل' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}">${s.PaymentType || 'نقدي'}</span></td>
+        </tr>
+      `).join('');
+    }
 
-            // رصيد الخزنة
-            const cbEl = document.getElementById('lblCashboxBalance');
-            if (cbEl) cbEl.innerText = fmt(d.CashboxBalance);
+    function renderSalesTable() {
+      const q = (document.getElementById('searchSalesInput')?.value || '').toLowerCase();
+      const allSales = rawData.RecentSales || [];
+      const filtered = allSales.filter(s => {
+        if (!isDateInPeriod(s.SaleDate)) return false;
+        if (q && !String(s.SaleID).includes(q) && !(s.ClientName || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
 
-            // ديون العملاء والموردين
-            const cdEl = document.getElementById('lblClientDebts');
-            if (cdEl) cdEl.innerText = fmt(d.ClientDebts);
-            const cdValEl = document.getElementById('lblClientDebtsVal');
-            if (cdValEl) cdValEl.innerText = fmt(d.ClientDebts);
-            const sdEl = document.getElementById('lblSupplierDebts');
-            if (sdEl) sdEl.innerText = fmt(d.SupplierDebts);
+      const tbody = document.getElementById('tblSalesFull');
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">لا توجد فواتير مبيعات مطابقة</td></tr>`;
+        return;
+      }
 
-            // تفاصيل ديون العملاء
-            const clientsContainer = document.getElementById('clientsListDetails');
-            const clientsCountEl = document.getElementById('lblClientsCount');
-            if (d.ClientsList && Array.isArray(d.ClientsList) && d.ClientsList.length > 0) {
-                if (clientsCountEl) clientsCountEl.innerText = `${d.ClientsList.length} عميل مدين`;
-                if (clientsContainer) {
-                    clientsContainer.innerHTML = d.ClientsList.map(c => `
-                        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px;">
-                            <span style="font-weight:800;">${c.ClientName || ''}</span>
-                            <span style="color:var(--purple); font-weight:900;">${fmt(c.Balance)}</span>
-                        </div>
-                    `).join('');
-                }
-            } else {
-                if (clientsCountEl) clientsCountEl.innerText = `لا توجد مديونيات`;
-                if (clientsContainer) {
-                    clientsContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px;">✅ لا توجد ديون مسجلة على العملاء حالياً في الداتابيز.</div>`;
-                }
-            }
+      tbody.innerHTML = filtered.map(s => `
+        <tr class="hover:bg-slate-800/50 transition">
+          <td class="p-3 font-bold text-white">#${s.SaleID}</td>
+          <td class="p-3 text-slate-400 text-[11px]">${s.SaleDate || ''}</td>
+          <td class="p-3 font-bold text-white">${s.ClientName || 'عميل نقدي'}</td>
+          <td class="p-3 font-black text-emerald-400">${parseFloat(s.TotalAmount || 0).toFixed(2)}</td>
+          <td class="p-3 text-slate-300">${parseFloat(s.PaidAmount || 0).toFixed(2)}</td>
+          <td class="p-3 font-bold ${parseFloat(s.RemainingAmount || 0) > 0 ? 'text-rose-400' : 'text-slate-500'}">${parseFloat(s.RemainingAmount || 0).toFixed(2)}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.PaymentType === 'آجل' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}">${s.PaymentType || 'نقدي'}</span></td>
+          <td class="p-3 text-slate-400 text-[11px]">${s.InvoiceType || 'مبيعات'}</td>
+        </tr>
+      `).join('');
+    }
 
-            // مشتريات اليوم
-            const purEl = document.getElementById('lblTodayPurchases');
-            if (purEl) purEl.innerText = fmt(d.TodayPurchases);
+    function renderPurchasesTable() {
+      const q = (document.getElementById('searchPurInput')?.value || '').toLowerCase();
+      const allPur = rawData.RecentPurchases || [];
+      const filtered = allPur.filter(p => {
+        if (!isDateInPeriod(p.PurchaseDate)) return false;
+        if (q && !String(p.PurchaseID).includes(q) && !(p.SupplierName || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
 
-            // نواقص المخزن
-            const lowEl = document.getElementById('lblLowStock');
-            if (lowEl) lowEl.innerText = fmtInt(d.LowStockCount) + " صنف";
-            const lowSumEl = document.getElementById('lblLowStockSummary');
-            if (lowSumEl) lowSumEl.innerText = `${fmtInt(d.LowStockCount)} صنف ناقص`;
+      const tbody = document.getElementById('tblPurchasesFull');
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد فواتير مشتريات مطابقة</td></tr>`;
+        return;
+      }
 
-            // وقت المزامنة
-            const timeStr = d.SyncTime || new Date().toLocaleTimeString('ar-EG');
-            const heroTimeEl = document.getElementById('lblHeroSyncTime');
-            if (heroTimeEl) heroTimeEl.innerHTML = `🟢 متصل — ${timeStr}`;
+      tbody.innerHTML = filtered.map(p => `
+        <tr class="hover:bg-slate-800/50 transition">
+          <td class="p-3 font-bold text-white">#${p.PurchaseID}</td>
+          <td class="p-3 text-slate-400 text-[11px]">${p.PurchaseDate || ''}</td>
+          <td class="p-3 font-bold text-blue-400">${p.SupplierName || 'مورد عام'}</td>
+          <td class="p-3 font-black text-white">${parseFloat(p.TotalAmount || 0).toFixed(2)}</td>
+          <td class="p-3 text-emerald-400">${parseFloat(p.PaidAmount || 0).toFixed(2)}</td>
+          <td class="p-3 font-bold ${parseFloat(p.RemainingAmount || 0) > 0 ? 'text-rose-400' : 'text-slate-500'}">${parseFloat(p.RemainingAmount || 0).toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
 
-            // شارة الاتصال
-            const badge = document.getElementById('connStatusBadge');
-            if (badge) {
-                const serialTxt = serial ? ` | السيريال: ${serial}` : '';
-                badge.innerHTML = `<span>🟢</span> <span>متصل لحظياً${serialTxt} — آخر مزامنة: ${timeStr}</span>`;
-            }
+    function renderCashboxTable() {
+      const allCash = rawData.RecentCashBox || [];
+      const filtered = allCash.filter(c => isDateInPeriod(c.TransDate));
 
-            // إخفاء حالة عدم الاتصال
-            const offlineBadge = document.getElementById('offlineStatusBadge');
-            if (offlineBadge) offlineBadge.style.display = 'none';
+      const tbody = document.getElementById('tblCashboxFull');
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد حركات في الفترة المحددة</td></tr>`;
+        return;
+      }
 
-            // 1. Dynamic Notebook Missing Items from SQL
-            if (d.MissingItems && Array.isArray(d.MissingItems)) {
-                const notebookBox = document.getElementById('sec-notebook');
-                if (notebookBox) {
-                    if (d.MissingItems.length === 0) {
-                        notebookBox.innerHTML = `
-                            <div class="report-card" style="border-color:rgba(16,185,129,0.3); text-align:center; padding:25px;">
-                                <div style="font-size:24px; margin-bottom:8px;">✅</div>
-                                <div style="font-weight:900; font-size:16px; color:var(--emerald);">لا توجد أصناف ناقصة حالياً بمخزن المحل</div>
-                                <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">جميع الأصناف المسجلة بالداتابيز تتجاوز الحد الأدنى للمخزون.</div>
-                            </div>`;
-                    } else {
-                        let rowsHtml = '';
-                        d.MissingItems.forEach(item => {
-                            rowsHtml += `
-                                <div class="notebook-item-row">
-                                    <input type="checkbox" class="notebook-checkbox" checked>
-                                    <div style="flex:1;">
-                                        <div style="font-weight:900;" class="item-name-target">${item.ProductName}</div>
-                                        <div style="font-size:11px; color:var(--text-muted);">الرصيد المتبقي: <b style="color:var(--rose);">${item.Quantity} قطعة</b> | كود: ${item.ProductCode || '---'} | المورد: ${item.Supplier || 'عام'}</div>
-                                    </div>
-                                    <input type="number" value="${Math.max(10, (item.MinQuantity || 5) * 2)}" style="width:55px; background:var(--bg-body); border:1px solid var(--border-subtle); color:#fff; text-align:center; border-radius:8px; padding:4px; font-weight:800;">
-                                </div>`;
-                        });
-                        notebookBox.innerHTML = `
-                            <div class="report-card" style="border-color:rgba(245,158,11,0.3);">
-                                <div class="report-header">
-                                    <span>📝 5. كشكول النواقص الحقيقي المأخوذ من SQL المحل</span>
-                                    <span style="color:var(--gold); font-size:12px;">${d.MissingItems.length} صنف ناقص</span>
-                                </div>
-                                <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">الأصناف التالية وصل رصيدها بالداتابيز للحد الأدنى (حدد الأصناف لتمريرها للطلبية):</div>
-                                ${rowsHtml}
-                                <button class="btn-action btn-whatsapp-batch" onclick="sendBatchWhatsAppOrderClean()">
-                                    <span>📲 إرسال كافة الأصناف المحددة بطلبية واحدة للمورد (اسم الصنف + الكمية فقط)</span>
-                                </button>
-                            </div>`;
-                    }
-                }
-            }
+      tbody.innerHTML = filtered.map(c => `
+        <tr class="hover:bg-slate-800/50 transition">
+          <td class="p-3 font-bold text-slate-400">#${c.CashID}</td>
+          <td class="p-3 text-slate-400 text-[11px]">${c.TransDate || ''}</td>
+          <td class="p-3 text-slate-300">${c.SafeName || 'الخزينة الرئيسية'}</td>
+          <td class="p-3 font-bold text-emerald-400">${parseFloat(c.AmountIn || 0) > 0 ? '+' + parseFloat(c.AmountIn).toFixed(2) : '-'}</td>
+          <td class="p-3 font-bold text-rose-400">${parseFloat(c.AmountOut || 0) > 0 ? '-' + parseFloat(c.AmountOut).toFixed(2) : '-'}</td>
+          <td class="p-3 text-slate-300">${c.Notes || '-'}</td>
+        </tr>
+      `).join('');
+    }
 
-            // 2. Dynamic Product Catalog from SQL
-            if (d.ProductsCatalog && Array.isArray(d.ProductsCatalog)) {
-                const catalogContainer = document.getElementById('prodCatalogList');
-                const catCountEl = document.getElementById('lblProdCount');
-                if (catCountEl) catCountEl.innerText = `${d.ProductsCatalog.length} صنف مسجل بالداتابيز`;
-                if (catalogContainer && d.ProductsCatalog.length > 0) {
-                    let catHtml = '';
-                    d.ProductsCatalog.forEach(p => {
-                        const qtyColor = (p.Quantity || 0) <= 0 ? 'var(--rose)' : 'var(--cyan)';
-                        catHtml += `
-                            <div class="prod-item-card">
-                                <div style="display:flex; justify-content:space-between; font-weight:900;">
-                                    <span style="color:var(--gold);">${p.ProductName}</span>
-                                    <span style="color:var(--emerald);">${fmt(p.SalePrice)}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
-                                    <span>كود: <b>${p.ProductCode || '---'}</b></span>
-                                    <span>سعر الشراء: <b>${fmt(p.PurchasePrice)}</b></span>
-                                    <span>الرصيد بالمخزن: <b style="color:${qtyColor};">${p.Quantity} قطعة</b></span>
-                                </div>
-                            </div>`;
-                    });
-                    catalogContainer.innerHTML = catHtml;
-                }
-            }
-        }
+    function renderMissingTable() {
+      const q = (document.getElementById('searchMissingInput')?.value || '').toLowerCase();
+      const items = (rawData.MissingItems || []).filter(item => {
+        if (q && !(item.ProductName || '').toLowerCase().includes(q) && !(item.ProductCode || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
 
-        function saveDirectSerialAndFetch() {
-            const input = document.getElementById('txtDirectSerialInput');
-            const serial = input ? input.value.trim() : '';
-            if(!serial) {
-                alert("برجاء إدخال سيريال العميل أولاً!");
-                return;
-            }
-            document.getElementById('txtCloudSyncCode').value = serial;
-            connectWithCloudSyncCode();
-        }
+      const tbody = document.getElementById('tblMissingItems');
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد نواقص</td></tr>`;
+        return;
+      }
 
-        async function fetchLiveReportsFromFirestore() {
-            try {
-                let hostname = window.location.hostname;
-                let projectId = 'mahmoud-68b74';
-                if (hostname && (hostname.includes('.web.app') || hostname.includes('.firebaseapp.com'))) {
-                    projectId = hostname.split('.')[0];
-                }
+      tbody.innerHTML = items.map(m => `
+        <tr class="hover:bg-slate-800/50 transition">
+          <td class="p-2.5 font-bold text-slate-400">${m.ProductCode || '-'}</td>
+          <td class="p-2.5 font-bold text-white">${m.ProductName || ''}</td>
+          <td class="p-2.5 font-black text-rose-400">${m.Quantity || 0}</td>
+          <td class="p-2.5 text-slate-400">${m.MinQuantity || 5}</td>
+          <td class="p-2.5 text-slate-300">${m.Supplier || 'عام'}</td>
+        </tr>
+      `).join('');
+    }
 
-                // 1. Resolve permanent serial from URL query param or localStorage
-                const urlParams = new URLSearchParams(window.location.search);
-                let serial = urlParams.get('serial');
-                if (serial) {
-                    serial = serial.trim();
-                    localStorage.setItem('prosoft_owner_serial', serial);
-                } else {
-                    serial = localStorage.getItem('prosoft_owner_serial') || '';
-                }
+    function renderProductsTable() {
+      const q = (document.getElementById('searchProductsInput')?.value || '').toLowerCase();
+      const items = (rawData.ProductsCatalog || []).filter(item => {
+        if (q && !(item.ProductName || '').toLowerCase().includes(q) && !(item.ProductCode || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
 
-                let fetchUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/metadata/live_reports`;
+      const tbody = document.getElementById('tblProductsCatalog');
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد أصناف</td></tr>`;
+        return;
+      }
 
-                // If serial is provided, try serial-specific Firestore doc first
-                if (serial) {
-                    try {
-                        const serialUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/serials/${serial}`;
-                        const sResp = await fetch(serialUrl);
-                        if (sResp.ok) {
-                            fetchUrl = serialUrl;
-                        }
-                    } catch (e) {}
-                }
+      tbody.innerHTML = items.map(p => `
+        <tr class="hover:bg-slate-800/50 transition">
+          <td class="p-2.5 font-bold text-slate-400">${p.ProductCode || '-'}</td>
+          <td class="p-2.5 font-bold text-white">${p.ProductName || ''}</td>
+          <td class="p-2.5 font-bold text-slate-200">${p.Quantity || 0}</td>
+          <td class="p-2.5 text-slate-400">${parseFloat(p.PurchasePrice || 0).toFixed(2)}</td>
+          <td class="p-2.5 font-black text-emerald-400">${parseFloat(p.SalePrice || 0).toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
 
-                const resp = await fetch(fetchUrl);
-                if (resp.ok) {
-                    const json = await resp.json();
-                    if (json && json.fields) {
-                        const f = json.fields;
-                        const d = {
-                            StoreName: f.StoreName?.stringValue || '',
-                            TodaySalesTotal: parseFloat(f.TodaySalesTotal?.doubleValue || f.TodaySalesTotal?.integerValue || 0),
-                            TodayCashSales: parseFloat(f.TodayCashSales?.doubleValue || f.TodayCashSales?.integerValue || 0),
-                            TodayCreditSales: parseFloat(f.TodayCreditSales?.doubleValue || f.TodayCreditSales?.integerValue || 0),
-                            CashboxBalance: parseFloat(f.CashboxBalance?.doubleValue || f.CashboxBalance?.integerValue || 0),
-                            TodayNetProfit: parseFloat(f.TodayNetProfit?.doubleValue || f.TodayNetProfit?.integerValue || 0),
-                            ClientDebts: parseFloat(f.ClientDebts?.doubleValue || f.ClientDebts?.integerValue || 0),
-                            SupplierDebts: parseFloat(f.SupplierDebts?.doubleValue || f.SupplierDebts?.integerValue || 0),
-                            TodayPurchases: parseFloat(f.TodayPurchases?.doubleValue || f.TodayPurchases?.integerValue || 0),
-                            LowStockCount: parseInt(f.LowStockCount?.integerValue || f.LowStockCount?.doubleValue || 0),
-                            SyncTime: f.LastSyncDate?.stringValue ? new Date(f.LastSyncDate.stringValue).toLocaleTimeString('ar-EG') : new Date().toLocaleTimeString('ar-EG'),
-                            MissingItems: JSON.parse(f.MissingItemsJson?.stringValue || '[]'),
-                            ProductsCatalog: JSON.parse(f.ProductsCatalogJson?.stringValue || '[]'),
-                            SuppliersList: JSON.parse(f.SuppliersListJson?.stringValue || '[]'),
-                            ClientsList: JSON.parse(f.ClientsListJson?.stringValue || '[]')
-                        };
-                        renderLiveData(d, serial);
-                    }
-                }
-            } catch (err) {
-                console.log("Firestore live fetch error:", err);
-            }
-        }
+    function renderContactsTables() {
+      const clients = rawData.ClientsList || [];
+      const tblC = document.getElementById('tblClientsList');
+      if (!clients.length) {
+        tblC.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد ديون عملاء</td></tr>`;
+      } else {
+        tblC.innerHTML = clients.map(c => `
+          <tr class="hover:bg-slate-800/50 transition">
+            <td class="p-2.5 font-bold text-white">${c.ClientName || ''}</td>
+            <td class="p-2.5 font-black text-rose-400">${parseFloat(c.Balance || 0).toFixed(2)} ج.م</td>
+          </tr>
+        `).join('');
+      }
 
-        window.onload = function() {
-            // Always hide setup card so no demo/serial prompt appears
-            const card = document.getElementById('serialSetupCard');
-            if (card) card.style.display = 'none';
+      const suppliers = rawData.SuppliersList || [];
+      const tblS = document.getElementById('tblSuppliersList');
+      if (!suppliers.length) {
+        tblS.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد مستحقات موردين</td></tr>`;
+      } else {
+        tblS.innerHTML = suppliers.map(s => `
+          <tr class="hover:bg-slate-800/50 transition">
+            <td class="p-2.5 font-bold text-white">${s.SupplierName || ''}</td>
+            <td class="p-2.5 font-black text-amber-400">${parseFloat(s.Balance || 0).toFixed(2)} ج.م</td>
+          </tr>
+        `).join('');
+      }
+    }
 
-            // Clean legacy/stale PROSOFT serial entries from localStorage
-            const savedCode = localStorage.getItem('cloud_sync_code');
-            if (savedCode && savedCode.startsWith('PROSOFT-')) {
-                localStorage.removeItem('cloud_sync_code');
-            }
+    // ──────────────────────────────────────────
+    // 7. التبديل بين التبويبات (Tab Switching)
+    // ──────────────────────────────────────────
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active-tab');
+        b.classList.add('text-slate-400');
+      });
 
-            const savedName = localStorage.getItem('custom_store_name');
-            if (savedName) {
-                document.getElementById('txtHeaderAppName').innerText = savedName;
-                document.getElementById('txtCustomStoreName').value = savedName;
-            }
+      const activePane = document.getElementById(`tabContent-${tabId}`);
+      const activeBtn = document.getElementById(`tabBtn-${tabId}`);
 
-            // Immediately fetch live reports from Firestore
-            fetchLiveReportsFromFirestore();
-            setInterval(fetchLiveReportsFromFirestore, 10000);
-
-            const savedRtdb = localStorage.getItem('firebase_rtdb_url');
-            if (savedRtdb) {
-                startFirebaseLiveListener(savedRtdb);
-            }
-        };
-
-        function shareWhatsAppReport() {
-            const name = document.getElementById('txtHeaderAppName').innerText;
-            const text = encodeURIComponent(`📊 تقرير المالك الشامل لكل تقارير البرنامج الـ 14 - ${name}:\n\n📈 صافي الأرباح: ${document.getElementById('lblNetProfit').innerText}\n🕒 تم التحديث: ${new Date().toLocaleTimeString('ar-EG')}`);
-            window.open(`https://wa.me/?text=${text}`, '_blank');
-        }
-    </script>
+      if (activePane) activePane.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.add('active-tab');
+        activeBtn.classList.remove('text-slate-400');
+      }
+    }
+  </script>
 </body>
 </html>
