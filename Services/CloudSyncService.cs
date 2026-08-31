@@ -213,8 +213,13 @@ namespace ChickenDist.Services
                 string clientsJson = DataTableToJson(dtClients);
 
                 // 9. قائمة المستخدمين والمدراء لتسجيل الدخول في تطبيق الموبايل
-                DataTable dtUsers = DbHelper.Query(
-                    "SELECT EmpID, EmpName, ISNULL(UserName, '') AS UserName, ISNULL(Password, '') AS Password, ISNULL(Role, 'Admin') AS Role FROM Employees WHERE IsActive = 1");
+                DataTable dtUsers = DbHelper.Query(@"
+                    SELECT EmpID, EmpName, 
+                           LTRIM(RTRIM(ISNULL(UserName, ''))) AS UserName, 
+                           LTRIM(RTRIM(ISNULL(Password, ''))) AS Password, 
+                           ISNULL(Role, 'Admin') AS Role 
+                    FROM Employees 
+                    WHERE IsActive = 1");
                 string usersJson = DataTableToJson(dtUsers);
 
                 // 10. سجل آخر فواتير المبيعات

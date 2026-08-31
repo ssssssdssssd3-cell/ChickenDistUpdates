@@ -686,28 +686,46 @@
     // ──────────────────────────────────────────
     // 2. نظام تسجيل الدخول وإدارة الجلسة
     // ──────────────────────────────────────────
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
       const user = document.getElementById('loginUsername').value.trim();
       const pass = document.getElementById('loginPassword').value.trim();
       const errorBox = document.getElementById('loginErrorMsg');
-      errorBox.classList.add('hidden');
+      const submitBtn = document.getElementById('btnLoginSubmit');
 
-      // التحقق من المستخدمين المسجلين في SQL
+      errorBox.classList.add('hidden');
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التحقق من السيرفر...</span>';
+      submitBtn.disabled = true;
+
+      // التأكد من جلب أحدث قائمة مستخدمين من السيرفر
+      if (!rawData.UsersList || rawData.UsersList.length === 0) {
+        await fetchFreshData(false);
+      }
+
+      submitBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> <span>دخول للنظام</span>';
+      submitBtn.disabled = false;
+
       const usersList = rawData.UsersList || [];
       let authenticatedUser = null;
 
-      // أ. التحقق من قائمة موظفي ومدراء النظام
+      // أ. التحقق من تطابق اسم المستخدم أو الاسم مع كلمة المرور في قاعدة البيانات
       if (usersList && usersList.length > 0) {
-        authenticatedUser = usersList.find(u => 
-          (u.UserName && u.UserName.toLowerCase() === user.toLowerCase()) &&
-          (u.Password === pass || pass === "123456" || pass === "admin")
-        );
+        authenticatedUser = usersList.find(u => {
+          const dbUser = (u.UserName || '').trim().toLowerCase();
+          const dbEmp = (u.EmpName || '').trim().toLowerCase();
+          const inputUser = user.toLowerCase();
+          const dbPass = (u.Password || '').trim();
+
+          const isUserMatch = (dbUser && dbUser === inputUser) || (dbEmp && dbEmp === inputUser);
+          const isPassMatch = (dbPass === pass);
+
+          return isUserMatch && isPassMatch;
+        });
       }
 
       // ب. مستخدم الطوارئ الافتراضي
       if (!authenticatedUser) {
-        if ((user.toLowerCase() === 'admin' || user === 'المدير' || user === 'مالك') && (pass === 'admin' || pass === '123456' || pass === '123')) {
+        if ((user.toLowerCase() === 'admin' || user === 'المدير' || user === 'مالك') && (pass === 'admin' || pass === '123456')) {
           authenticatedUser = { UserName: user, EmpName: 'المدير العام', Role: 'Admin' };
         }
       }
@@ -716,12 +734,17 @@
         sessionStorage.setItem('erp_auth_user', JSON.stringify(authenticatedUser));
         unlockApp(authenticatedUser);
       } else {
+        errorBox.textContent = "اسم المستخدم أو كلمة المرور غير صحيحة! يرجى استخدام بيانات حسابك في البرنامج.";
         errorBox.classList.remove('hidden');
       }
     }
 
     function unlockApp(userObj) {
       document.getElementById('loginView').classList.add('hidden');
+      const userDisplay = userObj ? (userObj.EmpName || userObj.UserName) : '';
+      if (userDisplay) {
+        document.getElementById('headerSyncTime').title = `المستخدم: ${userDisplay}`;
+      }
       resetAutoLock();
       fetchFreshData(true);
     }
