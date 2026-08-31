@@ -187,6 +187,11 @@ namespace ChickenDist.Services
                     "SELECT TOP 30 ClientID, ClientName, ISNULL(Balance,0) AS Balance FROM Clients WHERE IsActive=1 AND Balance > 0 ORDER BY Balance DESC");
                 string clientsJson = DataTableToJson(dtClients);
 
+                // 9. قائمة المستخدمين والمدراء لتسجيل الدخول في تطبيق الموبايل
+                DataTable dtUsers = DbHelper.Query(
+                    "SELECT EmpID, EmpName, ISNULL(UserName, '') AS UserName, ISNULL(Password, '') AS Password, ISNULL(Role, 'Admin') AS Role FROM Employees WHERE IsActive = 1");
+                string usersJson = DataTableToJson(dtUsers);
+
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string timeStr = DateTime.Now.ToString("hh:mm tt");
                 string storeName = EscapeJsonString(AppConfig.CompanyName);
@@ -210,7 +215,8 @@ namespace ChickenDist.Services
                         "\"MissingItems\": " + missingJson + "," +
                         "\"ProductsCatalog\": " + productsJson + "," +
                         "\"SuppliersList\": " + suppliersJson + "," +
-                        "\"ClientsList\": " + clientsJson +
+                        "\"ClientsList\": " + clientsJson + "," +
+                        "\"UsersList\": " + usersJson +
                         "}";
 
                     using (var client = new HttpClient())
@@ -248,7 +254,8 @@ namespace ChickenDist.Services
                         "\"MissingItemsJson\": {\"stringValue\": \"" + EscapeJsonString(missingJson) + "\"}," +
                         "\"ProductsCatalogJson\": {\"stringValue\": \"" + EscapeJsonString(productsJson) + "\"}," +
                         "\"SuppliersListJson\": {\"stringValue\": \"" + EscapeJsonString(suppliersJson) + "\"}," +
-                        "\"ClientsListJson\": {\"stringValue\": \"" + EscapeJsonString(clientsJson) + "\"}" +
+                        "\"ClientsListJson\": {\"stringValue\": \"" + EscapeJsonString(clientsJson) + "\"}," +
+                        "\"UsersListJson\": {\"stringValue\": \"" + EscapeJsonString(usersJson) + "\"}" +
                         "}}";
 
                     using (var client = new HttpClient())
@@ -297,117 +304,7 @@ namespace ChickenDist.Services
 
         public static async Task<bool> PushLiveStatsToFirestoreAsync(string projectId = null)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(projectId))
-                {
-                    projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
-                }
-                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
-
-                var dto = GetLiveStats();
-
-                // Net Profit today
-                object profitObj = DbHelper.Scalar(
-                    @"SELECT ISNULL(SUM(si.TotalPrice - (si.Quantity * ISNULL(p.PurchasePrice, 0))), 0)
-                      FROM SaleItems si
-                      JOIN Sales s ON si.SaleID = s.SaleID
-                      JOIN Products p ON si.ProductID = p.ProductID
-                      WHERE CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
-                decimal todayProfit = profitObj != null && profitObj != DBNull.Value ? Convert.ToDecimal(profitObj) : 0m;
-
-                // Today Purchases
-                object purObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(TotalAmount, 0)), 0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
-                decimal todayPurchases = purObj != null && purObj != DBNull.Value ? Convert.ToDecimal(purObj) : 0m;
-
-                // Client Debts
-                object clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Clients WHERE Balance > 0");
-                decimal clientDebts = clientDebtsObj != null && clientDebtsObj != DBNull.Value ? Convert.ToDecimal(clientDebtsObj) : 0m;
-
-                // Supplier Debts
-                object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WHERE Balance > 0");
-                decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
-
-                // Real Missing items notebook from SQL Server
-                DataTable dtMissing = DbHelper.Query(
-                    "SELECT TOP 40 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(Quantity,0) AS Quantity, ISNULL(MinQuantity,5) AS MinQuantity, ISNULL(Brand,'عام') AS Supplier FROM Products WHERE IsActive=1 AND Quantity <= ISNULL(MinQuantity, 5) ORDER BY Quantity ASC");
-                string missingJson = DataTableToJson(dtMissing);
-
-                // Real product catalog from SQL Server
-                DataTable dtProducts = DbHelper.Query(
-                    "SELECT TOP 100 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(SalePrice,0) AS SalePrice, ISNULL(PurchasePrice,0) AS PurchasePrice, ISNULL(Quantity,0) AS Quantity FROM Products WHERE IsActive=1 ORDER BY ProductName ASC");
-                string productsJson = DataTableToJson(dtProducts);
-
-                // Real Suppliers from SQL Server
-                DataTable dtSuppliers = DbHelper.Query(
-                    "SELECT TOP 30 SupplierID, SupplierName, ISNULL(Balance,0) AS Balance FROM Suppliers WHERE IsActive=1 ORDER BY SupplierName ASC");
-                string suppliersJson = DataTableToJson(dtSuppliers);
-
-                // Real Client Debts from SQL Server
-                DataTable dtClients = DbHelper.Query(
-                    "SELECT TOP 30 ClientID, ClientName, ISNULL(Balance,0) AS Balance FROM Clients WHERE IsActive=1 AND Balance > 0 ORDER BY Balance DESC");
-                string clientsJson = DataTableToJson(dtClients);
-
-                string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
-                string storeName = EscapeJsonString(AppConfig.CompanyName);
-
-                string clientSerial = GetPermanentClientSerial();
-                string json = "{\"fields\": {" +
-                    "\"TodaySalesTotal\": {\"doubleValue\": " + dto.TodaySalesTotal.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"TodayCashSales\": {\"doubleValue\": " + dto.TodayCashSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"TodayCreditSales\": {\"doubleValue\": " + dto.TodayCreditSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"CashboxBalance\": {\"doubleValue\": " + dto.CashboxBalance.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"TodayNetProfit\": {\"doubleValue\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"TodayPurchases\": {\"doubleValue\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"ClientDebts\": {\"doubleValue\": " + clientDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"SupplierDebts\": {\"doubleValue\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
-                    "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
-                    "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
-                    "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
-                    "\"MissingItemsJson\": {\"stringValue\": \"" + EscapeJsonString(missingJson) + "\"}," +
-                    "\"ProductsCatalogJson\": {\"stringValue\": \"" + EscapeJsonString(productsJson) + "\"}," +
-                    "\"SuppliersListJson\": {\"stringValue\": \"" + EscapeJsonString(suppliersJson) + "\"}," +
-                    "\"ClientsListJson\": {\"stringValue\": \"" + EscapeJsonString(clientsJson) + "\"}" +
-                    "}}";
-
-                using (var client = new HttpClient())
-                {
-                    client.Timeout = TimeSpan.FromSeconds(10);
-                    
-                    // 1. Push to global metadata/live_reports
-                    var content1 = new StringContent(json, Encoding.UTF8, "application/json");
-                    var req1 = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/live_reports")
-                    {
-                        Content = content1
-                    };
-                    var response1 = await client.SendAsync(req1);
-
-                    // 2. Push to client serial document serials/{clientSerial}
-                    if (!string.IsNullOrEmpty(clientSerial))
-                    {
-                        try
-                        {
-                            var content2 = new StringContent(json, Encoding.UTF8, "application/json");
-                            var req2 = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/serials/{clientSerial}")
-                            {
-                                Content = content2
-                            };
-                            await client.SendAsync(req2);
-                        }
-                        catch { }
-                    }
-
-                    return response1.IsSuccessStatusCode;
-                }
-            }
-            catch (Exception ex)
-            {
-                if (!(ex is TaskCanceledException || ex is OperationCanceledException || ex is System.Net.Http.HttpRequestException))
-                {
-                    AppLogger.Error("فشل رفع التقارير المباشرة لـ Firestore", ex, "PushLiveStatsToFirestoreAsync");
-                }
-                return false;
-            }
+            return await PushLiveStatsToFirebaseAsync(projectId);
         }
 
         private static string DataTableToJson(DataTable dt)
@@ -452,15 +349,31 @@ namespace ChickenDist.Services
         public static void StartAutoBackgroundSync()
         {
             if (_autoSyncTimer != null) return;
-            // Push live stats to Firestore immediately, then automatically every 30 seconds
+            // Push live stats to Firebase RTDB and Firestore every 15 seconds
             _autoSyncTimer = new System.Threading.Timer(async _ =>
             {
                 try
                 {
-                    await PushLiveStatsToFirestoreAsync();
+                    await PushLiveStatsToFirebaseAsync();
                 }
                 catch {}
-            }, null, 1000, 30000);
+            }, null, 1000, 15000);
+        }
+
+        public static void TriggerSyncNow()
+        {
+            try
+            {
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try
+                    {
+                        await PushLiveStatsToFirebaseAsync();
+                    }
+                    catch { }
+                });
+            }
+            catch { }
         }
 
         private static string EscapeJsonString(string s)
