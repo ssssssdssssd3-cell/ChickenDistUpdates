@@ -108,8 +108,8 @@ namespace ChickenDist.Services
         {
             try
             {
-                string projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
-                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
 
                 bool ok = await PushLiveStatsToFirebaseAsync(projectId);
                 string statusMsg = ok 
@@ -135,9 +135,9 @@ namespace ChickenDist.Services
         {
             if (string.IsNullOrEmpty(projectId))
             {
-                projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
+                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
             }
-            if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
 
             bool rtdbOk = false;
             bool firestoreOk = false;
