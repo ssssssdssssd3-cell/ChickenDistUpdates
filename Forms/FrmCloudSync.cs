@@ -101,33 +101,33 @@ namespace ChickenDist.Forms
             pnlKPI.Controls.Add(p1, 0, 0); pnlKPI.Controls.Add(p2, 1, 0); pnlKPI.Controls.Add(p3, 2, 0); pnlKPI.Controls.Add(p4, 3, 0);
             pnlKPI.Controls.Add(p5, 0, 1); pnlKPI.Controls.Add(p6, 1, 1); pnlKPI.Controls.Add(p7, 2, 1); pnlKPI.Controls.Add(p8, 3, 1);
 
-            // ===== 3. Bottom Action Buttons (Dock = Bottom so NEVER hidden) =====
+            // ===== 3. Action Buttons Panel (Dock = Top so prominently visible and elevated!) =====
             var pnlActions = new FlowLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                Height = 58,
-                FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(8, 8, 8, 8),
+                Dock = DockStyle.Top,
+                Height = 54,
+                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(10, 6, 10, 6),
                 BackColor = Color.FromArgb(15, 23, 42)
             };
 
             btnSyncNow = Theme.MakeButton("🔥 مزامنة ورفع كافة البيانات لحظياً الآن", Color.FromArgb(16, 185, 129));
-            btnSyncNow.Size = new Size(260, 40);
+            btnSyncNow.Size = new Size(250, 38);
             btnSyncNow.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSyncNow.Click += BtnSyncNow_Click;
 
-            btnDeployFirebase = Theme.MakeButton("🚀 نشر تطبيق المالك على فيربيز (Deploy)", Color.FromArgb(234, 88, 12));
-            btnDeployFirebase.Size = new Size(260, 40);
+            btnDeployFirebase = Theme.MakeButton("🚀 نشر تطبيق المالك (Deploy)", Color.FromArgb(234, 88, 12));
+            btnDeployFirebase.Size = new Size(230, 38);
             btnDeployFirebase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnDeployFirebase.Click += BtnDeployFirebase_Click;
 
-            btnOpenMobileApp = Theme.MakeButton("📱 فتح تطبيق المالك (Web App)", Color.FromArgb(147, 51, 234));
-            btnOpenMobileApp.Size = new Size(210, 40);
+            btnOpenMobileApp = Theme.MakeButton("📱 فتح تطبيق المالك", Color.FromArgb(147, 51, 234));
+            btnOpenMobileApp.Size = new Size(180, 38);
             btnOpenMobileApp.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnOpenMobileApp.Click += BtnOpenMobileApp_Click;
 
             btnCopyUrl = Theme.MakeButton("📋 نسخ الرابط", Color.FromArgb(2, 132, 199));
-            btnCopyUrl.Size = new Size(110, 40);
+            btnCopyUrl.Size = new Size(110, 38);
             btnCopyUrl.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCopyUrl.Click += (s, e) =>
             {
@@ -140,7 +140,7 @@ namespace ChickenDist.Forms
             };
 
             btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Color.FromArgb(71, 85, 105));
-            btnSave.Size = new Size(120, 40);
+            btnSave.Size = new Size(120, 38);
             btnSave.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
 
@@ -179,7 +179,7 @@ namespace ChickenDist.Forms
             txtFirebaseProjectId.TextChanged += (s, e) => UpdateWebUrlLabel();
 
             var lblUrlTitle = new Label { Text = "رابط تطبيق المالك (Web App URL):", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            lblLiveWebUrl = new Label { Text = "https://mahmoud-68b74.web.app", AutoSize = true, ForeColor = Color.FromArgb(56, 189, 248), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold | FontStyle.Underline), Anchor = AnchorStyles.Right, Cursor = Cursors.Hand };
+            lblLiveWebUrl = new Label { Text = "https://checkin-192ab.web.app", AutoSize = true, ForeColor = Color.FromArgb(56, 189, 248), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold | FontStyle.Underline), Anchor = AnchorStyles.Right, Cursor = Cursors.Hand };
             lblLiveWebUrl.Click += (s, e) => BtnOpenMobileApp_Click(s, e);
 
             var lblAuto = new Label { Text = "المزامنة اللحظية المستمرة:", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
@@ -206,7 +206,7 @@ namespace ChickenDist.Forms
             // Group: Deploy & Log Box
             var grpDeploy = new GroupBox
             {
-                Text = "🚀 نشر وتهيئة تطبيق المالك على حساب Firebase لهذا العميل (One-Click Deploy)",
+                Text = "🚀 سجل نشر وتهيئة تطبيق المالك على Firebase (Deploy Log)",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(245, 158, 11),
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -222,7 +222,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(10, 14, 23),
                 ForeColor = Color.FromArgb(148, 163, 184),
                 Font = new Font("Consolas", 9f),
-                Text = "جاهز لنشر تطبيق المالك على حساب Firebase... انقر على زر النشر بالأسفل."
+                Text = "جاهز لنشر تطبيق المالك على حساب Firebase... انقر على زر النشر أعلاه."
             };
             grpDeploy.Controls.Add(txtDeployLog);
 
@@ -230,8 +230,8 @@ namespace ChickenDist.Forms
             pnlMain.Controls.Add(new Panel { Height = 8, Dock = DockStyle.Top });
             pnlMain.Controls.Add(grpSettings);
 
-            // Order of adding controls in WinForms for Docking:
-            // 1. Top controls, 2. Bottom controls, 3. Fill control LAST!
+            // Controls docking order:
+            // 1. Fill control first in Controls.Add so it gets sandwiched between Tops and Bottoms
             this.Controls.Add(pnlMain);
             this.Controls.Add(pnlActions);
             this.Controls.Add(pnlKPI);
@@ -243,7 +243,7 @@ namespace ChickenDist.Forms
         private void UpdateWebUrlLabel()
         {
             string pId = txtFirebaseProjectId.Text.Trim();
-            if (string.IsNullOrEmpty(pId)) pId = "mahmoud-68b74";
+            if (string.IsNullOrEmpty(pId)) pId = "checkin-192ab";
             lblLiveWebUrl.Text = $"https://{pId}.web.app";
         }
 
