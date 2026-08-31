@@ -583,7 +583,7 @@ namespace ChickenDist.DAL
             }
             else if (stockCondition == "BELOW_MIN")
             {
-                sql += " AND ( (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit) OR ISNULL(stk.TotalStock, 0) <= 0 ) ";
+                sql += " AND p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit ";
             }
             else if (stockCondition == "BETWEEN_ZERO_AND_MIN")
             {
@@ -591,8 +591,8 @@ namespace ChickenDist.DAL
             }
             else
             {
-                // ALL: إما تحت حد الطلب أو رصيد صفر أو مسجل في كشكول النواقص
-                sql += " AND ( (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit) OR ISNULL(stk.TotalStock, 0) <= 0 OR sn.ShortageID IS NOT NULL ) ";
+                // ALL: إما تحت حد الطلب المحدد أو مسجل في كشكول النواقص كطلب نشط
+                sql += " AND ( (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit) OR (sn.ShortageID IS NOT NULL AND sn.Status IN (N'جديد', N'تم الطلب')) ) ";
             }
 
             // فلتر البحث النصي
