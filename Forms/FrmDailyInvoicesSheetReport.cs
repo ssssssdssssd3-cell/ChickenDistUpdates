@@ -41,24 +41,32 @@ namespace ChickenDist.Forms
         private int _printInvoiceIndex = 0;
         private int _printLineIndex = 0;
         private int _printPageNum = 1;
+        private bool _isInitializing = true;
 
-        public FrmDailyInvoicesSheetReport(DateTime? initialDate = null)
+        public FrmDailyInvoicesSheetReport(DateTime? fromDate = null, DateTime? toDate = null)
         {
+            _isInitializing = true;
             InitializeComponent();
-            if (initialDate.HasValue)
+            if (fromDate.HasValue)
             {
-                dtpFrom.Value = initialDate.Value.Date;
-                dtpTo.Value = initialDate.Value.Date.AddDays(1).AddSeconds(-1);
+                dtpFrom.Value = fromDate.Value.Date;
+                dtpTo.Value = toDate.HasValue ? toDate.Value.Date : fromDate.Value.Date;
+            }
+            else
+            {
+                dtpFrom.Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                dtpTo.Value = DateTime.Today;
             }
             LoadWarehouses();
             LoadClients();
+            _isInitializing = false;
             LoadReportData();
         }
 
         private void InitializeComponent()
         {
             this.Text = "📑 تقرير فواتير البيع التفصيلي اليومي (أصناف وفواتير)";
-            this.Size = new Size(1250, 750);
+            this.Size = new Size(1280, 780);
             this.MinimumSize = new Size(1000, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -90,29 +98,73 @@ namespace ChickenDist.Forms
             };
 
             // Date From
-            dtpFrom = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 115, Value = DateTime.Today };
-            flowFilters.Controls.Add(MakeFilterBox("📅 من تاريخ:", dtpFrom, 115));
+            dtpFrom = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 110, Value = DateTime.Today };
+            dtpFrom.ValueChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
+            flowFilters.Controls.Add(MakeFilterBox("📅 من:", dtpFrom, 110));
 
             // Date To
-            dtpTo = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 115, Value = DateTime.Today };
-            flowFilters.Controls.Add(MakeFilterBox("📅 إلى تاريخ:", dtpTo, 115));
+            dtpTo = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 110, Value = DateTime.Today };
+            dtpTo.ValueChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
+            flowFilters.Controls.Add(MakeFilterBox("📅 إلى:", dtpTo, 110));
+
+            // Quick Preset Buttons
+            var btnToday = Theme.MakeButton("اليوم", Color.FromArgb(71, 85, 105));
+            btnToday.Size = new Size(60, 36);
+            btnToday.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnToday.Click += (s, e) =>
+            {
+                _isInitializing = true;
+                dtpFrom.Value = DateTime.Today;
+                dtpTo.Value = DateTime.Today;
+                _isInitializing = false;
+                LoadReportData();
+            };
+            flowFilters.Controls.Add(btnToday);
+
+            var btnThisMonth = Theme.MakeButton("الشهر", Color.FromArgb(71, 85, 105));
+            btnThisMonth.Size = new Size(60, 36);
+            btnThisMonth.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnThisMonth.Click += (s, e) =>
+            {
+                _isInitializing = true;
+                dtpFrom.Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                dtpTo.Value = DateTime.Today;
+                _isInitializing = false;
+                LoadReportData();
+            };
+            flowFilters.Controls.Add(btnThisMonth);
+
+            var btnAllPeriods = Theme.MakeButton("الكل", Color.FromArgb(71, 85, 105));
+            btnAllPeriods.Size = new Size(55, 36);
+            btnAllPeriods.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnAllPeriods.Click += (s, e) =>
+            {
+                _isInitializing = true;
+                dtpFrom.Value = new DateTime(2020, 1, 1);
+                dtpTo.Value = DateTime.Today.AddDays(1);
+                _isInitializing = false;
+                LoadReportData();
+            };
+            flowFilters.Controls.Add(btnAllPeriods);
 
             // Warehouse
-            cboWarehouse = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 130, Font = Theme.FontMain };
-            flowFilters.Controls.Add(MakeFilterBox("🏢 المخزن:", cboWarehouse, 130));
+            cboWarehouse = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 120, Font = Theme.FontMain };
+            cboWarehouse.SelectedIndexChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
+            flowFilters.Controls.Add(MakeFilterBox("🏢 المخزن:", cboWarehouse, 120));
 
             // Client
-            cboClient = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 140, Font = Theme.FontMain };
-            flowFilters.Controls.Add(MakeFilterBox("👤 العميل:", cboClient, 140));
+            cboClient = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 130, Font = Theme.FontMain };
+            cboClient.SelectedIndexChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
+            flowFilters.Controls.Add(MakeFilterBox("👤 العميل:", cboClient, 130));
 
             // Search
-            txtSearch = new TextBox { Width = 140, Font = Theme.FontBold, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42) };
+            txtSearch = new TextBox { Width = 120, Font = Theme.FontBold, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42) };
             txtSearch.TextChanged += (s, e) => ApplySearchFilter();
-            flowFilters.Controls.Add(MakeFilterBox("🔍 تصفية سريعة:", txtSearch, 140));
+            flowFilters.Controls.Add(MakeFilterBox("🔍 بحث:", txtSearch, 120));
 
             // Buttons
-            btnLoad = Theme.MakeButton("🔄 عرض الفواتير", Color.FromArgb(245, 158, 11));
-            btnLoad.Size = new Size(115, 36);
+            btnLoad = Theme.MakeButton("🔄 عرض", Color.FromArgb(245, 158, 11));
+            btnLoad.Size = new Size(95, 36);
             btnLoad.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnLoad.Click += (s, e) => LoadReportData();
             flowFilters.Controls.Add(btnLoad);
@@ -830,7 +882,15 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            MessageBox.Show("لم يتم العثور على طابعة Microsoft Print to PDF بالجهاز.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            using (var dlg = new PrintDialog())
+                            {
+                                dlg.Document = pd;
+                                dlg.UseEXDialog = true;
+                                if (dlg.ShowDialog(this) == DialogResult.OK)
+                                {
+                                    pd.Print();
+                                }
+                            }
                         }
                     }
                     catch (Exception ex)

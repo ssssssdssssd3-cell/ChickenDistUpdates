@@ -342,7 +342,7 @@ namespace ChickenDist.Forms
 			btnDailyInvoicesSheet.Margin = new Padding(4, 0, 4, 0);
 			btnDailyInvoicesSheet.Click += delegate
 			{
-				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value);
+				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value, dtpTo.Value);
 				frm.Show();
 			};
 			flowLayoutPanel.Controls.Add(btnDailyInvoicesSheet);
@@ -1047,7 +1047,7 @@ namespace ChickenDist.Forms
 			var itemPrintDailySheet = new ToolStripMenuItem("📑 تقرير فواتير اليومية الشامل (شيت A4 مع كافة الأصناف)");
 			itemPrintDailySheet.Click += (s2, e2) =>
 			{
-				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value);
+				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value, dtpTo.Value);
 				frm.Show();
 			};
 

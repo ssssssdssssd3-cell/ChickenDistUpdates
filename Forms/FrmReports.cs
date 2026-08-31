@@ -487,7 +487,7 @@ namespace ChickenDist.Forms
 			btnDailyInvoicesSheet.Margin = new Padding(3, 2, 3, 2);
 			btnDailyInvoicesSheet.Click += delegate
 			{
-				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value);
+				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value, dtpTo.Value);
 				frm.Show(this);
 			};
 
