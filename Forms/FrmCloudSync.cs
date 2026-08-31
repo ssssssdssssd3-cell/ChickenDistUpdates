@@ -288,8 +288,8 @@ namespace ChickenDist.Forms
         {
             try
             {
-                string projectId = AppConfig.Get("FirebaseProjectId", "mahmoud-68b74");
-                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
                 txtFirebaseProjectId.Text = projectId;
                 UpdateWebUrlLabel();
 
@@ -474,7 +474,7 @@ namespace ChickenDist.Forms
             try
             {
                 string projectId = txtFirebaseProjectId.Text.Trim();
-                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
 
                 string url = $"https://{projectId}.web.app";
                 Process.Start(new ProcessStartInfo
@@ -494,7 +494,7 @@ namespace ChickenDist.Forms
             try
             {
                 string projectId = txtFirebaseProjectId.Text.Trim();
-                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
 
                 AppConfig.Set("FirebaseProjectId", projectId);
 

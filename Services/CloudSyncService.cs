@@ -49,9 +49,24 @@ namespace ChickenDist.Services
                 object credObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND SaleType <> 'Cash'");
                 dto.TodayCreditSales = credObj != null && credObj != DBNull.Value ? Convert.ToDecimal(credObj) : 0m;
 
-                // رصيد الخزنة
-                object cbObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn,0) - ISNULL(AmountOut,0)), 0) FROM CashBox");
-                dto.CashboxBalance = cbObj != null && cbObj != DBNull.Value ? Convert.ToDecimal(cbObj) : 0m;
+                // رصيد الخزائن والسيولة الفعلية المتاحة (شامل الأرصدة الافتتاحية لكافة الخزائن)
+                decimal totalCashboxBalance = 0m;
+                try
+                {
+                    object openBalObj = DbHelper.Scalar("SELECT ISNULL(SUM(OpeningBalance), 0) FROM SafeAccounts WHERE IsActive = 1");
+                    decimal openBal = openBalObj != null && openBalObj != DBNull.Value ? Convert.ToDecimal(openBalObj) : 0m;
+
+                    object movementsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn, 0) - ISNULL(AmountOut, 0)), 0) FROM CashBox");
+                    decimal movements = movementsObj != null && movementsObj != DBNull.Value ? Convert.ToDecimal(movementsObj) : 0m;
+
+                    totalCashboxBalance = openBal + movements;
+                }
+                catch
+                {
+                    object cbObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn,0) - ISNULL(AmountOut,0)), 0) FROM CashBox");
+                    totalCashboxBalance = cbObj != null && cbObj != DBNull.Value ? Convert.ToDecimal(cbObj) : 0m;
+                }
+                dto.CashboxBalance = totalCashboxBalance;
 
                 // نواقص المخزن
                 object lowObj = DbHelper.Scalar("SELECT COUNT(*) FROM Products WHERE IsActive = 1 AND Quantity <= ISNULL(MinQuantity, 5)");
