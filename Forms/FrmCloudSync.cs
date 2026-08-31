@@ -43,19 +43,45 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ===== 1. Header Title =====
-            var pnlTitle = Theme.MakeTitleBar("📱 تطبيق المالك وخدمات السحاب (Firebase Realtime Cloud)", 
-                "إدارة ومتابعة تطبيق المالك (Web App)، الرفع اللحظي لكافة التقارير، ونشر التطبيق على حسابات فيربيز المخصصة لكل عميل");
-            pnlTitle.Dock = DockStyle.Top;
+            var pnlTitle = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 65,
+                BackColor = Color.FromArgb(15, 23, 42),
+                Padding = new Padding(15, 8, 15, 8)
+            };
 
-            // ===== 2. KPI Cards Panel =====
+            var lblTitleText = new Label
+            {
+                Text = "📱 تطبيق المالك وخدمات السحاب (Firebase Realtime Cloud)",
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(56, 189, 248),
+                Dock = DockStyle.Top,
+                Height = 26,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            var lblSubText = new Label
+            {
+                Text = "متابعة وإدارة مزامنة بيانات وتقارير المحل لحظياً مع تطبيق المالك (Web App) ونشره على Firebase Hosting لكل عميل",
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            pnlTitle.Controls.Add(lblSubText);
+            pnlTitle.Controls.Add(lblTitleText);
+
+            // ===== 2. KPI Cards Panel (Compact & Clean) =====
             var pnlKPI = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 175,
+                Height = 125,
                 ColumnCount = 4,
                 RowCount = 2,
-                Padding = new Padding(10),
-                BackColor = Theme.BgCard
+                Padding = new Padding(8, 4, 8, 4),
+                BackColor = Color.FromArgb(18, 26, 43)
             };
             pnlKPI.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlKPI.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
@@ -75,108 +101,34 @@ namespace ChickenDist.Forms
             pnlKPI.Controls.Add(p1, 0, 0); pnlKPI.Controls.Add(p2, 1, 0); pnlKPI.Controls.Add(p3, 2, 0); pnlKPI.Controls.Add(p4, 3, 0);
             pnlKPI.Controls.Add(p5, 0, 1); pnlKPI.Controls.Add(p6, 1, 1); pnlKPI.Controls.Add(p7, 2, 1); pnlKPI.Controls.Add(p8, 3, 1);
 
-            // ===== 3. Settings & Deploy Controls =====
-            var pnlMain = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(15),
-                AutoScroll = true
-            };
-
-            var grpSettings = new GroupBox
-            {
-                Text = "⚙️ إعدادات حساب Firebase الخاص بالعميل والتزامن اللحظي",
-                Dock = DockStyle.Top,
-                Height = 220,
-                ForeColor = Theme.Accent,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                Padding = new Padding(12)
-            };
-
-            var tbl = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 5,
-                Padding = new Padding(6)
-            };
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 240f));
-            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-
-            var lblProject = new Label { Text = "معرّف مشروع Firebase للعميل (Project ID):", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
-            txtFirebaseProjectId = new TextBox { Dock = DockStyle.Fill, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.No, Font = new Font("Segoe UI", 11f, FontStyle.Bold) };
-            txtFirebaseProjectId.TextChanged += (s, e) => UpdateWebUrlLabel();
-
-            var lblUrlTitle = new Label { Text = "رابط تطبيق المالك (Web App URL):", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
-            lblLiveWebUrl = new Label { Text = "https://mahmoud-68b74.web.app", AutoSize = true, ForeColor = Color.FromArgb(56, 189, 248), Font = new Font("Segoe UI", 11f, FontStyle.Bold), Anchor = AnchorStyles.Left, Cursor = Cursors.Hand };
-            lblLiveWebUrl.Click += (s, e) => BtnOpenMobileApp_Click(s, e);
-
-            var lblAuto = new Label { Text = "المزامنة اللحظية المستمرة:", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
-            chkAutoSync = new CheckBox { Text = "تفعيل الرفع اللحظي التلقائي مع كل فاتورة بيع أو شراء أو حركة نقدية وتقفيل وردية", AutoSize = true, ForeColor = Theme.TextMain, Checked = true };
-
-            var lblInt = new Label { Text = "معدل التحديث الدوري:", AutoSize = true, ForeColor = Theme.TextMain, Anchor = AnchorStyles.Left };
-            cboInterval = new ComboBox { Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            cboInterval.Items.AddRange(new object[] { "كل 15 ثانية (فوري)", "كل 30 ثانية", "كل دقيقة", "كل 5 دقائق" });
-            cboInterval.SelectedIndex = 0;
-
-            lblLastSyncTime = new Label { Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: لم تتم بعد", AutoSize = true, ForeColor = Color.FromArgb(70, 200, 240), Anchor = AnchorStyles.Left, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
-
-            tbl.Controls.Add(lblProject, 0, 0); tbl.Controls.Add(txtFirebaseProjectId, 1, 0);
-            tbl.Controls.Add(lblUrlTitle, 0, 1); tbl.Controls.Add(lblLiveWebUrl, 1, 1);
-            tbl.Controls.Add(lblAuto, 0, 2); tbl.Controls.Add(chkAutoSync, 1, 2);
-            tbl.Controls.Add(lblInt, 0, 3); tbl.Controls.Add(cboInterval, 1, 3);
-            tbl.Controls.Add(lblLastSyncTime, 1, 4);
-
-            grpSettings.Controls.Add(tbl);
-
-            // Group: Deploy & Log Box
-            var grpDeploy = new GroupBox
-            {
-                Text = "🚀 نشر وتهيئة تطبيق المالك على حساب Firebase لهذا العميل (One-Click Deploy)",
-                Dock = DockStyle.Top,
-                Height = 160,
-                ForeColor = Color.FromArgb(245, 158, 11),
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                Padding = new Padding(10)
-            };
-
-            txtDeployLog = new TextBox
-            {
-                Dock = DockStyle.Fill,
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                BackColor = Color.FromArgb(10, 14, 23),
-                ForeColor = Color.FromArgb(148, 163, 184),
-                Font = new Font("Consolas", 9.5f),
-                Text = "جاهز لنشر تطبيق المالك على حساب Firebase... انقر على زر النشر بالأسفل."
-            };
-            grpDeploy.Controls.Add(txtDeployLog);
-
-            // ===== 4. Action Buttons =====
+            // ===== 3. Bottom Action Buttons (Dock = Bottom so NEVER hidden) =====
             var pnlActions = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 65,
+                Height = 58,
                 FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(10),
-                BackColor = Theme.BgCard
+                Padding = new Padding(8, 8, 8, 8),
+                BackColor = Color.FromArgb(15, 23, 42)
             };
 
-            btnSyncNow = Theme.MakeButton("🔥 مزامنة ورفع كافة البيانات لحظياً الآن", Theme.Accent);
-            btnSyncNow.Size = new Size(270, 42);
+            btnSyncNow = Theme.MakeButton("🔥 مزامنة ورفع كافة البيانات لحظياً الآن", Color.FromArgb(16, 185, 129));
+            btnSyncNow.Size = new Size(260, 40);
+            btnSyncNow.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSyncNow.Click += BtnSyncNow_Click;
 
-            btnDeployFirebase = Theme.MakeButton("🚀 نشر تطبيق المالك على فيربيز (Deploy)", Color.FromArgb(220, 80, 40));
-            btnDeployFirebase.Size = new Size(270, 42);
+            btnDeployFirebase = Theme.MakeButton("🚀 نشر تطبيق المالك على فيربيز (Deploy)", Color.FromArgb(234, 88, 12));
+            btnDeployFirebase.Size = new Size(260, 40);
+            btnDeployFirebase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnDeployFirebase.Click += BtnDeployFirebase_Click;
 
-            btnOpenMobileApp = Theme.MakeButton("📱 فتح تطبيق المالك (Web App)", Color.FromArgb(160, 80, 220));
-            btnOpenMobileApp.Size = new Size(220, 42);
+            btnOpenMobileApp = Theme.MakeButton("📱 فتح تطبيق المالك (Web App)", Color.FromArgb(147, 51, 234));
+            btnOpenMobileApp.Size = new Size(210, 40);
+            btnOpenMobileApp.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnOpenMobileApp.Click += BtnOpenMobileApp_Click;
 
-            btnCopyUrl = Theme.MakeButton("📋 نسخ الرابط", Color.FromArgb(40, 160, 220));
-            btnCopyUrl.Size = new Size(110, 42);
+            btnCopyUrl = Theme.MakeButton("📋 نسخ الرابط", Color.FromArgb(2, 132, 199));
+            btnCopyUrl.Size = new Size(110, 40);
+            btnCopyUrl.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCopyUrl.Click += (s, e) =>
             {
                 string u = lblLiveWebUrl.Text.Trim();
@@ -187,16 +139,99 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Theme.Success);
-            btnSave.Size = new Size(130, 42);
+            btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Color.FromArgb(71, 85, 105));
+            btnSave.Size = new Size(120, 40);
+            btnSave.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
 
             pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnDeployFirebase, btnOpenMobileApp, btnCopyUrl, btnSave });
 
+            // ===== 4. Middle Settings & Deploy Panel (Dock = Fill) =====
+            var pnlMain = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(12),
+                AutoScroll = true
+            };
+
+            var grpSettings = new GroupBox
+            {
+                Text = "⚙️ إعدادات حساب Firebase الخاص بالعميل والتزامن اللحظي",
+                Dock = DockStyle.Top,
+                Height = 185,
+                ForeColor = Color.FromArgb(56, 189, 248),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Padding = new Padding(10)
+            };
+
+            var tbl = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 4,
+                Padding = new Padding(4)
+            };
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 260f));
+            tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+
+            var lblProject = new Label { Text = "معرّف مشروع Firebase للعميل (Project ID):", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtFirebaseProjectId = new TextBox { Dock = DockStyle.Fill, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, RightToLeft = RightToLeft.No, Font = new Font("Segoe UI", 11f, FontStyle.Bold) };
+            txtFirebaseProjectId.TextChanged += (s, e) => UpdateWebUrlLabel();
+
+            var lblUrlTitle = new Label { Text = "رابط تطبيق المالك (Web App URL):", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            lblLiveWebUrl = new Label { Text = "https://mahmoud-68b74.web.app", AutoSize = true, ForeColor = Color.FromArgb(56, 189, 248), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold | FontStyle.Underline), Anchor = AnchorStyles.Right, Cursor = Cursors.Hand };
+            lblLiveWebUrl.Click += (s, e) => BtnOpenMobileApp_Click(s, e);
+
+            var lblAuto = new Label { Text = "المزامنة اللحظية المستمرة:", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            chkAutoSync = new CheckBox { Text = "تفعيل الرفع اللحظي التلقائي مع كل فاتورة بيع أو شراء أو حركة نقدية وتقفيل وردية", AutoSize = true, ForeColor = Color.FromArgb(226, 232, 240), Checked = true, Font = new Font("Segoe UI", 9f, FontStyle.Regular) };
+
+            var lblInt = new Label { Text = "معدل التحديث والـ Last Sync:", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            
+            var pnlIntRow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
+            cboInterval = new ComboBox { Width = 160, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f) };
+            cboInterval.Items.AddRange(new object[] { "كل 15 ثانية (فوري)", "كل 30 ثانية", "كل دقيقة", "كل 5 دقائق" });
+            cboInterval.SelectedIndex = 0;
+
+            lblLastSyncTime = new Label { Text = "🕒 آخر تحديث: لم تتم بعد", AutoSize = true, ForeColor = Color.FromArgb(52, 211, 153), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Padding = new Padding(10, 4, 0, 0) };
+            pnlIntRow.Controls.Add(cboInterval);
+            pnlIntRow.Controls.Add(lblLastSyncTime);
+
+            tbl.Controls.Add(lblProject, 0, 0); tbl.Controls.Add(txtFirebaseProjectId, 1, 0);
+            tbl.Controls.Add(lblUrlTitle, 0, 1); tbl.Controls.Add(lblLiveWebUrl, 1, 1);
+            tbl.Controls.Add(lblAuto, 0, 2); tbl.Controls.Add(chkAutoSync, 1, 2);
+            tbl.Controls.Add(lblInt, 0, 3); tbl.Controls.Add(pnlIntRow, 1, 3);
+
+            grpSettings.Controls.Add(tbl);
+
+            // Group: Deploy & Log Box
+            var grpDeploy = new GroupBox
+            {
+                Text = "🚀 نشر وتهيئة تطبيق المالك على حساب Firebase لهذا العميل (One-Click Deploy)",
+                Dock = DockStyle.Fill,
+                ForeColor = Color.FromArgb(245, 158, 11),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Padding = new Padding(8)
+            };
+
+            txtDeployLog = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                BackColor = Color.FromArgb(10, 14, 23),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Font = new Font("Consolas", 9f),
+                Text = "جاهز لنشر تطبيق المالك على حساب Firebase... انقر على زر النشر بالأسفل."
+            };
+            grpDeploy.Controls.Add(txtDeployLog);
+
             pnlMain.Controls.Add(grpDeploy);
-            pnlMain.Controls.Add(new Panel { Height = 10, Dock = DockStyle.Top });
+            pnlMain.Controls.Add(new Panel { Height = 8, Dock = DockStyle.Top });
             pnlMain.Controls.Add(grpSettings);
 
+            // Order of adding controls in WinForms for Docking:
+            // 1. Top controls, 2. Bottom controls, 3. Fill control LAST!
             this.Controls.Add(pnlMain);
             this.Controls.Add(pnlActions);
             this.Controls.Add(pnlKPI);
