@@ -26,6 +26,7 @@ namespace ChickenDist.Forms
         private Button btnBrowseFinished;
         private NumericUpDown numOutputQty;
         private TextBox txtUnitName;
+        private TextBox txtEstimatedDuration;
         private TextBox txtNotes;
         private Label lblHeaderUnitCostBadge;
 
@@ -214,13 +215,29 @@ namespace ChickenDist.Forms
             pnlUnit.Controls.Add(txtUnitName);
             flowFinished.Controls.Add(pnlUnit);
 
-            // 4. الملاحظات
-            var pnlNotes = new Panel { Width = 210, Height = 56, Margin = new Padding(0, 0, 0, 0) };
+            // 4. مدة التصنيع التقديرية
+            var pnlDuration = new Panel { Width = 110, Height = 56, Margin = new Padding(0, 0, 8, 0) };
+            pnlDuration.Controls.Add(new Label { Text = "⏱️ مدة التصنيع:", Dock = DockStyle.Top, Height = 18, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
+            txtEstimatedDuration = new TextBox
+            {
+                Location = new Point(0, 20),
+                Width = 110,
+                Height = 28,
+                Font = Theme.FontMain,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                TextAlign = HorizontalAlignment.Center
+            };
+            pnlDuration.Controls.Add(txtEstimatedDuration);
+            flowFinished.Controls.Add(pnlDuration);
+
+            // 5. الملاحظات
+            var pnlNotes = new Panel { Width = 160, Height = 56, Margin = new Padding(0, 0, 0, 0) };
             pnlNotes.Controls.Add(new Label { Text = "ملاحظات الوصفة:", Dock = DockStyle.Top, Height = 18, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
             txtNotes = new TextBox
             {
                 Location = new Point(0, 20),
-                Width = 210,
+                Width = 160,
                 Height = 28,
                 Font = Theme.FontMain,
                 BackColor = Theme.BgInput,
@@ -1039,6 +1056,7 @@ namespace ChickenDist.Forms
                 ProductID = _selectedFinishedProductID,
                 OutputQty = numOutputQty.Value,
                 UnitName = txtUnitName.Text.Trim(),
+                EstimatedDuration = txtEstimatedDuration != null ? txtEstimatedDuration.Text.Trim() : "",
                 Notes = txtNotes.Text.Trim()
             };
 
@@ -1112,6 +1130,7 @@ namespace ChickenDist.Forms
             txtFinishedProduct.Text = $"{bom.ProductCode} - {bom.ProductName}";
             numOutputQty.Value = bom.OutputQty > 0 ? bom.OutputQty : 1m;
             txtUnitName.Text = bom.UnitName ?? "قطعة";
+            if (txtEstimatedDuration != null) txtEstimatedDuration.Text = bom.EstimatedDuration ?? "";
             txtNotes.Text = bom.Notes ?? "";
 
             dgItems.Rows.Clear();
@@ -1145,6 +1164,7 @@ namespace ChickenDist.Forms
             txtFinishedProduct.Clear();
             numOutputQty.Value = 1m;
             txtUnitName.Text = "قطعة";
+            if (txtEstimatedDuration != null) txtEstimatedDuration.Clear();
             txtNotes.Clear();
             dgItems.Rows.Clear();
             ClearRawInputs();

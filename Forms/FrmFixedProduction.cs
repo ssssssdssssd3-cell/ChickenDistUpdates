@@ -33,6 +33,7 @@ namespace ChickenDist.Forms
         private NumericUpDown numProducedQty;
         private TextBox txtUnitName;
         private TextBox txtNotes;
+        private Label lblEstimatedDuration;
 
         // Controls - Expenses
         private NumericUpDown numExtraExpenses;
@@ -190,6 +191,15 @@ namespace ChickenDist.Forms
                     else SelectFinishedProduct(q);
                 }
             };
+            txtFinishedProduct.Leave += (s, e) =>
+            {
+                string q = txtFinishedProduct.Text.Trim();
+                if (!string.IsNullOrEmpty(q) && _selectedFinishedProductID <= 0)
+                {
+                    var dt = DbHelper.Query("SELECT TOP 1 ProductID FROM Products WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName LIKE '%' + @q + '%'", DbHelper.P("@q", q));
+                    if (dt != null && dt.Rows.Count > 0) LoadFinishedProduct(Convert.ToInt32(dt.Rows[0]["ProductID"]));
+                }
+            };
             pnlHeader.Controls.Add(txtFinishedProduct);
 
             btnBrowseFinished = Theme.MakeButton("🔍 بحث بالأصناف", 288, 76, 115, 34, Theme.Primary);
@@ -240,13 +250,23 @@ namespace ChickenDist.Forms
             txtNotes = new TextBox
             {
                 Location = new Point(755, 78),
-                Width = 280,
+                Width = 240,
                 Height = 32,
                 Font = Theme.FontMain,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain
             };
             pnlHeader.Controls.Add(txtNotes);
+
+            lblEstimatedDuration = new Label
+            {
+                Text = "⏱️ مدة التصنيع: غير محددة",
+                Location = new Point(1005, 82),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(52, 211, 153),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            pnlHeader.Controls.Add(lblEstimatedDuration);
 
             // Row 3: Operating Expenses
             var lblExp = new Label { Text = "⚡ مصاريف تشغيل إضافية (كهرباء/عمالة/صيانة):", Location = new Point(12, 122), AutoSize = true, ForeColor = Color.Orange };
@@ -617,6 +637,13 @@ namespace ChickenDist.Forms
             if (_currentBOM == null) return;
             dgItems.Rows.Clear();
 
+            if (lblEstimatedDuration != null)
+            {
+                lblEstimatedDuration.Text = !string.IsNullOrEmpty(_currentBOM.EstimatedDuration)
+                    ? $"⏱️ مدة التصنيع: {_currentBOM.EstimatedDuration}"
+                    : "⏱️ مدة التصنيع: غير محددة";
+            }
+
             decimal baseOutQty = _currentBOM.OutputQty > 0 ? _currentBOM.OutputQty : 1m;
             decimal multiplier = numProducedQty.Value / baseOutQty;
 
@@ -797,6 +824,7 @@ namespace ChickenDist.Forms
                 FinishedProductID = _selectedFinishedProductID,
                 ProducedQty = numProducedQty.Value,
                 UnitName = txtUnitName.Text.Trim(),
+                EstimatedDuration = _currentBOM != null ? (_currentBOM.EstimatedDuration ?? "") : "",
                 WarehouseID = wid,
                 ExtraExpenses = numExtraExpenses.Value,
                 ExpensesNotes = txtExpensesNotes.Text.Trim(),
@@ -861,6 +889,13 @@ namespace ChickenDist.Forms
             numProducedQty.Value = order.ProducedQty;
             txtUnitName.Text = order.UnitName ?? "قطعة";
             txtNotes.Text = order.Notes ?? "";
+
+            if (lblEstimatedDuration != null)
+            {
+                lblEstimatedDuration.Text = !string.IsNullOrEmpty(order.EstimatedDuration)
+                    ? $"⏱️ مدة التصنيع: {order.EstimatedDuration}"
+                    : "⏱️ مدة التصنيع: غير محددة";
+            }
 
             numExtraExpenses.Value = order.ExtraExpenses;
             txtExpensesNotes.Text = order.ExpensesNotes ?? "";
@@ -1033,6 +1068,7 @@ namespace ChickenDist.Forms
             txtNotes.Clear();
             numExtraExpenses.Value = 0m;
             txtExpensesNotes.Clear();
+            if (lblEstimatedDuration != null) lblEstimatedDuration.Text = "⏱️ مدة التصنيع: غير محددة";
 
             dgItems.Rows.Clear();
             RecalculateTotals();

@@ -30,6 +30,7 @@ namespace ChickenDist.Forms
         private Button btnBrowseFinished;
         private NumericUpDown numProducedQty;
         private TextBox txtUnitName;
+        private TextBox txtEstimatedDuration;
         private TextBox txtNotes;
 
         // Controls - Quick Add Raw Material Bar
@@ -197,6 +198,15 @@ namespace ChickenDist.Forms
                     else SelectFinishedProduct(q);
                 }
             };
+            txtFinishedProduct.Leave += (s, e) =>
+            {
+                string q = txtFinishedProduct.Text.Trim();
+                if (!string.IsNullOrEmpty(q) && _selectedFinishedProductID <= 0)
+                {
+                    var dt = DbHelper.Query("SELECT TOP 1 ProductID FROM Products WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName LIKE '%' + @q + '%'", DbHelper.P("@q", q));
+                    if (dt != null && dt.Rows.Count > 0) LoadFinishedProduct(Convert.ToInt32(dt.Rows[0]["ProductID"]));
+                }
+            };
             pnlHeader.Controls.Add(txtFinishedProduct);
 
             btnBrowseFinished = Theme.MakeButton("🔍 اختيار منتج", 340, 76, 120, 34, Theme.Primary);
@@ -236,13 +246,28 @@ namespace ChickenDist.Forms
             };
             pnlHeader.Controls.Add(txtUnitName);
 
-            var lblNotesTitle = new Label { Text = "ملاحظات وبيان التشغيل:", Location = new Point(710, 55), AutoSize = true, ForeColor = Color.Silver };
+            var lblDurTitle = new Label { Text = "⏱️ مدة التصنيع:", Location = new Point(710, 55), AutoSize = true, ForeColor = Color.Silver };
+            pnlHeader.Controls.Add(lblDurTitle);
+
+            txtEstimatedDuration = new TextBox
+            {
+                Location = new Point(710, 78),
+                Width = 110,
+                Height = 32,
+                Font = Theme.FontMain,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                TextAlign = HorizontalAlignment.Center
+            };
+            pnlHeader.Controls.Add(txtEstimatedDuration);
+
+            var lblNotesTitle = new Label { Text = "ملاحظات وبيان التشغيل:", Location = new Point(830, 55), AutoSize = true, ForeColor = Color.Silver };
             pnlHeader.Controls.Add(lblNotesTitle);
 
             txtNotes = new TextBox
             {
-                Location = new Point(710, 78),
-                Width = 440,
+                Location = new Point(830, 78),
+                Width = 320,
                 Height = 32,
                 Font = Theme.FontMain,
                 BackColor = Theme.BgInput,
@@ -735,6 +760,7 @@ namespace ChickenDist.Forms
                 FinishedProductID = _selectedFinishedProductID,
                 ProducedQty = numProducedQty.Value,
                 UnitName = txtUnitName.Text.Trim(),
+                EstimatedDuration = txtEstimatedDuration != null ? txtEstimatedDuration.Text.Trim() : "",
                 WarehouseID = wid,
                 ExtraExpenses = numExtraExpenses.Value,
                 ExpensesNotes = txtExpensesNotes.Text.Trim(),
@@ -798,6 +824,7 @@ namespace ChickenDist.Forms
             txtFinishedProduct.Text = $"{order.FinishedProductCode} - {order.FinishedProductName}";
             numProducedQty.Value = order.ProducedQty;
             txtUnitName.Text = order.UnitName ?? "قطعة";
+            if (txtEstimatedDuration != null) txtEstimatedDuration.Text = order.EstimatedDuration ?? "";
             txtNotes.Text = order.Notes ?? "";
 
             numExtraExpenses.Value = order.ExtraExpenses;
@@ -968,6 +995,7 @@ namespace ChickenDist.Forms
             numProducedQty.Value = 1m;
             txtUnitName.Text = "قطعة";
             txtNotes.Clear();
+            if (txtEstimatedDuration != null) txtEstimatedDuration.Clear();
             numExtraExpenses.Value = 0m;
             txtExpensesNotes.Clear();
 

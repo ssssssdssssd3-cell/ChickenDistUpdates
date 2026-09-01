@@ -30,6 +30,7 @@ namespace ChickenDist.Core
         public decimal OutputQty { get; set; } = 1m;
         public string UnitName { get; set; }
         public string Notes { get; set; }
+        public string EstimatedDuration { get; set; } = "";
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime LastUpdated { get; set; } = DateTime.Now;
         public bool IsActive { get; set; } = true;
@@ -77,6 +78,8 @@ namespace ChickenDist.Core
         public string FinishedProductName { get; set; }
         public decimal ProducedQty { get; set; } = 1m;
         public string UnitName { get; set; }
+        public string EstimatedDuration { get; set; } = "";
+        public string ActualDuration { get; set; } = "";
         public int WarehouseID { get; set; } = 1;
         public string WarehouseName { get; set; }
         public decimal RawMaterialsCost { get; set; }
@@ -197,7 +200,17 @@ namespace ChickenDist.Core
                             ActionBy NVARCHAR(100) NULL,
                             Details NVARCHAR(MAX) NULL
                         );
-                    END");
+                    END
+
+                    IF COL_LENGTH('BOMHeader', 'EstimatedDuration') IS NULL
+                        ALTER TABLE BOMHeader ADD EstimatedDuration NVARCHAR(100) NULL;
+
+                    IF COL_LENGTH('ProductionOrders', 'EstimatedDuration') IS NULL
+                        ALTER TABLE ProductionOrders ADD EstimatedDuration NVARCHAR(100) NULL;
+
+                    IF COL_LENGTH('ProductionOrders', 'ActualDuration') IS NULL
+                        ALTER TABLE ProductionOrders ADD ActualDuration NVARCHAR(100) NULL;
+                    ");
                     _tablesEnsured = true;
                 }
                 catch (Exception ex)
@@ -260,18 +273,27 @@ namespace ChickenDist.Core
                 string sql = @"
                     SELECT b.BOMID, b.ProductID, p.ProductCode, p.ProductName,
                            b.OutputQty, b.UnitName, b.Notes, b.LastUpdated,
+                           ISNULL(b.EstimatedDuration, N'') AS EstimatedDuration,
                            (SELECT COUNT(1) FROM BOMItems bi WHERE bi.BOMID = b.BOMID) AS ItemsCount,
-                            (SELECT COALESCE(SUM(bi.Quantity * COALESCE(NULLIF(rp.CostPrice, 0), NULLIF(rp.PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = rp.ProductID ORDER BY pi2.ItemID DESC), 0)), 0)
-                             FROM BOMItems bi
-                             JOIN Products rp ON bi.RawProductID = rp.ProductID
-                             WHERE bi.BOMID = b.BOMID) AS TotalEstCost
+                           ISNULL((
+                               SELECT SUM(bi.Quantity * ISNULL(NULLIF(rp.CostPrice, 0), ISNULL(NULLIF(rp.PurchasePrice, 0), ISNULL(lastPur.UnitPrice, 0))))
+                               FROM BOMItems bi
+                               JOIN Products rp ON bi.RawProductID = rp.ProductID
+                               OUTER APPLY (
+                                   SELECT TOP 1 pi2.UnitPrice 
+                                   FROM PurchaseItems pi2 
+                                   WHERE pi2.ProductID = rp.ProductID 
+                                   ORDER BY pi2.ItemID DESC
+                               ) lastPur
+                               WHERE bi.BOMID = b.BOMID
+                           ), 0) AS TotalEstCost
                     FROM BOMHeader b
                     JOIN Products p ON b.ProductID = p.ProductID
                     WHERE b.IsActive = 1";
 
                 if (!string.IsNullOrWhiteSpace(search))
                 {
-                    sql += " AND (p.ProductName LIKE @q OR p.ProductCode LIKE @q OR b.Notes LIKE @q)";
+                    sql += " AND (p.ProductName LIKE @q OR p.ProductCode LIKE @q OR b.Notes LIKE @q OR b.EstimatedDuration LIKE @q)";
                     return DbHelper.Query(sql + " ORDER BY p.ProductName ASC", DbHelper.P("@q", "%" + search.Trim() + "%"));
                 }
                 return DbHelper.Query(sql + " ORDER BY p.ProductName ASC");
@@ -294,6 +316,7 @@ namespace ChickenDist.Core
                 OutputQty = Convert.ToDecimal(row["OutputQty"]),
                 UnitName = row["UnitName"]?.ToString(),
                 Notes = row["Notes"]?.ToString(),
+                EstimatedDuration = row.Table.Columns.Contains("EstimatedDuration") && row["EstimatedDuration"] != DBNull.Value ? row["EstimatedDuration"].ToString() : "",
                 CreatedDate = Convert.ToDateTime(row["CreatedDate"]),
                 LastUpdated = Convert.ToDateTime(row["LastUpdated"]),
                 IsActive = Convert.ToBoolean(row["IsActive"])
@@ -356,13 +379,14 @@ namespace ChickenDist.Core
                         if (bom.BOMID <= 0)
                         {
                             object newId = DbHelper.ScalarTrans(trans, @"
-                                INSERT INTO BOMHeader (ProductID, OutputQty, UnitName, Notes, CreatedDate, LastUpdated, IsActive)
-                                VALUES (@pid, @outQty, @u, @notes, GETDATE(), GETDATE(), 1);
+                                INSERT INTO BOMHeader (ProductID, OutputQty, UnitName, Notes, EstimatedDuration, CreatedDate, LastUpdated, IsActive)
+                                VALUES (@pid, @outQty, @u, @notes, @dur, GETDATE(), GETDATE(), 1);
                                 SELECT SCOPE_IDENTITY();",
                                 DbHelper.P("@pid", bom.ProductID),
                                 DbHelper.P("@outQty", bom.OutputQty),
                                 DbHelper.P("@u", bom.UnitName),
-                                DbHelper.P("@notes", bom.Notes));
+                                DbHelper.P("@notes", bom.Notes),
+                                DbHelper.P("@dur", bom.EstimatedDuration ?? ""));
 
                             bom.BOMID = Convert.ToInt32(newId);
                         }
@@ -370,12 +394,13 @@ namespace ChickenDist.Core
                         {
                             DbHelper.ExecuteTrans(trans, @"
                                 UPDATE BOMHeader
-                                SET ProductID = @pid, OutputQty = @outQty, UnitName = @u, Notes = @notes, LastUpdated = GETDATE()
+                                SET ProductID = @pid, OutputQty = @outQty, UnitName = @u, Notes = @notes, EstimatedDuration = @dur, LastUpdated = GETDATE()
                                 WHERE BOMID = @bid",
                                 DbHelper.P("@pid", bom.ProductID),
                                 DbHelper.P("@outQty", bom.OutputQty),
                                 DbHelper.P("@u", bom.UnitName),
                                 DbHelper.P("@notes", bom.Notes),
+                                DbHelper.P("@dur", bom.EstimatedDuration ?? ""),
                                 DbHelper.P("@bid", bom.BOMID));
 
                             DbHelper.ExecuteTrans(trans, "DELETE FROM BOMItems WHERE BOMID = @bid", DbHelper.P("@bid", bom.BOMID));
@@ -482,12 +507,12 @@ namespace ChickenDist.Core
 
                             object newId = DbHelper.ScalarTrans(trans, @"
                                 INSERT INTO ProductionOrders (
-                                    OrderCode, ProductionType, BOMID, FinishedProductID, ProducedQty, UnitName,
+                                    OrderCode, ProductionType, BOMID, FinishedProductID, ProducedQty, UnitName, EstimatedDuration, ActualDuration,
                                     WarehouseID, RawMaterialsCost, ExtraExpenses, ExpensesNotes, TotalCost, UnitCost,
                                     Status, StockDeducted, StockAdded, CreatedDate, UpdatedDate, CompletedDate,
                                     CreatedBy, UpdatedBy, Notes
                                 ) VALUES (
-                                    @code, @type, @bid, @fpid, @pqty, @u,
+                                    @code, @type, @bid, @fpid, @pqty, @u, @dur, @actDur,
                                     @wid, @rawCost, @extra, @expNotes, @totCost, @unitCost,
                                     @status, 0, 0, GETDATE(), GETDATE(), @compDate,
                                     @cby, @uby, @notes
@@ -499,6 +524,8 @@ namespace ChickenDist.Core
                                 DbHelper.P("@fpid", order.FinishedProductID),
                                 DbHelper.P("@pqty", order.ProducedQty),
                                 DbHelper.P("@u", order.UnitName),
+                                DbHelper.P("@dur", order.EstimatedDuration ?? ""),
+                                DbHelper.P("@actDur", order.ActualDuration ?? ""),
                                 DbHelper.P("@wid", order.WarehouseID),
                                 DbHelper.P("@rawCost", order.RawMaterialsCost),
                                 DbHelper.P("@extra", order.ExtraExpenses),
@@ -572,7 +599,7 @@ namespace ChickenDist.Core
 
                             DbHelper.ExecuteTrans(trans, @"
                                 UPDATE ProductionOrders
-                                SET FinishedProductID = @fpid, ProducedQty = @pqty, UnitName = @u,
+                                SET FinishedProductID = @fpid, ProducedQty = @pqty, UnitName = @u, EstimatedDuration = @dur, ActualDuration = @actDur,
                                     WarehouseID = @wid, RawMaterialsCost = @rawCost, ExtraExpenses = @extra,
                                     ExpensesNotes = @expNotes, TotalCost = @totCost, UnitCost = @unitCost,
                                     Status = @status, UpdatedDate = GETDATE(), UpdatedBy = @uby, Notes = @notes,
@@ -581,6 +608,8 @@ namespace ChickenDist.Core
                                 DbHelper.P("@fpid", order.FinishedProductID),
                                 DbHelper.P("@pqty", order.ProducedQty),
                                 DbHelper.P("@u", order.UnitName),
+                                DbHelper.P("@dur", order.EstimatedDuration ?? ""),
+                                DbHelper.P("@actDur", order.ActualDuration ?? ""),
                                 DbHelper.P("@wid", order.WarehouseID),
                                 DbHelper.P("@rawCost", order.RawMaterialsCost),
                                 DbHelper.P("@extra", order.ExtraExpenses),
@@ -686,6 +715,8 @@ namespace ChickenDist.Core
                     FinishedProductName = r["FinishedProductName"]?.ToString(),
                     ProducedQty = Convert.ToDecimal(r["ProducedQty"]),
                     UnitName = r["UnitName"]?.ToString(),
+                    EstimatedDuration = r.Table.Columns.Contains("EstimatedDuration") && r["EstimatedDuration"] != DBNull.Value ? r["EstimatedDuration"].ToString() : "",
+                    ActualDuration = r.Table.Columns.Contains("ActualDuration") && r["ActualDuration"] != DBNull.Value ? r["ActualDuration"].ToString() : "",
                     WarehouseID = Convert.ToInt32(r["WarehouseID"]),
                     WarehouseName = r["WarehouseName"]?.ToString(),
                     RawMaterialsCost = Convert.ToDecimal(r["RawMaterialsCost"]),

@@ -206,17 +206,14 @@ namespace ChickenDist.Forms
             txtScalePLU.Font = new Font(Theme.FontMain, FontStyle.Bold);
             py += 38;
 
-            if (bizType == "General" || bizType == "SpareParts" || bizType == "Mobiles" || bizType == "Clothing")
-            {
-                chkHasExpiry = new CheckBox { Text = "له تاريخ صلاحية", Location = new Point(10, py), Width = 280, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
-                grpPrice.Controls.Add(chkHasExpiry);
-                py += 28;
+            chkHasExpiry = new CheckBox { Text = "له تاريخ صلاحية", Location = new Point(10, py), Width = 280, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            grpPrice.Controls.Add(chkHasExpiry);
+            py += 28;
 
-                AddNud(grpPrice, "أيام الصلاحية الافتراضية:", 10, py, out nudDefaultExpiryDays, 0);
-                nudDefaultExpiryDays.Maximum = 9999;
-                nudDefaultExpiryDays.Enabled = false;
-                chkHasExpiry.CheckedChanged += (s, e) => nudDefaultExpiryDays.Enabled = chkHasExpiry.Checked;
-            }
+            AddNud(grpPrice, "أيام الصلاحية الافتراضية:", 10, py, out nudDefaultExpiryDays, 0);
+            nudDefaultExpiryDays.Maximum = 9999;
+            nudDefaultExpiryDays.Enabled = false;
+            chkHasExpiry.CheckedChanged += (s, e) => nudDefaultExpiryDays.Enabled = chkHasExpiry.Checked;
 
             // --- GroupBox 3 Content (الوحدة الوسطى) ---
             int u2y = 25;
