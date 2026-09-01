@@ -65,9 +65,9 @@ namespace ChickenDist.Forms
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
             InitUI();
-            if (defaultShowZeroStock && chkShowZeroStock != null)
+            if (chkShowZeroStock != null)
             {
-                chkShowZeroStock.Checked = true;
+                chkShowZeroStock.Checked = defaultShowZeroStock;
             }
             LoadCategories();
             LoadProducts();
@@ -148,7 +148,7 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
-            chkShowZeroStock.CheckedChanged += (s, e) => RefreshGrid();
+            chkShowZeroStock.CheckedChanged += (s, e) => { if (_dvProducts != null) RefreshGrid(); };
             
             pnlSearch.Controls.AddRange(new Control[] { 
                 lblSearch, txtSearch, lblCat, cboCategory, 
@@ -398,7 +398,7 @@ namespace ChickenDist.Forms
 
         private void RefreshGrid()
         {
-            if (dgProducts == null) return;
+            if (dgProducts == null || _dvProducts == null) return;
             dgProducts.SuspendLayout();
             var oldMode = dgProducts.AutoSizeColumnsMode;
             dgProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
