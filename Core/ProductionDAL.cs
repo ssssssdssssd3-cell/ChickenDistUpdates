@@ -261,7 +261,7 @@ namespace ChickenDist.Core
                     SELECT b.BOMID, b.ProductID, p.ProductCode, p.ProductName,
                            b.OutputQty, b.UnitName, b.Notes, b.LastUpdated,
                            (SELECT COUNT(1) FROM BOMItems bi WHERE bi.BOMID = b.BOMID) AS ItemsCount,
-                            (SELECT COALESCE(SUM(bi.Quantity * COALESCE(NULLIF(rp.CostPrice, 0), NULLIF(rp.PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = rp.ProductID ORDER BY pi2.PurchaseItemID DESC), 0)), 0)
+                            (SELECT COALESCE(SUM(bi.Quantity * COALESCE(NULLIF(rp.CostPrice, 0), NULLIF(rp.PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = rp.ProductID ORDER BY pi2.ItemID DESC), 0)), 0)
                              FROM BOMItems bi
                              JOIN Products rp ON bi.RawProductID = rp.ProductID
                              WHERE bi.BOMID = b.BOMID) AS TotalEstCost
@@ -301,7 +301,7 @@ namespace ChickenDist.Core
 
             var dtItems = DbHelper.Query(@"
                 SELECT bi.*, p.ProductCode AS RawProductCode, p.ProductName AS RawProductName, 
-                       COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = p.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS RawCostPrice
+                       COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = p.ProductID ORDER BY pi2.ItemID DESC), 0) AS RawCostPrice
                 FROM BOMItems bi
                 JOIN Products p ON bi.RawProductID = p.ProductID
                 WHERE bi.BOMID = @bid

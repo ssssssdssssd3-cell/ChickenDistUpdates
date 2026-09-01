@@ -694,7 +694,7 @@ namespace ChickenDist.Forms
         {
             var dt = DbHelper.Query(@"
                 SELECT ProductID, ProductCode, ProductName, 
-                       COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
+                       COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.ItemID DESC), 0) AS CostPrice, 
                        COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
                 FROM Products WHERE ProductID = @id",
                 DbHelper.P("@id", productId));
@@ -744,7 +744,7 @@ namespace ChickenDist.Forms
                 // محاولة مطابقة كود أو باركود أو اسم
                 var dt = DbHelper.Query(@"
                     SELECT TOP 2 ProductID, ProductCode, ProductName,
-                           COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice,
+                           COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.ItemID DESC), 0) AS CostPrice,
                            COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName
                     FROM Products 
                     WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName = @q OR ProductName LIKE '%' + @q + '%' OR ProductCode LIKE @q + '%'",
@@ -782,7 +782,7 @@ namespace ChickenDist.Forms
 
                     var dt = DbHelper.Query(@"
                         SELECT ProductID, ProductCode, ProductName, 
-                               COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice, 
+                               COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.ItemID DESC), 0) AS CostPrice, 
                                COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName 
                         FROM Products WHERE ProductID = @id",
                         DbHelper.P("@id", frm.SelectedProductID));
@@ -903,7 +903,7 @@ namespace ChickenDist.Forms
                 {
                     var dt = DbHelper.Query(@"
                         SELECT TOP 2 ProductID, ProductCode, ProductName,
-                               COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.PurchaseItemID DESC), 0) AS CostPrice,
+                               COALESCE(NULLIF(CostPrice, 0), NULLIF(PurchasePrice, 0), (SELECT TOP 1 pi2.UnitPrice FROM PurchaseItems pi2 WHERE pi2.ProductID = Products.ProductID ORDER BY pi2.ItemID DESC), 0) AS CostPrice,
                                COALESCE(Unit1Name, Unit, N'قطعة') AS UnitName
                         FROM Products 
                         WHERE ProductCode = @q OR Unit1Barcode = @q OR Unit2Barcode = @q OR ProductName = @q OR ProductName LIKE '%' + @q + '%' OR ProductCode LIKE @q + '%'",
