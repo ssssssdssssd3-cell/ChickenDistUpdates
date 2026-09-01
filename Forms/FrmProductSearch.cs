@@ -65,12 +65,12 @@ namespace ChickenDist.Forms
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
             InitUI();
-            LoadCategories();
-            LoadProducts();
             if (defaultShowZeroStock && chkShowZeroStock != null)
             {
                 chkShowZeroStock.Checked = true;
             }
+            LoadCategories();
+            LoadProducts();
             if (!string.IsNullOrEmpty(initialSearchText))
             {
                 txtSearch.Text = initialSearchText;

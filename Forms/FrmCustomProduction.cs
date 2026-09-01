@@ -505,7 +505,10 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlQuickAdd);
             this.Controls.Add(pnlHeader);
             this.Controls.Add(pnlBottom);
-            dgItems.BringToFront();
+            pnlHeader.BringToFront();
+            pnlQuickAdd.BringToFront();
+            pnlBottom.BringToFront();
+            dgItems.SendToBack();
         }
 
         private void LoadWarehouses()

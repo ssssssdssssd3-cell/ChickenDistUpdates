@@ -592,7 +592,7 @@ namespace ChickenDist.DAL
             // شروط نوع النواقص والمخزون
             if (stockCondition == "ZERO_ONLY")
             {
-                sql += " AND ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL) ";
+                sql += " AND ISNULL(stk.TotalStock, 0) <= 0 ";
             }
             else if (stockCondition == "BELOW_MIN")
             {
@@ -605,11 +605,11 @@ namespace ChickenDist.DAL
             else
             {
                 // ALL (الافتراضي):
-                // 1) أي صنف له حركات ورصيده 0 أو أقل
+                // 1) أي صنف رصيده 0 أو أقل
                 // 2) أو أي صنف وصل/نزل عن حد الطلب
-                // 3) أو مسجل يدوياً في كشكول النواقص
+                // 3) أو مسجل يدوياً في كشكول النواقص كطلب نشط
                 sql += @" AND (
-                            (ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL))
+                            ISNULL(stk.TotalStock, 0) <= 0
                             OR (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit)
                             OR (sn.ShortageID IS NOT NULL AND sn.Status IN (N'جديد', N'تم الطلب'))
                         ) ";

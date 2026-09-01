@@ -415,7 +415,9 @@ namespace ChickenDist.Forms
             this.Controls.Add(dgItems);
             this.Controls.Add(pnlHeader);
             this.Controls.Add(pnlBottom);
-            dgItems.BringToFront();
+            pnlHeader.BringToFront();
+            pnlBottom.BringToFront();
+            dgItems.SendToBack();
         }
 
         private void LoadWarehouses()

@@ -513,7 +513,10 @@ namespace ChickenDist.Forms
             pnlEditor.Controls.Add(pnlQuickAdd);
             pnlEditor.Controls.Add(pnlFinishedCard);
             pnlEditor.Controls.Add(tblBottom);
-            dgItems.BringToFront();
+            pnlFinishedCard.BringToFront();
+            pnlQuickAdd.BringToFront();
+            tblBottom.BringToFront();
+            dgItems.SendToBack();
 
             // ──────────────────────────────────────────────────────────────
             // 2. القائمة الجانبية (الوصفات وشجر الإنتاج المسجلة - على اليسار)
