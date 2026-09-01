@@ -68,7 +68,7 @@ namespace ChickenDist.Services
                 }
                 dto.CashboxBalance = totalCashboxBalance;
 
-                // نواقص المخزن (أي صنف له حركات ورصيده 0 أو تحت حد الطلب أو مسجل في كشكول النواقص)
+                // نواقص المخزن
                 object lowObj = DbHelper.Scalar(@"
                     SELECT COUNT(*)
                     FROM Products p
@@ -79,20 +79,12 @@ namespace ChickenDist.Services
                             p.Quantity, 0
                         ) AS TotalStock
                     ) stk
-                    OUTER APPLY (
-                        SELECT TOP 1 1 AS HasHistory
-                        FROM (
-                            SELECT ProductID FROM SaleItems WHERE ProductID = p.ProductID
-                            UNION ALL
-                            SELECT ProductID FROM PurchaseItems WHERE ProductID = p.ProductID
-                        ) h
-                    ) mov
                     LEFT JOIN ShortageNotebook sn ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
                     WHERE p.IsActive = 1
                       AND (
-                          (ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL))
+                          ISNULL(stk.TotalStock, 0) <= 0
                           OR (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit)
-                          OR (sn.ShortageID IS NOT NULL)
+                          OR sn.ShortageID IS NOT NULL
                       )");
                 dto.LowStockCount = lowObj != null && lowObj != DBNull.Value ? Convert.ToInt32(lowObj) : 0;
 
@@ -246,16 +238,6 @@ namespace ChickenDist.Services
                         ) AS TotalStock
                     ) stk
                     OUTER APPLY (
-                        SELECT TOP 1 1 AS HasHistory
-                        FROM (
-                            SELECT ProductID FROM SaleItems WHERE ProductID = p.ProductID
-                            UNION ALL
-                            SELECT ProductID FROM PurchaseItems WHERE ProductID = p.ProductID
-                            UNION ALL
-                            SELECT ProductID FROM ProductMovements WHERE ProductID = p.ProductID
-                        ) h
-                    ) mov
-                    OUTER APPLY (
                         SELECT TOP 1 pu.SupplierID, sup.SupplierName
                         FROM PurchaseItems pi
                         INNER JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
@@ -266,9 +248,9 @@ namespace ChickenDist.Services
                     LEFT JOIN ShortageNotebook sn ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
                     WHERE p.IsActive = 1
                       AND (
-                          (ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL))
+                          ISNULL(stk.TotalStock, 0) <= 0
                           OR (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit)
-                          OR (sn.ShortageID IS NOT NULL)
+                          OR sn.ShortageID IS NOT NULL
                       )
                     ORDER BY ISNULL(stk.TotalStock, 0) ASC, p.ProductName ASC");
                 string missingJson = DataTableToJson(dtMissing);

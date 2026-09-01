@@ -558,16 +558,6 @@ namespace ChickenDist.DAL
                     ) AS TotalStock
                 ) stk
                 OUTER APPLY (
-                    SELECT TOP 1 1 AS HasHistory
-                    FROM (
-                        SELECT ProductID FROM SaleItems WHERE ProductID = p.ProductID
-                        UNION ALL
-                        SELECT ProductID FROM PurchaseItems WHERE ProductID = p.ProductID
-                        UNION ALL
-                        SELECT ProductID FROM ProductMovements WHERE ProductID = p.ProductID
-                    ) h
-                ) mov
-                OUTER APPLY (
                     SELECT TOP 1 pu.SupplierID, sup.SupplierName
                     FROM PurchaseItems pi
                     INNER JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
