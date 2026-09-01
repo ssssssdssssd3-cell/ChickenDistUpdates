@@ -244,7 +244,7 @@ namespace ChickenDist.Forms
         {
             string pId = txtFirebaseProjectId.Text.Trim();
             if (string.IsNullOrEmpty(pId)) pId = "checkin-192ab";
-            lblLiveWebUrl.Text = $"https://{pId}.web.app";
+            lblLiveWebUrl.Text = $"https://checkin-192ab.web.app/?p={pId}";
         }
 
         private Label MakeKPICard(string title, string defaultVal, Color accentColor, out Panel card)
@@ -387,7 +387,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            var dr = MessageBox.Show($"هل تريد نشر وتحديث تطبيق المالك (Web App) الآن على مشروع فيربيز الخاص بالعميل:\n\n🔥 {projectId}\n\nالرابط سيكون: https://{projectId}.web.app", "تأكيد النشر", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var dr = MessageBox.Show($"هل تريد نشر وتحديث استضافة تطبيق المالك (Dedicated Hosting) على مشروع فيربيز الخاص بالعميل:\n\n🔥 {projectId}\n\n💡 ملاحظة: تطبيق المالك يعمل بالفعل دون حاجة للنشر عبر الرابط:\nhttps://checkin-192ab.web.app/?p={projectId}", "تأكيد النشر", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (dr != DialogResult.Yes) return;
 
             btnDeployFirebase.Enabled = false;
@@ -409,13 +409,30 @@ namespace ChickenDist.Forms
                     return;
                 }
 
+                string npxCmd = "npx";
+                string[] possibleNpxPaths = new[]
+                {
+                    @"C:\Program Files\nodejs\npx.cmd",
+                    @"C:\Program Files (x86)\nodejs\npx.cmd",
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\npx.cmd"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\Roaming\npm\npx.cmd")
+                };
+                foreach (var p in possibleNpxPaths)
+                {
+                    if (File.Exists(p))
+                    {
+                        npxCmd = $"\"{p}\"";
+                        break;
+                    }
+                }
+
                 txtDeployLog.AppendText($"[1/2] المسار: {mobileAppDir}\r\n");
-                txtDeployLog.AppendText($"[2/2] تنفيذ أمر النشر: npx firebase-tools deploy --only hosting --project {projectId}...\r\n");
+                txtDeployLog.AppendText($"[2/2] تنفيذ أمر النشر: {npxCmd} -y firebase-tools deploy --only hosting --project {projectId}...\r\n");
 
                 var psi = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c npx -y firebase-tools deploy --only hosting --project {projectId}",
+                    Arguments = $"/c {npxCmd} -y firebase-tools deploy --only hosting --project {projectId} --non-interactive",
                     WorkingDirectory = mobileAppDir,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -448,12 +465,18 @@ namespace ChickenDist.Forms
 
                     if (proc.ExitCode == 0)
                     {
-                        txtDeployLog.AppendText($"\r\n==========================================\r\n✅ تم نشر تطبيق المالك بنجاح!\r\nرابط المالك: https://{projectId}.web.app\r\n==========================================\r\n");
-                        MessageBox.Show($"✅ تم نشر وتحديث تطبيق المالك بنجاح!\n\nرابط التطبيق: https://{projectId}.web.app", "نجاح النشر", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        txtDeployLog.AppendText($"\r\n==========================================\r\n✅ تم نشر تطبيق المالك بنجاح!\r\nرابط المالك المباشر: https://{projectId}.web.app\r\nرابط المالك العام: https://checkin-192ab.web.app/?p={projectId}\r\n==========================================\r\n");
+                        MessageBox.Show($"✅ تم نشر وتحديث تطبيق المالك بنجاح!\n\nرابط التطبيق: https://{projectId}.web.app\nأو الرابط العام: https://checkin-192ab.web.app/?p={projectId}", "نجاح النشر", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
                         txtDeployLog.AppendText($"\r\n❌ انتهت عملية النشر بكود: {proc.ExitCode}\r\n");
+                        txtDeployLog.AppendText($"\r\n💡 تنبيه مهم: لست بحاجة إلى تثبيت Node.js أو عمل Deploy إطلاقاً!\r\nتطبيق المالك يعمل الآن وجاهز فوراً لكل العملاء عبر الرابط الموحد:\r\nhttps://checkin-192ab.web.app/?p={projectId}\r\nيمكنك نسخه ومشاركته مع العميل مباشرة!\r\n");
+                        
+                        Clipboard.SetText($"https://checkin-192ab.web.app/?p={projectId}");
+                        MessageBox.Show(
+                            $"معلومة هامة بخصوص النشر (Deploy):\nعملية الـ Deploy المنفصلة تتطلب صلاحيات الحساب المالك لمشروع Firebase وتثبيت Node.js.\n\n✅ ولكن تطبيق المالك يعمل وجاهز 100% الآن بدون أي نشر عبر الرابط:\nhttps://checkin-192ab.web.app/?p={projectId}\n\n(تم نسخ الرابط الجاهز إلى الحافظة تلقائياً لمشاركته مع العميل)",
+                            "رابط تطبيق المالك الجاهز", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
             }
@@ -476,7 +499,7 @@ namespace ChickenDist.Forms
                 string projectId = txtFirebaseProjectId.Text.Trim();
                 if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
 
-                string url = $"https://{projectId}.web.app";
+                string url = $"https://checkin-192ab.web.app/?p={projectId}";
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = url,
