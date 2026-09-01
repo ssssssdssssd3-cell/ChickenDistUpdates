@@ -257,17 +257,17 @@ namespace ChickenDist.Services
 
                 // 6. دليل الأصناف
                 DataTable dtProducts = DbHelper.Query(
-                    "SELECT TOP 100 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(SalePrice,0) AS SalePrice, ISNULL(PurchasePrice,0) AS PurchasePrice, ISNULL(Quantity,0) AS Quantity FROM Products WHERE IsActive=1 ORDER BY ProductName ASC");
+                    "SELECT TOP 500 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(SalePrice,0) AS SalePrice, ISNULL(PurchasePrice,0) AS PurchasePrice, ISNULL(Quantity,0) AS Quantity FROM Products WHERE IsActive=1 ORDER BY ProductName ASC");
                 string productsJson = DataTableToJson(dtProducts);
 
                 // 7. قائمة الموردين
                 DataTable dtSuppliers = DbHelper.Query(
-                    "SELECT TOP 30 SupplierID, SupplierName, ISNULL(Balance,0) AS Balance FROM Suppliers WHERE IsActive=1 ORDER BY SupplierName ASC");
+                    "SELECT TOP 200 SupplierID, ISNULL(SupplierCode,'') AS SupplierCode, SupplierName, ISNULL(Phone,'') AS Phone, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance FROM Suppliers WHERE IsActive=1 ORDER BY Balance DESC, SupplierName ASC");
                 string suppliersJson = DataTableToJson(dtSuppliers);
 
-                // 8. ديون العملاء
+                // 8. ديون وقائمة العملاء
                 DataTable dtClients = DbHelper.Query(
-                    "SELECT TOP 30 ClientID, ClientName, ISNULL(Balance,0) AS Balance FROM Clients WHERE IsActive=1 AND Balance > 0 ORDER BY Balance DESC");
+                    "SELECT TOP 500 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
                 string clientsJson = DataTableToJson(dtClients);
 
                 // 9. قائمة المستخدمين والمدراء لتسجيل الدخول في تطبيق الموبايل
@@ -337,6 +337,30 @@ namespace ChickenDist.Services
                     ORDER BY sa.AccountID ASC");
                 string safesJson = DataTableToJson(dtSafes);
 
+                // 14. الأصناف الأكثر مبيعاً
+                DataTable dtTopSelling = DbHelper.Query(@"
+                    SELECT TOP 20 p.ProductID, p.ProductName, ISNULL(p.ProductCode, '') AS ProductCode,
+                           ISNULL(SUM(si.Quantity), 0) AS TotalQtySold,
+                           ISNULL(SUM(si.TotalPrice), 0) AS TotalSalesValue
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    JOIN Products p ON si.ProductID = p.ProductID
+                    GROUP BY p.ProductID, p.ProductName, p.ProductCode
+                    ORDER BY TotalSalesValue DESC");
+                string topSellingJson = DataTableToJson(dtTopSelling);
+
+                // 15. أحدث بنود المصروفات
+                DataTable dtExpenses = DbHelper.Query(@"
+                    SELECT TOP 100 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                           ISNULL(cb.AmountOut, 0) AS AmountOut,
+                           ISNULL(cb.Notes, N'مصروف') AS Notes,
+                           ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
+                    FROM CashBox cb
+                    LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    WHERE cb.AmountOut > 0
+                    ORDER BY cb.CashID DESC");
+                string expensesJson = DataTableToJson(dtExpenses);
+
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string timeStr = DateTime.Now.ToString("hh:mm tt");
                 string storeName = EscapeJsonString(AppConfig.CompanyName);
@@ -373,7 +397,9 @@ namespace ChickenDist.Services
                         "\"RecentSales\": " + recentSalesJson + "," +
                         "\"RecentPurchases\": " + recentPurchasesJson + "," +
                         "\"RecentCashBox\": " + recentCashJson + "," +
-                        "\"SafeAccounts\": " + safesJson +
+                        "\"SafeAccounts\": " + safesJson + "," +
+                        "\"TopSelling\": " + topSellingJson + "," +
+                        "\"ExpensesList\": " + expensesJson +
                         "}";
 
                     using (var client = new HttpClient())
@@ -416,7 +442,9 @@ namespace ChickenDist.Services
                         "\"RecentSalesJson\": {\"stringValue\": \"" + EscapeJsonString(recentSalesJson) + "\"}," +
                         "\"RecentPurchasesJson\": {\"stringValue\": \"" + EscapeJsonString(recentPurchasesJson) + "\"}," +
                         "\"RecentCashBoxJson\": {\"stringValue\": \"" + EscapeJsonString(recentCashJson) + "\"}," +
-                        "\"SafeAccountsJson\": {\"stringValue\": \"" + EscapeJsonString(safesJson) + "\"}" +
+                        "\"SafeAccountsJson\": {\"stringValue\": \"" + EscapeJsonString(safesJson) + "\"}," +
+                        "\"TopSellingJson\": {\"stringValue\": \"" + EscapeJsonString(topSellingJson) + "\"}," +
+                        "\"ExpensesListJson\": {\"stringValue\": \"" + EscapeJsonString(expensesJson) + "\"}" +
                         "}}";
 
                     using (var client = new HttpClient())

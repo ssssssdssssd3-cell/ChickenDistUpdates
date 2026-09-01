@@ -33,7 +33,7 @@
               900: '#14532d'
             },
             dark: {
-              bg: '#0f172a',
+              bg: '#0b0f19',
               card: '#1e293b',
               border: '#334155',
               text: '#f8fafc',
@@ -79,12 +79,17 @@
       color: #ffffff !important;
       border-color: #3b82f6 !important;
     }
+    .active-chip {
+      background-color: #16a34a !important;
+      color: #ffffff !important;
+      border-color: #22c55e !important;
+    }
     input[type="date"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white pb-12">
 
   <!-- ========================================== -->
   <!-- 1. شاشة تسجيل الدخول الإلزامية (LOGIN VIEW) -->
@@ -135,7 +140,7 @@
 
       <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
         <span>🔒 اتصال مشفر وآمن</span>
-        <span id="appVersionBadge">v2.7.2</span>
+        <span id="appVersionBadge">v2.8.6</span>
       </div>
     </div>
   </div>
@@ -164,14 +169,21 @@
 
       <!-- أزرار الإجراءات السريعة في الهيدر -->
       <div class="flex items-center gap-2">
+        <!-- زر مشاركة التقرير واتساب -->
+        <button onclick="shareExecutiveReportWhatsApp()" title="مشاركة التقرير عبر واتساب"
+                class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-md shadow-emerald-600/30">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span class="hidden sm:inline">مشاركة واتساب</span>
+        </button>
+
         <button onclick="fetchFreshData(true)" title="تحديث فوري وتجاوز الكاش"
-                class="p-2.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-sm">
+                class="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-sm">
           <i id="btnRefreshIcon" class="fa-solid fa-rotate"></i>
           <span class="hidden sm:inline">تحديث</span>
         </button>
 
         <button onclick="lockScreen()" title="قفل الشاشة"
-                class="p-2.5 bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 rounded-xl transition text-xs flex items-center gap-1.5 font-bold">
+                class="p-2 bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 rounded-xl transition text-xs flex items-center gap-1.5 font-bold">
           <i class="fa-solid fa-lock"></i>
           <span class="hidden sm:inline">قفل</span>
         </button>
@@ -245,6 +257,12 @@
         <i class="fa-solid fa-users"></i>
         <span>العملاء والموردين</span>
       </button>
+
+      <button onclick="switchTab('analytics')" id="tabBtn-analytics" 
+              class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>📊 تقارير وتحليلات</span>
+      </button>
     </div>
   </nav>
 
@@ -256,13 +274,19 @@
     <!-- ── TAB 1: لوحة المؤشرات (DASHBOARD) ── -->
     <div id="tabContent-dashboard" class="tab-pane space-y-4">
       
-      <!-- تنبيه الفترة المحددة -->
-      <div class="glass-card rounded-xl p-3 flex items-center justify-between text-xs text-slate-300">
+      <!-- تنبيه الفترة المحددة وزر الواتساب السريع -->
+      <div class="glass-card rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-slate-300">
         <div class="flex items-center gap-2">
-          <i class="fa-solid fa-calendar-check text-brand-500"></i>
-          <span>بيانات الفترة: <strong id="lblActivePeriodText" class="text-white">اليوم</strong></span>
+          <i class="fa-solid fa-calendar-check text-brand-500 text-base"></i>
+          <div>
+            <div class="font-bold text-white text-sm">بيانات الفترة: <span id="lblActivePeriodText" class="text-brand-400">اليوم</span></div>
+            <span class="text-[11px] text-slate-400">محدثة لحظياً ومطابقة لقاعدة بيانات السيرفر (SQL Server)</span>
+          </div>
         </div>
-        <span class="text-[11px] text-slate-500">تم التحديث من سيرفر SQL</span>
+        <button onclick="shareExecutiveReportWhatsApp()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-95">
+          <i class="fa-brands fa-whatsapp text-base"></i>
+          <span>إرسال ملخص الفترة واتساب</span>
+        </button>
       </div>
 
       <!-- كروت الإحصائيات الرئيسية للفترة -->
@@ -315,7 +339,7 @@
         <!-- 4. رصيد الخزينة الحالي -->
         <div class="glass-card rounded-2xl p-4 relative overflow-hidden border-t-2 border-t-amber-500 shadow-lg">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-slate-400">رصيد الخزينة الحالي</span>
+            <span class="text-xs font-bold text-slate-400">رصيد الخزينة والسيولة</span>
             <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">
               <i class="fa-solid fa-vault"></i>
             </div>
@@ -331,45 +355,66 @@
       <!-- كروت الأرصدة والتقييمات المالية العامة -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <!-- ديون العملاء -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md">
-          <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
-            <span>ديون العملاء الإجمالية</span>
-            <i class="fa-solid fa-user-clock text-rose-400"></i>
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+              <span>ديون العملاء الإجمالية</span>
+              <i class="fa-solid fa-user-clock text-rose-400"></i>
+            </div>
+            <div class="text-xl font-black text-rose-400" id="cardClientDebts">0.00 ج.م</div>
+            <p class="text-[11px] text-slate-500 mt-1">مستحقات على العملاء في السوق</p>
           </div>
-          <div class="text-lg font-black text-rose-400" id="cardClientDebts">0.00 ج.م</div>
-          <p class="text-[11px] text-slate-500 mt-1">مستحقات على العملاء في السوق</p>
+          <button onclick="switchTab('contacts')" class="mt-3 text-xs text-brand-400 hover:text-brand-300 font-bold flex items-center gap-1">
+            <span>متابعة مديونيات العملاء والبحث</span>
+            <i class="fa-solid fa-arrow-left text-[10px]"></i>
+          </button>
         </div>
 
         <!-- مستحقات الموردين -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md">
-          <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
-            <span>مستحقات الموردين</span>
-            <i class="fa-solid fa-truck-ramp-box text-amber-400"></i>
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+              <span>مستحقات الموردين</span>
+              <i class="fa-solid fa-truck-ramp-box text-amber-400"></i>
+            </div>
+            <div class="text-xl font-black text-amber-400" id="cardSupplierDebts">0.00 ج.م</div>
+            <p class="text-[11px] text-slate-500 mt-1">مبالغ مستحقة السداد للشركات والموردين</p>
           </div>
-          <div class="text-lg font-black text-amber-400" id="cardSupplierDebts">0.00 ج.م</div>
-          <p class="text-[11px] text-slate-500 mt-1">مبالغ مستحقة السداد للشركات والموردين</p>
+          <button onclick="switchTab('contacts')" class="mt-3 text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1">
+            <span>متابعة حسابات الموردين</span>
+            <i class="fa-solid fa-arrow-left text-[10px]"></i>
+          </button>
         </div>
 
         <!-- تقييم المخزون -->
-        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md">
-          <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
-            <span>قيمة بضاعة المخزن (بالتكلفة)</span>
-            <i class="fa-solid fa-warehouse text-emerald-400"></i>
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs text-slate-400 font-bold mb-1">
+              <span>قيمة بضاعة المخزن (بالتكلفة)</span>
+              <i class="fa-solid fa-warehouse text-emerald-400"></i>
+            </div>
+            <div class="text-xl font-black text-emerald-400" id="cardStockValue">0.00 ج.م</div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+              <span>بسعر البيع: <strong class="text-white" id="cardStockSaleValue">0.00 ج.م</strong></span>
+              <span>نواقص: <strong class="text-rose-400" id="cardLowStockCount">0</strong></span>
+            </div>
           </div>
-          <div class="text-lg font-black text-emerald-400" id="cardStockValue">0.00 ج.م</div>
-          <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-            <span>بسعر البيع: <strong class="text-white" id="cardStockSaleValue">0.00 ج.م</strong></span>
-            <span>نواقص: <strong class="text-rose-400" id="cardLowStockCount">0</strong></span>
-          </div>
+          <button onclick="switchTab('inventory')" class="mt-3 text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
+            <span>عرض النواقص ودليل الأصناف</span>
+            <i class="fa-solid fa-arrow-left text-[10px]"></i>
+          </button>
         </div>
       </div>
 
-      <!-- شريط الوصول السريع لأهم العمليات -->
+      <!-- أحدث الفواتير المسجلة -->
       <div class="glass-card rounded-2xl p-4">
-        <h3 class="text-xs font-black text-slate-300 mb-3 flex items-center gap-2">
-          <i class="fa-solid fa-bolt text-amber-400"></i>
-          أحدث الفواتير المسجلة
-        </h3>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-black text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-amber-400"></i>
+            أحدث فواتير المبيعات المسجلة
+          </h3>
+          <button onclick="switchTab('sales')" class="text-[11px] text-brand-400 font-bold hover:underline">عرض كل الفواتير</button>
+        </div>
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-right text-xs">
             <thead>
@@ -379,10 +424,11 @@
                 <th class="py-2">العميل</th>
                 <th class="py-2">الإجمالي</th>
                 <th class="py-2">النوع</th>
+                <th class="py-2 text-center">واتساب</th>
               </tr>
             </thead>
             <tbody id="tblRecentSalesPreview" class="divide-y divide-slate-800/60 text-slate-300">
-              <tr><td colspan="5" class="py-4 text-center text-slate-500">جاري تحميل الفواتير...</td></tr>
+              <tr><td colspan="6" class="py-4 text-center text-slate-500">جاري تحميل الفواتير...</td></tr>
             </tbody>
           </table>
         </div>
@@ -400,11 +446,13 @@
             </h2>
             <p class="text-[11px] text-slate-400">عرض فواتير المبيعات والآجل والنقدي للفترة المحددة</p>
           </div>
-          <div class="relative min-w-[220px]">
-            <input type="text" id="searchSalesInput" oninput="renderSalesTable()" 
-                   placeholder="بحث بالعميل أو رقم الفاتورة..."
-                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500" />
-            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+          <div class="flex items-center gap-2">
+            <div class="relative min-w-[220px]">
+              <input type="text" id="searchSalesInput" oninput="renderSalesTable()" 
+                     placeholder="بحث بالعميل أو رقم الفاتورة..."
+                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500" />
+              <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            </div>
           </div>
         </div>
 
@@ -420,10 +468,11 @@
                 <th class="p-3">المتبقي</th>
                 <th class="p-3">الدفع</th>
                 <th class="p-3">النوع</th>
+                <th class="p-3 text-center">مشاركة</th>
               </tr>
             </thead>
             <tbody id="tblSalesFull" class="divide-y divide-slate-800 text-slate-300">
-              <tr><td colspan="8" class="p-4 text-center text-slate-500">لا توجد بيانات</td></tr>
+              <tr><td colspan="9" class="p-4 text-center text-slate-500">لا توجد بيانات</td></tr>
             </tbody>
           </table>
         </div>
@@ -522,11 +571,17 @@
             </h2>
             <p class="text-[11px] text-slate-400">الأصناف التي وصلت أو قلت عن حد الطلب الأدنى</p>
           </div>
-          <div class="relative min-w-[200px]">
-            <input type="text" id="searchMissingInput" oninput="renderMissingTable()" 
-                   placeholder="بحث في النواقص..."
-                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
-            <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+          <div class="flex items-center gap-2">
+            <button onclick="shareMissingItemsWhatsApp()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+              <span>إرسال النواقص واتساب</span>
+            </button>
+            <div class="relative min-w-[200px]">
+              <input type="text" id="searchMissingInput" oninput="renderMissingTable()" 
+                     placeholder="بحث في النواقص..."
+                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
+              <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            </div>
           </div>
         </div>
 
@@ -585,63 +640,313 @@
       </div>
     </div>
 
-    <!-- ── TAB 6: العملاء والموردين (CONTACTS) ── -->
-    <div id="tabContent-contacts" class="tab-pane hidden space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- ديون العملاء -->
-        <div class="glass-card rounded-2xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-black text-rose-400 flex items-center gap-2">
-              <i class="fa-solid fa-users text-rose-400"></i>
-              ديون العملاء (أعلى الأرصدة)
-            </h2>
-            <span class="text-xs font-bold text-rose-400" id="contactsTotalClientDebts">0.00 ج.م</span>
+    <!-- ── TAB 6: العملاء والموردين والمديونيات مع الفلترة والواتساب (CONTACTS & DEBTS) ── -->
+    <div id="tabContent-contacts" class="tab-pane hidden space-y-4">
+      
+      <!-- شريط إجمالي المديونيات والمستحقات السريع -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="glass-card rounded-2xl p-3.5 border-r-4 border-r-rose-500 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-400 font-bold">إجمالي مديونيات العملاء</span>
+            <div class="text-lg font-black text-rose-400" id="contactsTotalClientDebts">0.00 ج.م</div>
           </div>
-          <div class="overflow-x-auto custom-scrollbar max-h-96">
-            <table class="w-full text-right text-xs">
-              <thead class="sticky top-0 bg-slate-900">
-                <tr class="text-slate-400 border-b border-slate-800">
-                  <th class="p-2.5">اسم العميل</th>
-                  <th class="p-2.5 text-rose-400">الرصيد المستحق</th>
-                </tr>
-              </thead>
-              <tbody id="tblClientsList" class="divide-y divide-slate-800 text-slate-300">
-                <tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد ديون مسجلة</td></tr>
-              </tbody>
-            </table>
+          <button onclick="shareAllClientDebtsWhatsApp()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>مشاركة ديون العملاء</span>
+          </button>
+        </div>
+
+        <div class="glass-card rounded-2xl p-3.5 border-r-4 border-r-amber-500 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-slate-400 font-bold">إجمالي مستحقات الموردين</span>
+            <div class="text-lg font-black text-amber-400" id="contactsTotalSupplierDebts">0.00 ج.م</div>
+          </div>
+          <button onclick="shareAllSupplierDebtsWhatsApp()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>مشاركة مستحقات الموردين</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- جدول العملاء والمديونيات مع الفلترة والبحث -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-users text-rose-400"></i>
+              <span>ديون وحسابات العملاء</span>
+              <span class="px-2 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-800 text-[10px]" id="badgeClientCount">0</span>
+            </h2>
+            <p class="text-[11px] text-slate-400">بحث فوري باسم العميل أو رقم الهاتف مع إمكانية إرسال مطالبة رصيد واتساب بضغطة زر</p>
+          </div>
+
+          <!-- أدوات البحث والفلتر السريع للعملاء -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- الفلاتر السريعة -->
+            <div class="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-xl p-1 text-xs">
+              <button onclick="setClientFilter('debts')" id="btnClientFilterDebts" class="px-2.5 py-1 rounded-lg font-bold transition active-chip">عليهم ديون</button>
+              <button onclick="setClientFilter('top10')" id="btnClientFilterTop10" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">أعلى 10</button>
+              <button onclick="setClientFilter('all')" id="btnClientFilterAll" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">الكل</button>
+            </div>
+
+            <!-- خانة البحث بالاسم أو الهاتف -->
+            <div class="relative flex-1 sm:w-64">
+              <input type="text" id="searchClientsInput" oninput="renderContactsTables()" 
+                     placeholder="بحث باسم العميل أو رقم الهاتف..."
+                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
+              <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            </div>
           </div>
         </div>
 
-        <!-- مستحقات الموردين -->
-        <div class="glass-card rounded-2xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-black text-amber-400 flex items-center gap-2">
-              <i class="fa-solid fa-truck text-amber-400"></i>
-              مستحقات الموردين والشركات
-            </h2>
-            <span class="text-xs font-bold text-amber-400" id="contactsTotalSupplierDebts">0.00 ج.م</span>
-          </div>
-          <div class="overflow-x-auto custom-scrollbar max-h-96">
-            <table class="w-full text-right text-xs">
-              <thead class="sticky top-0 bg-slate-900">
-                <tr class="text-slate-400 border-b border-slate-800">
-                  <th class="p-2.5">اسم المورد</th>
-                  <th class="p-2.5 text-amber-400">الرصيد المستحق</th>
-                </tr>
-              </thead>
-              <tbody id="tblSuppliersList" class="divide-y divide-slate-800 text-slate-300">
-                <tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد مستحقات مسجلة</td></tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="overflow-x-auto custom-scrollbar max-h-96">
+          <table class="w-full text-right text-xs">
+            <thead class="sticky top-0 bg-slate-900">
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-3">اسم العميل</th>
+                <th class="p-3">رقم الهاتف</th>
+                <th class="p-3">العنوان / المنطقة</th>
+                <th class="p-3 text-rose-400 font-bold">الرصيد المستحق</th>
+                <th class="p-3 text-center">إجراءات سريعة</th>
+              </tr>
+            </thead>
+            <tbody id="tblClientsList" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">جاري تحميل بيانات العملاء...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
+
+      <!-- جدول الموردين والمستحقات مع الفلترة والبحث -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-truck text-amber-400"></i>
+              <span>مستحقات وحسابات الموردين والشركات</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800 text-[10px]" id="badgeSupplierCount">0</span>
+            </h2>
+            <p class="text-[11px] text-slate-400">متابعة أرصدة الشركات والموردين ومطابقة الحسابات ومشاركتها عبر واتساب</p>
+          </div>
+
+          <!-- أدوات البحث والفلتر السريع للموردين -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- الفلاتر السريعة -->
+            <div class="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-xl p-1 text-xs">
+              <button onclick="setSupplierFilter('debts')" id="btnSupplierFilterDebts" class="px-2.5 py-1 rounded-lg font-bold transition active-chip">لهم مستحقات</button>
+              <button onclick="setSupplierFilter('all')" id="btnSupplierFilterAll" class="px-2.5 py-1 rounded-lg font-bold text-slate-400 hover:text-white transition">الكل</button>
+            </div>
+
+            <!-- خانة البحث بالاسم أو الهاتف -->
+            <div class="relative flex-1 sm:w-64">
+              <input type="text" id="searchSuppliersInput" oninput="renderContactsTables()" 
+                     placeholder="بحث باسم المورد أو رقم الهاتف..."
+                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+              <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar max-h-96">
+          <table class="w-full text-right text-xs">
+            <thead class="sticky top-0 bg-slate-900">
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-3">اسم المورد / الشركة</th>
+                <th class="p-3">رقم الهاتف</th>
+                <th class="p-3">العنوان</th>
+                <th class="p-3 text-amber-400 font-bold">الرصيد المستحق</th>
+                <th class="p-3 text-center">إجراءات سريعة</th>
+              </tr>
+            </thead>
+            <tbody id="tblSuppliersList" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">جاري تحميل بيانات الموردين...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB 7: التقارير والتحليلات المتقدمة (ANALYTICS & EXECUTIVE REPORTS) ── -->
+    <div id="tabContent-analytics" class="tab-pane hidden space-y-4">
+      
+      <!-- كروت مؤشرات الأداء والربحية المتقدمة -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="glass-card rounded-2xl p-4 border-t-2 border-t-emerald-500">
+          <div class="text-xs font-bold text-slate-400 mb-1 flex items-center justify-between">
+            <span>متوسط قيمة الفاتورة</span>
+            <i class="fa-solid fa-receipt text-emerald-400"></i>
+          </div>
+          <div class="text-xl font-black text-white" id="statAvgInvoice">0.00 ج.م</div>
+          <p class="text-[10px] text-slate-500 mt-1">متوسط إنفاق العميل في الفاتورة الواحدة</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border-t-2 border-t-blue-500">
+          <div class="text-xs font-bold text-slate-400 mb-1 flex items-center justify-between">
+            <span>نسبة التحصيل النقدي</span>
+            <i class="fa-solid fa-coins text-blue-400"></i>
+          </div>
+          <div class="text-xl font-black text-blue-400" id="statCashRatio">0%</div>
+          <p class="text-[10px] text-slate-500 mt-1">نسبة الكاش من إجمالي المبيعات المحققة</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border-t-2 border-t-purple-500">
+          <div class="text-xs font-bold text-slate-400 mb-1 flex items-center justify-between">
+            <span>نسبة هامش الربح</span>
+            <i class="fa-solid fa-chart-pie text-purple-400"></i>
+          </div>
+          <div class="text-xl font-black text-purple-400" id="statProfitMargin">0%</div>
+          <p class="text-[10px] text-slate-500 mt-1">نسبة صافي الربح من إجمالي المبيعات</p>
+        </div>
+      </div>
+
+      <!-- تقرير 1: الأصناف الأكثر مبيعاً والأعلى إيراداً (Top Selling Products) -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-trophy text-amber-400"></i>
+              تقرير الأصناف الأكثر مبيعاً والأعلى إيراداً
+            </h2>
+            <p class="text-[11px] text-slate-400">أفضل المنتجات حركة وتحقيقاً للإيرادات في النظام</p>
+          </div>
+          <button onclick="shareTopSellingWhatsApp()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>مشاركة التقرير واتساب</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar max-h-80">
+          <table class="w-full text-right text-xs">
+            <thead class="sticky top-0 bg-slate-900">
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-2.5">#</th>
+                <th class="p-2.5">اسم الصنف</th>
+                <th class="p-2.5">الكمية المباعة</th>
+                <th class="p-2.5 text-emerald-400">إجمالي المبيعات</th>
+                <th class="p-2.5">مؤشر الحجم</th>
+              </tr>
+            </thead>
+            <tbody id="tblTopSelling" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">جاري تحليل المبيعات...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- تقرير 2: تفصيل المصروفات والمسحوبات النقدية (Expenses Breakdown) -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-rose-400 flex items-center gap-2">
+              <i class="fa-solid fa-money-bill-transfer"></i>
+              تقرير تفصيل المصروفات والمسحوبات النقدية
+            </h2>
+            <p class="text-[11px] text-slate-400">سجل بنود الصرف والمصروفات الإدارية والتشغيلية وسحوبات الخزينة</p>
+          </div>
+          <button onclick="shareExpensesWhatsApp()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition">
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span>مشاركة تقرير المصروفات واتساب</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar max-h-80">
+          <table class="w-full text-right text-xs">
+            <thead class="sticky top-0 bg-slate-900">
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="p-2.5">#</th>
+                <th class="p-2.5">التاريخ والوقت</th>
+                <th class="p-2.5">الخزينة</th>
+                <th class="p-2.5 text-rose-400 font-bold">المبلغ المصروف</th>
+                <th class="p-2.5">بيان المصروف</th>
+              </tr>
+            </thead>
+            <tbody id="tblExpensesBreakdown" class="divide-y divide-slate-800 text-slate-300">
+              <tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد مصروفات مسجلة</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
   </main>
 
   <!-- ========================================== -->
-  <!-- 5. منطق التطبيق والتزامن اللحظي (JS LOGIC) -->
+  <!-- 5. نافذة منبثقة لكشف الحساب والتفاصيل (MODAL) -->
+  <!-- ========================================== -->
+  <div id="statementModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="glass-card rounded-2xl p-5 w-full max-w-lg shadow-2xl border border-slate-700 text-right relative overflow-hidden">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+            <i class="fa-solid fa-address-card"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-sm" id="modalContactName">اسم العميل</h3>
+            <span class="text-[11px] text-slate-400" id="modalContactType">كشف حساب تفصيلي</span>
+          </div>
+        </div>
+        <button onclick="closeStatementModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs" id="modalContactContent">
+        <!-- بيانات الرصيد والهاتف -->
+        <div class="grid grid-cols-2 gap-2 bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+          <div>
+            <span class="text-slate-400 text-[11px]">الرصيد الحالي:</span>
+            <div class="text-base font-black text-rose-400" id="modalContactBalance">0.00 ج.م</div>
+          </div>
+          <div>
+            <span class="text-slate-400 text-[11px]">رقم الهاتف:</span>
+            <div class="text-xs font-bold text-white mt-1" id="modalContactPhone">--</div>
+          </div>
+        </div>
+
+        <!-- فواتير العميل الأخيرة -->
+        <div>
+          <h4 class="font-bold text-slate-300 text-xs mb-1.5">أحدث فواتير التعامل:</h4>
+          <div class="max-h-48 overflow-y-auto custom-scrollbar rounded-xl border border-slate-800">
+            <table class="w-full text-right text-[11px]">
+              <thead class="bg-slate-900 text-slate-400">
+                <tr>
+                  <th class="p-2">الفاتورة</th>
+                  <th class="p-2">التاريخ</th>
+                  <th class="p-2">الإجمالي</th>
+                  <th class="p-2">المدفوع</th>
+                  <th class="p-2">المتبقي</th>
+                </tr>
+              </thead>
+              <tbody id="modalContactInvoices" class="divide-y divide-slate-800 text-slate-300">
+                <tr><td colspan="5" class="p-3 text-center text-slate-500">لا توجد فواتير سابقة</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+        <button id="modalBtnWhatsApp" onclick="" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition">
+          <i class="fa-brands fa-whatsapp text-base"></i>
+          <span>إرسال مطالبة واتساب</span>
+        </button>
+        <button onclick="closeStatementModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastNotification" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 border border-emerald-500/50 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMessage">تم نسخ التقرير بنجاح!</span>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 6. منطق التطبيق والتزامن اللحظي (JS LOGIC) -->
   <!-- ========================================== -->
   <script>
     // ⚙️ إعدادات المشروع وفيربيز
@@ -654,6 +959,8 @@
     let activeFilterRange = 'today';
     let filterStartDate = '';
     let filterEndDate = '';
+    let clientFilterType = 'debts';
+    let supplierFilterType = 'debts';
     let autoLockTimer = null;
     const AUTO_LOCK_MS = 30 * 60 * 1000; // 30 دقيقة
 
@@ -774,7 +1081,6 @@
       const refreshIcon = document.getElementById('btnRefreshIcon');
       if (showSpinner && refreshIcon) refreshIcon.classList.add('fa-spin');
 
-      // إضافة timestamp فريد لكسر أي كاش في المتصفح أو الشبكة
       const antiCacheUrl = `${RTDB_URL}?nocache=${Date.now()}&_t=${Math.random()}`;
 
       try {
@@ -790,7 +1096,6 @@
             processAndRenderData();
           }
         } else {
-          // Fallback to Firestore
           await fetchFirestoreFallback();
         }
       } catch (err) {
@@ -828,7 +1133,9 @@
               RecentSales: f.RecentSalesJson ? JSON.parse(f.RecentSalesJson.stringValue || "[]") : [],
               RecentPurchases: f.RecentPurchasesJson ? JSON.parse(f.RecentPurchasesJson.stringValue || "[]") : [],
               RecentCashBox: f.RecentCashBoxJson ? JSON.parse(f.RecentCashBoxJson.stringValue || "[]") : [],
-              SafeAccounts: f.SafeAccountsJson ? JSON.parse(f.SafeAccountsJson.stringValue || "[]") : []
+              SafeAccounts: f.SafeAccountsJson ? JSON.parse(f.SafeAccountsJson.stringValue || "[]") : [],
+              TopSelling: f.TopSellingJson ? JSON.parse(f.TopSellingJson.stringValue || "[]") : [],
+              ExpensesList: f.ExpensesListJson ? JSON.parse(f.ExpensesListJson.stringValue || "[]") : []
             };
             processAndRenderData();
           }
@@ -851,7 +1158,6 @@
         return `${y}-${m}-${day}`;
       };
 
-      // إزالة التحديد عن كافة أزرار الفلتر
       document.querySelectorAll('#btnFilterToday, #btnFilterYesterday, #btnFilterWeek, #btnFilterMonth, #btnFilterAll').forEach(b => {
         b.classList.remove('active-filter-btn');
       });
@@ -919,13 +1225,11 @@
     function processAndRenderData() {
       if (!rawData) return;
 
-      // أ. معلومات المتجر والهيدر
       const storeName = rawData.StoreName || "شركة برو سوفت";
       document.getElementById('headerStoreName').textContent = storeName;
       document.getElementById('loginStoreTitle').textContent = storeName;
       document.getElementById('headerSyncTime').textContent = "آخر تحديث: " + (rawData.SyncTime || new Date().toLocaleTimeString('ar-EG'));
 
-      // ب. فلترة المبيعات والمشتريات والخزنة بناءً على الفترة
       const sales = rawData.RecentSales || [];
       const filteredSales = sales.filter(s => isDateInPeriod(s.SaleDate));
 
@@ -935,7 +1239,6 @@
       const cashbox = rawData.RecentCashBox || [];
       const filteredCash = cashbox.filter(c => isDateInPeriod(c.TransDate));
 
-      // حساب مجاميع الفترة
       let periodSalesTot = 0, periodCashSales = 0, periodCreditSales = 0;
       filteredSales.forEach(s => {
         const tot = parseFloat(s.TotalAmount || 0);
@@ -945,7 +1248,6 @@
         periodCreditSales += Math.max(0, tot - paid);
       });
 
-      // إذا كانت الفترة "اليوم" ولم تكن هناك فواتير مفصلة، نأخذ الإجماليات اللحظية المرفوعة من C#
       if (activeFilterRange === 'today' && filteredSales.length === 0 && rawData.TodaySalesTotal) {
         periodSalesTot = parseFloat(rawData.TodaySalesTotal || 0);
         periodCashSales = parseFloat(rawData.TodayCashSales || 0);
@@ -976,14 +1278,14 @@
         periodCashOut = parseFloat(rawData.TodayCashOut || 0);
       }
 
-      // ج. تحديث كروت لوحة المؤشرات
       document.getElementById('cardPeriodSales').innerHTML = `${periodSalesTot.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
       document.getElementById('cardPeriodCashSales').textContent = periodCashSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardPeriodCreditSales').textContent = periodCreditSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      const periodProfit = activeFilterRange === 'today' && rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18); // تقديري إذا امتدت الفترة
+      const periodProfit = activeFilterRange === 'today' && rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18);
       document.getElementById('cardPeriodProfit').innerHTML = `${periodProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
-      document.getElementById('cardPeriodSalesCount').textContent = filteredSales.length > 0 ? filteredSales.length : (rawData.TodaySalesInvoicesCount || 0);
+      const salesCount = filteredSales.length > 0 ? filteredSales.length : (rawData.TodaySalesInvoicesCount || 0);
+      document.getElementById('cardPeriodSalesCount').textContent = salesCount;
 
       document.getElementById('cardPeriodPurchases').innerHTML = `${periodPurTot.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
       document.getElementById('cardPeriodPaidPur').textContent = periodPaidPur.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
@@ -995,23 +1297,29 @@
       document.getElementById('cardPeriodCashIn').textContent = periodCashIn.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardPeriodCashOut').textContent = periodCashOut.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      // د. الأرصدة العامة
-      document.getElementById('cardClientDebts').textContent = parseFloat(rawData.ClientDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
-      document.getElementById('contactsTotalClientDebts').textContent = parseFloat(rawData.ClientDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      const clientDebts = parseFloat(rawData.ClientDebts || 0);
+      document.getElementById('cardClientDebts').textContent = clientDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('contactsTotalClientDebts').textContent = clientDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      document.getElementById('cardSupplierDebts').textContent = parseFloat(rawData.SupplierDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
-      document.getElementById('contactsTotalSupplierDebts').textContent = parseFloat(rawData.SupplierDebts || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      const suppDebts = parseFloat(rawData.SupplierDebts || 0);
+      document.getElementById('cardSupplierDebts').textContent = suppDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('contactsTotalSupplierDebts').textContent = suppDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
       document.getElementById('cardStockValue').textContent = parseFloat(rawData.StockCostValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardStockSaleValue').textContent = parseFloat(rawData.StockSaleValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardLowStockCount').textContent = rawData.LowStockCount || 0;
 
-      // هـ. الشارات والعدادات
       document.getElementById('countSalesBadge').textContent = filteredSales.length;
       document.getElementById('countPurBadge').textContent = filteredPurchases.length;
       document.getElementById('countMissingBadge').textContent = (rawData.MissingItems || []).length;
 
-      // و. رسم الجداول
+      const avgInvoice = salesCount > 0 ? (periodSalesTot / salesCount) : 0;
+      document.getElementById('statAvgInvoice').textContent = avgInvoice.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      const cashRatio = periodSalesTot > 0 ? Math.round((periodCashSales / periodSalesTot) * 100) : 0;
+      document.getElementById('statCashRatio').textContent = cashRatio + '%';
+      const marginRatio = periodSalesTot > 0 ? Math.round((periodProfit / periodSalesTot) * 100) : 0;
+      document.getElementById('statProfitMargin').textContent = marginRatio + '%';
+
       renderRecentSalesPreview(filteredSales);
       renderSalesTable();
       renderPurchasesTable();
@@ -1019,6 +1327,7 @@
       renderMissingTable();
       renderProductsTable();
       renderContactsTables();
+      renderAnalyticsTables();
     }
 
     // ──────────────────────────────────────────
@@ -1027,7 +1336,7 @@
     function renderRecentSalesPreview(salesList) {
       const tbody = document.getElementById('tblRecentSalesPreview');
       if (!salesList || salesList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">لا توجد فواتير مبيعات في الفترة المحددة</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">لا توجد فواتير مبيعات في الفترة المحددة</td></tr>`;
         return;
       }
       const top5 = salesList.slice(0, 5);
@@ -1035,9 +1344,14 @@
         <tr class="hover:bg-slate-800/40 transition">
           <td class="py-2.5 font-bold text-white">#${s.SaleID}</td>
           <td class="py-2.5 text-slate-400">${s.SaleDate || ''}</td>
-          <td class="py-2.5 font-bold text-brand-400">${s.ClientName || 'عميل نقدي'}</td>
+          <td class="py-2.5 font-bold text-brand-400 cursor-pointer hover:underline" onclick="showContactModal('${escapeQuotes(s.ClientName)}', 'Client')">${s.ClientName || 'عميل نقدي'}</td>
           <td class="py-2.5 font-black text-emerald-400">${parseFloat(s.TotalAmount || 0).toFixed(2)} ج.م</td>
           <td class="py-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.PaymentType === 'آجل' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}">${s.PaymentType || 'نقدي'}</span></td>
+          <td class="py-2.5 text-center">
+            <button onclick="shareSaleInvoiceWhatsApp(${s.SaleID}, '${escapeQuotes(s.ClientName)}', ${s.TotalAmount}, ${s.PaidAmount}, ${s.RemainingAmount}, '${s.SaleDate}')" class="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition" title="مشاركة الفاتورة واتساب">
+              <i class="fa-brands fa-whatsapp text-xs"></i>
+            </button>
+          </td>
         </tr>
       `).join('');
     }
@@ -1053,7 +1367,7 @@
 
       const tbody = document.getElementById('tblSalesFull');
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">لا توجد فواتير مبيعات مطابقة</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">لا توجد فواتير مبيعات مطابقة</td></tr>`;
         return;
       }
 
@@ -1061,12 +1375,18 @@
         <tr class="hover:bg-slate-800/50 transition">
           <td class="p-3 font-bold text-white">#${s.SaleID}</td>
           <td class="p-3 text-slate-400 text-[11px]">${s.SaleDate || ''}</td>
-          <td class="p-3 font-bold text-white">${s.ClientName || 'عميل نقدي'}</td>
+          <td class="p-3 font-bold text-white cursor-pointer hover:text-brand-400 hover:underline" onclick="showContactModal('${escapeQuotes(s.ClientName)}', 'Client')">${s.ClientName || 'عميل نقدي'}</td>
           <td class="p-3 font-black text-emerald-400">${parseFloat(s.TotalAmount || 0).toFixed(2)}</td>
           <td class="p-3 text-slate-300">${parseFloat(s.PaidAmount || 0).toFixed(2)}</td>
           <td class="p-3 font-bold ${parseFloat(s.RemainingAmount || 0) > 0 ? 'text-rose-400' : 'text-slate-500'}">${parseFloat(s.RemainingAmount || 0).toFixed(2)}</td>
           <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.PaymentType === 'آجل' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}">${s.PaymentType || 'نقدي'}</span></td>
           <td class="p-3 text-slate-400 text-[11px]">${s.InvoiceType || 'مبيعات'}</td>
+          <td class="p-3 text-center">
+            <button onclick="shareSaleInvoiceWhatsApp(${s.SaleID}, '${escapeQuotes(s.ClientName)}', ${s.TotalAmount}, ${s.PaidAmount}, ${s.RemainingAmount}, '${s.SaleDate}')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition text-[11px] font-bold inline-flex items-center gap-1" title="مشاركة الفاتورة واتساب">
+              <i class="fa-brands fa-whatsapp"></i>
+              <span>واتساب</span>
+            </button>
+          </td>
         </tr>
       `).join('');
     }
@@ -1090,7 +1410,7 @@
         <tr class="hover:bg-slate-800/50 transition">
           <td class="p-3 font-bold text-white">#${p.PurchaseID}</td>
           <td class="p-3 text-slate-400 text-[11px]">${p.PurchaseDate || ''}</td>
-          <td class="p-3 font-bold text-blue-400">${p.SupplierName || 'مورد عام'}</td>
+          <td class="p-3 font-bold text-blue-400 cursor-pointer hover:underline" onclick="showContactModal('${escapeQuotes(p.SupplierName)}', 'Supplier')">${p.SupplierName || 'مورد عام'}</td>
           <td class="p-3 font-black text-white">${parseFloat(p.TotalAmount || 0).toFixed(2)}</td>
           <td class="p-3 text-emerald-400">${parseFloat(p.PaidAmount || 0).toFixed(2)}</td>
           <td class="p-3 font-bold ${parseFloat(p.RemainingAmount || 0) > 0 ? 'text-rose-400' : 'text-slate-500'}">${parseFloat(p.RemainingAmount || 0).toFixed(2)}</td>
@@ -1099,7 +1419,6 @@
     }
 
     function renderCashboxTable() {
-      // 1. رسم كروت أرصدة الخزائن التفصيلية
       const safes = rawData.SafeAccounts || [];
       const safesContainer = document.getElementById('safesCardsContainer');
       if (safesContainer) {
@@ -1107,7 +1426,7 @@
           safesContainer.innerHTML = safes.map(s => {
             const bal = parseFloat(s.Balance || 0);
             return `
-              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col justify-between shadow">
                 <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
                   <span class="font-bold text-slate-300 truncate">${s.AccountName || 'خزينة'}</span>
                   <i class="fa-solid fa-vault text-amber-500/70 text-[10px]"></i>
@@ -1123,7 +1442,6 @@
         }
       }
 
-      // 2. رسم جدول الحركات
       const allCash = rawData.RecentCashBox || [];
       const filtered = allCash.filter(c => isDateInPeriod(c.TransDate));
 
@@ -1137,7 +1455,7 @@
         <tr class="hover:bg-slate-800/50 transition">
           <td class="p-3 font-bold text-slate-400">#${c.CashID}</td>
           <td class="p-3 text-slate-400 text-[11px]">${c.TransDate || ''}</td>
-          <td class="p-3 text-slate-300">${c.SafeName || 'الخزينة الرئيسية'}</td>
+          <td class="p-3 text-slate-300 font-bold">${c.SafeName || 'الخزينة الرئيسية'}</td>
           <td class="p-3 font-bold text-emerald-400">${parseFloat(c.AmountIn || 0) > 0 ? '+' + parseFloat(c.AmountIn).toFixed(2) : '-'}</td>
           <td class="p-3 font-bold text-rose-400">${parseFloat(c.AmountOut || 0) > 0 ? '-' + parseFloat(c.AmountOut).toFixed(2) : '-'}</td>
           <td class="p-3 text-slate-300">${c.Notes || '-'}</td>
@@ -1148,7 +1466,7 @@
     function renderMissingTable() {
       const q = (document.getElementById('searchMissingInput')?.value || '').toLowerCase();
       const items = (rawData.MissingItems || []).filter(item => {
-        if (q && !(item.ProductName || '').toLowerCase().includes(q) && !(item.ProductCode || '').toLowerCase().includes(q)) return false;
+        if (q && !(item.ProductName || '').toLowerCase().includes(q) && !(item.ProductCode || '').toLowerCase().includes(q) && !(item.Supplier || '').toLowerCase().includes(q)) return false;
         return true;
       });
 
@@ -1178,7 +1496,7 @@
 
       const tbody = document.getElementById('tblProductsCatalog');
       if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد أصناف</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد أصناف مطابقة للبحث</td></tr>`;
         return;
       }
 
@@ -1193,36 +1511,460 @@
       `).join('');
     }
 
+    // ──────────────────────────────────────────
+    // 7. دوال فلترة وبحث ومطالبة العملاء والموردين
+    // ──────────────────────────────────────────
+    function setClientFilter(type) {
+      clientFilterType = type;
+      document.querySelectorAll('#btnClientFilterDebts, #btnClientFilterTop10, #btnClientFilterAll').forEach(b => {
+        b.classList.remove('active-chip');
+        b.classList.add('text-slate-400');
+      });
+      if (type === 'debts') document.getElementById('btnClientFilterDebts').classList.add('active-chip');
+      else if (type === 'top10') document.getElementById('btnClientFilterTop10').classList.add('active-chip');
+      else if (type === 'all') document.getElementById('btnClientFilterAll').classList.add('active-chip');
+
+      renderContactsTables();
+    }
+
+    function setSupplierFilter(type) {
+      supplierFilterType = type;
+      document.querySelectorAll('#btnSupplierFilterDebts, #btnSupplierFilterAll').forEach(b => {
+        b.classList.remove('active-chip');
+        b.classList.add('text-slate-400');
+      });
+      if (type === 'debts') document.getElementById('btnSupplierFilterDebts').classList.add('active-chip');
+      else if (type === 'all') document.getElementById('btnSupplierFilterAll').classList.add('active-chip');
+
+      renderContactsTables();
+    }
+
     function renderContactsTables() {
-      const clients = rawData.ClientsList || [];
-      const tblC = document.getElementById('tblClientsList');
-      if (!clients.length) {
-        tblC.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد ديون عملاء</td></tr>`;
-      } else {
-        tblC.innerHTML = clients.map(c => `
-          <tr class="hover:bg-slate-800/50 transition">
-            <td class="p-2.5 font-bold text-white">${c.ClientName || ''}</td>
-            <td class="p-2.5 font-black text-rose-400">${parseFloat(c.Balance || 0).toFixed(2)} ج.م</td>
-          </tr>
-        `).join('');
+      const qC = (document.getElementById('searchClientsInput')?.value || '').toLowerCase();
+      let clients = (rawData.ClientsList || []).slice();
+
+      if (clientFilterType === 'debts') {
+        clients = clients.filter(c => parseFloat(c.Balance || 0) > 0);
+      } else if (clientFilterType === 'top10') {
+        clients = clients.filter(c => parseFloat(c.Balance || 0) > 0).slice(0, 10);
       }
 
-      const suppliers = rawData.SuppliersList || [];
+      if (qC) {
+        clients = clients.filter(c => 
+          (c.ClientName || '').toLowerCase().includes(qC) ||
+          (c.Phone || '').includes(qC) ||
+          (c.Phone2 || '').includes(qC) ||
+          (c.ClientCode || '').toLowerCase().includes(qC) ||
+          (c.Address || '').toLowerCase().includes(qC)
+        );
+      }
+
+      document.getElementById('badgeClientCount').textContent = clients.length;
+
+      const tblC = document.getElementById('tblClientsList');
+      if (!clients.length) {
+        tblC.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا يوجد عملاء مطابقين لخيارات البحث</td></tr>`;
+      } else {
+        tblC.innerHTML = clients.map(c => {
+          const bal = parseFloat(c.Balance || 0);
+          const phone = (c.Phone || c.Phone2 || '').trim();
+          return `
+            <tr class="hover:bg-slate-800/50 transition">
+              <td class="p-3">
+                <div class="font-bold text-white cursor-pointer hover:text-brand-400 hover:underline" onclick="showContactModal('${escapeQuotes(c.ClientName)}', 'Client', ${bal}, '${phone}', '${escapeQuotes(c.Address || '')}')">${c.ClientName || ''}</div>
+                ${c.ClientCode ? `<span class="text-[10px] text-slate-500">كود: ${c.ClientCode}</span>` : ''}
+              </td>
+              <td class="p-3 font-mono text-slate-300 text-xs">${phone ? `<a href="tel:${phone}" class="text-blue-400 hover:underline"><i class="fa-solid fa-phone text-[10px] ml-1"></i>${phone}</a>` : '<span class="text-slate-600">-</span>'}</td>
+              <td class="p-3 text-slate-400 text-[11px]">${c.Address || '-'}</td>
+              <td class="p-3 font-black ${bal > 0 ? 'text-rose-400' : 'text-slate-400'}">${bal.toFixed(2)} ج.م</td>
+              <td class="p-3 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button onclick="shareClientDebtWhatsApp('${escapeQuotes(c.ClientName)}', ${bal}, '${phone}')" 
+                          class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow transition" 
+                          title="إرسال مطالبة رصيد واتساب">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>واتساب</span>
+                  </button>
+                  <button onclick="showContactModal('${escapeQuotes(c.ClientName)}', 'Client', ${bal}, '${phone}', '${escapeQuotes(c.Address || '')}')" 
+                          class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition" 
+                          title="كشف حساب مصغر">
+                    <i class="fa-solid fa-file-lines"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const qS = (document.getElementById('searchSuppliersInput')?.value || '').toLowerCase();
+      let suppliers = (rawData.SuppliersList || []).slice();
+
+      if (supplierFilterType === 'debts') {
+        suppliers = suppliers.filter(s => parseFloat(s.Balance || 0) > 0);
+      }
+
+      if (qS) {
+        suppliers = suppliers.filter(s => 
+          (s.SupplierName || '').toLowerCase().includes(qS) ||
+          (s.Phone || '').includes(qS) ||
+          (s.SupplierCode || '').toLowerCase().includes(qS) ||
+          (s.Address || '').toLowerCase().includes(qS)
+        );
+      }
+
+      document.getElementById('badgeSupplierCount').textContent = suppliers.length;
+
       const tblS = document.getElementById('tblSuppliersList');
       if (!suppliers.length) {
-        tblS.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">لا توجد مستحقات موردين</td></tr>`;
+        tblS.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا يوجد موردين مطابقين للبحث</td></tr>`;
       } else {
-        tblS.innerHTML = suppliers.map(s => `
-          <tr class="hover:bg-slate-800/50 transition">
-            <td class="p-2.5 font-bold text-white">${s.SupplierName || ''}</td>
-            <td class="p-2.5 font-black text-amber-400">${parseFloat(s.Balance || 0).toFixed(2)} ج.م</td>
-          </tr>
-        `).join('');
+        tblS.innerHTML = suppliers.map(s => {
+          const bal = parseFloat(s.Balance || 0);
+          const phone = (s.Phone || '').trim();
+          return `
+            <tr class="hover:bg-slate-800/50 transition">
+              <td class="p-3">
+                <div class="font-bold text-white cursor-pointer hover:text-amber-400 hover:underline" onclick="showContactModal('${escapeQuotes(s.SupplierName)}', 'Supplier', ${bal}, '${phone}', '${escapeQuotes(s.Address || '')}')">${s.SupplierName || ''}</div>
+                ${s.SupplierCode ? `<span class="text-[10px] text-slate-500">كود: ${s.SupplierCode}</span>` : ''}
+              </td>
+              <td class="p-3 font-mono text-slate-300 text-xs">${phone ? `<a href="tel:${phone}" class="text-blue-400 hover:underline"><i class="fa-solid fa-phone text-[10px] ml-1"></i>${phone}</a>` : '<span class="text-slate-600">-</span>'}</td>
+              <td class="p-3 text-slate-400 text-[11px]">${s.Address || '-'}</td>
+              <td class="p-3 font-black ${bal > 0 ? 'text-amber-400' : 'text-slate-400'}">${bal.toFixed(2)} ج.م</td>
+              <td class="p-3 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button onclick="shareSupplierDebtWhatsApp('${escapeQuotes(s.SupplierName)}', ${bal}, '${phone}')" 
+                          class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow transition" 
+                          title="مطابقة الرصيد واتساب">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>واتساب</span>
+                  </button>
+                  <button onclick="showContactModal('${escapeQuotes(s.SupplierName)}', 'Supplier', ${bal}, '${phone}', '${escapeQuotes(s.Address || '')}')" 
+                          class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition" 
+                          title="كشف حساب مصغر">
+                    <i class="fa-solid fa-file-lines"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
       }
     }
 
     // ──────────────────────────────────────────
-    // 7. التبديل بين التبويبات (Tab Switching)
+    // 8. رسم التقارير والتحليلات المتقدمة (ANALYTICS)
+    // ──────────────────────────────────────────
+    function renderAnalyticsTables() {
+      const topItems = rawData.TopSelling || [];
+      const tblTop = document.getElementById('tblTopSelling');
+      if (tblTop) {
+        if (!topItems.length) {
+          tblTop.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد بيانات مبيعات كافية للتحليل</td></tr>`;
+        } else {
+          const maxVal = Math.max(...topItems.map(i => parseFloat(i.TotalSalesValue || 0)), 1);
+          tblTop.innerHTML = topItems.map((item, idx) => {
+            const val = parseFloat(item.TotalSalesValue || 0);
+            const pct = Math.min(100, Math.round((val / maxVal) * 100));
+            return `
+              <tr class="hover:bg-slate-800/50 transition">
+                <td class="p-2.5 font-bold ${idx < 3 ? 'text-amber-400 font-black' : 'text-slate-400'}">#${idx + 1}</td>
+                <td class="p-2.5 font-bold text-white">${item.ProductName || ''}</td>
+                <td class="p-2.5 font-bold text-slate-300">${parseFloat(item.TotalQtySold || 0).toLocaleString('en-US')}</td>
+                <td class="p-2.5 font-black text-emerald-400">${val.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م</td>
+                <td class="p-2.5 w-32">
+                  <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-emerald-500 to-green-400 h-2 rounded-full" style="width: ${pct}%"></div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      const expenses = rawData.ExpensesList || [];
+      const tblExp = document.getElementById('tblExpensesBreakdown');
+      if (tblExp) {
+        if (!expenses.length) {
+          tblExp.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد مصروفات مسجلة</td></tr>`;
+        } else {
+          tblExp.innerHTML = expenses.map(exp => `
+            <tr class="hover:bg-slate-800/50 transition">
+              <td class="p-2.5 font-bold text-slate-400">#${exp.CashID}</td>
+              <td class="p-2.5 text-slate-400 text-[11px]">${exp.TransDate || ''}</td>
+              <td class="p-2.5 text-slate-300">${exp.SafeName || 'الخزينة الرئيسية'}</td>
+              <td class="p-2.5 font-black text-rose-400">-${parseFloat(exp.AmountOut || 0).toFixed(2)} ج.م</td>
+              <td class="p-2.5 text-slate-200 font-bold">${exp.Notes || 'مصروف عام'}</td>
+            </tr>
+          `).join('');
+        }
+      }
+    }
+
+    // ──────────────────────────────────────────
+    // 9. دوال مشاركة التقارير عبر واتساب (WhatsApp Share System)
+    // ──────────────────────────────────────────
+    function openWhatsAppUrl(phone, text) {
+      let cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+      if (cleanPhone.startsWith('01') && cleanPhone.length === 11) {
+        cleanPhone = '2' + cleanPhone;
+      }
+      
+      const encoded = encodeURIComponent(text);
+      let url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+      window.open(url, '_blank');
+      showToast("جاري توجيهك إلى واتساب...");
+    }
+
+    function shareExecutiveReportWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const period = document.getElementById('lblActivePeriodText')?.textContent || "اليوم";
+      const syncTime = rawData.SyncTime || new Date().toLocaleTimeString('ar-EG');
+      const sales = document.getElementById('cardPeriodSales')?.textContent || "0.00 ج.م";
+      const cashSales = document.getElementById('cardPeriodCashSales')?.textContent || "0.00";
+      const creditSales = document.getElementById('cardPeriodCreditSales')?.textContent || "0.00";
+      const salesCount = document.getElementById('cardPeriodSalesCount')?.textContent || "0";
+      const profit = document.getElementById('cardPeriodProfit')?.textContent || "0.00 ج.م";
+      const purchases = document.getElementById('cardPeriodPurchases')?.textContent || "0.00 ج.م";
+      const cashbox = document.getElementById('cardCashboxBalance')?.textContent || "0.00 ج.م";
+      const clientDebts = document.getElementById('cardClientDebts')?.textContent || "0.00 ج.م";
+      const supplierDebts = document.getElementById('cardSupplierDebts')?.textContent || "0.00 ج.م";
+      const stockVal = document.getElementById('cardStockValue')?.textContent || "0.00 ج.م";
+      const lowStock = document.getElementById('cardLowStockCount')?.textContent || "0";
+
+      const text = 
+`📊 *التقرير التنفيذي | ${storeName}*
+🗓️ *الفترة:* ${period}
+⏰ *وقت التقرير:* ${syncTime}
+━━━━━━━━━━━━━━━━━━
+💰 *المبيعات:* ${sales}
+   ▫️ نقدي (كاش): ${cashSales}
+   ▫️ آجل (ذمم): ${creditSales}
+   ▫️ عدد الفواتير: ${salesCount} فاتورة
+
+📈 *صافي الربح التقديري:* ${profit}
+📦 *المشتريات:* ${purchases}
+💵 *رصيد الخزينة والسيولة:* ${cashbox}
+
+👥 *إجمالي ديون العملاء:* ${clientDebts}
+🚚 *مستحقات الموردين:* ${supplierDebts}
+🏭 *قيمة بضاعة المخزن (تكلفة):* ${stockVal}
+⚠️ *عدد الأصناف الناقصة:* ${lowStock} صنف
+━━━━━━━━━━━━━━━━━━
+⚡ *تم استخراج التقرير آلياً عبر نظام ProSoft ERP*`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareClientDebtWhatsApp(clientName, balance, phone) {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const todayStr = new Date().toLocaleDateString('ar-EG');
+      const text = 
+`السيد/ *${clientName}* المحترم 🌹
+تحية طيبة وبعد من *${storeName}*،
+
+نود إحاطة سيادتكم بأن رصيد حسابكم الحالي المستحق لدينا هو:
+💰 *${parseFloat(balance || 0).toFixed(2)} ج.م*
+
+🗓️ *تاريخ المطابقة:* ${todayStr}
+
+شاكرين ومقدرين حسن تعاونكم الدائم معنا.`;
+
+      openWhatsAppUrl(phone, text);
+    }
+
+    function shareSupplierDebtWhatsApp(supplierName, balance, phone) {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const todayStr = new Date().toLocaleDateString('ar-EG');
+      const text = 
+`السادة شركة / *${supplierName}* المحترمين 🤝
+تحية طيبة وبعد من *${storeName}*،
+
+إشعار مطابقة رصيد:
+رصيدكم المستحق لدينا حتى تاريخ اليوم (${todayStr}) هو:
+💰 *${parseFloat(balance || 0).toFixed(2)} ج.م*
+
+شكراً لتعاملكم الراقي.`;
+
+      openWhatsAppUrl(phone, text);
+    }
+
+    function shareSaleInvoiceWhatsApp(saleId, clientName, total, paid, remaining, date) {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const text = 
+`🧾 *فاتورة مبيعات رقم #${saleId}*
+🏢 *${storeName}*
+👤 *العميل:* ${clientName || 'عميل نقدي'}
+🗓️ *التاريخ:* ${date || ''}
+━━━━━━━━━━━━━━━━━━
+💵 *إجمالي الفاتورة:* ${parseFloat(total || 0).toFixed(2)} ج.م
+✅ *المدفوع:* ${parseFloat(paid || 0).toFixed(2)} ج.م
+⏳ *المتبقي:* ${parseFloat(remaining || 0).toFixed(2)} ج.م
+━━━━━━━━━━━━━━━━━━
+شكراً لثقتكم بنا وبمنتجاتنا!`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareMissingItemsWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const items = rawData.MissingItems || [];
+      if (!items.length) {
+        showToast("لا توجد أصناف ناقصة حالياً!");
+        return;
+      }
+
+      let text = `🚨 *قائمة النواقص المطلوب توفيرها | ${storeName}*\n⏰ ${new Date().toLocaleDateString('ar-EG')}\n━━━━━━━━━━━━━━━━━━\n`;
+      items.slice(0, 30).forEach((item, idx) => {
+        text += `${idx + 1}. *${item.ProductName}* (الرصيد: ${item.Quantity} | حد الطلب: ${item.MinQuantity})\n`;
+      });
+      text += `━━━━━━━━━━━━━━━━━━\nيرجى التوجيه بطلب وتوريد الكميات الناقصة.`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareTopSellingWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const items = rawData.TopSelling || [];
+      if (!items.length) {
+        showToast("لا توجد بيانات للأصناف الأكثر مبيعاً!");
+        return;
+      }
+
+      let text = `🏆 *تقرير الأصناف الأكثر مبيعاً والأعلى إيراداً | ${storeName}*\n━━━━━━━━━━━━━━━━━━\n`;
+      items.slice(0, 15).forEach((item, idx) => {
+        text += `${idx + 1}. *${item.ProductName}* - مبيعات: ${parseFloat(item.TotalSalesValue || 0).toFixed(2)} ج.م (كمية: ${item.TotalQtySold})\n`;
+      });
+      text += `━━━━━━━━━━━━━━━━━━\nنظام ProSoft ERP`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareExpensesWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const expenses = rawData.ExpensesList || [];
+      if (!expenses.length) {
+        showToast("لا توجد مصروفات مسجلة!");
+        return;
+      }
+
+      let text = `⚡ *تقرير تفصيل المصروفات والمسحوبات | ${storeName}*\n━━━━━━━━━━━━━━━━━━\n`;
+      let total = 0;
+      expenses.slice(0, 15).forEach((exp, idx) => {
+        const amt = parseFloat(exp.AmountOut || 0);
+        total += amt;
+        text += `${idx + 1}. ${exp.Notes || 'مصروف'}: *${amt.toFixed(2)} ج.م* (${exp.TransDate || ''})\n`;
+      });
+      text += `━━━━━━━━━━━━━━━━━━\n💰 *إجمالي المصروفات المحددة:* ${total.toFixed(2)} ج.م\nنظام ProSoft ERP`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareAllClientDebtsWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const clients = (rawData.ClientsList || []).filter(c => parseFloat(c.Balance || 0) > 0);
+      if (!clients.length) {
+        showToast("لا توجد ديون عملاء مسجلة!");
+        return;
+      }
+
+      const total = clients.reduce((acc, c) => acc + parseFloat(c.Balance || 0), 0);
+      let text = `👥 *كشف مديونيات العملاء الإجمالي | ${storeName}*\n💰 *إجمالي الديون في السوق:* ${total.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م\n━━━━━━━━━━━━━━━━━━\n`;
+      clients.slice(0, 25).forEach((c, idx) => {
+        text += `${idx + 1}. *${c.ClientName}*: ${parseFloat(c.Balance || 0).toFixed(2)} ج.م ${c.Phone ? `(${c.Phone})` : ''}\n`;
+      });
+      text += `━━━━━━━━━━━━━━━━━━\nنظام ProSoft ERP`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareAllSupplierDebtsWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const suppliers = (rawData.SuppliersList || []).filter(s => parseFloat(s.Balance || 0) > 0);
+      if (!suppliers.length) {
+        showToast("لا توجد مستحقات موردين مسجلة!");
+        return;
+      }
+
+      const total = suppliers.reduce((acc, s) => acc + parseFloat(s.Balance || 0), 0);
+      let text = `🚚 *كشف مستحقات الموردين والشركات | ${storeName}*\n💰 *إجمالي المستحقات:* ${total.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م\n━━━━━━━━━━━━━━━━━━\n`;
+      suppliers.slice(0, 25).forEach((s, idx) => {
+        text += `${idx + 1}. *${s.SupplierName}*: ${parseFloat(s.Balance || 0).toFixed(2)} ج.م\n`;
+      });
+      text += `━━━━━━━━━━━━━━━━━━\nنظام ProSoft ERP`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    // ──────────────────────────────────────────
+    // 10. نافذة كشف الحساب المصغر (Statement Modal)
+    // ──────────────────────────────────────────
+    function showContactModal(name, type, balance = 0, phone = '', address = '') {
+      document.getElementById('modalContactName').textContent = name;
+      document.getElementById('modalContactType').textContent = type === 'Client' ? 'كشف حساب عميل تفصيلي' : 'كشف حساب مورد تفصيلي';
+      document.getElementById('modalContactBalance').textContent = parseFloat(balance || 0).toFixed(2) + ' ج.م';
+      document.getElementById('modalContactPhone').textContent = phone || 'غير مسجل';
+
+      const btnWa = document.getElementById('modalBtnWhatsApp');
+      btnWa.onclick = () => {
+        if (type === 'Client') shareClientDebtWhatsApp(name, balance, phone);
+        else shareSupplierDebtWhatsApp(name, balance, phone);
+      };
+
+      const invoicesTbody = document.getElementById('modalContactInvoices');
+      if (type === 'Client') {
+        const sales = (rawData.RecentSales || []).filter(s => (s.ClientName || '').toLowerCase() === name.toLowerCase());
+        if (!sales.length) {
+          invoicesTbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-500">لا توجد فواتير مسجلة لهذا العميل في السجل الحديث</td></tr>`;
+        } else {
+          invoicesTbody.innerHTML = sales.slice(0, 10).map(s => `
+            <tr class="hover:bg-slate-800/60">
+              <td class="p-2 font-bold text-white">#${s.SaleID}</td>
+              <td class="p-2 text-slate-400">${(s.SaleDate || '').substring(0, 10)}</td>
+              <td class="p-2 font-bold text-emerald-400">${parseFloat(s.TotalAmount || 0).toFixed(2)}</td>
+              <td class="p-2 text-slate-300">${parseFloat(s.PaidAmount || 0).toFixed(2)}</td>
+              <td class="p-2 font-bold ${parseFloat(s.RemainingAmount || 0) > 0 ? 'text-rose-400' : 'text-slate-500'}">${parseFloat(s.RemainingAmount || 0).toFixed(2)}</td>
+            </tr>
+          `).join('');
+        }
+      } else {
+        const purchases = (rawData.RecentPurchases || []).filter(p => (p.SupplierName || '').toLowerCase() === name.toLowerCase());
+        if (!purchases.length) {
+          invoicesTbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-500">لا توجد فواتير مسجلة لهذا المورد في السجل الحديث</td></tr>`;
+        } else {
+          invoicesTbody.innerHTML = purchases.slice(0, 10).map(p => `
+            <tr class="hover:bg-slate-800/60">
+              <td class="p-2 font-bold text-white">#${p.PurchaseID}</td>
+              <td class="p-2 text-slate-400">${(p.PurchaseDate || '').substring(0, 10)}</td>
+              <td class="p-2 font-bold text-white">${parseFloat(p.TotalAmount || 0).toFixed(2)}</td>
+              <td class="p-2 text-emerald-400">${parseFloat(p.PaidAmount || 0).toFixed(2)}</td>
+              <td class="p-2 font-bold ${parseFloat(p.RemainingAmount || 0) > 0 ? 'text-rose-400' : 'text-slate-500'}">${parseFloat(p.RemainingAmount || 0).toFixed(2)}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      document.getElementById('statementModal').classList.remove('hidden');
+    }
+
+    function closeStatementModal() {
+      document.getElementById('statementModal').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+
+    function escapeQuotes(str) {
+      return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    // ──────────────────────────────────────────
+    // 11. التبديل بين التبويبات (Tab Switching)
     // ──────────────────────────────────────────
     function switchTab(tabId) {
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
