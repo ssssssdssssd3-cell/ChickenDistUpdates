@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -486,6 +486,10 @@
           </div>
         </div>
 
+        <!-- كروت تفاصيل الخزائن والحسابات النقدية -->
+        <div id="safesCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-4">
+        </div>
+
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-right text-xs">
             <thead>
@@ -823,7 +827,8 @@
               UsersList: f.UsersListJson ? JSON.parse(f.UsersListJson.stringValue || "[]") : [],
               RecentSales: f.RecentSalesJson ? JSON.parse(f.RecentSalesJson.stringValue || "[]") : [],
               RecentPurchases: f.RecentPurchasesJson ? JSON.parse(f.RecentPurchasesJson.stringValue || "[]") : [],
-              RecentCashBox: f.RecentCashBoxJson ? JSON.parse(f.RecentCashBoxJson.stringValue || "[]") : []
+              RecentCashBox: f.RecentCashBoxJson ? JSON.parse(f.RecentCashBoxJson.stringValue || "[]") : [],
+              SafeAccounts: f.SafeAccountsJson ? JSON.parse(f.SafeAccountsJson.stringValue || "[]") : []
             };
             processAndRenderData();
           }
@@ -839,7 +844,12 @@
     function setDateRange(rangeType) {
       activeFilterRange = rangeType;
       const today = new Date();
-      const formatIso = d => d.toISOString().split('T')[0];
+      const formatIso = d => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
 
       // إزالة التحديد عن كافة أزرار الفلتر
       document.querySelectorAll('#btnFilterToday, #btnFilterYesterday, #btnFilterWeek, #btnFilterMonth, #btnFilterAll').forEach(b => {
@@ -872,7 +882,7 @@
         document.getElementById('btnFilterMonth').classList.add('active-filter-btn');
         document.getElementById('lblActivePeriodText').textContent = 'هذا الشهر (' + filterStartDate + ' إلى ' + filterEndDate + ')';
       } else if (rangeType === 'all') {
-        filterStartDate = '2000-01-01';
+        filterStartDate = '1900-01-01';
         filterEndDate = '2099-12-31';
         document.getElementById('btnFilterAll').classList.add('active-filter-btn');
         document.getElementById('lblActivePeriodText').textContent = 'جميع الفترات';
@@ -1089,6 +1099,31 @@
     }
 
     function renderCashboxTable() {
+      // 1. رسم كروت أرصدة الخزائن التفصيلية
+      const safes = rawData.SafeAccounts || [];
+      const safesContainer = document.getElementById('safesCardsContainer');
+      if (safesContainer) {
+        if (safes.length > 0) {
+          safesContainer.innerHTML = safes.map(s => {
+            const bal = parseFloat(s.Balance || 0);
+            return `
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span class="font-bold text-slate-300 truncate">${s.AccountName || 'خزينة'}</span>
+                  <i class="fa-solid fa-vault text-amber-500/70 text-[10px]"></i>
+                </div>
+                <div class="text-sm font-black ${bal >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                  ${bal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-[10px] font-normal text-slate-500">ج.م</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          safesContainer.innerHTML = '';
+        }
+      }
+
+      // 2. رسم جدول الحركات
       const allCash = rawData.RecentCashBox || [];
       const filtered = allCash.filter(c => isDateInPeriod(c.TransDate));
 

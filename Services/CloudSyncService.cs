@@ -283,12 +283,15 @@ namespace ChickenDist.Services
                 // 10. سجل فواتير المبيعات
                 DataTable dtRecentSales = DbHelper.Query(@"
                     SELECT TOP 2000 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
-                           ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
+                           ISNULL(NULLIF(s.CustomClientName, ''), ISNULL(c.ClientName, N'عميل نقدي')) AS ClientName,
                            ISNULL(s.TotalAmount, 0) AS TotalAmount,
-                           ISNULL(s.PaidAmount, 0) AS PaidAmount,
-                           ISNULL(s.RemainingAmount, 0) AS RemainingAmount,
-                           ISNULL(s.PaymentType, N'نقدي') AS PaymentType,
-                           ISNULL(s.InvoiceType, N'مبيعات') AS InvoiceType
+                           ISNULL(s.CashPaid, 0) + ISNULL(s.VisaPaid, 0) AS PaidAmount,
+                           CASE 
+                               WHEN s.SaleType = 'Cash' THEN 0 
+                               ELSE ISNULL(s.TotalAmount, 0) - (ISNULL(s.CashPaid, 0) + ISNULL(s.VisaPaid, 0)) 
+                           END AS RemainingAmount,
+                           CASE WHEN s.SaleType = 'Cash' THEN N'نقدي' ELSE N'آجل' END AS PaymentType,
+                           ISNULL(s.OrderType, N'مبيعات') AS InvoiceType
                     FROM Sales s
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     ORDER BY s.SaleID DESC");
@@ -299,8 +302,11 @@ namespace ChickenDist.Services
                     SELECT TOP 1000 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
                            ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
                            ISNULL(p.TotalAmount, 0) AS TotalAmount,
-                           ISNULL(p.PaidAmount, 0) AS PaidAmount,
-                           ISNULL(p.RemainingAmount, 0) AS RemainingAmount
+                           ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0) AS PaidAmount,
+                           CASE 
+                               WHEN p.PurchaseType = 'Cash' THEN 0 
+                               ELSE ISNULL(p.TotalAmount, 0) - (ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0)) 
+                           END AS RemainingAmount
                     FROM Purchases p
                     LEFT JOIN Suppliers sup ON p.SupplierID = sup.SupplierID
                     ORDER BY p.PurchaseID DESC");
@@ -317,6 +323,19 @@ namespace ChickenDist.Services
                     LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
                     ORDER BY cb.CashID DESC");
                 string recentCashJson = DataTableToJson(dtRecentCash);
+
+                // 13. أرصدة الخزائن التفصيلية
+                DataTable dtSafes = DbHelper.Query(@"
+                    SELECT sa.AccountID, sa.AccountName, sa.OpeningBalance,
+                           ISNULL(SUM(cb.AmountIn), 0) AS TotalIn,
+                           ISNULL(SUM(cb.AmountOut), 0) AS TotalOut,
+                           sa.OpeningBalance + ISNULL(SUM(cb.AmountIn - cb.AmountOut), 0) AS Balance
+                    FROM SafeAccounts sa
+                    LEFT JOIN CashBox cb ON sa.AccountID = cb.AccountID
+                    WHERE sa.IsActive = 1
+                    GROUP BY sa.AccountID, sa.AccountName, sa.OpeningBalance
+                    ORDER BY sa.AccountID ASC");
+                string safesJson = DataTableToJson(dtSafes);
 
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string timeStr = DateTime.Now.ToString("hh:mm tt");
@@ -353,7 +372,8 @@ namespace ChickenDist.Services
                         "\"UsersList\": " + usersJson + "," +
                         "\"RecentSales\": " + recentSalesJson + "," +
                         "\"RecentPurchases\": " + recentPurchasesJson + "," +
-                        "\"RecentCashBox\": " + recentCashJson +
+                        "\"RecentCashBox\": " + recentCashJson + "," +
+                        "\"SafeAccounts\": " + safesJson +
                         "}";
 
                     using (var client = new HttpClient())
@@ -395,7 +415,8 @@ namespace ChickenDist.Services
                         "\"UsersListJson\": {\"stringValue\": \"" + EscapeJsonString(usersJson) + "\"}," +
                         "\"RecentSalesJson\": {\"stringValue\": \"" + EscapeJsonString(recentSalesJson) + "\"}," +
                         "\"RecentPurchasesJson\": {\"stringValue\": \"" + EscapeJsonString(recentPurchasesJson) + "\"}," +
-                        "\"RecentCashBoxJson\": {\"stringValue\": \"" + EscapeJsonString(recentCashJson) + "\"}" +
+                        "\"RecentCashBoxJson\": {\"stringValue\": \"" + EscapeJsonString(recentCashJson) + "\"}," +
+                        "\"SafeAccountsJson\": {\"stringValue\": \"" + EscapeJsonString(safesJson) + "\"}" +
                         "}}";
 
                     using (var client = new HttpClient())
