@@ -1120,6 +1120,8 @@
               CashboxBalance: f.CashboxBalance ? (f.CashboxBalance.doubleValue || f.CashboxBalance.integerValue || 0) : 0,
               TodayNetProfit: f.TodayNetProfit ? (f.TodayNetProfit.doubleValue || f.TodayNetProfit.integerValue || 0) : 0,
               TodayPurchases: f.TodayPurchases ? (f.TodayPurchases.doubleValue || f.TodayPurchases.integerValue || 0) : 0,
+              StockCostValue: f.StockCostValue ? (f.StockCostValue.doubleValue || f.StockCostValue.integerValue || 0) : 0,
+              StockSaleValue: f.StockSaleValue ? (f.StockSaleValue.doubleValue || f.StockSaleValue.integerValue || 0) : 0,
               ClientDebts: f.ClientDebts ? (f.ClientDebts.doubleValue || f.ClientDebts.integerValue || 0) : 0,
               SupplierDebts: f.SupplierDebts ? (f.SupplierDebts.doubleValue || f.SupplierDebts.integerValue || 0) : 0,
               LowStockCount: f.LowStockCount ? parseInt(f.LowStockCount.integerValue || 0) : 0,
@@ -1305,8 +1307,18 @@
       document.getElementById('cardSupplierDebts').textContent = suppDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('contactsTotalSupplierDebts').textContent = suppDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      document.getElementById('cardStockValue').textContent = parseFloat(rawData.StockCostValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
-      document.getElementById('cardStockSaleValue').textContent = parseFloat(rawData.StockSaleValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      let stockCost = parseFloat(rawData.StockCostValue || 0);
+      let stockSale = parseFloat(rawData.StockSaleValue || 0);
+
+      if ((!stockCost || stockCost <= 0) && rawData.ProductsCatalog && rawData.ProductsCatalog.length > 0) {
+        stockCost = rawData.ProductsCatalog.reduce((acc, p) => acc + (Math.max(0, parseFloat(p.Quantity || 0)) * parseFloat(p.PurchasePrice || 0)), 0);
+      }
+      if ((!stockSale || stockSale <= 0) && rawData.ProductsCatalog && rawData.ProductsCatalog.length > 0) {
+        stockSale = rawData.ProductsCatalog.reduce((acc, p) => acc + (Math.max(0, parseFloat(p.Quantity || 0)) * parseFloat(p.SalePrice || 0)), 0);
+      }
+
+      document.getElementById('cardStockValue').textContent = stockCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
+      document.getElementById('cardStockSaleValue').textContent = stockSale.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardLowStockCount').textContent = rawData.LowStockCount || 0;
 
       document.getElementById('countSalesBadge').textContent = filteredSales.length;

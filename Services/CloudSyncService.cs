@@ -217,10 +217,24 @@ namespace ChickenDist.Services
                 decimal todayCashOut = cbOutObj != null && cbOutObj != DBNull.Value ? Convert.ToDecimal(cbOutObj) : 0m;
 
                 // تقييم المخزون الفعلي بسعر التكلفة وبسعر البيع
-                object stockCostObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Quantity, 0) * ISNULL(PurchasePrice, 0)), 0) FROM Products WHERE IsActive = 1");
+                object stockCostObj = DbHelper.Scalar(@"
+                    SELECT 
+                        CASE 
+                            WHEN EXISTS (SELECT 1 FROM ProductStock) THEN
+                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.PurchasePrice, 0)) FROM ProductStock ps JOIN Products p ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
+                            ELSE
+                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.PurchasePrice, 0)) FROM Products p WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
+                        END");
                 decimal stockCostValue = stockCostObj != null && stockCostObj != DBNull.Value ? Convert.ToDecimal(stockCostObj) : 0m;
 
-                object stockSaleObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Quantity, 0) * ISNULL(SalePrice, 0)), 0) FROM Products WHERE IsActive = 1");
+                object stockSaleObj = DbHelper.Scalar(@"
+                    SELECT 
+                        CASE 
+                            WHEN EXISTS (SELECT 1 FROM ProductStock) THEN
+                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.SalePrice, 0)) FROM ProductStock ps JOIN Products p ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
+                            ELSE
+                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.SalePrice, 0)) FROM Products p WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
+                        END");
                 decimal stockSaleValue = stockSaleObj != null && stockSaleObj != DBNull.Value ? Convert.ToDecimal(stockSaleObj) : 0m;
 
                 // 5. كشكول النواقص الحقيقي
@@ -256,8 +270,14 @@ namespace ChickenDist.Services
                 string missingJson = DataTableToJson(dtMissing);
 
                 // 6. دليل الأصناف
-                DataTable dtProducts = DbHelper.Query(
-                    "SELECT TOP 500 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(SalePrice,0) AS SalePrice, ISNULL(PurchasePrice,0) AS PurchasePrice, ISNULL(Quantity,0) AS Quantity FROM Products WHERE IsActive=1 ORDER BY ProductName ASC");
+                DataTable dtProducts = DbHelper.Query(@"
+                    SELECT TOP 500 p.ProductID, p.ProductName, ISNULL(p.ProductCode,'') AS ProductCode, 
+                           ISNULL(p.SalePrice,0) AS SalePrice, ISNULL(p.PurchasePrice,0) AS PurchasePrice, 
+                           ISNULL(ps.TotalQty, ISNULL(p.Quantity, 0)) AS Quantity 
+                    FROM Products p
+                    LEFT JOIN (SELECT ProductID, SUM(Quantity) AS TotalQty FROM ProductStock GROUP BY ProductID) ps ON p.ProductID = ps.ProductID
+                    WHERE p.IsActive = 1 
+                    ORDER BY p.ProductName ASC");
                 string productsJson = DataTableToJson(dtProducts);
 
                 // 7. قائمة الموردين
@@ -428,6 +448,8 @@ namespace ChickenDist.Services
                         "\"CashboxBalance\": {\"doubleValue\": " + dto.CashboxBalance.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"TodayNetProfit\": {\"doubleValue\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"TodayPurchases\": {\"doubleValue\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"StockCostValue\": {\"doubleValue\": " + stockCostValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"StockSaleValue\": {\"doubleValue\": " + stockSaleValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"ClientDebts\": {\"doubleValue\": " + clientDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"SupplierDebts\": {\"doubleValue\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
