@@ -453,11 +453,11 @@ namespace ChickenDist.DAL
                         string supName = r["SupplierName"] != DBNull.Value ? r["SupplierName"].ToString() : null;
                         string brand = r["Brand"] != DBNull.Value ? r["Brand"].ToString() : null;
 
-                        // 1) إذا وصل أو نزل عن حد الطلب (وكان حد الطلب محدد > 0) -> يدخل نواقص تلقائي
-                        if (minStockLimit > 0 && currentStock <= minStockLimit)
+                        // 1) إذا وصل أو نزل عن حد الطلب (أو نزل رصيده لـ 0 أو أقل حتى لو حد الطلب 0) -> يدخل نواقص تلقائي
+                        if ((minStockLimit > 0 && currentStock <= minStockLimit) || (currentStock <= 0))
                         {
-                            decimal deficit = minStockLimit - currentStock;
-                            if (deficit <= 0) deficit = 1;
+                            decimal deficit = minStockLimit > currentStock ? (minStockLimit - currentStock) : 1m;
+                            if (deficit <= 0) deficit = 1m;
 
                             AddOrUpdateShortage(
                                 productID: pid,
@@ -553,9 +553,20 @@ namespace ChickenDist.DAL
                     SELECT COALESCE(
                         (SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID),
                         (SELECT SUM(pb.Quantity) FROM ProductBatches pb WHERE pb.ProductID = p.ProductID),
+                        p.Quantity,
                         0
                     ) AS TotalStock
                 ) stk
+                OUTER APPLY (
+                    SELECT TOP 1 1 AS HasHistory
+                    FROM (
+                        SELECT ProductID FROM SaleItems WHERE ProductID = p.ProductID
+                        UNION ALL
+                        SELECT ProductID FROM PurchaseItems WHERE ProductID = p.ProductID
+                        UNION ALL
+                        SELECT ProductID FROM ProductMovements WHERE ProductID = p.ProductID
+                    ) h
+                ) mov
                 OUTER APPLY (
                     SELECT TOP 1 pu.SupplierID, sup.SupplierName
                     FROM PurchaseItems pi
@@ -574,12 +585,14 @@ namespace ChickenDist.DAL
                         GROUP BY ProductID
                     ) s2 ON s1.ShortageID = s2.MaxID
                 ) sn ON p.ProductID = sn.ProductID
-                WHERE p.IsActive = 1 AND COALESCE(sn.Status, N'جديد') <> N'ملغي' ";
+                WHERE p.IsActive = 1 
+                  AND COALESCE(sn.Status, N'جديد') <> N'ملغي'
+                  AND NOT (ISNULL(stk.TotalStock, 0) > COALESCE(p.MinStockLimit, 0) AND ISNULL(stk.TotalStock, 0) > 0 AND COALESCE(sn.Status, N'جديد') = N'تم التوفير') ";
 
             // شروط نوع النواقص والمخزون
             if (stockCondition == "ZERO_ONLY")
             {
-                sql += " AND ISNULL(stk.TotalStock, 0) <= 0 ";
+                sql += " AND ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL) ";
             }
             else if (stockCondition == "BELOW_MIN")
             {
@@ -591,8 +604,15 @@ namespace ChickenDist.DAL
             }
             else
             {
-                // ALL: إما تحت حد الطلب المحدد أو مسجل في كشكول النواقص كطلب نشط
-                sql += " AND ( (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit) OR (sn.ShortageID IS NOT NULL AND sn.Status IN (N'جديد', N'تم الطلب')) ) ";
+                // ALL (الافتراضي):
+                // 1) أي صنف له حركات ورصيده 0 أو أقل
+                // 2) أو أي صنف وصل/نزل عن حد الطلب
+                // 3) أو مسجل يدوياً في كشكول النواقص
+                sql += @" AND (
+                            (ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL))
+                            OR (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit)
+                            OR (sn.ShortageID IS NOT NULL AND sn.Status IN (N'جديد', N'تم الطلب'))
+                        ) ";
             }
 
             // فلتر البحث النصي

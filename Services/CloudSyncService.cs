@@ -68,8 +68,32 @@ namespace ChickenDist.Services
                 }
                 dto.CashboxBalance = totalCashboxBalance;
 
-                // نواقص المخزن
-                object lowObj = DbHelper.Scalar("SELECT COUNT(*) FROM Products WHERE IsActive = 1 AND Quantity <= ISNULL(MinQuantity, 5)");
+                // نواقص المخزن (أي صنف له حركات ورصيده 0 أو تحت حد الطلب أو مسجل في كشكول النواقص)
+                object lowObj = DbHelper.Scalar(@"
+                    SELECT COUNT(*)
+                    FROM Products p
+                    OUTER APPLY (
+                        SELECT COALESCE(
+                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID),
+                            (SELECT SUM(pb.Quantity) FROM ProductBatches pb WHERE pb.ProductID = p.ProductID),
+                            p.Quantity, 0
+                        ) AS TotalStock
+                    ) stk
+                    OUTER APPLY (
+                        SELECT TOP 1 1 AS HasHistory
+                        FROM (
+                            SELECT ProductID FROM SaleItems WHERE ProductID = p.ProductID
+                            UNION ALL
+                            SELECT ProductID FROM PurchaseItems WHERE ProductID = p.ProductID
+                        ) h
+                    ) mov
+                    LEFT JOIN ShortageNotebook sn ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
+                    WHERE p.IsActive = 1
+                      AND (
+                          (ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL))
+                          OR (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit)
+                          OR (sn.ShortageID IS NOT NULL)
+                      )");
                 dto.LowStockCount = lowObj != null && lowObj != DBNull.Value ? Convert.ToInt32(lowObj) : 0;
 
                 // حالة التزامن السابق
@@ -208,8 +232,45 @@ namespace ChickenDist.Services
                 decimal stockSaleValue = stockSaleObj != null && stockSaleObj != DBNull.Value ? Convert.ToDecimal(stockSaleObj) : 0m;
 
                 // 5. كشكول النواقص الحقيقي
-                DataTable dtMissing = DbHelper.Query(
-                    "SELECT TOP 50 ProductID, ProductName, ISNULL(ProductCode,'') AS ProductCode, ISNULL(Quantity,0) AS Quantity, ISNULL(MinQuantity,5) AS MinQuantity, ISNULL(Brand,'عام') AS Supplier FROM Products WHERE IsActive=1 AND Quantity <= ISNULL(MinQuantity, 5) ORDER BY Quantity ASC");
+                DataTable dtMissing = DbHelper.Query(@"
+                    SELECT TOP 200 p.ProductID, p.ProductName, ISNULL(p.ProductCode,'') AS ProductCode,
+                           ISNULL(stk.TotalStock, 0) AS Quantity,
+                           ISNULL(p.MinStockLimit, 0) AS MinQuantity,
+                           COALESCE(sn.SupplierName, lastSup.SupplierName, p.Brand, N'عام') AS Supplier
+                    FROM Products p
+                    OUTER APPLY (
+                        SELECT COALESCE(
+                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID),
+                            (SELECT SUM(pb.Quantity) FROM ProductBatches pb WHERE pb.ProductID = p.ProductID),
+                            p.Quantity, 0
+                        ) AS TotalStock
+                    ) stk
+                    OUTER APPLY (
+                        SELECT TOP 1 1 AS HasHistory
+                        FROM (
+                            SELECT ProductID FROM SaleItems WHERE ProductID = p.ProductID
+                            UNION ALL
+                            SELECT ProductID FROM PurchaseItems WHERE ProductID = p.ProductID
+                            UNION ALL
+                            SELECT ProductID FROM ProductMovements WHERE ProductID = p.ProductID
+                        ) h
+                    ) mov
+                    OUTER APPLY (
+                        SELECT TOP 1 pu.SupplierID, sup.SupplierName
+                        FROM PurchaseItems pi
+                        INNER JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                        LEFT JOIN Suppliers sup ON pu.SupplierID = sup.SupplierID
+                        WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1
+                        ORDER BY pu.PurchaseDate DESC, pu.PurchaseID DESC
+                    ) lastSup
+                    LEFT JOIN ShortageNotebook sn ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
+                    WHERE p.IsActive = 1
+                      AND (
+                          (ISNULL(stk.TotalStock, 0) <= 0 AND (mov.HasHistory = 1 OR sn.ShortageID IS NOT NULL))
+                          OR (p.MinStockLimit > 0 AND ISNULL(stk.TotalStock, 0) <= p.MinStockLimit)
+                          OR (sn.ShortageID IS NOT NULL)
+                      )
+                    ORDER BY ISNULL(stk.TotalStock, 0) ASC, p.ProductName ASC");
                 string missingJson = DataTableToJson(dtMissing);
 
                 // 6. دليل الأصناف

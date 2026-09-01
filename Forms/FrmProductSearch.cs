@@ -240,6 +240,7 @@ namespace ChickenDist.Forms
             });
             
             dgProducts.DoubleClick += DgProducts_DoubleClick;
+            dgProducts.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) SelectAndClose(); };
             dgProducts.KeyDown += DgProducts_KeyDown;
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
 

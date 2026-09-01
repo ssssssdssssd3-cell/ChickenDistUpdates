@@ -544,6 +544,7 @@ namespace ChickenDist.Forms
                     {
                         int pid = Convert.ToInt32(dg.SelectedRows[0].Cells["ProductID"].Value);
                         dlg.DialogResult = DialogResult.OK;
+                        dlg.Close();
                         LoadFinishedProduct(pid);
                     }
                 };
