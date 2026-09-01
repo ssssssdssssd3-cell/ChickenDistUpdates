@@ -174,33 +174,56 @@ namespace ChickenDist.Forms
             dgOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "المسؤول", FillWeight = 12 });
 
             dgOrders.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) OpenSelectedOrder(); };
-            this.Controls.Add(dgOrders);
-            dgOrders.BringToFront();
 
             // ── Bottom Action Bar ──
             var pnlBottom = new Panel
             {
-                Dock = DockStyle.Bottom,
-                Height = 60,
+                Height = 56,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12, 10, 12, 10)
+                Padding = new Padding(12, 8, 12, 8)
             };
-            this.Controls.Add(pnlBottom);
-            pnlBottom.BringToFront();
 
-            btnOpen = Theme.MakeButton("📂 استرجاع وفتح الأمر المختار", 12, 10, 220, 38, Color.FromArgb(16, 185, 129));
+            btnOpen = Theme.MakeButton("📂 استرجاع وفتح الأمر المختار", 12, 8, 220, 38, Color.FromArgb(16, 185, 129));
             btnOpen.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnOpen.Click += (s, e) => OpenSelectedOrder();
             pnlBottom.Controls.Add(btnOpen);
 
-            btnCancelOrder = Theme.MakeButton("❌ إلغاء الأمر وإرجاع الخامات للمخزن", 240, 10, 240, 38, Color.FromArgb(220, 53, 69));
+            btnCancelOrder = Theme.MakeButton("❌ إلغاء الأمر وإرجاع الخامات للمخزن", 240, 8, 240, 38, Color.FromArgb(220, 53, 69));
             btnCancelOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCancelOrder.Click += (s, e) => CancelSelectedOrder();
             pnlBottom.Controls.Add(btnCancelOrder);
 
-            btnClose = Theme.MakeButton("إغلاق", 490, 10, 100, 38, Color.FromArgb(100, 116, 139));
+            btnClose = Theme.MakeButton("إغلاق", 490, 8, 100, 38, Color.FromArgb(100, 116, 139));
             btnClose.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
             pnlBottom.Controls.Add(btnClose);
+
+            // ── Main Layout (TableLayoutPanel) لضمان ثبات الواجهة وظهور الترويسات ──
+            var tblMain = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Theme.BgMain,
+                Padding = new Padding(0)
+            };
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 56f)); // Row 0: شريط التصفية والبحث
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 1: جدول الأوامر المعلقة
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 56f));  // Row 2: أزرار العمليات السفلية
+
+            pnlTop.Dock = DockStyle.Fill;
+            pnlTop.Margin = new Padding(0, 0, 0, 4);
+            dgOrders.Dock = DockStyle.Fill;
+            dgOrders.Margin = new Padding(0, 0, 0, 4);
+            pnlBottom.Dock = DockStyle.Fill;
+            pnlBottom.Margin = new Padding(0);
+
+            tblMain.Controls.Add(pnlTop, 0, 0);
+            tblMain.Controls.Add(dgOrders, 0, 1);
+            tblMain.Controls.Add(pnlBottom, 0, 2);
+
+            this.Controls.Clear();
+            this.Controls.Add(tblMain);
         }
 
         private void LoadData()

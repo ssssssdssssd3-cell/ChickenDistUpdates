@@ -74,12 +74,10 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════
             var pnlFilters = new Panel
             {
-                Dock = DockStyle.Top,
                 Height = 48,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(8, 6, 8, 6)
             };
-            this.Controls.Add(pnlFilters);
 
             var flowFilters = new FlowLayoutPanel
             {
@@ -213,13 +211,11 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════
             var pnlKPI = new Panel
             {
-                Dock = DockStyle.Top,
                 Height = 44,
                 BackColor = Color.FromArgb(248, 250, 252),
                 Padding = new Padding(8, 4, 8, 4),
                 Margin = new Padding(0, 0, 0, 2)
             };
-            this.Controls.Add(pnlKPI);
 
             var flowKPI = new FlowLayoutPanel
             {
@@ -254,15 +250,12 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════
             split = new SplitContainer
             {
-                Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
                 BackColor = Color.FromArgb(203, 213, 225),
                 SplitterWidth = 6,
                 Panel1MinSize = 150,
                 Panel2MinSize = 80
             };
-            this.Controls.Add(split);
-            split.BringToFront();
 
             // ── أ) جدول أوامر التصنيع الرئيسي (Master Grid) ──
             dgOrders = new DataGridView
@@ -437,12 +430,10 @@ namespace ChickenDist.Forms
             // ══════════════════════════════════════════════════════════════
             var pnlBottom = new Panel
             {
-                Dock = DockStyle.Bottom,
                 Height = 44,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(8, 4, 8, 4)
             };
-            this.Controls.Add(pnlBottom);
 
             var flowBottom = new FlowLayoutPanel
             {
@@ -530,6 +521,38 @@ namespace ChickenDist.Forms
             btnExportExcel.Margin = new Padding(0, 1, 0, 0);
             btnExportExcel.Click += (s, e) => ExportToCsv();
             flowBottom.Controls.Add(btnExportExcel);
+
+            // ── Main Layout TableLayoutPanel ──
+            var tblMain = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 4,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Theme.BgMain,
+                Padding = new Padding(0)
+            };
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 48f)); // Row 0: الفلاتر
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 46f)); // Row 1: شريط المؤشرات
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 2: الجداول
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 44f)); // Row 3: الأزرار
+
+            pnlFilters.Dock = DockStyle.Fill;
+            pnlFilters.Margin = new Padding(0, 0, 0, 2);
+            pnlKPI.Dock = DockStyle.Fill;
+            pnlKPI.Margin = new Padding(0, 0, 0, 2);
+            split.Dock = DockStyle.Fill;
+            split.Margin = new Padding(0, 0, 0, 2);
+            pnlBottom.Dock = DockStyle.Fill;
+            pnlBottom.Margin = new Padding(0);
+
+            tblMain.Controls.Add(pnlFilters, 0, 0);
+            tblMain.Controls.Add(pnlKPI, 0, 1);
+            tblMain.Controls.Add(split, 0, 2);
+            tblMain.Controls.Add(pnlBottom, 0, 3);
+
+            this.Controls.Clear();
+            this.Controls.Add(tblMain);
 
             this.Resize += (s, e) =>
             {

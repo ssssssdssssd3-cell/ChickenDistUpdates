@@ -459,14 +459,33 @@ namespace ChickenDist.Forms
             btnPrint.Click += (s, e) => PrintOrder();
             pnlBottom.Controls.Add(btnPrint);
 
-            // ── Clean Docking ──
+            // ── Main Structure Layout (TableLayoutPanel) لمنع تداخل اللوحات وظهور رؤوس الأعمدة بالكامل ──
+            var tblMain = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Theme.BgMain,
+                Padding = new Padding(0)
+            };
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 160f)); // Row 0: بطاقة بيانات أمر التصنيع
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 1: جدول المواد الخام المستهلكة
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 105f)); // Row 2: شريط الملخص والعمليات السفلي
+
+            pnlHeader.Dock = DockStyle.Fill;
+            pnlHeader.Margin = new Padding(0, 0, 0, 4);
+            dgItems.Dock = DockStyle.Fill;
+            dgItems.Margin = new Padding(0, 0, 0, 4);
+            pnlBottom.Dock = DockStyle.Fill;
+            pnlBottom.Margin = new Padding(0);
+
+            tblMain.Controls.Add(pnlHeader, 0, 0);
+            tblMain.Controls.Add(dgItems, 0, 1);
+            tblMain.Controls.Add(pnlBottom, 0, 2);
+
             this.Controls.Clear();
-            this.Controls.Add(dgItems);
-            this.Controls.Add(pnlHeader);
-            this.Controls.Add(pnlBottom);
-            pnlHeader.BringToFront();
-            pnlBottom.BringToFront();
-            dgItems.SendToBack();
+            this.Controls.Add(tblMain);
         }
 
         private void LoadWarehouses()

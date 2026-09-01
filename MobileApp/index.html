@@ -949,8 +949,35 @@
   <!-- 6. منطق التطبيق والتزامن اللحظي (JS LOGIC) -->
   <!-- ========================================== -->
   <script>
-    // ⚙️ إعدادات المشروع وفيربيز
-    const FIREBASE_PROJECT_ID = "checkin-192ab";
+    // ⚙️ استخراج معرّف مشروع فيربيز تلقائياً بحسب نطاق الموقع أو الرابط
+    function resolveFirebaseProjectId() {
+      // 1. من معلمات الرابط (?project=... أو ?p=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const qp = urlParams.get('project') || urlParams.get('p') || urlParams.get('proj');
+      if (qp && qp.trim()) {
+        const clean = qp.trim();
+        localStorage.setItem('erp_active_project_id', clean);
+        return clean;
+      }
+
+      // 2. من النطاق تلقائياً (مثلاً: elra7ma-grop.web.app أو elra7ma-erp.web.app)
+      const host = window.location.hostname.toLowerCase();
+      if (host.includes('.web.app')) {
+        return host.split('.web.app')[0];
+      }
+      if (host.includes('.firebaseapp.com')) {
+        return host.split('.firebaseapp.com')[0];
+      }
+
+      // 3. من الـ LocalStorage إذا تم تعيينه
+      const saved = localStorage.getItem('erp_active_project_id');
+      if (saved && saved.trim()) return saved.trim();
+
+      // 4. المشروع الافتراضي
+      return "elra7ma-grop";
+    }
+
+    const FIREBASE_PROJECT_ID = resolveFirebaseProjectId();
     const RTDB_URL = `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com/erp_data.json`;
     const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/metadata/live_reports`;
 
