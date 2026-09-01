@@ -117,7 +117,7 @@ namespace ChickenDist.Forms
             lblOrderCode = new Label
             {
                 Text = "كود الأمر: CPRD-...",
-                Location = new Point(200, 14),
+                Location = new Point(180, 14),
                 AutoSize = true,
                 Font = Theme.FontBold,
                 ForeColor = Color.FromArgb(243, 198, 35)
@@ -127,7 +127,7 @@ namespace ChickenDist.Forms
             lblStatusBadge = new Label
             {
                 Text = "⏳ مسودة جديدة",
-                Location = new Point(400, 12),
+                Location = new Point(355, 12),
                 AutoSize = true,
                 Font = Theme.FontBold,
                 ForeColor = Color.White,
@@ -136,25 +136,25 @@ namespace ChickenDist.Forms
             };
             pnlHeader.Controls.Add(lblStatusBadge);
 
-            var lblDate = new Label { Text = "التاريخ:", Location = new Point(580, 14), AutoSize = true };
+            var lblDate = new Label { Text = "التاريخ:", Location = new Point(520, 14), AutoSize = true };
             pnlHeader.Controls.Add(lblDate);
 
             dtpOrderDate = new DateTimePicker
             {
-                Location = new Point(630, 11),
-                Width = 140,
+                Location = new Point(565, 11),
+                Width = 120,
                 Format = DateTimePickerFormat.Short,
                 Font = Theme.FontMain
             };
             pnlHeader.Controls.Add(dtpOrderDate);
 
-            var lblWh = new Label { Text = "المخزن:", Location = new Point(785, 14), AutoSize = true };
+            var lblWh = new Label { Text = "المخزن:", Location = new Point(695, 14), AutoSize = true };
             pnlHeader.Controls.Add(lblWh);
 
             cboWarehouse = new ComboBox
             {
-                Location = new Point(840, 11),
-                Width = 175,
+                Location = new Point(745, 11),
+                Width = 145,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = Theme.FontMain,
                 BackColor = Theme.BgInput,
@@ -162,7 +162,8 @@ namespace ChickenDist.Forms
             };
             pnlHeader.Controls.Add(cboWarehouse);
 
-            btnResume = Theme.MakeButton("🔄 استرجاع أمر معلق", 1030, 8, 130, 34, Color.FromArgb(51, 65, 85));
+            btnResume = Theme.MakeButton("🔄 استرجاع أمر معلق", 900, 8, 150, 34, Color.FromArgb(51, 65, 85));
+            btnResume.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnResume.Click += (s, e) => ShowSuspendedOrdersDialog();
             pnlHeader.Controls.Add(btnResume);
 
@@ -409,16 +410,44 @@ namespace ChickenDist.Forms
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+                RightToLeft = RightToLeft.Yes,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                RowTemplate = { Height = 34 },
+                GridColor = Color.FromArgb(226, 232, 240),
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ColumnHeadersHeight = 36
             };
+            dgItems.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(30, 41, 59),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Alignment = DataGridViewContentAlignment.MiddleCenter
+            };
+            dgItems.DefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.White,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                SelectionBackColor = Color.FromArgb(224, 242, 254),
+                SelectionForeColor = Color.Black,
+                Alignment = DataGridViewContentAlignment.MiddleCenter
+            };
+            dgItems.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+            {
+                BackColor = Color.FromArgb(248, 250, 252)
+            };
+            Theme.EnableDoubleBuffer(dgItems);
+
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductID", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RowNum", HeaderText = "م", FillWeight = 8, ReadOnly = true });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductCode", HeaderText = "كود الصنف المستهلك", FillWeight = 18, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductName", HeaderText = "اسم الصنف المراد خصمه", FillWeight = 38, ReadOnly = true });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المخصومة", FillWeight = 16 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "RawProductName", HeaderText = "اسم الصنف المراد خصمه", FillWeight = 38, ReadOnly = true, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المخصومة", FillWeight = 16, DefaultCellStyle = { ForeColor = Color.FromArgb(2, 132, 199), Font = new Font("Segoe UI", 10f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 12 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitCost", HeaderText = "سعر التكلفة", FillWeight = 15, ReadOnly = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 18, ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitCost", HeaderText = "سعر التكلفة", FillWeight = 15, ReadOnly = false, DefaultCellStyle = { ForeColor = Color.FromArgb(180, 83, 9), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalCost", HeaderText = "إجمالي التكلفة", FillWeight = 18, ReadOnly = true, DefaultCellStyle = { ForeColor = Color.FromArgb(217, 119, 6), Font = new Font("Segoe UI", 10f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 20 });
 
             var colDelete = new DataGridViewButtonColumn
@@ -886,70 +915,22 @@ namespace ChickenDist.Forms
 
         private void ShowSuspendedOrdersDialog()
         {
-            using (var dlg = new Form())
+            using (var dlg = new FrmSuspendedOrdersDialog("Custom"))
             {
-                dlg.Text = "📋 استرجاع أوامر التصنيع المخصصة المعلقة (تحت التحضير)";
-                dlg.Size = new Size(880, 480);
-                dlg.StartPosition = FormStartPosition.CenterParent;
-                dlg.RightToLeft = RightToLeft.Yes;
-                dlg.RightToLeftLayout = true;
-                dlg.BackColor = Theme.BgMain;
-                dlg.Font = Theme.FontMain;
-
-                var dgSuspended = new DataGridView
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductionID > 0)
                 {
-                    Dock = DockStyle.Fill,
-                    BackgroundColor = Theme.BgCard,
-                    BorderStyle = BorderStyle.None,
-                    RowHeadersVisible = false,
-                    AllowUserToAddRows = false,
-                    ReadOnly = true,
-                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-                };
-
-                var dt = ProductionDAL.GetSuspendedOrders("Custom");
-                dgSuspended.DataSource = dt;
-
-                if (dgSuspended.Columns["ProductionID"] != null) dgSuspended.Columns["ProductionID"].Visible = false;
-                if (dgSuspended.Columns["ProductionType"] != null) dgSuspended.Columns["ProductionType"].Visible = false;
-                if (dgSuspended.Columns["ProductionTypeName"] != null) dgSuspended.Columns["ProductionTypeName"].HeaderText = "النوع";
-                if (dgSuspended.Columns["OrderCode"] != null) dgSuspended.Columns["OrderCode"].HeaderText = "كود الأمر";
-                if (dgSuspended.Columns["ProductCode"] != null) dgSuspended.Columns["ProductCode"].HeaderText = "كود المنتج";
-                if (dgSuspended.Columns["ProductName"] != null) dgSuspended.Columns["ProductName"].HeaderText = "المنتج المصنع";
-                if (dgSuspended.Columns["ProducedQty"] != null) dgSuspended.Columns["ProducedQty"].HeaderText = "الكمية";
-                if (dgSuspended.Columns["UnitName"] != null) dgSuspended.Columns["UnitName"].HeaderText = "الوحدة";
-                if (dgSuspended.Columns["TotalCost"] != null) dgSuspended.Columns["TotalCost"].HeaderText = "إجمالي التكلفة";
-                if (dgSuspended.Columns["UnitCost"] != null) dgSuspended.Columns["UnitCost"].HeaderText = "تكلفة الوحدة";
-                if (dgSuspended.Columns["UpdatedDate"] != null) dgSuspended.Columns["UpdatedDate"].HeaderText = "آخر تعديل";
-
-                var pnlDlgBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
-                var btnOpen = Theme.MakeButton("📂 استرجاع الأمر المختار", 15, 10, 180, 36, Theme.Primary);
-                btnOpen.Click += (s, e) =>
-                {
-                    if (dgSuspended.CurrentRow != null)
+                    if (dlg.SelectedProductionType == "Fixed")
                     {
-                        int pid = Convert.ToInt32(dgSuspended.CurrentRow.Cells["ProductionID"].Value);
-                        dlg.DialogResult = DialogResult.OK;
-                        LoadExistingOrder(pid);
+                        using (var frmFixed = new FrmFixedProduction(dlg.SelectedProductionID))
+                        {
+                            frmFixed.ShowDialog(this);
+                        }
                     }
-                };
-                pnlDlgBottom.Controls.Add(btnOpen);
-
-                dlg.Controls.Add(dgSuspended);
-                dlg.Controls.Add(pnlDlgBottom);
-
-                dgSuspended.CellDoubleClick += (s, e) =>
-                {
-                    if (e.RowIndex >= 0)
+                    else
                     {
-                        int pid = Convert.ToInt32(dgSuspended.Rows[e.RowIndex].Cells["ProductionID"].Value);
-                        dlg.DialogResult = DialogResult.OK;
-                        LoadExistingOrder(pid);
+                        LoadExistingOrder(dlg.SelectedProductionID);
                     }
-                };
-
-                dlg.ShowDialog();
+                }
             }
         }
 

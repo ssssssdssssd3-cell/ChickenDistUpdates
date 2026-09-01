@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -47,6 +47,7 @@ namespace ChickenDist.Forms
         private Button btnOpenOrder;
         private Button btnNewFixed;
         private Button btnNewCustom;
+        private Button btnSuspendedOrders;
         private Button btnPrintReport;
         private Button btnExportExcel;
 
@@ -277,12 +278,15 @@ namespace ChickenDist.Forms
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                RowTemplate = { Height = 28 },
-                GridColor = Color.FromArgb(226, 232, 240)
+                RowTemplate = { Height = 30 },
+                GridColor = Color.FromArgb(226, 232, 240),
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ColumnHeadersHeight = 32
             };
             dgOrders.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Theme.Primary,
+                BackColor = Color.FromArgb(30, 41, 59),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Alignment = DataGridViewContentAlignment.MiddleCenter
@@ -365,14 +369,17 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RightToLeft = RightToLeft.Yes,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                RowTemplate = { Height = 25 },
-                GridColor = Color.FromArgb(226, 232, 240)
+                RowTemplate = { Height = 28 },
+                GridColor = Color.FromArgb(226, 232, 240),
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ColumnHeadersHeight = 30
             };
             dgItemsDetail.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.FromArgb(71, 85, 105),
+                BackColor = Color.FromArgb(30, 41, 59),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Alignment = DataGridViewContentAlignment.MiddleCenter
             };
             dgItemsDetail.DefaultCellStyle = new DataGridViewCellStyle
@@ -401,14 +408,17 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RightToLeft = RightToLeft.Yes,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                RowTemplate = { Height = 25 },
-                GridColor = Color.FromArgb(226, 232, 240)
+                RowTemplate = { Height = 28 },
+                GridColor = Color.FromArgb(226, 232, 240),
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ColumnHeadersHeight = 30
             };
             dgHistoryDetail.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.FromArgb(71, 85, 105),
+                BackColor = Color.FromArgb(30, 41, 59),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Alignment = DataGridViewContentAlignment.MiddleCenter
             };
             dgHistoryDetail.DefaultCellStyle = new DataGridViewCellStyle
@@ -474,6 +484,40 @@ namespace ChickenDist.Forms
                 }
             };
             flowBottom.Controls.Add(btnNewCustom);
+
+            btnSuspendedOrders = Theme.MakeButton("⏳ الأوامر المعلقة", 0, 0, 130, 34, Color.FromArgb(234, 88, 12));
+            btnSuspendedOrders.Font = Theme.FontBold;
+            btnSuspendedOrders.Margin = new Padding(0, 1, 8, 0);
+            btnSuspendedOrders.Click += (s, e) =>
+            {
+                using (var dlg = new FrmSuspendedOrdersDialog())
+                {
+                    if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductionID > 0)
+                    {
+                        if (dlg.SelectedProductionType == "Custom")
+                        {
+                            using (var frm = new FrmCustomProduction(dlg.SelectedProductionID))
+                            {
+                                frm.ShowDialog();
+                                ApplyFilters();
+                            }
+                        }
+                        else
+                        {
+                            using (var frm = new FrmFixedProduction(dlg.SelectedProductionID))
+                            {
+                                frm.ShowDialog();
+                                ApplyFilters();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ApplyFilters();
+                    }
+                }
+            };
+            flowBottom.Controls.Add(btnSuspendedOrders);
 
             btnPrintReport = Theme.MakeButton("🖨️ طباعة التقرير", 0, 0, 115, 34, Color.FromArgb(2, 132, 199));
             btnPrintReport.Font = Theme.FontBold;

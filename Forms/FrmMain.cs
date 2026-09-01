@@ -506,6 +506,18 @@ namespace ChickenDist.Forms
                     ("🌿 شجرة ومواد التصنيع (BOM)", "BOM", (Action)(() => NavigateTo(new FrmBOM()))),
                     ("🏭 أمر تصنيع ثابت (معياري)", "FixedProduction", (Action)(() => NavigateTo(new FrmFixedProduction()))),
                     ("🛠️ أمر تصنيع مخصص (مباشر)", "CustomProduction", (Action)(() => NavigateTo(new FrmCustomProduction()))),
+                    ("⏳ أوامر التصنيع المعلقة (تحت التحضير)", "SuspendedProduction", (Action)(() => {
+                        using (var dlg = new FrmSuspendedOrdersDialog())
+                        {
+                            if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductionID > 0)
+                            {
+                                if (dlg.SelectedProductionType == "Custom")
+                                    NavigateTo(new FrmCustomProduction(dlg.SelectedProductionID));
+                                else
+                                    NavigateTo(new FrmFixedProduction(dlg.SelectedProductionID));
+                            }
+                        }
+                    })),
                     ("📊 سجل وتقارير حركات التصنيع", "ProductionReports", (Action)(() => NavigateTo(new FrmProductionReports()))),
                 }),
 

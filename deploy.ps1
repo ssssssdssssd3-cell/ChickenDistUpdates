@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "2.8.8"
+$VERSION   = "2.8.9"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -134,6 +134,17 @@ foreach ($dest in $releaseDestinations) {
 $botPublicMobile = Join-Path $REPO_ROOT "bot\public\mobile.html"
 Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\index.html") -Destination $botPublicMobile -Force
 Write-OK "Synced MobileApp/index.html to bot/public/mobile.html"
+
+# Step 5.6: Copy final EXE to FINAL_RELEASE directory
+$finalReleaseExe = "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"
+if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
+    try {
+        Copy-Item $exePath -Destination $finalReleaseExe -Force
+        Write-OK "Copied final Release EXE to $finalReleaseExe"
+    } catch {
+        Write-Host "  [WARN] Could not overwrite running ChickenDist.exe in FINAL_RELEASE" -ForegroundColor Yellow
+    }
+}
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
