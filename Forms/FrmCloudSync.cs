@@ -244,7 +244,7 @@ namespace ChickenDist.Forms
         {
             string pId = txtFirebaseProjectId.Text.Trim();
             if (string.IsNullOrEmpty(pId)) pId = "checkin-192ab";
-            lblLiveWebUrl.Text = $"https://checkin-192ab.web.app/?p={pId}";
+            lblLiveWebUrl.Text = $"https://{pId}.web.app";
         }
 
         private Label MakeKPICard(string title, string defaultVal, Color accentColor, out Panel card)
@@ -409,52 +409,57 @@ namespace ChickenDist.Forms
                     return;
                 }
 
-                string npxCmd = "npx";
-                string[] possibleNpxPaths = new[]
+                // ── البحث عن firebase CLI ──
+                string firebaseCmd = FindFirebaseCLI();
+                if (string.IsNullOrEmpty(firebaseCmd))
                 {
-                    @"C:\Program Files\nodejs\npx.cmd",
-                    @"C:\Program Files (x86)\nodejs\npx.cmd",
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\npx.cmd"),
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\Roaming\npm\npx.cmd")
-                };
-                foreach (var p in possibleNpxPaths)
-                {
-                    if (File.Exists(p))
-                    {
-                        npxCmd = $"\"{p}\"";
-                        break;
-                    }
+                    txtDeployLog.AppendText("❌ لم يتم العثور على Firebase CLI!\r\n");
+                    txtDeployLog.AppendText("يرجى تثبيت Node.js ثم تشغيل:\r\n");
+                    txtDeployLog.AppendText("   npm install -g firebase-tools\r\n");
+                    txtDeployLog.AppendText("ثم تسجيل الدخول عبر:\r\n");
+                    txtDeployLog.AppendText("   firebase login\r\n");
+                    MessageBox.Show(
+                        "❌ Firebase CLI غير موجود!\r\n\r\nخطوات الإعداد:\r\n1. ثبّت Node.js من: https://nodejs.org\r\n2. افتح CMD وشغّل: npm install -g firebase-tools\r\n3. ثم: firebase login\r\n4. بعدها اضغط نشر مرة ثانية",
+                        "مطلوب إعداد Firebase CLI", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
 
                 txtDeployLog.AppendText($"[1/2] المسار: {mobileAppDir}\r\n");
-                txtDeployLog.AppendText($"[2/2] تنفيذ أمر النشر: {npxCmd} -y firebase-tools deploy --only hosting --project {projectId}...\r\n");
+                txtDeployLog.AppendText($"[2/2] تنفيذ: {firebaseCmd} deploy --only hosting --project {projectId}...\r\n");
+
+                // بناء PATH محسّن يشمل Node.js و npm global
+                string extraPaths = string.Join(";", new[]
+                {
+                    @"C:\Program Files\nodejs",
+                    @"C:\Program Files (x86)\nodejs",
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\Roaming\npm")
+                });
+                string fullPath = extraPaths + ";" + Environment.GetEnvironmentVariable("PATH");
 
                 var psi = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c {npxCmd} -y firebase-tools deploy --only hosting --project {projectId} --non-interactive",
+                    Arguments = $"/c \"{firebaseCmd}\" deploy --only hosting --project {projectId} --non-interactive",
                     WorkingDirectory = mobileAppDir,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     CreateNoWindow = true
                 };
+                psi.EnvironmentVariables["PATH"] = fullPath;
 
                 using (var proc = new Process { StartInfo = psi })
                 {
                     proc.OutputDataReceived += (s, ev) =>
                     {
                         if (!string.IsNullOrEmpty(ev.Data))
-                        {
                             this.Invoke((Action)(() => txtDeployLog.AppendText(ev.Data + "\r\n")));
-                        }
                     };
                     proc.ErrorDataReceived += (s, ev) =>
                     {
                         if (!string.IsNullOrEmpty(ev.Data))
-                        {
                             this.Invoke((Action)(() => txtDeployLog.AppendText("[LOG] " + ev.Data + "\r\n")));
-                        }
                     };
 
                     proc.Start();
@@ -465,18 +470,23 @@ namespace ChickenDist.Forms
 
                     if (proc.ExitCode == 0)
                     {
-                        txtDeployLog.AppendText($"\r\n==========================================\r\n✅ تم نشر تطبيق المالك بنجاح!\r\nرابط المالك المباشر: https://{projectId}.web.app\r\nرابط المالك العام: https://checkin-192ab.web.app/?p={projectId}\r\n==========================================\r\n");
-                        MessageBox.Show($"✅ تم نشر وتحديث تطبيق المالك بنجاح!\n\nرابط التطبيق: https://{projectId}.web.app\nأو الرابط العام: https://checkin-192ab.web.app/?p={projectId}", "نجاح النشر", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        string appUrl = $"https://{projectId}.web.app";
+                        txtDeployLog.AppendText($"\r\n==========================================\r\n");
+                        txtDeployLog.AppendText($"✅ تم نشر تطبيق المالك بنجاح!\r\n");
+                        txtDeployLog.AppendText($"🔗 رابط تطبيق المالك: {appUrl}\r\n");
+                        txtDeployLog.AppendText($"==========================================\r\n");
+                        Clipboard.SetText(appUrl);
+                        MessageBox.Show(
+                            $"✅ تم نشر وتحديث تطبيق المالك بنجاح!\r\n\r\n🔗 رابط التطبيق:\r\n{appUrl}\r\n\r\n(تم نسخ الرابط تلقائياً للحافظة)",
+                            "نجاح النشر", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
                         txtDeployLog.AppendText($"\r\n❌ انتهت عملية النشر بكود: {proc.ExitCode}\r\n");
-                        txtDeployLog.AppendText($"\r\n💡 تنبيه مهم: لست بحاجة إلى تثبيت Node.js أو عمل Deploy إطلاقاً!\r\nتطبيق المالك يعمل الآن وجاهز فوراً لكل العملاء عبر الرابط الموحد:\r\nhttps://checkin-192ab.web.app/?p={projectId}\r\nيمكنك نسخه ومشاركته مع العميل مباشرة!\r\n");
-                        
-                        Clipboard.SetText($"https://checkin-192ab.web.app/?p={projectId}");
-                        MessageBox.Show(
-                            $"معلومة هامة بخصوص النشر (Deploy):\nعملية الـ Deploy المنفصلة تتطلب صلاحيات الحساب المالك لمشروع Firebase وتثبيت Node.js.\n\n✅ ولكن تطبيق المالك يعمل وجاهز 100% الآن بدون أي نشر عبر الرابط:\nhttps://checkin-192ab.web.app/?p={projectId}\n\n(تم نسخ الرابط الجاهز إلى الحافظة تلقائياً لمشاركته مع العميل)",
-                            "رابط تطبيق المالك الجاهز", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        txtDeployLog.AppendText("\r\nالأسباب المحتملة:\r\n");
+                        txtDeployLog.AppendText("• المشروع غير موجود في Firebase Console (يجب إنشاؤه أولاً)\r\n");
+                        txtDeployLog.AppendText("• لم يتم تسجيل الدخول (شغّل: firebase login)\r\n");
+                        txtDeployLog.AppendText("• الحساب ليس لديه صلاحية على هذا المشروع\r\n");
                     }
                 }
             }
@@ -488,8 +498,53 @@ namespace ChickenDist.Forms
             finally
             {
                 btnDeployFirebase.Enabled = true;
-                btnDeployFirebase.Text = "🚀 نشر تطبيق المالك على فيربيز (Deploy)";
+                btnDeployFirebase.Text = "🚀 نشر تطبيق المالك (Deploy)";
             }
+        }
+
+        /// <summary>يبحث عن firebase CLI في كل المسارات الممكنة</summary>
+        private static string FindFirebaseCLI()
+        {
+            string[] candidatePaths = new[]
+            {
+                // npm global عند المستخدم الحالي
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\firebase.cmd"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\Roaming\npm\firebase.cmd"),
+                // npm global system
+                @"C:\Program Files\nodejs\node_modules\firebase-tools\bin\firebase.cmd",
+                @"C:\Users\" + Environment.UserName + @"\AppData\Roaming\npm\firebase.cmd",
+                // npm global بدون .cmd
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\firebase"),
+            };
+
+            foreach (var path in candidatePaths)
+            {
+                if (File.Exists(path)) return path;
+            }
+
+            // جرّب where.exe
+            try
+            {
+                var psi = new ProcessStartInfo("where.exe", "firebase")
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+                using (var proc = Process.Start(psi))
+                {
+                    string output = proc.StandardOutput.ReadToEnd().Trim();
+                    proc.WaitForExit();
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        string firstLine = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[0];
+                        if (File.Exists(firstLine)) return firstLine;
+                    }
+                }
+            }
+            catch { }
+
+            return null; // لم يتم إيجاده
         }
 
         private void BtnOpenMobileApp_Click(object sender, EventArgs e)
@@ -499,7 +554,8 @@ namespace ChickenDist.Forms
                 string projectId = txtFirebaseProjectId.Text.Trim();
                 if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
 
-                string url = $"https://checkin-192ab.web.app/?p={projectId}";
+                // بعد Deploy يفتح رابط العميل الخاص به مباشرة
+                string url = $"https://{projectId}.web.app";
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = url,
