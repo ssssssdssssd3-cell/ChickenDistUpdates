@@ -3638,6 +3638,85 @@ namespace ChickenDist.Core
                     }
                 }
                 catch { }
+
+                // ═══════════════════════════════════════════════════════
+                // v2.9.4 — إصلاح أعمدة ناقصة في قواعد بيانات قديمة
+                // ═══════════════════════════════════════════════════════
+
+                // ── Sales: أعمدة الدفع الجديدة ──
+                SafeMigrate("Sales.PaidAmount", @"
+                IF COL_LENGTH('Sales','PaidAmount') IS NULL
+                    ALTER TABLE Sales ADD PaidAmount DECIMAL(18,2) NOT NULL DEFAULT 0;");
+
+                SafeMigrate("Sales.RemainingAmount", @"
+                IF COL_LENGTH('Sales','RemainingAmount') IS NULL
+                    ALTER TABLE Sales ADD RemainingAmount DECIMAL(18,2) NOT NULL DEFAULT 0;");
+
+                SafeMigrate("Sales.PaymentType", @"
+                IF COL_LENGTH('Sales','PaymentType') IS NULL
+                    ALTER TABLE Sales ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Cash';");
+
+                SafeMigrate("Sales.InvoiceType", @"
+                IF COL_LENGTH('Sales','InvoiceType') IS NULL
+                    ALTER TABLE Sales ADD InvoiceType NVARCHAR(50) NOT NULL DEFAULT 'Sale';");
+
+                // ── Purchases: أعمدة الدفع الجديدة ──
+                SafeMigrate("Purchases.PaidAmount", @"
+                IF COL_LENGTH('Purchases','PaidAmount') IS NULL
+                    ALTER TABLE Purchases ADD PaidAmount DECIMAL(18,2) NOT NULL DEFAULT 0;");
+
+                SafeMigrate("Purchases.RemainingAmount", @"
+                IF COL_LENGTH('Purchases','RemainingAmount') IS NULL
+                    ALTER TABLE Purchases ADD RemainingAmount DECIMAL(18,2) NOT NULL DEFAULT 0;");
+
+                SafeMigrate("Purchases.PaymentType_col", @"
+                IF COL_LENGTH('Purchases','PaymentType') IS NULL
+                    ALTER TABLE Purchases ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Cash';");
+
+                // ── Products: عمود Barcode ──
+                SafeMigrate("Products.Barcode", @"
+                IF COL_LENGTH('Products','Barcode') IS NULL
+                    ALTER TABLE Products ADD Barcode NVARCHAR(100) NULL;");
+
+                SafeMigrate("Products.PrintLocalBarcode", @"
+                IF COL_LENGTH('Products','PrintLocalBarcode') IS NULL
+                    ALTER TABLE Products ADD PrintLocalBarcode BIT NOT NULL DEFAULT 1;");
+
+                // ── ReceiptVouchers: إنشاء الجدول إن لم يكن موجوداً ──
+                SafeMigrate("ReceiptVouchers.Table", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ReceiptVouchers')
+                BEGIN
+                    CREATE TABLE ReceiptVouchers (
+                        VoucherID     INT IDENTITY(1,1) PRIMARY KEY,
+                        VoucherCode   NVARCHAR(20)  NOT NULL,
+                        VoucherDate   DATETIME      NOT NULL DEFAULT GETDATE(),
+                        ClientID      INT           NULL,
+                        SupplierID    INT           NULL,
+                        Amount        DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        PaymentMethod NVARCHAR(50)  NOT NULL DEFAULT N'كاش',
+                        Notes         NVARCHAR(500) NULL,
+                        CreatedBy     INT           NULL,
+                        SaleID        INT           NULL,
+                        PurchaseID    INT           NULL,
+                        VoucherType   NVARCHAR(20)  NOT NULL DEFAULT 'Receipt'
+                    );
+                END");
+
+                // ── تصحيح قيم PaidAmount من بيانات موجودة ──
+                SafeMigrate("Sales.FixPaidAmount", @"
+                -- فواتير نقدية: المبلغ مدفوع بالكامل
+                UPDATE Sales SET PaidAmount = TotalAmount, RemainingAmount = 0
+                WHERE PaidAmount = 0 AND SaleType IN ('Cash','Retail');
+                -- فواتير آجلة: الباقي = الإجمالي
+                UPDATE Sales SET PaidAmount = 0, RemainingAmount = TotalAmount
+                WHERE PaidAmount = 0 AND RemainingAmount = 0 AND SaleType IN ('Credit','Installment');");
+
+                SafeMigrate("Purchases.FixPaidAmount", @"
+                UPDATE Purchases SET PaidAmount = TotalAmount, RemainingAmount = 0
+                WHERE PaidAmount = 0 AND PurchaseType = 'Cash';
+                UPDATE Purchases SET PaidAmount = 0, RemainingAmount = TotalAmount
+                WHERE PaidAmount = 0 AND RemainingAmount = 0 AND PurchaseType = 'Credit';");
+
             }
             catch (Exception ex)
             {

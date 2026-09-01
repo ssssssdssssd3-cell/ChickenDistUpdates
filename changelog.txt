@@ -1,3 +1,13 @@
+v2.9.4 - 2026-09-02
+- [إصلاح تلقائي لقواعد بيانات العملاء القديمة عند تشغيل البرنامج]:
+  - إضافة Migration تلقائي لعمود PaidAmount في جدول Sales (كان يسبب خطأ Invalid column name).
+  - إضافة Migration تلقائي لعمود RemainingAmount في Sales وPurchases.
+  - إضافة Migration تلقائي لعمودي PaymentType وInvoiceType في Sales.
+  - إضافة Migration تلقائي لعمود PaymentType وPaidAmount في Purchases.
+  - إضافة Migration تلقائي لعمود Barcode وPrintLocalBarcode في Products.
+  - إنشاء جدول ReceiptVouchers تلقائياً إن لم يكن موجوداً (كان يسبب Invalid object name).
+  - تصحيح قيم PaidAmount وRemainingAmount تلقائياً من بيانات السجلات الموجودة.
+
 v2.9.3 - 2026-09-02
 - [إصلاح جذري لزر النشر (Deploy) في شاشة مزامنة السحابة FrmCloudSync]:
   - استبدال استدعاء npx بـ FindFirebaseCLI() الذي يبحث عن firebase.cmd في كل المسارات الممكنة تلقائياً.
