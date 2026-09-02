@@ -3,31 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, s-maxage=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="3.0.0" />
+  <meta name="app-version" content="3.0.1" />
   <title>لوحة تحكم المالك | ProSoft ERP</title>
   <script>
-    // ── تهيئة الإصدار وإدارة الكاش وتثبيت الـ PWA ──
-    const APP_VERSION = "3.0.0";
-    const storedVer = localStorage.getItem("app_version");
-    if (storedVer && storedVer !== APP_VERSION) {
-      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      localStorage.setItem("app_version", APP_VERSION);
+    // ── المحرك الجذري لكسر كاش المتصفح تلقائياً (RADICAL ANTI-CACHE ENGINE) ──
+    const APP_BUILD_ID = "v301-" + new Date().toISOString().slice(0, 10);
+    const storedBuild = localStorage.getItem("prosoft_build_id");
+    
+    // 1. إذا وجد أي إصدار قديم في الذاكرة: امسح جميع الكاشات فوراً
+    if (storedBuild && storedBuild !== APP_BUILD_ID) {
+      if ('caches' in window) {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+      }
+      localStorage.setItem("prosoft_build_id", APP_BUILD_ID);
     } else {
-      localStorage.setItem("app_version", APP_VERSION);
+      localStorage.setItem("prosoft_build_id", APP_BUILD_ID);
     }
 
-    // تسجيل Service Worker لتفعيل التثبيت الفوري PWA على الموبايل
+    // 2. تسجيل وتحديث Service Worker مع كسر الكاش التلقائي
     let deferredInstallPrompt = null;
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(() => {
-          console.log('PWA Service Worker registered');
-        }).catch(err => console.log('SW registration note:', err));
+        navigator.serviceWorker.register('./sw.js?v=' + APP_BUILD_ID).then(reg => {
+          // فحص فوري لوجود تحديث جديد على السيرفر
+          reg.update();
+          reg.onupdatefound = () => {
+            const installing = reg.installing;
+            if (installing) {
+              installing.onstatechange = () => {
+                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                  // إصدار جديد نزل: مسح الكاش وإعادة التحميل التلقائي فوراً
+                  if ('caches' in window) {
+                    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
+                      window.location.reload(true);
+                    });
+                  }
+                }
+              };
+            }
+          };
+        }).catch(err => console.log('SW Note:', err));
+      });
+
+      // إعادة تحميل الصفحة فور استلام أي تحديث جديد من الـ Service Worker
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload(true);
+        }
       });
     }
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
