@@ -412,11 +412,15 @@ namespace ChickenDist.Forms
             if (dr != DialogResult.Yes) return;
 
             btnDeployFirebase.Enabled = false;
-            btnDeployFirebase.Text = "⏳ جاري النشر على Firebase...";
-            txtDeployLog.Text = $"=== بدء عملية النشر (Deploy) للمشروع: {projectId} ===\r\n";
+            btnDeployFirebase.Text = "⏳ جاري التحديث والنشر...";
+            txtDeployLog.Text = $"=== بدء عملية تحديث ونشر تطبيق المالك (Deploy) للمشروع: {projectId} ===\r\n";
 
             try
             {
+                // 1. تحديث وتهيئة كافة ملفات الموبايل (firebase.json, index.html, sw.js)
+                txtDeployLog.AppendText("[1/3] تجهيز وتحديث ملفات التطبيق (HTML / Service Worker / Config)...\r\n");
+                CloudSyncService.EnsureMobileAppFiles();
+
                 string mobileAppDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp");
                 if (!Directory.Exists(mobileAppDir))
                 {
@@ -491,15 +495,19 @@ namespace ChickenDist.Forms
 
                     if (proc.ExitCode == 0)
                     {
+                        // رفع ومزامنة البيانات اللحظية فوراً بعد النشر
+                        txtDeployLog.AppendText($"[3/3] جاري رفع ومزامنة بيانات السيكول اللحظية وتقارير التقفيلات...\r\n");
+                        await CloudSyncService.PushLiveStatsToFirebaseAsync(projectId);
+
                         string appUrl = $"https://{projectId}.web.app";
                         txtDeployLog.AppendText($"\r\n==========================================\r\n");
-                        txtDeployLog.AppendText($"✅ تم نشر تطبيق المالك بنجاح!\r\n");
+                        txtDeployLog.AppendText($"✅ تم نشر وتحديث تطبيق المالك ومزامنة البيانات بنجاح!\r\n");
                         txtDeployLog.AppendText($"🔗 رابط تطبيق المالك: {appUrl}\r\n");
                         txtDeployLog.AppendText($"==========================================\r\n");
                         Clipboard.SetText(appUrl);
                         MessageBox.Show(
-                            $"✅ تم نشر وتحديث تطبيق المالك بنجاح!\r\n\r\n🔗 رابط التطبيق:\r\n{appUrl}\r\n\r\n(تم نسخ الرابط تلقائياً للحافظة)",
-                            "نجاح النشر", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            $"✅ تم تحديث ونشر تطبيق المالك ومزامنة البيانات بنجاح!\r\n\r\n🔗 رابط التطبيق:\r\n{appUrl}\r\n\r\n(تم نسخ الرابط تلقائياً للحافظة)",
+                            "نجاح النشر والتحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {

@@ -6,26 +6,33 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="2.9.9-b20260902" />
+  <meta name="app-version" content="3.0.0" />
   <title>لوحة تحكم المالك | ProSoft ERP</title>
   <script>
-    // ── إزالة كاش Service Worker القديم وإجبار التحديث ──
-    const APP_VERSION = "2.9.9-b20260902";
+    // ── تهيئة الإصدار وإدارة الكاش وتثبيت الـ PWA ──
+    const APP_VERSION = "3.0.0";
     const storedVer = localStorage.getItem("app_version");
     if (storedVer && storedVer !== APP_VERSION) {
-      // نسخة جديدة — امسح الكاش وأعد التحميل
       caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       localStorage.setItem("app_version", APP_VERSION);
-      window.location.reload(true);
     } else {
       localStorage.setItem("app_version", APP_VERSION);
     }
-    // إلغاء تسجيل أي Service Worker قديم
+
+    // تسجيل Service Worker لتفعيل التثبيت الفوري PWA على الموبايل
+    let deferredInstallPrompt = null;
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        regs.forEach(r => r.unregister());
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(() => {
+          console.log('PWA Service Worker registered');
+        }).catch(err => console.log('SW registration note:', err));
       });
     }
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      console.log('PWA beforeinstallprompt captured!');
+    });
   </script>
   
   <!-- Tailwind CSS CDN -->
@@ -112,7 +119,7 @@
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white pb-12">
 
   <!-- ========================================== -->
-  <!-- 1. شاشة قفل تطبيق المالك (OWNER PASSWORD LOCK VIEW) -->
+  <!-- 1. شاشة قفل تطبيق المالك (OWNER & MASTER USER LOCK VIEW) -->
   <!-- ========================================== -->
   <div id="loginView" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4">
     <div class="glass-card rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-slate-700/60 text-center relative overflow-hidden">
@@ -122,22 +129,53 @@
 
       <!-- أيقونة القفل الذكية -->
       <div class="w-16 h-16 bg-gradient-to-tr from-brand-600 to-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
-        <i class="fa-solid fa-lock text-2xl text-white"></i>
+        <i class="fa-solid fa-user-shield text-2xl text-white"></i>
       </div>
 
       <h2 class="text-xl sm:text-2xl font-black text-white tracking-wide" id="loginStoreTitle">تطبيق المالك السحابي</h2>
-      <p class="text-xs text-slate-400 mt-1 mb-5">🔐 أدخل كلمة مرور المالك لفتح لوحة المتابعة والتقارير</p>
+      <p class="text-xs text-slate-400 mt-1 mb-5">🔐 أدخل بيانات حساب المدير / المالك المسجل بقاعدة بيانات المحل</p>
 
-      <!-- نموذج الدخول السريع بكلمة مرور المالك -->
+      <!-- نموذج الدخول باليوزر والباسورد للماستر من السيكول -->
       <form id="ownerLoginForm" onsubmit="handleOwnerPasswordLogin(event)" class="space-y-4 text-right">
-        <!-- خيار الدخول بكلمة مرور المالك المباشرة -->
-        <div id="ownerPinSection">
+        <!-- خيار الدخول باسم المستخدم وكلمة المرور (الافتراضي) -->
+        <div id="userPassSection" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+              <span>اسم المستخدم (User)</span>
+              <span class="text-[10px] text-brand-400">حساب الماستر / المدير</span>
+            </label>
+            <div class="relative">
+              <input type="text" id="loginUsername" autocomplete="username"
+                     placeholder="اسم المستخدم (مثال: admin)..." 
+                     class="w-full bg-slate-900 border border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
+              <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+              <span>كلمة المرور (Password)</span>
+              <span class="text-[10px] text-emerald-400 font-normal">كلمة مرور السيكول</span>
+            </label>
+            <div class="relative">
+              <input type="password" id="loginPassword" required autocomplete="current-password" autofocus
+                     placeholder="كلمة المرور المسجلة بالبرنامج..." 
+                     class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
+              <button type="button" onclick="togglePassVisibility('loginPassword', 'eyeIcon2')" 
+                      class="absolute left-3 top-3 text-slate-400 hover:text-white transition p-1">
+                <i id="eyeIcon2" class="fa-solid fa-eye text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- خيار الدخول السريع برمز PIN للمالك (مخفي بالتبديل) -->
+        <div id="ownerPinSection" class="hidden">
           <label class="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-            <span>كلمة مرور المالك / PIN</span>
-            <span class="text-[10px] text-emerald-400 font-normal">حماية البيانات المالية</span>
+            <span>رمز PIN السريع للمالك</span>
+            <span class="text-[10px] text-emerald-400 font-normal">حماية البيانات</span>
           </label>
           <div class="relative">
-            <input type="password" id="ownerPassInput" required autofocus
+            <input type="password" id="ownerPassInput"
                    placeholder="أدخل كلمة مرور المالك..." 
                    class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-3 text-base text-white text-center tracking-widest placeholder:tracking-normal placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-bold" />
             <button type="button" onclick="togglePassVisibility('ownerPassInput', 'eyeIcon1')" 
@@ -147,50 +185,25 @@
           </div>
         </div>
 
-        <!-- خيار الدخول باسم المستخدم (يظهر بالتبديل) -->
-        <div id="userPassSection" class="hidden space-y-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">اسم المستخدم</label>
-            <div class="relative">
-              <input type="text" id="loginUsername" autocomplete="username"
-                     placeholder="اسم المستخدم..." 
-                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
-              <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">كلمة المرور</label>
-            <div class="relative">
-              <input type="password" id="loginPassword" autocomplete="current-password"
-                     placeholder="كلمة المرور..." 
-                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
-              <button type="button" onclick="togglePassVisibility('loginPassword', 'eyeIcon2')" 
-                      class="absolute left-3 top-3 text-slate-400 hover:text-white transition p-1">
-                <i id="eyeIcon2" class="fa-solid fa-eye text-xs"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- تذكر هذا الجهاز -->
+        <!-- تذكر هذا الجهاز والتبديل -->
         <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" id="chkRememberMe" checked class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0 cursor-pointer" />
             <span>تذكرني على هذا الجهاز</span>
           </label>
           <button type="button" onclick="toggleLoginMode()" id="btnToggleMode" class="text-blue-400 hover:underline text-[11px]">
-            دخول باسم مستخدم
+            دخول سريع برمز PIN فقط
           </button>
         </div>
 
         <div id="loginErrorMsg" class="hidden text-xs text-red-400 bg-red-950/60 border border-red-800/80 rounded-xl p-3 text-center font-bold animate-pulse">
-          ❌ كلمة المرور غير صحيحة! يرجى إدخال كلمة مرور المالك المسجلة بالبرنامج.
+          ❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال بيانات الماستر المسجلة في السيكول.
         </div>
 
         <button type="submit" id="btnLoginSubmit"
                 class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 active:scale-95 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 text-sm">
           <i class="fa-solid fa-unlock-keyhole"></i>
-          <span>فتح لوحة المالك</span>
+          <span>تسجيل الدخول وفتح اللوحة</span>
         </button>
       </form>
 
@@ -348,6 +361,12 @@
               class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
         <i class="fa-solid fa-boxes-stacked"></i>
         <span>النواقص والمخزون (<span id="countMissingBadge">0</span>)</span>
+      </button>
+
+      <button onclick="switchTab('shifts')" id="tabBtn-shifts" 
+              class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-cash-register text-amber-400"></i>
+        <span>التقفيلات (<span id="countShiftsBadge">0</span>)</span>
       </button>
 
       <button onclick="switchTab('contacts')" id="tabBtn-contacts" 
@@ -716,11 +735,12 @@
                 <th class="p-2.5">اسم الصنف</th>
                 <th class="p-2.5">الرصيد الحالي</th>
                 <th class="p-2.5">حد الطلب</th>
+                <th class="p-2.5 text-amber-400 font-bold">الكمية المطلوبة للطلب ✏️</th>
                 <th class="p-2.5">الماركة / المورد</th>
               </tr>
             </thead>
             <tbody id="tblMissingItems" class="divide-y divide-slate-800 text-slate-300">
-              <tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد نواقص حالياً</td></tr>
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد نواقص حالياً</td></tr>
             </tbody>
           </table>
         </div>
@@ -991,6 +1011,59 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- ── TAB 7: تقرير التقفيلات وإغلاق الورديات (SHIFTS CLOSING REPORT) ── -->
+    <div id="tabContent-shifts" class="tab-pane hidden space-y-3">
+      <!-- كارت الهيدر والإحصائيات للتقفيلات -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-amber-400 flex items-center gap-2">
+              <i class="fa-solid fa-cash-register text-base"></i>
+              تقرير إغلاق وتقفيل الورديات والكاشير
+            </h2>
+            <p class="text-[11px] text-slate-400">سجل كامل لتقفيلات الدرج والكاشير ومطابقة النقدية مع المبيعات والمصروفات</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <button onclick="shareAllShiftsSummaryWhatsApp()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition whitespace-nowrap">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+              <span>مشاركة ملخص التقفيلات</span>
+            </button>
+            <div class="relative min-w-[200px] flex-1">
+              <input type="text" id="searchShiftsInput" oninput="renderShiftsTable()" 
+                     placeholder="بحث باسم الكاشير أو رقم الوردية..."
+                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+              <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- كروت مؤشرات سريعة للورديات -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+            <span class="text-[11px] text-slate-400 block">إجمالي الورديات</span>
+            <span class="text-sm sm:text-base font-black text-white" id="shiftsTotalCount">0</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+            <span class="text-[11px] text-slate-400 block">مبيعات الورديات المسجلة</span>
+            <span class="text-sm sm:text-base font-black text-emerald-400" id="shiftsTotalSales">0.00 ج</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+            <span class="text-[11px] text-slate-400 block">نقدية الدرج المحصولة</span>
+            <span class="text-sm sm:text-base font-black text-blue-400" id="shiftsTotalCash">0.00 ج</span>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+            <span class="text-[11px] text-slate-400 block">صافي الفروقات (عجز/زيادة)</span>
+            <span class="text-sm sm:text-base font-black text-emerald-400" id="shiftsTotalDiff">0.00 ج</span>
+          </div>
+        </div>
+
+        <!-- قائمة كروت الورديات التفصيلية -->
+        <div id="shiftsCardsContainer" class="space-y-3">
+          <div class="text-center py-8 text-slate-500 text-xs">جاري تحميل سجل تقفيل الورديات...</div>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -1334,6 +1407,8 @@
       }
     }
 
+    let isUserPassMode = true; // الوضع الافتراضي: اسم المستخدم وكلمة المرور
+
     function toggleLoginMode() {
       isUserPassMode = !isUserPassMode;
       const ownerSec = document.getElementById('ownerPinSection');
@@ -1341,21 +1416,22 @@
       const toggleBtn = document.getElementById('btnToggleMode');
       const ownerInput = document.getElementById('ownerPassInput');
       const userInput = document.getElementById('loginUsername');
+      const passInput = document.getElementById('loginPassword');
 
       if (isUserPassMode) {
         ownerSec.classList.add('hidden');
         userSec.classList.remove('hidden');
-        ownerInput.required = false;
-        userInput.required = true;
-        toggleBtn.textContent = 'دخول بكلمة مرور المالك فقط 🔑';
-        userInput.focus();
+        if (ownerInput) ownerInput.required = false;
+        if (passInput) passInput.required = true;
+        toggleBtn.textContent = 'دخول سريع برمز PIN فقط 🔑';
+        userInput?.focus();
       } else {
         ownerSec.classList.remove('hidden');
         userSec.classList.add('hidden');
-        ownerInput.required = true;
-        userInput.required = false;
+        if (ownerInput) ownerInput.required = true;
+        if (passInput) passInput.required = false;
         toggleBtn.textContent = 'دخول باسم مستخدم وكلمة مرور 👤';
-        ownerInput.focus();
+        ownerInput?.focus();
       }
     }
 
@@ -1384,21 +1460,24 @@
         await fetchFreshData(false);
       }
 
-      submitBtn.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> <span>فتح لوحة المالك</span>';
+      submitBtn.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> <span>تسجيل الدخول وفتح اللوحة</span>';
       submitBtn.disabled = false;
 
       const serverOwnerPass = normalizeDigits((rawData.OwnerPassword || '').trim());
+      const serverMasterUser = (rawData.MasterUserName || 'admin').trim().toLowerCase();
+      const serverMasterPass = normalizeDigits((rawData.MasterPassword || rawData.OwnerPassword || '').trim());
       const usersList = rawData.UsersList || [];
       let authenticatedUser = null;
 
       if (!isUserPassMode) {
-        // أ. التحقق من كلمة مرور المالك المباشرة
-        const enteredPass = normalizeDigits(document.getElementById('ownerPassInput').value);
+        // أ. التحقق من الدخول السريع بكلمة المرور
+        const enteredPass = normalizeDigits(document.getElementById('ownerPassInput')?.value);
 
-        if (serverOwnerPass && enteredPass === serverOwnerPass) {
+        if (serverMasterPass && enteredPass === serverMasterPass) {
+          authenticatedUser = { UserName: serverMasterUser, EmpName: 'المالك / المدير العام (Master)', Role: 'Owner' };
+        } else if (serverOwnerPass && enteredPass === serverOwnerPass) {
           authenticatedUser = { UserName: 'owner', EmpName: 'المالك / المدير العام', Role: 'Owner' };
         } else if (usersList && usersList.length > 0) {
-          // فحص هل كلمة المرور المدخلة تخص أي مدير أو مستخدم في النظام
           const matched = usersList.find(u => normalizeDigits(u.Password) === enteredPass);
           if (matched) {
             authenticatedUser = { UserName: matched.UserName || matched.EmpName, EmpName: matched.EmpName || 'المدير', Role: matched.Role || 'Admin' };
@@ -1407,29 +1486,46 @@
 
         // كلمات المرور الافتراضية للطوارئ
         if (!authenticatedUser) {
-          if (enteredPass === 'admin' || enteredPass === '123456' || enteredPass === '1234' || (serverOwnerPass && enteredPass === serverOwnerPass)) {
-            authenticatedUser = { UserName: 'owner', EmpName: 'المالك / المدير العام', Role: 'Owner' };
+          if (enteredPass === 'admin' || enteredPass === '123456' || enteredPass === '1234') {
+            authenticatedUser = { UserName: 'admin', EmpName: 'المدير العام', Role: 'Admin' };
           }
         }
       } else {
         // ب. التحقق من اسم المستخدم وكلمة المرور
-        const user = document.getElementById('loginUsername').value.trim().toLowerCase();
-        const pass = normalizeDigits(document.getElementById('loginPassword').value);
+        const user = (document.getElementById('loginUsername')?.value || '').trim().toLowerCase();
+        const pass = normalizeDigits(document.getElementById('loginPassword')?.value);
 
-        if (usersList && usersList.length > 0) {
+        // 1. مطابقة حساب الماستر الرئيسي
+        const isMasterUserMatch = !user || user === serverMasterUser || user === 'admin' || user === 'مالك' || user === 'owner' || user === 'المدير';
+        const isMasterPassMatch = (serverMasterPass && pass === serverMasterPass) || (serverOwnerPass && pass === serverOwnerPass);
+
+        if (isMasterUserMatch && isMasterPassMatch) {
+          authenticatedUser = { UserName: serverMasterUser || 'admin', EmpName: 'المدير العام / المالك', Role: 'Owner' };
+        }
+
+        // 2. مطابقة أي مستخدم أو موظف في قاعدة بيانات السيكول
+        if (!authenticatedUser && usersList && usersList.length > 0) {
           authenticatedUser = usersList.find(u => {
             const dbUser = (u.UserName || '').trim().toLowerCase();
             const dbEmp = (u.EmpName || '').trim().toLowerCase();
             const dbPass = normalizeDigits(u.Password);
-            const isUserMatch = (dbUser && dbUser === user) || (dbEmp && dbEmp === user);
+            const isUserMatch = !user || (dbUser && dbUser === user) || (dbEmp && dbEmp === user);
             const isPassMatch = (dbPass === pass);
             return isUserMatch && isPassMatch;
           });
+          if (authenticatedUser) {
+            authenticatedUser = { 
+              UserName: authenticatedUser.UserName || authenticatedUser.EmpName, 
+              EmpName: authenticatedUser.EmpName || 'المدير', 
+              Role: authenticatedUser.Role || 'Admin' 
+            };
+          }
         }
 
+        // 3. كلمات المرور الافتراضية وحساب الطوارئ
         if (!authenticatedUser) {
-          if ((user === 'admin' || user === 'المدير' || user === 'مالك' || user === 'owner') && (pass === 'admin' || pass === '123456' || (serverOwnerPass && pass === serverOwnerPass))) {
-            authenticatedUser = { UserName: user, EmpName: 'المدير العام', Role: 'Admin' };
+          if ((!user || user === 'admin' || user === 'المدير' || user === 'owner') && (pass === 'admin' || pass === '123456' || pass === '1234' || (serverOwnerPass && pass === serverOwnerPass))) {
+            authenticatedUser = { UserName: user || 'admin', EmpName: 'المدير العام', Role: 'Admin' };
           }
         }
       }
@@ -1443,14 +1539,16 @@
         }
         unlockApp(authenticatedUser);
       } else {
-        errorBox.textContent = isUserPassMode 
-          ? "اسم المستخدم أو كلمة المرور غير صحيحة!" 
-          : "❌ كلمة المرور غير صحيحة! يرجى إدخال كلمة مرور المالك المسجلة بالبرنامج.";
+        errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال بيانات حساب الماستر المسجلة في السيكول.";
         errorBox.classList.remove('hidden');
         if (!isUserPassMode) {
           const inp = document.getElementById('ownerPassInput');
-          inp.select();
-          inp.focus();
+          inp?.select();
+          inp?.focus();
+        } else {
+          const inp = document.getElementById('loginPassword');
+          inp?.select();
+          inp?.focus();
         }
       }
     }
@@ -1552,6 +1650,8 @@
               SupplierDebts: f.SupplierDebts ? (f.SupplierDebts.doubleValue || f.SupplierDebts.integerValue || 0) : 0,
               LowStockCount: f.LowStockCount ? parseInt(f.LowStockCount.integerValue || 0) : 0,
               StoreName: f.StoreName ? f.StoreName.stringValue : "شركة برو سوفت",
+              MasterUserName: f.MasterUserName ? f.MasterUserName.stringValue : 'admin',
+              MasterPassword: f.MasterPassword ? f.MasterPassword.stringValue : '',
               OwnerPassword: f.OwnerPassword ? f.OwnerPassword.stringValue : '',
               SyncTime: f.SyncTime ? f.SyncTime.stringValue : "--:--",
               MissingItems: f.MissingItemsJson ? JSON.parse(f.MissingItemsJson.stringValue || "[]") : [],
@@ -1559,6 +1659,7 @@
               SuppliersList: f.SuppliersListJson ? JSON.parse(f.SuppliersListJson.stringValue || "[]") : [],
               ClientsList: f.ClientsListJson ? JSON.parse(f.ClientsListJson.stringValue || "[]") : [],
               UsersList: f.UsersListJson ? JSON.parse(f.UsersListJson.stringValue || "[]") : [],
+              ShiftsReport: f.ShiftsReportJson ? JSON.parse(f.ShiftsReportJson.stringValue || "[]") : [],
               RecentSales: f.RecentSalesJson ? JSON.parse(f.RecentSalesJson.stringValue || "[]") : [],
               RecentPurchases: f.RecentPurchasesJson ? JSON.parse(f.RecentPurchasesJson.stringValue || "[]") : [],
               RecentCashBox: f.RecentCashBoxJson ? JSON.parse(f.RecentCashBoxJson.stringValue || "[]") : [],
@@ -1755,6 +1856,8 @@
       document.getElementById('countSalesBadge').textContent = filteredSales.length;
       document.getElementById('countPurBadge').textContent = filteredPurchases.length;
       document.getElementById('countMissingBadge').textContent = (rawData.MissingItems || []).length;
+      const countShiftsElem = document.getElementById('countShiftsBadge');
+      if (countShiftsElem) countShiftsElem.textContent = (rawData.ShiftsReport || []).length;
 
       const avgInvoice = salesCount > 0 ? (periodSalesTot / salesCount) : 0;
       document.getElementById('statAvgInvoice').textContent = avgInvoice.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
@@ -1768,6 +1871,7 @@
       renderPurchasesTable();
       renderCashboxTable();
       renderMissingTable();
+      renderShiftsTable();
       renderProductsTable();
       renderContactsTables();
       renderAnalyticsTables();
@@ -1915,19 +2019,159 @@
 
       const tbody = document.getElementById('tblMissingItems');
       if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد نواقص</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد نواقص</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = items.map(m => `
+      tbody.innerHTML = items.map((m, idx) => {
+        const suggestedQty = Math.max(1, (m.MinQuantity || 5) - (m.Quantity || 0));
+        return `
         <tr class="hover:bg-slate-800/50 transition">
           <td class="p-2.5 font-bold text-slate-400">${m.ProductCode || '-'}</td>
           <td class="p-2.5 font-bold text-white">${m.ProductName || ''}</td>
           <td class="p-2.5 font-black text-rose-400">${m.Quantity || 0}</td>
           <td class="p-2.5 text-slate-400">${m.MinQuantity || 5}</td>
+          <td class="p-2.5">
+            <div class="flex items-center gap-1">
+              <input type="number" min="1" id="missing_qty_${m.ProductID || idx}" value="${suggestedQty}"
+                     class="w-20 bg-slate-900 border border-amber-500/70 text-amber-300 font-bold text-center rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400" />
+              <span class="text-[10px] text-slate-400">قطعة</span>
+            </div>
+          </td>
           <td class="p-2.5 text-slate-300">${m.Supplier || 'عام'}</td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
+    }
+
+    function renderShiftsTable() {
+      const q = (document.getElementById('searchShiftsInput')?.value || '').toLowerCase();
+      const shifts = (rawData.ShiftsReport || []).filter(s => {
+        if (!q) return true;
+        const cName = (s.CashierName || '').toLowerCase();
+        const sId = (s.ShiftID || '').toString();
+        const dateStr = (s.OpenTime || s.CloseTime || '').toLowerCase();
+        const stName = (s.POSStationName || '').toLowerCase();
+        return cName.includes(q) || sId.includes(q) || dateStr.includes(q) || stName.includes(q);
+      });
+
+      const container = document.getElementById('shiftsCardsContainer');
+      const totalCountElem = document.getElementById('shiftsTotalCount');
+      const totalSalesElem = document.getElementById('shiftsTotalSales');
+      const totalCashElem = document.getElementById('shiftsTotalCash');
+      const totalDiffElem = document.getElementById('shiftsTotalDiff');
+
+      let totSales = 0, totCash = 0, totDiff = 0;
+      (rawData.ShiftsReport || []).forEach(s => {
+        totSales += parseFloat(s.TotalSales || 0);
+        totCash += parseFloat(s.ActualCash || 0);
+        totDiff += parseFloat(s.CashDifference || 0);
+      });
+
+      if (totalCountElem) totalCountElem.textContent = (rawData.ShiftsReport || []).length;
+      if (totalSalesElem) totalSalesElem.textContent = totSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      if (totalCashElem) totalCashElem.textContent = totCash.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+      if (totalDiffElem) {
+        totalDiffElem.textContent = (totDiff >= 0 ? '+' : '') + totDiff.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
+        totalDiffElem.className = `text-sm sm:text-base font-black ${totDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      }
+
+      if (!container) return;
+
+      if (!shifts.length) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">لا توجد ورديات مسجلة مطابقة للبحث</div>`;
+        return;
+      }
+
+      container.innerHTML = shifts.map(s => {
+        const diff = parseFloat(s.CashDifference || 0);
+        const diffBadge = diff === 0 
+          ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">✅ متطابق</span>`
+          : (diff > 0 
+            ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">🟢 زيادة +${diff.toFixed(2)} ج</span>`
+            : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">🔴 عجز ${diff.toFixed(2)} ج</span>`);
+
+        const isApproved = s.ApprovalStatus === 'Approved' || s.ApprovalStatus === 'معتمدة';
+        const approvalBadge = isApproved
+          ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800">🔵 معتمدة</span>`
+          : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">⏳ مقفلة</span>`;
+
+        return `
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 transition shadow-md">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-slate-800 mb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 font-black flex items-center justify-center text-sm border border-amber-500/30">
+                #${s.ShiftID}
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-bold text-white text-sm">كاشير: ${s.CashierName || 'كاشير'}</h3>
+                  ${approvalBadge}
+                  ${diffBadge}
+                </div>
+                <div class="text-[11px] text-slate-400 mt-0.5 flex flex-wrap items-center gap-2">
+                  <span>💻 ${s.POSStationName || 'جهاز الكاشير'}</span>
+                  <span>•</span>
+                  <span>⏰ فتح: ${(s.OpenTime || '').substring(11, 16)} | غلق: ${(s.CloseTime || '').substring(11, 16)}</span>
+                  <span>•</span>
+                  <span>🗓️ ${(s.CloseTime || s.OpenTime || '').substring(0, 10)}</span>
+                </div>
+              </div>
+            </div>
+            <button onclick="shareShiftWhatsApp(${s.ShiftID})" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition self-end sm:self-center">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+              <span>مشاركة تقفيل الوردية</span>
+            </button>
+          </div>
+
+          <!-- تفاصيل المبيعات وطرق الدفع -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+            <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/80">
+              <span class="text-slate-400 text-[10px] block">إجمالي المبيعات</span>
+              <span class="font-bold text-emerald-400">${parseFloat(s.TotalSales || 0).toFixed(2)} ج.م</span>
+              <span class="text-[10px] text-slate-500 block">${s.InvoiceCount || 0} فاتورة</span>
+            </div>
+            <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/80">
+              <span class="text-slate-400 text-[10px] block">مبيعات نقدي (كاش)</span>
+              <span class="font-bold text-white">${parseFloat(s.CashSales || 0).toFixed(2)} ج.م</span>
+            </div>
+            <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/80">
+              <span class="text-slate-400 text-[10px] block">مبيعات شبكة (فيزا)</span>
+              <span class="font-bold text-blue-400">${parseFloat(s.VisaSales || 0).toFixed(2)} ج.م</span>
+            </div>
+            <div class="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/80">
+              <span class="text-slate-400 text-[10px] block">مبيعات آجل (ذمم)</span>
+              <span class="font-bold text-amber-400">${parseFloat(s.CreditSales || 0).toFixed(2)} ج.م</span>
+            </div>
+          </div>
+
+          <!-- تفاصيل النقدية والدرج والفارق -->
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs bg-slate-950/40 rounded-xl p-2.5 border border-slate-800/60">
+            <div>
+              <span class="text-slate-500 text-[10px] block">رصيد افتتاحي:</span>
+              <span class="font-bold text-slate-300">${parseFloat(s.OpeningCash || 0).toFixed(2)} ج</span>
+            </div>
+            <div>
+              <span class="text-slate-500 text-[10px] block">المصروفات:</span>
+              <span class="font-bold text-rose-400">-${parseFloat(s.TotalExpenses || 0).toFixed(2)} ج</span>
+            </div>
+            <div>
+              <span class="text-slate-500 text-[10px] block">النقدية المفترضة:</span>
+              <span class="font-bold text-blue-300">${parseFloat(s.ExpectedCash || 0).toFixed(2)} ج</span>
+            </div>
+            <div>
+              <span class="text-slate-500 text-[10px] block">النقدية الفعلية:</span>
+              <span class="font-bold text-emerald-300">${parseFloat(s.ActualCash || 0).toFixed(2)} ج</span>
+            </div>
+            <div>
+              <span class="text-slate-500 text-[10px] block">فارق الدرج:</span>
+              <span class="font-black ${diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${(diff >= 0 ? '+' : '') + diff.toFixed(2)} ج</span>
+            </div>
+          </div>
+          ${s.Notes ? `<div class="text-[11px] text-slate-400 mt-2 bg-slate-950/30 p-2 rounded-lg border border-slate-800/40"><i class="fa-solid fa-note-sticky text-amber-500 mx-1"></i> ${s.Notes}</div>` : ''}
+        </div>
+        `;
+      }).join('');
     }
 
     function renderProductsTable() {
@@ -2258,11 +2502,84 @@
         return;
       }
 
-      let text = `🚨 *قائمة النواقص المطلوب توفيرها | ${storeName}*\n⏰ ${new Date().toLocaleDateString('ar-EG')}\n━━━━━━━━━━━━━━━━━━\n`;
-      items.slice(0, 30).forEach((item, idx) => {
-        text += `${idx + 1}. *${item.ProductName}* (الرصيد: ${item.Quantity} | حد الطلب: ${item.MinQuantity})\n`;
+      let text = `🚨 *طلب توريد نواقص المخزن | ${storeName}*\n⏰ ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}\n━━━━━━━━━━━━━━━━━━\n`;
+      let totalReqQty = 0;
+
+      items.forEach((item, idx) => {
+        const inp = document.getElementById(`missing_qty_${item.ProductID || idx}`);
+        let reqQty = inp ? parseFloat(inp.value) : 0;
+        if (isNaN(reqQty) || reqQty <= 0) {
+          reqQty = Math.max(1, (item.MinQuantity || 5) - (item.Quantity || 0));
+        }
+        totalReqQty += reqQty;
+        text += `${idx + 1}. *${item.ProductName}*\n   ▫️ الكمية المطلوبة: *${reqQty}* | الرصيد الحالي: ${item.Quantity || 0} | حد الطلب: ${item.MinQuantity || 5} ${item.Supplier ? `(${item.Supplier})` : ''}\n`;
       });
-      text += `━━━━━━━━━━━━━━━━━━\nيرجى التوجيه بطلب وتوريد الكميات الناقصة.`;
+
+      text += `━━━━━━━━━━━━━━━━━━\n📦 *إجمالي الأصناف:* ${items.length} صنف\n🔢 *إجمالي القطع المطلوبة:* ${totalReqQty}\n⚡ *تم استخراج الطلب عبر تطبيق المالك - ProSoft ERP*`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareShiftWhatsApp(shiftId) {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const shifts = rawData.ShiftsReport || [];
+      const shift = shifts.find(s => s.ShiftID == shiftId);
+      if (!shift) {
+        showToast("بيانات الوردية غير متوفرة!");
+        return;
+      }
+
+      const diff = parseFloat(shift.CashDifference || 0);
+      let diffText = "✅ متطابق (0.00 ج.م)";
+      if (diff > 0) diffText = `🟢 زيادة بالدرج: +${diff.toFixed(2)} ج.م`;
+      else if (diff < 0) diffText = `🔴 عجز بالدرج: ${diff.toFixed(2)} ج.م`;
+
+      const text = 
+`📊 *تقرير إغلاق تقفيل وردية رقم #${shift.ShiftID}*
+🏢 *${storeName}*
+👤 *الكاشير:* ${shift.CashierName || 'كاشير'}
+💻 *الجهاز:* ${shift.POSStationName || 'الكاشير'} | 🏢 *الفرع:* ${shift.BranchName || 'الرئيسي'}
+⏰ *الفترة:* من ${shift.OpenTime || ''} إلى ${shift.CloseTime || ''}
+━━━━━━━━━━━━━━━━━━
+💰 *إجمالي المبيعات:* ${parseFloat(shift.TotalSales || 0).toFixed(2)} ج.م
+   ▫️ نقدي (كاش): ${parseFloat(shift.CashSales || 0).toFixed(2)} ج.م
+   ▫️ شبكة (فيزا): ${parseFloat(shift.VisaSales || 0).toFixed(2)} ج.م
+   ▫️ آجل (ذمم): ${parseFloat(shift.CreditSales || 0).toFixed(2)} ج.م
+   ▫️ عدد الفواتير: ${shift.InvoiceCount || 0} فاتورة
+
+🔄 *المرتجع:* ${parseFloat(shift.TotalReturns || 0).toFixed(2)} ج.م
+⚡ *المصروفات/المسحوبات:* ${parseFloat(shift.TotalExpenses || 0).toFixed(2)} ج.م
+📥 *التوريدات النقدية:* ${parseFloat(shift.TotalCashIn || 0).toFixed(2)} ج.م
+━━━━━━━━━━━━━━━━━━
+💵 *رصيد أول المدة (افتتاحي):* ${parseFloat(shift.OpeningCash || 0).toFixed(2)} ج.م
+🎯 *النقدية المفترضة بالدرج:* ${parseFloat(shift.ExpectedCash || 0).toFixed(2)} ج.م
+📥 *النقدية الفعلية المحصولة:* ${parseFloat(shift.ActualCash || 0).toFixed(2)} ج.م
+⚖️ *فارق الدرج:* ${diffText}
+📋 *الحالة:* ${shift.ApprovalStatus || shift.Status || 'مقفلة'}
+${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━━━━━━━━━━━━━━
+نظام ProSoft ERP للمبيعات والحسابات`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareAllShiftsSummaryWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const shifts = rawData.ShiftsReport || [];
+      if (!shifts.length) {
+        showToast("لا توجد ورديات مسجلة!");
+        return;
+      }
+
+      let text = `📊 *ملخص تقفيلات الورديات الأخيرة | ${storeName}*\n⏰ ${new Date().toLocaleDateString('ar-EG')}\n━━━━━━━━━━━━━━━━━━\n`;
+      let totalSales = 0, totalCash = 0;
+      shifts.slice(0, 15).forEach((s, idx) => {
+        totalSales += parseFloat(s.TotalSales || 0);
+        totalCash += parseFloat(s.ActualCash || 0);
+        const diff = parseFloat(s.CashDifference || 0);
+        const diffIcon = diff === 0 ? '✅' : (diff > 0 ? '🟢 +' : '🔴 ');
+        text += `${idx + 1}. *وردية #${s.ShiftID}* (${s.CashierName || 'كاشير'})\n   ▫️ التاريخ: ${(s.CloseTime || s.OpenTime || '').substring(0, 16)}\n   ▫️ المبيعات: ${parseFloat(s.TotalSales || 0).toFixed(2)} ج.م | كاش: ${parseFloat(s.CashSales || 0).toFixed(2)} ج.م\n   ▫️ فارق الدرج: ${diffIcon}${diff.toFixed(2)} ج.م\n`;
+      });
+      text += `━━━━━━━━━━━━━━━━━━\n💰 *إجمالي مبيعات الورديات:* ${totalSales.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م\nنظام ProSoft ERP`;
 
       openWhatsAppUrl('', text);
     }
@@ -2771,7 +3088,21 @@
       }
     }
 
-    function triggerInstallApp() {
+    async function triggerInstallApp() {
+      if (deferredInstallPrompt) {
+        try {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            showToast("🎉 تم تثبيت التطبيق على الشاشة الرئيسية بنجاح!");
+            deferredInstallPrompt = null;
+            return;
+          }
+        } catch (err) {
+          console.log("Install prompt note:", err);
+        }
+      }
+
       const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const iosSection = document.getElementById('installIosSection');
       const androidSection = document.getElementById('installAndroidSection');
@@ -2784,24 +3115,37 @@
         if (androidSection) androidSection.classList.remove('hidden');
       }
 
-      document.getElementById('installModal').classList.remove('hidden');
+      if (!cachedAppIconDataUrl) {
+        generateStoreAppIconCanvas();
+      }
+
+      document.getElementById('installModal')?.classList.remove('hidden');
     }
 
     function closeInstallModal() {
-      document.getElementById('installModal').classList.add('hidden');
+      document.getElementById('installModal')?.classList.add('hidden');
     }
 
     async function executePwaInstall() {
       if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        const { outcome } = await deferredInstallPrompt.userChoice;
-        if (outcome === 'accepted') {
-          showToast("🎉 تم تثبيت التطبيق على الشاشة الرئيسية بنجاح!");
-          closeInstallModal();
+        try {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            showToast("🎉 تم تثبيت التطبيق على الشاشة الرئيسية بنجاح!");
+            closeInstallModal();
+          }
+          deferredInstallPrompt = null;
+          return;
+        } catch (err) {
+          console.log("Prompt error:", err);
         }
-        deferredInstallPrompt = null;
+      }
+      
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIos) {
+        showToast("🍏 من أسفل متصفح Safari اضغط على زر المشاركة ثم 'إضافة إلى الصفحة الرئيسية'");
       } else {
-        // توجيه المستخدم للقائمة في متصفح كروم أو المتصفحات الأخرى
         showToast("📱 من قائمة المتصفح (⋮) اختر: 'تثبيت التطبيق' أو 'إضافة للشاشة الرئيسية'");
       }
     }

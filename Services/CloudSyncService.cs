@@ -92,27 +92,36 @@ namespace ChickenDist.Services
                 string rootFirebaseJson = System.IO.Path.Combine(baseDir, "firebase.json");
                 System.IO.File.WriteAllText(rootFirebaseJson, firebaseJsonContent, new System.Text.UTF8Encoding(false));
 
-                // 3. التأكد من ملف index.html في MobileApp
+                // 3. كتابة ملف sw.js (Service Worker لتفعيل تثبيت الـ PWA 100% على الجوال)
+                string swContent = @"// ProSoft ERP Mobile App Service Worker (PWA)
+const CACHE_NAME = 'prosoft-pwa-v300';
+self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+self.addEventListener('fetch', (e) => {
+  // Always fetch fresh network requests for live ERP data
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});";
+                string swPath = System.IO.Path.Combine(mobileAppDir, "sw.js");
+                System.IO.File.WriteAllText(swPath, swContent, new System.Text.UTF8Encoding(false));
+
+                // 4. التأكد من وتحديث ملف index.html في MobileApp
                 string indexHtmlPath = System.IO.Path.Combine(mobileAppDir, "index.html");
-                if (!System.IO.File.Exists(indexHtmlPath))
+                string devIndex = @"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\index.html";
+                if (System.IO.File.Exists(devIndex))
                 {
-                    string devIndex = @"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\index.html";
-                    if (System.IO.File.Exists(devIndex))
+                    System.IO.File.Copy(devIndex, indexHtmlPath, true);
+                }
+                else if (!System.IO.File.Exists(indexHtmlPath))
+                {
+                    try
                     {
-                        System.IO.File.Copy(devIndex, indexHtmlPath, true);
-                    }
-                    else
-                    {
-                        try
+                        using (var wc = new System.Net.WebClient())
                         {
-                            using (var wc = new System.Net.WebClient())
-                            {
-                                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls;
-                                wc.DownloadFile("https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/MobileApp/index.html", indexHtmlPath);
-                            }
+                            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls;
+                            wc.DownloadFile("https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/MobileApp/index.html", indexHtmlPath);
                         }
-                        catch { }
                     }
+                    catch { }
                 }
             }
             catch (Exception ex)
@@ -378,10 +387,26 @@ namespace ChickenDist.Services
                     "SELECT TOP 500 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
                 string clientsJson = DataTableToJson(dtClients);
 
-                // 9. كلمة مرور المالك والمدراء لتسجيل الدخول في تطبيق الموبايل
-                object ownerPassObj = DbHelper.Scalar("SELECT TOP 1 LTRIM(RTRIM(ISNULL(Password,''))) FROM Employees WHERE Role IN ('Admin', 'Owner', N'مدير', N'المدير', N'مدير عام', N'المالك') OR EmpID = 1 ORDER BY EmpID ASC");
-                string ownerPassword = ownerPassObj != null && ownerPassObj != DBNull.Value ? ownerPassObj.ToString().Trim() : "123456";
-                if (string.IsNullOrEmpty(ownerPassword)) ownerPassword = "admin";
+                // 9. بيانات حساب المالك والمدراء والماستر لتسجيل الدخول في تطبيق الموبايل
+                DataTable dtMaster = DbHelper.Query(@"
+                    SELECT TOP 1 EmpID, EmpName, 
+                           LTRIM(RTRIM(ISNULL(UserName, ''))) AS UserName, 
+                           LTRIM(RTRIM(ISNULL(Password, ''))) AS Password, 
+                           ISNULL(Role, 'Admin') AS Role 
+                    FROM Employees 
+                    WHERE IsActive = 1 AND (Role IN ('Admin', 'Owner', N'مدير', N'المدير', N'مدير عام', N'المالك') OR EmpID = 1)
+                    ORDER BY CASE WHEN Role IN ('Owner', N'المالك') THEN 1 WHEN Role IN ('Admin', N'مدير عام', N'المدير') THEN 2 ELSE 3 END, EmpID ASC");
+
+                string masterUserName = "admin";
+                string masterPassword = "admin";
+                if (dtMaster != null && dtMaster.Rows.Count > 0)
+                {
+                    masterUserName = dtMaster.Rows[0]["UserName"]?.ToString().Trim();
+                    masterPassword = dtMaster.Rows[0]["Password"]?.ToString().Trim();
+                    if (string.IsNullOrEmpty(masterUserName)) masterUserName = "admin";
+                    if (string.IsNullOrEmpty(masterPassword)) masterPassword = "admin";
+                }
+                string ownerPassword = masterPassword;
 
                 DataTable dtUsers = DbHelper.Query(@"
                     SELECT EmpID, EmpName, 
@@ -473,6 +498,68 @@ namespace ChickenDist.Services
                     ORDER BY cb.CashID DESC");
                 string expensesJson = DataTableToJson(dtExpenses);
 
+                // 16. تقارير إغلاق وتقفيل الورديات (Shifts Closing History)
+                DataTable dtShifts = null;
+                try
+                {
+                    dtShifts = DbHelper.Query(@"
+                        SELECT TOP 50
+                            s.ShiftID,
+                            CONVERT(VARCHAR(19), s.OpenTime, 120) AS OpenTime,
+                            CONVERT(VARCHAR(19), ISNULL(s.CloseTime, s.OpenTime), 120) AS CloseTime,
+                            ISNULL(s.CashierName, ISNULL(e.EmpName, N'كاشير')) AS CashierName,
+                            ISNULL(s.POSStationName, N'جهاز الكاشير') AS POSStationName,
+                            ISNULL(s.BranchName, N'الفرع الرئيسي') AS BranchName,
+                            ISNULL(sa.AccountName, N'الدرج الرئيسي') AS SafeName,
+                            ISNULL(s.OpeningCash, 0) AS OpeningCash,
+                            ISNULL(s.TotalSales, 0) AS TotalSales,
+                            ISNULL(s.CashSales, 0) AS CashSales,
+                            ISNULL(s.VisaSales, 0) AS VisaSales,
+                            ISNULL(s.WalletSales, 0) AS WalletSales,
+                            ISNULL(s.CreditSales, 0) AS CreditSales,
+                            ISNULL(s.TotalReturns, 0) AS TotalReturns,
+                            ISNULL(s.CashReturns, 0) AS CashReturns,
+                            ISNULL(s.CashExpenses, 0) AS TotalExpenses,
+                            ISNULL(s.CashIn, 0) AS TotalCashIn,
+                            ISNULL(s.NetSales, 0) AS NetSales,
+                            ISNULL(s.ExpectedCash, 0) AS ExpectedCash,
+                            ISNULL(s.ActualCash, 0) AS ActualCash,
+                            ISNULL(s.Difference, 0) AS CashDifference,
+                            ISNULL(s.InvoiceCount, 0) AS InvoiceCount,
+                            ISNULL(s.Status, N'Closed') AS Status,
+                            ISNULL(s.ApprovalStatus, N'Closed') AS ApprovalStatus,
+                            ISNULL(s.Notes, N'') AS Notes
+                        FROM Shifts s
+                        LEFT JOIN Employees e ON s.OpenedBy = e.EmpID
+                        LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+                        ORDER BY s.ShiftID DESC");
+                }
+                catch
+                {
+                    try
+                    {
+                        dtShifts = DbHelper.Query(@"
+                            SELECT TOP 30
+                                s.ShiftID,
+                                CONVERT(VARCHAR(19), s.OpenTime, 120) AS OpenTime,
+                                CONVERT(VARCHAR(19), ISNULL(s.CloseTime, s.OpenTime), 120) AS CloseTime,
+                                ISNULL(e.EmpName, N'كاشير') AS CashierName,
+                                ISNULL(s.OpeningCash, 0) AS OpeningCash,
+                                ISNULL(s.TotalSales, 0) AS TotalSales,
+                                ISNULL(s.CashSales, 0) AS CashSales,
+                                ISNULL(s.VisaSales, 0) AS VisaSales,
+                                ISNULL(s.ExpectedCash, 0) AS ExpectedCash,
+                                ISNULL(s.ActualCash, 0) AS ActualCash,
+                                ISNULL(s.Difference, 0) AS CashDifference,
+                                ISNULL(s.Status, N'Closed') AS Status
+                            FROM Shifts s
+                            LEFT JOIN Employees e ON s.OpenedBy = e.EmpID
+                            ORDER BY s.ShiftID DESC");
+                    }
+                    catch { }
+                }
+                string shiftsJson = DataTableToJson(dtShifts);
+
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string timeStr = DateTime.Now.ToString("hh:mm tt");
                 string storeName = EscapeJsonString(AppConfig.CompanyName);
@@ -502,6 +589,8 @@ namespace ChickenDist.Services
                         "\"LowStockCount\": " + dto.LowStockCount + "," +
                         "\"StoreName\": \"" + storeName + "\"," +
                         "\"StoreLogo\": \"" + storeLogoBase64 + "\"," +
+                        "\"MasterUserName\": \"" + EscapeJsonString(masterUserName) + "\"," +
+                        "\"MasterPassword\": \"" + EscapeJsonString(masterPassword) + "\"," +
                         "\"OwnerPassword\": \"" + EscapeJsonString(ownerPassword) + "\"," +
                         "\"SyncTime\": \"" + timeStr + "\"," +
                         "\"LastSyncDate\": \"" + isoNow + "\"," +
@@ -515,6 +604,7 @@ namespace ChickenDist.Services
                         "\"SuppliersList\": " + suppliersJson + "," +
                         "\"ClientsList\": " + clientsJson + "," +
                         "\"UsersList\": " + usersJson + "," +
+                        "\"ShiftsReport\": " + shiftsJson + "," +
                         "\"RecentSales\": " + recentSalesJson + "," +
                         "\"RecentPurchases\": " + recentPurchasesJson + "," +
                         "\"RecentCashBox\": " + recentCashJson + "," +
@@ -556,6 +646,8 @@ namespace ChickenDist.Services
                         "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
                         "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
                         "\"StoreLogo\": {\"stringValue\": \"" + storeLogoBase64 + "\"}," +
+                        "\"MasterUserName\": {\"stringValue\": \"" + EscapeJsonString(masterUserName) + "\"}," +
+                        "\"MasterPassword\": {\"stringValue\": \"" + EscapeJsonString(masterPassword) + "\"}," +
                         "\"OwnerPassword\": {\"stringValue\": \"" + EscapeJsonString(ownerPassword) + "\"}," +
                         "\"SyncTime\": {\"stringValue\": \"" + timeStr + "\"}," +
                         "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
@@ -568,6 +660,7 @@ namespace ChickenDist.Services
                         "\"SuppliersListJson\": {\"stringValue\": \"" + EscapeJsonString(suppliersJson) + "\"}," +
                         "\"ClientsListJson\": {\"stringValue\": \"" + EscapeJsonString(clientsJson) + "\"}," +
                         "\"UsersListJson\": {\"stringValue\": \"" + EscapeJsonString(usersJson) + "\"}," +
+                        "\"ShiftsReportJson\": {\"stringValue\": \"" + EscapeJsonString(shiftsJson) + "\"}," +
                         "\"RecentSalesJson\": {\"stringValue\": \"" + EscapeJsonString(recentSalesJson) + "\"}," +
                         "\"RecentPurchasesJson\": {\"stringValue\": \"" + EscapeJsonString(recentPurchasesJson) + "\"}," +
                         "\"RecentCashBoxJson\": {\"stringValue\": \"" + EscapeJsonString(recentCashJson) + "\"}," +
