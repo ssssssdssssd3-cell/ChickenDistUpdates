@@ -77,19 +77,16 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "🌿 شجرة ومكونات التصنيع (BOM) - تحديد وتعديل وصفات الإنتاج المعيارية";
-            this.Size = new Size(1220, 760);
-            this.MinimumSize = new Size(1060, 680);
+            this.Size = new Size(1260, 780);
+            this.MinimumSize = new Size(1080, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = false; // لمنع تشوه التخطيط في ويندوز فورمز
-            this.BackColor = Theme.BgMain;
-            this.Font = Theme.FontMain;
+            this.RightToLeftLayout = false;
+            this.BackColor = Color.FromArgb(241, 245, 249);
+            this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
 
             // ══════════════════════════════════════════════════════════════
-            // الحاوية الرئيسية: محرر الوصفة (يمين 70%) + قائمة الوصفات (يسار 30%)
-            // ══════════════════════════════════════════════════════════════
-            // ══════════════════════════════════════════════════════════════
-            // الحاوية الرئيسية: محرر الوصفة (يمين مرن) + قائمة الوصفات (يسار ثابت 340px)
+            // الحاوية الرئيسية: محرر الوصفة (يمين مرن) + قائمة الوصفات (يسار ثابت 310px)
             // ══════════════════════════════════════════════════════════════
             var tblContainer = new TableLayoutPanel
             {
@@ -97,29 +94,52 @@ namespace ChickenDist.Forms
                 ColumnCount = 2,
                 RowCount = 1,
                 RightToLeft = RightToLeft.Yes,
-                BackColor = Theme.BgMain,
+                BackColor = Color.FromArgb(241, 245, 249),
                 Padding = new Padding(6)
             };
-            tblContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // 0: المحرر (على اليمين)
-            tblContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 340f)); // 1: القائمة الجانبية (على اليسار 340px)
+            tblContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // 0: المحرر (اليمين)
+            tblContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 310f)); // 1: القائمة الجانبية (اليسار)
             tblContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             this.Controls.Add(tblContainer);
 
             // ──────────────────────────────────────────────────────────────
             // 1. المحرر الرئيسي للوصفة (الجانب الأيمن)
             // ──────────────────────────────────────────────────────────────
-            var pnlEditor = new Panel
+            var tblEditorLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgMain,
-                Padding = new Padding(2)
+                ColumnCount = 1,
+                RowCount = 4,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
             };
-            tblContainer.Controls.Add(pnlEditor, 0, 0);
+            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 138f)); // Row 0: بطاقة المنتج النهائي
+            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 118f)); // Row 1: بطاقة اختيار وإضافة المواد الخام
+            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 2: جدول بنود وخامات الوصفة
+            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56f));   // Row 3: شريط العمليات والملخص السفلي
+            tblContainer.Controls.Add(tblEditorLayout, 0, 0);
 
-            // ── أ) بطاقة المنتج النهائي المصنع (Top Card - Height 120px) ──
-            var pnlFinishedCard = CreateCardPanel(120);
+            // ══════════════════════════════════════════════════════════════
+            // [الجزء 1 - أعلى]: بطاقة المنتج النهائي المصنع (المعياري)
+            // ══════════════════════════════════════════════════════════════
+            var pnlFinishedCard = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(12, 8, 12, 8),
+                Margin = new Padding(0, 0, 0, 6)
+            };
+            pnlFinishedCard.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1.2f))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlFinishedCard.Width - 1, pnlFinishedCard.Height - 1);
+                }
+            };
 
-            // ترويسة البطاقة
+            // ترويسة بطاقة المنتج النهائي
             var pnlFinishedHeader = new Panel { Dock = DockStyle.Top, Height = 28, BackColor = Color.Transparent };
             var lblFpTitle = new Label
             {
@@ -127,7 +147,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Theme.Accent
+                ForeColor = Color.FromArgb(15, 23, 42)
             };
             pnlFinishedHeader.Controls.Add(lblFpTitle);
 
@@ -139,279 +159,284 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(16, 185, 129),
                 BackColor = Color.FromArgb(240, 253, 244),
-                Padding = new Padding(8, 3, 8, 3)
+                Padding = new Padding(10, 3, 10, 3)
             };
             pnlFinishedHeader.Controls.Add(lblHeaderUnitCostBadge);
             pnlFinishedCard.Controls.Add(pnlFinishedHeader);
 
-            // حقول المنتج النهائي داخل TableLayoutPanel لضمان الترتيب التام وعدم اختفاء أي خانة
+            // جدول حقول المنتج النهائي (Row 0: Labels, Row 1: Controls)
             var tblFinished = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 5,
-                RowCount = 1,
+                RowCount = 2,
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Color.Transparent,
-                Padding = new Padding(0, 2, 0, 0)
+                Margin = new Padding(0),
+                Padding = new Padding(0, 4, 0, 0)
             };
-            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 320f)); // 0: الصنف النهائي
-            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95f));  // 1: الكمية
-            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75f));  // 2: الوحدة
-            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // 3: مدة التصنيع
-            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // 4: الملاحظات
-            tblFinished.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            pnlFinishedCard.Controls.Add(tblFinished);
+            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 36f)); // 0: الصنف النهائي + بحث
+            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12f)); // 1: الكمية
+            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 11f)); // 2: الوحدة
+            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15f)); // 3: مدة التصنيع
+            tblFinished.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 26f)); // 4: الملاحظات
+            tblFinished.RowStyles.Add(new RowStyle(SizeType.Absolute, 22f));      // Row 0: Labels
+            tblFinished.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f));      // Row 1: Inputs
 
-            // 1. حقل الصنف النهائي
-            var pnlFpInput = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlFpInput.Controls.Add(new Label { Text = "الصنف النهائي (اكتب كود/اسم أو اضغط بحث):", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
-            
-            var tblFpBox = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
-                RightToLeft = RightToLeft.Yes,
-                Margin = new Padding(0)
-            };
-            tblFpBox.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            tblFpBox.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 74f));
-            tblFpBox.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            // Labels Row
+            tblFinished.Controls.Add(new Label { Text = "الصنف النهائي (كود/اسم/بحث):", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomRight }, 0, 0);
+            tblFinished.Controls.Add(new Label { Text = "الكمية المعيارية:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 1, 0);
+            tblFinished.Controls.Add(new Label { Text = "الوحدة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 2, 0);
+            tblFinished.Controls.Add(new Label { Text = "⏱️ مدة التصنيع:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 3, 0);
+            tblFinished.Controls.Add(new Label { Text = "ملاحظات الوصفة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomRight }, 4, 0);
 
+            // Controls Row
+            // 0: الصنف النهائي + زر البحث
+            var pnlFpBox = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 6, 0) };
             txtFinishedProduct = new TextBox
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 4, 0),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
             };
             txtFinishedProduct.KeyDown += TxtFinishedProduct_KeyDown;
-            tblFpBox.Controls.Add(txtFinishedProduct, 0, 0);
-
-            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 70, 28, Theme.Primary);
-            btnBrowseFinished.Dock = DockStyle.Fill;
-            btnBrowseFinished.Margin = new Padding(0);
+            
+            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 72, 30, Theme.Primary);
+            btnBrowseFinished.Dock = DockStyle.Left;
+            btnBrowseFinished.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnBrowseFinished.Click += (s, e) => SelectFinishedProduct();
-            tblFpBox.Controls.Add(btnBrowseFinished, 1, 0);
 
-            pnlFpInput.Controls.Add(tblFpBox);
-            tblFinished.Controls.Add(pnlFpInput, 0, 0);
+            pnlFpBox.Controls.Add(txtFinishedProduct);
+            pnlFpBox.Controls.Add(btnBrowseFinished);
+            tblFinished.Controls.Add(pnlFpBox, 0, 1);
 
-            // 2. الكمية المعيارية
-            var pnlOutputQty = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlOutputQty.Controls.Add(new Label { Text = "الكمية:", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
+            // 1: الكمية
             numOutputQty = new NumericUpDown
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 0, 0),
+                Margin = new Padding(0, 2, 6, 0),
                 DecimalPlaces = 2,
                 Minimum = 0.01m,
                 Maximum = 1000000m,
                 Value = 1m,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(2, 132, 199),
                 TextAlign = HorizontalAlignment.Center
             };
             numOutputQty.ValueChanged += (s, e) => RecalculateTotals();
-            pnlOutputQty.Controls.Add(numOutputQty);
-            tblFinished.Controls.Add(pnlOutputQty, 1, 0);
+            tblFinished.Controls.Add(numOutputQty, 1, 1);
 
-            // 3. الوحدة
-            var pnlUnit = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlUnit.Controls.Add(new Label { Text = "الوحدة:", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
+            // 2: الوحدة
             txtUnitName = new TextBox
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 0, 0),
+                Margin = new Padding(0, 2, 6, 0),
                 Text = "قطعة",
-                Font = Theme.FontMain,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 TextAlign = HorizontalAlignment.Center
             };
-            pnlUnit.Controls.Add(txtUnitName);
-            tblFinished.Controls.Add(pnlUnit, 2, 0);
+            tblFinished.Controls.Add(txtUnitName, 2, 1);
 
-            // 4. مدة التصنيع التقديرية
-            var pnlDuration = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlDuration.Controls.Add(new Label { Text = "⏱️ مدة التصنيع:", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
+            // 3: مدة التصنيع
             txtEstimatedDuration = new TextBox
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 0, 0),
-                Font = Theme.FontMain,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                Margin = new Padding(0, 2, 6, 0),
+                Font = new Font("Segoe UI", 10f, FontStyle.Regular),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 TextAlign = HorizontalAlignment.Center
             };
-            pnlDuration.Controls.Add(txtEstimatedDuration);
-            tblFinished.Controls.Add(pnlDuration, 3, 0);
+            tblFinished.Controls.Add(txtEstimatedDuration, 3, 1);
 
-            // 5. الملاحظات
-            var pnlNotes = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 0) };
-            pnlNotes.Controls.Add(new Label { Text = "ملاحظات الوصفة:", Dock = DockStyle.Top, Height = 20, ForeColor = Theme.TextSub, Font = Theme.FontSmall });
+            // 4: الملاحظات
             txtNotes = new TextBox
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0, 2, 0, 0),
-                Font = Theme.FontMain,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                Font = new Font("Segoe UI", 10f, FontStyle.Regular),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42)
             };
-            pnlNotes.Controls.Add(txtNotes);
-            tblFinished.Controls.Add(pnlNotes, 4, 0);
+            tblFinished.Controls.Add(txtNotes, 4, 1);
 
-            // ── ب) شريط الإضافة السريع للمواد الخام (Quick Add Bar - Height 74px) ──
+            pnlFinishedCard.Controls.Add(tblFinished);
+            tblEditorLayout.Controls.Add(pnlFinishedCard, 0, 0);
+
+            // ══════════════════════════════════════════════════════════════
+            // [الجزء 2 - أوسط]: بطاقة اختيار وإضافة مواد وخامات التصنيع
+            // ══════════════════════════════════════════════════════════════
             var pnlQuickAdd = new Panel
             {
-                Height = 74,
-                BackColor = Color.FromArgb(241, 245, 249),
-                Padding = new Padding(8, 4, 8, 4),
-                Margin = new Padding(0, 0, 0, 4)
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(12, 6, 12, 6),
+                Margin = new Padding(0, 0, 0, 6)
+            };
+            pnlQuickAdd.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(148, 163, 184), 1.2f))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlQuickAdd.Width - 1, pnlQuickAdd.Height - 1);
+                }
             };
 
+            // ترويسة اختيار المواد الخام
+            var pnlRawHeader = new Panel { Dock = DockStyle.Top, Height = 24, BackColor = Color.Transparent };
+            var lblRawSectionTitle = new Label
+            {
+                Text = "📦 اختيار وإضافة مواد وخامات التصنيع (المكونات):",
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 41, 59)
+            };
+            pnlRawHeader.Controls.Add(lblRawSectionTitle);
+
+            var lblRawHint = new Label
+            {
+                Text = "💡 اضغط Enter في أي خانة لإضافة الخامة فوراً",
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Italic),
+                ForeColor = Color.FromArgb(100, 116, 139)
+            };
+            pnlRawHeader.Controls.Add(lblRawHint);
+            pnlQuickAdd.Controls.Add(pnlRawHeader);
+
+            // جدول حقول المواد الخام
             var tblQuick = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 6,
-                RowCount = 1,
+                RowCount = 2,
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Color.Transparent,
-                Margin = new Padding(0)
+                Margin = new Padding(0),
+                Padding = new Padding(0, 2, 0, 0)
             };
-            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300f)); // 0: المادة الخام
-            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70f));  // 1: الوحدة
-            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // 2: الكمية
-            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105f)); // 3: سعر التكلفة
-            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110f)); // 4: إجمالي التكلفة
-            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f)); // 5: زر الإضافة
-            tblQuick.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            pnlQuickAdd.Controls.Add(tblQuick);
+            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35f)); // 0: المادة الخام
+            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10f)); // 1: الوحدة
+            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 11f)); // 2: الكمية
+            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 13f)); // 3: سعر التكلفة
+            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14f)); // 4: إجمالي التكلفة
+            tblQuick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 17f)); // 5: زر الإضافة
+            tblQuick.RowStyles.Add(new RowStyle(SizeType.Absolute, 20f));      // Row 0: Labels
+            tblQuick.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f));      // Row 1: Inputs
 
-            // 1. المادة الخام
-            var pnlRawInput = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlRawInput.Controls.Add(new Label { Text = "📦 المادة الخام (كود/اسم/باركود):", Dock = DockStyle.Top, Height = 20, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(30, 41, 59) });
-            
-            var tblRawBox = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
-                RightToLeft = RightToLeft.Yes,
-                Margin = new Padding(0)
-            };
-            tblRawBox.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            tblRawBox.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70f));
-            tblRawBox.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            // Labels
+            tblQuick.Controls.Add(new Label { Text = "المادة الخام (كود/اسم/باركود):", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomRight }, 0, 0);
+            tblQuick.Controls.Add(new Label { Text = "الوحدة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 1, 0);
+            tblQuick.Controls.Add(new Label { Text = "الكمية المطلوبة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 2, 0);
+            tblQuick.Controls.Add(new Label { Text = "سعر التكلفة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 3, 0);
+            tblQuick.Controls.Add(new Label { Text = "إجمالي التكلفة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 4, 0);
+            tblQuick.Controls.Add(new Label { Text = "", Dock = DockStyle.Fill }, 5, 0);
 
+            // Controls
+            // 0: المادة الخام + زر البحث
+            var pnlRawBox = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 6, 0) };
             txtRawProduct = new TextBox
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 4, 0),
                 BackColor = Color.White,
                 ForeColor = Color.Black,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
             };
             txtRawProduct.KeyDown += TxtRawProduct_KeyDown;
-            tblRawBox.Controls.Add(txtRawProduct, 0, 0);
-
-            btnBrowseRaw = Theme.MakeButton("🔍 خامات", 0, 0, 68, 28, Color.FromArgb(71, 85, 105));
-            btnBrowseRaw.Dock = DockStyle.Fill;
-            btnBrowseRaw.Margin = new Padding(0);
+            
+            btnBrowseRaw = Theme.MakeButton("🔍 خامات", 0, 0, 75, 30, Color.FromArgb(71, 85, 105));
+            btnBrowseRaw.Dock = DockStyle.Left;
+            btnBrowseRaw.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnBrowseRaw.Click += (s, e) => SelectRawProduct("", autoAddToGrid: true);
-            tblRawBox.Controls.Add(btnBrowseRaw, 1, 0);
 
-            pnlRawInput.Controls.Add(tblRawBox);
-            tblQuick.Controls.Add(pnlRawInput, 0, 0);
+            pnlRawBox.Controls.Add(txtRawProduct);
+            pnlRawBox.Controls.Add(btnBrowseRaw);
+            tblQuick.Controls.Add(pnlRawBox, 0, 1);
 
-            // 2. الوحدة
-            var pnlRawU = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlRawU.Controls.Add(new Label { Text = "الوحدة:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontSmall, ForeColor = Color.FromArgb(71, 85, 105) });
+            // 1: الوحدة
             txtRawUnit = new TextBox
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 0, 0),
+                Margin = new Padding(0, 2, 6, 0),
                 Text = "قطعة",
-                Font = Theme.FontMain,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 BackColor = Color.White,
                 ForeColor = Color.Black,
                 TextAlign = HorizontalAlignment.Center
             };
-            pnlRawU.Controls.Add(txtRawUnit);
-            tblQuick.Controls.Add(pnlRawU, 1, 0);
+            tblQuick.Controls.Add(txtRawUnit, 1, 1);
 
-            // 3. الكمية المطلوبة
-            var pnlRawQ = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlRawQ.Controls.Add(new Label { Text = "الكمية:", Dock = DockStyle.Top, Height = 20, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(30, 41, 59) });
+            // 2: الكمية
             numRawQty = new NumericUpDown
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 0, 0),
+                Margin = new Padding(0, 2, 6, 0),
                 DecimalPlaces = 3,
                 Minimum = 0.001m,
                 Maximum = 1000000m,
                 Value = 1m,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 BackColor = Color.White,
-                ForeColor = Color.Black,
+                ForeColor = Color.FromArgb(2, 132, 199),
                 TextAlign = HorizontalAlignment.Center
             };
             numRawQty.ValueChanged += (s, e) => UpdateRawTotalPreview();
             numRawQty.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; AddCurrentRawToGrid(); } };
-            pnlRawQ.Controls.Add(numRawQty);
-            tblQuick.Controls.Add(pnlRawQ, 2, 0);
+            tblQuick.Controls.Add(numRawQty, 2, 1);
 
-            // 4. سعر التكلفة للوحدة
-            var pnlRawC = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlRawC.Controls.Add(new Label { Text = "سعر التكلفة:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontSmall, ForeColor = Color.FromArgb(71, 85, 105) });
+            // 3: سعر التكلفة
             numRawCostPrice = new NumericUpDown
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 0, 0),
+                Margin = new Padding(0, 2, 6, 0),
                 DecimalPlaces = 2,
                 Minimum = 0m,
                 Maximum = 1000000m,
                 Value = 0m,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(180, 83, 9),
                 TextAlign = HorizontalAlignment.Center
             };
             numRawCostPrice.ValueChanged += (s, e) => UpdateRawTotalPreview();
             numRawCostPrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; AddCurrentRawToGrid(); } };
-            pnlRawC.Controls.Add(numRawCostPrice);
-            tblQuick.Controls.Add(pnlRawC, 3, 0);
+            tblQuick.Controls.Add(numRawCostPrice, 3, 1);
 
-            // 5. إجمالي تكلفة البند
-            var pnlRawTot = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0) };
-            pnlRawTot.Controls.Add(new Label { Text = "إجمالي التكلفة:", Dock = DockStyle.Top, Height = 20, Font = Theme.FontSmall, ForeColor = Color.FromArgb(71, 85, 105) });
+            // 4: إجمالي تكلفة البند
             lblRawTotalPreview = new Label
             {
                 Text = "0.00 ج.م",
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 2, 0, 0),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(217, 119, 6),
+                Margin = new Padding(0, 2, 6, 0),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(180, 83, 9),
+                BackColor = Color.FromArgb(254, 243, 199),
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            pnlRawTot.Controls.Add(lblRawTotalPreview);
-            tblQuick.Controls.Add(pnlRawTot, 4, 0);
+            tblQuick.Controls.Add(lblRawTotalPreview, 4, 1);
 
-            // 6. زر الإضافة الكبير
-            btnAddRaw = Theme.MakeButton("➕ إضافة للشجرة", 0, 0, 135, 30, Color.FromArgb(16, 185, 129));
+            // 5: زر الإضافة الكبير
+            btnAddRaw = Theme.MakeButton("➕ إضافة للشجرة", 0, 0, 130, 32, Color.FromArgb(16, 185, 129));
             btnAddRaw.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnAddRaw.Dock = DockStyle.Fill;
-            btnAddRaw.Margin = new Padding(0, 20, 4, 0);
+            btnAddRaw.Margin = new Padding(0, 2, 0, 0);
             btnAddRaw.Click += (s, e) => AddCurrentRawToGrid();
-            tblQuick.Controls.Add(btnAddRaw, 5, 0);
+            tblQuick.Controls.Add(btnAddRaw, 5, 1);
 
-            // ── ج) جدول بنود وخامات الوصفة (DataGrid) ──
+            pnlQuickAdd.Controls.Add(tblQuick);
+            tblEditorLayout.Controls.Add(pnlQuickAdd, 0, 1);
+
+            // ══════════════════════════════════════════════════════════════
+            // [الجزء 3 - رئيسي]: جدول بنود وخامات الوصفة (DataGrid)
+            // ══════════════════════════════════════════════════════════════
             dgItems = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
+                BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -423,7 +448,8 @@ namespace ChickenDist.Forms
                 GridColor = Color.FromArgb(226, 232, 240),
                 EnableHeadersVisualStyles = false,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-                ColumnHeadersHeight = 36
+                ColumnHeadersHeight = 36,
+                Margin = new Padding(0, 0, 0, 6)
             };
             dgItems.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
@@ -435,8 +461,8 @@ namespace ChickenDist.Forms
             dgItems.DefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.White,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 SelectionBackColor = Color.FromArgb(224, 242, 254),
                 SelectionForeColor = Color.Black,
                 Alignment = DataGridViewContentAlignment.MiddleCenter
@@ -485,23 +511,33 @@ namespace ChickenDist.Forms
                     RecalculateTotals();
                 }
             };
+            tblEditorLayout.Controls.Add(dgItems, 0, 2);
 
-            // ── د) شريط الملخص والعمليات السفلي بتصميم TableLayoutPanel مستقر ومنع أي تداخل (Bottom Bar - Height 58px) ──
+            // ══════════════════════════════════════════════════════════════
+            // [الجزء 4 - أسفل]: شريط العمليات والملخص السفلي
+            // ══════════════════════════════════════════════════════════════
             var tblBottom = new TableLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                Height = 58,
+                Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 RowCount = 1,
                 RightToLeft = RightToLeft.Yes,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(4)
+                BackColor = Color.White,
+                Padding = new Padding(6, 4, 6, 4),
+                Margin = new Padding(0)
             };
             tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f)); // Column 0 (Right): الأزرار
             tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f)); // Column 1 (Left): الملخص المالي
             tblBottom.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblBottom.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1f))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, tblBottom.Width - 1, tblBottom.Height - 1);
+                }
+            };
 
-            // Column 0: الأزرار (Right side in RTL)
+            // Column 0: الأزرار
             var pnlActionsRight = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -512,31 +548,31 @@ namespace ChickenDist.Forms
             };
             tblBottom.Controls.Add(pnlActionsRight, 0, 0);
 
-            btnSave = Theme.MakeButton("💾 حفظ الشجرة", 0, 0, 130, 38, Color.FromArgb(16, 185, 129));
+            btnSave = Theme.MakeButton("💾 حفظ الشجرة", 0, 0, 130, 36, Color.FromArgb(16, 185, 129));
             btnSave.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            btnSave.Margin = new Padding(0, 4, 6, 0);
+            btnSave.Margin = new Padding(0, 2, 6, 0);
             btnSave.Click += (s, e) => SaveCurrentBOM();
             pnlActionsRight.Controls.Add(btnSave);
 
-            btnNew = Theme.MakeButton("➕ وصفة جديدة", 0, 0, 115, 38, Color.FromArgb(71, 85, 105));
+            btnNew = Theme.MakeButton("➕ وصفة جديدة", 0, 0, 115, 36, Color.FromArgb(71, 85, 105));
             btnNew.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnNew.Margin = new Padding(0, 4, 6, 0);
+            btnNew.Margin = new Padding(0, 2, 6, 0);
             btnNew.Click += (s, e) => ResetForm();
             pnlActionsRight.Controls.Add(btnNew);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 85, 38, Color.FromArgb(2, 132, 199));
+            btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 85, 36, Color.FromArgb(2, 132, 199));
             btnPrint.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnPrint.Margin = new Padding(0, 4, 6, 0);
+            btnPrint.Margin = new Padding(0, 2, 6, 0);
             btnPrint.Click += (s, e) => PrintBOM();
             pnlActionsRight.Controls.Add(btnPrint);
 
-            btnDelete = Theme.MakeButton("🗑️ حذف", 0, 0, 80, 38, Color.FromArgb(239, 68, 68));
+            btnDelete = Theme.MakeButton("🗑️ حذف", 0, 0, 80, 36, Color.FromArgb(239, 68, 68));
             btnDelete.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnDelete.Margin = new Padding(0, 4, 0, 0);
+            btnDelete.Margin = new Padding(0, 2, 0, 0);
             btnDelete.Click += (s, e) => DeleteCurrentBOM();
             pnlActionsRight.Controls.Add(btnDelete);
 
-            // Column 1: الملخص المالي (Left side in RTL)
+            // Column 1: الملخص المالي
             var pnlSummaryLeft = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -556,44 +592,25 @@ namespace ChickenDist.Forms
             lblItemsCount = CreateBadge("📦 الأصناف: 0", Color.FromArgb(71, 85, 105), Color.FromArgb(241, 245, 249));
             pnlSummaryLeft.Controls.Add(lblItemsCount);
 
-            // تجميع عناصر المحرر في TableLayoutPanel لضمان الاستقرار التام ومنع أي تداخل نهائياً
-            var tblEditorLayout = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 4,
-                RightToLeft = RightToLeft.Yes,
-                BackColor = Theme.BgMain,
-                Padding = new Padding(0)
-            };
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 118f)); // Row 0: بطاقة المنتج النهائي
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 76f));  // Row 1: شريط إضافة الخامات
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 2: جدول بنود وخامات الوصفة
-            tblEditorLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 58f));  // Row 3: شريط العمليات والملخص السفلي
-
-            pnlFinishedCard.Dock = DockStyle.Fill;
-            pnlFinishedCard.Margin = new Padding(0, 0, 0, 4);
-            pnlQuickAdd.Dock = DockStyle.Fill;
-            pnlQuickAdd.Margin = new Padding(0, 0, 0, 4);
-            dgItems.Dock = DockStyle.Fill;
-            dgItems.Margin = new Padding(0, 0, 0, 4);
-            tblBottom.Dock = DockStyle.Fill;
-            tblBottom.Margin = new Padding(0);
-
-            tblEditorLayout.Controls.Add(pnlFinishedCard, 0, 0);
-            tblEditorLayout.Controls.Add(pnlQuickAdd, 0, 1);
-            tblEditorLayout.Controls.Add(dgItems, 0, 2);
             tblEditorLayout.Controls.Add(tblBottom, 0, 3);
-
-            pnlEditor.Controls.Clear();
-            pnlEditor.Controls.Add(tblEditorLayout);
 
             // ──────────────────────────────────────────────────────────────
             // 2. القائمة الجانبية (الوصفات وشجر الإنتاج المسجلة - على اليسار)
             // ──────────────────────────────────────────────────────────────
-            var pnlSidebar = CreateCardPanel(0);
-            pnlSidebar.Dock = DockStyle.Fill;
-            pnlSidebar.Padding = new Padding(8);
+            var pnlSidebar = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(8),
+                Margin = new Padding(6, 0, 0, 0)
+            };
+            pnlSidebar.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1.2f))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlSidebar.Width - 1, pnlSidebar.Height - 1);
+                }
+            };
             tblContainer.Controls.Add(pnlSidebar, 1, 0);
 
             var pnlSideTop = new Panel { Dock = DockStyle.Top, Height = 64, BackColor = Color.Transparent };
@@ -603,18 +620,18 @@ namespace ChickenDist.Forms
                 Text = "📋 شجر الإنتاج والوصفات المسجلة",
                 Dock = DockStyle.Top,
                 Height = 26,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Theme.Accent
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42)
             };
             pnlSideTop.Controls.Add(lblSideTitle);
 
             txtSearchBOM = new TextBox
             {
                 Dock = DockStyle.Bottom,
-                Height = 32,
-                Font = Theme.FontMain,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                Height = 30,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                BackColor = Color.White,
+                ForeColor = Color.Black
             };
             txtSearchBOM.TextChanged += (s, e) => LoadSavedBOMsList(txtSearchBOM.Text.Trim());
             pnlSideTop.Controls.Add(txtSearchBOM);
@@ -626,7 +643,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Bottom,
                 Height = 26,
                 Font = Theme.FontSmall,
-                ForeColor = Theme.TextSub,
+                ForeColor = Color.FromArgb(100, 116, 139),
                 TextAlign = ContentAlignment.MiddleLeft
             };
             pnlSidebar.Controls.Add(lblBOMCount);
@@ -660,7 +677,7 @@ namespace ChickenDist.Forms
             dgBOMList.DefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.White,
-                ForeColor = Theme.TextMain,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = Theme.FontMain,
                 SelectionBackColor = Color.FromArgb(224, 242, 254),
                 SelectionForeColor = Color.Black

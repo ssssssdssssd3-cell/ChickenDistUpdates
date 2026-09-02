@@ -793,10 +793,10 @@ namespace ChickenDist.Forms
             // Left: توقيت الطباعة
             g.DrawString($"توقيت الطباعة  {DateTime.Now:dd/MM/yyyy}", fFoot, Brushes.Black, marginL, footY);
 
-            // Center: Copyright @ e-Stock / Modern Soft Company
-            string copyText = "Copyright @ e-Stock\nModern Soft Company";
+            // Center: Copyright @ ProSoft ERP System
+            string copyText = "نظام برو سوفت لإدارة الحسابات والمبيعات - ProSoft ERP";
             var sfCenter = new StringFormat { Alignment = StringAlignment.Center };
-            g.DrawString(copyText, new Font("Arial", 7f, FontStyle.Italic), Brushes.Black, marginL + pageW / 2f, footY - 1, sfCenter);
+            g.DrawString(copyText, new Font("Segoe UI", 7.5f, FontStyle.Bold), Brushes.DarkSlateGray, marginL + pageW / 2f, footY, sfCenter);
 
             // Right: رقم الصفحة X
             var sfRight = new StringFormat { Alignment = StringAlignment.Far };
