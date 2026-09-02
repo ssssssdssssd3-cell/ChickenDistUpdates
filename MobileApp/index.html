@@ -6,11 +6,11 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, s-maxage=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="app-version" content="3.0.1" />
+  <meta name="app-version" content="3.1.0" />
   <title>لوحة تحكم المالك | ProSoft ERP</title>
   <script>
     // ── المحرك الجذري لكسر كاش المتصفح تلقائياً (RADICAL ANTI-CACHE ENGINE) ──
-    const APP_BUILD_ID = "v301-" + new Date().toISOString().slice(0, 10);
+    const APP_BUILD_ID = "v310-" + new Date().toISOString().slice(0, 10);
     const storedBuild = localStorage.getItem("prosoft_build_id");
     
     // 1. إذا وجد أي إصدار قديم في الذاكرة: امسح جميع الكاشات فوراً
@@ -163,7 +163,21 @@
       </div>
 
       <h2 class="text-xl sm:text-2xl font-black text-white tracking-wide" id="loginStoreTitle">تطبيق المالك السحابي</h2>
-      <p class="text-xs text-slate-400 mt-1 mb-5">🔐 أدخل بيانات حساب المدير / المالك المسجل بقاعدة بيانات المحل</p>
+      <p class="text-xs text-slate-400 mt-1 mb-3">🔐 أدخل بيانات حساب المدير / المالك المسجل بقاعدة بيانات المحل</p>
+
+      <!-- مؤشر حالة اتصال قاعدة البيانات SQL Server لشاشة تسجيل الدخول -->
+      <div id="loginConnectionBox" class="mb-4 p-2.5 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs transition-all shadow-inner">
+        <div class="flex items-center gap-2.5 text-right">
+          <span id="loginConnectionDot" class="w-3 h-3 rounded-full bg-amber-400 animate-ping flex-shrink-0"></span>
+          <div>
+            <div id="loginConnectionText" class="font-bold text-slate-200 text-[11px] leading-tight">جاري فحص اتصال سيرفر SQL Server...</div>
+            <div id="loginSyncTimeText" class="text-[10px] text-slate-400 mt-0.5">آخر مزامنة: --:--</div>
+          </div>
+        </div>
+        <button type="button" onclick="fetchFreshData(true)" class="p-2 bg-slate-800 hover:bg-slate-700 active:scale-90 text-brand-400 rounded-xl text-xs transition border border-slate-700" title="إعادة فحص الاتصال وتحديث البيانات">
+          <i id="btnLoginRefreshIcon" class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
 
       <!-- نموذج الدخول باليوزر والباسورد للماستر من السيكول -->
       <form id="ownerLoginForm" onsubmit="handleOwnerPasswordLogin(event)" class="space-y-4 text-right">
@@ -239,7 +253,7 @@
 
       <div class="mt-5 pt-3.5 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
         <span>🔒 بيانات مشفرة ومحمية بالكامل</span>
-        <span id="appVersionBadge">v2.9.7</span>
+        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.1.0</span>
       </div>
     </div>
   </div>
@@ -2843,9 +2857,18 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
       const offlineDetails = document.getElementById('offlineDetailsText');
       const syncTimeLabel = document.getElementById('headerSyncTime');
 
+      // عناصر شاشة تسجيل الدخول
+      const loginBox = document.getElementById('loginConnectionBox');
+      const loginDot = document.getElementById('loginConnectionDot');
+      const loginText = document.getElementById('loginConnectionText');
+      const loginSyncTime = document.getElementById('loginSyncTimeText');
+
       if (!syncMs) {
         if (text) text.textContent = "جاري الاتصال...";
         if (syncTimeLabel) syncTimeLabel.textContent = "آخر تحديث: --:--";
+        if (loginText) loginText.innerHTML = '<span class="text-amber-300 font-bold">⏳ جاري الاتصال بقاعدة البيانات...</span>';
+        if (loginSyncTime) loginSyncTime.textContent = "يرجى الانتظار لحين جلب حالة المحل";
+        if (loginDot) loginDot.className = "w-3 h-3 rounded-full bg-amber-400 animate-ping flex-shrink-0";
         return;
       }
 
@@ -2875,6 +2898,20 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
         if (offlineBanner) {
           offlineBanner.classList.add('hidden');
         }
+
+        // تحديث شاشة الدخول للوضع المتصل
+        if (loginBox) {
+          loginBox.className = "mb-4 p-2.5 rounded-2xl bg-emerald-950/40 border border-emerald-700/60 flex items-center justify-between text-xs transition-all shadow-inner";
+        }
+        if (loginDot) {
+          loginDot.className = "w-3 h-3 rounded-full bg-emerald-400 shadow-md shadow-emerald-500/50 animate-pulse flex-shrink-0";
+        }
+        if (loginText) {
+          loginText.innerHTML = '<span class="text-emerald-300 font-black">🟢 سيرفر SQL Server: متصل مباشر ⚡</span>';
+        }
+        if (loginSyncTime) {
+          loginSyncTime.innerHTML = `آخر نبضة مزامنة: <span class="text-emerald-400 font-bold">${timeFormatted}</span>`;
+        }
       } else {
         isServerOnline = false;
         const durText = formatTimeAgo(diffSec);
@@ -2893,6 +2930,20 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
           if (offlineDetails) {
             offlineDetails.textContent = `آخر مزامنة عندما كان الجهاز متصلاً: ${timeFormatted} بتوقيت (${dateFormatted}) - البيانات المعروضة هي آخر نسخة محفوظة.`;
           }
+        }
+
+        // تحديث شاشة الدخول للوضع غير المتصل
+        if (loginBox) {
+          loginBox.className = "mb-4 p-2.5 rounded-2xl bg-rose-950/40 border border-rose-800/60 flex items-center justify-between text-xs transition-all shadow-inner";
+        }
+        if (loginDot) {
+          loginDot.className = "w-3 h-3 rounded-full bg-rose-500 animate-ping flex-shrink-0";
+        }
+        if (loginText) {
+          loginText.innerHTML = `<span class="text-rose-400 font-black">🔴 سيرفر SQL Server: غير متصل (${durText})</span>`;
+        }
+        if (loginSyncTime) {
+          loginSyncTime.innerHTML = `آخر مزامنة ناجحة: <span class="text-slate-400 font-bold">${timeFormatted}</span>`;
         }
       }
     }

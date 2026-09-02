@@ -27,7 +27,7 @@ namespace ChickenDist.Services
         }
 
         /// <summary>
-        /// ينشئ ويتأكد من وجود مجلد MobileApp وملف firebase.json وملف index.html تلقائياً على جهاز العميل دون الحاجة لنقلها يدوياً
+        /// ينشئ ويتأكد من وجود مجلد MobileApp وجميع ملفات تطبيق المالك (HTML, JS, PWA Service Worker, Rules, Config) تلقائياً على جهاز العميل بأحدث إصدار
         /// </summary>
         public static void EnsureMobileAppFiles()
         {
@@ -40,6 +40,7 @@ namespace ChickenDist.Services
                     System.IO.Directory.CreateDirectory(mobileAppDir);
                 }
 
+                // 1. ملف إعدادات الاستضافة العالمي firebase.json مع إجبار منع الكاش على كل المسارات
                 string firebaseJsonContent = @"{
   ""hosting"": {
     ""public"": ""."",
@@ -54,19 +55,25 @@ namespace ChickenDist.Services
       ""*.rules.json"",
       ""*.rules""
     ],
-    ""rewrites"": [
-      {
-        ""source"": ""**"",
-        ""destination"": ""/index.html""
-      }
-    ],
     ""headers"": [
       {
-        ""source"": ""**/*.@(js|html|css|json|png|jpg|jpeg|svg|webp)"",
+        ""source"": ""**"",
         ""headers"": [
           {
             ""key"": ""Cache-Control"",
-            ""value"": ""no-cache, no-store, must-revalidate""
+            ""value"": ""no-cache, no-store, must-revalidate, max-age=0, s-maxage=0""
+          },
+          {
+            ""key"": ""Pragma"",
+            ""value"": ""no-cache""
+          },
+          {
+            ""key"": ""Expires"",
+            ""value"": ""0""
+          },
+          {
+            ""key"": ""Surrogate-Control"",
+            ""value"": ""no-store""
           },
           {
             ""key"": ""Access-Control-Allow-Origin"",
@@ -83,32 +90,62 @@ namespace ChickenDist.Services
     ""rules"": ""firestore.rules""
   }
 }";
-
-                // 1. كتابة ملف firebase.json داخل MobileApp
                 string mobileFirebaseJson = System.IO.Path.Combine(mobileAppDir, "firebase.json");
                 System.IO.File.WriteAllText(mobileFirebaseJson, firebaseJsonContent, new System.Text.UTF8Encoding(false));
 
-                // 2. كتابة ملف firebase.json في المجلد الرئيسي للبرنامج أيضاً
                 string rootFirebaseJson = System.IO.Path.Combine(baseDir, "firebase.json");
                 System.IO.File.WriteAllText(rootFirebaseJson, firebaseJsonContent, new System.Text.UTF8Encoding(false));
 
-                // 3. كتابة وتحديث ملف sw.js (Service Worker لتفعيل تثبيت الـ PWA ومسح الكاش القديم)
-                string swContent = @"// ProSoft ERP Mobile App Service Worker (PWA) v3.0.0
-const CACHE_NAME = 'prosoft-pwa-v300';
-self.addEventListener('install', (e) => { self.skipWaiting(); });
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => self.clients.claim())
+                // 2. ملف قواعد بيانات السيكول السحابية database.rules.json
+                string dbRulesContent = @"{
+  ""rules"": {
+    "".read"": true,
+    "".write"": true
+  }
+}";
+                string dbRulesPath = System.IO.Path.Combine(mobileAppDir, "database.rules.json");
+                System.IO.File.WriteAllText(dbRulesPath, dbRulesContent, new System.Text.UTF8Encoding(false));
+
+                // 3. ملف قواعد Firestore
+                string firestoreRulesContent = @"rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}";
+                string firestoreRulesPath = System.IO.Path.Combine(mobileAppDir, "firestore.rules");
+                System.IO.File.WriteAllText(firestoreRulesPath, firestoreRulesContent, new System.Text.UTF8Encoding(false));
+
+                // 4. كتابة وتحديث ملف sw.js (Service Worker لتفعيل تثبيت الـ PWA v3.1.0 ومسح الكاش فوراً)
+                string swContent = @"// ProSoft ERP Mobile App Service Worker (v3.1.0)
+const CACHE_NAME = 'prosoft-pwa-v310-' + Date.now();
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => caches.delete(key))
+      );
+    }).then(() => self.clients.claim())
   );
 });
-self.addEventListener('fetch', (e) => {
-  // Always fetch fresh network requests for live ERP data
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+
+self.addEventListener('fetch', (event) => {
+  // Always fetch fresh network requests, never serve stale HTML or API data
+  event.respondWith(
+    fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
+  );
 });";
                 string swPath = System.IO.Path.Combine(mobileAppDir, "sw.js");
                 System.IO.File.WriteAllText(swPath, swContent, new System.Text.UTF8Encoding(false));
 
-                // 4. التأكد من وتحديث ملف index.html في MobileApp بأحدث نسخة دائماً
+                // 5. استخراج ملفات الـ EmbeddedResource بالكامل من الـ EXE المحدث
                 string indexHtmlPath = System.IO.Path.Combine(mobileAppDir, "index.html");
                 string devIndex = @"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\index.html";
                 bool updated = false;
@@ -123,7 +160,6 @@ self.addEventListener('fetch', (e) => {
                     catch { }
                 }
 
-                // محاولة استخراج أحدث ملف index.html من الموارد المضمنة داخل البرنامج EmbeddedResource
                 if (!updated)
                 {
                     try
@@ -150,7 +186,7 @@ self.addEventListener('fetch', (e) => {
                     catch { }
                 }
 
-                // محاولة تحميل أحدث نسخة من GitHub مع كسر الكاش لضمان وصول التحديثات لأي عميل
+                // 6. محاولة تحميل أحدث نسخة من GitHub مع كسر الكاش للتأكد من وصول آخر تعديل دائماً
                 try
                 {
                     using (var wc = new System.Net.WebClient())
