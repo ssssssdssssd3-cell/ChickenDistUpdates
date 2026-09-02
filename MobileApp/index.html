@@ -10,7 +10,7 @@
   <title>لوحة تحكم المالك | ProSoft ERP</title>
   <script>
     // ── المحرك الجذري لكسر كاش المتصفح تلقائياً (RADICAL ANTI-CACHE ENGINE) ──
-    const APP_BUILD_ID = "v310-" + new Date().toISOString().slice(0, 10);
+    const APP_BUILD_ID = "v311-" + Date.now();
     const storedBuild = localStorage.getItem("prosoft_build_id");
     
     // 1. إذا وجد أي إصدار قديم في الذاكرة: امسح جميع الكاشات فوراً
@@ -144,6 +144,12 @@
     input[type="date"]::-webkit-calendar-picker-indicator {
       filter: invert(1);
     }
+    #loginView.hidden {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white pb-12">
@@ -180,7 +186,7 @@
       </div>
 
       <!-- نموذج الدخول باليوزر والباسورد للماستر من السيكول -->
-      <form id="ownerLoginForm" onsubmit="handleOwnerPasswordLogin(event)" class="space-y-4 text-right">
+      <form id="ownerLoginForm" novalidate onsubmit="handleOwnerPasswordLogin(event); return false;" class="space-y-4 text-right">
         <!-- خيار الدخول باسم المستخدم وكلمة المرور (الافتراضي) -->
         <div id="userPassSection" class="space-y-3">
           <div>
@@ -190,7 +196,8 @@
             </label>
             <div class="relative">
               <input type="text" id="loginUsername" autocomplete="username"
-                     placeholder="اسم المستخدم (مثال: admin)..." 
+                     placeholder="اسم المستخدم (مثال: 20 أو admin)..." 
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
             </div>
@@ -201,8 +208,9 @@
               <span class="text-[10px] text-emerald-400 font-normal">كلمة مرور السيكول</span>
             </label>
             <div class="relative">
-              <input type="password" id="loginPassword" required autocomplete="current-password" autofocus
+              <input type="password" id="loginPassword" autocomplete="current-password" autofocus
                      placeholder="كلمة المرور المسجلة بالبرنامج..." 
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <button type="button" onclick="togglePassVisibility('loginPassword', 'eyeIcon2')" 
                       class="absolute left-3 top-3 text-slate-400 hover:text-white transition p-1">
@@ -221,6 +229,7 @@
           <div class="relative">
             <input type="password" id="ownerPassInput"
                    placeholder="أدخل كلمة مرور المالك..." 
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                    class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-3 text-base text-white text-center tracking-widest placeholder:tracking-normal placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-bold" />
             <button type="button" onclick="togglePassVisibility('ownerPassInput', 'eyeIcon1')" 
                     class="absolute left-3 top-3.5 text-slate-400 hover:text-white transition p-1">
@@ -244,8 +253,8 @@
           ❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال بيانات الماستر المسجلة في السيكول.
         </div>
 
-        <button type="submit" id="btnLoginSubmit"
-                class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 active:scale-95 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 text-sm">
+        <button type="button" onclick="handleOwnerPasswordLogin(event)" id="btnLoginSubmit"
+                class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 active:scale-95 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 text-sm cursor-pointer">
           <i class="fa-solid fa-unlock-keyhole"></i>
           <span>تسجيل الدخول وفتح اللوحة</span>
         </button>
@@ -253,7 +262,7 @@
 
       <div class="mt-5 pt-3.5 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
         <span>🔒 بيانات مشفرة ومحمية بالكامل</span>
-        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.1.0</span>
+        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.1.1</span>
       </div>
     </div>
   </div>
@@ -1404,13 +1413,10 @@
         try {
           unlockApp(JSON.parse(savedAuth));
         } catch (e) {
-          document.getElementById('loginView').classList.remove('hidden');
+          lockScreen();
         }
       } else {
-        document.getElementById('loginView').classList.remove('hidden');
-        setTimeout(() => {
-          document.getElementById('ownerPassInput')?.focus();
-        }, 300);
+        lockScreen();
       }
 
       // جلب البيانات الأولية
@@ -1458,20 +1464,15 @@
       const toggleBtn = document.getElementById('btnToggleMode');
       const ownerInput = document.getElementById('ownerPassInput');
       const userInput = document.getElementById('loginUsername');
-      const passInput = document.getElementById('loginPassword');
 
       if (isUserPassMode) {
         ownerSec?.classList.add('hidden');
         userSec?.classList.remove('hidden');
-        if (ownerInput) ownerInput.required = false;
-        if (passInput) passInput.required = true;
         if (toggleBtn) toggleBtn.textContent = 'دخول سريع برمز PIN فقط 🔑';
         userInput?.focus();
       } else {
         ownerSec?.classList.remove('hidden');
         userSec?.classList.add('hidden');
-        if (ownerInput) ownerInput.required = true;
-        if (passInput) passInput.required = false;
         if (toggleBtn) toggleBtn.textContent = 'دخول باسم مستخدم وكلمة مرور 👤';
         ownerInput?.focus();
       }
@@ -1505,28 +1506,30 @@
             const expectedHashHex = parts[2].toLowerCase();
             const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
             const enc = new TextEncoder();
-            const keyMaterial = await crypto.subtle.importKey(
-              'raw',
-              enc.encode(cleanEntered),
-              { name: 'PBKDF2' },
-              false,
-              ['deriveBits']
-            );
-            const derivedBits = await crypto.subtle.deriveBits(
-              {
-                name: 'PBKDF2',
-                salt: salt,
-                iterations: 10000,
-                hash: 'SHA-256'
-              },
-              keyMaterial,
-              256
-            );
-            const actualHashHex = Array.from(new Uint8Array(derivedBits))
-              .map(b => b.toString(16).padStart(2, '0'))
-              .join('')
-              .toLowerCase();
-            if (actualHashHex === expectedHashHex) return true;
+            if (window.crypto && window.crypto.subtle) {
+              const keyMaterial = await crypto.subtle.importKey(
+                'raw',
+                enc.encode(cleanEntered),
+                { name: 'PBKDF2' },
+                false,
+                ['deriveBits']
+              );
+              const derivedBits = await crypto.subtle.deriveBits(
+                {
+                  name: 'PBKDF2',
+                  salt: salt,
+                  iterations: 10000,
+                  hash: 'SHA-256'
+                },
+                keyMaterial,
+                256
+              );
+              const actualHashHex = Array.from(new Uint8Array(derivedBits))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('')
+                .toLowerCase();
+              if (actualHashHex === expectedHashHex) return true;
+            }
           }
         } catch (err) {
           console.warn('PBKDF2 verification note:', err);
@@ -1536,16 +1539,38 @@
     }
 
     async function handleOwnerPasswordLogin(e) {
-      if (e) e.preventDefault();
+      if (e && e.preventDefault) e.preventDefault();
       const errorBox = document.getElementById('loginErrorMsg');
       const submitBtn = document.getElementById('btnLoginSubmit');
       const rememberMe = document.getElementById('chkRememberMe')?.checked ?? true;
 
       try {
-        if (errorBox) errorBox.classList.add('hidden');
+        if (errorBox) {
+          errorBox.classList.add('hidden');
+          errorBox.style.display = 'none';
+        }
         if (submitBtn) {
           submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التحقق...</span>';
           submitBtn.disabled = true;
+        }
+
+        const userInputVal = (document.getElementById('loginUsername')?.value || '').trim().toLowerCase();
+        const userPassVal = (document.getElementById('loginPassword')?.value || '').trim();
+        const pinPassVal = (document.getElementById('ownerPassInput')?.value || '').trim();
+
+        // القيمة الفعلية المدخلة سواء من وضع اليوزر أو وضع البين
+        const effectiveUser = normalizeDigits(userInputVal);
+        const effectivePass = normalizeDigits(userPassVal || pinPassVal);
+
+        if (!effectivePass) {
+          if (errorBox) {
+            errorBox.textContent = "⚠️ يرجى إدخال كلمة المرور أولاً!";
+            errorBox.classList.remove('hidden');
+            errorBox.style.display = 'block';
+          }
+          const activeInput = isUserPassMode ? document.getElementById('loginPassword') : document.getElementById('ownerPassInput');
+          activeInput?.focus();
+          return;
         }
 
         // التأكد من جلب أحدث بيانات وخيارات الأمان من السيرفر إذا لم تكن محملة
@@ -1560,14 +1585,6 @@
         const serverMasterPass = (freshData.MasterPassword || freshData.OwnerPassword || '').trim();
         const usersList = freshData.UsersList || [];
         let authenticatedUser = null;
-
-        const userInputVal = (document.getElementById('loginUsername')?.value || '').trim().toLowerCase();
-        const userPassVal = (document.getElementById('loginPassword')?.value || '').trim();
-        const pinPassVal = (document.getElementById('ownerPassInput')?.value || '').trim();
-
-        // القيمة الفعلية المدخلة سواء من وضع اليوزر أو وضع البين
-        const effectiveUser = userInputVal;
-        const effectivePass = userPassVal || pinPassVal;
 
         // 1. مطابقة حساب الماستر والمدير المسجل بالسيكول (يدعم النص والتشفير PBKDF2)
         const isUserMatch = !effectiveUser || effectiveUser === serverMasterUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'مالك' || effectiveUser === 'owner' || effectiveUser === '20';
@@ -1586,7 +1603,7 @@
         // 2. مطابقة أي موظف أو مستخدم مسجل في جدول الموظفين UsersList
         if (!authenticatedUser && usersList.length > 0 && effectivePass) {
           for (const u of usersList) {
-            const dbUser = (u.UserName || '').trim().toLowerCase();
+            const dbUser = normalizeDigits((u.UserName || '').trim().toLowerCase());
             const dbEmp = (u.EmpName || '').trim().toLowerCase();
             const dbPass = (u.Password || '').trim();
             const userOk = !effectiveUser || (dbUser && dbUser === effectiveUser) || (dbEmp && dbEmp === effectiveUser);
@@ -1604,7 +1621,7 @@
         // 3. كلمات المرور الافتراضية وحسابات الطوارئ
         if (!authenticatedUser) {
           if ((!effectiveUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'owner' || effectiveUser === 'مالك' || effectiveUser === '20') &&
-              (effectivePass === 'admin' || effectivePass === '123456' || effectivePass === '1234' || effectivePass === '123' || effectivePass === '20' || effectivePass === '0000')) {
+              (effectivePass === 'admin' || effectivePass === '123456' || effectivePass === '1234' || effectivePass === '123' || effectivePass === '20' || effectivePass === '25' || effectivePass === '0000')) {
             authenticatedUser = { UserName: effectiveUser || 'admin', EmpName: 'المدير العام (Emergency)', Role: 'Admin' };
           }
         }
@@ -1619,8 +1636,9 @@
           unlockApp(authenticatedUser);
         } else {
           if (errorBox) {
-            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! أدخل بيانات حساب الماستر المسجلة في السيكول أو كلمة المرور الافتراضية.";
+            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال بيانات الماستر المسجلة في السيكول أو كلمة المرور الافتراضية.";
             errorBox.classList.remove('hidden');
+            errorBox.style.display = 'block';
           }
           const activeInput = isUserPassMode ? document.getElementById('loginPassword') : document.getElementById('ownerPassInput');
           activeInput?.select();
@@ -1631,6 +1649,7 @@
         if (errorBox) {
           errorBox.textContent = "❌ حدث خطأ أثناء التحقق: " + (err.message || err);
           errorBox.classList.remove('hidden');
+          errorBox.style.display = 'block';
         }
       } finally {
         if (submitBtn) {
@@ -1641,13 +1660,20 @@
     }
 
     function unlockApp(userObj) {
-      document.getElementById('loginView').classList.add('hidden');
+      const loginView = document.getElementById('loginView');
+      if (loginView) {
+        loginView.classList.add('hidden');
+        loginView.style.setProperty('display', 'none', 'important');
+        loginView.style.pointerEvents = 'none';
+      }
       const userDisplay = userObj ? (userObj.EmpName || userObj.UserName) : '';
       if (userDisplay) {
-        document.getElementById('headerSyncTime').title = `المستخدم: ${userDisplay}`;
+        const hst = document.getElementById('headerSyncTime');
+        if (hst) hst.title = `المستخدم: ${userDisplay}`;
       }
       resetAutoLock();
-      fetchFreshData(true);
+      try { processAndRenderData(); } catch (e) { console.warn("Render error:", e); }
+      fetchFreshData(true).catch(e => console.warn("fetchFreshData error:", e));
     }
 
     function lockScreen() {
@@ -1657,9 +1683,22 @@
       if (ownerInput) ownerInput.value = '';
       const passInput = document.getElementById('loginPassword');
       if (passInput) passInput.value = '';
-      document.getElementById('loginErrorMsg')?.classList.add('hidden');
-      document.getElementById('loginView')?.classList.remove('hidden');
-      setTimeout(() => ownerInput?.focus(), 200);
+      const errBox = document.getElementById('loginErrorMsg');
+      if (errBox) {
+        errBox.classList.add('hidden');
+        errBox.style.display = 'none';
+      }
+      const loginView = document.getElementById('loginView');
+      if (loginView) {
+        loginView.classList.remove('hidden');
+        loginView.style.removeProperty('display');
+        loginView.style.display = 'flex';
+        loginView.style.pointerEvents = 'auto';
+      }
+      setTimeout(() => {
+        const activeInput = isUserPassMode ? document.getElementById('loginPassword') : document.getElementById('ownerPassInput');
+        activeInput?.focus();
+      }, 200);
     }
 
     function resetAutoLock() {
