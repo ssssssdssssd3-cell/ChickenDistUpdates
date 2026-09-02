@@ -1390,7 +1390,7 @@
     // ──────────────────────────────────────────
     // 2. نظام تسجيل الدخول وإدارة كلمة مرور المالك
     // ──────────────────────────────────────────
-    let isUserPassMode = false;
+    let isUserPassMode = true; // الوضع الافتراضي: اسم المستخدم وكلمة المرور
 
     function togglePassVisibility(inputId, iconId) {
       const inp = document.getElementById(inputId);
@@ -1407,8 +1407,6 @@
       }
     }
 
-    let isUserPassMode = true; // الوضع الافتراضي: اسم المستخدم وكلمة المرور
-
     function toggleLoginMode() {
       isUserPassMode = !isUserPassMode;
       const ownerSec = document.getElementById('ownerPinSection');
@@ -1419,18 +1417,18 @@
       const passInput = document.getElementById('loginPassword');
 
       if (isUserPassMode) {
-        ownerSec.classList.add('hidden');
-        userSec.classList.remove('hidden');
+        ownerSec?.classList.add('hidden');
+        userSec?.classList.remove('hidden');
         if (ownerInput) ownerInput.required = false;
         if (passInput) passInput.required = true;
-        toggleBtn.textContent = 'دخول سريع برمز PIN فقط 🔑';
+        if (toggleBtn) toggleBtn.textContent = 'دخول سريع برمز PIN فقط 🔑';
         userInput?.focus();
       } else {
-        ownerSec.classList.remove('hidden');
-        userSec.classList.add('hidden');
+        ownerSec?.classList.remove('hidden');
+        userSec?.classList.add('hidden');
         if (ownerInput) ownerInput.required = true;
         if (passInput) passInput.required = false;
-        toggleBtn.textContent = 'دخول باسم مستخدم وكلمة مرور 👤';
+        if (toggleBtn) toggleBtn.textContent = 'دخول باسم مستخدم وكلمة مرور 👤';
         ownerInput?.focus();
       }
     }
@@ -1446,109 +1444,102 @@
     }
 
     async function handleOwnerPasswordLogin(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const errorBox = document.getElementById('loginErrorMsg');
       const submitBtn = document.getElementById('btnLoginSubmit');
       const rememberMe = document.getElementById('chkRememberMe')?.checked ?? true;
 
-      errorBox.classList.add('hidden');
-      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التحقق...</span>';
-      submitBtn.disabled = true;
-
-      // التأكد من جلب أحدث بيانات وخيارات الأمان من السيرفر
-      if (!rawData.OwnerPassword && (!rawData.UsersList || rawData.UsersList.length === 0)) {
-        await fetchFreshData(false);
-      }
-
-      submitBtn.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> <span>تسجيل الدخول وفتح اللوحة</span>';
-      submitBtn.disabled = false;
-
-      const serverOwnerPass = normalizeDigits((rawData.OwnerPassword || '').trim());
-      const serverMasterUser = (rawData.MasterUserName || 'admin').trim().toLowerCase();
-      const serverMasterPass = normalizeDigits((rawData.MasterPassword || rawData.OwnerPassword || '').trim());
-      const usersList = rawData.UsersList || [];
-      let authenticatedUser = null;
-
-      if (!isUserPassMode) {
-        // أ. التحقق من الدخول السريع بكلمة المرور
-        const enteredPass = normalizeDigits(document.getElementById('ownerPassInput')?.value);
-
-        if (serverMasterPass && enteredPass === serverMasterPass) {
-          authenticatedUser = { UserName: serverMasterUser, EmpName: 'المالك / المدير العام (Master)', Role: 'Owner' };
-        } else if (serverOwnerPass && enteredPass === serverOwnerPass) {
-          authenticatedUser = { UserName: 'owner', EmpName: 'المالك / المدير العام', Role: 'Owner' };
-        } else if (usersList && usersList.length > 0) {
-          const matched = usersList.find(u => normalizeDigits(u.Password) === enteredPass);
-          if (matched) {
-            authenticatedUser = { UserName: matched.UserName || matched.EmpName, EmpName: matched.EmpName || 'المدير', Role: matched.Role || 'Admin' };
-          }
+      try {
+        if (errorBox) errorBox.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التحقق...</span>';
+          submitBtn.disabled = true;
         }
 
-        // كلمات المرور الافتراضية للطوارئ
-        if (!authenticatedUser) {
-          if (enteredPass === 'admin' || enteredPass === '123456' || enteredPass === '1234') {
-            authenticatedUser = { UserName: 'admin', EmpName: 'المدير العام', Role: 'Admin' };
-          }
-        }
-      } else {
-        // ب. التحقق من اسم المستخدم وكلمة المرور
-        const user = (document.getElementById('loginUsername')?.value || '').trim().toLowerCase();
-        const pass = normalizeDigits(document.getElementById('loginPassword')?.value);
-
-        // 1. مطابقة حساب الماستر الرئيسي
-        const isMasterUserMatch = !user || user === serverMasterUser || user === 'admin' || user === 'مالك' || user === 'owner' || user === 'المدير';
-        const isMasterPassMatch = (serverMasterPass && pass === serverMasterPass) || (serverOwnerPass && pass === serverOwnerPass);
-
-        if (isMasterUserMatch && isMasterPassMatch) {
-          authenticatedUser = { UserName: serverMasterUser || 'admin', EmpName: 'المدير العام / المالك', Role: 'Owner' };
+        // التأكد من جلب أحدث بيانات وخيارات الأمان من السيرفر إذا لم تكن محملة
+        const rData = rawData || {};
+        if (!rData.OwnerPassword && (!rData.UsersList || rData.UsersList.length === 0)) {
+          try { await fetchFreshData(false); } catch (fetchErr) { console.warn("Login pre-fetch note:", fetchErr); }
         }
 
-        // 2. مطابقة أي مستخدم أو موظف في قاعدة بيانات السيكول
-        if (!authenticatedUser && usersList && usersList.length > 0) {
-          authenticatedUser = usersList.find(u => {
+        const freshData = rawData || {};
+        const serverOwnerPass = normalizeDigits((freshData.OwnerPassword || '').trim());
+        const serverMasterUser = (freshData.MasterUserName || 'admin').trim().toLowerCase();
+        const serverMasterPass = normalizeDigits((freshData.MasterPassword || freshData.OwnerPassword || '').trim());
+        const usersList = freshData.UsersList || [];
+        let authenticatedUser = null;
+
+        const userInputVal = (document.getElementById('loginUsername')?.value || '').trim().toLowerCase();
+        const userPassVal = normalizeDigits(document.getElementById('loginPassword')?.value || '');
+        const pinPassVal = normalizeDigits(document.getElementById('ownerPassInput')?.value || '');
+
+        // القيمة الفعلية المدخلة سواء من وضع اليوزر أو وضع البين
+        const effectiveUser = userInputVal;
+        const effectivePass = userPassVal || pinPassVal;
+
+        // 1. مطابقة حساب الماستر والمدير المسجل بالسيكول
+        const isUserMatch = !effectiveUser || effectiveUser === serverMasterUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'مالك' || effectiveUser === 'owner';
+        const isPassMatch = (serverMasterPass && effectivePass === serverMasterPass) || 
+                            (serverOwnerPass && effectivePass === serverOwnerPass);
+
+        if (isUserMatch && isPassMatch) {
+          authenticatedUser = { UserName: serverMasterUser || 'admin', EmpName: 'المدير العام / المالك (Master)', Role: 'Owner' };
+        }
+
+        // 2. مطابقة أي موظف أو مستخدم مسجل في جدول الموظفين UsersList
+        if (!authenticatedUser && usersList.length > 0 && effectivePass) {
+          const matched = usersList.find(u => {
             const dbUser = (u.UserName || '').trim().toLowerCase();
             const dbEmp = (u.EmpName || '').trim().toLowerCase();
             const dbPass = normalizeDigits(u.Password);
-            const isUserMatch = !user || (dbUser && dbUser === user) || (dbEmp && dbEmp === user);
-            const isPassMatch = (dbPass === pass);
-            return isUserMatch && isPassMatch;
+            const userOk = !effectiveUser || (dbUser && dbUser === effectiveUser) || (dbEmp && dbEmp === effectiveUser);
+            const passOk = (dbPass === effectivePass);
+            return userOk && passOk;
           });
-          if (authenticatedUser) {
-            authenticatedUser = { 
-              UserName: authenticatedUser.UserName || authenticatedUser.EmpName, 
-              EmpName: authenticatedUser.EmpName || 'المدير', 
-              Role: authenticatedUser.Role || 'Admin' 
+          if (matched) {
+            authenticatedUser = {
+              UserName: matched.UserName || matched.EmpName,
+              EmpName: matched.EmpName || 'المستخدم',
+              Role: matched.Role || 'Admin'
             };
           }
         }
 
-        // 3. كلمات المرور الافتراضية وحساب الطوارئ
+        // 3. كلمات المرور الافتراضية وحسابات الطوارئ
         if (!authenticatedUser) {
-          if ((!user || user === 'admin' || user === 'المدير' || user === 'owner') && (pass === 'admin' || pass === '123456' || pass === '1234' || (serverOwnerPass && pass === serverOwnerPass))) {
-            authenticatedUser = { UserName: user || 'admin', EmpName: 'المدير العام', Role: 'Admin' };
+          if ((!effectiveUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'owner' || effectiveUser === 'مالك') &&
+              (effectivePass === 'admin' || effectivePass === '123456' || effectivePass === '1234' || effectivePass === '123' || (serverOwnerPass && effectivePass === serverOwnerPass) || (serverMasterPass && effectivePass === serverMasterPass))) {
+            authenticatedUser = { UserName: effectiveUser || 'admin', EmpName: 'المدير العام (Emergency)', Role: 'Admin' };
           }
         }
-      }
 
-      if (authenticatedUser) {
-        const authJson = JSON.stringify(authenticatedUser);
-        if (rememberMe) {
-          localStorage.setItem('erp_auth_user', authJson);
+        if (authenticatedUser) {
+          const authJson = JSON.stringify(authenticatedUser);
+          if (rememberMe) {
+            localStorage.setItem('erp_auth_user', authJson);
+          } else {
+            sessionStorage.setItem('erp_auth_user', authJson);
+          }
+          unlockApp(authenticatedUser);
         } else {
-          sessionStorage.setItem('erp_auth_user', authJson);
+          if (errorBox) {
+            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! أدخل بيانات حساب الماستر المسجلة في السيكول أو اضغط مزامنة من البرنامج.";
+            errorBox.classList.remove('hidden');
+          }
+          const activeInput = isUserPassMode ? document.getElementById('loginPassword') : document.getElementById('ownerPassInput');
+          activeInput?.select();
+          activeInput?.focus();
         }
-        unlockApp(authenticatedUser);
-      } else {
-        errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال بيانات حساب الماستر المسجلة في السيكول.";
-        errorBox.classList.remove('hidden');
-        if (!isUserPassMode) {
-          const inp = document.getElementById('ownerPassInput');
-          inp?.select();
-          inp?.focus();
-        } else {
-          const inp = document.getElementById('loginPassword');
-          inp?.select();
-          inp?.focus();
+      } catch (err) {
+        console.error("Login Error:", err);
+        if (errorBox) {
+          errorBox.textContent = "❌ حدث خطأ أثناء التحقق: " + (err.message || err);
+          errorBox.classList.remove('hidden');
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> <span>تسجيل الدخول وفتح اللوحة</span>';
+          submitBtn.disabled = false;
         }
       }
     }
