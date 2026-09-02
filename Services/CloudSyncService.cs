@@ -476,6 +476,8 @@ namespace ChickenDist.Services
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string timeStr = DateTime.Now.ToString("hh:mm tt");
                 string storeName = EscapeJsonString(AppConfig.CompanyName);
+                long syncTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                string storeLogoBase64 = GetStoreLogoBase64();
 
                 // A. الرفع المباشر لـ Firebase Realtime Database (RTDB)
                 try
@@ -499,9 +501,15 @@ namespace ChickenDist.Services
                         "\"SupplierDebts\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"LowStockCount\": " + dto.LowStockCount + "," +
                         "\"StoreName\": \"" + storeName + "\"," +
+                        "\"StoreLogo\": \"" + storeLogoBase64 + "\"," +
                         "\"OwnerPassword\": \"" + EscapeJsonString(ownerPassword) + "\"," +
                         "\"SyncTime\": \"" + timeStr + "\"," +
                         "\"LastSyncDate\": \"" + isoNow + "\"," +
+                        "\"SyncTimestamp\": " + syncTimestamp + "," +
+                        "\"ServerStatus\": \"ONLINE\"," +
+                        "\"DatabaseEngine\": \"Microsoft SQL Server\"," +
+                        "\"MachineName\": \"" + EscapeJsonString(Environment.MachineName) + "\"," +
+                        "\"AppVersion\": \"" + UpdateManager.CurrentVersion + "\"," +
                         "\"MissingItems\": " + missingJson + "," +
                         "\"ProductsCatalog\": " + productsJson + "," +
                         "\"SuppliersList\": " + suppliersJson + "," +
@@ -547,9 +555,14 @@ namespace ChickenDist.Services
                         "\"SupplierDebts\": {\"doubleValue\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
                         "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
+                        "\"StoreLogo\": {\"stringValue\": \"" + storeLogoBase64 + "\"}," +
                         "\"OwnerPassword\": {\"stringValue\": \"" + EscapeJsonString(ownerPassword) + "\"}," +
                         "\"SyncTime\": {\"stringValue\": \"" + timeStr + "\"}," +
                         "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
+                        "\"SyncTimestamp\": {\"integerValue\": \"" + syncTimestamp + "\"}," +
+                        "\"ServerStatus\": {\"stringValue\": \"ONLINE\"}," +
+                        "\"DatabaseEngine\": {\"stringValue\": \"Microsoft SQL Server\"}," +
+                        "\"MachineName\": {\"stringValue\": \"" + EscapeJsonString(Environment.MachineName) + "\"}," +
                         "\"MissingItemsJson\": {\"stringValue\": \"" + EscapeJsonString(missingJson) + "\"}," +
                         "\"ProductsCatalogJson\": {\"stringValue\": \"" + EscapeJsonString(productsJson) + "\"}," +
                         "\"SuppliersListJson\": {\"stringValue\": \"" + EscapeJsonString(suppliersJson) + "\"}," +
@@ -679,6 +692,26 @@ namespace ChickenDist.Services
                 });
             }
             catch { }
+        }
+
+        public static string GetStoreLogoBase64()
+        {
+            try
+            {
+                using (var img = Theme.GetCompanyLogo())
+                {
+                    if (img != null)
+                    {
+                        using (var ms = new System.IO.MemoryStream())
+                        {
+                            img.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                            return "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+                        }
+                    }
+                }
+            }
+            catch { }
+            return "";
         }
 
         private static string EscapeJsonString(string s)

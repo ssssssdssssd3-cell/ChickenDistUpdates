@@ -184,44 +184,57 @@
   <!-- ========================================== -->
   <!-- 2. الهيدر الرئيسي وتاريخ المزامنة والتحكم -->
   <!-- ========================================== -->
-  <header class="sticky top-0 z-40 glass-card border-b border-slate-800 px-4 py-3 shadow-md">
+  <header class="sticky top-0 z-40 glass-card border-b border-slate-800 px-3 sm:px-4 py-3 shadow-md">
     <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white shadow-md">
-          <i class="fa-solid fa-chart-pie text-lg"></i>
+      <!-- اللوجو واسم المكان وحالة الاتصال بالسيكول -->
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        <div id="headerLogoContainer" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white shadow-md overflow-hidden relative border border-emerald-400/30 flex-shrink-0">
+          <img id="headerStoreLogo" src="" alt="Store Logo" class="w-full h-full object-contain hidden" />
+          <i id="headerFallbackIcon" class="fa-solid fa-chart-pie text-lg text-white"></i>
         </div>
         <div>
-          <h1 class="text-base sm:text-lg font-black text-white leading-tight" id="headerStoreName">شركة برو سوفت</h1>
-          <div class="flex items-center gap-2 text-[11px] text-slate-400">
-            <span class="inline-flex items-center gap-1 text-emerald-400 font-bold">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              مباشر SQL
-            </span>
-            <span>•</span>
-            <span id="headerSyncTime">آخر تحديث: --:--</span>
+          <h1 class="text-sm sm:text-lg font-black text-white leading-tight truncate max-w-[170px] sm:max-w-xs" id="headerStoreName">شركة برو سوفت</h1>
+          <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] text-slate-400 mt-0.5">
+            <!-- شارة حالة الاتصال بالسيكول (قابلة للضغط للتشخيص) -->
+            <button onclick="openDiagnosticsModal()" id="btnConnectionBadge" title="اضغط لعرض تفاصيل تشخيص الاتصال بقاعدة البيانات"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-bold transition hover:bg-emerald-900 cursor-pointer shadow-sm text-[10px] sm:text-[11px]">
+              <span id="connectionDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="connectionStatusText">متصل مباشر SQL</span>
+            </button>
+            <span class="text-slate-600">•</span>
+            <span id="headerSyncTime" class="text-slate-400 text-[10px] sm:text-[11px]">آخر تحديث: --:--</span>
           </div>
         </div>
       </div>
 
       <!-- أزرار الإجراءات السريعة في الهيدر -->
-      <div class="flex items-center gap-2">
-        <!-- زر مشاركة التقرير واتساب -->
-        <button onclick="shareExecutiveReportWhatsApp()" title="مشاركة التقرير عبر واتساب"
-                class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-md shadow-emerald-600/30">
-          <i class="fa-brands fa-whatsapp text-sm"></i>
-          <span class="hidden sm:inline">مشاركة واتساب</span>
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <!-- زر تثبيت التطبيق على الموبايل -->
+        <button onclick="triggerInstallApp()" title="تثبيت التطبيق على الشاشة الرئيسية بأيقونة المكان"
+                class="px-2.5 sm:px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-md shadow-blue-600/30">
+          <i class="fa-solid fa-mobile-screen-button text-sm"></i>
+          <span class="hidden md:inline">تثبيت التطبيق</span>
         </button>
 
+        <!-- زر مشاركة التقرير واتساب -->
+        <button onclick="shareExecutiveReportWhatsApp()" title="مشاركة التقرير عبر واتساب"
+                class="px-2.5 sm:px-3 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-md shadow-emerald-600/30">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span class="hidden sm:inline">مشاركة</span>
+        </button>
+
+        <!-- زر التحديث اليدوي الفوري -->
         <button onclick="fetchFreshData(true)" title="تحديث فوري وتجاوز الكاش"
                 class="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-sm">
           <i id="btnRefreshIcon" class="fa-solid fa-rotate"></i>
-          <span class="hidden sm:inline">تحديث</span>
+          <span class="hidden lg:inline">تحديث</span>
         </button>
 
+        <!-- زر قفل الشاشة -->
         <button onclick="lockScreen()" title="قفل الشاشة"
                 class="p-2 bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 text-red-300 rounded-xl transition text-xs flex items-center gap-1.5 font-bold">
           <i class="fa-solid fa-lock"></i>
-          <span class="hidden sm:inline">قفل</span>
+          <span class="hidden lg:inline">قفل</span>
         </button>
       </div>
     </div>
@@ -252,6 +265,35 @@
       </div>
     </div>
   </header>
+
+  <!-- ========================================== -->
+  <!-- 2.1 شريط تنبيه انقطاع الاتصال بسيرفر SQL -->
+  <!-- ========================================== -->
+  <div id="serverOfflineBanner" class="hidden bg-gradient-to-r from-rose-950/95 via-red-950/95 to-slate-900/95 border-b border-rose-800/80 px-4 py-2.5 shadow-lg">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2.5 text-rose-200">
+        <div class="w-7 h-7 rounded-lg bg-rose-900/90 border border-rose-700 flex items-center justify-center text-rose-300 text-xs flex-shrink-0 animate-bounce">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <div class="font-black text-white text-xs sm:text-sm flex items-center gap-2">
+            <span>⚠️ تنبيه: جهاز المحل الرئيسي (SQL Server) غير متصل حالياً!</span>
+            <span id="badgeOfflineDuration" class="px-1.5 py-0.5 rounded bg-rose-900/90 text-rose-200 text-[10px] font-mono font-bold">منذ --</span>
+          </div>
+          <div class="text-rose-300/90 text-[11px] mt-0.5" id="offlineDetailsText">آخر مزامنة ناجحة تمت عندما كان الجهاز متصلاً: --:-- (البيانات المعروضة أدناه هي آخر نسخة محفوظة).</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mr-auto sm:mr-0 self-end sm:self-center">
+        <button onclick="fetchFreshData(true)" class="px-3 py-1.5 bg-rose-800 hover:bg-rose-700 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 shadow transition">
+          <i class="fa-solid fa-rotate"></i>
+          <span>إعادة فحص الاتصال</span>
+        </button>
+        <button onclick="openDiagnosticsModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold text-[11px] transition">
+          تفاصيل الربط
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ========================================== -->
   <!-- 3. شريط التبويبات الرئيسي (NAVIGATION TABS) -->
@@ -310,6 +352,31 @@
     <!-- ── TAB 1: لوحة المؤشرات (DASHBOARD) ── -->
     <div id="tabContent-dashboard" class="tab-pane space-y-4">
       
+      <!-- بطاقة تثبيت التطبيق على الهاتف وشريط حالة الربط المباشر -->
+      <div class="glass-card rounded-2xl p-3.5 sm:p-4 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 border border-blue-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-md">
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30 flex-shrink-0">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+          </div>
+          <div>
+            <div class="font-black text-white text-sm flex items-center gap-2">
+              <span>تطبيق المالك السريع على شاشة هاتفك</span>
+              <span class="px-2 py-0.5 rounded-full bg-blue-900/80 border border-blue-500/40 text-blue-300 text-[10px] font-bold">تثبيت فوري PWA</span>
+            </div>
+            <p class="text-slate-400 text-[11px] mt-0.5">ثبّت التطبيق بأيقونة ولوجو المكان على شاشة هاتفك لفتحه بضغطة واحدة دون الحاجة للمتصفح</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
+          <button onclick="triggerInstallApp()" class="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/30 transition">
+            <i class="fa-solid fa-download"></i>
+            <span>تثبيت على الشاشة الرئيسية</span>
+          </button>
+          <button onclick="openQrModal()" title="رمز QR للمشاركة" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition text-xs flex items-center justify-center border border-slate-700">
+            <i class="fa-solid fa-qrcode text-base text-blue-400"></i>
+          </button>
+        </div>
+      </div>
+
       <!-- تنبيه الفترة المحددة وزر الواتساب السريع -->
       <div class="glass-card rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-slate-300">
         <div class="flex items-center gap-2">
@@ -971,6 +1038,166 @@
         <button onclick="closeStatementModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition">
           إغلاق
         </button>
+  <!-- ========================================== -->
+  <!-- 5.1 نافذة تشخيص الاتصال بسيرفر SQL (CONNECTION DIAGNOSTICS MODAL) -->
+  <!-- ========================================== -->
+  <div id="connectionModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-slate-700 text-right relative overflow-hidden">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-emerald-400 text-lg">
+            <i class="fa-solid fa-server"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-white text-sm">تشخيص حالة الربط بسيرفر المحل</h3>
+            <span class="text-[11px] text-slate-400">Microsoft SQL Server Live Link</span>
+          </div>
+        </div>
+        <button onclick="closeDiagnosticsModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- مؤشر الحالة المرئي -->
+      <div id="diagStatusCard" class="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-center mb-4">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 text-2xl mb-2" id="diagStatusIcon">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="text-base font-black text-white" id="diagStatusTitle">السيرفر متصل ويعمل بشكل ممتاز ⚡</div>
+        <p class="text-xs text-emerald-300/80 mt-1" id="diagStatusSubtitle">يتم تحديث البيانات لحظياً من قاعدة بيانات SQL Server على جهاز المحل.</p>
+      </div>
+
+      <!-- تفاصيل الربط التقنية -->
+      <div class="space-y-2.5 text-xs bg-slate-900/90 rounded-2xl p-4 border border-slate-800">
+        <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+          <span class="text-slate-400">محرك قاعدة البيانات:</span>
+          <span class="font-bold text-white flex items-center gap-1">
+            <i class="fa-solid fa-database text-blue-400"></i>
+            <span id="diagDbEngine">Microsoft SQL Server</span>
+          </span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+          <span class="text-slate-400">حالة الاتصال بالسيرفر:</span>
+          <span class="font-bold" id="diagServerStatus">متصل (Online)</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+          <span class="text-slate-400">وقت آخر مزامنة:</span>
+          <span class="font-mono font-bold text-emerald-400" id="diagLastSyncTime">--:--</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+          <span class="text-slate-400">فارق التوقيت (Freshness):</span>
+          <span class="font-mono font-bold text-slate-200" id="diagTimeElapsed">منذ أقل من دقيقة</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+          <span class="text-slate-400">اسم جهاز المحل (Host):</span>
+          <span class="font-mono font-bold text-slate-300" id="diagMachineName">--</span>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="text-slate-400">إصدار برنامج الكاشير:</span>
+          <span class="font-mono font-bold text-brand-400" id="diagAppVersion">v2.9.8</span>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center gap-2">
+        <button onclick="fetchFreshData(true)" class="flex-1 py-3 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition text-xs shadow-lg shadow-brand-600/30">
+          <i class="fa-solid fa-rotate"></i>
+          <span>إعادة فحص وتحديث الاتصال فوراً</span>
+        </button>
+        <button onclick="closeDiagnosticsModal()" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition text-xs">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5.2 نافذة تثبيت التطبيق على الموبايل (INSTALL APP PWA MODAL) -->
+  <!-- ========================================== -->
+  <div id="installModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-slate-700 text-right relative overflow-hidden">
+      <!-- زر إغلاق -->
+      <button onclick="closeInstallModal()" class="absolute left-4 top-4 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- الأيقونة المعاينة والاسم -->
+      <div class="text-center pt-2 pb-4">
+        <div class="relative inline-block mb-3">
+          <canvas id="appIconPreviewCanvas" width="100" height="100" class="w-20 h-20 rounded-2xl shadow-xl shadow-brand-500/20 border-2 border-amber-400 mx-auto object-contain bg-slate-900"></canvas>
+          <div class="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-emerald-500 rounded-full border-2 border-slate-950 flex items-center justify-center text-white text-xs">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </div>
+        <h3 class="text-lg font-black text-white" id="installStoreTitle">تطبيق المالك</h3>
+        <p class="text-xs text-slate-400 mt-0.5">تثبيت أيقونة التطبيق على شاشة هاتفك المحمول</p>
+      </div>
+
+      <!-- خيارات التثبيت بحسب نظام التشغيل -->
+      <div id="installAndroidSection" class="space-y-3 mb-3">
+        <button onclick="executePwaInstall()" id="btnNativeInstall" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 active:scale-95 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 text-sm">
+          <i class="fa-solid fa-mobile-screen-button text-base"></i>
+          <span>تثبيت الأيقونة على الشاشة الرئيسية الآن</span>
+        </button>
+      </div>
+
+      <!-- تعليمات الآيفون Safari (تظهر تلقائياً أو بالتبديل) -->
+      <div id="installIosSection" class="space-y-2.5 text-xs bg-slate-900/90 rounded-2xl p-4 border border-slate-800">
+        <div class="font-bold text-amber-400 mb-1 flex items-center gap-1.5">
+          <i class="fa-brands fa-apple text-base"></i>
+          <span>خطوات التثبيت على أجهزة iPhone / iPad (متصفح Safari):</span>
+        </div>
+        <div class="flex items-start gap-2 text-slate-300">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-brand-400 font-bold flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">1</span>
+          <span>اضغط على زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket text-blue-400 mx-1"></i> (Share) في أسفل أو أعلى المتصفح.</span>
+        </div>
+        <div class="flex items-start gap-2 text-slate-300">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-brand-400 font-bold flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">2</span>
+          <span>مرر للأسفل واختر <strong>"إضافة إلى الصفحة الرئيسية" <i class="fa-regular fa-square-plus text-emerald-400 mx-1"></i> (Add to Home Screen)</strong>.</span>
+        </div>
+        <div class="flex items-start gap-2 text-slate-300">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-brand-400 font-bold flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">3</span>
+          <span>اضغط على <strong>"إضافة" (Add)</strong> في الزاوية العلوية وسيظهر التطبيق بلوجو المكان مباشرة على شاشتك.</span>
+        </div>
+      </div>
+
+      <!-- خيارات إضافية: تنزيل الأيقونة أو فتح QR -->
+      <div class="mt-4 pt-3 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
+        <button onclick="downloadAppIconPng()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-download text-emerald-400"></i>
+          <span>تنزيل الأيقونة PNG</span>
+        </button>
+        <button onclick="openQrModal()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-qrcode text-blue-400"></i>
+          <span>رمز QR للموبايل</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5.3 نافذة رمز QR لمشاركة الرابط (QR MODAL) -->
+  <!-- ========================================== -->
+  <div id="qrModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-slate-700 text-center relative overflow-hidden">
+      <button onclick="closeQrModal()" class="absolute left-4 top-4 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-3 text-xl">
+        <i class="fa-solid fa-qrcode"></i>
+      </div>
+      <h3 class="text-base font-black text-white">امسح الرمز بكاميرا الموبايل</h3>
+      <p class="text-xs text-slate-400 mt-0.5 mb-4">افتح الكاميرا على هاتفك ووجهها نحو الرمز لفتح تطبيق المالك فوراً</p>
+
+      <div class="p-3 bg-white rounded-2xl inline-block shadow-xl mb-4">
+        <img id="qrCodeImage" src="" alt="QR Code" class="w-48 h-48 mx-auto" />
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="copyAppUrl()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-copy text-blue-400"></i>
+          <span>نسخ رابط التطبيق</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1052,7 +1279,10 @@
       // جلب البيانات الأولية
       fetchFreshData(true);
 
-      // ضبط التحديث التلقائي كل 30 ثانية
+      // فحص وتحديث حالة الاتصال الحقيقي بالسيكول كل 5 ثواني
+      setInterval(updateConnectionStatus, 5000);
+
+      // ضبط التحديث التلقائي للبيانات كل 30 ثانية
       setInterval(() => {
         if (!document.getElementById('loginView').classList.contains('hidden')) return;
         fetchFreshData(false);
@@ -1391,7 +1621,11 @@
       const storeName = rawData.StoreName || "شركة برو سوفت";
       document.getElementById('headerStoreName').textContent = storeName;
       document.getElementById('loginStoreTitle').textContent = storeName;
-      document.getElementById('headerSyncTime').textContent = "آخر تحديث: " + (rawData.SyncTime || new Date().toLocaleTimeString('ar-EG'));
+      const installTitle = document.getElementById('installStoreTitle');
+      if (installTitle) installTitle.textContent = storeName;
+
+      renderStoreLogos();
+      updateConnectionStatus();
 
       const sales = rawData.RecentSales || [];
       const filteredSales = sales.filter(s => isDateInPeriod(s.SaleDate));
@@ -2154,6 +2388,426 @@
         activeBtn.classList.add('active-tab');
         activeBtn.classList.remove('text-slate-400');
       }
+    }
+
+    // ──────────────────────────────────────────
+    // 12. فحص حالة الاتصال الحقيقي بقاعدة بيانات SQL Server
+    // ──────────────────────────────────────────
+    let isServerOnline = true;
+    let lastSyncDateObj = null;
+
+    function getSyncTimestampMs() {
+      if (rawData.SyncTimestamp && typeof rawData.SyncTimestamp === 'number') {
+        return rawData.SyncTimestamp;
+      }
+      if (rawData.LastSyncDate) {
+        const parsed = new Date(rawData.LastSyncDate).getTime();
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+      return 0;
+    }
+
+    function updateConnectionStatus() {
+      const syncMs = getSyncTimestampMs();
+      const dot = document.getElementById('connectionDot');
+      const text = document.getElementById('connectionStatusText');
+      const badge = document.getElementById('btnConnectionBadge');
+      const offlineBanner = document.getElementById('serverOfflineBanner');
+      const offlineDur = document.getElementById('badgeOfflineDuration');
+      const offlineDetails = document.getElementById('offlineDetailsText');
+      const syncTimeLabel = document.getElementById('headerSyncTime');
+
+      if (!syncMs) {
+        if (text) text.textContent = "جاري الاتصال...";
+        if (syncTimeLabel) syncTimeLabel.textContent = "آخر تحديث: --:--";
+        return;
+      }
+
+      lastSyncDateObj = new Date(syncMs);
+      const now = Date.now();
+      const diffSec = Math.max(0, Math.floor((now - syncMs) / 1000));
+
+      const timeFormatted = rawData.SyncTime || lastSyncDateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      const dateFormatted = lastSyncDateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+      if (syncTimeLabel) {
+        syncTimeLabel.textContent = "آخر تحديث: " + timeFormatted;
+      }
+
+      // يعتبر متصلاً إذا كان آخر تحديث خلال 120 ثانية (دقيقتين)
+      if (diffSec <= 120) {
+        isServerOnline = true;
+        if (dot) {
+          dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        }
+        if (badge) {
+          badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-bold transition hover:bg-emerald-900 cursor-pointer shadow-sm text-[10px] sm:text-[11px]";
+        }
+        if (text) {
+          text.textContent = diffSec < 30 ? "متصل مباشر SQL ⚡" : "متصل (SQL Server)";
+        }
+        if (offlineBanner) {
+          offlineBanner.classList.add('hidden');
+        }
+      } else {
+        isServerOnline = false;
+        const durText = formatTimeAgo(diffSec);
+        if (dot) {
+          dot.className = "w-2 h-2 rounded-full bg-rose-500";
+        }
+        if (badge) {
+          badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-950/90 border border-rose-500/50 text-rose-300 font-bold transition hover:bg-rose-900 cursor-pointer shadow-sm text-[10px] sm:text-[11px] animate-pulse";
+        }
+        if (text) {
+          text.textContent = `السيرفر غير متصل (${durText})`;
+        }
+        if (offlineBanner) {
+          offlineBanner.classList.remove('hidden');
+          if (offlineDur) offlineDur.textContent = durText;
+          if (offlineDetails) {
+            offlineDetails.textContent = `آخر مزامنة عندما كان الجهاز متصلاً: ${timeFormatted} بتوقيت (${dateFormatted}) - البيانات المعروضة هي آخر نسخة محفوظة.`;
+          }
+        }
+      }
+    }
+
+    function formatTimeAgo(diffSec) {
+      if (diffSec < 60) return `منذ ${diffSec} ثانية`;
+      const mins = Math.floor(diffSec / 60);
+      if (mins < 60) return `منذ ${mins} دقيقة`;
+      const hours = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      if (hours < 24) return `منذ ${hours} س و ${remMins} د`;
+      const days = Math.floor(hours / 24);
+      return `منذ ${days} يوم`;
+    }
+
+    // ──────────────────────────────────────────
+    // 13. نافذة تشخيص الاتصال (Diagnostics Modal)
+    // ──────────────────────────────────────────
+    function openDiagnosticsModal() {
+      updateConnectionStatus();
+      const syncMs = getSyncTimestampMs();
+      const diffSec = syncMs ? Math.max(0, Math.floor((Date.now() - syncMs) / 1000)) : 999999;
+      
+      const diagCard = document.getElementById('diagStatusCard');
+      const diagIcon = document.getElementById('diagStatusIcon');
+      const diagTitle = document.getElementById('diagStatusTitle');
+      const diagSub = document.getElementById('diagStatusSubtitle');
+      const diagDb = document.getElementById('diagDbEngine');
+      const diagStatus = document.getElementById('diagServerStatus');
+      const diagTime = document.getElementById('diagLastSyncTime');
+      const diagElapsed = document.getElementById('diagTimeElapsed');
+      const diagHost = document.getElementById('diagMachineName');
+      const diagVer = document.getElementById('diagAppVersion');
+
+      if (diagDb) diagDb.textContent = rawData.DatabaseEngine || "Microsoft SQL Server";
+      if (diagHost) diagHost.textContent = rawData.MachineName || "PC-CASHIER-MAIN";
+      if (diagVer) diagVer.textContent = rawData.AppVersion || "v2.9.8";
+
+      if (syncMs > 0) {
+        const dt = new Date(syncMs);
+        if (diagTime) diagTime.textContent = (rawData.SyncTime || dt.toLocaleTimeString('ar-EG')) + " (" + dt.toLocaleDateString('ar-EG') + ")";
+        if (diagElapsed) diagElapsed.textContent = formatTimeAgo(diffSec);
+      } else {
+        if (diagTime) diagTime.textContent = "--:--";
+        if (diagElapsed) diagElapsed.textContent = "غير متاح";
+      }
+
+      if (diffSec <= 120) {
+        diagCard.className = "p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-center mb-4";
+        diagIcon.className = "inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 text-2xl mb-2";
+        diagIcon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+        diagTitle.className = "text-base font-black text-white";
+        diagTitle.textContent = "سيرفر SQL متصل ويعمل لحظياً ⚡";
+        diagSub.className = "text-xs text-emerald-300/80 mt-1";
+        diagSub.textContent = "يتم تحديث البيانات وقراءتها مباشرة من قاعدة بيانات SQL Server على جهاز المحل.";
+        if (diagStatus) {
+          diagStatus.className = "font-bold text-emerald-400";
+          diagStatus.textContent = "🟢 متصل ونشط (Online)";
+        }
+      } else {
+        diagCard.className = "p-4 rounded-2xl bg-rose-950/50 border border-rose-500/40 text-center mb-4";
+        diagIcon.className = "inline-flex items-center justify-center w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 text-2xl mb-2";
+        diagIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+        diagTitle.className = "text-base font-black text-white";
+        diagTitle.textContent = "جهاز السيرفر غير متصل حالياً ⚠️";
+        diagSub.className = "text-xs text-rose-300/90 mt-1";
+        diagSub.textContent = "تأكد من فتح برنامج الكاشير على جهاز المحل الرئيسي وتوفر اتصال الإنترنت لديه لمواصلة القراءة اللحظية.";
+        if (diagStatus) {
+          diagStatus.className = "font-bold text-rose-400";
+          diagStatus.textContent = "🔴 غير متصل (Offline)";
+        }
+      }
+
+      document.getElementById('connectionModal').classList.remove('hidden');
+    }
+
+    function closeDiagnosticsModal() {
+      document.getElementById('connectionModal').classList.add('hidden');
+    }
+
+    // ──────────────────────────────────────────
+    // 14. توليد أيقونة التطبيق باللوجو وتثبيت PWA (App Icon & PWA Installation)
+    // ──────────────────────────────────────────
+    let deferredInstallPrompt = null;
+    let cachedAppIconDataUrl = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      console.log("PWA install prompt ready.");
+      const btnNative = document.getElementById('btnNativeInstall');
+      if (btnNative) {
+        btnNative.classList.remove('opacity-50');
+      }
+    });
+
+    function renderStoreLogos() {
+      const headerLogo = document.getElementById('headerStoreLogo');
+      const fallbackIcon = document.getElementById('headerFallbackIcon');
+
+      if (rawData.StoreLogo && rawData.StoreLogo.startsWith('data:image')) {
+        if (headerLogo) {
+          headerLogo.src = rawData.StoreLogo;
+          headerLogo.classList.remove('hidden');
+        }
+        if (fallbackIcon) {
+          fallbackIcon.classList.add('hidden');
+        }
+      }
+
+      generateStoreAppIconCanvas();
+    }
+
+    function generateStoreAppIconCanvas() {
+      const storeName = rawData.StoreName || "ProSoft ERP";
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // 1. خلفية داكنة فخمة متدرجة
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(0.5, '#0b0f19');
+      grad.addColorStop(1, '#020617');
+      ctx.fillStyle = grad;
+      
+      // رسم زوايا مستديرة (Squircle)
+      const radius = 100;
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. إطار ذهبي دائري داخلي فخم
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2 - 25, 175, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fill();
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.shadowColor = 'rgba(245, 158, 11, 0.4)';
+      ctx.shadowBlur = 20;
+      ctx.stroke();
+      ctx.restore();
+
+      // دالة مساعدة لإنهاء رسم الأيقونة بعد وضع الصورة أو النص
+      const finalizeIcon = (hasCustomLogo, logoImg = null) => {
+        if (hasCustomLogo && logoImg) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2 - 25, 155, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(logoImg, size / 2 - 150, size / 2 - 175, 300, 300);
+          ctx.restore();
+        } else {
+          // رسم الشعار الافتراضي
+          ctx.fillStyle = '#f59e0b';
+          ctx.font = 'bold 130px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⚡', size / 2, size / 2 - 35);
+        }
+
+        // 3. اسم المحل في الأسفل بخط عريض وواضح
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 36px "Segoe UI", Tahoma, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        let displayTitle = storeName;
+        if (displayTitle.length > 18) displayTitle = displayTitle.substring(0, 16) + '...';
+        ctx.fillText(displayTitle, size / 2, size - 70);
+
+        // 4. شريط ERP المعتمد
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 20px "Segoe UI", Tahoma, Arial, sans-serif';
+        ctx.fillText('PROSOFT OWNER APP', size / 2, size - 32);
+
+        cachedAppIconDataUrl = canvas.toDataURL('image/png');
+
+        // تحديث أيقونة المعاينة في المودال
+        const prevCanvas = document.getElementById('appIconPreviewCanvas');
+        if (prevCanvas) {
+          const pCtx = prevCanvas.getContext('2d');
+          pCtx.clearRect(0, 0, prevCanvas.width, prevCanvas.height);
+          pCtx.drawImage(canvas, 0, 0, prevCanvas.width, prevCanvas.height);
+        }
+
+        // تحديث روابط Favicon و Apple Touch Icon بالصفحة
+        updatePageFaviconAndPwa(cachedAppIconDataUrl, storeName);
+      };
+
+      if (rawData.StoreLogo && rawData.StoreLogo.startsWith('data:image')) {
+        const img = new Image();
+        img.onload = () => finalizeIcon(true, img);
+        img.onerror = () => finalizeIcon(false);
+        img.src = rawData.StoreLogo;
+      } else {
+        finalizeIcon(false);
+      }
+    }
+
+    function updatePageFaviconAndPwa(iconUrl, storeName) {
+      // 1. Favicon
+      let fav = document.querySelector("link[rel*='icon']");
+      if (!fav) {
+        fav = document.createElement('link');
+        fav.rel = 'shortcut icon';
+        document.head.appendChild(fav);
+      }
+      fav.href = iconUrl;
+
+      // 2. Apple Touch Icon
+      let appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+      if (!appleIcon) {
+        appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        document.head.appendChild(appleIcon);
+      }
+      appleIcon.href = iconUrl;
+
+      // 3. Web App Manifest Blob
+      try {
+        const manifestObj = {
+          name: storeName + " - تطبيق المالك",
+          short_name: storeName.substring(0, 14),
+          description: "لوحة التحكم السحابية المباشرة للمالك - " + storeName,
+          start_url: window.location.href,
+          display: "standalone",
+          background_color: "#0b0f19",
+          theme_color: "#10b981",
+          icons: [
+            {
+              src: iconUrl,
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable"
+            }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+
+        let manifestLink = document.querySelector("link[rel='manifest']");
+        if (!manifestLink) {
+          manifestLink = document.createElement('link');
+          manifestLink.rel = 'manifest';
+          document.head.appendChild(manifestLink);
+        }
+        manifestLink.href = manifestUrl;
+      } catch (e) {
+        console.warn("Manifest update error:", e);
+      }
+    }
+
+    function triggerInstallApp() {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const iosSection = document.getElementById('installIosSection');
+      const androidSection = document.getElementById('installAndroidSection');
+
+      if (isIos) {
+        if (iosSection) iosSection.classList.remove('hidden');
+        if (androidSection) androidSection.classList.add('hidden');
+      } else {
+        if (iosSection) iosSection.classList.add('hidden');
+        if (androidSection) androidSection.classList.remove('hidden');
+      }
+
+      document.getElementById('installModal').classList.remove('hidden');
+    }
+
+    function closeInstallModal() {
+      document.getElementById('installModal').classList.add('hidden');
+    }
+
+    async function executePwaInstall() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+          showToast("🎉 تم تثبيت التطبيق على الشاشة الرئيسية بنجاح!");
+          closeInstallModal();
+        }
+        deferredInstallPrompt = null;
+      } else {
+        // توجيه المستخدم للقائمة في متصفح كروم أو المتصفحات الأخرى
+        showToast("📱 من قائمة المتصفح (⋮) اختر: 'تثبيت التطبيق' أو 'إضافة للشاشة الرئيسية'");
+      }
+    }
+
+    function downloadAppIconPng() {
+      if (!cachedAppIconDataUrl) {
+        generateStoreAppIconCanvas();
+      }
+      setTimeout(() => {
+        const storeName = (rawData.StoreName || "ProSoft").replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+        const link = document.createElement('a');
+        link.download = `${storeName}_App_Icon.png`;
+        link.href = cachedAppIconDataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("📥 تم تنزيل أيقونة التطبيق بدقة عالية!");
+      }, 300);
+    }
+
+    // ──────────────────────────────────────────
+    // 15. نافذة رمز QR والمشاركة السريعة
+    // ──────────────────────────────────────────
+    function openQrModal() {
+      const currentUrl = window.location.href;
+      const qrImg = document.getElementById('qrCodeImage');
+      if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(currentUrl)}&bgcolor=ffffff&color=0b0f19&margin=10`;
+      }
+      document.getElementById('qrModal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function copyAppUrl() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        showToast("📋 تم نسخ رابط التطبيق للحافظة بنجاح!");
+      }).catch(() => {
+        showToast("الرابط: " + window.location.href);
+      });
     }
   </script>
 </body>
