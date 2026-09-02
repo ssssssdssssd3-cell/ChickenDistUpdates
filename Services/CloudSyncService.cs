@@ -92,11 +92,15 @@ namespace ChickenDist.Services
                 string rootFirebaseJson = System.IO.Path.Combine(baseDir, "firebase.json");
                 System.IO.File.WriteAllText(rootFirebaseJson, firebaseJsonContent, new System.Text.UTF8Encoding(false));
 
-                // 3. كتابة ملف sw.js (Service Worker لتفعيل تثبيت الـ PWA 100% على الجوال)
-                string swContent = @"// ProSoft ERP Mobile App Service Worker (PWA)
+                // 3. كتابة وتحديث ملف sw.js (Service Worker لتفعيل تثبيت الـ PWA ومسح الكاش القديم)
+                string swContent = @"// ProSoft ERP Mobile App Service Worker (PWA) v3.0.0
 const CACHE_NAME = 'prosoft-pwa-v300';
 self.addEventListener('install', (e) => { self.skipWaiting(); });
-self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => self.clients.claim())
+  );
+});
 self.addEventListener('fetch', (e) => {
   // Always fetch fresh network requests for live ERP data
   e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
@@ -104,25 +108,65 @@ self.addEventListener('fetch', (e) => {
                 string swPath = System.IO.Path.Combine(mobileAppDir, "sw.js");
                 System.IO.File.WriteAllText(swPath, swContent, new System.Text.UTF8Encoding(false));
 
-                // 4. التأكد من وتحديث ملف index.html في MobileApp
+                // 4. التأكد من وتحديث ملف index.html في MobileApp بأحدث نسخة دائماً
                 string indexHtmlPath = System.IO.Path.Combine(mobileAppDir, "index.html");
                 string devIndex = @"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\index.html";
+                bool updated = false;
+
                 if (System.IO.File.Exists(devIndex))
-                {
-                    System.IO.File.Copy(devIndex, indexHtmlPath, true);
-                }
-                else if (!System.IO.File.Exists(indexHtmlPath))
                 {
                     try
                     {
-                        using (var wc = new System.Net.WebClient())
+                        System.IO.File.Copy(devIndex, indexHtmlPath, true);
+                        updated = true;
+                    }
+                    catch { }
+                }
+
+                // محاولة استخراج أحدث ملف index.html من الموارد المضمنة داخل البرنامج EmbeddedResource
+                if (!updated)
+                {
+                    try
+                    {
+                        var asm = typeof(CloudSyncService).Assembly;
+                        foreach (var resName in asm.GetManifestResourceNames())
                         {
-                            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls;
-                            wc.DownloadFile("https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/MobileApp/index.html", indexHtmlPath);
+                            if (resName.EndsWith("index.html", StringComparison.OrdinalIgnoreCase))
+                            {
+                                using (var stream = asm.GetManifestResourceStream(resName))
+                                using (var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8))
+                                {
+                                    string content = reader.ReadToEnd();
+                                    if (!string.IsNullOrEmpty(content) && content.Contains("ProSoft"))
+                                    {
+                                        System.IO.File.WriteAllText(indexHtmlPath, content, new System.Text.UTF8Encoding(false));
+                                        updated = true;
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                     catch { }
                 }
+
+                // محاولة تحميل أحدث نسخة من GitHub مع كسر الكاش لضمان وصول التحديثات لأي عميل
+                try
+                {
+                    using (var wc = new System.Net.WebClient())
+                    {
+                        System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls | (System.Net.SecurityProtocolType)12288;
+                        wc.Encoding = System.Text.Encoding.UTF8;
+                        wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                        string html = wc.DownloadString("https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/MobileApp/index.html?t=" + DateTime.Now.Ticks);
+                        if (!string.IsNullOrEmpty(html) && html.Contains("tabContent-shifts") && html.Contains("ProSoft"))
+                        {
+                            System.IO.File.WriteAllText(indexHtmlPath, html, new System.Text.UTF8Encoding(false));
+                            updated = true;
+                        }
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
