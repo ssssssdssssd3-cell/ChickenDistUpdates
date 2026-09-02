@@ -92,55 +92,91 @@
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white pb-12">
 
   <!-- ========================================== -->
-  <!-- 1. شاشة تسجيل الدخول الإلزامية (LOGIN VIEW) -->
+  <!-- 1. شاشة قفل تطبيق المالك (OWNER PASSWORD LOCK VIEW) -->
   <!-- ========================================== -->
   <div id="loginView" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4">
-    <div class="glass-card rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-slate-700/60 text-center relative overflow-hidden">
-      <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-500/20 rounded-full blur-2xl"></div>
-      <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl"></div>
+    <div class="glass-card rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-slate-700/60 text-center relative overflow-hidden">
+      <!-- تأثيرات الإضاءة الخلفية -->
+      <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-500/20 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
 
-      <div class="w-16 h-16 bg-gradient-to-tr from-brand-600 to-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/30">
-        <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
+      <!-- أيقونة القفل الذكية -->
+      <div class="w-16 h-16 bg-gradient-to-tr from-brand-600 to-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
+        <i class="fa-solid fa-lock text-2xl text-white"></i>
       </div>
 
-      <h2 class="text-2xl font-black text-white tracking-wide" id="loginStoreTitle">تطبيق المالك السحابي</h2>
-      <p class="text-xs text-slate-400 mt-1 mb-6">يرجى تسجيل الدخول للوصول إلى لوحة المتابعة والتقارير</p>
+      <h2 class="text-xl sm:text-2xl font-black text-white tracking-wide" id="loginStoreTitle">تطبيق المالك السحابي</h2>
+      <p class="text-xs text-slate-400 mt-1 mb-5">🔐 أدخل كلمة مرور المالك لفتح لوحة المتابعة والتقارير</p>
 
-      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-right">
-        <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">اسم المستخدم</label>
+      <!-- نموذج الدخول السريع بكلمة مرور المالك -->
+      <form id="ownerLoginForm" onsubmit="handleOwnerPasswordLogin(event)" class="space-y-4 text-right">
+        <!-- خيار الدخول بكلمة مرور المالك المباشرة -->
+        <div id="ownerPinSection">
+          <label class="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+            <span>كلمة مرور المالك / PIN</span>
+            <span class="text-[10px] text-emerald-400 font-normal">حماية البيانات المالية</span>
+          </label>
           <div class="relative">
-            <input type="text" id="loginUsername" required autocomplete="username"
-                   placeholder="أدخل اسم المستخدم..." 
-                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
-            <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+            <input type="password" id="ownerPassInput" required autofocus
+                   placeholder="أدخل كلمة مرور المالك..." 
+                   class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-3 text-base text-white text-center tracking-widest placeholder:tracking-normal placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-bold" />
+            <button type="button" onclick="togglePassVisibility('ownerPassInput', 'eyeIcon1')" 
+                    class="absolute left-3 top-3.5 text-slate-400 hover:text-white transition p-1">
+              <i id="eyeIcon1" class="fa-solid fa-eye text-sm"></i>
+            </button>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">كلمة المرور</label>
-          <div class="relative">
-            <input type="password" id="loginPassword" required autocomplete="current-password"
-                   placeholder="أدخل كلمة المرور..." 
-                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
-            <i class="fa-solid fa-lock absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+        <!-- خيار الدخول باسم المستخدم (يظهر بالتبديل) -->
+        <div id="userPassSection" class="hidden space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">اسم المستخدم</label>
+            <div class="relative">
+              <input type="text" id="loginUsername" autocomplete="username"
+                     placeholder="اسم المستخدم..." 
+                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
+              <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">كلمة المرور</label>
+            <div class="relative">
+              <input type="password" id="loginPassword" autocomplete="current-password"
+                     placeholder="كلمة المرور..." 
+                     class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition" />
+              <button type="button" onclick="togglePassVisibility('loginPassword', 'eyeIcon2')" 
+                      class="absolute left-3 top-3 text-slate-400 hover:text-white transition p-1">
+                <i id="eyeIcon2" class="fa-solid fa-eye text-xs"></i>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div id="loginErrorMsg" class="hidden text-xs text-red-400 bg-red-950/50 border border-red-800/60 rounded-lg p-2.5 text-center font-bold">
-          اسم المستخدم أو كلمة المرور غير صحيحة!
+        <!-- تذكر هذا الجهاز -->
+        <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="chkRememberMe" checked class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0 cursor-pointer" />
+            <span>تذكرني على هذا الجهاز</span>
+          </label>
+          <button type="button" onclick="toggleLoginMode()" id="btnToggleMode" class="text-blue-400 hover:underline text-[11px]">
+            دخول باسم مستخدم
+          </button>
+        </div>
+
+        <div id="loginErrorMsg" class="hidden text-xs text-red-400 bg-red-950/60 border border-red-800/80 rounded-xl p-3 text-center font-bold animate-pulse">
+          ❌ كلمة المرور غير صحيحة! يرجى إدخال كلمة مرور المالك المسجلة بالبرنامج.
         </div>
 
         <button type="submit" id="btnLoginSubmit"
-                class="w-full py-3 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 text-white font-bold rounded-xl shadow-lg shadow-brand-600/30 transition transform active:scale-95 flex items-center justify-center gap-2">
-          <i class="fa-solid fa-right-to-bracket"></i>
-          <span>دخول للنظام</span>
+                class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 active:scale-95 text-white font-extrabold rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2 text-sm">
+          <i class="fa-solid fa-unlock-keyhole"></i>
+          <span>فتح لوحة المالك</span>
         </button>
       </form>
 
-      <div class="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
-        <span>🔒 اتصال مشفر وآمن</span>
-        <span id="appVersionBadge">v2.8.6</span>
+      <div class="mt-5 pt-3.5 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+        <span>🔒 بيانات مشفرة ومحمية بالكامل</span>
+        <span id="appVersionBadge">v2.9.7</span>
       </div>
     </div>
   </div>
@@ -998,12 +1034,19 @@
       // إعداد التواريخ الافتراضية
       setDateRange('today');
       
-      // التحقق من حالة تسجيل الدخول السابقة
-      const savedAuth = sessionStorage.getItem('erp_auth_user');
+      // التحقق من حالة تسجيل الدخول السابقة (تذكر الجهاز أو الجلسة الحالية)
+      const savedAuth = localStorage.getItem('erp_auth_user') || sessionStorage.getItem('erp_auth_user');
       if (savedAuth) {
-        unlockApp(JSON.parse(savedAuth));
+        try {
+          unlockApp(JSON.parse(savedAuth));
+        } catch (e) {
+          document.getElementById('loginView').classList.remove('hidden');
+        }
       } else {
         document.getElementById('loginView').classList.remove('hidden');
+        setTimeout(() => {
+          document.getElementById('ownerPassInput')?.focus();
+        }, 300);
       }
 
       // جلب البيانات الأولية
@@ -1022,58 +1065,143 @@
     });
 
     // ──────────────────────────────────────────
-    // 2. نظام تسجيل الدخول وإدارة الجلسة
+    // 2. نظام تسجيل الدخول وإدارة كلمة مرور المالك
     // ──────────────────────────────────────────
-    async function handleLogin(e) {
+    let isUserPassMode = false;
+
+    function togglePassVisibility(inputId, iconId) {
+      const inp = document.getElementById(inputId);
+      const icn = document.getElementById(iconId);
+      if (!inp || !icn) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icn.classList.remove('fa-eye');
+        icn.classList.add('fa-eye-slash');
+      } else {
+        inp.type = 'password';
+        icn.classList.remove('fa-eye-slash');
+        icn.classList.add('fa-eye');
+      }
+    }
+
+    function toggleLoginMode() {
+      isUserPassMode = !isUserPassMode;
+      const ownerSec = document.getElementById('ownerPinSection');
+      const userSec = document.getElementById('userPassSection');
+      const toggleBtn = document.getElementById('btnToggleMode');
+      const ownerInput = document.getElementById('ownerPassInput');
+      const userInput = document.getElementById('loginUsername');
+
+      if (isUserPassMode) {
+        ownerSec.classList.add('hidden');
+        userSec.classList.remove('hidden');
+        ownerInput.required = false;
+        userInput.required = true;
+        toggleBtn.textContent = 'دخول بكلمة مرور المالك فقط 🔑';
+        userInput.focus();
+      } else {
+        ownerSec.classList.remove('hidden');
+        userSec.classList.add('hidden');
+        ownerInput.required = true;
+        userInput.required = false;
+        toggleBtn.textContent = 'دخول باسم مستخدم وكلمة مرور 👤';
+        ownerInput.focus();
+      }
+    }
+
+    function normalizeDigits(str) {
+      if (!str) return '';
+      const arDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      let res = str.toString().trim();
+      for (let i = 0; i < 10; i++) {
+        res = res.replaceAll(arDigits[i], i.toString());
+      }
+      return res;
+    }
+
+    async function handleOwnerPasswordLogin(e) {
       e.preventDefault();
-      const user = document.getElementById('loginUsername').value.trim();
-      const pass = document.getElementById('loginPassword').value.trim();
       const errorBox = document.getElementById('loginErrorMsg');
       const submitBtn = document.getElementById('btnLoginSubmit');
+      const rememberMe = document.getElementById('chkRememberMe')?.checked ?? true;
 
       errorBox.classList.add('hidden');
-      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التحقق من السيرفر...</span>';
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التحقق...</span>';
       submitBtn.disabled = true;
 
-      // التأكد من جلب أحدث قائمة مستخدمين من السيرفر
-      if (!rawData.UsersList || rawData.UsersList.length === 0) {
+      // التأكد من جلب أحدث بيانات وخيارات الأمان من السيرفر
+      if (!rawData.OwnerPassword && (!rawData.UsersList || rawData.UsersList.length === 0)) {
         await fetchFreshData(false);
       }
 
-      submitBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> <span>دخول للنظام</span>';
+      submitBtn.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> <span>فتح لوحة المالك</span>';
       submitBtn.disabled = false;
 
+      const serverOwnerPass = normalizeDigits((rawData.OwnerPassword || '').trim());
       const usersList = rawData.UsersList || [];
       let authenticatedUser = null;
 
-      // أ. التحقق من تطابق اسم المستخدم أو الاسم مع كلمة المرور في قاعدة البيانات
-      if (usersList && usersList.length > 0) {
-        authenticatedUser = usersList.find(u => {
-          const dbUser = (u.UserName || '').trim().toLowerCase();
-          const dbEmp = (u.EmpName || '').trim().toLowerCase();
-          const inputUser = user.toLowerCase();
-          const dbPass = (u.Password || '').trim();
+      if (!isUserPassMode) {
+        // أ. التحقق من كلمة مرور المالك المباشرة
+        const enteredPass = normalizeDigits(document.getElementById('ownerPassInput').value);
 
-          const isUserMatch = (dbUser && dbUser === inputUser) || (dbEmp && dbEmp === inputUser);
-          const isPassMatch = (dbPass === pass);
+        if (serverOwnerPass && enteredPass === serverOwnerPass) {
+          authenticatedUser = { UserName: 'owner', EmpName: 'المالك / المدير العام', Role: 'Owner' };
+        } else if (usersList && usersList.length > 0) {
+          // فحص هل كلمة المرور المدخلة تخص أي مدير أو مستخدم في النظام
+          const matched = usersList.find(u => normalizeDigits(u.Password) === enteredPass);
+          if (matched) {
+            authenticatedUser = { UserName: matched.UserName || matched.EmpName, EmpName: matched.EmpName || 'المدير', Role: matched.Role || 'Admin' };
+          }
+        }
 
-          return isUserMatch && isPassMatch;
-        });
-      }
+        // كلمات المرور الافتراضية للطوارئ
+        if (!authenticatedUser) {
+          if (enteredPass === 'admin' || enteredPass === '123456' || enteredPass === '1234' || (serverOwnerPass && enteredPass === serverOwnerPass)) {
+            authenticatedUser = { UserName: 'owner', EmpName: 'المالك / المدير العام', Role: 'Owner' };
+          }
+        }
+      } else {
+        // ب. التحقق من اسم المستخدم وكلمة المرور
+        const user = document.getElementById('loginUsername').value.trim().toLowerCase();
+        const pass = normalizeDigits(document.getElementById('loginPassword').value);
 
-      // ب. مستخدم الطوارئ الافتراضي
-      if (!authenticatedUser) {
-        if ((user.toLowerCase() === 'admin' || user === 'المدير' || user === 'مالك') && (pass === 'admin' || pass === '123456')) {
-          authenticatedUser = { UserName: user, EmpName: 'المدير العام', Role: 'Admin' };
+        if (usersList && usersList.length > 0) {
+          authenticatedUser = usersList.find(u => {
+            const dbUser = (u.UserName || '').trim().toLowerCase();
+            const dbEmp = (u.EmpName || '').trim().toLowerCase();
+            const dbPass = normalizeDigits(u.Password);
+            const isUserMatch = (dbUser && dbUser === user) || (dbEmp && dbEmp === user);
+            const isPassMatch = (dbPass === pass);
+            return isUserMatch && isPassMatch;
+          });
+        }
+
+        if (!authenticatedUser) {
+          if ((user === 'admin' || user === 'المدير' || user === 'مالك' || user === 'owner') && (pass === 'admin' || pass === '123456' || (serverOwnerPass && pass === serverOwnerPass))) {
+            authenticatedUser = { UserName: user, EmpName: 'المدير العام', Role: 'Admin' };
+          }
         }
       }
 
       if (authenticatedUser) {
-        sessionStorage.setItem('erp_auth_user', JSON.stringify(authenticatedUser));
+        const authJson = JSON.stringify(authenticatedUser);
+        if (rememberMe) {
+          localStorage.setItem('erp_auth_user', authJson);
+        } else {
+          sessionStorage.setItem('erp_auth_user', authJson);
+        }
         unlockApp(authenticatedUser);
       } else {
-        errorBox.textContent = "اسم المستخدم أو كلمة المرور غير صحيحة! يرجى استخدام بيانات حسابك في البرنامج.";
+        errorBox.textContent = isUserPassMode 
+          ? "اسم المستخدم أو كلمة المرور غير صحيحة!" 
+          : "❌ كلمة المرور غير صحيحة! يرجى إدخال كلمة مرور المالك المسجلة بالبرنامج.";
         errorBox.classList.remove('hidden');
+        if (!isUserPassMode) {
+          const inp = document.getElementById('ownerPassInput');
+          inp.select();
+          inp.focus();
+        }
       }
     }
 
@@ -1088,10 +1216,15 @@
     }
 
     function lockScreen() {
+      localStorage.removeItem('erp_auth_user');
       sessionStorage.removeItem('erp_auth_user');
-      document.getElementById('loginPassword').value = '';
-      document.getElementById('loginErrorMsg').classList.add('hidden');
-      document.getElementById('loginView').classList.remove('hidden');
+      const ownerInput = document.getElementById('ownerPassInput');
+      if (ownerInput) ownerInput.value = '';
+      const passInput = document.getElementById('loginPassword');
+      if (passInput) passInput.value = '';
+      document.getElementById('loginErrorMsg')?.classList.add('hidden');
+      document.getElementById('loginView')?.classList.remove('hidden');
+      setTimeout(() => ownerInput?.focus(), 200);
     }
 
     function resetAutoLock() {
@@ -1153,6 +1286,7 @@
               SupplierDebts: f.SupplierDebts ? (f.SupplierDebts.doubleValue || f.SupplierDebts.integerValue || 0) : 0,
               LowStockCount: f.LowStockCount ? parseInt(f.LowStockCount.integerValue || 0) : 0,
               StoreName: f.StoreName ? f.StoreName.stringValue : "شركة برو سوفت",
+              OwnerPassword: f.OwnerPassword ? f.OwnerPassword.stringValue : '',
               SyncTime: f.SyncTime ? f.SyncTime.stringValue : "--:--",
               MissingItems: f.MissingItemsJson ? JSON.parse(f.MissingItemsJson.stringValue || "[]") : [],
               ProductsCatalog: f.ProductsCatalogJson ? JSON.parse(f.ProductsCatalogJson.stringValue || "[]") : [],

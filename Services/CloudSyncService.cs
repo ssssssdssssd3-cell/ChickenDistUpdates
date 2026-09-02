@@ -378,7 +378,11 @@ namespace ChickenDist.Services
                     "SELECT TOP 500 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
                 string clientsJson = DataTableToJson(dtClients);
 
-                // 9. قائمة المستخدمين والمدراء لتسجيل الدخول في تطبيق الموبايل
+                // 9. كلمة مرور المالك والمدراء لتسجيل الدخول في تطبيق الموبايل
+                object ownerPassObj = DbHelper.Scalar("SELECT TOP 1 LTRIM(RTRIM(ISNULL(Password,''))) FROM Employees WHERE Role IN ('Admin', 'Owner', N'مدير', N'المدير', N'مدير عام', N'المالك') OR EmpID = 1 ORDER BY EmpID ASC");
+                string ownerPassword = ownerPassObj != null && ownerPassObj != DBNull.Value ? ownerPassObj.ToString().Trim() : "123456";
+                if (string.IsNullOrEmpty(ownerPassword)) ownerPassword = "admin";
+
                 DataTable dtUsers = DbHelper.Query(@"
                     SELECT EmpID, EmpName, 
                            LTRIM(RTRIM(ISNULL(UserName, ''))) AS UserName, 
@@ -495,6 +499,7 @@ namespace ChickenDist.Services
                         "\"SupplierDebts\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"LowStockCount\": " + dto.LowStockCount + "," +
                         "\"StoreName\": \"" + storeName + "\"," +
+                        "\"OwnerPassword\": \"" + EscapeJsonString(ownerPassword) + "\"," +
                         "\"SyncTime\": \"" + timeStr + "\"," +
                         "\"LastSyncDate\": \"" + isoNow + "\"," +
                         "\"MissingItems\": " + missingJson + "," +
@@ -542,6 +547,7 @@ namespace ChickenDist.Services
                         "\"SupplierDebts\": {\"doubleValue\": " + suppDebts.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"LowStockCount\": {\"integerValue\": \"" + dto.LowStockCount + "\"}," +
                         "\"StoreName\": {\"stringValue\": \"" + storeName + "\"}," +
+                        "\"OwnerPassword\": {\"stringValue\": \"" + EscapeJsonString(ownerPassword) + "\"}," +
                         "\"SyncTime\": {\"stringValue\": \"" + timeStr + "\"}," +
                         "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
                         "\"MissingItemsJson\": {\"stringValue\": \"" + EscapeJsonString(missingJson) + "\"}," +
