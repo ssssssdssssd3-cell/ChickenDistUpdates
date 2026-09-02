@@ -21,11 +21,12 @@ namespace ChickenDist.Forms
         private ComboBox cboInterval;
         private Label lblSalesTotal, lblCashSales, lblCashboxBalance, lblLowStock, lblSyncStatus, lblLastSyncTime;
         private Label lblClientDebts, lblSupplierDebts, lblTodayNetProfit;
-        private Button btnSyncNow, btnDeployFirebase, btnCopyUrl, btnOpenMobileApp, btnSave;
+        private Button btnSyncNow, btnDeployFirebase, btnInstallTools, btnLoginFirebase, btnEnsureFiles, btnCopyUrl, btnOpenMobileApp, btnSave;
         private TextBox txtDeployLog;
 
         public FrmCloudSync()
         {
+            CloudSyncService.EnsureMobileAppFiles();
             InitUI();
             LoadSettings();
             RefreshLiveStats();
@@ -34,8 +35,8 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "📱 تطبيق المالك وخدمات السحاب (Firebase Realtime Cloud)";
-            this.Size = new Size(1060, 780);
-            this.MinimumSize = new Size(950, 700);
+            this.Size = new Size(1100, 820);
+            this.MinimumSize = new Size(980, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -101,33 +102,34 @@ namespace ChickenDist.Forms
             pnlKPI.Controls.Add(p1, 0, 0); pnlKPI.Controls.Add(p2, 1, 0); pnlKPI.Controls.Add(p3, 2, 0); pnlKPI.Controls.Add(p4, 3, 0);
             pnlKPI.Controls.Add(p5, 0, 1); pnlKPI.Controls.Add(p6, 1, 1); pnlKPI.Controls.Add(p7, 2, 1); pnlKPI.Controls.Add(p8, 3, 1);
 
-            // ===== 3. Action Buttons Panel (Dock = Top so prominently visible and elevated!) =====
+            // ===== 3. Action Buttons Panel (Dock = Top with 2 Organized Rows) =====
             var pnlActions = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 54,
+                Height = 94,
                 FlowDirection = FlowDirection.RightToLeft,
                 Padding = new Padding(10, 6, 10, 6),
                 BackColor = Color.FromArgb(15, 23, 42)
             };
 
-            btnSyncNow = Theme.MakeButton("🔥 مزامنة ورفع كافة البيانات لحظياً الآن", Color.FromArgb(16, 185, 129));
-            btnSyncNow.Size = new Size(250, 38);
+            // الصف الأول: عمليات المزامنة والنشر
+            btnSyncNow = Theme.MakeButton("🔥 مزامنة ورفع البيانات لحظياً", Color.FromArgb(16, 185, 129));
+            btnSyncNow.Size = new Size(220, 36);
             btnSyncNow.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSyncNow.Click += BtnSyncNow_Click;
 
             btnDeployFirebase = Theme.MakeButton("🚀 نشر تطبيق المالك (Deploy)", Color.FromArgb(234, 88, 12));
-            btnDeployFirebase.Size = new Size(230, 38);
+            btnDeployFirebase.Size = new Size(210, 36);
             btnDeployFirebase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnDeployFirebase.Click += BtnDeployFirebase_Click;
 
             btnOpenMobileApp = Theme.MakeButton("📱 فتح تطبيق المالك", Color.FromArgb(147, 51, 234));
-            btnOpenMobileApp.Size = new Size(180, 38);
+            btnOpenMobileApp.Size = new Size(160, 36);
             btnOpenMobileApp.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnOpenMobileApp.Click += BtnOpenMobileApp_Click;
 
             btnCopyUrl = Theme.MakeButton("📋 نسخ الرابط", Color.FromArgb(2, 132, 199));
-            btnCopyUrl.Size = new Size(110, 38);
+            btnCopyUrl.Size = new Size(110, 36);
             btnCopyUrl.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCopyUrl.Click += (s, e) =>
             {
@@ -140,11 +142,30 @@ namespace ChickenDist.Forms
             };
 
             btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Color.FromArgb(71, 85, 105));
-            btnSave.Size = new Size(120, 38);
+            btnSave.Size = new Size(120, 36);
             btnSave.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
 
-            pnlActions.Controls.AddRange(new Control[] { btnSyncNow, btnDeployFirebase, btnOpenMobileApp, btnCopyUrl, btnSave });
+            // الصف الثاني: أدوات التثبيت وتسجيل الدخول وإنشاء الملفات
+            btnInstallTools = Theme.MakeButton("📦 تثبيت أداة Firebase Tools", Color.FromArgb(79, 70, 229));
+            btnInstallTools.Size = new Size(220, 36);
+            btnInstallTools.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnInstallTools.Click += BtnInstallFirebaseTools_Click;
+
+            btnLoginFirebase = Theme.MakeButton("🔑 تسجيل دخول فيربيز (Firebase Login)", Color.FromArgb(13, 148, 136));
+            btnLoginFirebase.Size = new Size(270, 36);
+            btnLoginFirebase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnLoginFirebase.Click += BtnLoginFirebase_Click;
+
+            btnEnsureFiles = Theme.MakeButton("🔄 تهيئة ملفات firebase.json", Color.FromArgb(37, 99, 235));
+            btnEnsureFiles.Size = new Size(210, 36);
+            btnEnsureFiles.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnEnsureFiles.Click += BtnEnsureFiles_Click;
+
+            pnlActions.Controls.AddRange(new Control[] {
+                btnSyncNow, btnDeployFirebase, btnOpenMobileApp, btnCopyUrl, btnSave,
+                btnInstallTools, btnLoginFirebase, btnEnsureFiles
+            });
 
             // ===== 4. Middle Settings & Deploy Panel (Dock = Fill) =====
             var pnlMain = new Panel
@@ -500,6 +521,199 @@ namespace ChickenDist.Forms
                 btnDeployFirebase.Enabled = true;
                 btnDeployFirebase.Text = "🚀 نشر تطبيق المالك (Deploy)";
             }
+        }
+
+        private async void BtnInstallFirebaseTools_Click(object sender, EventArgs e)
+        {
+            btnInstallTools.Enabled = false;
+            btnInstallTools.Text = "⏳ جاري التثبيت...";
+            txtDeployLog.Text = "=== بدء تثبيت أداة Firebase Tools (npm install -g firebase-tools) ===\r\n";
+            txtDeployLog.AppendText("يرجى الانتظار، جاري تحميل وتثبيت حزمة الأدوات عبر Node.js...\r\n");
+
+            try
+            {
+                CloudSyncService.EnsureMobileAppFiles();
+
+                string npmCmd = FindNpmCLI();
+                if (string.IsNullOrEmpty(npmCmd))
+                {
+                    txtDeployLog.AppendText("❌ لم يتم العثور على Node.js / npm على هذا الجهاز!\r\n");
+                    txtDeployLog.AppendText("يرجى تثبيت Node.js أولاً من الموقع الرسمي: https://nodejs.org\r\n");
+                    var res = MessageBox.Show(
+                        "لم يتم العثور على Node.js على هذا الجهاز!\n\nهل ترغب في فتح موقع Node.js الرسمي لتحميله وتثبيته الآن؟",
+                        "Node.js غير مثبت", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (res == DialogResult.Yes)
+                    {
+                        Process.Start(new ProcessStartInfo { FileName = "https://nodejs.org/en/download", UseShellExecute = true });
+                    }
+                    return;
+                }
+
+                txtDeployLog.AppendText($"[1/2] تم العثور على npm: {npmCmd}\r\n");
+                txtDeployLog.AppendText("[2/2] جاري تنفيذ: npm install -g firebase-tools ...\r\n");
+
+                string extraPaths = string.Join(";", new[]
+                {
+                    @"C:\Program Files\nodejs",
+                    @"C:\Program Files (x86)\nodejs",
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\Roaming\npm")
+                });
+                string fullPath = extraPaths + ";" + Environment.GetEnvironmentVariable("PATH");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c npm install -g firebase-tools",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                psi.EnvironmentVariables["PATH"] = fullPath;
+
+                using (var proc = new Process { StartInfo = psi })
+                {
+                    proc.OutputDataReceived += (s, ev) =>
+                    {
+                        if (!string.IsNullOrEmpty(ev.Data))
+                            this.Invoke((Action)(() => txtDeployLog.AppendText(ev.Data + "\r\n")));
+                    };
+                    proc.ErrorDataReceived += (s, ev) =>
+                    {
+                        if (!string.IsNullOrEmpty(ev.Data))
+                            this.Invoke((Action)(() => txtDeployLog.AppendText("[LOG] " + ev.Data + "\r\n")));
+                    };
+
+                    proc.Start();
+                    proc.BeginOutputReadLine();
+                    proc.BeginErrorReadLine();
+
+                    await Task.Run(() => proc.WaitForExit());
+
+                    if (proc.ExitCode == 0)
+                    {
+                        txtDeployLog.AppendText("\r\n==========================================\r\n");
+                        txtDeployLog.AppendText("✅ تم تثبيت أداة Firebase Tools بنجاح!\r\n");
+                        txtDeployLog.AppendText("الخطوة التالية: اضغط على زر '🔑 تسجيل دخول فيربيز (Firebase Login)' لربط حساب Google.\r\n");
+                        txtDeployLog.AppendText("==========================================\r\n");
+                        MessageBox.Show("✅ تم تثبيت أداة Firebase Tools بنجاح على الجهاز!\n\nالخطوة التالية: اضغط على زر 'تسجيل دخول فيربيز' لربط الحساب.", "نجاح التثبيت", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        txtDeployLog.AppendText($"\r\n⚠️ انتهى التثبيت بكود: {proc.ExitCode}\r\n");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                txtDeployLog.AppendText($"\r\n❌ خطأ أثناء تثبيت Firebase Tools: {ex.Message}\r\n");
+                MessageBox.Show("خطأ أثناء التثبيت: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnInstallTools.Enabled = true;
+                btnInstallTools.Text = "📦 تثبيت أداة Firebase Tools";
+            }
+        }
+
+        private void BtnLoginFirebase_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                CloudSyncService.EnsureMobileAppFiles();
+
+                string firebaseCmd = FindFirebaseCLI();
+                if (string.IsNullOrEmpty(firebaseCmd))
+                {
+                    var res = MessageBox.Show(
+                        "أداة Firebase CLI غير مثبتة بعد على هذا الجهاز!\n\nهل ترغب في تثبيتها أولاً عبر زر 'تثبيت أداة Firebase Tools'؟",
+                        "Firebase Tools غير مثبت", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (res == DialogResult.Yes)
+                    {
+                        BtnInstallFirebaseTools_Click(sender, e);
+                    }
+                    return;
+                }
+
+                txtDeployLog.AppendText("=== جاري فتح نافذة تسجيل الدخول في Firebase (Google Login) ===\r\n");
+                txtDeployLog.AppendText("سيتم فتح نافذة الأوامر والمتصفح لتسجيل الدخول بحساب Google...\r\n");
+
+                string mobileAppDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp");
+                if (!Directory.Exists(mobileAppDir)) Directory.CreateDirectory(mobileAppDir);
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/k \"\"{firebaseCmd}\" login\"",
+                    WorkingDirectory = mobileAppDir,
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Normal
+                };
+
+                Process.Start(psi);
+                txtDeployLog.AppendText("✅ تم فتح نافذة تسجيل الدخول. يرجى إتمام التسجيل في المتصفح والعودة للبرنامج.\r\n");
+            }
+            catch (Exception ex)
+            {
+                txtDeployLog.AppendText($"❌ خطأ أثناء فتح نافذة تسجيل الدخول: {ex.Message}\r\n");
+                MessageBox.Show("خطأ أثناء تسجيل الدخول: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnEnsureFiles_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                CloudSyncService.EnsureMobileAppFiles();
+                string mobileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp");
+                txtDeployLog.AppendText("✅ تم توليد وتحديث ملفات firebase.json و index.html في المجلد:\r\n" + mobileDir + "\r\n");
+                MessageBox.Show($"✅ تم التأكد وإنشاء ملفات:\n- MobileApp/firebase.json\n- MobileApp/index.html\n- firebase.json\n\nبنجاح داخل مسار البرنامج!", "تهيئة الملفات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء تهيئة الملفات: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>يبحث عن npm CLI في كل المسارات الممكنة</summary>
+        private static string FindNpmCLI()
+        {
+            string[] candidatePaths = new[]
+            {
+                @"C:\Program Files\nodejs\npm.cmd",
+                @"C:\Program Files (x86)\nodejs\npm.cmd",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\npm.cmd"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\Roaming\npm\npm.cmd")
+            };
+
+            foreach (var path in candidatePaths)
+            {
+                if (File.Exists(path)) return path;
+            }
+
+            try
+            {
+                var psi = new ProcessStartInfo("where.exe", "npm")
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                };
+                using (var proc = Process.Start(psi))
+                {
+                    string output = proc.StandardOutput.ReadToEnd().Trim();
+                    proc.WaitForExit();
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        string firstLine = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[0];
+                        if (File.Exists(firstLine)) return firstLine;
+                    }
+                }
+            }
+            catch { }
+
+            return null;
         }
 
         /// <summary>يبحث عن firebase CLI في كل المسارات الممكنة</summary>

@@ -23,13 +23,101 @@ namespace ChickenDist.Services
     {
         public static void EnsureMobileAppFolderExists()
         {
+            EnsureMobileAppFiles();
+        }
+
+        /// <summary>
+        /// ينشئ ويتأكد من وجود مجلد MobileApp وملف firebase.json وملف index.html تلقائياً على جهاز العميل دون الحاجة لنقلها يدوياً
+        /// </summary>
+        public static void EnsureMobileAppFiles()
+        {
             try
             {
-                DriverPortalServer.EnsureMobileAppFilesExtracted();
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string mobileAppDir = System.IO.Path.Combine(baseDir, "MobileApp");
+                if (!System.IO.Directory.Exists(mobileAppDir))
+                {
+                    System.IO.Directory.CreateDirectory(mobileAppDir);
+                }
+
+                string firebaseJsonContent = @"{
+  ""hosting"": {
+    ""public"": ""."",
+    ""ignore"": [
+      ""firebase.json"",
+      ""**/.*"",
+      ""**/node_modules/**"",
+      ""*.bat"",
+      ""*.ps1"",
+      ""*.cmd"",
+      ""*.exe"",
+      ""*.rules.json"",
+      ""*.rules""
+    ],
+    ""rewrites"": [
+      {
+        ""source"": ""**"",
+        ""destination"": ""/index.html""
+      }
+    ],
+    ""headers"": [
+      {
+        ""source"": ""**/*.@(js|html|css|json|png|jpg|jpeg|svg|webp)"",
+        ""headers"": [
+          {
+            ""key"": ""Cache-Control"",
+            ""value"": ""no-cache, no-store, must-revalidate""
+          },
+          {
+            ""key"": ""Access-Control-Allow-Origin"",
+            ""value"": ""*""
+          }
+        ]
+      }
+    ]
+  },
+  ""database"": {
+    ""rules"": ""database.rules.json""
+  },
+  ""firestore"": {
+    ""rules"": ""firestore.rules""
+  }
+}";
+
+                // 1. كتابة ملف firebase.json داخل MobileApp
+                string mobileFirebaseJson = System.IO.Path.Combine(mobileAppDir, "firebase.json");
+                System.IO.File.WriteAllText(mobileFirebaseJson, firebaseJsonContent, new System.Text.UTF8Encoding(false));
+
+                // 2. كتابة ملف firebase.json في المجلد الرئيسي للبرنامج أيضاً
+                string rootFirebaseJson = System.IO.Path.Combine(baseDir, "firebase.json");
+                System.IO.File.WriteAllText(rootFirebaseJson, firebaseJsonContent, new System.Text.UTF8Encoding(false));
+
+                // 3. التأكد من ملف index.html في MobileApp
+                string indexHtmlPath = System.IO.Path.Combine(mobileAppDir, "index.html");
+                if (!System.IO.File.Exists(indexHtmlPath))
+                {
+                    string devIndex = @"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\index.html";
+                    if (System.IO.File.Exists(devIndex))
+                    {
+                        System.IO.File.Copy(devIndex, indexHtmlPath, true);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            using (var wc = new System.Net.WebClient())
+                            {
+                                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls;
+                                wc.DownloadFile("https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/MobileApp/index.html", indexHtmlPath);
+                            }
+                        }
+                        catch { }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("EnsureMobileAppFolderExists warning: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("EnsureMobileAppFiles warning: " + ex.Message);
             }
         }
 
