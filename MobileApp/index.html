@@ -6,7 +6,27 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
+  <meta name="app-version" content="2.9.9-b20260902" />
   <title>لوحة تحكم المالك | ProSoft ERP</title>
+  <script>
+    // ── إزالة كاش Service Worker القديم وإجبار التحديث ──
+    const APP_VERSION = "2.9.9-b20260902";
+    const storedVer = localStorage.getItem("app_version");
+    if (storedVer && storedVer !== APP_VERSION) {
+      // نسخة جديدة — امسح الكاش وأعد التحميل
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+      localStorage.setItem("app_version", APP_VERSION);
+      window.location.reload(true);
+    } else {
+      localStorage.setItem("app_version", APP_VERSION);
+    }
+    // إلغاء تسجيل أي Service Worker قديم
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister());
+      });
+    }
+  </script>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -1483,6 +1503,7 @@
           const data = await resp.json();
           if (data) {
             rawData = data;
+            checkAndReloadIfNewVersion(data.AppVersion);
             processAndRenderData();
           }
         } else {
@@ -1493,6 +1514,21 @@
         await fetchFirestoreFallback();
       } finally {
         if (showSpinner && refreshIcon) refreshIcon.classList.remove('fa-spin');
+      }
+    }
+
+    // يكتشف لو في إصدار جديد من البرنامج ويجبر المتصفح على التحديث تلقائياً
+    let _versionCheckDone = false;
+    function checkAndReloadIfNewVersion(serverVersion) {
+      if (_versionCheckDone || !serverVersion) return;
+      _versionCheckDone = true;
+      const storedVer = localStorage.getItem('html_deploy_version');
+      if (storedVer && storedVer !== serverVersion) {
+        localStorage.setItem('html_deploy_version', serverVersion);
+        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        setTimeout(() => window.location.reload(true), 500);
+      } else {
+        localStorage.setItem('html_deploy_version', serverVersion);
       }
     }
 
