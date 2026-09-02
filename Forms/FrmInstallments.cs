@@ -42,6 +42,8 @@ namespace ChickenDist.Forms
         private Button btnReschedule;
         private Button btnCancelContract;
         private Button btnAuditLog;
+        private Button btnPrintReceipt;
+        private Button btnSendWhatsApp;
 
         public FrmInstallments()
         {
@@ -297,60 +299,84 @@ namespace ChickenDist.Forms
             dgSchedule.Columns.Add(new DataGridViewTextBoxColumn { Name = "PaidAmount", HeaderText = "المدفوع", FillWeight = 35 });
             dgSchedule.Columns.Add(new DataGridViewTextBoxColumn { Name = "Remaining", HeaderText = "المتبقي", FillWeight = 35 });
             dgSchedule.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "الحالة", FillWeight = 35 });
+
+            // Context Menu for right-clicking schedule rows
+            var ctxSchedule = new ContextMenuStrip();
+            var miCollect = new ToolStripMenuItem("💵 سداد هذا القسط", null, (s, e) => BtnCollectSingle_Click(s, e));
+            var miPrint = new ToolStripMenuItem("🖨️ طباعة إيصال السداد", null, (s, e) => BtnPrintReceipt_Click(s, e));
+            var miWAText = new ToolStripMenuItem("💬 إرسال إيصال واتساب (نص)", null, (s, e) => SendWhatsAppForSelectedSchedule(false));
+            var miWAImage = new ToolStripMenuItem("🖼️ إرسال إيصال واتساب (صورة)", null, (s, e) => SendWhatsAppForSelectedSchedule(true));
+            ctxSchedule.Items.AddRange(new ToolStripItem[] { miCollect, new ToolStripSeparator(), miPrint, miWAText, miWAImage });
+            dgSchedule.ContextMenuStrip = ctxSchedule;
+
             pnlDetails.Controls.Add(dgSchedule, 0, 1);
 
-            // Operation Buttons Table Layout (100% responsive)
+            // Operation Buttons Table Layout (100% responsive - 4 columns)
             var pnlActions = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 3,
+                ColumnCount = 4,
                 RowCount = 2,
                 Padding = new Padding(0),
                 Margin = new Padding(0),
                 BackColor = Theme.BgCard
             };
-            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
             btnCollectSingle = Theme.MakeButton("💵 سداد قسط", Theme.Success);
             btnCollectSingle.Dock = DockStyle.Fill;
-            btnCollectSingle.Margin = new Padding(3);
+            btnCollectSingle.Margin = new Padding(2);
             btnCollectSingle.Click += BtnCollectSingle_Click;
 
-            btnCollectAmount = Theme.MakeButton("💰 تحصيل مبلغ", Theme.Accent);
+            btnCollectAmount = Theme.MakeButton("💰 تحصيل دفعة", Theme.Accent);
             btnCollectAmount.Dock = DockStyle.Fill;
-            btnCollectAmount.Margin = new Padding(3);
+            btnCollectAmount.Margin = new Padding(2);
             btnCollectAmount.Click += BtnCollectAmount_Click;
 
             btnEarlyPayoff = Theme.MakeButton("⚡ سداد مبكر", Color.FromArgb(160, 50, 160));
             btnEarlyPayoff.Dock = DockStyle.Fill;
-            btnEarlyPayoff.Margin = new Padding(3);
+            btnEarlyPayoff.Margin = new Padding(2);
             btnEarlyPayoff.Click += BtnEarlyPayoff_Click;
+
+            btnPrintReceipt = Theme.MakeButton("🖨️ طباعة إيصال", Color.FromArgb(52, 152, 219));
+            btnPrintReceipt.Dock = DockStyle.Fill;
+            btnPrintReceipt.Margin = new Padding(2);
+            btnPrintReceipt.Click += BtnPrintReceipt_Click;
 
             btnReschedule = Theme.MakeButton("📅 إعادة جدولة", Theme.Primary);
             btnReschedule.Dock = DockStyle.Fill;
-            btnReschedule.Margin = new Padding(3);
+            btnReschedule.Margin = new Padding(2);
             btnReschedule.Click += BtnReschedule_Click;
 
             btnCancelContract = Theme.MakeButton("❌ إلغاء العقد", Theme.Danger);
             btnCancelContract.Dock = DockStyle.Fill;
-            btnCancelContract.Margin = new Padding(3);
+            btnCancelContract.Margin = new Padding(2);
             btnCancelContract.Click += BtnCancelContract_Click;
 
             btnAuditLog = Theme.MakeButton("🔐 سجل التدقيق", Color.FromArgb(120, 120, 80));
             btnAuditLog.Dock = DockStyle.Fill;
-            btnAuditLog.Margin = new Padding(3);
+            btnAuditLog.Margin = new Padding(2);
             btnAuditLog.Click += BtnAuditLog_Click;
+
+            btnSendWhatsApp = Theme.MakeButton("📱 إرسال واتساب", Color.FromArgb(37, 211, 102));
+            btnSendWhatsApp.Dock = DockStyle.Fill;
+            btnSendWhatsApp.Margin = new Padding(2);
+            btnSendWhatsApp.Click += BtnSendWhatsApp_Click;
 
             pnlActions.Controls.Add(btnCollectSingle, 0, 0);
             pnlActions.Controls.Add(btnCollectAmount, 1, 0);
             pnlActions.Controls.Add(btnEarlyPayoff, 2, 0);
+            pnlActions.Controls.Add(btnPrintReceipt, 3, 0);
+
             pnlActions.Controls.Add(btnReschedule, 0, 1);
             pnlActions.Controls.Add(btnCancelContract, 1, 1);
             pnlActions.Controls.Add(btnAuditLog, 2, 1);
+            pnlActions.Controls.Add(btnSendWhatsApp, 3, 1);
 
             pnlDetails.Controls.Add(pnlActions, 0, 2);
             splitTbl.Controls.Add(pnlDetails, 1, 0);
@@ -539,6 +565,8 @@ namespace ChickenDist.Forms
             btnReschedule.Enabled = enabled;
             btnCancelContract.Enabled = enabled;
             btnAuditLog.Enabled = enabled;
+            btnPrintReceipt.Enabled = enabled;
+            btnSendWhatsApp.Enabled = enabled;
         }
 
         private void DgContracts_SelectionChanged(object sender, EventArgs e)
@@ -560,6 +588,8 @@ namespace ChickenDist.Forms
             btnEarlyPayoff.Enabled = (status == "Active" || status == "Defaulted");
             btnCollectSingle.Enabled = (status == "Active" || status == "Defaulted");
             btnCollectAmount.Enabled = (status == "Active" || status == "Defaulted");
+            btnPrintReceipt.Enabled = true;
+            btnSendWhatsApp.Enabled = true;
         }
 
         private void LoadSchedule(int contractID)
@@ -640,9 +670,12 @@ namespace ChickenDist.Forms
                         bool ok = InstallmentDAL.CollectPayment(_selectedContractID, 1, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes);
                         if (ok)
                         {
-                            MessageBox.Show("✅ تم سداد القسط وتحديث القيود بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             LoadDashboard();
                             SearchContracts();
+
+                            // فتح نافذة خيارات الطباعة والواتساب مباشرة
+                            var printer = new FrmPrintInstallmentPayment(_selectedContractID, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes, installmentNo: no);
+                            printer.ShowOptionsDialog(this);
                         }
                     }
                     catch (Exception ex)
@@ -678,9 +711,12 @@ namespace ChickenDist.Forms
                         bool ok = InstallmentDAL.CollectPayment(_selectedContractID, 1, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes);
                         if (ok)
                         {
-                            MessageBox.Show("✅ تم تحصيل المبلغ وتوزيعه بنجاح على الأقساط من الأقدم للأحدث.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             LoadDashboard();
                             SearchContracts();
+
+                            // فتح نافذة خيارات الطباعة والواتساب مباشرة
+                            var printer = new FrmPrintInstallmentPayment(_selectedContractID, frm.CollectedAmount, frm.PaymentMethod, frm.SelectedSafeID, frm.Notes);
+                            printer.ShowOptionsDialog(this);
                         }
                     }
                     catch (Exception ex)
@@ -762,9 +798,6 @@ namespace ChickenDist.Forms
                             // 2. نقوم بتحصيل القيمة المتبقية بالكامل لإغلاق العقد
                             if (payoffAmount > 0)
                             {
-                                // نستدعي السداد المجمع داخل نفس الترانزأكشن
-                                // سنقوم بتمرير التحصيل
-                                // بما أننا في ترانزأكشن حالية، يمكن كتابة كود التحصيل مباشرة لتجنب تكرار فتح الترانزأكشن
                                 var dtContract = DbHelper.QueryTrans(trans, "SELECT CustomerID, ContractCode FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", _selectedContractID));
                                 int customerID = Convert.ToInt32(dtContract.Rows[0]["CustomerID"]);
                                 string contractCode = dtContract.Rows[0]["ContractCode"].ToString();
@@ -832,9 +865,12 @@ namespace ChickenDist.Forms
 
                         if (ok)
                         {
-                            MessageBox.Show("✅ تم إجراء التسوية والسداد المبكر وإغلاق العقد بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             LoadDashboard();
                             SearchContracts();
+
+                            // فتح نافذة خيارات الطباعة والواتساب مباشرة
+                            var printer = new FrmPrintInstallmentPayment(_selectedContractID, payoffAmount, frm.PaymentMethod, frm.SelectedSafeID, $"تسوية وسداد مبكر للعقد (خصم تنازل: {frm.WaiverAmount:N2} ج)");
+                            printer.ShowOptionsDialog(this);
                         }
                     }
                     catch (Exception ex)
@@ -842,6 +878,71 @@ namespace ChickenDist.Forms
                         MessageBox.Show("❌ فشل إجراء السداد المبكر: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
+            }
+        }
+
+        private void BtnPrintReceipt_Click(object sender, EventArgs e)
+        {
+            PrintOrSendForSchedule(directWhatsApp: false);
+        }
+
+        private void BtnSendWhatsApp_Click(object sender, EventArgs e)
+        {
+            PrintOrSendForSchedule(directWhatsApp: true, isImage: false);
+        }
+
+        private void SendWhatsAppForSelectedSchedule(bool isImage)
+        {
+            PrintOrSendForSchedule(directWhatsApp: true, isImage: isImage);
+        }
+
+        private void PrintOrSendForSchedule(bool directWhatsApp = false, bool isImage = false)
+        {
+            if (_selectedContractID == 0)
+            {
+                MessageBox.Show("يرجى اختيار عقد تقسيط أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int? instNo = null;
+            decimal paidAmount = 0m;
+            string notes = "";
+
+            if (dgSchedule.SelectedRows.Count > 0)
+            {
+                var row = dgSchedule.SelectedRows[0];
+                instNo = Convert.ToInt32(row.Cells["No"].Value);
+                string paidStr = row.Cells["PaidAmount"].Value?.ToString().Replace(" ج", "").Trim() ?? "0";
+                decimal.TryParse(paidStr, out paidAmount);
+                string remStr = row.Cells["Remaining"].Value?.ToString().Replace(" ج", "").Trim() ?? "0";
+                decimal.TryParse(remStr, out decimal rem);
+                if (paidAmount <= 0) paidAmount = rem;
+            }
+
+            if (paidAmount <= 0)
+            {
+                var lastPayObj = DbHelper.Scalar("SELECT TOP 1 Amount FROM InstallmentPayments WHERE ContractID=@cid ORDER BY PaymentID DESC", DbHelper.P("@cid", _selectedContractID));
+                if (lastPayObj != null && lastPayObj != DBNull.Value)
+                {
+                    paidAmount = Convert.ToDecimal(lastPayObj);
+                }
+                else
+                {
+                    var instValObj = DbHelper.Scalar("SELECT InstallmentValue FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", _selectedContractID));
+                    if (instValObj != null && instValObj != DBNull.Value)
+                        paidAmount = Convert.ToDecimal(instValObj);
+                }
+            }
+
+            var printer = new FrmPrintInstallmentPayment(_selectedContractID, paidAmount, installmentNo: instNo, notes: notes);
+            if (directWhatsApp)
+            {
+                if (isImage) printer.SendWhatsAppImage();
+                else printer.SendWhatsAppText();
+            }
+            else
+            {
+                printer.ShowOptionsDialog(this);
             }
         }
 
