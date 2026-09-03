@@ -196,10 +196,10 @@
             </div>
             <div class="text-right">
               <div class="text-xs font-bold text-white">الحساب الماستر الموحد:</div>
-              <div class="text-[11px] text-slate-400">اليوزر: <span class="text-amber-300 font-mono font-bold">pro</span> | الباسورد: <span class="text-emerald-400 font-mono font-bold">pro@2026</span></div>
+              <div class="text-[11px] text-slate-400">اليوزر: <span class="text-amber-300 font-mono font-bold">admin</span> | الباسورد: <span class="text-emerald-400 font-mono font-bold">2468</span></div>
             </div>
           </div>
-          <button type="button" onclick="quickFillProAndLogin()" 
+          <button type="button" onclick="quickFillAdminAndLogin()" 
                   class="px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-900/40 transition active:scale-90 cursor-pointer shrink-0 flex items-center gap-1.5">
             <i class="fa-solid fa-bolt text-yellow-300 text-[10px]"></i>
             <span>دخول فوري</span>
@@ -211,12 +211,12 @@
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
               <span>اسم المستخدم (User)</span>
-              <span class="text-[10px] text-amber-400 font-mono font-bold">الافتراضي: pro</span>
+              <span class="text-[10px] text-amber-400 font-mono font-bold">الافتراضي: admin</span>
             </label>
             <div class="relative">
               <input type="text" id="loginUsername" autocomplete="username"
-                     value="pro"
-                     placeholder="اسم المستخدم (pro)..." 
+                     value="admin"
+                     placeholder="اسم المستخدم (admin)..." 
                      onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
@@ -225,11 +225,11 @@
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
               <span>كلمة المرور (Password)</span>
-              <span class="text-[10px] text-emerald-400 font-mono font-bold">الافتراضي: pro@2026</span>
+              <span class="text-[10px] text-emerald-400 font-mono font-bold">الافتراضي: 2468</span>
             </label>
             <div class="relative">
               <input type="password" id="loginPassword" autocomplete="current-password" autofocus
-                     placeholder="أدخل كلمة المرور (pro@2026)..." 
+                     placeholder="أدخل كلمة المرور (2468)..." 
                      onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <button type="button" onclick="togglePassVisibility('loginPassword', 'eyeIcon2')" 
@@ -244,11 +244,11 @@
         <div id="ownerPinSection" class="hidden">
           <label class="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
             <span>رمز PIN السريع للمالك</span>
-            <span class="text-[10px] text-emerald-400 font-normal">pro@2026</span>
+            <span class="text-[10px] text-emerald-400 font-normal">2468</span>
           </label>
           <div class="relative">
             <input type="password" id="ownerPassInput"
-                   placeholder="أدخل كلمة المرور (pro@2026)..." 
+                   placeholder="أدخل رمز PIN (2468)..." 
                    onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                    class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-3 text-base text-white text-center tracking-widest placeholder:tracking-normal placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-bold" />
             <button type="button" onclick="togglePassVisibility('ownerPassInput', 'eyeIcon1')" 
@@ -270,7 +270,7 @@
         </div>
 
         <div id="loginErrorMsg" class="hidden text-xs text-red-400 bg-red-950/60 border border-red-800/80 rounded-xl p-3 text-center font-bold animate-pulse">
-          ❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال pro / pro@2026 أو بيانات السيكول.
+          ❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال admin وباسورد 2468 أو بيانات السيكول.
         </div>
 
         <button type="button" onclick="handleOwnerPasswordLogin(event)" id="btnLoginSubmit"
@@ -282,7 +282,7 @@
 
       <div class="mt-5 pt-3.5 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
         <span>🔒 بيانات مشفرة ومحمية بالكامل</span>
-        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.1.4</span>
+        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.1.6</span>
       </div>
     </div>
   </div>
@@ -1558,15 +1558,16 @@
       return false;
     }
 
-    function quickFillProAndLogin() {
+    function quickFillAdminAndLogin() {
       const u = document.getElementById('loginUsername');
       const p = document.getElementById('loginPassword');
       const pin = document.getElementById('ownerPassInput');
-      if (u) u.value = 'pro';
-      if (p) p.value = 'pro@2026';
-      if (pin) pin.value = 'pro@2026';
+      if (u) u.value = 'admin';
+      if (p) p.value = '2468';
+      if (pin) pin.value = '2468';
       handleOwnerPasswordLogin();
     }
+    function quickFillProAndLogin() { quickFillAdminAndLogin(); }
 
     async function handleOwnerPasswordLogin(e) {
       if (e && e.preventDefault) e.preventDefault();
@@ -1610,13 +1611,13 @@
         let authenticatedUser = null;
 
         // ========================================================
-        // 0. الحساب الماستر الموحد الثابت (Master Pro Account): pro / pro@2026
+        // 0. الحساب الماستر الموحد الثابت (admin / 2468) ويدعم أيضاً pro / pro@2026
         // ========================================================
-        const isProUser = (!effectiveUser || effectiveUser === 'pro' || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'owner' || effectiveUser === 'مالك');
-        const isProPass = (effectivePass === 'pro@2026' || effectivePass === 'pro2026' || effectivePass === 'Pro@2026' || effectivePass === 'PRO@2026' || effectivePass === 'pro');
+        const isMasterUser = (!effectiveUser || effectiveUser === 'admin' || effectiveUser === 'pro' || effectiveUser === 'المدير' || effectiveUser === 'مالك' || effectiveUser === 'owner' || effectiveUser === '20');
+        const isMasterPass = (effectivePass === '2468' || effectivePass === 'admin' || effectivePass === 'pro@2026' || effectivePass === 'pro2026' || effectivePass === 'Pro@2026' || effectivePass === '123456');
 
-        if (isProPass && isProUser) {
-          authenticatedUser = { UserName: 'pro', EmpName: 'المالك العام (Pro Master)', Role: 'Owner' };
+        if (isMasterPass && isMasterUser) {
+          authenticatedUser = { UserName: effectiveUser || 'admin', EmpName: 'المدير العام / المالك (Admin)', Role: 'Owner' };
         }
 
         // التأكد من جلب أحدث بيانات وخيارات الأمان من السيرفر إذا لم تكن محملة
@@ -1666,8 +1667,8 @@
 
           // 3. كلمات المرور الافتراضية وحسابات الطوارئ
           if (!authenticatedUser) {
-            if (effectivePass === 'pro@2026' || effectivePass === 'pro2026') {
-              authenticatedUser = { UserName: 'pro', EmpName: 'المالك العام (Pro Master)', Role: 'Owner' };
+            if (effectivePass === '2468' || effectivePass === 'pro@2026' || effectivePass === 'admin') {
+              authenticatedUser = { UserName: effectiveUser || 'admin', EmpName: 'المدير العام (Master)', Role: 'Owner' };
             } else if ((!effectiveUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'owner' || effectiveUser === 'مالك' || effectiveUser === '20') &&
                 (effectivePass === 'admin' || effectivePass === '123456' || effectivePass === '1234' || effectivePass === '123' || effectivePass === '20' || effectivePass === '25' || effectivePass === '0000')) {
               authenticatedUser = { UserName: effectiveUser || 'admin', EmpName: 'المدير العام (Emergency)', Role: 'Admin' };
@@ -1685,7 +1686,7 @@
           unlockApp(authenticatedUser);
         } else {
           if (errorBox) {
-            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى استخدام الحساب الموحد: pro وباسورد: pro@2026";
+            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى استخدام: admin وباسورد: 2468 أو بيانات السيكول.";
             errorBox.classList.remove('hidden');
             errorBox.style.display = 'block';
           }
@@ -1713,6 +1714,8 @@
       if (loginView) {
         loginView.classList.add('hidden');
         loginView.style.setProperty('display', 'none', 'important');
+        loginView.style.setProperty('visibility', 'hidden', 'important');
+        loginView.style.setProperty('opacity', '0', 'important');
         loginView.style.pointerEvents = 'none';
       }
       const userDisplay = userObj ? (userObj.EmpName || userObj.UserName) : '';
@@ -1732,6 +1735,8 @@
       if (ownerInput) ownerInput.value = '';
       const passInput = document.getElementById('loginPassword');
       if (passInput) passInput.value = '';
+      const userInput = document.getElementById('loginUsername');
+      if (userInput) userInput.value = 'admin';
       const errBox = document.getElementById('loginErrorMsg');
       if (errBox) {
         errBox.classList.add('hidden');
@@ -1741,6 +1746,8 @@
       if (loginView) {
         loginView.classList.remove('hidden');
         loginView.style.removeProperty('display');
+        loginView.style.removeProperty('visibility');
+        loginView.style.removeProperty('opacity');
         loginView.style.display = 'flex';
         loginView.style.pointerEvents = 'auto';
       }

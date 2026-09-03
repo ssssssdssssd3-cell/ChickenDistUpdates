@@ -221,7 +221,7 @@ namespace ChickenDist.Forms
             var pnlCredRow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
             var lblCredBadge = new Label 
             { 
-                Text = "🔑 اسم المستخدم: pro    |    كلمة المرور: pro@2026", 
+                Text = "🔑 اسم المستخدم: admin    |    كلمة المرور: 2468", 
                 AutoSize = true, 
                 ForeColor = Color.FromArgb(250, 204, 21), 
                 BackColor = Color.FromArgb(30, 41, 59),
@@ -235,7 +235,7 @@ namespace ChickenDist.Forms
             btnCopyCred.Click += (s, e) =>
             {
                 string u = lblLiveWebUrl.Text.Trim();
-                string txt = $"📱 تطبيق المالك ProSoft Cloud:\nالرابط: {u}\nاسم المستخدم: pro\nكلمة المرور: pro@2026";
+                string txt = $"📱 تطبيق المالك ProSoft Cloud:\nالرابط: {u}\nاسم المستخدم: admin\nكلمة المرور: 2468";
                 Clipboard.SetText(txt);
                 MessageBox.Show("✅ تم نسخ رابط وبيانات دخول تطبيق المالك بنجاح لإرسالها للعميل:\n\n" + txt, "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
