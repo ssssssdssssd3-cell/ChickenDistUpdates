@@ -214,33 +214,67 @@ namespace ChickenDist.Forms
                     _totalCollections = Convert.ToDecimal(dtExp.Rows[0]["TotalCashIn"]);
                 }
 
-                // لو الوردية مفتوحة أو أرقام المبيعات لم تُخزن بعد
-                if (_status == "Open" || _totalSales == 0)
+                // تحميل وتدقيق أرقام المبيعات وطرق الدفع من جدول الفواتير لضمان مطابقة الفيزا والشبكة والآجل
+                if (_status == "Open" || _totalSales == 0 || (_visaSales == 0 && _creditSales == 0))
                 {
                     var dtSales = DbHelper.Query(@"
                         SELECT
                             COUNT(SaleID) AS InvoiceCount,
                             ISNULL(SUM(TotalAmount), 0) AS TotalSales,
                             ISNULL(SUM(DiscountAmount), 0) AS TotalDiscounts,
-                            ISNULL(SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END), 0) AS CashSales,
-                            ISNULL(SUM(CASE WHEN SaleType = 'Visa' THEN ISNULL(VisaPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
-                            ISNULL(SUM(CASE WHEN SaleType IN ('Wallet','Instapay','VodafoneCash') THEN TotalAmount ELSE 0 END), 0) AS WalletSales,
-                            ISNULL(SUM(CASE WHEN SaleType = 'Credit' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
-                            ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed','Wallet','Instapay','VodafoneCash') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
+                            ISNULL(SUM(CASE 
+                                WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) 
+                                WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) 
+                                WHEN ISNULL(CashPaid, 0) > 0 AND SaleType NOT IN ('Visa', 'Network', 'Card') THEN CashPaid 
+                                ELSE 0 
+                            END), 0) AS CashSales,
+                            ISNULL(SUM(CASE 
+                                WHEN ISNULL(VisaPaid, 0) > 0 THEN VisaPaid 
+                                WHEN SaleType IN ('Visa', 'Network', 'Card', 'شبكة', 'فيزا') THEN TotalAmount 
+                                ELSE 0 
+                            END), 0) AS VisaSales,
+                            ISNULL(SUM(CASE WHEN SaleType IN ('Wallet','Instapay','VodafoneCash','محفظة','فودافون كاش','انستاباي') THEN TotalAmount ELSE 0 END), 0) AS WalletSales,
+                            ISNULL(SUM(CASE 
+                                WHEN SaleType IN ('Credit', 'Installment') THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) 
+                                WHEN SaleType = 'Mixed' THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) 
+                                WHEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) > 0.005 THEN (TotalAmount - ISNULL(CashPaid, 0) - ISNULL(VisaPaid, 0)) 
+                                ELSE 0 
+                            END), 0) AS CreditSales,
+                            ISNULL(SUM(CASE WHEN SaleType NOT IN ('Cash','Credit','Visa','Mixed','Wallet','Instapay','VodafoneCash','Installment','Network','Card','شبكة','فيزا','محفظة','فودافون كاش','انستاباي') THEN TotalAmount ELSE 0 END), 0) AS OtherSales
                         FROM Sales 
                         WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND SaleDate >= @dt)) AND IsPosted = 1",
                         DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime), DbHelper.P("@emp", openedBy));
 
                     if (dtSales.Rows.Count > 0)
                     {
-                        _invoiceCount = Convert.ToInt32(dtSales.Rows[0]["InvoiceCount"]);
-                        _totalSales = Convert.ToDecimal(dtSales.Rows[0]["TotalSales"]);
-                        _totalDiscounts = Convert.ToDecimal(dtSales.Rows[0]["TotalDiscounts"]);
-                        _cashSales = Convert.ToDecimal(dtSales.Rows[0]["CashSales"]);
-                        _visaSales = Convert.ToDecimal(dtSales.Rows[0]["VisaSales"]);
-                        _walletSales = Convert.ToDecimal(dtSales.Rows[0]["WalletSales"]);
-                        _creditSales = Convert.ToDecimal(dtSales.Rows[0]["CreditSales"]);
-                        _otherSales = Convert.ToDecimal(dtSales.Rows[0]["OtherSales"]);
+                        int liveInvCount = Convert.ToInt32(dtSales.Rows[0]["InvoiceCount"]);
+                        decimal liveTotalSales = Convert.ToDecimal(dtSales.Rows[0]["TotalSales"]);
+                        decimal liveDiscounts = Convert.ToDecimal(dtSales.Rows[0]["TotalDiscounts"]);
+                        decimal liveCashSales = Convert.ToDecimal(dtSales.Rows[0]["CashSales"]);
+                        decimal liveVisaSales = Convert.ToDecimal(dtSales.Rows[0]["VisaSales"]);
+                        decimal liveWalletSales = Convert.ToDecimal(dtSales.Rows[0]["WalletSales"]);
+                        decimal liveCreditSales = Convert.ToDecimal(dtSales.Rows[0]["CreditSales"]);
+                        decimal liveOtherSales = Convert.ToDecimal(dtSales.Rows[0]["OtherSales"]);
+
+                        if (_totalSales == 0 || _status == "Open")
+                        {
+                            _invoiceCount = liveInvCount;
+                            _totalSales = liveTotalSales;
+                            _totalDiscounts = liveDiscounts;
+                            _cashSales = liveCashSales;
+                            _visaSales = liveVisaSales;
+                            _walletSales = liveWalletSales;
+                            _creditSales = liveCreditSales;
+                            _otherSales = liveOtherSales;
+                        }
+                        else
+                        {
+                            if (_visaSales == 0 && liveVisaSales > 0) _visaSales = liveVisaSales;
+                            if (_creditSales == 0 && liveCreditSales > 0) _creditSales = liveCreditSales;
+                            if (_walletSales == 0 && liveWalletSales > 0) _walletSales = liveWalletSales;
+                            if (_cashSales == 0 && liveCashSales > 0) _cashSales = liveCashSales;
+                            if (_invoiceCount == 0 && liveInvCount > 0) _invoiceCount = liveInvCount;
+                        }
 
                         decimal calcCredit = Math.Max(0m, (_totalSales - _totalDiscounts) - (_cashSales + _visaSales + _walletSales));
                         if (calcCredit > _creditSales) _creditSales = calcCredit;
@@ -497,10 +531,10 @@ namespace ChickenDist.Forms
             {
                 financialRows.Add(("1", "رصيد بداية الوردية (الافتتاحي)", _openingCash, "النقدية المسجلة بالدرج عند بدء الوردية", Color.Black, false, Color.White));
                 financialRows.Add(("2", "مبيعات نقدية (كاش الدرج) 🛒", _cashSales, "السيولة النقدية المحصلة بالدرج من المبيعات", Color.FromArgb(15, 118, 110), true, colRowAlt));
-                financialRows.Add(("3", "مبيعات فيزا وماكينات إلكترونية 💳", _visaSales, "إيرادات بحسابات وماكينات الفيزا (لا تدخل بسيولة الدرج)", Color.FromArgb(109, 40, 217), false, Color.White));
+                financialRows.Add(("3", "مبيعات فيزا وشبكة وبطاقات إلكترونية 💳", _visaSales, "إيرادات بحسابات وماكينات الفيزا والشبكة (لا تدخل بسيولة الدرج)", Color.FromArgb(109, 40, 217), true, Color.White));
                 financialRows.Add(("4", "مبيعات محافظ إلكترونية (إنستاباي/فودافون) 📱", _walletSales, "إيرادات بالمحافظ الإلكترونية (لا تدخل بسيولة الدرج)", Color.FromArgb(0, 168, 232), false, colRowAlt));
-                financialRows.Add(("5", "مبيعات آجل / عملاء 📑", (_creditSales + _otherSales), "مبيعات ذمم وعملاء آجل", Color.FromArgb(52, 152, 219), false, Color.White));
-                financialRows.Add(("6", "إجمالي مبيعات الوردية الكلي", _totalSales, $"الفواتير: {_invoiceCount} | الخصومات: {_totalDiscounts:N2} ج | الصافي: {_netSales:N2} ج", Color.FromArgb(30, 58, 138), true, Color.FromArgb(241, 245, 249)));
+                financialRows.Add(("5", "مبيعات آجل وذمم عملاء 📋", (_creditSales + _otherSales), "مبيعات ذمم وعملاء آجل للمطابقة مع الفواتير الموقعة", Color.FromArgb(217, 119, 6), true, Color.White));
+                financialRows.Add(("6", "إجمالي مبيعات الوردية الكلي 💰", _totalSales, $"الفواتير: {_invoiceCount} | الخصومات: {_totalDiscounts:N2} ج | الصافي: {_netSales:N2} ج", Color.FromArgb(30, 58, 138), true, Color.FromArgb(241, 245, 249)));
                 financialRows.Add(("7", "توريدات وإيداعات وتحصيل للدرج ➕", _totalCollections, "سندات قبض وتحويلات نقدية واردة للدرج", _totalCollections > 0 ? Color.FromArgb(21, 128, 61) : Color.Black, false, Color.White));
                 financialRows.Add(("8", "مرتجعات مبيعات كاش الدرج ↩ ➖", _cashReturns > 0 ? _cashReturns : _totalReturns, "مرتجع مبيعات نقدية مخصوم من نقدية الدرج", _totalReturns > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, colRowAlt));
                 financialRows.Add(("9", "مصروفات ونثريات وسحوبات من الدرج ➖", _totalExpenses, "نثريات ومصروفات وسندات صرف مسحوبة من الدرج", _totalExpenses > 0 ? Color.FromArgb(185, 28, 28) : Color.Black, false, Color.White));
@@ -510,9 +544,13 @@ namespace ChickenDist.Forms
             }
             else
             {
-                financialRows.Add(("1", "النقدية الفعلية المسلمة بالدرج 💵", _actualCash, "المبلغ الفعلي المعدود والمسلم بواسطة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)));
-                financialRows.Add(("2", "المبلغ المحول والمودع بالخزنة 🏦", _transferredAmount, $"تم تحويله إلى: {(string.IsNullOrEmpty(_targetSafeName) ? "---" : _targetSafeName)}", Color.FromArgb(15, 118, 110), true, colRowAlt));
-                financialRows.Add(("3", "المبلغ المتبقي بالدرج كعهدة بداية 📌", _remainingInDrawer, "عهدة افتتاحية بالدرج للوردية القادمة", Color.Black, true, Color.White));
+                financialRows.Add(("1", "مبيعات نقدية (كاش الدرج) 🛒", _cashSales, "السيولة النقدية المحصلة بالدرج من المبيعات", Color.FromArgb(15, 118, 110), true, colRowAlt));
+                financialRows.Add(("2", "مبيعات فيزا وشبكة وبطاقات إلكترونية 💳", _visaSales, "إيرادات بحسابات وماكينات الفيزا والشبكة للمطابقة", Color.FromArgb(109, 40, 217), true, Color.White));
+                financialRows.Add(("3", "مبيعات آجل وذمم عملاء 📋", (_creditSales + _otherSales), "مبيعات ذمم وعملاء آجل للمطابقة مع الفواتير", Color.FromArgb(217, 119, 6), true, colRowAlt));
+                financialRows.Add(("4", "إجمالي مبيعات الوردية الكلي 💰", _totalSales, $"إجمالي المبيعات الشاملة لكافة طرق الدفع", Color.FromArgb(30, 58, 138), true, Color.FromArgb(241, 245, 249)));
+                financialRows.Add(("5", "النقدية الفعلية المسلمة بالدرج 💵", _actualCash, "المبلغ الفعلي المعدود والمسلم بواسطة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)));
+                financialRows.Add(("6", "المبلغ المحول والمودع بالخزنة 🏦", _transferredAmount, $"تم تحويله إلى: {(string.IsNullOrEmpty(_targetSafeName) ? "---" : _targetSafeName)}", Color.FromArgb(15, 118, 110), true, colRowAlt));
+                financialRows.Add(("7", "المبلغ المتبقي بالدرج كعهدة بداية 📌", _remainingInDrawer, "عهدة افتتاحية بالدرج للوردية القادمة", Color.Black, true, Color.White));
             }
 
             foreach (var r in financialRows)
@@ -663,9 +701,21 @@ namespace ChickenDist.Forms
                 y += rh + (isHighlighted ? 3 : 1);
             }
 
+            // 3. ملخص طرق الدفع والمبيعات (يطبع دائماً للمطابقة وتدقيق ماكينات الشبكة وفواتير الآجل)
+            g.DrawString("💳 تفصيل المبيعات وطرق الدفع:", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), sfRight);
+            y += 18;
+            DrawRecGridRow("  • مبيعات نقدية (كاش الدرج):", _cashSales);
+            DrawRecGridRow("  • مبيعات فيزا وشبكة (مدى/بطاقة):", _visaSales, isBold: _visaSales > 0);
+            if (_walletSales > 0) DrawRecGridRow("  • مبيعات محافظ إلكترونية:", _walletSales);
+            DrawRecGridRow("  • مبيعات آجل وذمم عملاء:", (_creditSales + _otherSales), isBold: (_creditSales + _otherSales) > 0);
+            DrawRecGridRow("إجمالي المبيعات الشاملة:", _totalSales, isBold: true, isHighlighted: true);
+            y += 4;
+
             bool canViewDetails = Session.CanViewShiftDetails();
             if (!canViewDetails)
             {
+                g.DrawString("💵 تسليم عهدة ونقدية الدرج:", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), sfRight);
+                y += 18;
                 DrawRecGridRow("المبلغ الفعلي المسلم بالدرج:", _actualCash, true, true);
                 if (_transferredAmount > 0)
                 {
@@ -676,19 +726,16 @@ namespace ChickenDist.Forms
             }
             else
             {
-                DrawRecGridRow("رصيد بداية الوردية:", _openingCash);
-                DrawRecGridRow("إجمالي المبيعات:", _totalSales, true);
-                DrawRecGridRow("  • مبيعات كاش بالدرج:", _cashSales);
-                DrawRecGridRow("  • مبيعات فيزا (إلكتروني):", _visaSales);
-                if (_walletSales > 0) DrawRecGridRow("  • مبيعات محافظ:", _walletSales);
-                DrawRecGridRow("  • مبيعات آجل:", _creditSales + _otherSales);
+                g.DrawString("💵 حركة سيولة الدرج والتسوية:", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), sfRight);
+                y += 18;
+                DrawRecGridRow("رصيد بداية الوردية (الافتتاحي):", _openingCash);
                 DrawRecGridRow("توريدات وإيداعات الدرج ➕:", _totalCollections);
                 DrawRecGridRow("مرتجعات كاش الدرج ↩ ➖:", _cashReturns > 0 ? _cashReturns : _totalReturns);
                 DrawRecGridRow("المصروفات والسحب من الدرج ➖:", _totalExpenses);
                 y += 3;
 
-                DrawRecGridRow("المتوقع بالدرج (السيولة):", _expectedCash, true, true);
-                DrawRecGridRow("الفعلي بالدرج:", _actualCash, true, true);
+                DrawRecGridRow("المتوقع بالدرج (السيولة الواجبة):", _expectedCash, true, true);
+                DrawRecGridRow("الفعلي بالدرج (المعدود):", _actualCash, true, true);
             
                 string diffTxt = _difference == 0 ? "0.00 ج (مطابق ✔)" : (_difference < 0 ? $"{_difference:N2} ج (عجز 🔴)" : $"+{_difference:N2} ج (زيادة 🟢)");
                 int diffRh = 22;
@@ -779,8 +826,12 @@ namespace ChickenDist.Forms
                                  $"🕒 وقت الإغلاق: {printer._closeTime:yyyy-MM-dd hh:mm tt}\n" +
                                  $"━━━━━━━━━━━━━━\n" +
                                  $"🧾 عدد الفواتير: {printer._invoiceCount}\n" +
-                                 $"💰 رصيد الفتح: {printer._openingCash:N2} ج\n" +
-                                 $"🛒 إجمالي المبيعات: {printer._totalSales:N2} ج (نقدي: {printer._cashSales:N2} ج | فيزا: {printer._visaSales:N2} ج)\n" +
+                                 $"💰 رصيد الفتح (الافتتاحي): {printer._openingCash:N2} ج\n" +
+                                 $"🛒 إجمالي المبيعات: {printer._totalSales:N2} ج\n" +
+                                 $"  • 💵 مبيعات كاش بالدرج: {printer._cashSales:N2} ج\n" +
+                                 $"  • 💳 مبيعات فيزا وشبكة: {printer._visaSales:N2} ج\n" +
+                                 (printer._walletSales > 0 ? $"  • 📱 مبيعات محافظ: {printer._walletSales:N2} ج\n" : "") +
+                                 $"  • 📋 مبيعات آجل وذمم: {(printer._creditSales + printer._otherSales):N2} ج\n" +
                                  $"↩️ المرتجعات: {printer._totalReturns:N2} ج\n" +
                                  $"💸 المصروفات: {printer._totalExpenses:N2} ج\n" +
                                  $"━━━━━━━━━━━━━━\n" +

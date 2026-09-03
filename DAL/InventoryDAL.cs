@@ -163,8 +163,8 @@ namespace ChickenDist.DAL
                     - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted IN (0, 1) AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted IN (0, 1) AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Transfers
                     - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
@@ -260,7 +260,8 @@ namespace ChickenDist.DAL
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
                     LEFT JOIN LatestAdj l ON si.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = s.WarehouseID" : "")}
-                    WHERE si.ProductID IN ({pidInClause}) AND s.IsPosted IN (0, 1) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                    WHERE si.ProductID IN ({pidInClause}) AND s.IsPosted = 1 {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                      AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID))))
                       AND (l.MaxDate IS NULL OR s.SaleDate > l.MaxDate)
                     GROUP BY si.ProductID
 
@@ -373,7 +374,8 @@ namespace ChickenDist.DAL
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
                     LEFT JOIN LatestAdj l ON si.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = s.WarehouseID" : "")}
-                    WHERE s.IsPosted IN (0, 1) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                    WHERE s.IsPosted = 1 {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}
+                      AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID))))
                       AND (l.MaxDate IS NULL OR s.SaleDate > l.MaxDate)
                     GROUP BY si.ProductID
 
@@ -579,14 +581,19 @@ namespace ChickenDist.DAL
                     SELECT 
                         s.SaleDate AS MovDate,
                         CASE s.SaleType 
-                            WHEN 'Cash' THEN N'بيع نقدي (مستودع)' 
-                            WHEN 'Credit' THEN N'بيع آجل (مستودع)' 
-                            ELSE N'تحميل حمولة مندوب' 
+                            WHEN 'Cash' THEN N'فاتورة بيع نقدي' 
+                            WHEN 'Credit' THEN N'فاتورة بيع آجل' 
+                            WHEN 'Visa' THEN N'فاتورة بيع فيزا / شبكة' 
+                            WHEN 'Mixed' THEN N'فاتورة بيع مختلط' 
+                            WHEN 'Installment' THEN N'فاتورة بيع تقسيط' 
+                            WHEN 'Wallet' THEN N'فاتورة محفظة إلكترونية' 
+                            WHEN 'DriverLoad' THEN N'تحميل سيارة مندوب' 
+                            ELSE N'فاتورة مبيعات' 
                         END AS MovType,
                         s.SaleCode AS RefCode,
-                        CASE s.SaleType
-                            WHEN 'DriverLoad' THEN ISNULL(e.EmpName, N'---')
-                            ELSE ISNULL(c.ClientName, N'---')
+                        CASE 
+                            WHEN s.SaleType = 'DriverLoad' THEN ISNULL(e.EmpName, N'---')
+                            ELSE COALESCE(c.ClientName, s.CustomClientName, e.EmpName, N'عميل نقدي')
                         END AS PersonName,
                         w.WarehouseName,
                         0.00 AS QtyIn,
@@ -599,8 +606,8 @@ namespace ChickenDist.DAL
                     LEFT JOIN Clients c ON s.ClientID = c.ClientID
                     LEFT JOIN Employees e ON s.DriverID = e.EmpID
                     WHERE si.ProductID = @pid
-                      AND s.IsPosted IN (0, 1)
-                      AND (s.SaleType = 'DriverLoad' OR (s.SaleType IN ('Cash', 'Credit', 'Installment') AND s.DriverID IS NULL))
+                      AND s.IsPosted = 1
+                      AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID))))
                       {whFilterSales}
  
                     UNION ALL
@@ -918,6 +925,133 @@ namespace ChickenDist.DAL
                 }
             }
             catch { }
+        }
+
+        /// <summary>
+        /// حساب صافي رصيد الصنف الفعلي من واقع إجمالي كافة الحركات المرحلة تاريخياً (وارد - صادر)
+        /// </summary>
+        public static decimal CalculateNetStockFromMovements(int productID, int? warehouseID = null)
+        {
+            try
+            {
+                var prms = new List<SqlParameter> { DbHelper.P("@pid", productID) };
+                if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
+
+                string sql = $@"
+                    SELECT 
+                        -- Incoming: Purchases
+                        ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                                WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                        -- Incoming: Sales Returns
+                        ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                                WHERE ri.ProductID = p.ProductID {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
+                        -- Incoming: Driver Handover Returns
+                        ISNULL((SELECT SUM(hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID
+                                WHERE hi.ProductID = p.ProductID {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
+                        -- Incoming: Warehouse Transfers
+                        ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                                WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
+                        -- Outgoing: Sales
+                        - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                  FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID
+                                  WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 
+                                    AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID))))
+                                    {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
+                        -- Outgoing: Purchase Returns
+                        - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                  FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                                  WHERE pri.ProductID = p.ProductID {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                        -- Outgoing: Transfers Out
+                        - ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                  FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
+                                  WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
+                        -- Outgoing: Wastage & Loss
+                        - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)))
+                                  FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                                  WHERE wli.ProductID = p.ProductID {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS NetStock
+                    FROM Products p
+                    WHERE p.ProductID = @pid";
+
+                var val = DbHelper.Scalar(sql, prms.ToArray());
+                return val == null || val == DBNull.Value ? 0m : Convert.ToDecimal(val);
+            }
+            catch
+            {
+                return 0m;
+            }
+        }
+
+        /// <summary>
+        /// إعادة احتساب ومطابقة رصيد صنف محدد في المستودع ليتطابق بدقة مع كشف الحركة الدفتري وتحديث جدول ProductStock
+        /// </summary>
+        public static decimal ReconcileProductStockWithMovements(int productID, int? warehouseID = null, int? empID = null)
+        {
+            int targetWid = warehouseID.HasValue && warehouseID.Value > 0 ? warehouseID.Value : 1;
+            decimal exactMovementStock = CalculateNetStockFromMovements(productID, targetWid);
+            decimal currentBookStock = GetProductStock(productID, targetWid);
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                // 1. تسجيل حركة تسوية جردية رسمية لتصحيح الانحراف إن وجد
+                if (Math.Abs(exactMovementStock - currentBookStock) >= 0.001m)
+                {
+                    DbHelper.ExecuteTrans(trans, @"
+                        INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, AdjDate, Notes, CreatedBy, Factor)
+                        VALUES (@pid, @wid, @book, @act, GETDATE(), N'مطابقة آلية للرصيد مع كشف الحركات الفعلي', @emp, 1.0)",
+                        DbHelper.P("@pid", productID),
+                        DbHelper.P("@wid", targetWid),
+                        DbHelper.P("@book", currentBookStock),
+                        DbHelper.P("@act", exactMovementStock),
+                        DbHelper.P("@emp", empID.HasValue ? (object)empID.Value : (Session.EmpID > 0 ? (object)Session.EmpID : DBNull.Value)));
+                }
+
+                // 2. تحديث جدول ProductStock
+                DbHelper.ExecuteTrans(trans, @"
+                    IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = @wid)
+                        UPDATE ProductStock SET Quantity = @q, LastUpdated = GETDATE() WHERE ProductID = @pid AND WarehouseID = @wid
+                    ELSE
+                        INSERT INTO ProductStock (ProductID, WarehouseID, Quantity, LastUpdated) VALUES (@pid, @wid, @q, GETDATE())",
+                    DbHelper.P("@pid", productID),
+                    DbHelper.P("@wid", targetWid),
+                    DbHelper.P("@q", exactMovementStock));
+
+                // 3. تحديث إجمالي رصيد الصنف في جدول Products
+                DbHelper.ExecuteTrans(trans, @"
+                    UPDATE Products 
+                    SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductStock WHERE ProductID = @pid)
+                    WHERE ProductID = @pid",
+                    DbHelper.P("@pid", productID));
+            });
+
+            ProductCache.Invalidate();
+            return exactMovementStock;
+        }
+
+        /// <summary>
+        /// إعادة مطابقة وضبط أرصدة كافة أصناف المستودع من واقع كشف الحركات الفعلي
+        /// </summary>
+        public static int ReconcileAllWarehouseStock(int warehouseID, int? empID = null)
+        {
+            int reconciledCount = 0;
+            try
+            {
+                var dt = DbHelper.Query("SELECT ProductID FROM Products WHERE IsActive = 1");
+                foreach (DataRow r in dt.Rows)
+                {
+                    int pid = Convert.ToInt32(r["ProductID"]);
+                    ReconcileProductStockWithMovements(pid, warehouseID, empID);
+                    reconciledCount++;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("InventoryDAL.ReconcileAllWarehouseStock", ex);
+            }
+            return reconciledCount;
         }
     }
 }

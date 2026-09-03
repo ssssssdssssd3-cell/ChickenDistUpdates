@@ -445,11 +445,36 @@ namespace ChickenDist.Forms
             btnFindOutliers.Margin = new Padding(2, 1, 3, 0);
             btnFindOutliers.Click += (s, e) => ShowOutliersDialog();
 
+            var btnReconcileStock = Theme.MakeButton("🔄 ضبط ومطابقة الأرصدة", Color.FromArgb(13, 148, 136));
+            btnReconcileStock.Size = new Size(160, 28);
+            btnReconcileStock.Margin = new Padding(2, 1, 3, 0);
+            btnReconcileStock.Click += (s, e) =>
+            {
+                int? wid = null;
+                if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0) wid = ci.ID;
+                int targetWid = wid ?? 1;
+
+                if (MessageBox.Show($"هل ترغب في إعادة احتساب ومطابقة كافة أرصدة أصناف المخزن من واقع كشف الحركات الفعلي (الوارد - الصادر)؟\n\nستتم مطابقة أي فروقات دفتريّة بين الجرد والحركات وضبط رصيد الأصناف لتطابق الحركات المرحلة بدقة 100%.", "تأكيد مطابقة أرصدة المخزن", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    this.Cursor = Cursors.WaitCursor;
+                    try
+                    {
+                        int count = InventoryDAL.ReconcileAllWarehouseStock(targetWid, Session.EmpID);
+                        MessageBox.Show($"✅ تمت مطابقة وضبط أرصدة ({count}) صنف بنجاح تام وفق الحركات الفعلية!", "تمت المطابقة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadStock();
+                    }
+                    finally
+                    {
+                        this.Cursor = Cursors.Default;
+                    }
+                }
+            };
+
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory,
                 btnSaveAdj, btnClearAdj,
                 btnPrintStock, btnPrintIncreaseBarcodes, btnVarianceReport, btnMovement, btnAddExpiryRow,
-                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnZeroOutWarehouse, btnFindOutliers
+                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnZeroOutWarehouse, btnFindOutliers, btnReconcileStock
             });
 
             pnlHeaderContainer.Controls.Add(pnlRow3);
@@ -521,10 +546,25 @@ namespace ChickenDist.Forms
             var itemFixStock = new ToolStripMenuItem("🛠️ تصفير / تصحيح رصيد هذا الصنف فوراً");
             itemFixStock.Click += (s, e) => FixSelectedProductStockDirectly();
 
+            var itemReconcileRow = new ToolStripMenuItem("🔄 مطابقة واحتساب رصيد هذا الصنف من واقع الحركات");
+            itemReconcileRow.Click += (s, e) =>
+            {
+                if (dgStock.SelectedRows.Count > 0)
+                {
+                    int pId = Convert.ToInt32(dgStock.SelectedRows[0].Cells["ProductID"].Value);
+                    string pName = dgStock.SelectedRows[0].Cells["ProductName"].Value?.ToString() ?? "";
+                    int? wid = null;
+                    if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0) wid = ci.ID;
+                    decimal newBal = InventoryDAL.ReconcileProductStockWithMovements(pId, wid, Session.EmpID);
+                    MessageBox.Show($"✅ تمت مطابقة رصيد [{pName}] بنجاح!\nالرصيد الفعلي بعد المطابقة: {newBal:N2}", "تمت المطابقة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadStock();
+                }
+            };
+
             var itemCard = new ToolStripMenuItem("🏷️ فتح كارت الصنف");
             itemCard.Click += (s, e) => OpenSelectedProductCard();
 
-            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, itemShortage, new ToolStripSeparator(), itemFixStock, itemCard });
+            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, itemShortage, new ToolStripSeparator(), itemReconcileRow, itemFixStock, itemCard });
             dgStock.ContextMenuStrip = ctxStock;
 
             dgStock.CellMouseDown += (s, e) =>
