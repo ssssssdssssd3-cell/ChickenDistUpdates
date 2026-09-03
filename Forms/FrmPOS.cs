@@ -19,6 +19,9 @@ namespace ChickenDist.Forms
         private TextBox txtBarcode;
         private DataGridView dgItems;
         private Label lblTotal, lblPaid, lblChange, lblItemCount, lblClientName, lblClientPoints;
+        private Label lblInvoiceItemsBadge;
+        private CheckBox chkQuickInStockOnly;
+        private int? _currentQuickCategoryId = null;
         private Label _lPaid, _lVisaPaid;
         private Button _btnPrint, _btnWhatsApp, btnOpenDrawer;
         private TextBox txtPaid, txtVisaPaid;
@@ -100,7 +103,9 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(20, 35), Size = new Size(300, 32),
                 Font = new Font("Segoe UI", 14f), BackColor = Theme.BgInput, ForeColor = Color.Black,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.Yes,
+                TextAlign = HorizontalAlignment.Left
             };
             txtBarcode.KeyDown += TxtBarcode_KeyDown;
 
@@ -555,20 +560,54 @@ namespace ChickenDist.Forms
                 catch { }
             };
 
-            var lQuick = new Label { Text = "⚡ أصناف سريعة", Dock = DockStyle.Top, Height = 28, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, BackColor = Color.Transparent };
+            var pnlQuickHeader = new Panel { Dock = DockStyle.Top, Height = 32, BackColor = Color.Transparent, Padding = new Padding(4, 2, 4, 2) };
+
+            chkQuickInStockOnly = new CheckBox
+            {
+                Text = "رصيد متوفر فقط",
+                Dock = DockStyle.Left,
+                Width = 140,
+                ForeColor = Color.FromArgb(226, 232, 240),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Checked = AppConfig.POSQuickInStockOnly,
+                Cursor = Cursors.Hand,
+                RightToLeft = RightToLeft.Yes
+            };
+            chkQuickInStockOnly.CheckedChanged += (s, e) =>
+            {
+                AppConfig.POSQuickInStockOnly = chkQuickInStockOnly.Checked;
+                FilterQuickItems(_currentQuickCategoryId);
+            };
+
+            var lQuick = new Label { Text = "⚡ أصناف سريعة", Dock = DockStyle.Fill, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, BackColor = Color.Transparent };
+            pnlQuickHeader.Controls.Add(lQuick);
+            pnlQuickHeader.Controls.Add(chkQuickInStockOnly);
+
             flowQuickItems = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Transparent, FlowDirection = FlowDirection.RightToLeft, RightToLeft = RightToLeft.Yes };
             pnlQuick.Controls.Add(flowQuickItems);
             pnlQuick.Controls.Add(flowCategories);
-            pnlQuick.Controls.Add(lQuick);
+            pnlQuick.Controls.Add(pnlQuickHeader);
             this.Controls.Add(pnlQuick);
 
             // ── لوحة الإجماليات ───────────────────────────────
             pnlTotals = new Panel { Location = new Point(10, 495), Size = new Size(1070, 200), BackColor = Theme.BgCard };
             pnlTotals.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlTotals);
 
-            // ترتيب RTL: الإجمالي (يمين) → المدفوع ونوع الدفع (وسط) → الباقي (يسار)
+            // ترتيب RTL: الإجمالي (يمين) → المدفوع ونوع الدفع (وسط) → الباقي وعدد الأصناف (يسار)
             lblTotal     = new Label { Text = "الإجمالي: 0.00 ج",  Location = new Point(700, 45), Size = new Size(340, 40), ForeColor = Theme.Success, Font = new Font("Segoe UI", 20f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
             lblItemCount = new Label { Text = "عدد الأصناف: 0",    Location = new Point(700, 10), Size = new Size(340, 30), ForeColor = Theme.TextSub,  Font = new Font("Segoe UI", 11f),              TextAlign = ContentAlignment.MiddleRight };
+
+            lblInvoiceItemsBadge = new Label
+            {
+                Text = "📦 أصناف الفاتورة: 0",
+                Location = new Point(20, 46),
+                Size = new Size(205, 42),
+                ForeColor = Color.FromArgb(255, 220, 110),
+                BackColor = Color.FromArgb(30, 41, 59),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
 
             // ── شريط اختيار نوع الدفع (كاش - فيزا - آجل - مختلط) ──
             pnlPaymentTypes = new Panel { Size = new Size(400, 36), BackColor = Color.Transparent };
@@ -704,6 +743,7 @@ namespace ChickenDist.Forms
                 pnlTotals.Controls.Add(btnModelLookup);
             }
 
+            pnlTotals.Controls.Add(lblInvoiceItemsBadge);
             pnlTotals.Controls.Add(lblItemCount);
             pnlTotals.Controls.Add(lblTotal);
             pnlTotals.Controls.Add(pnlPaymentTypes);
@@ -819,9 +859,16 @@ namespace ChickenDist.Forms
                 if (txtPaid != null) { txtPaid.Location = new Point(midX - 110, 52); txtPaid.Size = new Size(125, 34); }
             }
 
-            // الباقي: أقصى اليسار
-            lblChange.Location = new Point(20, 48);
-            lblChange.Size     = new Size(Math.Max(120, midX - 165), 40);
+            // عدد الأصناف في الفاتورة: أقصى اليسار فوق زر إتمام البيع
+            if (lblInvoiceItemsBadge != null)
+            {
+                lblInvoiceItemsBadge.Location = new Point(20, 48);
+                lblInvoiceItemsBadge.Size     = new Size(205, 40);
+            }
+
+            // الباقي: بجانب عدد أصناف الفاتورة
+            lblChange.Location = new Point(235, 48);
+            lblChange.Size     = new Size(Math.Max(130, midX - 245), 40);
 
             // الأزرار: توزيع ديناميكي من اليمين ليسار لتفادي أي تداخل
             var btnKitchenCtrl = pnlTotals.Controls["btnKitchenPrint"];
@@ -1519,7 +1566,15 @@ namespace ChickenDist.Forms
             }
 
             lblTotal.Text = $"الإجمالي: {(total - loyaltyDiscount):N2} ج";
-            lblItemCount.Text = $"عدد الأصناف: {_items.Count}   |   عدد القطع: {_items.ConvertAll(i => i.Qty).FindAll(q => q > 0).Count}";
+            decimal totalPieces = 0;
+            foreach (var it in _items) totalPieces += it.Qty;
+            lblItemCount.Text = $"عدد الأصناف: {_items.Count}   |   عدد القطع: {totalPieces:G29}";
+            if (lblInvoiceItemsBadge != null)
+            {
+                lblInvoiceItemsBadge.Text = totalPieces > 0 && totalPieces != _items.Count
+                    ? $"📦 أصناف الفاتورة: {_items.Count} ({totalPieces:G29} ق)"
+                    : $"📦 أصناف الفاتورة: {_items.Count}";
+            }
             if (_selectedSaleType == "Cash" && txtPaid != null) txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
             else if (_selectedSaleType == "Visa" && txtVisaPaid != null) txtVisaPaid.Text = (total - loyaltyDiscount).ToString("N2");
             RecalcChange();
@@ -2628,17 +2683,31 @@ namespace ChickenDist.Forms
 
         private void FilterQuickItems(int? categoryID)
         {
+            _currentQuickCategoryId = categoryID;
             flowQuickItems.Controls.Clear();
-            string query = "SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE IsActive=1 AND ISNULL(IsQuickItem, 0)=1";
+
+            bool inStockOnly = chkQuickInStockOnly != null && chkQuickInStockOnly.Checked;
+
+            string query = @"
+                SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice,
+                       COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = 1), p.Quantity, 0) AS StockQty
+                FROM Products p WITH (NOLOCK)
+                WHERE p.IsActive = 1 AND ISNULL(p.IsQuickItem, 0) = 1";
+
             var pList = new List<System.Data.SqlClient.SqlParameter>();
 
             if (categoryID.HasValue)
             {
-                query += " AND CategoryID=@catId";
+                query += " AND p.CategoryID = @catId";
                 pList.Add(DbHelper.P("@catId", categoryID.Value));
             }
 
-            query += " ORDER BY ProductName";
+            if (inStockOnly)
+            {
+                query += " AND COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = 1), p.Quantity, 0) > 0";
+            }
+
+            query += " ORDER BY p.ProductName";
             DataTable dt = DbHelper.Query(query, pList.ToArray());
 
             var colors = new Color[] {

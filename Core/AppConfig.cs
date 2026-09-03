@@ -207,6 +207,13 @@ namespace ChickenDist.Core
             set => Set("PrintShopLogo", value ? "true" : "false");
         }
 
+        /// <summary>إظهار الأصناف ذات الرصيد فقط في لوحة الأصناف السريعة بنقطة البيع</summary>
+        public static bool POSQuickInStockOnly
+        {
+            get => Get("POSQuickInStockOnly", "false") == "true";
+            set => Set("POSQuickInStockOnly", value ? "true" : "false");
+        }
+
         /// <summary>إظهار عمود الخصم في جدول أصناف الريسيت</summary>
         public static bool ReceiptShowDiscount
         {

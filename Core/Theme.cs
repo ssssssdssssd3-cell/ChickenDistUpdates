@@ -214,9 +214,12 @@ namespace ChickenDist.Core
                 if (c is TextBox tb)
                 {
                     tb.RightToLeft = RightToLeft.Yes;
-                    if (tb.TextAlign == HorizontalAlignment.Left)
+                    // في بيئة WinForms، عند تفعيل RightToLeft = Yes، فإن HorizontalAlignment.Left ترسم النص من اليمين (ES_RIGHT)
+                    // بينما HorizontalAlignment.Right ترسمه من اليسار (ES_LEFT).
+                    // لذلك لضمان بداية الكتابة من اليمين للأصناف والبحث نضبط TextAlign على Left إلا إذا كان مركزاً Center
+                    if (tb.TextAlign == HorizontalAlignment.Right)
                     {
-                        tb.TextAlign = HorizontalAlignment.Right;
+                        tb.TextAlign = HorizontalAlignment.Left;
                     }
                     tb.BorderStyle = BorderStyle.FixedSingle;
                     tb.ForeColor = TextDark;
@@ -413,9 +416,9 @@ namespace ChickenDist.Core
                 else if (c is TextBox tb)
                 {
                     tb.RightToLeft = RightToLeft.Yes;
-                    if (tb.TextAlign == HorizontalAlignment.Left)
+                    if (tb.TextAlign != HorizontalAlignment.Center)
                     {
-                        tb.TextAlign = HorizontalAlignment.Right;
+                        tb.TextAlign = HorizontalAlignment.Left;
                     }
                     tb.BorderStyle = BorderStyle.FixedSingle;
                     tb.BackColor = Color.White;

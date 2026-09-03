@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 12f),
                 RightToLeft = RightToLeft.Yes,
-                TextAlign = HorizontalAlignment.Right
+                TextAlign = HorizontalAlignment.Left
             };
             txtSearch.TextChanged += (s, e) => ApplyFilter();
             txtSearch.KeyDown += TxtSearch_KeyDown;
