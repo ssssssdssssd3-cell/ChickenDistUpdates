@@ -670,6 +670,7 @@ namespace ChickenDist.DAL
                     JOIN Warehouses w ON sa.WarehouseID = w.WarehouseID
                     LEFT JOIN Employees e ON sa.CreatedBy = e.EmpID
                     WHERE sa.ProductID = @pid
+                      AND (sa.Notes IS NULL OR sa.Notes NOT LIKE N'مطابقة آلية%')
                       {whFilterAdjustments}
  
                     UNION ALL
@@ -954,6 +955,12 @@ namespace ChickenDist.DAL
 
                 string sql = $@"
                     SELECT 
+                        -- Incoming / Outgoing: Stock Adjustments (تسويات الجرد الفعلية باستثناء حركات المطابقة الآلية)
+                        ISNULL((SELECT SUM((sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, @defFactor))
+                                FROM StockAdjustments sa WITH (NOLOCK)
+                                WHERE sa.ProductID = @pid 
+                                  AND (sa.Notes IS NULL OR sa.Notes NOT LIKE N'مطابقة آلية%')
+                                  {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}), 0) +
                         -- Incoming: Purchases
                         ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, @defFactor))
                                 FROM PurchaseItems pi WITH (NOLOCK) 
@@ -1014,22 +1021,16 @@ namespace ChickenDist.DAL
         {
             int targetWid = warehouseID.HasValue && warehouseID.Value > 0 ? warehouseID.Value : 1;
             decimal exactMovementStock = CalculateNetStockFromMovements(productID, targetWid);
-            decimal currentBookStock = GetProductStock(productID, targetWid);
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                // 1. تسجيل حركة تسوية جردية رسمية لتصحيح الانحراف إن وجد
-                if (Math.Abs(exactMovementStock - currentBookStock) >= 0.001m)
-                {
-                    DbHelper.ExecuteTrans(trans, @"
-                        INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, AdjDate, Notes, CreatedBy, Factor)
-                        VALUES (@pid, @wid, @book, @act, GETDATE(), N'مطابقة آلية للرصيد مع كشف الحركات الفعلي', @emp, 1.0)",
-                        DbHelper.P("@pid", productID),
-                        DbHelper.P("@wid", targetWid),
-                        DbHelper.P("@book", currentBookStock),
-                        DbHelper.P("@act", exactMovementStock),
-                        DbHelper.P("@emp", empID.HasValue ? (object)empID.Value : (Session.EmpID > 0 ? (object)Session.EmpID : DBNull.Value)));
-                }
+                // تنظيف أي تسويات مطابقة آلية سابقة لتصحيح التسلسل وسجل الحركات
+                DbHelper.ExecuteTrans(trans, @"
+                    DELETE FROM StockAdjustments 
+                    WHERE ProductID = @pid AND WarehouseID = @wid 
+                      AND Notes LIKE N'مطابقة آلية%'",
+                    DbHelper.P("@pid", productID),
+                    DbHelper.P("@wid", targetWid));
 
                 // 2. تحديث جدول ProductStock
                 DbHelper.ExecuteTrans(trans, @"

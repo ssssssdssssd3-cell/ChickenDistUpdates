@@ -1102,6 +1102,80 @@ namespace ChickenDist.Core
                 ELSE
                     EXEC sp_executesql N'ALTER TABLE ReturnItems ADD ReturnItemID INT IDENTITY(1,1);';
             END");
+
+            SafeMigrate("Fix.CleanupFaultyReconcileAdjustments_v2", @"
+            IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
+            BEGIN
+                -- 1. حصر الأصناف والمستودعات المتأثرة بالمطابقة الآلية الخاطئة
+                DECLARE @Affected TABLE (ProductID INT, WarehouseID INT);
+                
+                INSERT INTO @Affected (ProductID, WarehouseID)
+                SELECT DISTINCT ProductID, WarehouseID
+                FROM StockAdjustments
+                WHERE Notes LIKE N'مطابقة آلية%' AND ProductID IS NOT NULL;
+
+                -- 2. حذف حركات التسوية الآلية الخاطئة
+                DELETE FROM StockAdjustments 
+                WHERE Notes LIKE N'مطابقة آلية%';
+
+                -- 3. إعادة احتساب الأرصدة بدقة وتحديث ProductStock للأصناف المتأثرة فقط
+                IF OBJECT_ID('ProductStock', 'U') IS NOT NULL AND EXISTS (SELECT 1 FROM @Affected)
+                BEGIN
+                    UPDATE ps
+                    SET ps.Quantity = ISNULL((
+                        -- تسويات الجرد الفعلية (رصيد أول المدة أو تسويات رسمية)
+                        ISNULL((SELECT SUM((sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, 1.0))
+                                FROM StockAdjustments sa WITH (NOLOCK)
+                                WHERE sa.ProductID = ps.ProductID AND sa.WarehouseID = ps.WarehouseID
+                                  AND (sa.Notes IS NULL OR sa.Notes NOT LIKE N'مطابقة آلية%')), 0)
+                        -- مشتريات
+                        + ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, 1.0))
+                                 FROM PurchaseItems pi WITH (NOLOCK) 
+                                 JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID
+                                 WHERE pi.ProductID = ps.ProductID AND pu.WarehouseID = ps.WarehouseID AND pu.IsPosted = 1), 0)
+                        -- مرتجع مبيعات
+                        + ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, 1.0))
+                                 FROM ReturnItems ri WITH (NOLOCK) 
+                                 JOIN SalesReturns sr WITH (NOLOCK) ON ri.ReturnID = sr.ReturnID
+                                 WHERE ri.ProductID = ps.ProductID AND sr.WarehouseID = ps.WarehouseID), 0)
+                        -- تحويلات واردة
+                        + ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, 1.0))
+                                 FROM WarehouseTransferItems ti WITH (NOLOCK) 
+                                 JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID
+                                 WHERE ti.ProductID = ps.ProductID AND t.ToWarehouseID = ps.WarehouseID AND t.IsPosted = 1), 0)
+                        -- مبيعات
+                        - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, 1.0))
+                                 FROM SaleItems si WITH (NOLOCK) 
+                                 JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID
+                                 WHERE si.ProductID = ps.ProductID AND s.WarehouseID = ps.WarehouseID AND s.IsPosted = 1
+                                   AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID))))), 0)
+                        -- مرتجع مشتريات
+                        - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, 1.0))
+                                 FROM PurchaseReturnItems pri WITH (NOLOCK) 
+                                 JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID
+                                 WHERE pri.ProductID = ps.ProductID AND pr.WarehouseID = ps.WarehouseID), 0)
+                        -- تحويلات صادرة
+                        - ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, 1.0))
+                                 FROM WarehouseTransferItems ti WITH (NOLOCK) 
+                                 JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID
+                                 WHERE ti.ProductID = ps.ProductID AND t.FromWarehouseID = ps.WarehouseID AND t.IsPosted = 1), 0)
+                        -- هالك وتالف
+                        - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, 1.0))
+                                 FROM WastageLossItems wli WITH (NOLOCK) 
+                                 JOIN WastageLoss wl WITH (NOLOCK) ON wli.WastageID = wl.WastageID
+                                 WHERE wli.ProductID = ps.ProductID AND wl.WarehouseID = ps.WarehouseID), 0)
+                    ), 0),
+                    ps.LastUpdated = GETDATE()
+                    FROM ProductStock ps
+                    JOIN @Affected a ON ps.ProductID = a.ProductID AND ps.WarehouseID = a.WarehouseID;
+
+                    -- 4. تحديث الرصيد الإجمالي في جدول Products للأصناف المتأثرة
+                    UPDATE p
+                    SET p.Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductStock ps WHERE ps.ProductID = p.ProductID)
+                    FROM Products p
+                    WHERE p.ProductID IN (SELECT DISTINCT ProductID FROM @Affected);
+                END
+            END");
         }
 
         public static void EnsureScalePLUColumnExists()
