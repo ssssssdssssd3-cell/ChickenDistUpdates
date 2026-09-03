@@ -185,18 +185,38 @@
         </button>
       </div>
 
-      <!-- نموذج الدخول باليوزر والباسورد للماستر من السيكول -->
-      <form id="ownerLoginForm" novalidate onsubmit="handleOwnerPasswordLogin(event); return false;" class="space-y-4 text-right">
+      <!-- نموذج الدخول باليوزر والباسورد الموحد -->
+      <form id="ownerLoginForm" novalidate onsubmit="handleOwnerPasswordLogin(event); return false;" class="space-y-3.5 text-right">
+        
+        <!-- بطاقة الدخول السريع المباشر الموحد بنقرة واحدة -->
+        <div class="bg-gradient-to-r from-brand-950/90 to-slate-900 border border-brand-500/50 rounded-2xl p-3 shadow-lg flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400 shrink-0">
+              <i class="fa-solid fa-key text-xs"></i>
+            </div>
+            <div class="text-right">
+              <div class="text-xs font-bold text-white">الحساب الماستر الموحد:</div>
+              <div class="text-[11px] text-slate-400">اليوزر: <span class="text-amber-300 font-mono font-bold">pro</span> | الباسورد: <span class="text-emerald-400 font-mono font-bold">pro@2026</span></div>
+            </div>
+          </div>
+          <button type="button" onclick="quickFillProAndLogin()" 
+                  class="px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-900/40 transition active:scale-90 cursor-pointer shrink-0 flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt text-yellow-300 text-[10px]"></i>
+            <span>دخول فوري</span>
+          </button>
+        </div>
+
         <!-- خيار الدخول باسم المستخدم وكلمة المرور (الافتراضي) -->
         <div id="userPassSection" class="space-y-3">
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
               <span>اسم المستخدم (User)</span>
-              <span class="text-[10px] text-brand-400">حساب الماستر / المدير</span>
+              <span class="text-[10px] text-amber-400 font-mono font-bold">الافتراضي: pro</span>
             </label>
             <div class="relative">
               <input type="text" id="loginUsername" autocomplete="username"
-                     placeholder="اسم المستخدم (مثال: 20 أو admin)..." 
+                     value="pro"
+                     placeholder="اسم المستخدم (pro)..." 
                      onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
@@ -205,11 +225,11 @@
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
               <span>كلمة المرور (Password)</span>
-              <span class="text-[10px] text-emerald-400 font-normal">كلمة مرور السيكول</span>
+              <span class="text-[10px] text-emerald-400 font-mono font-bold">الافتراضي: pro@2026</span>
             </label>
             <div class="relative">
               <input type="password" id="loginPassword" autocomplete="current-password" autofocus
-                     placeholder="كلمة المرور المسجلة بالبرنامج..." 
+                     placeholder="أدخل كلمة المرور (pro@2026)..." 
                      onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <button type="button" onclick="togglePassVisibility('loginPassword', 'eyeIcon2')" 
@@ -224,11 +244,11 @@
         <div id="ownerPinSection" class="hidden">
           <label class="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
             <span>رمز PIN السريع للمالك</span>
-            <span class="text-[10px] text-emerald-400 font-normal">حماية البيانات</span>
+            <span class="text-[10px] text-emerald-400 font-normal">pro@2026</span>
           </label>
           <div class="relative">
             <input type="password" id="ownerPassInput"
-                   placeholder="أدخل كلمة مرور المالك..." 
+                   placeholder="أدخل كلمة المرور (pro@2026)..." 
                    onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                    class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-3 text-base text-white text-center tracking-widest placeholder:tracking-normal placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-bold" />
             <button type="button" onclick="togglePassVisibility('ownerPassInput', 'eyeIcon1')" 
@@ -250,7 +270,7 @@
         </div>
 
         <div id="loginErrorMsg" class="hidden text-xs text-red-400 bg-red-950/60 border border-red-800/80 rounded-xl p-3 text-center font-bold animate-pulse">
-          ❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال بيانات الماستر المسجلة في السيكول.
+          ❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال pro / pro@2026 أو بيانات السيكول.
         </div>
 
         <button type="button" onclick="handleOwnerPasswordLogin(event)" id="btnLoginSubmit"
@@ -262,7 +282,7 @@
 
       <div class="mt-5 pt-3.5 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
         <span>🔒 بيانات مشفرة ومحمية بالكامل</span>
-        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.1.1</span>
+        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.1.4</span>
       </div>
     </div>
   </div>
@@ -1538,6 +1558,16 @@
       return false;
     }
 
+    function quickFillProAndLogin() {
+      const u = document.getElementById('loginUsername');
+      const p = document.getElementById('loginPassword');
+      const pin = document.getElementById('ownerPassInput');
+      if (u) u.value = 'pro';
+      if (p) p.value = 'pro@2026';
+      if (pin) pin.value = 'pro@2026';
+      handleOwnerPasswordLogin();
+    }
+
     async function handleOwnerPasswordLogin(e) {
       if (e && e.preventDefault) e.preventDefault();
       const errorBox = document.getElementById('loginErrorMsg');
@@ -1570,59 +1600,78 @@
           }
           const activeInput = isUserPassMode ? document.getElementById('loginPassword') : document.getElementById('ownerPassInput');
           activeInput?.focus();
+          if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> <span>تسجيل الدخول وفتح اللوحة</span>';
+            submitBtn.disabled = false;
+          }
           return;
         }
 
-        // التأكد من جلب أحدث بيانات وخيارات الأمان من السيرفر إذا لم تكن محملة
-        const rData = rawData || {};
-        if (!rData.OwnerPassword && (!rData.UsersList || rData.UsersList.length === 0)) {
-          try { await fetchFreshData(false); } catch (fetchErr) { console.warn("Login pre-fetch note:", fetchErr); }
-        }
-
-        const freshData = rawData || {};
-        const serverOwnerPass = (freshData.OwnerPassword || '').trim();
-        const serverMasterUser = (freshData.MasterUserName || 'admin').trim().toLowerCase();
-        const serverMasterPass = (freshData.MasterPassword || freshData.OwnerPassword || '').trim();
-        const usersList = freshData.UsersList || [];
         let authenticatedUser = null;
 
-        // 1. مطابقة حساب الماستر والمدير المسجل بالسيكول (يدعم النص والتشفير PBKDF2)
-        const isUserMatch = !effectiveUser || effectiveUser === serverMasterUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'مالك' || effectiveUser === 'owner' || effectiveUser === '20';
-        
-        let isPassMatch = false;
-        if (serverMasterPass && await verifyPasswordMatch(effectivePass, serverMasterPass)) {
-          isPassMatch = true;
-        } else if (serverOwnerPass && await verifyPasswordMatch(effectivePass, serverOwnerPass)) {
-          isPassMatch = true;
+        // ========================================================
+        // 0. الحساب الماستر الموحد الثابت (Master Pro Account): pro / pro@2026
+        // ========================================================
+        const isProUser = (!effectiveUser || effectiveUser === 'pro' || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'owner' || effectiveUser === 'مالك');
+        const isProPass = (effectivePass === 'pro@2026' || effectivePass === 'pro2026' || effectivePass === 'Pro@2026' || effectivePass === 'PRO@2026' || effectivePass === 'pro');
+
+        if (isProPass && isProUser) {
+          authenticatedUser = { UserName: 'pro', EmpName: 'المالك العام (Pro Master)', Role: 'Owner' };
         }
 
-        if (isUserMatch && isPassMatch) {
-          authenticatedUser = { UserName: serverMasterUser || 'admin', EmpName: 'المدير العام / المالك (Master)', Role: 'Owner' };
-        }
+        // التأكد من جلب أحدث بيانات وخيارات الأمان من السيرفر إذا لم تكن محملة
+        if (!authenticatedUser) {
+          const rData = rawData || {};
+          if (!rData.OwnerPassword && (!rData.UsersList || rData.UsersList.length === 0)) {
+            try { await fetchFreshData(false); } catch (fetchErr) { console.warn("Login pre-fetch note:", fetchErr); }
+          }
 
-        // 2. مطابقة أي موظف أو مستخدم مسجل في جدول الموظفين UsersList
-        if (!authenticatedUser && usersList.length > 0 && effectivePass) {
-          for (const u of usersList) {
-            const dbUser = normalizeDigits((u.UserName || '').trim().toLowerCase());
-            const dbEmp = (u.EmpName || '').trim().toLowerCase();
-            const dbPass = (u.Password || '').trim();
-            const userOk = !effectiveUser || (dbUser && dbUser === effectiveUser) || (dbEmp && dbEmp === effectiveUser);
-            if (userOk && await verifyPasswordMatch(effectivePass, dbPass)) {
-              authenticatedUser = {
-                UserName: u.UserName || u.EmpName,
-                EmpName: u.EmpName || 'المستخدم',
-                Role: u.Role || 'Admin'
-              };
-              break;
+          const freshData = rawData || {};
+          const serverOwnerPass = (freshData.OwnerPassword || '').trim();
+          const serverMasterUser = (freshData.MasterUserName || 'admin').trim().toLowerCase();
+          const serverMasterPass = (freshData.MasterPassword || freshData.OwnerPassword || '').trim();
+          const usersList = freshData.UsersList || [];
+
+          // 1. مطابقة حساب الماستر والمدير المسجل بالسيكول (يدعم النص والتشفير PBKDF2)
+          const isUserMatch = !effectiveUser || effectiveUser === serverMasterUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'مالك' || effectiveUser === 'owner' || effectiveUser === '20';
+          
+          let isPassMatch = false;
+          if (serverMasterPass && await verifyPasswordMatch(effectivePass, serverMasterPass)) {
+            isPassMatch = true;
+          } else if (serverOwnerPass && await verifyPasswordMatch(effectivePass, serverOwnerPass)) {
+            isPassMatch = true;
+          }
+
+          if (isUserMatch && isPassMatch) {
+            authenticatedUser = { UserName: serverMasterUser || 'admin', EmpName: 'المدير العام / المالك (Master)', Role: 'Owner' };
+          }
+
+          // 2. مطابقة أي موظف أو مستخدم مسجل في جدول الموظفين UsersList
+          if (!authenticatedUser && usersList.length > 0 && effectivePass) {
+            for (const u of usersList) {
+              const dbUser = normalizeDigits((u.UserName || '').trim().toLowerCase());
+              const dbEmp = (u.EmpName || '').trim().toLowerCase();
+              const dbPass = (u.Password || '').trim();
+              const userOk = !effectiveUser || (dbUser && dbUser === effectiveUser) || (dbEmp && dbEmp === effectiveUser);
+              if (userOk && await verifyPasswordMatch(effectivePass, dbPass)) {
+                authenticatedUser = {
+                  UserName: u.UserName || u.EmpName,
+                  EmpName: u.EmpName || 'المستخدم',
+                  Role: u.Role || 'Admin'
+                };
+                break;
+              }
             }
           }
-        }
 
-        // 3. كلمات المرور الافتراضية وحسابات الطوارئ
-        if (!authenticatedUser) {
-          if ((!effectiveUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'owner' || effectiveUser === 'مالك' || effectiveUser === '20') &&
-              (effectivePass === 'admin' || effectivePass === '123456' || effectivePass === '1234' || effectivePass === '123' || effectivePass === '20' || effectivePass === '25' || effectivePass === '0000')) {
-            authenticatedUser = { UserName: effectiveUser || 'admin', EmpName: 'المدير العام (Emergency)', Role: 'Admin' };
+          // 3. كلمات المرور الافتراضية وحسابات الطوارئ
+          if (!authenticatedUser) {
+            if (effectivePass === 'pro@2026' || effectivePass === 'pro2026') {
+              authenticatedUser = { UserName: 'pro', EmpName: 'المالك العام (Pro Master)', Role: 'Owner' };
+            } else if ((!effectiveUser || effectiveUser === 'admin' || effectiveUser === 'المدير' || effectiveUser === 'owner' || effectiveUser === 'مالك' || effectiveUser === '20') &&
+                (effectivePass === 'admin' || effectivePass === '123456' || effectivePass === '1234' || effectivePass === '123' || effectivePass === '20' || effectivePass === '25' || effectivePass === '0000')) {
+              authenticatedUser = { UserName: effectiveUser || 'admin', EmpName: 'المدير العام (Emergency)', Role: 'Admin' };
+            }
           }
         }
 
@@ -1636,7 +1685,7 @@
           unlockApp(authenticatedUser);
         } else {
           if (errorBox) {
-            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى إدخال بيانات الماستر المسجلة في السيكول أو كلمة المرور الافتراضية.";
+            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى استخدام الحساب الموحد: pro وباسورد: pro@2026";
             errorBox.classList.remove('hidden');
             errorBox.style.display = 'block';
           }

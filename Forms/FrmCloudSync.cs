@@ -179,7 +179,7 @@ namespace ChickenDist.Forms
             {
                 Text = "⚙️ إعدادات حساب Firebase الخاص بالعميل والتزامن اللحظي",
                 Dock = DockStyle.Top,
-                Height = 185,
+                Height = 230,
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 Padding = new Padding(10)
@@ -189,7 +189,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 4,
+                RowCount = 5,
                 Padding = new Padding(4)
             };
             tbl.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 260f));
@@ -217,10 +217,36 @@ namespace ChickenDist.Forms
             pnlIntRow.Controls.Add(cboInterval);
             pnlIntRow.Controls.Add(lblLastSyncTime);
 
+            var lblCredTitle = new Label { Text = "بيانات دخول تطبيق المالك الموحدة:", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            var pnlCredRow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
+            var lblCredBadge = new Label 
+            { 
+                Text = "🔑 اسم المستخدم: pro    |    كلمة المرور: pro@2026", 
+                AutoSize = true, 
+                ForeColor = Color.FromArgb(250, 204, 21), 
+                BackColor = Color.FromArgb(30, 41, 59),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Padding = new Padding(8, 4, 8, 4)
+            };
+            var btnCopyCred = Theme.MakeButton("📋 نسخ الرابط والبيانات للعميل", Color.FromArgb(16, 185, 129));
+            btnCopyCred.Size = new Size(200, 32);
+            btnCopyCred.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnCopyCred.Click += (s, e) =>
+            {
+                string u = lblLiveWebUrl.Text.Trim();
+                string txt = $"📱 تطبيق المالك ProSoft Cloud:\nالرابط: {u}\nاسم المستخدم: pro\nكلمة المرور: pro@2026";
+                Clipboard.SetText(txt);
+                MessageBox.Show("✅ تم نسخ رابط وبيانات دخول تطبيق المالك بنجاح لإرسالها للعميل:\n\n" + txt, "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            pnlCredRow.Controls.Add(lblCredBadge);
+            pnlCredRow.Controls.Add(btnCopyCred);
+
             tbl.Controls.Add(lblProject, 0, 0); tbl.Controls.Add(txtFirebaseProjectId, 1, 0);
             tbl.Controls.Add(lblUrlTitle, 0, 1); tbl.Controls.Add(lblLiveWebUrl, 1, 1);
             tbl.Controls.Add(lblAuto, 0, 2); tbl.Controls.Add(chkAutoSync, 1, 2);
             tbl.Controls.Add(lblInt, 0, 3); tbl.Controls.Add(pnlIntRow, 1, 3);
+            tbl.Controls.Add(lblCredTitle, 0, 4); tbl.Controls.Add(pnlCredRow, 1, 4);
 
             grpSettings.Controls.Add(tbl);
 

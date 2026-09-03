@@ -672,6 +672,8 @@ self.addEventListener('fetch', (event) => {
                         "\"MasterUserName\": \"" + EscapeJsonString(masterUserName) + "\"," +
                         "\"MasterPassword\": \"" + EscapeJsonString(masterPassword) + "\"," +
                         "\"OwnerPassword\": \"" + EscapeJsonString(ownerPassword) + "\"," +
+                        "\"ProMasterUser\": \"pro\"," +
+                        "\"ProMasterPass\": \"pro@2026\"," +
                         "\"SyncTime\": \"" + timeStr + "\"," +
                         "\"LastSyncDate\": \"" + isoNow + "\"," +
                         "\"SyncTimestamp\": " + syncTimestamp + "," +
@@ -729,6 +731,8 @@ self.addEventListener('fetch', (event) => {
                         "\"MasterUserName\": {\"stringValue\": \"" + EscapeJsonString(masterUserName) + "\"}," +
                         "\"MasterPassword\": {\"stringValue\": \"" + EscapeJsonString(masterPassword) + "\"}," +
                         "\"OwnerPassword\": {\"stringValue\": \"" + EscapeJsonString(ownerPassword) + "\"}," +
+                        "\"ProMasterUser\": {\"stringValue\": \"pro\"}," +
+                        "\"ProMasterPass\": {\"stringValue\": \"pro@2026\"}," +
                         "\"SyncTime\": {\"stringValue\": \"" + timeStr + "\"}," +
                         "\"LastSyncDate\": {\"stringValue\": \"" + isoNow + "\"}," +
                         "\"SyncTimestamp\": {\"integerValue\": \"" + syncTimestamp + "\"}," +
