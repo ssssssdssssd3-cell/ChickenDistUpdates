@@ -433,6 +433,7 @@ namespace ChickenDist.Core
                 using (var con = GetConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
+                    cmd.CommandTimeout = 120;
                     if (prms != null) cmd.Parameters.AddRange(prms);
                     con.Open();
                     cmd.ExecuteNonQuery();
@@ -517,11 +518,9 @@ namespace ChickenDist.Core
             SafeMigrate("DecimalExpansion.Safety", @"
             IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
             BEGIN
-                DECLARE @hadDiffQty BIT = 0;
-                IF EXISTS (SELECT 1 FROM sys.computed_columns WHERE object_id = OBJECT_ID('StockAdjustments') AND name = 'DiffQty')
+                IF COL_LENGTH('StockAdjustments', 'DiffQty') IS NOT NULL
                 BEGIN
-                    ALTER TABLE StockAdjustments DROP COLUMN DiffQty;
-                    SET @hadDiffQty = 1;
+                    EXEC sp_executesql N'ALTER TABLE StockAdjustments DROP COLUMN DiffQty;';
                 END
 
                 ALTER TABLE StockAdjustments ALTER COLUMN BookQty DECIMAL(18, 4) NOT NULL;
@@ -529,9 +528,9 @@ namespace ChickenDist.Core
                 IF COL_LENGTH('StockAdjustments', 'Factor') IS NOT NULL
                     ALTER TABLE StockAdjustments ALTER COLUMN Factor DECIMAL(18, 4) NULL;
 
-                IF @hadDiffQty = 1 OR COL_LENGTH('StockAdjustments', 'DiffQty') IS NULL
+                IF COL_LENGTH('StockAdjustments', 'DiffQty') IS NULL
                 BEGIN
-                    ALTER TABLE StockAdjustments ADD DiffQty AS (ActualQty - BookQty);
+                    EXEC sp_executesql N'ALTER TABLE StockAdjustments ADD DiffQty AS (ActualQty - BookQty);';
                 END
             END
 
@@ -720,30 +719,36 @@ namespace ChickenDist.Core
 
             IF OBJECT_ID('Products', 'U') IS NOT NULL
             BEGIN
+                IF COL_LENGTH('Products', 'Barcode') IS NULL
+                    ALTER TABLE Products ADD Barcode NVARCHAR(100) NULL;
+
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
                 BEGIN
-                    CREATE NONCLUSTERED INDEX IX_Products_Search ON Products(ProductName, ProductCode, Barcode) INCLUDE (SalePrice, PurchasePrice, Quantity);
+                    IF COL_LENGTH('Products', 'Quantity') IS NOT NULL
+                        EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_Products_Search ON Products(ProductName, ProductCode, Barcode) INCLUDE (SalePrice, PurchasePrice, Quantity);';
+                    ELSE
+                        EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_Products_Search ON Products(ProductName, ProductCode, Barcode) INCLUDE (SalePrice, PurchasePrice);';
                 END
             END
 
             IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
             BEGIN
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_SaleID' AND object_id = OBJECT_ID('SaleItems'))
-                    CREATE NONCLUSTERED INDEX IX_SaleItems_SaleID ON SaleItems(SaleID) INCLUDE (ProductID, Quantity, UnitPrice, TotalPrice, Factor);
+                    EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_SaleItems_SaleID ON SaleItems(SaleID) INCLUDE (ProductID, Quantity, UnitPrice, TotalPrice, Factor);';
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_SaleItems_Opt' AND object_id = OBJECT_ID('SaleItems')) AND COL_LENGTH('SaleItems', 'Factor') IS NOT NULL
-                    CREATE NONCLUSTERED INDEX IX_SaleItems_Opt ON SaleItems(ProductID, SaleID) INCLUDE (Quantity, Factor);
+                    EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_SaleItems_Opt ON SaleItems(ProductID, SaleID) INCLUDE (Quantity, Factor);';
             END
 
             IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
             BEGIN
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_ReturnID' AND object_id = OBJECT_ID('ReturnItems'))
-                    CREATE NONCLUSTERED INDEX IX_ReturnItems_ReturnID ON ReturnItems(ReturnID) INCLUDE (Quantity, UnitPrice);
+                    EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_ReturnItems_ReturnID ON ReturnItems(ReturnID) INCLUDE (Quantity, UnitPrice);';
             END
 
             IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
             BEGIN
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
-                    CREATE NONCLUSTERED INDEX IX_PurchaseItems_Opt ON PurchaseItems(PurchaseID) INCLUDE (ProductID, Quantity, UnitPrice);
+                    EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_PurchaseItems_Opt ON PurchaseItems(PurchaseID) INCLUDE (ProductID, Quantity, UnitPrice);';
             END");
 
             SafeMigrate("HR.CompleteModule", @"
@@ -1047,13 +1052,13 @@ namespace ChickenDist.Core
             END");
 
             SafeMigrate("Products.Indexes", @"
-            IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
+            IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Cat_Search' AND object_id = OBJECT_ID('Products'))
             BEGIN
-                CREATE INDEX IX_Products_Search ON Products(IsActive, CategoryID) INCLUDE (ProductID, ProductCode, ProductName, SalePrice);
+                EXEC sp_executesql N'CREATE INDEX IX_Products_Cat_Search ON Products(IsActive, CategoryID) INCLUDE (ProductID, ProductCode, ProductName, SalePrice);';
             END
             IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_IntlCode' AND object_id = OBJECT_ID('Products'))
             BEGIN
-                CREATE INDEX IX_Products_IntlCode ON Products(InternationalCode);
+                EXEC sp_executesql N'CREATE INDEX IX_Products_IntlCode ON Products(InternationalCode);';
             END");
 
             SafeMigrate("PurchaseItems.IMEIColumn", @"
@@ -1082,6 +1087,20 @@ namespace ChickenDist.Core
             BEGIN
                 IF COL_LENGTH('StockAdjustments', 'BatchCode') IS NULL
                     ALTER TABLE StockAdjustments ADD BatchCode NVARCHAR(50) NULL;
+            END");
+
+            SafeMigrate("LegacyFixes.CostPriceAndReturnItemID", @"
+            IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'CostPrice') IS NULL
+            BEGIN
+                ALTER TABLE SaleItems ADD CostPrice DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL AND COL_LENGTH('ReturnItems', 'ReturnItemID') IS NULL
+            BEGIN
+                IF COL_LENGTH('ReturnItems', 'RItemID') IS NOT NULL
+                    EXEC sp_executesql N'ALTER TABLE ReturnItems ADD ReturnItemID AS RItemID;';
+                ELSE
+                    EXEC sp_executesql N'ALTER TABLE ReturnItems ADD ReturnItemID INT IDENTITY(1,1);';
             END");
         }
 
@@ -3840,6 +3859,7 @@ namespace ChickenDist.Core
                 using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
+                    cmd.CommandTimeout = 90;
                     if (prms != null) cmd.Parameters.AddRange(prms);
                     using (var da = new SqlDataAdapter(cmd))
                         da.Fill(dt);
@@ -3861,6 +3881,7 @@ namespace ChickenDist.Core
                 using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
+                    cmd.CommandTimeout = 90;
                     if (prms != null) cmd.Parameters.AddRange(prms);
                     return cmd.ExecuteNonQuery();
                 }
@@ -3881,6 +3902,7 @@ namespace ChickenDist.Core
                 using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql + "; SELECT SCOPE_IDENTITY();", con))
                 {
+                    cmd.CommandTimeout = 90;
                     if (prms != null) cmd.Parameters.AddRange(prms);
                     var result = cmd.ExecuteScalar();
                     return result == null ? -1 : Convert.ToInt32(result);
@@ -3902,6 +3924,7 @@ namespace ChickenDist.Core
                 using (var con = GetOpenConnection())
                 using (var cmd = new SqlCommand(sql, con))
                 {
+                    cmd.CommandTimeout = 90;
                     if (prms != null) cmd.Parameters.AddRange(prms);
                     return cmd.ExecuteScalar();
                 }
@@ -3947,6 +3970,7 @@ namespace ChickenDist.Core
         {
             using (var cmd = new SqlCommand(sql, trans.Connection, trans))
             {
+                cmd.CommandTimeout = 90;
                 if (prms != null) cmd.Parameters.AddRange(prms);
                 return cmd.ExecuteNonQuery();
             }
@@ -3956,6 +3980,7 @@ namespace ChickenDist.Core
         {
             using (var cmd = new SqlCommand(sql + "; SELECT SCOPE_IDENTITY();", trans.Connection, trans))
             {
+                cmd.CommandTimeout = 90;
                 if (prms != null) cmd.Parameters.AddRange(prms);
                 var result = cmd.ExecuteScalar();
                 return result == null ? -1 : Convert.ToInt32(result);
@@ -3966,6 +3991,7 @@ namespace ChickenDist.Core
         {
             using (var cmd = new SqlCommand(sql, trans.Connection, trans))
             {
+                cmd.CommandTimeout = 90;
                 if (prms != null) cmd.Parameters.AddRange(prms);
                 return cmd.ExecuteScalar();
             }
@@ -3979,6 +4005,7 @@ namespace ChickenDist.Core
         {
             using (var cmd = new SqlCommand(sql, trans.Connection, trans))
             {
+                cmd.CommandTimeout = 90;
                 if (prms != null) cmd.Parameters.AddRange(prms);
                 var dt = new DataTable();
                 using (var adapter = new SqlDataAdapter(cmd))

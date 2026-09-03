@@ -217,30 +217,30 @@ self.addEventListener('fetch', (event) => {
             try
             {
                 // مبيعات اليوم
-                object totObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object totObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
                 dto.TodaySalesTotal = totObj != null && totObj != DBNull.Value ? Convert.ToDecimal(totObj) : 0m;
 
-                object cashObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND SaleType = 'Cash'");
+                object cashObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND SaleType = 'Cash'");
                 dto.TodayCashSales = cashObj != null && cashObj != DBNull.Value ? Convert.ToDecimal(cashObj) : 0m;
 
-                object credObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND SaleType <> 'Cash'");
+                object credObj = DbHelper.Scalar("SELECT ISNULL(SUM(TotalAmount),0) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE) AND SaleType <> 'Cash'");
                 dto.TodayCreditSales = credObj != null && credObj != DBNull.Value ? Convert.ToDecimal(credObj) : 0m;
 
                 // رصيد الخزائن والسيولة الفعلية المتاحة (شامل الأرصدة الافتتاحية لكافة الخزائن)
                 decimal totalCashboxBalance = 0m;
                 try
                 {
-                    object openBalObj = DbHelper.Scalar("SELECT ISNULL(SUM(OpeningBalance), 0) FROM SafeAccounts WHERE IsActive = 1");
+                    object openBalObj = DbHelper.Scalar("SELECT ISNULL(SUM(OpeningBalance), 0) FROM SafeAccounts WITH (NOLOCK) WHERE IsActive = 1");
                     decimal openBal = openBalObj != null && openBalObj != DBNull.Value ? Convert.ToDecimal(openBalObj) : 0m;
 
-                    object movementsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn, 0) - ISNULL(AmountOut, 0)), 0) FROM CashBox");
+                    object movementsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn, 0) - ISNULL(AmountOut, 0)), 0) FROM CashBox WITH (NOLOCK)");
                     decimal movements = movementsObj != null && movementsObj != DBNull.Value ? Convert.ToDecimal(movementsObj) : 0m;
 
                     totalCashboxBalance = openBal + movements;
                 }
                 catch
                 {
-                    object cbObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn,0) - ISNULL(AmountOut,0)), 0) FROM CashBox");
+                    object cbObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(AmountIn,0) - ISNULL(AmountOut,0)), 0) FROM CashBox WITH (NOLOCK)");
                     totalCashboxBalance = cbObj != null && cbObj != DBNull.Value ? Convert.ToDecimal(cbObj) : 0m;
                 }
                 dto.CashboxBalance = totalCashboxBalance;
@@ -248,15 +248,15 @@ self.addEventListener('fetch', (event) => {
                 // نواقص المخزن
                 object lowObj = DbHelper.Scalar(@"
                     SELECT COUNT(*)
-                    FROM Products p
+                    FROM Products p WITH (NOLOCK)
                     OUTER APPLY (
                         SELECT COALESCE(
-                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID),
-                            (SELECT SUM(pb.Quantity) FROM ProductBatches pb WHERE pb.ProductID = p.ProductID),
+                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID),
+                            (SELECT SUM(pb.Quantity) FROM ProductBatches pb WITH (NOLOCK) WHERE pb.ProductID = p.ProductID),
                             p.Quantity, 0
                         ) AS TotalStock
                     ) stk
-                    LEFT JOIN ShortageNotebook sn ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
+                    LEFT JOIN ShortageNotebook sn WITH (NOLOCK) ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
                     WHERE p.IsActive = 1
                       AND (
                           ISNULL(stk.TotalStock, 0) <= 0
@@ -357,60 +357,60 @@ self.addEventListener('fetch', (event) => {
                 // 1. حساب صافي الربح اليوم
                 object profitObj = DbHelper.Scalar(
                     @"SELECT ISNULL(SUM(si.TotalPrice - (si.Quantity * ISNULL(p.PurchasePrice, 0))), 0)
-                      FROM SaleItems si
-                      JOIN Sales s ON si.SaleID = s.SaleID
-                      JOIN Products p ON si.ProductID = p.ProductID
+                      FROM SaleItems si WITH (NOLOCK)
+                      JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID
+                      JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
                       WHERE CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayProfit = profitObj != null && profitObj != DBNull.Value ? Convert.ToDecimal(profitObj) : 0m;
 
                 // 2. مشتريات اليوم
-                object purObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(TotalAmount, 0)), 0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object purObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(TotalAmount, 0)), 0) FROM Purchases WITH (NOLOCK) WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayPurchases = purObj != null && purObj != DBNull.Value ? Convert.ToDecimal(purObj) : 0m;
 
-                object purCashObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(PaidAmount, 0)), 0) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object purCashObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(PaidAmount, 0)), 0) FROM Purchases WITH (NOLOCK) WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayPaidPurchases = purCashObj != null && purCashObj != DBNull.Value ? Convert.ToDecimal(purCashObj) : 0m;
                 decimal todayCreditPurchases = Math.Max(0, todayPurchases - todayPaidPurchases);
 
                 // عدد فواتير البيع والشراء اليوم
-                object salesCountObj = DbHelper.Scalar("SELECT COUNT(*) FROM Sales WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object salesCountObj = DbHelper.Scalar("SELECT COUNT(*) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
                 int todaySalesInvoicesCount = salesCountObj != null && salesCountObj != DBNull.Value ? Convert.ToInt32(salesCountObj) : 0;
 
-                object purCountObj = DbHelper.Scalar("SELECT COUNT(*) FROM Purchases WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object purCountObj = DbHelper.Scalar("SELECT COUNT(*) FROM Purchases WITH (NOLOCK) WHERE CAST(PurchaseDate AS DATE) = CAST(GETDATE() AS DATE)");
                 int todayPurInvoicesCount = purCountObj != null && purCountObj != DBNull.Value ? Convert.ToInt32(purCountObj) : 0;
 
                 // 3. ديون العملاء
-                object clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Clients WHERE Balance > 0");
+                object clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Clients WITH (NOLOCK) WHERE Balance > 0");
                 decimal clientDebts = clientDebtsObj != null && clientDebtsObj != DBNull.Value ? Convert.ToDecimal(clientDebtsObj) : 0m;
 
                 // 4. مستحقات الموردين
-                object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WHERE Balance > 0");
+                object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WITH (NOLOCK) WHERE Balance > 0");
                 decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
 
                 // مقبوضات ومصروفات اليوم في الخزنة
-                object cbInObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn), 0) FROM CashBox WHERE CAST(TransDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object cbInObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn), 0) FROM CashBox WITH (NOLOCK) WHERE CAST(TransDate AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayCashIn = cbInObj != null && cbInObj != DBNull.Value ? Convert.ToDecimal(cbInObj) : 0m;
 
-                object cbOutObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountOut), 0) FROM CashBox WHERE CAST(TransDate AS DATE) = CAST(GETDATE() AS DATE)");
+                object cbOutObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountOut), 0) FROM CashBox WITH (NOLOCK) WHERE CAST(TransDate AS DATE) = CAST(GETDATE() AS DATE)");
                 decimal todayCashOut = cbOutObj != null && cbOutObj != DBNull.Value ? Convert.ToDecimal(cbOutObj) : 0m;
 
                 // تقييم المخزون الفعلي بسعر التكلفة وبسعر البيع
                 object stockCostObj = DbHelper.Scalar(@"
                     SELECT 
                         CASE 
-                            WHEN EXISTS (SELECT 1 FROM ProductStock) THEN
-                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.PurchasePrice, 0)) FROM ProductStock ps JOIN Products p ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
+                            WHEN EXISTS (SELECT 1 FROM ProductStock WITH (NOLOCK)) THEN
+                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.PurchasePrice, 0)) FROM ProductStock ps WITH (NOLOCK) JOIN Products p WITH (NOLOCK) ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
                             ELSE
-                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.PurchasePrice, 0)) FROM Products p WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
+                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.PurchasePrice, 0)) FROM Products p WITH (NOLOCK) WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
                         END");
                 decimal stockCostValue = stockCostObj != null && stockCostObj != DBNull.Value ? Convert.ToDecimal(stockCostObj) : 0m;
 
                 object stockSaleObj = DbHelper.Scalar(@"
                     SELECT 
                         CASE 
-                            WHEN EXISTS (SELECT 1 FROM ProductStock) THEN
-                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.SalePrice, 0)) FROM ProductStock ps JOIN Products p ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
+                            WHEN EXISTS (SELECT 1 FROM ProductStock WITH (NOLOCK)) THEN
+                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.SalePrice, 0)) FROM ProductStock ps WITH (NOLOCK) JOIN Products p WITH (NOLOCK) ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
                             ELSE
-                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.SalePrice, 0)) FROM Products p WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
+                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.SalePrice, 0)) FROM Products p WITH (NOLOCK) WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
                         END");
                 decimal stockSaleValue = stockSaleObj != null && stockSaleObj != DBNull.Value ? Convert.ToDecimal(stockSaleObj) : 0m;
 
@@ -420,23 +420,23 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(stk.TotalStock, 0) AS Quantity,
                            ISNULL(p.MinStockLimit, 0) AS MinQuantity,
                            COALESCE(sn.SupplierName, lastSup.SupplierName, p.Brand, N'عام') AS Supplier
-                    FROM Products p
+                    FROM Products p WITH (NOLOCK)
                     OUTER APPLY (
                         SELECT COALESCE(
-                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID),
-                            (SELECT SUM(pb.Quantity) FROM ProductBatches pb WHERE pb.ProductID = p.ProductID),
+                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID),
+                            (SELECT SUM(pb.Quantity) FROM ProductBatches pb WITH (NOLOCK) WHERE pb.ProductID = p.ProductID),
                             p.Quantity, 0
                         ) AS TotalStock
                     ) stk
                     OUTER APPLY (
                         SELECT TOP 1 pu.SupplierID, sup.SupplierName
-                        FROM PurchaseItems pi
-                        INNER JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
-                        LEFT JOIN Suppliers sup ON pu.SupplierID = sup.SupplierID
+                        FROM PurchaseItems pi WITH (NOLOCK)
+                        INNER JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID
+                        LEFT JOIN Suppliers sup WITH (NOLOCK) ON pu.SupplierID = sup.SupplierID
                         WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1
                         ORDER BY pu.PurchaseDate DESC, pu.PurchaseID DESC
                     ) lastSup
-                    LEFT JOIN ShortageNotebook sn ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
+                    LEFT JOIN ShortageNotebook sn WITH (NOLOCK) ON p.ProductID = sn.ProductID AND sn.Status IN (N'جديد', N'تم الطلب')
                     WHERE p.IsActive = 1
                       AND (
                           ISNULL(stk.TotalStock, 0) <= 0
@@ -451,20 +451,20 @@ self.addEventListener('fetch', (event) => {
                     SELECT TOP 500 p.ProductID, p.ProductName, ISNULL(p.ProductCode,'') AS ProductCode, 
                            ISNULL(p.SalePrice,0) AS SalePrice, ISNULL(p.PurchasePrice,0) AS PurchasePrice, 
                            ISNULL(ps.TotalQty, ISNULL(p.Quantity, 0)) AS Quantity 
-                    FROM Products p
-                    LEFT JOIN (SELECT ProductID, SUM(Quantity) AS TotalQty FROM ProductStock GROUP BY ProductID) ps ON p.ProductID = ps.ProductID
+                    FROM Products p WITH (NOLOCK)
+                    LEFT JOIN (SELECT ProductID, SUM(Quantity) AS TotalQty FROM ProductStock WITH (NOLOCK) GROUP BY ProductID) ps ON p.ProductID = ps.ProductID
                     WHERE p.IsActive = 1 
                     ORDER BY p.ProductName ASC");
                 string productsJson = DataTableToJson(dtProducts);
 
                 // 7. قائمة الموردين
                 DataTable dtSuppliers = DbHelper.Query(
-                    "SELECT TOP 200 SupplierID, ISNULL(SupplierCode,'') AS SupplierCode, SupplierName, ISNULL(Phone,'') AS Phone, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance FROM Suppliers WHERE IsActive=1 ORDER BY Balance DESC, SupplierName ASC");
+                    "SELECT TOP 200 SupplierID, ISNULL(SupplierCode,'') AS SupplierCode, SupplierName, ISNULL(Phone,'') AS Phone, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance FROM Suppliers WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, SupplierName ASC");
                 string suppliersJson = DataTableToJson(dtSuppliers);
 
                 // 8. ديون وقائمة العملاء
                 DataTable dtClients = DbHelper.Query(
-                    "SELECT TOP 500 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
+                    "SELECT TOP 500 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
                 string clientsJson = DataTableToJson(dtClients);
 
                 // 9. بيانات حساب المالك والمدراء والماستر لتسجيل الدخول في تطبيق الموبايل
@@ -473,7 +473,7 @@ self.addEventListener('fetch', (event) => {
                            LTRIM(RTRIM(ISNULL(UserName, ''))) AS UserName, 
                            LTRIM(RTRIM(ISNULL(Password, ''))) AS Password, 
                            ISNULL(Role, 'Admin') AS Role 
-                    FROM Employees 
+                    FROM Employees WITH (NOLOCK) 
                     WHERE IsActive = 1 AND (Role IN ('Admin', 'Owner', N'مدير', N'المدير', N'مدير عام', N'المالك') OR EmpID = 1)
                     ORDER BY CASE WHEN Role IN ('Owner', N'المالك') THEN 1 WHEN Role IN ('Admin', N'مدير عام', N'المدير') THEN 2 ELSE 3 END, EmpID ASC");
 
@@ -509,8 +509,8 @@ self.addEventListener('fetch', (event) => {
                            END AS RemainingAmount,
                            CASE WHEN s.SaleType = 'Cash' THEN N'نقدي' ELSE N'آجل' END AS PaymentType,
                            ISNULL(s.OrderType, N'مبيعات') AS InvoiceType
-                    FROM Sales s
-                    LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    FROM Sales s WITH (NOLOCK)
+                    LEFT JOIN Clients c WITH (NOLOCK) ON s.ClientID = c.ClientID
                     ORDER BY s.SaleID DESC");
                 string recentSalesJson = DataTableToJson(dtRecentSales);
 
@@ -524,8 +524,8 @@ self.addEventListener('fetch', (event) => {
                                WHEN p.PurchaseType = 'Cash' THEN 0 
                                ELSE ISNULL(p.TotalAmount, 0) - (ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0)) 
                            END AS RemainingAmount
-                    FROM Purchases p
-                    LEFT JOIN Suppliers sup ON p.SupplierID = sup.SupplierID
+                    FROM Purchases p WITH (NOLOCK)
+                    LEFT JOIN Suppliers sup WITH (NOLOCK) ON p.SupplierID = sup.SupplierID
                     ORDER BY p.PurchaseID DESC");
                 string recentPurchasesJson = DataTableToJson(dtRecentPurchases);
 
@@ -536,8 +536,8 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'') AS Notes,
                            ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
-                    FROM CashBox cb
-                    LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    FROM CashBox cb WITH (NOLOCK)
+                    LEFT JOIN SafeAccounts sa WITH (NOLOCK) ON cb.AccountID = sa.AccountID
                     ORDER BY cb.CashID DESC");
                 string recentCashJson = DataTableToJson(dtRecentCash);
 
@@ -547,8 +547,8 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(SUM(cb.AmountIn), 0) AS TotalIn,
                            ISNULL(SUM(cb.AmountOut), 0) AS TotalOut,
                            sa.OpeningBalance + ISNULL(SUM(cb.AmountIn - cb.AmountOut), 0) AS Balance
-                    FROM SafeAccounts sa
-                    LEFT JOIN CashBox cb ON sa.AccountID = cb.AccountID
+                    FROM SafeAccounts sa WITH (NOLOCK)
+                    LEFT JOIN CashBox cb WITH (NOLOCK) ON sa.AccountID = cb.AccountID
                     WHERE sa.IsActive = 1
                     GROUP BY sa.AccountID, sa.AccountName, sa.OpeningBalance
                     ORDER BY sa.AccountID ASC");
@@ -559,9 +559,9 @@ self.addEventListener('fetch', (event) => {
                     SELECT TOP 20 p.ProductID, p.ProductName, ISNULL(p.ProductCode, '') AS ProductCode,
                            ISNULL(SUM(si.Quantity), 0) AS TotalQtySold,
                            ISNULL(SUM(si.TotalPrice), 0) AS TotalSalesValue
-                    FROM SaleItems si
-                    JOIN Sales s ON si.SaleID = s.SaleID
-                    JOIN Products p ON si.ProductID = p.ProductID
+                    FROM SaleItems si WITH (NOLOCK)
+                    JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID
+                    JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
                     GROUP BY p.ProductID, p.ProductName, p.ProductCode
                     ORDER BY TotalSalesValue DESC");
                 string topSellingJson = DataTableToJson(dtTopSelling);
@@ -572,8 +572,8 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'مصروف') AS Notes,
                            ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
-                    FROM CashBox cb
-                    LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    FROM CashBox cb WITH (NOLOCK)
+                    LEFT JOIN SafeAccounts sa WITH (NOLOCK) ON cb.AccountID = sa.AccountID
                     WHERE cb.AmountOut > 0
                     ORDER BY cb.CashID DESC");
                 string expensesJson = DataTableToJson(dtExpenses);
@@ -609,9 +609,9 @@ self.addEventListener('fetch', (event) => {
                             ISNULL(s.Status, N'Closed') AS Status,
                             ISNULL(s.ApprovalStatus, N'Closed') AS ApprovalStatus,
                             ISNULL(s.Notes, N'') AS Notes
-                        FROM Shifts s
-                        LEFT JOIN Employees e ON s.OpenedBy = e.EmpID
-                        LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+                        FROM Shifts s WITH (NOLOCK)
+                        LEFT JOIN Employees e WITH (NOLOCK) ON s.OpenedBy = e.EmpID
+                        LEFT JOIN SafeAccounts sa WITH (NOLOCK) ON s.SafeAccountID = sa.AccountID
                         ORDER BY s.ShiftID DESC");
                 }
                 catch
@@ -632,8 +632,8 @@ self.addEventListener('fetch', (event) => {
                                 ISNULL(s.ActualCash, 0) AS ActualCash,
                                 ISNULL(s.Difference, 0) AS CashDifference,
                                 ISNULL(s.Status, N'Closed') AS Status
-                            FROM Shifts s
-                            LEFT JOIN Employees e ON s.OpenedBy = e.EmpID
+                            FROM Shifts s WITH (NOLOCK)
+                            LEFT JOIN Employees e WITH (NOLOCK) ON s.OpenedBy = e.EmpID
                             ORDER BY s.ShiftID DESC");
                     }
                     catch { }
