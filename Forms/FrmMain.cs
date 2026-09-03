@@ -502,25 +502,6 @@ namespace ChickenDist.Forms
                     ("📊 تقارير المخازن",   "RepStores",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
                 }),
 
-                ("🏭", "التصنيع", Color.FromArgb(180, 83, 9), new[] {
-                    ("🌿 شجرة ومواد التصنيع (BOM)", "BOM", (Action)(() => NavigateTo(new FrmBOM()))),
-                    ("🏭 أمر تصنيع ثابت (معياري)", "FixedProduction", (Action)(() => NavigateTo(new FrmFixedProduction()))),
-                    ("🛠️ أمر تصنيع مخصص (مباشر)", "CustomProduction", (Action)(() => NavigateTo(new FrmCustomProduction()))),
-                    ("⏳ أوامر التصنيع المعلقة (تحت التحضير)", "SuspendedProduction", (Action)(() => {
-                        using (var dlg = new FrmSuspendedOrdersDialog())
-                        {
-                            if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductionID > 0)
-                            {
-                                if (dlg.SelectedProductionType == "Custom")
-                                    NavigateTo(new FrmCustomProduction(dlg.SelectedProductionID));
-                                else
-                                    NavigateTo(new FrmFixedProduction(dlg.SelectedProductionID));
-                            }
-                        }
-                    })),
-                    ("📊 سجل وتقارير حركات التصنيع", "ProductionReports", (Action)(() => NavigateTo(new FrmProductionReports()))),
-                }),
-
                 ("👥", "العملاء", Color.FromArgb(30, 64, 175), new[] {
                     ("👥 إدارة العملاء",   "Clients",   (Action)(() => NavigateTo(new FrmClients()))),
                     ("📊 كشف حساب عميل",   "ClientStatement", (Action)(() => OpenClientStatementSelector())),
@@ -593,18 +574,28 @@ namespace ChickenDist.Forms
 
             if (AppConfig.IsManufacturing)
             {
-                int prodIdx = groups.FindIndex(g => g.icon == "🏭");
-                if (prodIdx > 1)
+                var factoryItems = new (string text, string screen, Action action)[]
                 {
-                    var prodGroup = groups[prodIdx];
-                    groups.RemoveAt(prodIdx);
-                    var factoryItems = new System.Collections.Generic.List<(string text, string screen, Action action)>(prodGroup.items)
-                    {
-                        ("📦 مستودع خامات ومكونات الإنتاج", "Inventory", (Action)(() => NavigateTo(new FrmInventory()))),
-                        ("🗑️ هالك وتالف خطوط الإنتاج", "Wastage", (Action)(() => NavigateTo(new FrmWastage())))
-                    };
-                    groups.Insert(1, ("🏭", "المصانع والإنتاج", Color.FromArgb(180, 83, 9), factoryItems.ToArray()));
-                }
+                    ("🌿 شجرة ومواد التصنيع (BOM)", "BOM", (Action)(() => NavigateTo(new FrmBOM()))),
+                    ("🏭 أمر تصنيع ثابت (معياري)", "FixedProduction", (Action)(() => NavigateTo(new FrmFixedProduction()))),
+                    ("🛠️ أمر تصنيع مخصص (مباشر)", "CustomProduction", (Action)(() => NavigateTo(new FrmCustomProduction()))),
+                    ("⏳ أوامر التصنيع المعلقة (تحت التحضير)", "SuspendedProduction", (Action)(() => {
+                        using (var dlg = new FrmSuspendedOrdersDialog())
+                        {
+                            if (dlg.ShowDialog() == DialogResult.OK && dlg.SelectedProductionID > 0)
+                            {
+                                if (dlg.SelectedProductionType == "Custom")
+                                    NavigateTo(new FrmCustomProduction(dlg.SelectedProductionID));
+                                else
+                                    NavigateTo(new FrmFixedProduction(dlg.SelectedProductionID));
+                            }
+                        }
+                    })),
+                    ("📊 سجل وتقارير حركات التصنيع", "ProductionReports", (Action)(() => NavigateTo(new FrmProductionReports()))),
+                    ("📦 مستودع خامات ومكونات الإنتاج", "Inventory", (Action)(() => NavigateTo(new FrmInventory()))),
+                    ("🗑️ هالك وتالف خطوط الإنتاج", "Wastage", (Action)(() => NavigateTo(new FrmWastage())))
+                };
+                groups.Insert(1, ("🏭", "المصانع والإنتاج", Color.FromArgb(180, 83, 9), factoryItems));
             }
 
             return groups;
