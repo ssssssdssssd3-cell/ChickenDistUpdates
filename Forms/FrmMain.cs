@@ -591,6 +591,22 @@ namespace ChickenDist.Forms
                 }));
             }
 
+            if (AppConfig.IsManufacturing)
+            {
+                int prodIdx = groups.FindIndex(g => g.icon == "🏭");
+                if (prodIdx > 1)
+                {
+                    var prodGroup = groups[prodIdx];
+                    groups.RemoveAt(prodIdx);
+                    var factoryItems = new System.Collections.Generic.List<(string text, string screen, Action action)>(prodGroup.items)
+                    {
+                        ("📦 مستودع خامات ومكونات الإنتاج", "Inventory", (Action)(() => NavigateTo(new FrmInventory()))),
+                        ("🗑️ هالك وتالف خطوط الإنتاج", "Wastage", (Action)(() => NavigateTo(new FrmWastage())))
+                    };
+                    groups.Insert(1, ("🏭", "المصانع والإنتاج", Color.FromArgb(180, 83, 9), factoryItems.ToArray()));
+                }
+            }
+
             return groups;
         }
 
@@ -1954,7 +1970,18 @@ namespace ChickenDist.Forms
             };
 
             addBadge($"👤 المستخدم: {Session.EmpName}", "#2563EB");
-            addBadge($"🏢 النشاط: {(string.IsNullOrWhiteSpace(AppConfig.BusinessType) ? "عام" : AppConfig.BusinessType)}", "#059669");
+            string bizLabel = AppConfig.BusinessType switch
+            {
+                "Factories" or "Manufacturing" => "مصانع وإنتاج صناعي 🏭",
+                "SpareParts" => "قطع غيار ومخازن",
+                "Supermarket" => "سوبر ماركت وأغذية",
+                "Mobiles" => "موبايلات وأجهزة ذكية",
+                "Clothing" => "ملابس وأحذية",
+                "CarService" => "غيار زيت وصيانة سيارات",
+                "Restaurant" => "مطاعم وكافيهات",
+                _ => string.IsNullOrWhiteSpace(AppConfig.BusinessType) ? "نشاط عام" : AppConfig.BusinessType
+            };
+            addBadge($"🏢 النشاط: {bizLabel}", "#059669");
             addBadge($"📅 اليوم: {DateTime.Today:dd MMMM yyyy}", "#4B5563");
             addBadge($"🟢 حالة النظام: متصل وتعمل قاعدة البيانات بنجاح", "#047857");
 

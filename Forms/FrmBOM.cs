@@ -192,23 +192,38 @@ namespace ChickenDist.Forms
 
             // Controls Row
             // 0: الصنف النهائي + زر البحث
-            var pnlFpBox = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 6, 0) };
+            var pnlFpBox = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0, 0, 6, 0),
+                Padding = new Padding(0)
+            };
+            pnlFpBox.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            pnlFpBox.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72f));
+            pnlFpBox.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
             txtFinishedProduct = new TextBox
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(15, 23, 42),
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Margin = new Padding(4, 2, 0, 0)
             };
             txtFinishedProduct.KeyDown += TxtFinishedProduct_KeyDown;
             
-            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 72, 30, Theme.Primary);
-            btnBrowseFinished.Dock = DockStyle.Left;
+            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 70, 30, Theme.Primary);
+            btnBrowseFinished.Dock = DockStyle.Fill;
             btnBrowseFinished.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnBrowseFinished.Margin = new Padding(0, 0, 2, 0);
             btnBrowseFinished.Click += (s, e) => SelectFinishedProduct();
 
-            pnlFpBox.Controls.Add(txtFinishedProduct);
-            pnlFpBox.Controls.Add(btnBrowseFinished);
+            pnlFpBox.Controls.Add(txtFinishedProduct, 0, 0);
+            pnlFpBox.Controls.Add(btnBrowseFinished, 1, 0);
             tblFinished.Controls.Add(pnlFpBox, 0, 1);
 
             // 1: الكمية
@@ -338,23 +353,38 @@ namespace ChickenDist.Forms
 
             // Controls
             // 0: المادة الخام + زر البحث
-            var pnlRawBox = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 6, 0) };
+            var pnlRawBox = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0, 0, 6, 0),
+                Padding = new Padding(0)
+            };
+            pnlRawBox.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            pnlRawBox.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72f));
+            pnlRawBox.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
             txtRawProduct = new TextBox
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
                 ForeColor = Color.Black,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Margin = new Padding(4, 2, 0, 0)
             };
             txtRawProduct.KeyDown += TxtRawProduct_KeyDown;
             
-            btnBrowseRaw = Theme.MakeButton("🔍 خامات", 0, 0, 75, 30, Color.FromArgb(71, 85, 105));
-            btnBrowseRaw.Dock = DockStyle.Left;
+            btnBrowseRaw = Theme.MakeButton("🔍 خامات", 0, 0, 70, 30, Color.FromArgb(71, 85, 105));
+            btnBrowseRaw.Dock = DockStyle.Fill;
             btnBrowseRaw.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnBrowseRaw.Margin = new Padding(0, 0, 2, 0);
             btnBrowseRaw.Click += (s, e) => SelectRawProduct("", autoAddToGrid: true);
 
-            pnlRawBox.Controls.Add(txtRawProduct);
-            pnlRawBox.Controls.Add(btnBrowseRaw);
+            pnlRawBox.Controls.Add(txtRawProduct, 0, 0);
+            pnlRawBox.Controls.Add(btnBrowseRaw, 1, 0);
             tblQuick.Controls.Add(pnlRawBox, 0, 1);
 
             // 1: الوحدة

@@ -773,6 +773,8 @@ namespace ChickenDist.Core
                         "Mobiles"   => "كود الموديل",
                         "Clothing"  => "كود الموديل",
                         "SpareParts" => "رقم القطعة",
+                        "Factories" => "كود الخامة / المنتج",
+                        "Manufacturing" => "كود الخامة / المنتج",
                         _           => "رقم القطعة"
                     };
                 }
@@ -781,6 +783,8 @@ namespace ChickenDist.Core
                     col.HeaderText = AppConfig.BusinessType switch
                     {
                         "Mobiles"   => "التوافق",
+                        "Factories" => "الكود الهندسي / الموديل",
+                        "Manufacturing" => "الكود الهندسي / الموديل",
                         _           => "الموديل"
                     };
                 }
@@ -789,6 +793,8 @@ namespace ChickenDist.Core
                     col.HeaderText = AppConfig.BusinessType switch
                     {
                         "Mobiles"   => "الماركة",
+                        "Factories" => "المواصفة الفنية",
+                        "Manufacturing" => "المواصفة الفنية",
                         _           => "الماركة"
                     };
                 }
@@ -797,6 +803,8 @@ namespace ChickenDist.Core
                     col.HeaderText = AppConfig.BusinessType switch
                     {
                         "Clothing"  => "مكان العرض",
+                        "Factories" => "العنبر / خط الإنتاج",
+                        "Manufacturing" => "العنبر / خط الإنتاج",
                         _           => "الرف"
                     };
                 }
@@ -806,6 +814,8 @@ namespace ChickenDist.Core
                     {
                         "Mobiles"   => "الشركة المصنعة",
                         "Clothing"  => "الخامة",
+                        "Factories" => "المورد / المنشأ الصناعي",
+                        "Manufacturing" => "المورد / المنشأ الصناعي",
                         _           => "الشركة المنتجة"
                     };
                 }
@@ -815,6 +825,8 @@ namespace ChickenDist.Core
                     {
                         "Mobiles"   => "الجهاز / الصنف",
                         "Clothing"  => "القطعة / الصنف",
+                        "Factories" => "اسم الخامة / المنتج المصنع",
+                        "Manufacturing" => "اسم الخامة / المنتج المصنع",
                         _           => "اسم الصنف"
                     };
                 }

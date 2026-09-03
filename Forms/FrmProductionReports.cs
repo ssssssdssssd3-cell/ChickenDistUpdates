@@ -70,109 +70,91 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ══════════════════════════════════════════════════════════════
-            // 1. الشريط العلوي للفلاتر المدمجة (Compact Filter Bar - 48px)
+            // 1. الشريط العلوي للفلاتر المنظمة (2 طابق منظم - 76px)
             // ══════════════════════════════════════════════════════════════
             var pnlFilters = new Panel
             {
-                Height = 48,
+                Height = 76,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8, 6, 8, 6)
+                Padding = new Padding(8, 4, 8, 4)
             };
 
-            var flowFilters = new FlowLayoutPanel
+            var tblFilters = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            tblFilters.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f)); // Row 0: Dates & Warehouse
+            tblFilters.RowStyles.Add(new RowStyle(SizeType.Absolute, 34f)); // Row 1: Types, Status & Search
+            pnlFilters.Controls.Add(tblFilters);
+
+            var flowRow0 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0, 1, 0, 1)
             };
-            pnlFilters.Controls.Add(flowFilters);
+            tblFilters.Controls.Add(flowRow0, 0, 0);
 
             // عنوان الفلترة
-            flowFilters.Controls.Add(new Label
+            flowRow0.Controls.Add(new Label
             {
-                Text = "🔍 تصفية الأوامر:",
+                Text = "🔍 فترة التقرير:",
                 AutoSize = true,
                 Font = Theme.FontBold,
                 ForeColor = Theme.Accent,
-                Margin = new Padding(0, 6, 6, 0)
+                Margin = new Padding(0, 5, 6, 0)
             });
 
             // من تاريخ
-            flowFilters.Controls.Add(new Label { Text = "من:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
+            flowRow0.Controls.Add(new Label { Text = "من:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
             dtpFrom = new DateTimePicker
             {
-                Width = 92,
+                Width = 95,
                 Height = 26,
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Today.AddDays(-30),
                 Font = Theme.FontMain,
                 Margin = new Padding(0, 3, 4, 0)
             };
-            flowFilters.Controls.Add(dtpFrom);
+            flowRow0.Controls.Add(dtpFrom);
 
             // إلى تاريخ
-            flowFilters.Controls.Add(new Label { Text = "إلى:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
+            flowRow0.Controls.Add(new Label { Text = "إلى:", AutoSize = true, Margin = new Padding(2, 6, 2, 0), Font = Theme.FontSmall });
             dtpTo = new DateTimePicker
             {
-                Width = 92,
+                Width = 95,
                 Height = 26,
                 Format = DateTimePickerFormat.Short,
                 Value = DateTime.Today,
                 Font = Theme.FontMain,
-                Margin = new Padding(0, 3, 4, 0)
+                Margin = new Padding(0, 3, 6, 0)
             };
-            flowFilters.Controls.Add(dtpTo);
+            flowRow0.Controls.Add(dtpTo);
 
             // أزرار الفترات السريعة
             btnFilterToday = MakeSmallButton("اليوم", () => { dtpFrom.Value = DateTime.Today; dtpTo.Value = DateTime.Today; ApplyFilters(); });
-            flowFilters.Controls.Add(btnFilterToday);
+            flowRow0.Controls.Add(btnFilterToday);
 
             btnFilterThisMonth = MakeSmallButton("الشهر", () => { dtpFrom.Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1); dtpTo.Value = DateTime.Today; ApplyFilters(); });
-            flowFilters.Controls.Add(btnFilterThisMonth);
+            flowRow0.Controls.Add(btnFilterThisMonth);
 
             btnFilterAllTime = MakeSmallButton("الكل", () => { dtpFrom.Value = DateTime.Today.AddYears(-5); dtpTo.Value = DateTime.Today; ApplyFilters(); });
-            flowFilters.Controls.Add(btnFilterAllTime);
-
-            // نوع التصنيع
-            flowFilters.Controls.Add(new Label { Text = "النوع:", AutoSize = true, Margin = new Padding(4, 6, 2, 0), Font = Theme.FontSmall });
-            cboTypeFilter = new ComboBox
-            {
-                Width = 100,
-                Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                Margin = new Padding(0, 3, 4, 0)
-            };
-            cboTypeFilter.Items.AddRange(new object[] { "كل الأنواع", "تصنيع ثابت (BOM)", "تصنيع مخصص" });
-            cboTypeFilter.SelectedIndex = 0;
-            cboTypeFilter.SelectedIndexChanged += (s, e) => ApplyFilters();
-            flowFilters.Controls.Add(cboTypeFilter);
-
-            // الحالة
-            flowFilters.Controls.Add(new Label { Text = "الحالة:", AutoSize = true, Margin = new Padding(4, 6, 2, 0), Font = Theme.FontSmall });
-            cboStatusFilter = new ComboBox
-            {
-                Width = 105,
-                Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                Margin = new Padding(0, 3, 4, 0)
-            };
-            cboStatusFilter.Items.AddRange(new object[] { "كل الحالات", "تحت التحضير", "مكتمل ومرحل", "ملغي" });
-            cboStatusFilter.SelectedIndex = 0;
-            cboStatusFilter.SelectedIndexChanged += (s, e) => ApplyFilters();
-            flowFilters.Controls.Add(cboStatusFilter);
+            flowRow0.Controls.Add(btnFilterAllTime);
 
             // المخزن
-            flowFilters.Controls.Add(new Label { Text = "المخزن:", AutoSize = true, Margin = new Padding(4, 6, 2, 0), Font = Theme.FontSmall });
+            flowRow0.Controls.Add(new Label { Text = "المخزن:", AutoSize = true, Margin = new Padding(12, 6, 2, 0), Font = Theme.FontSmall });
             cboWarehouseFilter = new ComboBox
             {
-                Width = 105,
+                Width = 130,
                 Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
@@ -181,30 +163,77 @@ namespace ChickenDist.Forms
                 Margin = new Padding(0, 3, 4, 0)
             };
             cboWarehouseFilter.SelectedIndexChanged += (s, e) => ApplyFilters();
-            flowFilters.Controls.Add(cboWarehouseFilter);
+            flowRow0.Controls.Add(cboWarehouseFilter);
+
+            // Row 1: النوع والحالة والبحث
+            var flowRow1 = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0, 1, 0, 1)
+            };
+            tblFilters.Controls.Add(flowRow1, 0, 1);
+
+            // نوع التصنيع
+            flowRow1.Controls.Add(new Label { Text = "نوع التصنيع:", AutoSize = true, Margin = new Padding(0, 6, 2, 0), Font = Theme.FontSmall });
+            cboTypeFilter = new ComboBox
+            {
+                Width = 120,
+                Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                Margin = new Padding(0, 3, 8, 0)
+            };
+            cboTypeFilter.Items.AddRange(new object[] { "كل الأنواع", "تصنيع ثابت (BOM)", "تصنيع مخصص" });
+            cboTypeFilter.SelectedIndex = 0;
+            cboTypeFilter.SelectedIndexChanged += (s, e) => ApplyFilters();
+            flowRow1.Controls.Add(cboTypeFilter);
+
+            // الحالة
+            flowRow1.Controls.Add(new Label { Text = "الحالة:", AutoSize = true, Margin = new Padding(4, 6, 2, 0), Font = Theme.FontSmall });
+            cboStatusFilter = new ComboBox
+            {
+                Width = 115,
+                Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                Margin = new Padding(0, 3, 10, 0)
+            };
+            cboStatusFilter.Items.AddRange(new object[] { "كل الحالات", "تحت التحضير", "مكتمل ومرحل", "ملغي" });
+            cboStatusFilter.SelectedIndex = 0;
+            cboStatusFilter.SelectedIndexChanged += (s, e) => ApplyFilters();
+            flowRow1.Controls.Add(cboStatusFilter);
 
             // حقل البحث الفوري
+            flowRow1.Controls.Add(new Label { Text = "بحث سريع:", AutoSize = true, Margin = new Padding(6, 6, 2, 0), Font = Theme.FontSmall });
             txtSearch = new TextBox
             {
-                Width = 140,
+                Width = 180,
                 Height = 26,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontMain,
-                Margin = new Padding(4, 3, 2, 0)
+                Margin = new Padding(0, 3, 4, 0)
             };
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; ApplyFilters(); } };
-            flowFilters.Controls.Add(txtSearch);
+            flowRow1.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("بحث", 0, 0, 60, 27, Theme.Primary);
-            btnSearch.Margin = new Padding(0, 2, 3, 0);
+            btnSearch = Theme.MakeButton("🔍 بحث", 0, 0, 70, 27, Theme.Primary);
+            btnSearch.Margin = new Padding(0, 2, 4, 0);
             btnSearch.Click += (s, e) => ApplyFilters();
-            flowFilters.Controls.Add(btnSearch);
+            flowRow1.Controls.Add(btnSearch);
 
-            btnRefresh = Theme.MakeButton("🔄", 0, 0, 36, 27, Color.FromArgb(71, 85, 105));
+            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 75, 27, Color.FromArgb(71, 85, 105));
             btnRefresh.Margin = new Padding(0, 2, 2, 0);
             btnRefresh.Click += (s, e) => { txtSearch.Clear(); ApplyFilters(); };
-            flowFilters.Controls.Add(btnRefresh);
+            flowRow1.Controls.Add(btnRefresh);
 
             // ══════════════════════════════════════════════════════════════
             // 2. شريط البطاقات الإحصائية والمالية (KPI Dashboard - 46px)

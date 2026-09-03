@@ -99,10 +99,10 @@ namespace ChickenDist.Forms
                 Padding = new Padding(8, 6, 8, 6)
             };
             tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 48f));  // Row 0: شريط الترويسة وكود الأمر
-            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 108f)); // Row 1: بطاقة المنتج النهائي والكميات
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 112f)); // Row 1: بطاقة المنتج النهائي والكميات
             tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 54f));  // Row 2: شريط مصاريف التشغيل والإضافات
             tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 3: جدول المواد الخام المستهلكة
-            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 66f));  // Row 4: شريط العمليات والملخص المالي السفلي
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 94f));  // Row 4: شريط العمليات والملخص المالي السفلي (طابقين منظمين)
             this.Controls.Add(tblMain);
 
             // ──────────────────────────────────────────────────────────────
@@ -290,13 +290,28 @@ namespace ChickenDist.Forms
 
             // Controls
             // 0: المنتج النهائي + الأزرار
-            var pnlFpInputs = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 6, 0) };
+            var pnlFpInputs = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 3,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0, 0, 6, 0),
+                Padding = new Padding(0)
+            };
+            pnlFpInputs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            pnlFpInputs.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 68f));
+            pnlFpInputs.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));
+            pnlFpInputs.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
             txtFinishedProduct = new TextBox
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(15, 23, 42),
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Margin = new Padding(4, 2, 0, 0)
             };
             txtFinishedProduct.KeyDown += (s, e) =>
             {
@@ -320,20 +335,21 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnBrowseBOM = Theme.MakeButton("📋 الوصفات", 0, 0, 85, 30, Color.FromArgb(14, 116, 144));
-            btnBrowseBOM.Dock = DockStyle.Left;
-            btnBrowseBOM.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-            btnBrowseBOM.Click += (s, e) => SelectFromRegisteredBOMs();
-
-            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 68, 30, Theme.Primary);
-            btnBrowseFinished.Dock = DockStyle.Left;
+            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 64, 30, Theme.Primary);
+            btnBrowseFinished.Dock = DockStyle.Fill;
             btnBrowseFinished.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-            btnBrowseFinished.Margin = new Padding(0, 0, 4, 0);
+            btnBrowseFinished.Margin = new Padding(2, 0, 2, 0);
             btnBrowseFinished.Click += (s, e) => SelectFinishedProduct();
 
-            pnlFpInputs.Controls.Add(txtFinishedProduct);
-            pnlFpInputs.Controls.Add(btnBrowseFinished);
-            pnlFpInputs.Controls.Add(btnBrowseBOM);
+            btnBrowseBOM = Theme.MakeButton("📋 الوصفات", 0, 0, 80, 30, Color.FromArgb(14, 116, 144));
+            btnBrowseBOM.Dock = DockStyle.Fill;
+            btnBrowseBOM.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnBrowseBOM.Margin = new Padding(0, 0, 2, 0);
+            btnBrowseBOM.Click += (s, e) => SelectFromRegisteredBOMs();
+
+            pnlFpInputs.Controls.Add(txtFinishedProduct, 0, 0);
+            pnlFpInputs.Controls.Add(btnBrowseFinished, 1, 0);
+            pnlFpInputs.Controls.Add(btnBrowseBOM, 2, 0);
             tblFp.Controls.Add(pnlFpInputs, 0, 1);
 
             // 1: الكمية
@@ -388,7 +404,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(248, 250, 252),
-                Padding = new Padding(10, 8, 10, 8),
+                Padding = new Padding(8, 6, 8, 6),
                 Margin = new Padding(0, 0, 0, 6)
             };
             pnlExpensesBar.Paint += (s, e) =>
@@ -399,27 +415,43 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var tblExpenses = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            tblExpenses.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // 0: Expenses
+            tblExpenses.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190f)); // 1: Add Extra Raw Button
+            tblExpenses.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
             var pnlExpRight = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0, 2, 0, 0)
             };
 
             var lblExp = new Label
             {
-                Text = "⚡ مصاريف تشغيل إضافية (كهرباء/عمالة):",
+                Text = "⚡ مصاريف تشغيل إضافية:",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(217, 119, 6),
-                Margin = new Padding(0, 6, 6, 0)
+                Margin = new Padding(0, 5, 4, 0)
             };
             pnlExpRight.Controls.Add(lblExp);
 
             numExtraExpenses = new NumericUpDown
             {
-                Width = 110,
+                Width = 100,
                 DecimalPlaces = 2,
                 Minimum = 0m,
                 Maximum = 1000000m,
@@ -428,7 +460,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(180, 83, 9),
                 TextAlign = HorizontalAlignment.Center,
-                Margin = new Padding(0, 3, 14, 0)
+                Margin = new Padding(0, 1, 10, 0)
             };
             numExtraExpenses.ValueChanged += (s, e) => RecalculateTotals();
             pnlExpRight.Controls.Add(numExtraExpenses);
@@ -439,27 +471,29 @@ namespace ChickenDist.Forms
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(51, 65, 85),
-                Margin = new Padding(0, 6, 6, 0)
+                Margin = new Padding(0, 5, 4, 0)
             };
             pnlExpRight.Controls.Add(lblExpNotes);
 
             txtExpensesNotes = new TextBox
             {
-                Width = 260,
+                Width = 240,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 BackColor = Color.White,
                 ForeColor = Color.Black,
-                Margin = new Padding(0, 3, 14, 0)
+                Margin = new Padding(0, 2, 6, 0)
             };
             pnlExpRight.Controls.Add(txtExpensesNotes);
+            tblExpenses.Controls.Add(pnlExpRight, 0, 0);
 
-            btnAddExtraRaw = Theme.MakeButton("➕ إضافة مادة خام إضافية", 0, 0, 175, 30, Color.FromArgb(51, 65, 85));
-            btnAddExtraRaw.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnAddExtraRaw.Margin = new Padding(0, 1, 0, 0);
+            btnAddExtraRaw = Theme.MakeButton("➕ إضافة مادة خام إضافية", 0, 0, 185, 32, Color.FromArgb(51, 65, 85));
+            btnAddExtraRaw.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnAddExtraRaw.Dock = DockStyle.Fill;
+            btnAddExtraRaw.Margin = new Padding(2, 0, 2, 0);
             btnAddExtraRaw.Click += (s, e) => AddExtraRawMaterial();
-            pnlExpRight.Controls.Add(btnAddExtraRaw);
+            tblExpenses.Controls.Add(btnAddExtraRaw, 1, 0);
 
-            pnlExpensesBar.Controls.Add(pnlExpRight);
+            pnlExpensesBar.Controls.Add(tblExpenses);
             tblMain.Controls.Add(pnlExpensesBar, 0, 2);
 
             // ──────────────────────────────────────────────────────────────
@@ -549,21 +583,20 @@ namespace ChickenDist.Forms
             tblMain.Controls.Add(dgItems, 0, 3);
 
             // ──────────────────────────────────────────────────────────────
-            // [صف 4]: شريط العمليات والملخص المالي السفلي
+            // [صف 4]: شريط العمليات والملخص المالي السفلي (طابقين منظمين 100% عرض)
             // ──────────────────────────────────────────────────────────────
             var tblBottom = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
+                ColumnCount = 1,
+                RowCount = 2,
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Color.White,
-                Padding = new Padding(8, 6, 8, 6),
+                Padding = new Padding(8, 4, 8, 4),
                 Margin = new Padding(0)
             };
-            tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58f)); // Column 0 (Right): الأزرار
-            tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f)); // Column 1 (Left): الملخص المالي
-            tblBottom.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblBottom.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f)); // Row 0: الملخص المالي
+            tblBottom.RowStyles.Add(new RowStyle(SizeType.Absolute, 44f)); // Row 1: أزرار العمليات
             tblBottom.Paint += (s, e) =>
             {
                 using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1f))
@@ -572,57 +605,16 @@ namespace ChickenDist.Forms
                 }
             };
 
-            // Column 0: الأزرار
-            var pnlActions = new FlowLayoutPanel
+            // Row 0: الملخص المالي (بطاقات التكلفة على كامل العرض)
+            var pnlSummary = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 BackColor = Color.Transparent,
-                Padding = new Padding(0, 4, 0, 0)
+                Margin = new Padding(0),
+                Padding = new Padding(0, 1, 0, 1)
             };
-            tblBottom.Controls.Add(pnlActions, 0, 0);
-
-            btnComplete = Theme.MakeButton("✅ إتمام وترحيل التصنيع", 0, 0, 175, 40, Color.FromArgb(22, 163, 74));
-            btnComplete.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            btnComplete.Margin = new Padding(0, 0, 6, 0);
-            btnComplete.Click += (s, e) => SaveOrder(true);
-            pnlActions.Controls.Add(btnComplete);
-
-            btnSuspend = Theme.MakeButton("⏸️ تعليق (خروج الخامات)", 0, 0, 165, 40, Color.FromArgb(234, 88, 12));
-            btnSuspend.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            btnSuspend.Margin = new Padding(0, 0, 6, 0);
-            btnSuspend.Click += (s, e) => SaveOrder(false);
-            pnlActions.Controls.Add(btnSuspend);
-
-            btnNew = Theme.MakeButton("➕ أمر جديد", 0, 0, 105, 40, Color.FromArgb(51, 65, 85));
-            btnNew.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnNew.Margin = new Padding(0, 0, 6, 0);
-            btnNew.Click += (s, e) => ResetForm();
-            pnlActions.Controls.Add(btnNew);
-
-            btnPrint = Theme.MakeButton("🖨️ طباعة إذن التشغيل", 0, 0, 145, 40, Color.FromArgb(2, 132, 199));
-            btnPrint.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnPrint.Margin = new Padding(0, 0, 6, 0);
-            btnPrint.Click += (s, e) => PrintOrder();
-            pnlActions.Controls.Add(btnPrint);
-
-            btnCancelOrder = Theme.MakeButton("❌ إلغاء الأمر", 0, 0, 100, 40, Color.FromArgb(220, 53, 69));
-            btnCancelOrder.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnCancelOrder.Margin = new Padding(0, 0, 0, 0);
-            btnCancelOrder.Click += (s, e) => CancelOrder();
-            pnlActions.Controls.Add(btnCancelOrder);
-
-            // Column 1: الملخص المالي
-            var pnlSummary = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0, 4, 0, 0)
-            };
-            tblBottom.Controls.Add(pnlSummary, 1, 0);
 
             lblUnitCost = new Label
             {
@@ -631,47 +623,90 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(16, 185, 129),
                 BackColor = Color.FromArgb(236, 253, 245),
-                Padding = new Padding(8, 6, 8, 6),
-                Margin = new Padding(2, 2, 4, 2)
+                Padding = new Padding(10, 5, 10, 5),
+                Margin = new Padding(0, 0, 10, 0)
             };
             pnlSummary.Controls.Add(lblUnitCost);
 
             lblTotalCost = new Label
             {
-                Text = "💰 الإجمالي: 0.00 ج.م",
+                Text = "💰 الإجمالي الكلي: 0.00 ج.م",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(217, 119, 6),
                 BackColor = Color.FromArgb(254, 243, 199),
-                Padding = new Padding(8, 6, 8, 6),
-                Margin = new Padding(2, 2, 4, 2)
+                Padding = new Padding(10, 5, 10, 5),
+                Margin = new Padding(0, 0, 10, 0)
             };
             pnlSummary.Controls.Add(lblTotalCost);
 
             lblExtraCost = new Label
             {
-                Text = "⚡ المصاريف: 0.00 ج.م",
+                Text = "⚡ مصاريف تشغيل: 0.00 ج.م",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(180, 83, 9),
                 BackColor = Color.FromArgb(255, 237, 213),
-                Padding = new Padding(6, 6, 6, 6),
-                Margin = new Padding(2, 2, 4, 2)
+                Padding = new Padding(8, 5, 8, 5),
+                Margin = new Padding(0, 0, 10, 0)
             };
             pnlSummary.Controls.Add(lblExtraCost);
 
             lblRawCost = new Label
             {
-                Text = "📦 خامات: 0.00 ج.م",
+                Text = "📦 تكلفة الخامات: 0.00 ج.م",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(71, 85, 105),
                 BackColor = Color.FromArgb(241, 245, 249),
-                Padding = new Padding(6, 6, 6, 6),
-                Margin = new Padding(2, 2, 2, 2)
+                Padding = new Padding(8, 5, 8, 5),
+                Margin = new Padding(0, 0, 10, 0)
             };
             pnlSummary.Controls.Add(lblRawCost);
+            tblBottom.Controls.Add(pnlSummary, 0, 0);
 
+            // Row 1: أزرار العمليات التنفيذية (على كامل العرض دون أي قص)
+            var pnlActions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0, 2, 0, 0)
+            };
+
+            btnComplete = Theme.MakeButton("✅ إتمام وترحيل التصنيع", 0, 0, 170, 38, Color.FromArgb(22, 163, 74));
+            btnComplete.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnComplete.Margin = new Padding(0, 0, 8, 0);
+            btnComplete.Click += (s, e) => SaveOrder(true);
+            pnlActions.Controls.Add(btnComplete);
+
+            btnSuspend = Theme.MakeButton("⏸️ تعليق (خروج الخامات)", 0, 0, 165, 38, Color.FromArgb(234, 88, 12));
+            btnSuspend.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnSuspend.Margin = new Padding(0, 0, 8, 0);
+            btnSuspend.Click += (s, e) => SaveOrder(false);
+            pnlActions.Controls.Add(btnSuspend);
+
+            btnPrint = Theme.MakeButton("🖨️ طباعة إذن التشغيل", 0, 0, 145, 38, Color.FromArgb(2, 132, 199));
+            btnPrint.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnPrint.Margin = new Padding(0, 0, 8, 0);
+            btnPrint.Click += (s, e) => PrintOrder();
+            pnlActions.Controls.Add(btnPrint);
+
+            btnNew = Theme.MakeButton("➕ أمر جديد", 0, 0, 105, 38, Color.FromArgb(51, 65, 85));
+            btnNew.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnNew.Margin = new Padding(0, 0, 8, 0);
+            btnNew.Click += (s, e) => ResetForm();
+            pnlActions.Controls.Add(btnNew);
+
+            btnCancelOrder = Theme.MakeButton("❌ إلغاء الأمر", 0, 0, 105, 38, Color.FromArgb(220, 53, 69));
+            btnCancelOrder.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnCancelOrder.Margin = new Padding(0, 0, 0, 0);
+            btnCancelOrder.Click += (s, e) => CancelOrder();
+            pnlActions.Controls.Add(btnCancelOrder);
+
+            tblBottom.Controls.Add(pnlActions, 0, 1);
             tblMain.Controls.Add(tblBottom, 0, 4);
         }
 
