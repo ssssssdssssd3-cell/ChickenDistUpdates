@@ -8,8 +8,11 @@ namespace ChickenDist.DAL
     public class TransferItemDTO
     {
         public int ProductID { get; set; }
+        public string ProductCode { get; set; }
         public string ProductName { get; set; }
         public decimal Quantity { get; set; }
+        public decimal AvailableStock { get; set; }
+        public string Unit { get; set; }
     }
 
     public static class TransferDAL

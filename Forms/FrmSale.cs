@@ -4266,20 +4266,10 @@ namespace ChickenDist.Forms
 
 				if (quantityToCheckBase > 0 && quantityToCheckBase > productStock)
 				{
-					decimal availableInSelectedUnit = productStock / item.Factor;
-					bool allowNegativeStock = AppConfig.Get("AllowNegativeStock", "False") == "True";
-
-					if (!allowNegativeStock)
-					{
-						MessageBox.Show($"❌ خطأ: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الزيادة المطلوبة.\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
-							"عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Hand);
-						return;
-					}
-					else
-					{
-						MessageBox.Show($"تحذير: الصنف '{item.ProductName}' سيؤدي لظهور رصيد بالسالب!\nالزيادة المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}",
-							"تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-					}
+					decimal availableInSelectedUnit = productStock / (item.Factor > 0 ? item.Factor : 1m);
+					MessageBox.Show($"❌ تم منع حفظ الفاتورة: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الكمية المطلوبة.\nالكمية المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}\n\n⚠️ البيع بالسالب غير مسموح به للأصناف غير الخدمية.",
+						"عجز في الرصيد - منع البيع بالسالب", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					return;
 				}
 			}
 

@@ -308,8 +308,16 @@ namespace ChickenDist.Forms
                     }
                     else if (colName == "QtyPlus" && e.RowIndex < _items.Count)
                     {
-                        _items[e.RowIndex].Qty += 1;
-                        _items[e.RowIndex].Total = (_items[e.RowIndex].Qty * _items[e.RowIndex].Price) - _items[e.RowIndex].DiscountAmt;
+                        var item = _items[e.RowIndex];
+                        decimal targetBaseQty = (item.Qty + 1) * item.Factor;
+                        if (!CheckAvailableStock(item.ProductID, item.BatchID, targetBaseQty, out decimal avail, out string err))
+                        {
+                            decimal maxAvail = avail / (item.Factor > 0 ? item.Factor : 1m);
+                            MessageBox.Show($"⚠️ لا يمكن زيادة الكمية.\nالرصيد المتاح بالمخزن ({maxAvail:G29}) لا يكفي!\nالبيع بالسالب غير مسموح للأصناف العادية.", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                        item.Qty += 1;
+                        item.Total = (item.Qty * item.Price) - item.DiscountAmt;
                         RefreshGrid();
                         try { SystemSounds.Asterisk.Play(); } catch { }
                     }
@@ -2130,22 +2138,14 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                // ── التحقق من المخزون الحي قبل الحفظ ──
-                bool allowNegativeStock = AppConfig.Get("AllowNegativeStock", "False") == "True";
+                // ── التحقق من المخزون الحي قبل الحفظ (منع البيع بالسالب للأصناف غير الخدمية) ──
                 foreach (var item in _items)
                 {
                     if (!CheckAvailableStock(item.ProductID, item.BatchID, item.Qty * item.Factor, out decimal avail, out string errMsg))
                     {
-                        if (!allowNegativeStock)
-                        {
-                            MessageBox.Show($"عذراً، الصنف {item.Name} رصيده لا يكفي لإتمام البيع!\n{errMsg}", "منع البيع", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            _isSaving = false;
-                            return;
-                        }
-                        else
-                        {
-                            MessageBox.Show($"تحذير: الصنف {item.Name} سيؤدي لظهور رصيد بالسالب!\n{errMsg}", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }
+                        MessageBox.Show($"عذراً، الصنف '{item.Name}' رصيده لا يكفي لإتمام البيع!\n{errMsg}\n\n⚠️ تم منع البيع لأن الصنف ليس صنف خدمة وغير مسموح ببيعه بالسالب.", "منع البيع بالسالب", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        _isSaving = false;
+                        return;
                     }
                 }
 
@@ -2214,6 +2214,19 @@ namespace ChickenDist.Forms
                             DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
                             DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
                             DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
+
+                        // التحقق الإضافي الصارم داخل المعاملة (DB Transaction) لمنع البيع بالسالب للأصناف غير الخدمية
+                        var srvCheckObj = DbHelper.ScalarTrans(trans, "SELECT COALESCE(IsService, 0) FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", item.ProductID));
+                        bool isSrv = srvCheckObj != null && srvCheckObj != DBNull.Value && Convert.ToBoolean(srvCheckObj);
+                        if (!isSrv)
+                        {
+                            decimal curStock = InventoryDAL.GetProductStock(item.ProductID, warehouseID);
+                            decimal requiredBase = item.Qty * item.Factor;
+                            if (requiredBase > curStock)
+                            {
+                                throw new InvalidOperationException($"عجز مخزون غير متوقع: الصنف '{item.Name}' رصيده المتاح بالمخزن ({curStock:G29}) غير كافٍ لإتمام الفاتورة ({requiredBase:G29})!\nتم إلغاء البيع لمنع ظهور رصيد سالب.");
+                            }
+                        }
 
                         // Deduct from ProductBatches table
                         if (item.BatchID.HasValue)
@@ -2409,6 +2422,7 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("FrmPOS.BtnPay_Click", ex);
+                MessageBox.Show("❌ فشل حفظ الفاتورة:\n" + ex.Message, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {

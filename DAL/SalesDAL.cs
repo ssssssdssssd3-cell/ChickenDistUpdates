@@ -241,6 +241,18 @@ namespace ChickenDist.DAL
                     // Deduct from ProductBatches table
                     if (!isDraft)
                     {
+                        var srvObj = DbHelper.ScalarTrans(trans, "SELECT COALESCE(IsService, 0) FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                        bool isSrv = srvObj != null && srvObj != DBNull.Value && Convert.ToBoolean(srvObj);
+                        if (!isSrv)
+                        {
+                            decimal curStock = InventoryDAL.GetProductStock(item.ProductID, targetWarehouse);
+                            decimal neededQty = item.Quantity * item.Factor;
+                            if (neededQty > curStock)
+                            {
+                                throw new InvalidOperationException($"❌ عجز في المخزون: الصنف '{item.ProductName}' رصيده المتاح بالمخزن ({curStock:G29}) غير كافٍ لإتمام عملية البيع ({neededQty:G29}) ولا يمكن البيع بالسالب!");
+                            }
+                        }
+
                         if (item.BatchID.HasValue)
                         {
                             decimal baseQty = item.Quantity * item.Factor;
