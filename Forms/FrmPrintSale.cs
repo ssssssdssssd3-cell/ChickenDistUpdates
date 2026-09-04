@@ -834,6 +834,17 @@ namespace ChickenDist.Forms
                     }
 
                     g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
+
+                    string invNotes = _saleRow != null && _saleRow.Table.Columns.Contains("Notes") && _saleRow["Notes"] != DBNull.Value ? _saleRow["Notes"].ToString().Trim() : "";
+                    if (!string.IsNullOrWhiteSpace(invNotes) && invNotes != "POS" && invNotes != "POS_DRAFT")
+                    {
+                        string noteStr = "📝 ملاحظات: " + invNotes;
+                        var noteSize = g.MeasureString(noteStr, normal, printableW);
+                        g.DrawString(noteStr, normal, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, noteSize.Height + 4), right);
+                        y += (int)noteSize.Height + 6;
+                        g.DrawLine(Pens.LightGray, lMargin, y, pageW - rMargin, y); y += 6;
+                    }
+
                     if (AppConfig.BusinessType == "Clothing")
                     {
                         g.DrawString("سياسة الاستبدال والاسترجاع:\nالاستبدال خلال 14 يوماً والاسترجاع خلال 7 أيام من تاريخ الفاتورة بشرط وجود تكت الملابس والفاتورة.", small, Brushes.Black, new RectangleF(lMargin, y, printableW, 32), center);
@@ -1614,7 +1625,14 @@ namespace ChickenDist.Forms
                         int rightNotesW = pageW - margin - rightNotesX;
                         if (rightNotesW > 80)
                         {
-                            g.DrawString($"فقط وقدره: {tafStr}", boldSheet, Brushes.Black, new RectangleF(rightNotesX, y + 8, rightNotesW, isA4Page ? 50 : 40), right);
+                            g.DrawString($"فقط وقدره: {tafStr}", boldSheet, Brushes.Black, new RectangleF(rightNotesX, y + 8, rightNotesW, isA4Page ? 40 : 30), right);
+
+                            string classicNotes = _saleRow != null && _saleRow.Table.Columns.Contains("Notes") && _saleRow["Notes"] != DBNull.Value ? _saleRow["Notes"].ToString().Trim() : "";
+                            if (!string.IsNullOrWhiteSpace(classicNotes) && classicNotes != "POS" && classicNotes != "POS_DRAFT")
+                            {
+                                string cNoteStr = "📝 ملاحظات: " + classicNotes;
+                                g.DrawString(cNoteStr, normal, Brushes.DarkBlue, new RectangleF(rightNotesX, y + (isA4Page ? 50 : 38), rightNotesW, isA4Page ? 65 : 48), right);
+                            }
                         }
 
                         y += sumLabels.Length * boxRowH + (isA4Page ? 30 : 25);
@@ -1954,6 +1972,19 @@ namespace ChickenDist.Forms
                                 y += 25;
                             }
                         }
+                    }
+
+                    string sheetNotes = _saleRow != null && _saleRow.Table.Columns.Contains("Notes") && _saleRow["Notes"] != DBNull.Value ? _saleRow["Notes"].ToString().Trim() : "";
+                    if (!string.IsNullOrWhiteSpace(sheetNotes) && sheetNotes != "POS" && sheetNotes != "POS_DRAFT")
+                    {
+                        g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 6;
+                        string noteBoxText = "📝 ملاحظات: " + sheetNotes;
+                        var noteSz = g.MeasureString(noteBoxText, boldSheet, pageW - 2 * margin - 16);
+                        float boxH = Math.Max(isA4Page ? 26 : 22, noteSz.Height + 6);
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), margin, y, pageW - 2 * margin, boxH);
+                        g.DrawRectangle(Pens.LightGray, margin, y, pageW - 2 * margin, boxH);
+                        g.DrawString(noteBoxText, boldSheet, Brushes.DarkBlue, new RectangleF(margin + 6, y + 3, pageW - 2 * margin - 12, boxH - 4), right);
+                        y += (int)boxH + 8;
                     }
 
                     // Official Signatures

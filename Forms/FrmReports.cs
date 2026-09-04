@@ -1579,7 +1579,8 @@ namespace ChickenDist.Forms
 						("ItemProfit", "الربح"),
 						("SaleTypeArabic", "طريقة الدفع"),
 						("CreatedByName", "المستخدم / الكاشير"),
-						("WarehouseName", "المخزن")
+						("WarehouseName", "المخزن"),
+						("Notes", "ملاحظات")
 					}, dataGridView);
 					break;
 				case "SalesByCategory":
@@ -1772,7 +1773,8 @@ namespace ChickenDist.Forms
 						("TotalPrice", "الإجمالي"),
 						("PurchaseTypeArabic", "نوع الشراء"),
 						("CreatedByName", "الموظف"),
-						("WarehouseName", "المخزن")
+						("WarehouseName", "المخزن"),
+						("Notes", "ملاحظات")
 					}, dataGridView);
 					break;
 				case "PurchasesByCategory":
@@ -2181,7 +2183,8 @@ namespace ChickenDist.Forms
 							("الكمية", "الكمية"),
 							("سعر الوحدة", "سعر الوحدة"),
 							("الصافي", "الصافي"),
-							("نوع البيع", "نوع البيع")
+							("نوع البيع", "نوع البيع"),
+							("ملاحظات", "ملاحظات")
 						}, dataGridView);
 
 						decimal totalSales = 0;
@@ -3004,6 +3007,7 @@ namespace ChickenDist.Forms
 						else if (hText.Contains("الكمية") || hText.Contains("المخزون")) stdW = 85;
 						else if (hText.Contains("القيمة") || hText.Contains("المبيعات") || hText.Contains("المشتريات") || hText.Contains("الإجمالي") || hText.Contains("الرصيد")) stdW = 100;
 						else if (hText.Contains("الشركة") || hText.Contains("المورد") || hText.Contains("العميل")) stdW = 130;
+						else if (hText.Contains("ملاحظات") || hText.Contains("البيان") || hText.Contains("الوصف") || cName.Contains("Notes")) stdW = 140;
 
 						if (!printDocument.DefaultPageSettings.Landscape)
 						{
@@ -3017,7 +3021,7 @@ namespace ChickenDist.Forms
 					if (nameColIndex >= 0)
 					{
 						int remainW = pageW - otherColsTotalW;
-						colWidths[nameColIndex] = Math.Max(remainW, 260);
+						colWidths[nameColIndex] = Math.Max(remainW, 140);
 					}
 					else
 					{
@@ -3028,23 +3032,40 @@ namespace ChickenDist.Forms
 						for (int i = 0; i < visCols.Count; i++)
 						{
 							colWidths[i] = (visCols[i].Width * pageW) / totalW;
-							if (colWidths[i] < 40) colWidths[i] = 40;
+							if (colWidths[i] < 45) colWidths[i] = 45;
 							assigned += colWidths[i];
 						}
-						if (assigned != pageW) colWidths[colWidths.Length - 1] += (pageW - assigned);
+						int diff = pageW - assigned;
+						if (diff != 0)
+						{
+							int maxIdx = 0;
+							for (int i = 1; i < colWidths.Length; i++)
+							{
+								if (colWidths[i] > colWidths[maxIdx]) maxIdx = i;
+							}
+							if (colWidths[maxIdx] + diff >= 45)
+								colWidths[maxIdx] += diff;
+						}
 					}
 
 					int totalAssigned = 0;
 					for (int i = 0; i < colWidths.Length; i++) totalAssigned += colWidths[i];
-					if (totalAssigned != pageW && colWidths.Length > 0)
+					int netDiff = pageW - totalAssigned;
+					if (netDiff != 0 && colWidths.Length > 0)
 					{
-						if (nameColIndex >= 0 && colWidths[nameColIndex] + (pageW - totalAssigned) >= 150)
+						if (nameColIndex >= 0 && colWidths[nameColIndex] + netDiff >= 120)
 						{
-							colWidths[nameColIndex] += (pageW - totalAssigned);
+							colWidths[nameColIndex] += netDiff;
 						}
 						else
 						{
-							colWidths[0] += (pageW - totalAssigned);
+							int maxIdx = 0;
+							for (int i = 1; i < colWidths.Length; i++)
+							{
+								if (colWidths[i] > colWidths[maxIdx]) maxIdx = i;
+							}
+							if (colWidths[maxIdx] + netDiff >= 45)
+								colWidths[maxIdx] += netDiff;
 						}
 					}
 				}
@@ -3727,11 +3748,24 @@ namespace ChickenDist.Forms
 								int assigned = 0;
 								for (int i = 0; i < visCols.Count; i++)
 								{
-									colWidths[i] = (visCols[i].Width * pageW) / totalW;
-									if (colWidths[i] < 40) colWidths[i] = 40;
-									assigned += colWidths[i];
+									string hText = visCols[i].HeaderText ?? "";
+									int cw = (visCols[i].Width * pageW) / totalW;
+									int minW = (hText.Contains("ملاحظات") || hText.Contains("البيان") || hText.Contains("الوصف")) ? 90 : 45;
+									if (cw < minW) cw = minW;
+									colWidths[i] = cw;
+									assigned += cw;
 								}
-								if (assigned != pageW) colWidths[colWidths.Length - 1] += (pageW - assigned);
+								int diff = pageW - assigned;
+								if (diff != 0)
+								{
+									int maxIdx = 0;
+									for (int i = 1; i < colWidths.Length; i++)
+									{
+										if (colWidths[i] > colWidths[maxIdx]) maxIdx = i;
+									}
+									if (colWidths[maxIdx] + diff >= 45)
+										colWidths[maxIdx] += diff;
+								}
 							}
 
 							int headH = 28;
@@ -3788,9 +3822,11 @@ namespace ChickenDist.Forms
 									g.DrawRectangle(penGrid, rx, y, cw, rowH);
 
 									string cVal = row.Cells[visCols[i].Index].Value?.ToString() ?? "";
+									string hText = visCols[i].HeaderText ?? "";
+									bool isTextNameCol = (hText.Contains("الصنف") || hText.Contains("البيان") || hText.Contains("العميل") || hText.Contains("المورد") || hText.Contains("ملاحظات") || hText.Contains("الوصف"));
 									var sf = new StringFormat
 									{
-										Alignment = StringAlignment.Center,
+										Alignment = isTextNameCol ? StringAlignment.Near : StringAlignment.Center,
 										LineAlignment = StringAlignment.Center,
 										Trimming = StringTrimming.EllipsisCharacter,
 										FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.DirectionRightToLeft

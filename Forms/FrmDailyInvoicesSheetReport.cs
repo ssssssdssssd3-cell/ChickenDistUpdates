@@ -307,6 +307,7 @@ namespace ChickenDist.Forms
             dgPreviewSummary.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount", HeaderText = "الخصم", FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, ForeColor = Color.FromArgb(249, 115, 22) } });
             dgPreviewSummary.Columns.Add(new DataGridViewTextBoxColumn { Name = "Returns", HeaderText = "المرتجع", FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, ForeColor = Color.FromArgb(239, 68, 68) } });
             dgPreviewSummary.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount", HeaderText = "الصافي النهائي", FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(16, 185, 129) } });
+            dgPreviewSummary.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 60f });
         }
 
         private void LoadWarehouses()
@@ -391,7 +392,8 @@ namespace ChickenDist.Forms
                     inv.BaseAmount.ToString("N2"),
                     inv.DiscountAmount.ToString("N2"),
                     inv.ReturnAmount.ToString("N2"),
-                    inv.NetAmount.ToString("N2")
+                    inv.NetAmount.ToString("N2"),
+                    inv.Notes
                 );
             }
 
@@ -463,7 +465,8 @@ namespace ChickenDist.Forms
                         DiscountAmount = Convert.ToDecimal(sRow["DiscountAmount"]),
                         ExtraAmount = sRow.Table.Columns.Contains("ShippingCharge") ? Convert.ToDecimal(sRow["ShippingCharge"]) : 0m,
                         ReturnAmount = sRow.Table.Columns.Contains("ReturnAmount") ? Convert.ToDecimal(sRow["ReturnAmount"]) : 0m,
-                        NetAmount = Convert.ToDecimal(sRow["TotalAmount"])
+                        NetAmount = Convert.ToDecimal(sRow["TotalAmount"]),
+                        Notes = sRow.Table.Columns.Contains("Notes") && sRow["Notes"] != DBNull.Value ? sRow["Notes"].ToString().Trim() : ""
                     };
 
                     if (itemsGrouped.ContainsKey(sid))
@@ -670,6 +673,13 @@ namespace ChickenDist.Forms
                             g.DrawString(finValues[c], fCell, Brushes.Black, cellRect, sfCenter);
                         }
                         y += finDataH + 3;
+
+                        if (!string.IsNullOrWhiteSpace(inv.Notes) && inv.Notes != "POS" && inv.Notes != "POS_DRAFT")
+                        {
+                            var noteRect = new Rectangle(marginL + 2, y, pageW - 4, 16);
+                            g.DrawString($"📝 ملاحظات الفاتورة: {inv.Notes}", fCellB, Brushes.DarkBlue, noteRect, sfRtlRight);
+                            y += 18;
+                        }
 
                         // C. Section Header: أصناف الفاتورة
                         var secRect = new Rectangle(marginR - 120, y, 120, 14);
@@ -918,6 +928,7 @@ namespace ChickenDist.Forms
         public decimal ExtraAmount { get; set; }
         public decimal ReturnAmount { get; set; }
         public decimal NetAmount { get; set; }
+        public string Notes { get; set; } = "";
         public List<DailyInvoiceLineItem> Lines { get; set; } = new List<DailyInvoiceLineItem>();
     }
 

@@ -2429,7 +2429,8 @@ namespace ChickenDist.DAL
                         ELSE s.SaleType
                     END AS SaleTypeArabic,
                     ISNULL(e.EmpName, N'---') AS CreatedByName,
-                    ISNULL(w.WarehouseName, N'الرئيسي') AS WarehouseName
+                    ISNULL(w.WarehouseName, N'الرئيسي') AS WarehouseName,
+                    COALESCE(NULLIF(si.Notes, N''), s.Notes, N'') AS Notes
                 FROM SaleItems si
                 JOIN Sales s ON si.SaleID = s.SaleID
                 JOIN Products p ON si.ProductID = p.ProductID
@@ -3255,7 +3256,8 @@ namespace ChickenDist.DAL
                         WHEN 'Installment' THEN N'تقسيط'
                         WHEN 'DriverLoad' THEN N'حملة مندوب'
                         ELSE s.SaleType
-                    END AS [نوع البيع]
+                    END AS [نوع البيع],
+                    COALESCE(NULLIF(si.Notes, N''), s.Notes, N'') AS [ملاحظات]
                 FROM SaleItems si
                 JOIN Sales s ON si.SaleID = s.SaleID
                 JOIN Products p ON si.ProductID = p.ProductID

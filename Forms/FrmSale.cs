@@ -79,6 +79,7 @@ namespace ChickenDist.Forms
 		private Label lblItemCountTitle;
 		private Label lblItemCountVal;
 
+		private TextBox txtBarcode;
 		private ComboBox cboProduct;
 		private string _barcodeBuffer = "";
 		private DateTime _barcodeStartTime = DateTime.MinValue;
@@ -159,7 +160,16 @@ namespace ChickenDist.Forms
 			{
 				this.BeginInvoke((MethodInvoker)delegate
 				{
-					AddNewCodeRow();
+					if (txtBarcode != null)
+					{
+						this.ActiveControl = txtBarcode;
+						txtBarcode.Focus();
+						txtBarcode.SelectAll();
+					}
+					else
+					{
+						AddNewCodeRow();
+					}
 				});
 			};
 		}
@@ -807,6 +817,24 @@ namespace ChickenDist.Forms
 				Padding = new Padding(0)
 			};
 
+			var lblBarcode = new Label
+			{
+				Text = "📷 باركود / كود الصنف (الاسكنر):",
+				AutoSize = true,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(3, 6, 2, 0)
+			};
+			txtBarcode = new TextBox
+			{
+				Size = new Size(185, 28),
+				Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				Margin = new Padding(2, 1, 10, 0)
+			};
+			txtBarcode.KeyDown += TxtBarcode_KeyDown;
+
 			btnSearchProduct = new Button
 			{
 				Text = "🔍 بحث سريع عن الأصناف (F3)",
@@ -864,6 +892,8 @@ namespace ChickenDist.Forms
 			btnPriceChecker.FlatAppearance.BorderSize = 0;
 			btnPriceChecker.Click += (s, e) => new FrmPriceChecker(false).ShowDialog(this);
 
+			flowToolbar.Controls.Add(lblBarcode);
+			flowToolbar.Controls.Add(txtBarcode);
 			flowToolbar.Controls.Add(btnSearchProduct);
 			flowToolbar.Controls.Add(btnManualAdd);
 			flowToolbar.Controls.Add(btnPriceChecker);
@@ -1524,6 +1554,19 @@ namespace ChickenDist.Forms
 			base.OnKeyPress(e);
 		}
 
+		private void TxtBarcode_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.Enter)
+			{
+				e.SuppressKeyPress = true;
+				string code = txtBarcode?.Text?.Trim() ?? "";
+				if (!string.IsNullOrEmpty(code))
+				{
+					ProcessScannedBarcode(code);
+				}
+			}
+		}
+
 		private void ProcessScannedBarcode(string code)
 		{
 			if (string.IsNullOrWhiteSpace(code)) return;
@@ -1552,8 +1595,8 @@ namespace ChickenDist.Forms
 				if (price <= 0) price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
 				if (string.IsNullOrEmpty(unitName)) unitName = dt.Rows[0]["Unit"]?.ToString();
 
-				// إزالة السطر المعلق إن وجد
-				if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
+				// إزالة السطر المعلق إن وجد وفوق الأصناف الفعلية
+				if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
 				{
 					dgItems.Rows.RemoveAt(_pendingRowIdx);
 					_pendingRowIdx = -1;
@@ -1563,11 +1606,28 @@ namespace ChickenDist.Forms
 				AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
 
 				try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
-				AddNewCodeRow();
+
+				if (txtBarcode != null)
+				{
+					txtBarcode.Clear();
+					this.ActiveControl = txtBarcode;
+					txtBarcode.Focus();
+					txtBarcode.SelectAll();
+				}
+				else
+				{
+					AddNewCodeRow();
+				}
 			}
 			else
 			{
 				MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				if (txtBarcode != null)
+				{
+					txtBarcode.SelectAll();
+					this.ActiveControl = txtBarcode;
+					txtBarcode.Focus();
+				}
 			}
 		}
 
@@ -1582,15 +1642,16 @@ namespace ChickenDist.Forms
 					string scannedCode = _barcodeBuffer.Trim();
 					_barcodeBuffer = "";
 
-					// مسح محتوى خلية CodeEntry المعلقة قبل EndEdit لمنع CellEndEdit من معالجة نفس الباركود مرة ثانية
-					if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
-					{
-						dgItems.Rows[_pendingRowIdx].Cells["CodeEntry"].Value = null;
-						if (dgItems.IsCurrentCellInEditMode)
-							dgItems.CancelEdit();
-					}
+					if (dgItems.IsCurrentCellInEditMode)
+						dgItems.CancelEdit();
 
 					ProcessScannedBarcode(scannedCode);
+					if (txtBarcode != null)
+					{
+						txtBarcode.Clear();
+						this.ActiveControl = txtBarcode;
+						txtBarcode.Focus();
+					}
 					return true;
 				}
 				_barcodeBuffer = "";
@@ -3013,14 +3074,17 @@ namespace ChickenDist.Forms
 			{
 				string code = dgItems.Rows[e.RowIndex].Cells["CodeEntry"].Value?.ToString()?.Trim() ?? "";
 				int rowIdx  = e.RowIndex;
+				int capturedPending = _pendingRowIdx;
 				this.BeginInvoke((MethodInvoker)delegate
 				{
 					if (string.IsNullOrEmpty(code))
 					{
-						// كود فارغ → حذف السطر المعلق
-						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
-							dgItems.Rows.RemoveAt(rowIdx);
-						_pendingRowIdx = -1;
+						// كود فارغ → حذف السطر المعلق فقط إذا كان هو السطر المعلق ولم يُستبدل بأصناف
+						if (capturedPending >= 0 && capturedPending == _pendingRowIdx && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+						{
+							dgItems.Rows.RemoveAt(_pendingRowIdx);
+							_pendingRowIdx = -1;
+						}
 						return;
 					}
 					var dt = ProductDAL.FindByCode(code);
@@ -3049,14 +3113,25 @@ namespace ChickenDist.Forms
 						if (string.IsNullOrEmpty(unitName)) unitName = dt.Rows[0]["Unit"]?.ToString();
 
 						// حذف السطر المعلق ثم إضافة الصنف الحقيقي
-						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
-							dgItems.Rows.RemoveAt(rowIdx);
-						_pendingRowIdx = -1;
+						if (capturedPending >= 0 && capturedPending == _pendingRowIdx && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+						{
+							dgItems.Rows.RemoveAt(_pendingRowIdx);
+							_pendingRowIdx = -1;
+						}
 						decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : 1.00m;
 						AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
 
 						try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
-						AddNewCodeRow();
+						if (txtBarcode != null)
+						{
+							txtBarcode.Clear();
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
+						}
+						else
+						{
+							AddNewCodeRow();
+						}
 					}
 					else
 					{
@@ -4657,7 +4732,19 @@ namespace ChickenDist.Forms
 						}
 						catch { }
 					}
-					if (!_isCopyMode) ResetForm();
+					if (!_isCopyMode)
+					{
+						ResetForm();
+						this.BeginInvoke((MethodInvoker)delegate
+						{
+							if (txtBarcode != null && !this.IsDisposed)
+							{
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+								txtBarcode.SelectAll();
+							}
+						});
+					}
 					else this.Close();
 				}
 				else
@@ -7185,7 +7272,17 @@ namespace ChickenDist.Forms
 
 			this.BeginInvoke((MethodInvoker)delegate
 			{
-				AddNewCodeRow();
+				if (txtBarcode != null)
+				{
+					txtBarcode.Clear();
+					this.ActiveControl = txtBarcode;
+					txtBarcode.Focus();
+					txtBarcode.SelectAll();
+				}
+				else
+				{
+					AddNewCodeRow();
+				}
 			});
 		}
 

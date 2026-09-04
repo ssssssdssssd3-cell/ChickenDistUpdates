@@ -2427,6 +2427,15 @@ namespace ChickenDist.Forms
             finally
             {
                 _isSaving = false;
+                this.BeginInvoke(new Action(() =>
+                {
+                    if (txtBarcode != null && !this.IsDisposed)
+                    {
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                        txtBarcode.SelectAll();
+                    }
+                }));
             }
         }
 
@@ -2459,8 +2468,9 @@ namespace ChickenDist.Forms
             }
             this.BeginInvoke(new Action(() =>
             {
-                if (txtBarcode != null)
+                if (txtBarcode != null && !this.IsDisposed)
                 {
+                    this.ActiveControl = txtBarcode;
                     txtBarcode.Focus();
                     txtBarcode.SelectAll();
                 }
@@ -2614,6 +2624,18 @@ namespace ChickenDist.Forms
                 }
             }
             catch (Exception ex) { AppLogger.Error("FrmPOS.PrintReceipt", ex); }
+            finally
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    if (txtBarcode != null && !this.IsDisposed)
+                    {
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                        txtBarcode.SelectAll();
+                    }
+                }));
+            }
         }
 
         // ── بحث أصناف ────────────────────────────────────────

@@ -291,9 +291,9 @@ namespace ChickenDist.Forms
                 y += 25;
                 g.DrawLine(Pens.Gray, 20, y, pageW - 20, y); y += 10;
 
-                // Table columns: Date, Type, Ref, Party, In, Out, Balance
-                int[] xCols = { 20, 130, 260, 350, 480, 560, 640 };
-                string[] headers = { "التاريخ", "نوع الحركة", "المستند", "العميل/المندوب", "وارد (+)", "صادر (-)", "الرصيد" };
+                // Table columns: Date, Type, Ref, Party, In, Out, Balance, Notes
+                int[] xCols = { 20, 115, 205, 270, 380, 440, 500, 565 };
+                string[] headers = { "التاريخ", "نوع الحركة", "المستند", "العميل/المندوب", "وارد (+)", "صادر (-)", "الرصيد", "البيان / ملاحظات" };
                 
                 for (int i = 0; i < headers.Length; i++)
                 {
@@ -318,18 +318,21 @@ namespace ChickenDist.Forms
                     string qtyIn = row.Cells["QtyIn"].Value?.ToString() ?? "";
                     string qtyOut = row.Cells["QtyOut"].Value?.ToString() ?? "";
                     string balance = row.Cells["Balance"].Value?.ToString() ?? "";
+                    string notes = row.Cells["Notes"].Value?.ToString() ?? "";
 
                     g.DrawString(date, normal, Brushes.Black, xCols[0], y);
                     g.DrawString(type, normal, Brushes.Black, xCols[1], y);
                     g.DrawString(refCode, normal, Brushes.Black, xCols[2], y);
                     
-                    // Truncate party name if too long for spacing
-                    if (party.Length > 20) party = party.Substring(0, 18) + "..";
+                    if (party.Length > 16) party = party.Substring(0, 14) + "..";
                     g.DrawString(party, normal, Brushes.Black, xCols[3], y);
                     
                     g.DrawString(qtyIn, bold, Brushes.DarkGreen, xCols[4], y);
                     g.DrawString(qtyOut, bold, Brushes.DarkRed, xCols[5], y);
                     g.DrawString(balance, bold, Brushes.Black, xCols[6], y);
+
+                    if (notes.Length > 32) notes = notes.Substring(0, 30) + "..";
+                    g.DrawString(notes, small, Brushes.DarkSlateGray, xCols[7], y);
 
                     y += 20;
                 }

@@ -741,7 +741,8 @@ namespace ChickenDist.DAL
                         ELSE p.PurchaseType
                     END AS PurchaseTypeArabic,
                     ISNULL(e.EmpName, N'---') AS CreatedByName,
-                    ISNULL(w.WarehouseName, N'الرئيسي') AS WarehouseName
+                    ISNULL(w.WarehouseName, N'الرئيسي') AS WarehouseName,
+                    COALESCE(NULLIF(pi.Notes, N''), p.Notes, N'') AS Notes
                 FROM PurchaseItems pi
                 JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
                 JOIN Products pr ON pi.ProductID = pr.ProductID

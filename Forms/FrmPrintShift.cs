@@ -593,15 +593,18 @@ namespace ChickenDist.Forms
 
             // ── 6. جرد الفئات النقدية وتبرير العجز (إن وجدا) ───────
             string denomsFormatted = FrmCashDenominations.FormatDenominationsForPrint(_denominationsJson);
-            if (!string.IsNullOrWhiteSpace(denomsFormatted) || !string.IsNullOrWhiteSpace(_deficitReason))
+            if (!string.IsNullOrWhiteSpace(denomsFormatted) || !string.IsNullOrWhiteSpace(_deficitReason) || !string.IsNullOrWhiteSpace(_notes))
             {
-                int extraH = 46;
-                g.FillRectangle(new SolidBrush(Color.FromArgb(254, 252, 232)), lMargin, y, printableW, extraH);
-                g.DrawRectangle(new Pen(Color.FromArgb(234, 179, 8), 1f), lMargin, y, printableW, extraH);
-
                 string extraNotes = "";
+                if (!string.IsNullOrWhiteSpace(_notes)) extraNotes += $"📝 ملاحظات الوردية: {_notes}   ";
                 if (!string.IsNullOrWhiteSpace(_deficitReason)) extraNotes += $"⚠️ تبرير سبب العجز: {_deficitReason}   ";
                 if (!string.IsNullOrWhiteSpace(denomsFormatted)) extraNotes += $"|  🧮 جرد الفئات: {denomsFormatted.Replace("\r\n", "  •  ")}";
+
+                var measured = g.MeasureString(extraNotes, fontBold, printableW - 20);
+                int extraH = Math.Max(46, (int)measured.Height + 10);
+
+                g.FillRectangle(new SolidBrush(Color.FromArgb(254, 252, 232)), lMargin, y, printableW, extraH);
+                g.DrawRectangle(new Pen(Color.FromArgb(234, 179, 8), 1f), lMargin, y, printableW, extraH);
 
                 g.DrawString(extraNotes, fontBold, new SolidBrush(Color.FromArgb(113, 63, 18)), new RectangleF(lMargin + 10, y + 4, printableW - 20, extraH - 8), sfRight);
                 y += extraH + 8;
@@ -773,6 +776,17 @@ namespace ChickenDist.Forms
                 y += 80;
             }
 
+            if (!string.IsNullOrWhiteSpace(_notes))
+            {
+                g.DrawLine(new Pen(Color.Black, 1f), lMargin, y, lMargin + printableW, y);
+                y += 4;
+                g.DrawString("📝 ملاحظات الوردية:", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), sfRight);
+                y += 18;
+                var noteSz = g.MeasureString(_notes, fontNormal, printableW);
+                g.DrawString(_notes, fontNormal, Brushes.Black, new RectangleF(lMargin, y, printableW, noteSz.Height + 4), sfRight);
+                y += (int)noteSz.Height + 6;
+            }
+
             g.DrawLine(new Pen(Color.Black, 1.5f), lMargin, y, lMargin + printableW, y);
             y += 8;
 
@@ -838,6 +852,7 @@ namespace ChickenDist.Forms
                                  $"💼 المتوقع بالدرج: {printer._expectedCash:N2} ج\n" +
                                  $"💵 الفعلي بالدرج: {printer._actualCash:N2} ج\n" +
                                  $"⚖️ الفرق المحاسبي: {printer._difference:N2} ج\n" +
+                                 (!string.IsNullOrWhiteSpace(printer._notes) ? $"📝 ملاحظات الوردية: {printer._notes}\n" : "") +
                                  (!string.IsNullOrWhiteSpace(printer._deficitReason) ? $"⚠️ سبب العجز: {printer._deficitReason}\n" : "") +
                                  $"🏦 المحول للخزنة: {printer._transferredAmount:N2} ج\n" +
                                  $"📌 المتبقي بالدرج: {printer._remainingInDrawer:N2} ج";
