@@ -315,11 +315,13 @@ namespace ChickenDist.Forms
             {
                 DbHelper.EnsureShiftSchema();
                 DataTable dtShift = DbHelper.Query(@"
-                    SELECT s.*, e.EmpName AS OpenedByName, ec.EmpName AS ClosedByName, sa.AccountName AS SafeName
+                    SELECT s.*, e.EmpName AS OpenedByName, ec.EmpName AS ClosedByName, sa.AccountName AS SafeName,
+                           st.AccountName AS TargetSafeName
                     FROM Shifts s
                     LEFT JOIN Employees e ON s.OpenedBy = e.EmpID
                     LEFT JOIN Employees ec ON s.ClosedBy = ec.EmpID
                     LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+                    LEFT JOIN SafeAccounts st ON s.TransferToSafeID = st.AccountID
                     WHERE s.ShiftID = @sid",
                     DbHelper.P("@sid", shiftID));
                 if (dtShift.Rows.Count == 0) return;
@@ -330,10 +332,22 @@ namespace ChickenDist.Forms
                 string openedBy = sRow["OpenedByName"] != DBNull.Value ? sRow["OpenedByName"].ToString() : "---";
                 string closedBy = sRow["ClosedByName"] != DBNull.Value ? sRow["ClosedByName"].ToString() : "---";
                 string safeName = sRow["SafeName"] != DBNull.Value ? sRow["SafeName"].ToString() : "درج الكاشير";
+                string targetSafeName = sRow.Table.Columns.Contains("TargetSafeName") && sRow["TargetSafeName"] != DBNull.Value ? sRow["TargetSafeName"].ToString() : "";
+                decimal transferred = sRow["TransferredAmount"] != DBNull.Value ? Convert.ToDecimal(sRow["TransferredAmount"]) : 0m;
+                decimal remaining = sRow["RemainingInDrawer"] != DBNull.Value ? Convert.ToDecimal(sRow["RemainingInDrawer"]) : 0m;
 
-                lblShiftHeader.Text = status == "Open"
+                string transferDetails = "";
+                if (status != "Open")
+                {
+                    if (transferred > 0)
+                        transferDetails = $" | 💸 تم تحويل: {transferred:N2} ج إلى ({(string.IsNullOrEmpty(targetSafeName) ? "خزينة" : targetSafeName)}) | 📌 متبقي بالدرج: {remaining:N2} ج";
+                    else
+                        transferDetails = $" | 📌 كامل النقدية أبقيت بالدرج: {remaining:N2} ج";
+                }
+
+                lblShiftHeader.Text = (status == "Open"
                     ? $"🟢 الوردية مفتوحة | الكاشير: {openedBy} | الخزنة: {safeName}"
-                    : $"🔴 الوردية مغلقة | فتح: {openedBy} | أغلقت بواسطة: {closedBy} | الخزنة: {safeName}";
+                    : $"🔴 الوردية مغلقة | فتح: {openedBy} | أغلقت بواسطة: {closedBy} | الخزنة: {safeName}") + transferDetails;
 
                 int drawerSafeID = sRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(sRow["SafeAccountID"]) : 1;
                 int openedByEmpID = sRow["OpenedBy"] != DBNull.Value ? Convert.ToInt32(sRow["OpenedBy"]) : Session.EmpID;

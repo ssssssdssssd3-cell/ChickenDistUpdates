@@ -1459,6 +1459,9 @@ namespace ChickenDist.Forms
 						("ExpectedCash", "النقدية المتوقعة"),
 						("ActualCash", "النقدية الفعلية"),
 						("Difference", "العجز / الزيادة"),
+						("TransferredAmount", "مبلغ التحويل"),
+						("TransferredToSafeName", "تم التحويل إلى"),
+						("RemainingInDrawer", "المتبقي بالدرج"),
 						("StatusArabic", "حالة الوردية"),
 						("Notes", "الملاحظات")
 					}, dataGridView);
@@ -2834,6 +2837,8 @@ namespace ChickenDist.Forms
 				case "LoadTotal":
 				case "ReturnsTotal":
 				case "PaidTotal":
+				case "TransferredAmount":
+				case "RemainingInDrawer":
 				case "CurrentBalance":
 				case "TotalQty":
 				case "ReturnedQty":

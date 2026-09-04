@@ -1620,12 +1620,21 @@ namespace ChickenDist.DAL
                     END AS ExpectedCash,
                     s.ActualCash,
                     s.Difference,
+                    ISNULL(s.TransferredAmount, 0) AS TransferredAmount,
+                    CASE 
+                        WHEN s.TransferredAmount > 0 AND saTarget.AccountName IS NOT NULL THEN saTarget.AccountName
+                        WHEN s.TransferredAmount > 0 THEN ISNULL((SELECT TOP 1 sa2.AccountName FROM CashBox cb JOIN SafeAccounts sa2 ON cb.AccountID = sa2.AccountID WHERE cb.ShiftID = s.ShiftID AND cb.TransType = 'ShiftCloseIn'), N'خزينة')
+                        WHEN s.Status = 'Closed' THEN N'إبقاء بالدرج'
+                        ELSE N'-'
+                    END AS TransferredToSafeName,
+                    ISNULL(s.RemainingInDrawer, 0) AS RemainingInDrawer,
                     CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة 🟢' END AS StatusArabic,
                     s.Notes
                 FROM Shifts s
                 LEFT JOIN Employees eOpen ON s.OpenedBy = eOpen.EmpID
                 LEFT JOIN Employees eClose ON s.ClosedBy = eClose.EmpID
                 LEFT JOIN SafeAccounts sa ON s.SafeAccountID = sa.AccountID
+                LEFT JOIN SafeAccounts saTarget ON s.TransferToSafeID = saTarget.AccountID
                 WHERE s.OpenTime BETWEEN @f AND @t
                 ORDER BY s.ShiftID DESC";
             return DbHelper.Query(sql, DbHelper.P("@f", f), DbHelper.P("@t", t));
