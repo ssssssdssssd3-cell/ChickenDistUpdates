@@ -699,19 +699,19 @@ namespace ChickenDist.Forms
             txtVisaPaid = new TextBox { Location = new Point(50, 46), Size = new Size(105, 34), Font = new Font("Segoe UI", 15f, FontStyle.Bold), BackColor = Theme.BgInput, ForeColor = Color.Black, BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center, Visible = false };
             txtVisaPaid.TextChanged += (s, e) => RecalcChange();
 
-            lblChange = new Label { Text = "الباقي: 0.00 ج", Location = new Point(20, 45), Size = new Size(230, 40), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 18f, FontStyle.Bold) };
+            lblChange = new Label { Text = "الباقي: 0.00 ج", Location = new Point(230, 46), Size = new Size(240, 42), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 17.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter };
 
             // ── أزرار الأسفل ──────────────────────────────────
             btnPay = Theme.MakeButton("💰 إتمام البيع (F5)", Theme.Success, new Point(20, 130), new Size(250, 55));
-            btnPay.Font = new Font("Segoe UI", 14f, FontStyle.Bold);
+            btnPay.Font = new Font("Segoe UI", 13.5f, FontStyle.Bold);
             btnPay.Click += BtnPay_Click;
 
-            btnNew = Theme.MakeButton("🔄 فاتورة جديدة (F2)", Color.FromArgb(60, 70, 85), new Point(280, 130), new Size(210, 55));
-            btnNew.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            btnNew = Theme.MakeButton("🔄 فاتورة جديدة (F2)", Color.FromArgb(60, 70, 85), new Point(280, 130), new Size(160, 55));
+            btnNew.Font = new Font("Segoe UI", 11.5f, FontStyle.Bold);
             btnNew.Click += (s, e) => NewInvoice();
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Theme.Danger, new Point(500, 130), new Size(170, 55));
-            btnCancel.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Theme.Danger, new Point(450, 130), new Size(130, 55));
+            btnCancel.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnCancel.Click += (s, e) => { if (_items.Count > 0 && MessageBox.Show("إلغاء الفاتورة؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes) NewInvoice(); };
 
             _btnPrint = Theme.MakeButton("🖨️ طباعة (F6)", Theme.Primary, new Point(680, 130), new Size(110, 55));
@@ -867,77 +867,108 @@ namespace ChickenDist.Forms
                 if (txtPaid != null) { txtPaid.Location = new Point(midX - 110, 52); txtPaid.Size = new Size(125, 34); }
             }
 
-            // عدد الأصناف في الفاتورة: أقصى اليسار فوق زر إتمام البيع
+            // ── ضبط شارة أصناف الفاتورة وحقل الباقي ─────────────
+            int paymentLeftEdge = (_selectedSaleType == "Mixed") ? (midX - 150) : (midX - 110);
+
+            // شارة أصناف الفاتورة: أقصى اليسار
+            int badgeW = 205;
             if (lblInvoiceItemsBadge != null)
             {
-                lblInvoiceItemsBadge.Location = new Point(20, 48);
-                lblInvoiceItemsBadge.Size     = new Size(205, 40);
+                badgeW = Math.Min(205, Math.Max(140, (paymentLeftEdge - 35) / 2));
+                lblInvoiceItemsBadge.Location = new Point(20, 46);
+                lblInvoiceItemsBadge.Size     = new Size(badgeW, 42);
             }
 
-            // الباقي: بجانب عدد أصناف الفاتورة
-            lblChange.Location = new Point(235, 48);
-            lblChange.Size     = new Size(Math.Max(130, midX - 245), 40);
+            // الباقي: يقع بين شارة الأصناف ومربع المدفوع مع هامش أمان مؤكد لمنع أي تداخل أو قص
+            int changeX = 20 + badgeW + 12;
+            int changeRightLimit = paymentLeftEdge - 15;
+            int changeW = Math.Max(140, changeRightLimit - changeX);
 
-            // الأزرار: توزيع ديناميكي من اليمين ليسار لتفادي أي تداخل
+            lblChange.Location = new Point(changeX, 46);
+            lblChange.Size     = new Size(changeW, 42);
+            lblChange.TextAlign = ContentAlignment.MiddleCenter;
+            lblChange.Font     = new Font("Segoe UI", changeW < 180 ? 15f : 17.5f, FontStyle.Bold);
+
+            // ── توزيع ديناميكي ذكي للأزرار السفلية لمنع أي تداخل نهائياً ──
+            int btnY = 130;
+            int btnH = 55;
+            int rightMargin = 15;
+            int gap = 6;
+
             var btnKitchenCtrl = pnlTotals.Controls["btnKitchenPrint"];
-            var btnSuspendCtrl = pnlTotals.Controls["btnSuspend"];
-            var btnRecallCtrl = pnlTotals.Controls["btnRecall"];
-
-            if (_btnWhatsApp != null) { _btnWhatsApp.Location = new Point(totW - 125, 130);             _btnWhatsApp.Size = new Size(110, 55); }
-            if (btnOpenDrawer!= null) { btnOpenDrawer.Location= new Point(totW - 275, 130);             btnOpenDrawer.Size= new Size(145, 55); }
-
-            int currentX = totW - 275;
-            if (btnKitchenCtrl != null)
-            {
-                currentX -= 95;
-                btnKitchenCtrl.Location = new Point(currentX, 130);
-                btnKitchenCtrl.Size = new Size(90, 55);
-            }
-            if (btnSuspendCtrl != null)
-            {
-                currentX -= 135;
-                btnSuspendCtrl.Location = new Point(currentX, 130);
-                btnSuspendCtrl.Size = new Size(130, 55);
-            }
-            if (btnRecallCtrl != null)
-            {
-                currentX -= 145;
-                btnRecallCtrl.Location = new Point(currentX, 130);
-                btnRecallCtrl.Size = new Size(140, 55);
-            }
-
             var btnIncompleteCtrl = pnlTotals.Controls["btnIncompletePOS"];
-            if (btnIncompleteCtrl != null)
+
+            var rightButtons = new List<(Control ctrl, int baseWidth)>();
+
+            if (_btnWhatsApp != null && _btnWhatsApp.Visible)
+                rightButtons.Add((_btnWhatsApp, 95));
+
+            if (btnOpenDrawer != null && btnOpenDrawer.Visible)
+                rightButtons.Add((btnOpenDrawer, 110));
+
+            if (btnKitchenCtrl != null && btnKitchenCtrl.Visible)
+                rightButtons.Add((btnKitchenCtrl, 85));
+
+            if (btnSuspend != null && btnSuspend.Visible)
+                rightButtons.Add((btnSuspend, 105));
+
+            if (btnRecall != null && btnRecall.Visible)
+                rightButtons.Add((btnRecall, 110));
+
+            if (btnIncompleteCtrl != null && btnIncompleteCtrl.Visible)
+                rightButtons.Add((btnIncompleteCtrl, 105));
+
+            if (btnModelLookup != null && btnModelLookup.Visible)
+                rightButtons.Add((btnModelLookup, 120));
+
+            if (btnCancel != null && btnCancel.Visible)
+                rightButtons.Add((btnCancel, 125));
+
+            if (btnNew != null && btnNew.Visible)
+                rightButtons.Add((btnNew, 155));
+
+            // مساحة زر إتمام البيع الأساسية (الزر الأخضر الرئيسي)
+            int minPayWidth = 180;
+            int payLeft = 20;
+            int payGap = 12;
+
+            int totalBaseRight = 0;
+            foreach (var b in rightButtons) totalBaseRight += b.baseWidth + gap;
+            if (rightButtons.Count > 0) totalBaseRight -= gap;
+
+            int availableForRight = totW - rightMargin - (payLeft + minPayWidth + payGap);
+            double scale = 1.0;
+            if (availableForRight > 0 && totalBaseRight > availableForRight)
             {
-                currentX -= 135;
-                btnIncompleteCtrl.Location = new Point(currentX, 130);
-                btnIncompleteCtrl.Size = new Size(130, 55);
+                scale = (double)availableForRight / totalBaseRight;
+                if (scale < 0.70) scale = 0.70;
             }
 
-            var btnModelLookupCtrl = pnlTotals.Controls["btnModelLookup"];
-            if (btnModelLookupCtrl != null)
+            // توزيع الأزرار من أقصى اليمين نحو اليسار
+            int curX = totW - rightMargin;
+            for (int i = 0; i < rightButtons.Count; i++)
             {
-                currentX -= 145;
-                btnModelLookupCtrl.Location = new Point(currentX, 130);
-                btnModelLookupCtrl.Size = new Size(140, 55);
+                var (ctrl, baseW) = rightButtons[i];
+                int btnWidth = (int)Math.Round(baseW * scale);
+                curX -= btnWidth;
+                ctrl.Location = new Point(curX, btnY);
+                ctrl.Size = new Size(btnWidth, btnH);
+                curX -= gap;
             }
 
-            if (btnCancel != null)
+            // زر إتمام البيع: يبدأ من payLeft (20) ويتمدد حتى يملأ كل المساحة المتبقية قبل btnNew بفارق payGap
+            if (btnPay != null && btnPay.Visible)
             {
-                currentX -= 180;
-                btnCancel.Location = new Point(currentX, 130);
-                btnCancel.Size = new Size(175, 55);
-            }
-            if (btnNew != null)
-            {
-                currentX -= 215;
-                btnNew.Location = new Point(currentX, 130);
-                btnNew.Size = new Size(210, 55);
-            }
-            if (btnPay != null)
-            {
-                btnPay.Location = new Point(20, 130);
-                btnPay.Size = new Size(Math.Max(150, currentX - 30), 55);
+                int payRightLimit = curX + gap - payGap;
+                int payW = Math.Max(minPayWidth, payRightLimit - payLeft);
+                // صمام أمان نهائي: لا يتجاوز يسار زر جديد إطلاقاً
+                if (payLeft + payW > curX + gap - 5)
+                {
+                    payW = Math.Max(120, (curX + gap - 5) - payLeft);
+                }
+                btnPay.Location = new Point(payLeft, btnY);
+                btnPay.Size = new Size(payW, btnH);
+                btnPay.Font = new Font("Segoe UI", payW < 190 ? 12.5f : 13.5f, FontStyle.Bold);
             }
         }
 
