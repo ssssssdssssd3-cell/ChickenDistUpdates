@@ -1,5 +1,5 @@
-// ProSoft ERP Mobile App Service Worker (v3.1.6)
-const CACHE_NAME = 'prosoft-pwa-v316-' + Date.now();
+// ProSoft ERP Mobile App Service Worker (v3.2.4)
+const CACHE_NAME = 'prosoft-pwa-v324';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -9,7 +9,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.map((key) => caches.delete(key))
+        keys.filter(k => k !== CACHE_NAME).map((key) => caches.delete(key))
       );
     }).then(() => self.clients.claim())
   );

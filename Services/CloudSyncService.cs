@@ -448,7 +448,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 6. دليل الأصناف
                 DataTable dtProducts = DbHelper.Query(@"
-                    SELECT TOP 500 p.ProductID, p.ProductName, ISNULL(p.ProductCode,'') AS ProductCode, 
+                    SELECT TOP 300 p.ProductID, p.ProductName, ISNULL(p.ProductCode,'') AS ProductCode, 
                            ISNULL(p.SalePrice,0) AS SalePrice, ISNULL(p.PurchasePrice,0) AS PurchasePrice, 
                            ISNULL(ps.TotalQty, ISNULL(p.Quantity, 0)) AS Quantity 
                     FROM Products p WITH (NOLOCK)
@@ -459,12 +459,12 @@ self.addEventListener('fetch', (event) => {
 
                 // 7. قائمة الموردين
                 DataTable dtSuppliers = DbHelper.Query(
-                    "SELECT TOP 200 SupplierID, ISNULL(SupplierCode,'') AS SupplierCode, SupplierName, ISNULL(Phone,'') AS Phone, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance FROM Suppliers WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, SupplierName ASC");
+                    "SELECT TOP 150 SupplierID, ISNULL(SupplierCode,'') AS SupplierCode, SupplierName, ISNULL(Phone,'') AS Phone, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance FROM Suppliers WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, SupplierName ASC");
                 string suppliersJson = DataTableToJson(dtSuppliers);
 
                 // 8. ديون وقائمة العملاء
                 DataTable dtClients = DbHelper.Query(
-                    "SELECT TOP 500 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
+                    "SELECT TOP 300 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
                 string clientsJson = DataTableToJson(dtClients);
 
                 // 9. بيانات حساب المالك والمدراء والماستر لتسجيل الدخول في تطبيق الموبايل
@@ -499,7 +499,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 10. سجل فواتير المبيعات
                 DataTable dtRecentSales = DbHelper.Query(@"
-                    SELECT TOP 2000 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
+                    SELECT TOP 400 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
                            ISNULL(NULLIF(s.CustomClientName, ''), ISNULL(c.ClientName, N'عميل نقدي')) AS ClientName,
                            ISNULL(s.TotalAmount, 0) AS TotalAmount,
                            ISNULL(s.CashPaid, 0) + ISNULL(s.VisaPaid, 0) AS PaidAmount,
@@ -516,7 +516,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 11. سجل فواتير المشتريات
                 DataTable dtRecentPurchases = DbHelper.Query(@"
-                    SELECT TOP 1000 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
+                    SELECT TOP 200 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
                            ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
                            ISNULL(p.TotalAmount, 0) AS TotalAmount,
                            ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0) AS PaidAmount,
@@ -531,7 +531,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 12. سجل حركات الخزينة
                 DataTable dtRecentCash = DbHelper.Query(@"
-                    SELECT TOP 1000 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                    SELECT TOP 300 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
                            ISNULL(cb.AmountIn, 0) AS AmountIn,
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'') AS Notes,
@@ -697,12 +697,47 @@ self.addEventListener('fetch', (event) => {
 
                     using (var client = new HttpClient())
                     {
-                        client.Timeout = TimeSpan.FromSeconds(10);
+                        client.Timeout = TimeSpan.FromSeconds(60);
                         var content = new StringContent(rtdbPayload, Encoding.UTF8, "application/json");
-                        var resp = await client.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/erp_data.json", content);
-                        if (resp.IsSuccessStatusCode)
+
+                        // 1. تجربة الرابط الافتراضي default-rtdb
+                        try
                         {
-                            rtdbOk = true;
+                            var resp = await client.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/erp_data.json", content);
+                            if (resp != null && resp.IsSuccessStatusCode)
+                            {
+                                rtdbOk = true;
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Firebase Default RTDB Status: {resp?.StatusCode}");
+                            }
+                        }
+                        catch (Exception exDefault)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Firebase Default RTDB error: " + exDefault.Message);
+                        }
+
+                        // 2. تجربة رابط RTDB الكلاسيكي البديل في حال تعذر الأول
+                        if (!rtdbOk)
+                        {
+                            try
+                            {
+                                var contentFallback = new StringContent(rtdbPayload, Encoding.UTF8, "application/json");
+                                var respFallback = await client.PutAsync($"https://{projectId}.firebaseio.com/erp_data.json", contentFallback);
+                                if (respFallback != null && respFallback.IsSuccessStatusCode)
+                                {
+                                    rtdbOk = true;
+                                }
+                                else
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Firebase Fallback RTDB Status: {respFallback?.StatusCode}");
+                                }
+                            }
+                            catch (Exception exFallback)
+                            {
+                                System.Diagnostics.Debug.WriteLine("Firebase Fallback RTDB error: " + exFallback.Message);
+                            }
                         }
                     }
                 }
@@ -755,7 +790,7 @@ self.addEventListener('fetch', (event) => {
 
                     using (var client = new HttpClient())
                     {
-                        client.Timeout = TimeSpan.FromSeconds(10);
+                        client.Timeout = TimeSpan.FromSeconds(30);
                         var content = new StringContent(firestorePayload, Encoding.UTF8, "application/json");
                         var req = new HttpRequestMessage(new HttpMethod("PATCH"), $"https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/metadata/live_reports")
                         {
@@ -786,6 +821,20 @@ self.addEventListener('fetch', (event) => {
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine("Firestore Upload: " + ex.Message);
+                }
+
+                if (rtdbOk || firestoreOk)
+                {
+                    try
+                    {
+                        string statusMsg = $"متصل بنجاح 🔥 ({DateTime.Now:yyyy-MM-dd HH:mm:ss})";
+                        DbHelper.Execute(@"
+                            UPDATE CloudSyncSettings 
+                            SET LastSyncDate = GETDATE(), LastSyncStatus = @status 
+                            WHERE SettingID = 1",
+                            DbHelper.P("@status", statusMsg));
+                    }
+                    catch { }
                 }
 
                 return rtdbOk || firestoreOk;
