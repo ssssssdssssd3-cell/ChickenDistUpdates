@@ -821,12 +821,14 @@ namespace ChickenDist.DAL
                           PurchasePrice        = @cp,
                           PendingSalePrice     = @psp,
                           PendingQtyThreshold  = @pqt,
-                          PendingPriceSourceRefID = @pref
+                          PendingPriceSourceRefID = @pref,
+                          PendingSaleCol       = @col
                       WHERE ProductID = @id",
                     DbHelper.P("@cp", costPrice),
                     DbHelper.P("@psp", pendingPrice),
                     DbHelper.P("@pqt", oldStock),
                     DbHelper.P("@pref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value),
+                    DbHelper.P("@col", saleCol),
                     DbHelper.P("@id", productID));
             }
 
@@ -839,31 +841,37 @@ namespace ChickenDist.DAL
         /// </summary>
         public static void ActivatePendingPrice(int productID)
         {
-            var dt = DbHelper.Query("SELECT SalePrice, PendingSalePrice, PendingPriceSourceRefID FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+            var dt = DbHelper.Query("SELECT SalePrice, Unit1SalePrice, Unit2SalePrice, PendingSalePrice, PendingPriceSourceRefID, PendingSaleCol FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
             if (dt.Rows.Count > 0 && dt.Rows[0]["PendingSalePrice"] != DBNull.Value)
             {
-                decimal oldPrice = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
+                string targetCol = dt.Rows[0]["PendingSaleCol"] != DBNull.Value ? dt.Rows[0]["PendingSaleCol"].ToString() : "SalePrice";
+                if (string.IsNullOrEmpty(targetCol) || (targetCol != "SalePrice" && targetCol != "Unit1SalePrice" && targetCol != "Unit2SalePrice"))
+                {
+                    targetCol = "SalePrice";
+                }
+                decimal oldPrice = Convert.ToDecimal(dt.Rows[0][targetCol] != DBNull.Value ? dt.Rows[0][targetCol] : 0m);
                 decimal newPrice = Convert.ToDecimal(dt.Rows[0]["PendingSalePrice"]);
                 object refIdVal = dt.Rows[0]["PendingPriceSourceRefID"];
                 int? purchaseID = refIdVal != DBNull.Value ? (int?)Convert.ToInt32(refIdVal) : null;
 
                 DbHelper.Execute(
-                    @"UPDATE Products
-                      SET SalePrice           = PendingSalePrice,
+                    $@"UPDATE Products
+                      SET {targetCol}         = PendingSalePrice,
                           PendingSalePrice    = NULL,
                           PendingQtyThreshold = NULL,
-                          PendingPriceSourceRefID = NULL
+                          PendingPriceSourceRefID = NULL,
+                          PendingSaleCol      = NULL
                       WHERE ProductID = @id AND PendingSalePrice IS NOT NULL",
                     DbHelper.P("@id", productID));
 
-                string notes = purchaseID.HasValue ? "تفعيل سعر معلق تلقائي من فاتورة الشراء #" + purchaseID.Value : "تفعيل سعر معلق تلقائي";
+                string notes = purchaseID.HasValue ? $"تفعيل سعر معلق تلقائي من فاتورة الشراء #{purchaseID.Value} ({targetCol})" : $"تفعيل سعر معلق تلقائي ({targetCol})";
                 DbHelper.Execute(
                     @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
                       VALUES (@pid, @old, @new, 'PurchaseInvoice', @ref, @uid, @notes)",
                     DbHelper.P("@pid", productID), DbHelper.P("@old", oldPrice), DbHelper.P("@new", newPrice),
                     DbHelper.P("@ref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", notes));
 
-                AppLogger.Audit("تفعيل سعر معلق", $"صنف رقم ({productID}) | السعر الجديد المفعل: {newPrice:N2} ج");
+                AppLogger.Audit("تفعيل سعر معلق", $"صنف رقم ({productID}) | العمود: {targetCol} | السعر الجديد المفعل: {newPrice:N2} ج");
             }
         }
 
@@ -1772,14 +1780,7 @@ namespace ChickenDist.DAL
                         decimal liveBal = AccountDAL.GetCashBalance(safeID);
                         if (liveBal < -0.001m)
                         {
-                            decimal fixAmt = Math.Abs(liveBal);
-                            DbHelper.Execute(
-                                @"INSERT INTO CashBox (TransDate, TransType, AmountIn, AmountOut, AccountID, Notes, CreatedBy)
-                                  VALUES (GETDATE(), 'Reconcile', @amt, 0, @acc, N'سند تسوية تلقائي لتصحيح رصيد الدرج ومنع السالب', @uid);",
-                                DbHelper.P("@amt", fixAmt),
-                                DbHelper.P("@acc", safeID > 0 ? safeID : 1),
-                                DbHelper.P("@uid", empID));
-                            liveBal = 0m;
+                            AppLogger.Audit("تنبيه فتح وردية برصيد سالب", $"خزينة/درج ({safeID}) رصيدها الفعلي بالسالب ({liveBal:N2} ج) عند فتح الوردية.");
                         }
                         openingCash = Math.Max(0m, liveBal);
                     }

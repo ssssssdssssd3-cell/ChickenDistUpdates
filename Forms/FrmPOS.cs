@@ -70,6 +70,7 @@ namespace ChickenDist.Forms
 
         // جلسة البحث السريع - لمنع تدخل FocusQtyCell أثناء تكرار شاشة البحث
         private bool _searchSessionActive = false;
+        private decimal? _pendingScaleWeight = null;
 
         public FrmPOS()
         {
@@ -79,11 +80,29 @@ namespace ChickenDist.Forms
             LoadDeliveryDrivers();
             LoadClients();
             LoadStockCache();
+            if (AppConfig.ScaleEnabled)
+            {
+                try { ScaleService.Instance.WeightChanged += ScaleService_WeightChanged; } catch { }
+            }
+            this.FormClosing += (s, e) => {
+                if (AppConfig.ScaleEnabled)
+                {
+                    try { ScaleService.Instance.WeightChanged -= ScaleService_WeightChanged; } catch { }
+                }
+            };
             this.Load += (s, e) => {
                 LayoutPanels();
                 this.ActiveControl = txtBarcode;
                 txtBarcode.Focus();
             };
+        }
+
+        private void ScaleService_WeightChanged(decimal weight, bool isStable)
+        {
+            if (isStable && weight > 0)
+            {
+                _pendingScaleWeight = weight;
+            }
         }
 
         private void InitUI()
@@ -1026,6 +1045,7 @@ namespace ChickenDist.Forms
             else if (e.KeyCode == Keys.F3) { SuspendCurrentOrder(); e.Handled = true; }
             else if (e.KeyCode == Keys.F4) { RecallDraftSale(); e.Handled = true; }
             else if (e.KeyCode == Keys.F5) { BtnPay_Click(null, null); e.Handled = true; }
+            else if (e.KeyCode == Keys.F6) { if (_lastSaleID > 0) PrintReceipt(_lastSaleID, askFirst: false); e.Handled = true; }
             else if (e.KeyCode == Keys.F7) { SetPaymentType("Cash"); e.Handled = true; }
             else if (e.KeyCode == Keys.F8) { SetPaymentType("Visa"); e.Handled = true; }
             else if (e.KeyCode == Keys.F9) { SetPaymentType("Credit"); e.Handled = true; }
@@ -1189,12 +1209,24 @@ namespace ChickenDist.Forms
             if (e.KeyCode == Keys.Enter)
             {
                 e.SuppressKeyPress = true;
-                string code = txtBarcode.Text.Trim();
-                if (!string.IsNullOrEmpty(code))
+                string rawInput = txtBarcode.Text.Trim();
+                if (!string.IsNullOrEmpty(rawInput))
                 {
-                    AddProductByCode(code);
+                    decimal multiQty = 1m;
+                    string code = rawInput;
+                    if (rawInput.Contains("*"))
+                    {
+                        var parts = rawInput.Split(new char[] { '*' }, 2);
+                        if (decimal.TryParse(parts[0].Trim(), out decimal q) && q > 0)
+                        {
+                            multiQty = q;
+                            code = parts[1].Trim();
+                        }
+                    }
+
+                    AddProductByCode(code, multiQty, focusQty: false);
                     txtBarcode.Clear();
-                    // لا نعيد التركيز لـ txtBarcode — FocusQtyCell ستضع التركيز على خلية الكمية
+                    txtBarcode.Focus();
                 }
             }
             else if (e.KeyCode == Keys.Down)
@@ -1220,7 +1252,7 @@ namespace ChickenDist.Forms
             }
         }
 
-        private void AddProductByCode(string code)
+        private void AddProductByCode(string code, decimal requestedQty = 1m, bool focusQty = false)
         {
             // بحث بالباركود أو الكود
             string trimmedC = code.TrimStart('0');
@@ -1413,11 +1445,12 @@ namespace ChickenDist.Forms
                     return;
                 }
             }
-
-            AddItemFromRow(row, 1, unitName, factor, price, batchID, expiryDate);
+            decimal qtyToAdd = _pendingScaleWeight.HasValue ? _pendingScaleWeight.Value : (requestedQty > 0 ? requestedQty : 1m);
+            _pendingScaleWeight = null;
+            AddItemFromRow(row, qtyToAdd, unitName, factor, price, batchID, expiryDate, 0m, focusQty);
         }
 
-        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null, decimal discountAmt = 0m)
+        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null, decimal discountAmt = 0m, bool focusQty = false)
         {
             if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
             {
@@ -1534,7 +1567,7 @@ namespace ChickenDist.Forms
                 }
                 existing.Total = (existing.Qty * existing.Price) - existing.DiscountAmt;
                 RefreshGrid();
-                FocusQtyCell(existing);
+                if (focusQty) FocusQtyCell(existing);
                 return;
             }
 
@@ -1558,7 +1591,7 @@ namespace ChickenDist.Forms
             };
             _items.Add(newItem);
             RefreshGrid();
-            FocusQtyCell(newItem);
+            if (focusQty) FocusQtyCell(newItem);
             try { SystemSounds.Asterisk.Play(); } catch { } // صوت تنبيه عند إضافة صنف
         }
 
@@ -2414,6 +2447,12 @@ namespace ChickenDist.Forms
 
                     _lastSaleID = saleID;
                 });
+
+                // فتح درج النقدية تلقائياً عند السداد النقدي أو المختلط
+                if (_selectedSaleType == "Cash" || (_selectedSaleType == "Mixed" && cashPaidVal > 0))
+                {
+                    try { RawPrinterHelper.OpenCashDrawer(); } catch { }
+                }
 
                 // طباعة تلقائية بعد الدفع — حسب إعداد وضع طباعة الرسيت
                 string receiptMode = AppConfig.POSReceiptMode; // Always | Ask | Never

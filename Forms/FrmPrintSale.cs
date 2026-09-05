@@ -84,8 +84,9 @@ namespace ChickenDist.Forms
 
             if (isReceipt)
             {
-                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 1000);
-                pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
+                int paperW = AppConfig.ReceiptPaperWidth == 58 ? 205 : 300;
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", paperW, 1000);
+                pd.DefaultPageSettings.Margins = new Margins(paperW == 205 ? 6 : 10, paperW == 205 ? 6 : 10, 10, 10);
                 AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
             }
             else
@@ -141,16 +142,16 @@ namespace ChickenDist.Forms
                     g.TranslateTransform(a5Shift, 0);
                 }
 
-                int lMargin = isReceipt ? 12 : (isA4Page ? 30 : 24);
-                int rMargin = isReceipt ? 28 : (isA4Page ? 30 : 24);
+                int lMargin = isReceipt ? (pageW <= 230 ? 6 : 12) : (isA4Page ? 30 : 24);
+                int rMargin = isReceipt ? (pageW <= 230 ? 8 : 28) : (isA4Page ? 30 : 24);
                 int printableW = pageW - lMargin - rMargin;
                 int margin = lMargin;
                 int y = isReceipt ? 5 : (isA4Page ? 20 : 15);
 
-                var boldBig = new Font("Arial", isReceipt ? 12 : (isA4Page ? 16 : 13), FontStyle.Bold);
-                var bold = new Font("Arial", isReceipt ? 9 : (isA4Page ? 11 : 9.5f), FontStyle.Bold);
-                var normal = new Font("Arial", isReceipt ? 8.5f : (isA4Page ? 10f : 8.5f));
-                var small = new Font("Arial", isReceipt ? 7.5f : (isA4Page ? 9f : 7.5f));
+                var boldBig = new Font("Arial", isReceipt ? (pageW <= 230 ? 10f : 12f) : (isA4Page ? 16 : 13), FontStyle.Bold);
+                var bold = new Font("Arial", isReceipt ? (pageW <= 230 ? 8f : 9f) : (isA4Page ? 11 : 9.5f), FontStyle.Bold);
+                var normal = new Font("Arial", isReceipt ? (pageW <= 230 ? 7.5f : 8.5f) : (isA4Page ? 10f : 8.5f));
+                var small = new Font("Arial", isReceipt ? (pageW <= 230 ? 6.5f : 7.5f) : (isA4Page ? 9f : 7.5f));
 
                 DrawShopLogo(g, pageW, ref y, isReceipt);
 

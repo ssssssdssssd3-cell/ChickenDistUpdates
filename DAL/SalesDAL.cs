@@ -206,11 +206,21 @@ namespace ChickenDist.DAL
                 }
             }
 
+            string saleTypeName = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : saleType == 4 ? "Visa" : saleType == 5 ? "Mixed" : "Cash";
+            if (saleTypeName == "Mixed" && (!clientID.HasValue || clientID.Value <= 0) && !isDraft)
+            {
+                decimal totalPaid = (cashPaid ?? 0m) + (visaPaid ?? 0m);
+                if (totalPaid < total - 0.01m)
+                {
+                    throw new InvalidOperationException($"❌ خطأ مالي: إجمالي المسدد نقدياً وفيزا ({totalPaid:N2} ج) أقل من إجمالي الفاتورة ({total:N2} ج) لعميل نقدي غير مسجل!\nيجب سداد كامل الفاتورة أو اختيار عميل مسجل لتحميل المتبقي ({total - totalPaid:N2} ج) كدين على حسابه.");
+                }
+            }
+
             int returnedSaleID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : saleType == 4 ? "Visa" : saleType == 5 ? "Mixed" : "Cash";
+                string typeStr = saleTypeName;
                 var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                 string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
                 int targetWarehouse = warehouseID ?? 1;
@@ -332,7 +342,7 @@ namespace ChickenDist.DAL
                             }
                         }
 
-                        // Atomic update to subtract from PendingQtyThreshold if sold at old SalePrice
+                        // Atomic update to subtract from PendingQtyThreshold if sold at old price
                         DbHelper.ExecuteTrans(trans,
                             @"UPDATE Products
                               SET PendingQtyThreshold = CASE 
@@ -340,8 +350,16 @@ namespace ChickenDist.DAL
                                   ELSE PendingQtyThreshold - @qty
                                   END,
                                   SalePrice = CASE
-                                  WHEN PendingQtyThreshold - @qty <= 0 THEN PendingSalePrice
+                                  WHEN PendingQtyThreshold - @qty <= 0 AND (PendingSaleCol IS NULL OR PendingSaleCol = 'SalePrice') THEN PendingSalePrice
                                   ELSE SalePrice
+                                  END,
+                                  Unit1SalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 AND PendingSaleCol = 'Unit1SalePrice' THEN PendingSalePrice
+                                  ELSE Unit1SalePrice
+                                  END,
+                                  Unit2SalePrice = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 AND PendingSaleCol = 'Unit2SalePrice' THEN PendingSalePrice
+                                  ELSE Unit2SalePrice
                                   END,
                                   PendingSalePrice = CASE
                                   WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
@@ -350,15 +368,17 @@ namespace ChickenDist.DAL
                                   PendingPriceSourceRefID = CASE
                                   WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
                                   ELSE PendingPriceSourceRefID
+                                  END,
+                                  PendingSaleCol = CASE
+                                  WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                  ELSE PendingSaleCol
                                   END
                               WHERE ProductID = @pid 
                                 AND PendingSalePrice IS NOT NULL 
                                 AND PendingQtyThreshold > 0 
-                                AND @qty > 0
-                                AND ABS(SalePrice - @up) < 0.005",
+                                AND @qty > 0",
                             DbHelper.P("@qty", item.Quantity),
-                            DbHelper.P("@pid", item.ProductID),
-                            DbHelper.P("@up", item.UnitPrice));
+                            DbHelper.P("@pid", item.ProductID));
                     }
                 }
 
@@ -2039,6 +2059,26 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp", item.TotalPrice),
                         DbHelper.P("@un", item.UnitName),
                         DbHelper.P("@fac", item.Factor));
+
+                    decimal baseQty = item.Quantity * (item.Factor > 0 ? item.Factor : 1m);
+                    if (item.BatchID.HasValue && item.BatchID.Value > 0)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE ProductBatches SET Quantity = Quantity + @qty WHERE BatchID = @bid",
+                            DbHelper.P("@qty", baseQty), DbHelper.P("@bid", item.BatchID.Value));
+                    }
+                    else
+                    {
+                        var targetBatchObj = DbHelper.ScalarTrans(trans,
+                            "SELECT TOP 1 BatchID FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid ORDER BY BatchID DESC",
+                            DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", whID));
+                        if (targetBatchObj != null && targetBatchObj != DBNull.Value)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET Quantity = Quantity + @qty WHERE BatchID = @bid",
+                                DbHelper.P("@qty", baseQty), DbHelper.P("@bid", Convert.ToInt32(targetBatchObj)));
+                        }
+                    }
                 }
 
                 // المنطق المحاسبي الدقيق:
@@ -2166,6 +2206,17 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp", item.TotalPrice),
                         DbHelper.P("@un", item.UnitName),
                         DbHelper.P("@fac", item.Factor));
+
+                    decimal baseQty = item.Quantity * (item.Factor > 0 ? item.Factor : 1m);
+                    var targetBatchObj = DbHelper.ScalarTrans(trans,
+                        "SELECT TOP 1 BatchID FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid ORDER BY BatchID DESC",
+                        DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", warehouseID));
+                    if (targetBatchObj != null && targetBatchObj != DBNull.Value)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE ProductBatches SET Quantity = Quantity + @qty WHERE BatchID = @bid",
+                            DbHelper.P("@qty", baseQty), DbHelper.P("@bid", Convert.ToInt32(targetBatchObj)));
+                    }
                 }
 
                 // 2. تسجيل حركة الصرف الجديدة (فاتورة بيع بديل)

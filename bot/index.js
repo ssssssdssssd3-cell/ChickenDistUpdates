@@ -1020,10 +1020,18 @@ function listenForCommands() {
                             return;
                         }
                         try {
-                            if (!fs.existsSync(cmd.filePath)) {
-                                throw new Error(`Backup file not found at local path: ${cmd.filePath}`);
+                            if (!cmd.filePath || typeof cmd.filePath !== 'string') {
+                                throw new Error('Invalid or missing backup file path.');
                             }
-                            const media = MessageMedia.fromFilePath(cmd.filePath);
+                            const resolvedPath = path.resolve(cmd.filePath);
+                            const ext = path.extname(resolvedPath).toLowerCase();
+                            if (ext !== '.zip' && ext !== '.bak') {
+                                throw new Error(`Access denied: Backup file must have .zip or .bak extension. Received: ${ext}`);
+                            }
+                            if (!fs.existsSync(resolvedPath)) {
+                                throw new Error(`Backup file not found at local path: ${resolvedPath}`);
+                            }
+                            const media = MessageMedia.fromFilePath(resolvedPath);
                             let targetJid = getJidFromPhone(cmd.phone);
                             const caption = `📦 *نسخة احتياطية لقاعدة البيانات*\n📅 *التاريخ:* ${new Date().toLocaleString('ar-EG')}`;
                             await client.sendMessage(targetJid, media, { caption });

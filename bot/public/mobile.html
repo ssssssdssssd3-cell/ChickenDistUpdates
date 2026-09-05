@@ -1615,6 +1615,25 @@
           console.warn('PBKDF2 verification note:', err);
         }
       }
+
+      // 3. التحقق من تشفير SHA-256 القياسي
+      if (cleanStored.length === 64 && /^[0-9a-fA-F]+$/.test(cleanStored)) {
+        try {
+          if (window.crypto && window.crypto.subtle) {
+            const enc = new TextEncoder();
+            const msgBuffer = enc.encode(cleanEntered);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashHex = Array.from(new Uint8Array(hashBuffer))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('')
+              .toLowerCase();
+            if (hashHex === cleanStored.toLowerCase()) return true;
+          }
+        } catch (err) {
+          console.warn('SHA-256 verification note:', err);
+        }
+      }
+
       return false;
     }
 

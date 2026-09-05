@@ -263,7 +263,22 @@ namespace ChickenDist.DAL
                         DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value),
                         DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
 
-                    if (!isDraft && item.ExpiryDate.HasValue)
+                    if (!isDraft)
+                    {
+                        if (item.UnitPrice > 0)
+                        {
+                            decimal costPerBaseUnit = item.UnitPrice / (item.Factor > 0 ? item.Factor : 1.0m);
+                            DbHelper.ExecuteTrans(trans,
+                                @"UPDATE Products 
+                                  SET PurchasePrice = @pp, 
+                                      CostPrice = @cp 
+                                  WHERE ProductID = @pid",
+                                DbHelper.P("@pp", item.UnitPrice),
+                                DbHelper.P("@cp", costPerBaseUnit),
+                                DbHelper.P("@pid", item.ProductID));
+                        }
+
+                        if (item.ExpiryDate.HasValue)
                     {
                         decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
                         decimal baseQty = item.Quantity * factor;
@@ -294,6 +309,7 @@ namespace ChickenDist.DAL
                         }
                     }
                 }
+            }
 
                 // ── القيود المحاسبية (للفواتير المؤكدة فقط) ─────────────────────
                 if (!isDraft)
@@ -1125,6 +1141,25 @@ namespace ChickenDist.DAL
                         DbHelper.P("@tp",  item.TotalPrice),
                         DbHelper.P("@un",  item.UnitName),
                         DbHelper.P("@fac", item.Factor));
+
+                    decimal baseQty = item.Quantity * (item.Factor > 0 ? item.Factor : 1m);
+                    var targetBatchObj = DbHelper.ScalarTrans(trans,
+                        "SELECT TOP 1 BatchID FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid AND Quantity >= @qty ORDER BY ExpiryDate ASC, BatchID ASC",
+                        DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", whID), DbHelper.P("@qty", baseQty));
+
+                    if (targetBatchObj == null || targetBatchObj == DBNull.Value)
+                    {
+                        targetBatchObj = DbHelper.ScalarTrans(trans,
+                            "SELECT TOP 1 BatchID FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid ORDER BY BatchID DESC",
+                            DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", whID));
+                    }
+
+                    if (targetBatchObj != null && targetBatchObj != DBNull.Value)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE ProductBatches SET Quantity = CASE WHEN Quantity - @qty < 0 THEN 0 ELSE Quantity - @qty END WHERE BatchID = @bid",
+                            DbHelper.P("@qty", baseQty), DbHelper.P("@bid", Convert.ToInt32(targetBatchObj)));
+                    }
                 }
 
                 // القيد المحاسبي السليم

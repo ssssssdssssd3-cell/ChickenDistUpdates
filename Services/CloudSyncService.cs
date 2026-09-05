@@ -495,6 +495,14 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(Role, 'Admin') AS Role 
                     FROM Employees 
                     WHERE IsActive = 1");
+                if (dtUsers != null)
+                {
+                    foreach (DataRow uRow in dtUsers.Rows)
+                    {
+                        string rawPass = uRow["Password"] != DBNull.Value ? uRow["Password"].ToString() : "";
+                        uRow["Password"] = ComputeSha256(rawPass);
+                    }
+                }
                 string usersJson = DataTableToJson(dtUsers);
 
                 // 10. سجل فواتير المبيعات
@@ -678,10 +686,10 @@ self.addEventListener('fetch', (event) => {
                         "\"StoreName\": \"" + storeName + "\"," +
                         "\"StoreLogo\": \"" + storeLogoBase64 + "\"," +
                         "\"MasterUserName\": \"" + EscapeJsonString(masterUserName) + "\"," +
-                        "\"MasterPassword\": \"" + EscapeJsonString(masterPassword) + "\"," +
-                        "\"OwnerPassword\": \"" + EscapeJsonString(ownerPassword) + "\"," +
+                        "\"MasterPassword\": \"" + EscapeJsonString(ComputeSha256(masterPassword)) + "\"," +
+                        "\"OwnerPassword\": \"" + EscapeJsonString(ComputeSha256(ownerPassword)) + "\"," +
                         "\"ProMasterUser\": \"pro\"," +
-                        "\"ProMasterPass\": \"pro@2026\"," +
+                        "\"ProMasterPass\": \"" + ComputeSha256("pro@2026") + "\"," +
                         "\"SyncTime\": \"" + timeStr + "\"," +
                         "\"LastSyncDate\": \"" + isoNow + "\"," +
                         "\"SyncTimestamp\": " + syncTimestamp + "," +
@@ -953,6 +961,21 @@ self.addEventListener('fetch', (event) => {
         {
             if (string.IsNullOrEmpty(s)) return "";
             return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "");
+        }
+
+        private static string ComputeSha256(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "";
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+                var sb = new System.Text.StringBuilder();
+                foreach (byte b in bytes)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
+                return sb.ToString();
+            }
         }
     }
 }

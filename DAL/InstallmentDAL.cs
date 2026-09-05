@@ -398,7 +398,7 @@ namespace ChickenDist.DAL
         public static void HandleSalesReturn(SqlTransaction trans, int invoiceID, decimal returnAmount)
         {
             // البحث عن العقد المرتبط بالفاتورة
-            var dtContract = DbHelper.Query("SELECT ContractID, ContractAmount, FinancedAmount, DownPayment FROM InstallmentContracts WHERE InvoiceID = @iid AND Status = 'Active'",
+            var dtContract = DbHelper.QueryTrans(trans, "SELECT ContractID, ContractAmount, FinancedAmount, DownPayment FROM InstallmentContracts WHERE InvoiceID = @iid AND Status = 'Active'",
                 DbHelper.P("@iid", invoiceID));
 
             if (dtContract.Rows.Count == 0) return; // ليس بيع بالتقسيط نشط
@@ -428,7 +428,7 @@ namespace ChickenDist.DAL
                 DbHelper.P("@cid", contractID));
 
             // تعديل الأقساط تنازلياً بدءاً من الأخير
-            var dtSchedule = DbHelper.Query(
+            var dtSchedule = DbHelper.QueryTrans(trans,
                 "SELECT ScheduleID, Amount, PaidAmount, RemainingAmount FROM InstallmentSchedules WHERE ContractID = @cid ORDER BY InstallmentNo DESC",
                 DbHelper.P("@cid", contractID));
 

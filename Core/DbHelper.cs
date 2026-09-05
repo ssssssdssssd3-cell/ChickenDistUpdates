@@ -202,7 +202,7 @@ namespace ChickenDist.Core
                     IntegratedSecurity = isIntegrated,
                     TrustServerCertificate = true,
                     ConnectTimeout = 30,
-                    PacketSize = 32768,
+                    PacketSize = 8192,
                     MultipleActiveResultSets = true,
                     Pooling = true,
                     MinPoolSize = 5,
@@ -3775,6 +3775,10 @@ namespace ChickenDist.Core
                 IF COL_LENGTH('Products','PrintLocalBarcode') IS NULL
                     ALTER TABLE Products ADD PrintLocalBarcode BIT NOT NULL DEFAULT 1;");
 
+                SafeMigrate("Products.PendingSaleCol", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL AND COL_LENGTH('Products','PendingSaleCol') IS NULL
+                    ALTER TABLE Products ADD PendingSaleCol NVARCHAR(50) NULL;");
+
                 // ── ReceiptVouchers: إنشاء الجدول إن لم يكن موجوداً ──
                 SafeMigrate("ReceiptVouchers.Table", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ReceiptVouchers')
@@ -3885,8 +3889,7 @@ namespace ChickenDist.Core
             }
             catch (SqlException ex)
             {
-                try { con.Dispose(); } catch { }
-                SqlConnection.ClearAllPools();
+                try { SqlConnection.ClearPool(con); con.Dispose(); } catch { }
 
                 string iniPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");
                 string server = ReadIniDirect(iniPath, "Database", "Server", ".");
@@ -3898,13 +3901,17 @@ namespace ChickenDist.Core
                 TryMigrateOldDatabase(server, user, pass, isIntegrated);
                 UpdateIniDatabaseKey(iniPath, "ProSoftDB");
 
+                string prevConn = _connStr;
                 _connStr = GetConnectionStringFromIni();
                 if (_connStr.Contains("ChickenDist"))
                 {
                     _connStr = _connStr.Replace("Initial Catalog=ChickenDist", "Initial Catalog=ProSoftDB")
                                        .Replace("Database=ChickenDist", "Database=ProSoftDB");
                 }
-                SqlConnection.ClearAllPools();
+                if (prevConn != _connStr)
+                {
+                    try { SqlConnection.ClearAllPools(); } catch { }
+                }
 
                 var conRetry = new SqlConnection(_connStr);
                 conRetry.Open();
@@ -4030,7 +4037,7 @@ namespace ChickenDist.Core
                     }
                     catch (Exception ex)
                     {
-                        trans.Rollback();
+                        try { trans.Rollback(); } catch (Exception rbEx) { AppLogger.Error("trans.Rollback failed", rbEx); }
                         AppLogger.Error("RunInTransaction: تم التراجع عن العملية", ex, "DbHelper.RunInTransaction");
                         MessageBox.Show("حدث خطأ وتم التراجع عن العملية بأمان.\n\n" + ex.Message,
                             "خطأ في العملية", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -4251,10 +4258,17 @@ namespace ChickenDist.Core
             }
         }
 
+        private static volatile bool _shiftSchemaVerified = false;
+        private static readonly object _shiftSchemaLock = new object();
+
         public static void EnsureShiftSchema()
         {
-            try
+            if (_shiftSchemaVerified) return;
+            lock (_shiftSchemaLock)
             {
+                if (_shiftSchemaVerified) return;
+                try
+                {
                 Execute(@"
                     IF NOT EXISTS (SELECT * FROM sys.tables WHERE name='Shifts')
                     BEGIN
@@ -4408,13 +4422,22 @@ namespace ChickenDist.Core
                             ALTER TABLE PurchaseReturns ADD ShiftID INT NULL;
                     END
                 ");
-            }
-            catch (Exception ex)
-            {
-                AppLogger.Error("DbHelper.EnsureShiftSchema", ex);
-            }
+                    _shiftSchemaVerified = true;
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("DbHelper.EnsureShiftSchema", ex);
+                }
 
-            EnsureFixedAssetsAndShareholdersSchema();
+                try
+                {
+                    EnsureFixedAssetsAndShareholdersSchema();
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("DbHelper.EnsureFixedAssetsAndShareholdersSchema", ex);
+                }
+            }
         }
 
         public static void EnsureFixedAssetsAndShareholdersSchema()

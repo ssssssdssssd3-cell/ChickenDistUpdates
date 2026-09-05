@@ -87,6 +87,16 @@ namespace ChickenDist.Core
             set => Set("ReceiptPrinterName", value);
         }
 
+        public static int ReceiptPaperWidth
+        {
+            get
+            {
+                string val = Get("ReceiptPaperWidth", "80");
+                return int.TryParse(val, out int w) ? w : 80;
+            }
+            set => Set("ReceiptPaperWidth", value.ToString());
+        }
+
         public static string A4PrinterName
         {
             get => Get("A4PrinterName", "");
