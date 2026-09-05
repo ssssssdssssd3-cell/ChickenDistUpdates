@@ -44,7 +44,7 @@ namespace ChickenDist.Forms
         private Label lblTableNum;
         private TextBox txtTableNum;
         private ComboBox cboDeliveryDriver;
-        private Button btnSuspend, btnRecall, btnModelLookup;
+        private Button btnSuspend, btnRecall, btnModelLookup, btnIncompletePOS, btnKitchenPrint;
         private int _loadedDraftSaleID = 0;
         private bool _isSaving = false;
         private int? _selectedVisaAccountID = null;
@@ -78,7 +78,11 @@ namespace ChickenDist.Forms
             LoadDeliveryDrivers();
             LoadClients();
             LoadStockCache();
-            this.Load += (s, e) => { this.ActiveControl = txtBarcode; txtBarcode.Focus(); };
+            this.Load += (s, e) => {
+                LayoutPanels();
+                this.ActiveControl = txtBarcode;
+                txtBarcode.Focus();
+            };
         }
 
         private void InitUI()
@@ -737,14 +741,14 @@ namespace ChickenDist.Forms
             btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnRecall.Click += (s, e) => RecallDraftSale();
 
-            var btnIncompletePOS = Theme.MakeButton("📂 فواتير\nلم تكتمل", Color.FromArgb(70, 40, 130), new Point(0, 130), new Size(130, 55));
+            btnIncompletePOS = Theme.MakeButton("📂 فواتير\nلم تكتمل", Color.FromArgb(70, 40, 130), new Point(0, 128), new Size(115, 56));
             btnIncompletePOS.Name = "btnIncompletePOS";
             btnIncompletePOS.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnIncompletePOS.Click += (s, e) => OpenIncompletePOSDialog();
 
-            if (!AppConfig.IsRestaurant)
+            if (AppConfig.IsClothing)
             {
-                btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات", Color.FromArgb(142, 68, 173), new Point(500, 130), new Size(140, 55));
+                btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات", Color.FromArgb(142, 68, 173), new Point(0, 128), new Size(125, 56));
                 btnModelLookup.Name = "btnModelLookup";
                 btnModelLookup.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
                 btnModelLookup.Click += (s, e) => OpenModelLookup();
@@ -771,10 +775,10 @@ namespace ChickenDist.Forms
 
             if (AppConfig.IsRestaurant)
             {
-                var btnKitchen = Theme.MakeButton("🍳 بون\nمطبخ", Color.FromArgb(230, 120, 20), new Point(0, 130), new Size(95, 55));
-                btnKitchen.Name = "btnKitchenPrint";
-                btnKitchen.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
-                btnKitchen.Click += (s, e) =>
+                btnKitchenPrint = Theme.MakeButton("🍳 بون\nمطبخ", Color.FromArgb(230, 120, 20), new Point(0, 128), new Size(95, 56));
+                btnKitchenPrint.Name = "btnKitchenPrint";
+                btnKitchenPrint.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+                btnKitchenPrint.Click += (s, e) =>
                 {
                     if (_lastSaleID <= 0) return;
                     var ans = MessageBox.Show("هل تريد طباعة بون التحضير؟", "طباعة",
@@ -783,7 +787,7 @@ namespace ChickenDist.Forms
                     if (ans == DialogResult.Yes)
                         try { new FrmKitchenPrint(_lastSaleID); } catch { }
                 };
-                pnlTotals.Controls.Add(btnKitchen);
+                pnlTotals.Controls.Add(btnKitchenPrint);
             }
 
             this.Controls.Add(pnlTotals);
@@ -791,6 +795,7 @@ namespace ChickenDist.Forms
             this.FormClosing += FrmPOS_FormClosing;
             FrmQuickAdd.ProductSaved += FrmPOS_ProductSaved;
             this.Resize += (s, e) => LayoutPanels();
+            this.Shown += (s, e) => LayoutPanels();
             LayoutPanels();
         }
 
@@ -889,86 +894,94 @@ namespace ChickenDist.Forms
             lblChange.TextAlign = ContentAlignment.MiddleCenter;
             lblChange.Font     = new Font("Segoe UI", changeW < 180 ? 15f : 17.5f, FontStyle.Bold);
 
-            // ── توزيع ديناميكي ذكي للأزرار السفلية لمنع أي تداخل نهائياً ──
-            int btnY = 130;
-            int btnH = 55;
-            int rightMargin = 15;
+            // ── توزيع ديناميكي ذكي ومحكم للأزرار السفلية لمنع أي تداخل نهائياً ──
+            int btnY = 128;
+            int btnH = 56;
+            int margin = 15;
             int gap = 6;
 
-            var btnKitchenCtrl = pnlTotals.Controls["btnKitchenPrint"];
-            var btnIncompleteCtrl = pnlTotals.Controls["btnIncompletePOS"];
+            var orderedButtons = new List<(Control ctrl, int baseWidth, int minWidth)>();
 
-            var rightButtons = new List<(Control ctrl, int baseWidth)>();
-
-            if (_btnWhatsApp != null && _btnWhatsApp.Visible)
-                rightButtons.Add((_btnWhatsApp, 95));
-
-            if (btnOpenDrawer != null && btnOpenDrawer.Visible)
-                rightButtons.Add((btnOpenDrawer, 110));
-
-            if (btnKitchenCtrl != null && btnKitchenCtrl.Visible)
-                rightButtons.Add((btnKitchenCtrl, 85));
-
-            if (btnSuspend != null && btnSuspend.Visible)
-                rightButtons.Add((btnSuspend, 105));
-
-            if (btnRecall != null && btnRecall.Visible)
-                rightButtons.Add((btnRecall, 110));
-
-            if (btnIncompleteCtrl != null && btnIncompleteCtrl.Visible)
-                rightButtons.Add((btnIncompleteCtrl, 105));
-
-            if (btnModelLookup != null && btnModelLookup.Visible)
-                rightButtons.Add((btnModelLookup, 120));
-
-            if (btnCancel != null && btnCancel.Visible)
-                rightButtons.Add((btnCancel, 125));
+            // 1) الإجراءات النقدية والأساسية (أقصى اليسار)
+            if (btnPay != null && btnPay.Visible)
+                orderedButtons.Add((btnPay, 210, 140));
 
             if (btnNew != null && btnNew.Visible)
-                rightButtons.Add((btnNew, 155));
+                orderedButtons.Add((btnNew, 155, 115));
 
-            // مساحة زر إتمام البيع الأساسية (الزر الأخضر الرئيسي)
-            int minPayWidth = 180;
-            int payLeft = 20;
-            int payGap = 12;
+            if (btnCancel != null && btnCancel.Visible)
+                orderedButtons.Add((btnCancel, 120, 90));
 
-            int totalBaseRight = 0;
-            foreach (var b in rightButtons) totalBaseRight += b.baseWidth + gap;
-            if (rightButtons.Count > 0) totalBaseRight -= gap;
+            // 2) أدوات النشاط: فحص الألوان والمقاسات مخصص لنشاط الملابس فقط
+            if (btnModelLookup != null && btnModelLookup.Visible)
+                orderedButtons.Add((btnModelLookup, 125, 95));
 
-            int availableForRight = totW - rightMargin - (payLeft + minPayWidth + payGap);
-            double scale = 1.0;
-            if (availableForRight > 0 && totalBaseRight > availableForRight)
+            // 3) إدارة طلبات وحالات الفواتير (الوسط)
+            var incompleteBtn = btnIncompletePOS ?? pnlTotals.Controls["btnIncompletePOS"];
+            if (incompleteBtn != null && incompleteBtn.Visible)
+                orderedButtons.Add((incompleteBtn, 115, 85));
+
+            if (btnRecall != null && btnRecall.Visible)
+                orderedButtons.Add((btnRecall, 120, 90));
+
+            if (btnSuspend != null && btnSuspend.Visible)
+                orderedButtons.Add((btnSuspend, 115, 85));
+
+            // 4) خدمات المطاعم (إن وُجدت)
+            var kitchenBtn = btnKitchenPrint ?? pnlTotals.Controls["btnKitchenPrint"];
+            if (kitchenBtn != null && kitchenBtn.Visible)
+                orderedButtons.Add((kitchenBtn, 95, 75));
+
+            // 5) أدوات الأجهزة والتواصل (اليمين)
+            if (_btnWhatsApp != null && _btnWhatsApp.Visible)
+                orderedButtons.Add((_btnWhatsApp, 110, 85));
+
+            if (btnOpenDrawer != null && btnOpenDrawer.Visible)
+                orderedButtons.Add((btnOpenDrawer, 135, 100));
+
+            int count = orderedButtons.Count;
+            if (count > 0)
             {
-                scale = (double)availableForRight / totalBaseRight;
-                if (scale < 0.70) scale = 0.70;
-            }
-
-            // توزيع الأزرار من أقصى اليمين نحو اليسار
-            int curX = totW - rightMargin;
-            for (int i = 0; i < rightButtons.Count; i++)
-            {
-                var (ctrl, baseW) = rightButtons[i];
-                int btnWidth = (int)Math.Round(baseW * scale);
-                curX -= btnWidth;
-                ctrl.Location = new Point(curX, btnY);
-                ctrl.Size = new Size(btnWidth, btnH);
-                curX -= gap;
-            }
-
-            // زر إتمام البيع: يبدأ من payLeft (20) ويتمدد حتى يملأ كل المساحة المتبقية قبل btnNew بفارق payGap
-            if (btnPay != null && btnPay.Visible)
-            {
-                int payRightLimit = curX + gap - payGap;
-                int payW = Math.Max(minPayWidth, payRightLimit - payLeft);
-                // صمام أمان نهائي: لا يتجاوز يسار زر جديد إطلاقاً
-                if (payLeft + payW > curX + gap - 5)
+                int totalGaps = (count - 1) * gap;
+                int availableW = totW - (2 * margin) - totalGaps;
+                int totalBaseWidth = 0;
+                int totalMinWidth = 0;
+                foreach (var b in orderedButtons)
                 {
-                    payW = Math.Max(120, (curX + gap - 5) - payLeft);
+                    totalBaseWidth += b.baseWidth;
+                    totalMinWidth += b.minWidth;
                 }
-                btnPay.Location = new Point(payLeft, btnY);
-                btnPay.Size = new Size(payW, btnH);
-                btnPay.Font = new Font("Segoe UI", payW < 190 ? 12.5f : 13.5f, FontStyle.Bold);
+
+                int remainingW = Math.Max(totalMinWidth, availableW);
+                int remainingBase = totalBaseWidth;
+                int curX = margin;
+
+                for (int i = 0; i < count; i++)
+                {
+                    var (ctrl, baseW, minW) = orderedButtons[i];
+                    int btnW;
+                    if (i == count - 1)
+                    {
+                        btnW = remainingW;
+                    }
+                    else
+                    {
+                        btnW = (int)Math.Round((double)baseW * remainingW / remainingBase);
+                        if (btnW < minW) btnW = minW;
+                    }
+
+                    ctrl.Location = new Point(curX, btnY);
+                    ctrl.Size = new Size(btnW, btnH);
+                    curX += btnW + gap;
+                    remainingW -= btnW;
+                    remainingBase -= baseW;
+                }
+
+                if (btnPay != null && btnPay.Visible)
+                    btnPay.Font = new Font("Segoe UI", btnPay.Width < 170 ? 11.5f : 13.5f, FontStyle.Bold);
+
+                if (btnNew != null && btnNew.Visible)
+                    btnNew.Font = new Font("Segoe UI", btnNew.Width < 135 ? 10f : 11.5f, FontStyle.Bold);
             }
         }
 

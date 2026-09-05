@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "3.2.5"
+$VERSION   = "3.2.6"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -139,6 +139,8 @@ Write-OK "Synced MobileApp/index.html to bot/public/mobile.html"
 $finalReleaseExe = "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"
 if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
     try {
+        Get-Process | Where-Object { $_.ProcessName -eq "ChickenDist" -or $_.ProcessName -eq "ProSoft" } | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 800
         Copy-Item $exePath -Destination $finalReleaseExe -Force
         Write-OK "Copied final Release EXE to $finalReleaseExe"
     } catch {

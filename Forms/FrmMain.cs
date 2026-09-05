@@ -423,7 +423,7 @@ namespace ChickenDist.Forms
             foreach (var scr in screens)
             {
                 var trimmed = scr.Trim();
-                if (trimmed == "ClothingMatrix" && AppConfig.BusinessType != "Clothing") return false;
+                if ((trimmed == "ClothingMatrix" || trimmed == "ModelLookup") && !AppConfig.IsClothing) return false;
                 if (!Session.CanAccess(trimmed)) return false;
             }
             return true;

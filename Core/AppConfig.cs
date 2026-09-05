@@ -41,6 +41,11 @@ namespace ChickenDist.Core
             get => BusinessType == "Factories" || BusinessType == "Manufacturing";
         }
 
+        public static bool IsClothing
+        {
+            get => BusinessType == "Clothing";
+        }
+
         public static string AppTheme
         {
             get => Get("AppTheme", "Dark");
