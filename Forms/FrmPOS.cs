@@ -512,13 +512,45 @@ namespace ChickenDist.Forms
             // ── لوحة العميل ───────────────────────────────────
             pnlClient = new Panel { Location = new Point(660, 85), Size = new Size(420, 55), BackColor = Theme.BgCard };
             var lClient = new Label { Text = "العميل:", Location = new Point(5, 5), Size = new Size(60, 25), ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            cboClient = new ComboBox { Location = new Point(70, 3), Size = new Size(200, 28), DropDownStyle = ComboBoxStyle.DropDown, Font = Theme.FontMain, BackColor = Theme.BgInput };
+            cboClient = new ComboBox { Location = new Point(70, 3), Size = new Size(165, 28), DropDownStyle = ComboBoxStyle.DropDown, Font = Theme.FontMain, BackColor = Theme.BgInput };
             cboClient.SelectedIndexChanged += CboClient_Changed;
+
+            var btnClientSearch = Theme.MakeButton("🔍", Theme.Accent);
+            btnClientSearch.Location = new Point(238, 3);
+            btnClientSearch.Size = new Size(36, 28);
+            btnClientSearch.Click += (s, e) =>
+            {
+                using (var frm = new FrmClientSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                    {
+                        int cid = frm.SelectedClientID;
+                        var allClients = cboClient.Tag as List<ComboItem>;
+                        if (allClients != null)
+                        {
+                            cboClient.BeginUpdate();
+                            cboClient.Items.Clear();
+                            cboClient.Items.AddRange(allClients.ToArray());
+                            cboClient.EndUpdate();
+                        }
+                        for (int i = 0; i < cboClient.Items.Count; i++)
+                        {
+                            if (cboClient.Items[i] is ComboItem ci && ci.ID == cid)
+                            {
+                                cboClient.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
+
             lblClientPoints = new Label { Text = "", Location = new Point(280, 5), Size = new Size(130, 25), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             chkRedeemPoints = new CheckBox { Text = "استرداد نقاط", Location = new Point(280, 28), Size = new Size(120, 22), ForeColor = Theme.TextMain, Font = Theme.FontMain, Checked = false };
             chkRedeemPoints.CheckedChanged += (s, e) => RefreshGrid();
             pnlClient.Controls.Add(lClient);
             pnlClient.Controls.Add(cboClient);
+            pnlClient.Controls.Add(btnClientSearch);
             pnlClient.Controls.Add(lblClientPoints);
             pnlClient.Controls.Add(chkRedeemPoints);
             this.Controls.Add(pnlClient);
@@ -3003,9 +3035,18 @@ namespace ChickenDist.Forms
             cboClient.Items.Clear();
             List<ComboItem> clientItems = new List<ComboItem>();
             clientItems.Add(new ComboItem(0, "-- بدون عميل --"));
-            var dt = DbHelper.Query("SELECT ClientID, ClientName FROM Clients WHERE IsActive=1 ORDER BY ClientName");
-            foreach (DataRow row in dt.Rows) clientItems.Add(new ComboItem(Convert.ToInt32(row["ClientID"]), row["ClientName"].ToString()));
+            var dt = DbHelper.Query("SELECT ClientID, ClientCode, ClientName, Phone, Phone2 FROM Clients WHERE IsActive=1 ORDER BY ClientName");
+            foreach (DataRow row in dt.Rows)
+            {
+                string code = row["ClientCode"]?.ToString() ?? "";
+                string name = row["ClientName"]?.ToString() ?? "";
+                string phone = row["Phone"]?.ToString() ?? "";
+                string phone2 = row["Phone2"]?.ToString() ?? "";
+                string combinedPhone = string.IsNullOrEmpty(phone2) ? phone : $"{phone} / {phone2}";
+                clientItems.Add(new ComboItem(Convert.ToInt32(row["ClientID"]), name, combinedPhone, code));
+            }
             cboClient.Items.AddRange(clientItems.ToArray());
+            cboClient.Tag = clientItems;
             cboClient.SelectedIndex = 0;
             cboClient.EndUpdate();
             SetupSearchableCombo(cboClient);
@@ -3044,7 +3085,9 @@ namespace ChickenDist.Forms
                     foreach (ComboItem item2 in list2)
                     {
                         if (item2.ID == 0) continue;
-                        if (item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                        if ((item2.Text != null && item2.Text.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrEmpty(item2.Code) && item2.Code.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrEmpty(item2.Phone) && item2.Phone.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0))
                         {
                             filtered.Add(item2);
                             count++;
@@ -3103,8 +3146,8 @@ namespace ChickenDist.Forms
 
         public class ComboItem
         {
-            public int ID; public string Text; public string Phone;
-            public ComboItem(int id, string text, string phone = "") { ID = id; Text = text; Phone = phone; }
+            public int ID; public string Text; public string Phone; public string Code;
+            public ComboItem(int id, string text, string phone = "", string code = "") { ID = id; Text = text; Phone = phone; Code = code; }
             public override string ToString() => Text;
         }
 

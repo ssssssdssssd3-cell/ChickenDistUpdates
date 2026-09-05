@@ -1278,10 +1278,27 @@ namespace ChickenDist.DAL
             return DbHelper.Query(sql);
         }
 
-        public static DataTable Search(string term)
+        public static DataTable Search(string term, string searchType = "all")
         {
+            string condition;
+            switch (searchType?.ToLowerInvariant())
+            {
+                case "name":
+                    condition = "c.ClientName LIKE @t";
+                    break;
+                case "phone":
+                    condition = "c.Phone LIKE @t OR c.Phone2 LIKE @t";
+                    break;
+                case "code":
+                    condition = "c.ClientCode LIKE @t";
+                    break;
+                default:
+                    condition = "c.ClientName LIKE @t OR c.Phone LIKE @t OR c.ClientCode LIKE @t OR c.Phone2 LIKE @t";
+                    break;
+            }
+
             return DbHelper.Query(
-                @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address, c.DriverID, c.MaxCreditLimit, c.Notes,
+                $@"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address, c.DriverID, c.MaxCreditLimit, c.Notes,
                   COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
                   COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
                   ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
@@ -1290,7 +1307,7 @@ namespace ChickenDist.DAL
                   FROM Clients c 
                   LEFT JOIN vw_ClientBalance cb ON c.ClientID=cb.ClientID
                   LEFT JOIN vw_ClientCratesBalance ccb ON c.ClientID=ccb.ClientID
-                  WHERE c.ClientName LIKE @t OR c.Phone LIKE @t OR c.ClientCode LIKE @t OR c.Phone2 LIKE @t",
+                  WHERE {condition}",
                 DbHelper.P("@t", "%" + term + "%"));
         }
 

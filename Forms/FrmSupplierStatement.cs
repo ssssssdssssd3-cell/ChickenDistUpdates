@@ -70,6 +70,31 @@ namespace ChickenDist.Forms
             cmbSupplierSelector.SelectedIndexChanged += CmbSupplierSelector_SelectedIndexChanged;
             pnlFilter.Controls.Add(cmbSupplierSelector);
 
+            var btnSearchSupplier = new Button
+            {
+                Text = "🔍",
+                Width = 34,
+                Height = 27,
+                Font = Theme.FontBold,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 2, 0, 0)
+            };
+            btnSearchSupplier.FlatAppearance.BorderSize = 0;
+            btnSearchSupplier.Click += (s, e) =>
+            {
+                using (var frm = new FrmSupplierSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedSupplierID > 0)
+                    {
+                        try { cmbSupplierSelector.SelectedValue = frm.SelectedSupplierID; } catch { }
+                    }
+                }
+            };
+            pnlFilter.Controls.Add(btnSearchSupplier);
+
             pnlFilter.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(12, 6, 0, 0) });
             dtpFrom = new DateTimePicker
             {

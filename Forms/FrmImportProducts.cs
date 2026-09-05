@@ -68,10 +68,6 @@ namespace ChickenDist.Forms
             btnCopyTemplate.Click += BtnCopyTemplate_Click;
             pnlTopControls.Controls.Add(btnCopyTemplate);
 
-            var btnFixDuplicatesInDb = Theme.MakeButton("🛠️ الأكواد المكررة", 540, 12, 160, 36, Color.FromArgb(180, 83, 9));
-            btnFixDuplicatesInDb.Click += (s, e) => new FrmDuplicateCodesResolver().ShowDialog();
-            pnlTopControls.Controls.Add(btnFixDuplicatesInDb);
-
             var lblPolicy = new Label
             {
                 Text = "سياسة أرصدة الأصناف الموجودة مسبقاً:",

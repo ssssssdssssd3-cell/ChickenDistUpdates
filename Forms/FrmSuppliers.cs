@@ -12,6 +12,7 @@ namespace ChickenDist.Forms
     {
         private DataGridView dgSuppliers;
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtAddress;
+        private ComboBox cboSearchFilter;
         private NumericUpDown nudOpening;
         private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete, btnStatement, btnItemMovementReport;
@@ -79,22 +80,43 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 8, 6, 0)
             };
 
+            cboSearchFilter = new ComboBox
+            {
+                Dock = DockStyle.Right,
+                Width = 135,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+            cboSearchFilter.Items.AddRange(new object[] { "🔍 الكل (شامل)", "🏢 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchFilter.SelectedIndex = 0;
+            cboSearchFilter.SelectedIndexChanged += (s, e) =>
+            {
+                if (IsPlaceholderText(txtSearch.Text))
+                {
+                    txtSearch.Text = GetCurrentPlaceholder();
+                }
+                string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
+                LoadSuppliers(searchVal);
+            };
+
             txtSearch = new TextBox
             {
                 Dock = DockStyle.Right,
-                Width = 280,
+                Width = 260,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(15, 23, 42),
                 Text = "بحث بالاسم أو الهاتف أو الكود...",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle
             };
-            txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود...") txtSearch.Text = ""; };
-            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الهاتف أو الكود..."; };
+            txtSearch.Enter += (s, e) => { if (IsPlaceholderText(txtSearch.Text)) txtSearch.Text = ""; };
+            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = GetCurrentPlaceholder(); };
             txtSearch.TextChanged += (s, e) =>
             {
-                string searchVal = txtSearch.Text;
-                if (searchVal == "بحث بالاسم أو الهاتف أو الكود...") searchVal = "";
+                string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
                 LoadSuppliers(searchVal);
             };
 
@@ -103,14 +125,14 @@ namespace ChickenDist.Forms
             btnSearchIcon.Width = 45;
             btnSearchIcon.Click += (s, e) =>
             {
-                string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود..." ? "" : txtSearch.Text;
+                string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
                 LoadSuppliers(searchVal);
             };
             txtSearch.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter)
                 {
-                    string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود..." ? "" : txtSearch.Text;
+                    string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
                     LoadSuppliers(searchVal);
                 }
             };
@@ -118,6 +140,7 @@ namespace ChickenDist.Forms
             pnlSearch.Controls.Add(lblSummary);
             pnlSearch.Controls.Add(btnSearchIcon);
             pnlSearch.Controls.Add(txtSearch);
+            pnlSearch.Controls.Add(cboSearchFilter);
             pnlSearch.Controls.Add(lblSearch);
 
             dgSuppliers = new DataGridView
@@ -304,10 +327,31 @@ namespace ChickenDist.Forms
             return p;
         }
 
+        private string GetCurrentPlaceholder()
+        {
+            if (cboSearchFilter == null) return "بحث بالاسم أو الهاتف أو الكود...";
+            switch (cboSearchFilter.SelectedIndex)
+            {
+                case 1: return "اكتب اسم المورد للبحث...";
+                case 2: return "اكتب رقم الهاتف للبحث...";
+                case 3: return "اكتب كود المورد للبحث...";
+                default: return "بحث بالاسم أو الهاتف أو الكود...";
+            }
+        }
+
+        private bool IsPlaceholderText(string text)
+        {
+            return string.IsNullOrWhiteSpace(text) ||
+                   text == "بحث بالاسم أو الهاتف أو الكود..." ||
+                   text == "اكتب اسم المورد للبحث..." ||
+                   text == "اكتب رقم الهاتف للبحث..." ||
+                   text == "اكتب كود المورد للبحث...";
+        }
+
         private void LoadSuppliers(string search = "")
         {
             dgSuppliers.Rows.Clear();
-            if (search == "بحث بالاسم أو الهاتف أو الكود...") search = "";
+            if (IsPlaceholderText(search)) search = "";
 
             DataTable dt = SupplierDAL.GetAll();
 
@@ -315,6 +359,7 @@ namespace ChickenDist.Forms
             var oldMode = dgSuppliers.AutoSizeColumnsMode;
             dgSuppliers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
 
+            int filterType = cboSearchFilter != null ? cboSearchFilter.SelectedIndex : 0;
             decimal totalDue = 0;
             int count = 0;
             foreach (DataRow r in dt.Rows)
@@ -322,8 +367,29 @@ namespace ChickenDist.Forms
                 string code = r["SupplierCode"]?.ToString() ?? "";
                 string name = r["SupplierName"]?.ToString() ?? "";
                 string phone = r["Phone"]?.ToString() ?? "";
-                if (!string.IsNullOrEmpty(search) && !name.Contains(search) && !phone.Contains(search) && !code.Contains(search))
-                    continue;
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    bool match = false;
+                    switch (filterType)
+                    {
+                        case 1: // بالاسم
+                            match = name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+                            break;
+                        case 2: // برقم الهاتف
+                            match = phone.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+                            break;
+                        case 3: // بالكود
+                            match = code.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+                            break;
+                        default: // الكل
+                            match = name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    phone.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    code.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+                            break;
+                    }
+                    if (!match) continue;
+                }
 
                 decimal bal = Convert.ToDecimal(r["Balance"]);
                 totalDue += bal;

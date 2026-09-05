@@ -17,7 +17,7 @@ namespace ChickenDist.Forms
         private DataGridView dgMovement;
         private DateTimePicker dtpFrom, dtpTo;
         private ComboBox cboTransType;
-        private Button btnLoad, btnPrint, btnSyncStock;
+        private Button btnLoad, btnPrint;
         private Label lblTitle;
 
         public FrmProductMovement(int productID, string productName, string productUnit)
@@ -50,21 +50,7 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            btnSyncStock = Theme.MakeButton("🔄 ضبط ومطابقة الرصيد مع الحركة", Color.FromArgb(13, 148, 136));
-            btnSyncStock.Dock = DockStyle.Right;
-            btnSyncStock.Width = 220;
-            btnSyncStock.Click += (s, e) =>
-            {
-                if (MessageBox.Show($"هل ترغب في إعادة احتساب ومطابقة الرصيد الفعلي للصنف [{_productName}] مع كشف الحركات الفعلي؟\n\nسيتم تحديث رصيد الصنف في المستودع ليتطابق تماماً مع صافي الحركات.", "تأكيد مطابقة الرصيد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                {
-                    decimal newBal = InventoryDAL.ReconcileProductStockWithMovements(_productID, null, Session.EmpID);
-                    MessageBox.Show($"✅ تم ضبط ومطابقة رصيد الصنف بنجاح!\nالرصيد الفعلي المعتمد الآن: {newBal:N2} {_productUnit}", "تمت المطابقة", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadMovement();
-                }
-            };
-
             pnlHeader.Controls.Add(lblTitle);
-            pnlHeader.Controls.Add(btnSyncStock);
             this.Controls.Add(pnlHeader);
 
             // Filter Bar

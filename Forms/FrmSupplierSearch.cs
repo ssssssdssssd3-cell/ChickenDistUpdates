@@ -11,12 +11,15 @@ namespace ChickenDist.Forms
     public class FrmSupplierSearch : Form
     {
         private TextBox txtSearch;
+        private ComboBox cboSearchType;
         private DataGridView dgSuppliers;
         private Button btnSelect, btnCancel;
         private DataTable _dtSuppliers;
         private DataView _dvSuppliers;
 
         public int SelectedSupplierID { get; private set; } = 0;
+        public string SelectedSupplierName { get; private set; } = "";
+        public string SelectedSupplierPhone { get; private set; } = "";
 
         public FrmSupplierSearch()
         {
@@ -38,11 +41,27 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 65, BackColor = Theme.BgSearchPanel, RightToLeft = RightToLeft.No, Padding = new Padding(12) };
-            var lblSearch = new Label { Text = "ابحث بالاسم او الهاتف او الكود:", Location = new Point(590, 22), Width = 210, ForeColor = Color.FromArgb(255, 220, 110), TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold };
-            txtSearch = new TextBox { Location = new Point(20, 18), Width = 560, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 12f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Left };
+            var lblSearch = new Label { Text = "🔍 نوع البحث:", Location = new Point(665, 22), Width = 130, ForeColor = Color.FromArgb(255, 220, 110), TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold };
+            cboSearchType = new ComboBox
+            {
+                Location = new Point(490, 18),
+                Width = 170,
+                Height = 32,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                RightToLeft = RightToLeft.Yes
+            };
+            cboSearchType.Items.AddRange(new object[] { "🔍 الكل (شامل)", "🏢 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchType.SelectedIndex = 0;
+            cboSearchType.SelectedIndexChanged += (s, e) => ApplyFilter();
+
+            txtSearch = new TextBox { Location = new Point(20, 18), Width = 455, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 12f), RightToLeft = RightToLeft.Yes, TextAlign = HorizontalAlignment.Left };
             txtSearch.TextChanged += (s, e) => ApplyFilter();
             txtSearch.KeyDown += TxtSearch_KeyDown;
             pnlSearch.Controls.Add(lblSearch);
+            pnlSearch.Controls.Add(cboSearchType);
             pnlSearch.Controls.Add(txtSearch);
             Theme.StyleSearchPanel(pnlSearch);
 
@@ -98,7 +117,29 @@ namespace ChickenDist.Forms
         {
             if (_dvSuppliers == null) return;
             string txt = txtSearch.Text.Trim().Replace("'", "''");
-            _dvSuppliers.RowFilter = string.IsNullOrEmpty(txt) ? "" : string.Format("SupplierName LIKE '%{0}%' OR Phone LIKE '%{0}%' OR SupplierCode LIKE '%{0}%' OR Address LIKE '%{0}%'", txt);
+            if (string.IsNullOrEmpty(txt))
+            {
+                _dvSuppliers.RowFilter = "";
+            }
+            else
+            {
+                int filterType = cboSearchType != null ? cboSearchType.SelectedIndex : 0;
+                switch (filterType)
+                {
+                    case 1: // بالاسم
+                        _dvSuppliers.RowFilter = string.Format("SupplierName LIKE '%{0}%'", txt);
+                        break;
+                    case 2: // برقم الهاتف
+                        _dvSuppliers.RowFilter = string.Format("Phone LIKE '%{0}%'", txt);
+                        break;
+                    case 3: // بالكود
+                        _dvSuppliers.RowFilter = string.Format("SupplierCode LIKE '%{0}%'", txt);
+                        break;
+                    default: // الكل
+                        _dvSuppliers.RowFilter = string.Format("SupplierName LIKE '%{0}%' OR Phone LIKE '%{0}%' OR SupplierCode LIKE '%{0}%' OR Address LIKE '%{0}%'", txt);
+                        break;
+                }
+            }
         }
 
         private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
@@ -118,6 +159,8 @@ namespace ChickenDist.Forms
             {
                 var row = ((DataRowView)dgSuppliers.CurrentRow.DataBoundItem).Row;
                 SelectedSupplierID = Convert.ToInt32(row["SupplierID"]);
+                SelectedSupplierName = row["SupplierName"]?.ToString() ?? "";
+                SelectedSupplierPhone = row["Phone"]?.ToString() ?? "";
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

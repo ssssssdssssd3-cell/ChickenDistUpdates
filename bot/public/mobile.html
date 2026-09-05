@@ -884,6 +884,14 @@
 
           <!-- أدوات البحث والفلتر السريع للعملاء -->
           <div class="flex flex-wrap items-center gap-2">
+            <!-- نوع البحث -->
+            <select id="clientSearchType" onchange="renderContactsTables()" class="bg-slate-900 border border-slate-700 text-slate-300 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:border-rose-500">
+              <option value="all">🔍 الكل (شامل)</option>
+              <option value="name">👤 بالاسم</option>
+              <option value="phone">📞 برقم الهاتف</option>
+              <option value="code">🔢 بالكود</option>
+            </select>
+
             <!-- الفلاتر السريعة -->
             <div class="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-xl p-1 text-xs">
               <button onclick="setClientFilter('debts')" id="btnClientFilterDebts" class="px-2.5 py-1 rounded-lg font-bold transition active-chip">عليهم ديون</button>
@@ -894,7 +902,7 @@
             <!-- خانة البحث بالاسم أو الهاتف -->
             <div class="relative flex-1 sm:w-64">
               <input type="text" id="searchClientsInput" oninput="renderContactsTables()" 
-                     placeholder="بحث باسم العميل أو رقم الهاتف..."
+                     placeholder="بحث في العملاء..."
                      class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500" />
               <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
             </div>
@@ -933,6 +941,14 @@
 
           <!-- أدوات البحث والفلتر السريع للموردين -->
           <div class="flex flex-wrap items-center gap-2">
+            <!-- نوع البحث -->
+            <select id="supplierSearchType" onchange="renderContactsTables()" class="bg-slate-900 border border-slate-700 text-slate-300 rounded-xl px-2.5 py-2 text-xs focus:outline-none focus:border-amber-500">
+              <option value="all">🔍 الكل (شامل)</option>
+              <option value="name">🏢 بالاسم</option>
+              <option value="phone">📞 برقم الهاتف</option>
+              <option value="code">🔢 بالكود</option>
+            </select>
+
             <!-- الفلاتر السريعة -->
             <div class="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-xl p-1 text-xs">
               <button onclick="setSupplierFilter('debts')" id="btnSupplierFilterDebts" class="px-2.5 py-1 rounded-lg font-bold transition active-chip">لهم مستحقات</button>
@@ -942,7 +958,7 @@
             <!-- خانة البحث بالاسم أو الهاتف -->
             <div class="relative flex-1 sm:w-64">
               <input type="text" id="searchSuppliersInput" oninput="renderContactsTables()" 
-                     placeholder="بحث باسم المورد أو رقم الهاتف..."
+                     placeholder="بحث في الموردين..."
                      class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
               <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
             </div>
@@ -2845,14 +2861,17 @@
         clients = clients.filter(c => parseFloat(c.Balance || 0) > 0).slice(0, 10);
       }
 
+      const sTypeC = document.getElementById('clientSearchType')?.value || 'all';
       if (qC) {
-        clients = clients.filter(c => 
-          (c.ClientName || '').toLowerCase().includes(qC) ||
-          (c.Phone || '').includes(qC) ||
-          (c.Phone2 || '').includes(qC) ||
-          (c.ClientCode || '').toLowerCase().includes(qC) ||
-          (c.Address || '').toLowerCase().includes(qC)
-        );
+        clients = clients.filter(c => {
+          const nameMatch = (c.ClientName || '').toLowerCase().includes(qC);
+          const phoneMatch = (c.Phone || '').includes(qC) || (c.Phone2 || '').includes(qC);
+          const codeMatch = (c.ClientCode || '').toLowerCase().includes(qC);
+          if (sTypeC === 'name') return nameMatch;
+          if (sTypeC === 'phone') return phoneMatch;
+          if (sTypeC === 'code') return codeMatch;
+          return nameMatch || phoneMatch || codeMatch || (c.Address || '').toLowerCase().includes(qC);
+        });
       }
 
       document.getElementById('badgeClientCount').textContent = clients.length;
@@ -2900,13 +2919,17 @@
         suppliers = suppliers.filter(s => parseFloat(s.Balance || 0) > 0);
       }
 
+      const sTypeS = document.getElementById('supplierSearchType')?.value || 'all';
       if (qS) {
-        suppliers = suppliers.filter(s => 
-          (s.SupplierName || '').toLowerCase().includes(qS) ||
-          (s.Phone || '').includes(qS) ||
-          (s.SupplierCode || '').toLowerCase().includes(qS) ||
-          (s.Address || '').toLowerCase().includes(qS)
-        );
+        suppliers = suppliers.filter(s => {
+          const nameMatch = (s.SupplierName || '').toLowerCase().includes(qS);
+          const phoneMatch = (s.Phone || '').includes(qS);
+          const codeMatch = (s.SupplierCode || '').toLowerCase().includes(qS);
+          if (sTypeS === 'name') return nameMatch;
+          if (sTypeS === 'phone') return phoneMatch;
+          if (sTypeS === 'code') return codeMatch;
+          return nameMatch || phoneMatch || codeMatch || (s.Address || '').toLowerCase().includes(qS);
+        });
       }
 
       document.getElementById('badgeSupplierCount').textContent = suppliers.length;

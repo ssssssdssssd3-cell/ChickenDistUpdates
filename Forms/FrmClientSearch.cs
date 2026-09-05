@@ -11,12 +11,15 @@ namespace ChickenDist.Forms
     public class FrmClientSearch : Form
     {
         private TextBox txtSearch;
+        private ComboBox cboSearchType;
         private DataGridView dgClients;
         private Button btnSelect, btnCancel;
         private DataTable _dtClients;
         private DataView _dvClients;
 
         public int SelectedClientID { get; private set; } = 0;
+        public string SelectedClientName { get; private set; } = "";
+        public string SelectedClientPhone { get; private set; } = "";
 
         public FrmClientSearch()
         {
@@ -50,18 +53,33 @@ namespace ChickenDist.Forms
 
             var lblSearch = new Label
             {
-                Text = "ابحث بالاسم أو الهاتف أو الكود:",
-                Location = new Point(630, 22),
-                Width = 200,
+                Text = "🔍 نوع البحث:",
+                Location = new Point(690, 22),
+                Width = 130,
                 ForeColor = Color.FromArgb(255, 220, 110),
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = Theme.FontBold
             };
 
+            cboSearchType = new ComboBox
+            {
+                Location = new Point(510, 18),
+                Width = 175,
+                Height = 32,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                RightToLeft = RightToLeft.Yes
+            };
+            cboSearchType.Items.AddRange(new object[] { "🔍 الكل (شامل)", "👤 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchType.SelectedIndex = 0;
+            cboSearchType.SelectedIndexChanged += (s, e) => ApplyFilter();
+
             txtSearch = new TextBox
             {
                 Location = new Point(20, 18),
-                Width = 600,
+                Width = 475,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
@@ -73,6 +91,7 @@ namespace ChickenDist.Forms
             txtSearch.KeyDown += TxtSearch_KeyDown;
 
             pnlSearch.Controls.Add(lblSearch);
+            pnlSearch.Controls.Add(cboSearchType);
             pnlSearch.Controls.Add(txtSearch);
             Theme.StyleSearchPanel(pnlSearch);
 
@@ -213,10 +232,25 @@ namespace ChickenDist.Forms
             }
             else
             {
-                _dvClients.RowFilter = string.Format(
-                    "ClientName LIKE '%{0}%' OR Phone LIKE '%{0}%' OR Phone2 LIKE '%{0}%' OR ClientCode LIKE '%{0}%' OR Address LIKE '%{0}%'",
-                    txt
-                );
+                int filterType = cboSearchType != null ? cboSearchType.SelectedIndex : 0;
+                switch (filterType)
+                {
+                    case 1: // بالاسم
+                        _dvClients.RowFilter = string.Format("ClientName LIKE '%{0}%'", txt);
+                        break;
+                    case 2: // برقم الهاتف
+                        _dvClients.RowFilter = string.Format("Phone LIKE '%{0}%' OR Phone2 LIKE '%{0}%'", txt);
+                        break;
+                    case 3: // بالكود
+                        _dvClients.RowFilter = string.Format("ClientCode LIKE '%{0}%'", txt);
+                        break;
+                    default: // الكل (شامل)
+                        _dvClients.RowFilter = string.Format(
+                            "ClientName LIKE '%{0}%' OR Phone LIKE '%{0}%' OR Phone2 LIKE '%{0}%' OR ClientCode LIKE '%{0}%' OR Address LIKE '%{0}%'",
+                            txt
+                        );
+                        break;
+                }
             }
         }
 
@@ -251,6 +285,8 @@ namespace ChickenDist.Forms
             {
                 var row = ((DataRowView)dgClients.CurrentRow.DataBoundItem).Row;
                 SelectedClientID = Convert.ToInt32(row["ClientID"]);
+                SelectedClientName = row["ClientName"]?.ToString() ?? "";
+                SelectedClientPhone = row["Phone"]?.ToString() ?? "";
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

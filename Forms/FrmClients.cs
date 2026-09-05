@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private DataGridView dgClients;
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtPhone2, txtAddress, txtNotes;
         private NumericUpDown nudOpening, nudCreditLimit, nudOpeningCrates;
-        private ComboBox cmbDriver, cmbPriceTier, cmbPaymentType;
+        private ComboBox cmbDriver, cmbPriceTier, cmbPaymentType, cboSearchFilter;
         private CheckBox chkActive;
         private Button btnNew, btnSave, btnDelete, btnStatement, btnSearch, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement;
         private Label lblBalance, lblSummary;
@@ -83,21 +83,42 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 8, 6, 0)
             };
 
+            cboSearchFilter = new ComboBox
+            {
+                Dock = DockStyle.Right,
+                Width = 135,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+            cboSearchFilter.Items.AddRange(new object[] { "🔍 الكل (شامل)", "👤 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchFilter.SelectedIndex = 0;
+            cboSearchFilter.SelectedIndexChanged += (s, e) =>
+            {
+                if (IsPlaceholderText(txtSearch.Text))
+                {
+                    txtSearch.Text = GetCurrentPlaceholder();
+                }
+                string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
+                LoadClients(searchVal);
+            };
+
             txtSearch = new TextBox
             {
                 Dock = DockStyle.Right,
-                Width = 280,
+                Width = 260,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(15, 23, 42),
                 Text = "بحث بالاسم أو الهاتف أو الكود...",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle
             };
-            txtSearch.Enter += (s, e) => { if (txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود...") txtSearch.Text = ""; };
-            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = "بحث بالاسم أو الهاتف أو الكود..."; };
+            txtSearch.Enter += (s, e) => { if (IsPlaceholderText(txtSearch.Text)) txtSearch.Text = ""; };
+            txtSearch.Leave += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearch.Text)) txtSearch.Text = GetCurrentPlaceholder(); };
             txtSearch.TextChanged += (s, e) => {
-                string searchVal = txtSearch.Text;
-                if (searchVal == "بحث بالاسم أو الهاتف أو الكود...") searchVal = "";
+                string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
                 LoadClients(searchVal);
             };
 
@@ -105,25 +126,20 @@ namespace ChickenDist.Forms
             btnSearch.Dock = DockStyle.Right;
             btnSearch.Width = 45;
             btnSearch.Click += (s, e) => {
-                string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود..." ? "" : txtSearch.Text;
+                string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
                 LoadClients(searchVal);
             };
             txtSearch.KeyDown += (s, e) => { 
                 if (e.KeyCode == Keys.Enter) {
-                    string searchVal = txtSearch.Text == "بحث بالاسم أو الهاتف أو الكود..." ? "" : txtSearch.Text;
+                    string searchVal = IsPlaceholderText(txtSearch.Text) ? "" : txtSearch.Text.Trim();
                     LoadClients(searchVal);
                 }
             };
 
-            var btnFixDuplicates = Theme.MakeButton("🔍 الأكواد المكررة", Color.FromArgb(180, 83, 9));
-            btnFixDuplicates.Dock = DockStyle.Left;
-            btnFixDuplicates.Width = 145;
-            btnFixDuplicates.Click += (s, e) => FixDuplicateClientCodes();
-
             pnlSearch.Controls.Add(lblSummary);
-            pnlSearch.Controls.Add(btnFixDuplicates);
             pnlSearch.Controls.Add(btnSearch);
             pnlSearch.Controls.Add(txtSearch);
+            pnlSearch.Controls.Add(cboSearchFilter);
             pnlSearch.Controls.Add(lblSearch);
 
             dgClients = new DataGridView
@@ -355,14 +371,47 @@ namespace ChickenDist.Forms
             return p;
         }
 
+        private string GetCurrentPlaceholder()
+        {
+            if (cboSearchFilter == null) return "بحث بالاسم أو الهاتف أو الكود...";
+            switch (cboSearchFilter.SelectedIndex)
+            {
+                case 1: return "اكتب اسم العميل للبحث...";
+                case 2: return "اكتب رقم الهاتف للبحث...";
+                case 3: return "اكتب كود العميل للبحث...";
+                default: return "بحث بالاسم أو الهاتف أو الكود...";
+            }
+        }
+
+        private bool IsPlaceholderText(string text)
+        {
+            return string.IsNullOrWhiteSpace(text) ||
+                   text == "بحث بالاسم أو الهاتف أو الكود..." ||
+                   text == "اكتب اسم العميل للبحث..." ||
+                   text == "اكتب رقم الهاتف للبحث..." ||
+                   text == "اكتب كود العميل للبحث...";
+        }
+
         private void LoadClients(string search = "")
         {
             dgClients.Rows.Clear();
-            if (search == "بحث بالاسم أو الهاتف أو الكود...") search = "";
+            if (IsPlaceholderText(search)) search = "";
+
+            string searchType = "all";
+            if (cboSearchFilter != null)
+            {
+                switch (cboSearchFilter.SelectedIndex)
+                {
+                    case 1: searchType = "name"; break;
+                    case 2: searchType = "phone"; break;
+                    case 3: searchType = "code"; break;
+                    default: searchType = "all"; break;
+                }
+            }
 
             DataTable dt = string.IsNullOrWhiteSpace(search)
                 ? ClientDAL.GetAll()
-                : ClientDAL.Search(search);
+                : ClientDAL.Search(search, searchType);
 
             // تعطيل AutoSize أثناء التحميل لتسريع عرض العملاء
             dgClients.SuspendLayout();

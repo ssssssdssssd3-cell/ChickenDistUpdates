@@ -78,8 +78,38 @@ namespace ChickenDist.Forms
 				cboSupplierFilter.Items.Add(new ComboItem((int)row["SupplierID"], row["SupplierName"].ToString()));
 			cboSupplierFilter.DisplayMember = "Text";
 			cboSupplierFilter.SelectedIndex = 0;
-			cboSupplierFilter.SelectedIndexChanged += delegate { LoadPurchases(); };
-			filterPanel.Controls.AddRange(new Control[] { lblSupplier, cboSupplierFilter });
+			Button btnSupplierSearchDlg = new Button
+			{
+				Text = "🔍",
+				Width = 32,
+				Height = 26,
+				Font = Theme.FontBold,
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Theme.Accent,
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
+				Margin = new Padding(2, 0, 8, 0)
+			};
+			btnSupplierSearchDlg.FlatAppearance.BorderSize = 0;
+			btnSupplierSearchDlg.Click += (s, e) =>
+			{
+				using (var frm = new FrmSupplierSearch())
+				{
+					if (frm.ShowDialog() == DialogResult.OK && frm.SelectedSupplierID > 0)
+					{
+						int sid = frm.SelectedSupplierID;
+						for (int i = 0; i < cboSupplierFilter.Items.Count; i++)
+						{
+							if (cboSupplierFilter.Items[i] is ComboItem ci && ci.ID == sid)
+							{
+								cboSupplierFilter.SelectedIndex = i;
+								break;
+							}
+						}
+					}
+				}
+			};
+			filterPanel.Controls.AddRange(new Control[] { lblSupplier, cboSupplierFilter, btnSupplierSearchDlg });
 
 			Label lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			txtProductSearch = new TextBox { Width = 120, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };

@@ -105,7 +105,7 @@ namespace ChickenDist.Forms
             cboSearchClient = new ComboBox
             {
                 Location = new Point(65, 9),
-                Width = 200,
+                Width = 170,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -113,6 +113,46 @@ namespace ChickenDist.Forms
             };
             SetupSearchableCombo(cboSearchClient);
             pnlFilters.Controls.Add(cboSearchClient);
+
+            var btnSearchClient = new Button
+            {
+                Text = "🔍",
+                Location = new Point(238, 9),
+                Size = new Size(34, 26),
+                Font = Theme.FontBold,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnSearchClient.FlatAppearance.BorderSize = 0;
+            btnSearchClient.Click += (s, e) =>
+            {
+                using (var frm = new FrmClientSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                    {
+                        int cid = frm.SelectedClientID;
+                        var allClients = cboSearchClient.Tag as List<ComboItem>;
+                        if (allClients != null)
+                        {
+                            cboSearchClient.BeginUpdate();
+                            cboSearchClient.Items.Clear();
+                            cboSearchClient.Items.AddRange(allClients.ToArray());
+                            cboSearchClient.EndUpdate();
+                        }
+                        for (int i = 0; i < cboSearchClient.Items.Count; i++)
+                        {
+                            if (cboSearchClient.Items[i] is ComboItem ci && ci.ID == cid)
+                            {
+                                cboSearchClient.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
+            pnlFilters.Controls.Add(btnSearchClient);
 
             AddLabel(pnlFilters, "الحالة:", 280, 13);
             cboSearchStatus = new ComboBox

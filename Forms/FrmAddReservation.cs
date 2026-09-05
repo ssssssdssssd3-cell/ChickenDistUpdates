@@ -74,7 +74,7 @@ namespace ChickenDist.Forms
             cboClient = new ComboBox
             {
                 Location = new Point(140, y - 4),
-                Width = 260,
+                Width = 225,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
@@ -82,6 +82,34 @@ namespace ChickenDist.Forms
             };
             cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
             this.Controls.Add(cboClient);
+
+            var btnClientSearch = Theme.MakeButton("🔍", 370, y - 4, 35, 27, Theme.Primary);
+            btnClientSearch.Click += (s, e) =>
+            {
+                using (var frm = new FrmClientSearch())
+                {
+                    if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedClientID > 0)
+                    {
+                        int cid = frm.SelectedClientID;
+                        bool found = false;
+                        for (int i = 0; i < cboClient.Items.Count; i++)
+                        {
+                            if (cboClient.Items[i] is ClientItem ci && ci.ID == cid)
+                            {
+                                cboClient.SelectedIndex = i;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                        {
+                            txtClientName.Text = frm.SelectedClientName;
+                            txtClientPhone.Text = frm.SelectedClientPhone;
+                        }
+                    }
+                }
+            };
+            this.Controls.Add(btnClientSearch);
 
             AddLabel("اسم العميل:", 415, y);
             txtClientName = new TextBox

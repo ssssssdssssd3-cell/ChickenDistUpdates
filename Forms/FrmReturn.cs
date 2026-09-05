@@ -337,7 +337,7 @@ namespace ChickenDist.Forms
             }
 
             // دالة مساعدة لإنشاء حاوية (الاسم أولاً ثم الخانة) لضمان عدم انفصال التسمية عن الحقل أبداً
-            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth)
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth, Control extraCtrl = null)
             {
                 var lbl = new Label
                 {
@@ -364,32 +364,63 @@ namespace ChickenDist.Forms
 
                 pnl.Controls.Add(lbl);
                 pnl.Controls.Add(inputCtrl);
+                if (extraCtrl != null) pnl.Controls.Add(extraCtrl);
                 return pnl;
             }
 
             cboMode = new ComboBox
             {
                 Width = 210, Height = 26,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cboMode.Items.Add("🧾 مرتجع على فاتورة بيع محددة");
-            cboMode.Items.Add("🌐 مرتجع بيع عام (بدون فاتورة)");
-            cboMode.Items.Add("🔄 استبدال أصناف (مرتجع + بديل)");
+            cboMode.Items.AddRange(new object[] { "🔁 مرتجع مبيعات عادي", "🔄 استبدال فوري (مرتجع + شراء أصناف أخرى)" });
             cboMode.SelectedIndex = 0;
+            StyleSearchInput(cboMode);
             cboMode.SelectedIndexChanged += (s, e) => ToggleReturnMode();
             var pnlMode = MakeFilterPanel("العملية:", cboMode, 210);
 
             cboClient = new ComboBox 
             { 
-                Width = 160, 
+                Width = 150, 
                 DropDownStyle = ComboBoxStyle.DropDown, 
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems
             };
             StyleSearchInput(cboClient);
             SetupSearchableCombo(cboClient);
-            var pnlClient = MakeFilterPanel("العميل:", cboClient, 160);
+
+            var btnClientSearch = new Button
+            {
+                Text = "🔍",
+                Width = 32,
+                Height = 26,
+                Font = Theme.FontBold,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 0, 0, 0)
+            };
+            btnClientSearch.FlatAppearance.BorderSize = 0;
+            btnClientSearch.Click += (s, e) =>
+            {
+                using (var frm = new FrmClientSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                    {
+                        int cid = frm.SelectedClientID;
+                        for (int i = 0; i < cboClient.Items.Count; i++)
+                        {
+                            if (cboClient.Items[i] is ComboItem ci && ci.ID == cid)
+                            {
+                                cboClient.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
+            var pnlClient = MakeFilterPanel("العميل:", cboClient, 150, btnClientSearch);
 
             cboSaleTypeFilter = new ComboBox
             {
