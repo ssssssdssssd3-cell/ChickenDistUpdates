@@ -138,8 +138,9 @@ Write-OK "Synced MobileApp/index.html to bot/public/mobile.html"
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory
 $finalReleaseExe = "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"
 if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
+    Write-Step "Updating FINAL_RELEASE"
     try {
-        Get-Process | Where-Object { $_.ProcessName -eq "ChickenDist" -or $_.ProcessName -eq "ProSoft" } | Stop-Process -Force -ErrorAction SilentlyContinue
+        Get-Process -Name "ChickenDist", "ProSoft" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 800
         Copy-Item $exePath -Destination $finalReleaseExe -Force
         Write-OK "Copied final Release EXE to $finalReleaseExe"
