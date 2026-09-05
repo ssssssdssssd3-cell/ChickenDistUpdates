@@ -10,7 +10,7 @@
   <title>لوحة تحكم المالك | ProSoft ERP</title>
   <script>
     // ── المحرك الذكي لإدارة الإصدار وكاش التطبيق (SMART CACHE & PWA ENGINE) ──
-    const APP_BUILD_ID = "v3.2.4";
+    const APP_BUILD_ID = "v3.2.5";
     const storedBuild = localStorage.getItem("prosoft_build_id");
     
     // 1. مسح الكاش القديم فقط في حال ترقية الإصدار الفعلي وليس مع كل زيارة
@@ -163,35 +163,16 @@
       <!-- نموذج الدخول باليوزر والباسورد الموحد -->
       <form id="ownerLoginForm" novalidate onsubmit="handleOwnerPasswordLogin(event); return false;" class="space-y-3.5 text-right">
         
-        <!-- بطاقة الدخول السريع المباشر الموحد بنقرة واحدة -->
-        <div class="bg-gradient-to-r from-brand-950/90 to-slate-900 border border-brand-500/50 rounded-2xl p-3 shadow-lg flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400 shrink-0">
-              <i class="fa-solid fa-key text-xs"></i>
-            </div>
-            <div class="text-right">
-              <div class="text-xs font-bold text-white">الحساب الماستر الموحد:</div>
-              <div class="text-[11px] text-slate-400">اليوزر: <span class="text-amber-300 font-mono font-bold">admin</span> | الباسورد: <span class="text-emerald-400 font-mono font-bold">2468</span></div>
-            </div>
-          </div>
-          <button type="button" onclick="quickFillAdminAndLogin()" 
-                  class="px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-900/40 transition active:scale-90 cursor-pointer shrink-0 flex items-center gap-1.5">
-            <i class="fa-solid fa-bolt text-yellow-300 text-[10px]"></i>
-            <span>دخول فوري</span>
-          </button>
-        </div>
-
         <!-- خيار الدخول باسم المستخدم وكلمة المرور (الافتراضي) -->
         <div id="userPassSection" class="space-y-3">
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
-              <span>اسم المستخدم (User)</span>
-              <span class="text-[10px] text-amber-400 font-mono font-bold">الافتراضي: admin</span>
+              <span>اسم المستخدم (Username)</span>
             </label>
             <div class="relative">
               <input type="text" id="loginUsername" autocomplete="username"
-                     value="admin"
-                     placeholder="اسم المستخدم (admin)..." 
+                     value=""
+                     placeholder="أدخل اسم المستخدم..." 
                      onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <i class="fa-solid fa-user absolute left-3 top-3.5 text-slate-500 text-xs"></i>
@@ -200,11 +181,10 @@
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
               <span>كلمة المرور (Password)</span>
-              <span class="text-[10px] text-emerald-400 font-mono font-bold">الافتراضي: 2468</span>
             </label>
             <div class="relative">
               <input type="password" id="loginPassword" autocomplete="current-password" autofocus
-                     placeholder="أدخل كلمة المرور (2468)..." 
+                     placeholder="أدخل كلمة المرور..." 
                      onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                      class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition font-bold" />
               <button type="button" onclick="togglePassVisibility('loginPassword', 'eyeIcon2')" 
@@ -218,12 +198,11 @@
         <!-- خيار الدخول السريع برمز PIN للمالك (مخفي بالتبديل) -->
         <div id="ownerPinSection" class="hidden">
           <label class="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-            <span>رمز PIN السريع للمالك</span>
-            <span class="text-[10px] text-emerald-400 font-normal">2468</span>
+            <span>رمز PIN السريع</span>
           </label>
           <div class="relative">
             <input type="password" id="ownerPassInput"
-                   placeholder="أدخل رمز PIN (2468)..." 
+                   placeholder="أدخل رمز PIN..." 
                    onkeydown="if(event.key==='Enter'){event.preventDefault();handleOwnerPasswordLogin(event);}"
                    class="w-full bg-slate-900 border-2 border-slate-700 focus:border-brand-500 rounded-xl px-4 py-3 text-base text-white text-center tracking-widest placeholder:tracking-normal placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition font-bold" />
             <button type="button" onclick="togglePassVisibility('ownerPassInput', 'eyeIcon1')" 
@@ -233,14 +212,14 @@
           </div>
         </div>
 
-        <!-- تذكر هذا الجهاز والتبديل -->
+        <!-- أزرار التبديل ومعلومات الأمان -->
         <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" id="chkRememberMe" checked class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0 cursor-pointer" />
-            <span>تذكرني على هذا الجهاز</span>
-          </label>
+          <span class="text-[11px] text-slate-500 flex items-center gap-1">
+            <i class="fa-solid fa-clock-rotate-left text-amber-500/80"></i>
+            <span>مدة الجلسة: 30 دقيقة</span>
+          </span>
           <button type="button" onclick="toggleLoginMode()" id="btnToggleMode" class="text-blue-400 hover:underline text-[11px]">
-            دخول سريع برمز PIN فقط
+            دخول سريع برمز PIN
           </button>
         </div>
 
@@ -302,6 +281,13 @@
                 class="px-2.5 sm:px-3 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-md shadow-emerald-600/30">
           <i class="fa-brands fa-whatsapp text-sm"></i>
           <span class="hidden sm:inline">مشاركة</span>
+        </button>
+
+        <!-- زر النسخ الاحتياطي السحابي -->
+        <button onclick="confirmDownloadBackup()" title="تحميل أحدث نسخة احتياطية سحابية لقاعدة البيانات"
+                class="px-2.5 sm:px-3 py-2 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 active:scale-95 text-white rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-md shadow-indigo-700/30">
+          <i class="fa-solid fa-cloud-arrow-down text-sm text-cyan-300"></i>
+          <span class="hidden md:inline">الباكب السحابي</span>
         </button>
 
         <!-- زر التحديث اليدوي الفوري -->
@@ -462,6 +448,31 @@
             <i class="fa-solid fa-qrcode text-base text-blue-400"></i>
           </button>
         </div>
+      </div>
+
+      <!-- بطاقة النسخ الاحتياطي السحابي (CLOUD BACKUP & DOWNLOAD CARD) -->
+      <div id="cloudBackupCard" class="glass-card rounded-2xl p-4 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5 w-full sm:w-auto">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-600/30 flex-shrink-0">
+            <i class="fa-solid fa-cloud-arrow-down"></i>
+          </div>
+          <div>
+            <div class="font-extrabold text-white text-sm flex items-center gap-2">
+              <span>النسخ الاحتياطي السحابي لقاعدة البيانات</span>
+              <span id="backupStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">محمية سحابياً ✅</span>
+            </div>
+            <div class="text-slate-300 text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span><i class="fa-solid fa-file-zipper text-indigo-400 text-[11px]"></i> <span id="lblBackupFileName">ProSoft_Backup.zip</span></span>
+              <span><i class="fa-solid fa-weight-hanging text-sky-400 text-[11px]"></i> الحجم: <span id="lblBackupFileSize">--</span></span>
+              <span><i class="fa-solid fa-clock text-amber-400 text-[11px]"></i> التوقيت: <span id="lblBackupTime">--</span></span>
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="confirmDownloadBackup()" 
+                class="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition cursor-pointer">
+          <i class="fa-solid fa-download"></i>
+          <span>تحميل أحدث نسخة احتياطية</span>
+        </button>
       </div>
 
       <!-- تنبيه الفترة المحددة وزر الواتساب السريع -->
@@ -1343,6 +1354,62 @@
     </div>
   </div>
 
+  <!-- 5.4 نافذة تأكيد تحميل النسخة الاحتياطية السحابية (BACKUP CONFIRM MODAL) -->
+  <!-- ========================================== -->
+  <div id="backupConfirmModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-slate-700 text-right relative overflow-hidden space-y-4 animate-scale-up">
+      <button onclick="closeBackupModal()" class="absolute left-4 top-4 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-xl flex-shrink-0">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-black text-white">تأكيد تحميل النسخة الاحتياطية</h3>
+          <p class="text-xs text-slate-400 mt-0.5">قاعدة بيانات البرنامج (SQL Server Database)</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700/80 space-y-2.5 text-xs">
+        <div class="flex items-center justify-between text-slate-300">
+          <span class="text-slate-400">اسم الملف:</span>
+          <span id="modalBackupFileName" class="font-mono font-bold text-white text-[11px] dir-ltr">ProSoft_Backup.zip</span>
+        </div>
+        <div class="flex items-center justify-between text-slate-300">
+          <span class="text-slate-400">حجم الملف المضغوط:</span>
+          <span id="modalBackupFileSize" class="font-bold text-emerald-400">--</span>
+        </div>
+        <div class="flex items-center justify-between text-slate-300">
+          <span class="text-slate-400">تاريخ ووقت النسخة:</span>
+          <span id="modalBackupTime" class="font-bold text-sky-400">--</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 leading-relaxed">
+        ⚠️ هل أنت متأكد من رغبتك في تنزيل أحدث نسخة احتياطية لقاعدة البيانات على جهازك الآن؟
+      </p>
+
+      <div id="backupDownloadProgress" class="hidden text-center py-2 space-y-2">
+        <div class="inline-block animate-spin text-indigo-400 text-2xl">
+          <i class="fa-solid fa-circle-notch"></i>
+        </div>
+        <p class="text-xs text-slate-300 font-bold" id="backupProgressText">جاري تحميل وتجهيز ملف الباكب...</p>
+      </div>
+
+      <div class="flex items-center gap-3 pt-1" id="modalBackupActionButtons">
+        <button type="button" onclick="closeBackupModal()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs transition">
+          إلغاء
+        </button>
+        <button type="button" id="btnConfirmDownload" onclick="executeBackupDownload()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>نعم، تحميل الآن</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toastNotification" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 border border-emerald-500/50 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2">
     <i class="fa-solid fa-circle-check text-emerald-400"></i>
@@ -1403,16 +1470,20 @@
       // إعداد التواريخ الافتراضية
       setDateRange('today');
       
-      // التحقق من حالة تسجيل الدخول السابقة (تذكر الجهاز أو الجلسة الحالية)
-      const savedAuth = localStorage.getItem('erp_auth_user') || sessionStorage.getItem('erp_auth_user');
-      if (savedAuth) {
+      // فحص الجلسة: مدة الجلسة الصالحة 30 دقيقة فقط من وقت تسجيل الدخول الفعلي
+      const savedAuth = sessionStorage.getItem('erp_auth_user');
+      const authTime = parseInt(sessionStorage.getItem('erp_auth_time') || '0');
+      const now = Date.now();
+
+      if (savedAuth && authTime > 0 && (now - authTime < AUTO_LOCK_MS)) {
         try {
           unlockApp(JSON.parse(savedAuth));
         } catch (e) {
           lockScreen();
         }
       } else {
-        lockScreen();
+        // لا يوجد جلسة نشطة أو انتهت الـ 30 دقيقة: إجبار الدخول باليوزر والباسورد
+        lockScreen(authTime > 0 ? "⏰ انتهت صلاحية الجلسة (30 دقيقة). يرجى تسجيل الدخول مجدداً." : null);
       }
 
       // جلب البيانات الأولية
@@ -1421,17 +1492,30 @@
       // فحص وتحديث حالة الاتصال الحقيقي بالسيكول كل 5 ثواني
       setInterval(updateConnectionStatus, 5000);
 
-      // ضبط التحديث التلقائي للبيانات كل 30 ثانية
+      // ضبط التحديث التلقائي للبيانات كل 30 ثانية أثناء العمل
       setInterval(() => {
         if (!document.getElementById('loginView').classList.contains('hidden')) return;
         fetchFreshData(false);
       }, 30000);
 
-      // إعادة ضبط مؤقت القفل التلقائي عند أي حركة
+      // فحص انتهاء الجلسة كل 10 ثوانٍ (تسجيل خروج كل نص ساعة بدقة)
+      setInterval(checkSessionExpiry, 10000);
+
+      // إعادة ضبط مؤقت عدم النشاط
       window.addEventListener('mousemove', resetAutoLock);
       window.addEventListener('keydown', resetAutoLock);
       window.addEventListener('touchstart', resetAutoLock);
     });
+
+    function checkSessionExpiry() {
+      const authTime = parseInt(sessionStorage.getItem('erp_auth_time') || '0');
+      if (authTime > 0) {
+        const elapsed = Date.now() - authTime;
+        if (elapsed >= AUTO_LOCK_MS) {
+          lockScreen("⏰ انتهت صلاحية الجلسة (30 دقيقة). تم تسجيل الخروج تلقائياً لحماية البيانات.");
+        }
+      }
+    }
 
     // ──────────────────────────────────────────
     // 2. نظام تسجيل الدخول وإدارة كلمة مرور المالك
@@ -1534,22 +1618,10 @@
       return false;
     }
 
-    function quickFillAdminAndLogin() {
-      const u = document.getElementById('loginUsername');
-      const p = document.getElementById('loginPassword');
-      const pin = document.getElementById('ownerPassInput');
-      if (u) u.value = 'admin';
-      if (p) p.value = '2468';
-      if (pin) pin.value = '2468';
-      handleOwnerPasswordLogin();
-    }
-    function quickFillProAndLogin() { quickFillAdminAndLogin(); }
-
     async function handleOwnerPasswordLogin(e) {
       if (e && e.preventDefault) e.preventDefault();
       const errorBox = document.getElementById('loginErrorMsg');
       const submitBtn = document.getElementById('btnLoginSubmit');
-      const rememberMe = document.getElementById('chkRememberMe')?.checked ?? true;
 
       try {
         if (errorBox) {
@@ -1568,6 +1640,20 @@
         // القيمة الفعلية المدخلة سواء من وضع اليوزر أو وضع البين
         const effectiveUser = normalizeDigits(userInputVal);
         const effectivePass = normalizeDigits(userPassVal || pinPassVal);
+
+        if (isUserPassMode && !effectiveUser) {
+          if (errorBox) {
+            errorBox.textContent = "⚠️ يرجى إدخال اسم المستخدم أولاً!";
+            errorBox.classList.remove('hidden');
+            errorBox.style.display = 'block';
+          }
+          document.getElementById('loginUsername')?.focus();
+          if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> <span>تسجيل الدخول وفتح اللوحة</span>';
+            submitBtn.disabled = false;
+          }
+          return;
+        }
 
         if (!effectivePass) {
           if (errorBox) {
@@ -1658,15 +1744,15 @@
 
         if (authenticatedUser) {
           const authJson = JSON.stringify(authenticatedUser);
-          if (rememberMe) {
-            localStorage.setItem('erp_auth_user', authJson);
-          } else {
-            sessionStorage.setItem('erp_auth_user', authJson);
-          }
+          sessionStorage.setItem('erp_auth_user', authJson);
+          sessionStorage.setItem('erp_auth_time', Date.now().toString());
+          // حذف التخزين الدائم لضمان عدم الدخول العشوائي بدون تسجيل الدخول
+          localStorage.removeItem('erp_auth_user');
+          localStorage.removeItem('erp_auth_time');
           unlockApp(authenticatedUser);
         } else {
           if (errorBox) {
-            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى استخدام: admin وباسورد: 2468 أو بيانات السيكول.";
+            errorBox.textContent = "❌ اسم المستخدم أو كلمة المرور غير صحيحة! يرجى التأكد من البيانات والمحاولة مجدداً.";
             errorBox.classList.remove('hidden');
             errorBox.style.display = 'block';
           }
@@ -1708,20 +1794,33 @@
       fetchFreshData(true).catch(e => console.warn("fetchFreshData error:", e));
     }
 
-    function lockScreen() {
+    function lockScreen(msg = null) {
+      if (autoLockTimer) clearTimeout(autoLockTimer);
       localStorage.removeItem('erp_auth_user');
+      localStorage.removeItem('erp_auth_time');
       sessionStorage.removeItem('erp_auth_user');
+      sessionStorage.removeItem('erp_auth_time');
+
       const ownerInput = document.getElementById('ownerPassInput');
       if (ownerInput) ownerInput.value = '';
       const passInput = document.getElementById('loginPassword');
       if (passInput) passInput.value = '';
       const userInput = document.getElementById('loginUsername');
-      if (userInput) userInput.value = 'admin';
+      if (userInput) userInput.value = '';
+
       const errBox = document.getElementById('loginErrorMsg');
       if (errBox) {
-        errBox.classList.add('hidden');
-        errBox.style.display = 'none';
+        if (msg) {
+          errBox.textContent = msg;
+          errBox.className = "p-3 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-200 text-xs font-bold text-center";
+          errBox.classList.remove('hidden');
+          errBox.style.display = 'block';
+        } else {
+          errBox.classList.add('hidden');
+          errBox.style.display = 'none';
+        }
       }
+
       const loginView = document.getElementById('loginView');
       if (loginView) {
         loginView.classList.remove('hidden');
@@ -1732,16 +1831,28 @@
         loginView.style.pointerEvents = 'auto';
       }
       setTimeout(() => {
-        const activeInput = isUserPassMode ? document.getElementById('loginPassword') : document.getElementById('ownerPassInput');
+        const activeInput = isUserPassMode ? document.getElementById('loginUsername') : document.getElementById('ownerPassInput');
         activeInput?.focus();
       }, 200);
     }
 
     function resetAutoLock() {
+      // فحص هل الجلسة منتهية بالفعل (30 دقيقة منذ تسجيل الدخول)
+      const authTime = parseInt(sessionStorage.getItem('erp_auth_time') || '0');
+      if (authTime > 0 && (Date.now() - authTime >= AUTO_LOCK_MS)) {
+        lockScreen("⏰ انتهت صلاحية الجلسة (30 دقيقة). تم تسجيل الخروج تلقائياً لحماية البيانات.");
+        return;
+      }
+
       if (autoLockTimer) clearTimeout(autoLockTimer);
+      // حساب الوقت المتبقي من الـ 30 دقيقة بدقة
+      let remaining = AUTO_LOCK_MS;
+      if (authTime > 0) {
+        remaining = Math.max(1000, AUTO_LOCK_MS - (Date.now() - authTime));
+      }
       autoLockTimer = setTimeout(() => {
-        lockScreen();
-      }, AUTO_LOCK_MS);
+        lockScreen("⏰ انتهت الجلسة (30 دقيقة). تم قفل التطبيق تلقائياً لحماية البيانات.");
+      }, remaining);
     }
 
     // ──────────────────────────────────────────
@@ -2071,6 +2182,122 @@
       renderProductsTable();
       renderContactsTables();
       renderAnalyticsTables();
+      renderCloudBackupInfo();
+    }
+
+    // ──────────────────────────────────────────
+    // 6. إدارة النسخ الاحتياطي السحابي (Cloud Backup Logic)
+    // ──────────────────────────────────────────
+    function renderCloudBackupInfo() {
+      const bInfo = rawData.LatestBackup || {};
+      const lblFileName = document.getElementById('lblBackupFileName');
+      const lblFileSize = document.getElementById('lblBackupFileSize');
+      const lblTime = document.getElementById('lblBackupTime');
+      const badge = document.getElementById('backupStatusBadge');
+
+      const fileName = bInfo.FileName || 'ProSoft_Backup.zip';
+      const fileSize = bInfo.FileSizeMB ? `${bInfo.FileSizeMB} ميجابايت` : (bInfo.FileSizeKB ? `${Math.round(bInfo.FileSizeKB)} ك.ب` : 'متوفرة سحابياً');
+      const backupTime = bInfo.FormattedTime || bInfo.BackupDate || rawData.SyncTime || 'اليوم';
+
+      if (lblFileName) lblFileName.textContent = fileName;
+      if (lblFileSize) lblFileSize.textContent = fileSize;
+      if (lblTime) lblTime.textContent = backupTime;
+      if (badge) {
+        if (bInfo.HasBackup || bInfo.FileName) {
+          badge.textContent = 'محمية سحابياً ✅';
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        } else {
+          badge.textContent = 'سحابة متصلة ☁️';
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        }
+      }
+
+      // Update modal fields
+      const mName = document.getElementById('modalBackupFileName');
+      const mSize = document.getElementById('modalBackupFileSize');
+      const mTime = document.getElementById('modalBackupTime');
+      if (mName) mName.textContent = fileName;
+      if (mSize) mSize.textContent = fileSize;
+      if (mTime) mTime.textContent = backupTime;
+    }
+
+    function confirmDownloadBackup() {
+      renderCloudBackupInfo();
+      const modal = document.getElementById('backupConfirmModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeBackupModal() {
+      const modal = document.getElementById('backupConfirmModal');
+      if (modal) modal.classList.add('hidden');
+      const progressBox = document.getElementById('backupDownloadProgress');
+      if (progressBox) progressBox.classList.add('hidden');
+      const actionBtns = document.getElementById('modalBackupActionButtons');
+      if (actionBtns) actionBtns.classList.remove('hidden');
+    }
+
+    async function executeBackupDownload() {
+      const progressBox = document.getElementById('backupDownloadProgress');
+      const progressText = document.getElementById('backupProgressText');
+      const actionBtns = document.getElementById('modalBackupActionButtons');
+
+      try {
+        if (progressBox) progressBox.classList.remove('hidden');
+        if (actionBtns) actionBtns.classList.add('hidden');
+        if (progressText) progressText.textContent = "جاري الاتصال بالسحابة وجلب ملف الباكب...";
+
+        // جلب أحدث ملف من السحابة
+        const backupUrl = `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`;
+        let resp = null;
+        try {
+          resp = await fetch(backupUrl);
+        } catch (e1) {
+          // تجربة الرابط الاحتياطي
+          const fallbackUrl = `https://${FIREBASE_PROJECT_ID}.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`;
+          resp = await fetch(fallbackUrl);
+        }
+
+        if (!resp || !resp.ok) {
+          throw new Error("تعذر الوصول لملف النسخة الاحتياطية على السحابة.");
+        }
+
+        const backupData = await resp.json();
+        if (!backupData || !backupData.Base64Data) {
+          throw new Error("لم يتم العثور على نسخة احتياطية مرفوعة على السحابة بعد. يرجى تشغيل النسخ الاحتياطي من البرنامج أولاً.");
+        }
+
+        if (progressText) progressText.textContent = "جاري فك وتجهيز ملف ZIP للتحميل...";
+
+        // فك تشفير Base64 إلى Blob وتنزيله
+        const binaryStr = atob(backupData.Base64Data);
+        const len = binaryStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/zip' });
+
+        const fileName = backupData.FileName || 'ProSoft_Database_Backup.zip';
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+        }, 2000);
+
+        closeBackupModal();
+        showToast("✅ تم تنزيل ملف النسخة الاحتياطية بنجاح إلى جهازك!");
+      } catch (err) {
+        console.error("Backup download error:", err);
+        alert("❌ تعذر تحميل ملف النسخة الاحتياطية:\n" + (err.message || err));
+      } finally {
+        if (progressBox) progressBox.classList.add('hidden');
+        if (actionBtns) actionBtns.classList.remove('hidden');
+      }
     }
 
     // ──────────────────────────────────────────

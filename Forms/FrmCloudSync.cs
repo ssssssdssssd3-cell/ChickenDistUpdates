@@ -21,7 +21,7 @@ namespace ChickenDist.Forms
         private ComboBox cboInterval;
         private Label lblSalesTotal, lblCashSales, lblCashboxBalance, lblLowStock, lblSyncStatus, lblLastSyncTime;
         private Label lblClientDebts, lblSupplierDebts, lblTodayNetProfit;
-        private Button btnSyncNow, btnDeployFirebase, btnInstallTools, btnLoginFirebase, btnEnsureFiles, btnCopyUrl, btnOpenMobileApp, btnSave;
+        private Button btnSyncNow, btnDeployFirebase, btnInstallTools, btnLoginFirebase, btnEnsureFiles, btnCopyUrl, btnOpenMobileApp, btnSave, btnCloudBackup;
         private TextBox txtDeployLog;
 
         public FrmCloudSync()
@@ -162,9 +162,14 @@ namespace ChickenDist.Forms
             btnEnsureFiles.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnEnsureFiles.Click += BtnEnsureFiles_Click;
 
+            btnCloudBackup = Theme.MakeButton("💾 عمل ورفع نسخة احتياطية سحابية الآن", Color.FromArgb(13, 148, 136));
+            btnCloudBackup.Size = new Size(270, 36);
+            btnCloudBackup.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnCloudBackup.Click += BtnCloudBackup_Click;
+
             pnlActions.Controls.AddRange(new Control[] {
                 btnSyncNow, btnDeployFirebase, btnOpenMobileApp, btnCopyUrl, btnSave,
-                btnInstallTools, btnLoginFirebase, btnEnsureFiles
+                btnCloudBackup, btnInstallTools, btnLoginFirebase, btnEnsureFiles
             });
 
             // ===== 4. Middle Settings & Deploy Panel (Dock = Fill) =====
@@ -423,6 +428,58 @@ namespace ChickenDist.Forms
                 btnSyncNow.Enabled = true;
                 btnSyncNow.Text = "🔥 مزامنة ورفع كافة البيانات لحظياً الآن";
             }
+        }
+
+        private void BtnCloudBackup_Click(object sender, EventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                "هل تريد إنشاء نسخة احتياطية كاملة ومضغوطة لقاعدة البيانات ورفعها للسحاب الآن؟\n\nستتمكن من تنزيلها فوراً من تطبيق المالك مع تأمينها والاحتفاظ بـ 5 نسخ بحد أقصى.",
+                "تأكيد النسخ الاحتياطي السحابي",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button1,
+                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+
+            if (confirm != DialogResult.Yes) return;
+
+            btnCloudBackup.Enabled = false;
+            btnCloudBackup.Text = "⏳ جاري النسخ والرفع السحابي...";
+
+            Task.Run(() =>
+            {
+                bool ok = BackupManager.DoBackup(silent: true);
+                if (ok)
+                {
+                    CloudSyncService.PushLiveStatsToFirebaseAsync().Wait();
+                }
+
+                this.BeginInvoke((MethodInvoker)(() =>
+                {
+                    btnCloudBackup.Enabled = true;
+                    btnCloudBackup.Text = "💾 عمل ورفع نسخة احتياطية سحابية الآن";
+                    RefreshLiveStats();
+                    if (ok)
+                    {
+                        MessageBox.Show(
+                            "✅ تم إنشاء النسخة الاحتياطية وضغطها ورفعها للسحابة بنجاح!\n\nيمكنك الآن فتح تطبيق المالك وتحميلها بنقرة واحدة.",
+                            "نجاح النسخ الاحتياطي السحابي",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information,
+                            MessageBoxDefaultButton.Button1,
+                            MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "❌ فشل عمل النسخة الاحتياطية أو رفعها للسحابة. يرجى مراجعة سجل البرنامج.",
+                            "خطأ",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error,
+                            MessageBoxDefaultButton.Button1,
+                            MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                    }
+                }));
+            });
         }
 
         private async void BtnDeployFirebase_Click(object sender, EventArgs e)

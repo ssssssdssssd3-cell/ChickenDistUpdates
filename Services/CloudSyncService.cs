@@ -646,6 +646,14 @@ self.addEventListener('fetch', (event) => {
                 long syncTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 string storeLogoBase64 = GetStoreLogoBase64();
 
+                var (bFileName, bSizeMB, bFormattedTime) = BackupManager.GetLatestBackupInfo();
+                string backupJson = "{" +
+                    "\"FileName\": \"" + EscapeJsonString(bFileName) + "\"," +
+                    "\"FileSizeMB\": " + bSizeMB.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                    "\"FormattedTime\": \"" + EscapeJsonString(bFormattedTime) + "\"," +
+                    "\"HasBackup\": " + (bSizeMB > 0 ? "true" : "false") +
+                    "}";
+
                 // A. الرفع المباشر لـ Firebase Realtime Database (RTDB)
                 try
                 {
@@ -681,6 +689,7 @@ self.addEventListener('fetch', (event) => {
                         "\"DatabaseEngine\": \"Microsoft SQL Server\"," +
                         "\"MachineName\": \"" + EscapeJsonString(Environment.MachineName) + "\"," +
                         "\"AppVersion\": \"" + UpdateManager.CurrentVersion + "\"," +
+                        "\"LatestBackup\": " + backupJson + "," +
                         "\"MissingItems\": " + missingJson + "," +
                         "\"ProductsCatalog\": " + productsJson + "," +
                         "\"SuppliersList\": " + suppliersJson + "," +

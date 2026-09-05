@@ -171,12 +171,12 @@ namespace ChickenDist.Core
                     waSuccess = UploadToWhatsApp(zipPath, out waError);
                 }
 
-                // رفع النسخة الاحتياطية للسحاب تلقائياً (Firebase Storage) لحماية البيانات من التلف
+                // رفع النسخة الاحتياطية للسحاب تلقائياً وإتاحتها للتحميل من تطبيق المالك
                 bool cloudSuccess = false;
                 string cloudError = "";
                 try
                 {
-                    cloudSuccess = UploadToFirebaseStorage(zipPath, out cloudError);
+                    cloudSuccess = UploadToCloudBackup(zipPath, out cloudError);
                 }
                 catch (Exception ex)
                 {
@@ -186,15 +186,21 @@ namespace ChickenDist.Core
                 // حفظ وقت آخر باكب ناجح
                 LastBackupTime = DateTime.Now;
 
-                // حذف الملفات القديمة (الاحتفاظ بأحدث 10 ملفات فقط)
-                CleanOldBackups(folder, keepCount: 10);
+                // حذف الملفات القديمة (الاحتفاظ بأحدث 5 ملفات فقط على مدار اليوم)
+                CleanOldBackups(folder, keepCount: 5);
+
+                // إشعار المزامنة السحابية بتحديث بيانات الباكب في الخلفية
+                System.Threading.ThreadPool.QueueUserWorkItem(async _ =>
+                {
+                    try { await ChickenDist.Services.CloudSyncService.PushLiveStatsToFirebaseAsync(); } catch { }
+                });
 
                 if (!silent)
                 {
                     string successMsg = $"✅ تم عمل النسخة الاحتياطية بنجاح وضغطها لملف ZIP!\n\nالملف:\n{zipPath}";
                     if (cloudSuccess)
                     {
-                        successMsg += "\n\n☁️ تم رفع النسخة وتأمينها سحابياً بنجاح على خوادم Google Cloud! ✅";
+                        successMsg += "\n\n☁️ تم رفع وتأمين النسخة سحابياً وإتاحتها للتحميل من تطبيق المالك! ✅";
                     }
                     else
                     {
@@ -313,27 +319,57 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
-        /// يحذف الملفات القديمة، يحتفظ بأحدث keepCount ملفات فقط
+        /// يحذف الملفات القديمة، يحتفظ بأحدث keepCount ملفات فقط (الافتراضي 5 ملفات بحد أقصى على مدار اليوم)
         /// </summary>
-        private static void CleanOldBackups(string folder, int keepCount)
+        public static void CleanOldBackups(string folder, int keepCount = 5)
         {
             try
             {
-                var files = new DirectoryInfo(folder).GetFiles("ChickenDist_Backup_*.bak");
+                var dir = new DirectoryInfo(folder);
+                if (!dir.Exists) return;
+
+                // 1. تنظيف ملفات .bak
+                var files = dir.GetFiles("*Backup_*.bak");
                 Array.Sort(files, (a, b) => b.LastWriteTime.CompareTo(a.LastWriteTime));
                 for (int i = keepCount; i < files.Length; i++)
                 {
-                    try { files[i].Delete(); } catch { /* تجاهل أخطاء الحذف */ }
+                    try { files[i].Delete(); } catch { }
                 }
 
-                var zipFiles = new DirectoryInfo(folder).GetFiles("ChickenDist_Backup_*.zip");
+                // 2. تنظيف ملفات .zip (الاحتفاظ بأحدث 5 نسخ فقط)
+                var zipFiles = dir.GetFiles("*Backup_*.zip");
                 Array.Sort(zipFiles, (a, b) => b.LastWriteTime.CompareTo(a.LastWriteTime));
                 for (int i = keepCount; i < zipFiles.Length; i++)
                 {
-                    try { zipFiles[i].Delete(); } catch { /* تجاهل أخطاء الحذف */ }
+                    try { zipFiles[i].Delete(); } catch { }
                 }
             }
-            catch { /* لا نوقف البرنامج */ }
+            catch { }
+        }
+
+        /// <summary>
+        /// يجلب تفاصيل أحدث نسخة احتياطية محلية موجودة على القرص
+        /// </summary>
+        public static (string fileName, double sizeMB, string formattedTime) GetLatestBackupInfo()
+        {
+            try
+            {
+                string folder = BackupFolder;
+                if (Directory.Exists(folder))
+                {
+                    var zipFiles = new DirectoryInfo(folder).GetFiles("*Backup_*.zip");
+                    if (zipFiles.Length > 0)
+                    {
+                        Array.Sort(zipFiles, (a, b) => b.LastWriteTime.CompareTo(a.LastWriteTime));
+                        var latest = zipFiles[0];
+                        double mb = Math.Round(latest.Length / (1024.0 * 1024.0), 2);
+                        string ft = latest.LastWriteTime.ToString("yyyy/MM/dd hh:mm tt");
+                        return (latest.Name, mb, ft);
+                    }
+                }
+            }
+            catch { }
+            return ("ProSoft_Backup.zip", 0.0, "");
         }
 
         /// <summary>
@@ -355,71 +391,107 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
-        /// يرفع ملف النسخة الاحتياطية إلى سحابة Firebase Storage بشكل مشفر آمن
+        /// يرفع ملف النسخة الاحتياطية إلى سحابة Firebase Realtime Cloud مضغوطاً ومشفر Base64
+        /// مع تطبيق سياسة الاحتفاظ بحد أقصى 5 نسخ سحابية فقط على مدار اليوم
         /// </summary>
-        public static bool UploadToFirebaseStorage(string filePath, out string errorMessage)
+        public static bool UploadToCloudBackup(string filePath, out string errorMessage)
         {
             errorMessage = "";
             try
             {
+                if (!File.Exists(filePath))
+                {
+                    errorMessage = "ملف النسخة الاحتياطية غير موجود على القرص.";
+                    return false;
+                }
+
+                FileInfo fi = new FileInfo(filePath);
+                double sizeKB = Math.Round(fi.Length / 1024.0, 1);
+                double sizeMB = Math.Round(fi.Length / (1024.0 * 1024.0), 2);
+                string fileName = Path.GetFileName(filePath);
+                string backupId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string nowIso = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string formattedTime = DateTime.Now.ToString("yyyy/MM/dd hh:mm tt");
+
+                // تحويل محتويات ملف الـ ZIP المضغوط إلى Base64
+                byte[] fileBytes = File.ReadAllBytes(filePath);
+                string base64Data = Convert.ToBase64String(fileBytes);
+
+                string projectId = AppConfig.Get("FirebaseProjectId", "elra7ma-grop");
+                if (string.IsNullOrWhiteSpace(projectId)) projectId = "elra7ma-grop";
+
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMinutes(5); // 5 دقائق للباكب الكبير
+                    httpClient.Timeout = TimeSpan.FromMinutes(3);
 
-                    // 1. Get anonymous authentication token from Firebase Auth
-                    string authUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={AppConfig.FirebaseApiKey}";
-                    string authJson = "{\"returnSecureToken\":true}";
-                    var authContent = new System.Net.Http.StringContent(authJson, System.Text.Encoding.UTF8, "application/json");
-                    var authResponse = httpClient.PostAsync(authUrl, authContent).Result;
-                    if (!authResponse.IsSuccessStatusCode)
+                    // 1. تجهيز حزمة النسخة الأحدث (Latest Backup Payload)
+                    string latestPayload = "{" +
+                        "\"BackupId\": \"" + backupId + "\"," +
+                        "\"FileName\": \"" + fileName + "\"," +
+                        "\"FileSizeKB\": " + sizeKB.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"FileSizeMB\": " + sizeMB.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"BackupDate\": \"" + nowIso + "\"," +
+                        "\"FormattedTime\": \"" + formattedTime + "\"," +
+                        "\"Base64Data\": \"" + base64Data + "\"" +
+                        "}";
+
+                    var content = new System.Net.Http.StringContent(latestPayload, System.Text.Encoding.UTF8, "application/json");
+
+                    // الرفع للمسار الأساسي default-rtdb
+                    bool uploadOk = false;
+                    try
                     {
-                        errorMessage = "فشل المصادقة السحابية: " + authResponse.Content.ReadAsStringAsync().Result;
+                        var resp = httpClient.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/cloud_backups/latest.json", content).Result;
+                        if (resp != null && resp.IsSuccessStatusCode)
+                        {
+                            uploadOk = true;
+                        }
+                    }
+                    catch { }
+
+                    // تجربة الرابط الاحتياطي
+                    if (!uploadOk)
+                    {
+                        try
+                        {
+                            var contentFallback = new System.Net.Http.StringContent(latestPayload, System.Text.Encoding.UTF8, "application/json");
+                            var respFallback = httpClient.PutAsync($"https://{projectId}.firebaseio.com/cloud_backups/latest.json", contentFallback).Result;
+                            if (respFallback != null && respFallback.IsSuccessStatusCode)
+                            {
+                                uploadOk = true;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    if (!uploadOk)
+                    {
+                        errorMessage = "تعذر إرسال ملف الباكب إلى سيرفر Firebase Realtime Database.";
                         return false;
                     }
 
-                    string authResJson = authResponse.Content.ReadAsStringAsync().Result;
-                    string token = "";
-                    int tokenIndex = authResJson.IndexOf("\"idToken\":");
-                    if (tokenIndex != -1)
+                    // 2. تحديث سجل التاريخ السحابي وإدارة سياسة الـ 5 نسخ كحد أقصى
+                    try
                     {
-                        int start = authResJson.IndexOf("\"", tokenIndex + 10);
-                        int end = authResJson.IndexOf("\"", start + 1);
-                        token = authResJson.Substring(start + 1, end - start - 1);
+                        string metaPayload = "{" +
+                            "\"BackupId\": \"" + backupId + "\"," +
+                            "\"FileName\": \"" + fileName + "\"," +
+                            "\"FileSizeMB\": " + sizeMB.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                            "\"BackupDate\": \"" + nowIso + "\"," +
+                            "\"FormattedTime\": \"" + formattedTime + "\"" +
+                            "}";
+                        var metaContent = new System.Net.Http.StringContent(metaPayload, System.Text.Encoding.UTF8, "application/json");
+                        httpClient.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/cloud_backups/history/{backupId}.json", metaContent).Wait();
+
+                        // فحص النسخ السحابية القديمة وحذف ما يتجاوز الـ 5 نسخ
+                        CleanOldCloudBackups(httpClient, projectId, keepCount: 5);
+                    }
+                    catch (Exception exHist)
+                    {
+                        AppLogger.Error("فشل تحديث سجل الباكب السحابي", exHist, "BackupManager");
                     }
 
-                    if (string.IsNullOrEmpty(token))
-                    {
-                        errorMessage = "لم يتم الحصول على مفتاح الأمان السحابي.";
-                        return false;
-                    }
-
-                    // 2. Upload file stream to Firebase Storage (separated by sanitized Company Name)
-                    string bucket = AppConfig.FirebaseStorageBucket;
-                    string fileName = Path.GetFileName(filePath);
-                    
-                    // Sanitize company name for clean folder naming in URLs
-                    string rawCompany = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "DefaultCompany" : AppConfig.CompanyName.Trim();
-                    string safeCompany = rawCompany.Replace(" ", "_").Replace("/", "_").Replace("\\", "_").Replace(":", "_").Replace("?", "_").Replace("*", "_");
-                    
-                    string uploadUrl = $"https://firebasestorage.googleapis.com/v0/b/{bucket}/o?uploadType=media&name=backups/{safeCompany}/{fileName}";
-
-                    byte[] fileBytes = File.ReadAllBytes(filePath);
-                    var fileContent = new System.Net.Http.ByteArrayContent(fileBytes);
-                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-
-                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-                    var uploadResponse = httpClient.PostAsync(uploadUrl, fileContent).Result;
-                    if (uploadResponse.IsSuccessStatusCode)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        string uploadResJson = uploadResponse.Content.ReadAsStringAsync().Result;
-                        errorMessage = $"خطأ في الرفع السحابي ({uploadResponse.StatusCode}): {uploadResJson}";
-                        return false;
-                    }
+                    return true;
                 }
             }
             catch (Exception ex)
@@ -427,6 +499,46 @@ namespace ChickenDist.Core
                 errorMessage = ex.Message;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// يحذف النسخ الاحتياطية السحابية القديمة ويحتفظ بحد أقصى keepCount نسخ (5 نسخ)
+        /// </summary>
+        private static void CleanOldCloudBackups(System.Net.Http.HttpClient client, string projectId, int keepCount = 5)
+        {
+            try
+            {
+                var resp = client.GetAsync($"https://{projectId}-default-rtdb.firebaseio.com/cloud_backups/history.json?shallow=true").Result;
+                if (resp != null && resp.IsSuccessStatusCode)
+                {
+                    string json = resp.Content.ReadAsStringAsync().Result;
+                    if (!string.IsNullOrWhiteSpace(json) && json.StartsWith("{"))
+                    {
+                        var matches = System.Text.RegularExpressions.Regex.Matches(json, "\"([^\"]+)\"\\s*:");
+                        var keys = new System.Collections.Generic.List<string>();
+                        foreach (System.Text.RegularExpressions.Match m in matches)
+                        {
+                            if (m.Groups.Count > 1) keys.Add(m.Groups[1].Value);
+                        }
+
+                        if (keys.Count > keepCount)
+                        {
+                            keys.Sort(); // ترتيب تصاعدي زمني لحذف الأقدم
+                            int toDelete = keys.Count - keepCount;
+                            for (int i = 0; i < toDelete; i++)
+                            {
+                                string oldKey = keys[i];
+                                try
+                                {
+                                    client.DeleteAsync($"https://{projectId}-default-rtdb.firebaseio.com/cloud_backups/history/{oldKey}.json").Wait();
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
         }
     }
 }
