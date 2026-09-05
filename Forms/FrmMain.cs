@@ -555,7 +555,12 @@ namespace ChickenDist.Forms
                 }),
 
                 ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
-                    ("⚙️ الإعدادات العامة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
+                    ("🏢 بيانات المؤسسة والفرع", "Settings", (Action)(() => new FrmCompanySettings().ShowDialog())),
+                    ("🖨️ إعدادات الطابعات والفواتير", "Settings", (Action)(() => new FrmPrinterSettings().ShowDialog())),
+                    ("💾 النسخ الاحتياطي والأرشفة", "Settings", (Action)(() => new FrmBackupSettings().ShowDialog())),
+                    ("⚖️ إعدادات الموازين والأجهزة", "Settings", (Action)(() => new FrmScaleSettings().ShowDialog())),
+                    ("⚙️ خيارات النظام والتشغيل", "Settings", (Action)(() => new FrmGeneralSettings().ShowDialog())),
+                    ("🎛️ لوحة الإعدادات الشاملة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
                     ("📱 تطبيق المالك وخدمات السحاب (Firebase)", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
                     ("📚 إدارة الجداول المرجعية", "LookupManager", (Action)(() => NavigateTo(new FrmLookupManager()))),
@@ -967,7 +972,7 @@ namespace ChickenDist.Forms
                             (currentScreenType == "FrmSuppliers" && item.screen == "Suppliers") ||
                             (currentScreenType == "FrmCashBox" && item.screen == "CashBox") ||
                             (currentScreenType == "FrmEmployees" && item.screen == "Employees") ||
-                            (currentScreenType == "FrmSettings" && item.screen == "Settings"))
+                            (currentScreenType.EndsWith("Settings") && item.screen == "Settings"))
                         {
                             isGroupActive = true;
                         }

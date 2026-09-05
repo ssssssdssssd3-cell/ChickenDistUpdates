@@ -145,6 +145,9 @@ namespace ChickenDist.Core
             _       => Color.FromArgb(160, 172, 190) // Dark
         };
 
+        public static Color TextSecondary => TextSub;
+        public static Color TextMuted => TextSub;
+
         public static Color BorderColor => AppConfig.AppTheme switch
         {
             "Light" => Color.FromArgb(218, 224, 233),
