@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
+using System.Linq;
 using ChickenDist.Core;
 
 namespace ChickenDist.DAL
@@ -183,6 +184,28 @@ namespace ChickenDist.DAL
                 throw new InvalidOperationException("⚠️ عفوًا: لا يمكن حفظ الفاتورة بدون وجود وردية (شيفت) مفتوحة حالياً!\nيرجى فتح وردية جديدة أولاً لتسجيل الفاتورة وحساب النقدية والدرج.");
             }
 
+            if (!isDraft && items != null)
+            {
+                int targetWh = warehouseID ?? 1;
+                var groupedStockItems = items
+                    .GroupBy(x => new { x.ProductID, x.ProductName })
+                    .Select(g => new { g.Key.ProductID, g.Key.ProductName, TotalQty = g.Sum(x => x.Quantity * x.Factor) });
+
+                foreach (var gItem in groupedStockItems)
+                {
+                    var srvObj = DbHelper.Scalar("SELECT COALESCE(IsService, 0) FROM Products WITH (NOLOCK) WHERE ProductID = @pid", DbHelper.P("@pid", gItem.ProductID));
+                    bool isSrv = srvObj != null && srvObj != DBNull.Value && Convert.ToBoolean(srvObj);
+                    if (!isSrv)
+                    {
+                        decimal curStock = InventoryDAL.GetProductStock(gItem.ProductID, targetWh);
+                        if (gItem.TotalQty > curStock)
+                        {
+                            throw new InvalidOperationException($"❌ عجز في المخزون: الصنف '{gItem.ProductName}' رصيده المتاح بالمخزن ({curStock:G29}) غير كافٍ لإتمام عملية البيع ({gItem.TotalQty:G29}) ولا يمكن البيع بالسالب!");
+                        }
+                    }
+                }
+            }
+
             int returnedSaleID = -1;
 
             DbHelper.RunInTransaction((con, trans) =>
@@ -241,18 +264,6 @@ namespace ChickenDist.DAL
                     // Deduct from ProductBatches table
                     if (!isDraft)
                     {
-                        var srvObj = DbHelper.ScalarTrans(trans, "SELECT COALESCE(IsService, 0) FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
-                        bool isSrv = srvObj != null && srvObj != DBNull.Value && Convert.ToBoolean(srvObj);
-                        if (!isSrv)
-                        {
-                            decimal curStock = InventoryDAL.GetProductStock(item.ProductID, targetWarehouse);
-                            decimal neededQty = item.Quantity * item.Factor;
-                            if (neededQty > curStock)
-                            {
-                                throw new InvalidOperationException($"❌ عجز في المخزون: الصنف '{item.ProductName}' رصيده المتاح بالمخزن ({curStock:G29}) غير كافٍ لإتمام عملية البيع ({neededQty:G29}) ولا يمكن البيع بالسالب!");
-                            }
-                        }
-
                         if (item.BatchID.HasValue)
                         {
                             decimal baseQty = item.Quantity * item.Factor;

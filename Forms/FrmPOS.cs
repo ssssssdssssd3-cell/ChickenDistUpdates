@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Linq;
 using System.Media;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -1732,7 +1733,7 @@ namespace ChickenDist.Forms
             available = 0;
             errorMessage = "";
 
-            var isServiceObj = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", productID));
+            var isServiceObj = DbHelper.Scalar("SELECT IsService FROM Products WITH (NOLOCK) WHERE ProductID=@pid", DbHelper.P("@pid", productID));
             if (isServiceObj != null && isServiceObj != DBNull.Value && Convert.ToBoolean(isServiceObj))
             {
                 return true;
@@ -1740,7 +1741,7 @@ namespace ChickenDist.Forms
 
             if (batchID.HasValue)
             {
-                var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE BatchID=@bid", DbHelper.P("@bid", batchID.Value));
+                var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WITH (NOLOCK) WHERE BatchID=@bid", DbHelper.P("@bid", batchID.Value));
                 available = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
                 if (qtyInFactor > available)
                 {
@@ -2183,11 +2184,15 @@ namespace ChickenDist.Forms
                 }
 
                 // ── التحقق من المخزون الحي قبل الحفظ (منع البيع بالسالب للأصناف غير الخدمية) ──
-                foreach (var item in _items)
+                var groupedStockItems = _items
+                    .GroupBy(x => new { x.ProductID, x.BatchID, x.Name })
+                    .Select(g => new { g.Key.ProductID, g.Key.BatchID, g.Key.Name, TotalBaseQty = g.Sum(x => x.Qty * x.Factor) });
+
+                foreach (var gItem in groupedStockItems)
                 {
-                    if (!CheckAvailableStock(item.ProductID, item.BatchID, item.Qty * item.Factor, out decimal avail, out string errMsg))
+                    if (!CheckAvailableStock(gItem.ProductID, gItem.BatchID, gItem.TotalBaseQty, out decimal avail, out string errMsg))
                     {
-                        MessageBox.Show($"عذراً، الصنف '{item.Name}' رصيده لا يكفي لإتمام البيع!\n{errMsg}\n\n⚠️ تم منع البيع لأن الصنف ليس صنف خدمة وغير مسموح ببيعه بالسالب.", "منع البيع بالسالب", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"عذراً، الصنف '{gItem.Name}' رصيده لا يكفي لإتمام البيع!\n{errMsg}\n\n⚠️ تم منع البيع لأن الصنف ليس صنف خدمة وغير مسموح ببيعه بالسالب.", "منع البيع بالسالب", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         _isSaving = false;
                         return;
                     }
@@ -2258,19 +2263,6 @@ namespace ChickenDist.Forms
                             DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
                             DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
                             DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
-
-                        // التحقق الإضافي الصارم داخل المعاملة (DB Transaction) لمنع البيع بالسالب للأصناف غير الخدمية
-                        var srvCheckObj = DbHelper.ScalarTrans(trans, "SELECT COALESCE(IsService, 0) FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", item.ProductID));
-                        bool isSrv = srvCheckObj != null && srvCheckObj != DBNull.Value && Convert.ToBoolean(srvCheckObj);
-                        if (!isSrv)
-                        {
-                            decimal curStock = InventoryDAL.GetProductStock(item.ProductID, warehouseID);
-                            decimal requiredBase = item.Qty * item.Factor;
-                            if (requiredBase > curStock)
-                            {
-                                throw new InvalidOperationException($"عجز مخزون غير متوقع: الصنف '{item.Name}' رصيده المتاح بالمخزن ({curStock:G29}) غير كافٍ لإتمام الفاتورة ({requiredBase:G29})!\nتم إلغاء البيع لمنع ظهور رصيد سالب.");
-                            }
-                        }
 
                         // Deduct from ProductBatches table
                         if (item.BatchID.HasValue)
