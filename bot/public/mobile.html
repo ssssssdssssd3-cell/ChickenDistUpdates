@@ -1354,11 +1354,11 @@
     </div>
   </div>
 
-  <!-- 5.4 نافذة تأكيد تحميل النسخة الاحتياطية السحابية (BACKUP CONFIRM MODAL) -->
+  <!-- 5.4 نافذة تأكيد وتحميل النسخة الاحتياطية السحابية (BACKUP CONFIRM & DOWNLOAD MODAL) -->
   <!-- ========================================== -->
   <div id="backupConfirmModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
     <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl border border-slate-700 text-right relative overflow-hidden space-y-4 animate-scale-up">
-      <button onclick="closeBackupModal()" class="absolute left-4 top-4 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+      <button type="button" onclick="closeBackupModal()" class="absolute left-4 top-4 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
         <i class="fa-solid fa-xmark"></i>
       </button>
 
@@ -1367,12 +1367,13 @@
           <i class="fa-solid fa-cloud-arrow-down"></i>
         </div>
         <div>
-          <h3 class="text-base font-black text-white">تأكيد تحميل النسخة الاحتياطية</h3>
+          <h3 class="text-base font-black text-white">النسخة الاحتياطية السحابية</h3>
           <p class="text-xs text-slate-400 mt-0.5">قاعدة بيانات البرنامج (SQL Server Database)</p>
         </div>
       </div>
 
-      <div class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700/80 space-y-2.5 text-xs">
+      <!-- معلومات النسخة الاحتياطية -->
+      <div id="modalBackupDetailsBox" class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700/80 space-y-2.5 text-xs">
         <div class="flex items-center justify-between text-slate-300">
           <span class="text-slate-400">اسم الملف:</span>
           <span id="modalBackupFileName" class="font-mono font-bold text-white text-[11px] dir-ltr">ProSoft_Backup.zip</span>
@@ -1387,22 +1388,65 @@
         </div>
       </div>
 
-      <p class="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 leading-relaxed">
-        ⚠️ هل أنت متأكد من رغبتك في تنزيل أحدث نسخة احتياطية لقاعدة البيانات على جهازك الآن؟
-      </p>
-
-      <div id="backupDownloadProgress" class="hidden text-center py-2 space-y-2">
-        <div class="inline-block animate-spin text-indigo-400 text-2xl">
-          <i class="fa-solid fa-circle-notch"></i>
-        </div>
-        <p class="text-xs text-slate-300 font-bold" id="backupProgressText">جاري تحميل وتجهيز ملف الباكب...</p>
+      <!-- تنبيه أولي قبل التحميل -->
+      <div id="modalBackupInitialPrompt" class="text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 leading-relaxed">
+        ⚠️ هل ترغب في تنزيل أحدث نسخة احتياطية سحابية لقاعدة البيانات على هاتفك / جهازك الآن؟
       </div>
 
+      <!-- مؤشر التحميل والتجهيز -->
+      <div id="backupDownloadProgress" class="hidden text-center py-4 space-y-3 bg-slate-900/60 rounded-2xl border border-indigo-500/20 p-4">
+        <div class="inline-block animate-spin text-indigo-400 text-3xl">
+          <i class="fa-solid fa-circle-notch"></i>
+        </div>
+        <p class="text-xs text-slate-200 font-bold" id="backupProgressText">جاري الاتصال بالسحابة وجلب ملف الباكب...</p>
+        <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+          <div id="backupProgressBar" class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-1.5 rounded-full w-2/3 animate-pulse"></div>
+        </div>
+      </div>
+
+      <!-- رسالة الخطأ لو تعذر الجلب -->
+      <div id="backupDownloadError" class="hidden text-xs text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3.5 space-y-2">
+        <div class="flex items-center gap-2 font-bold text-rose-400">
+          <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+          <span>تعذر تحميل النسخة الاحتياطية</span>
+        </div>
+        <p id="backupErrorText" class="text-[11px] text-slate-300 leading-relaxed"></p>
+        <button type="button" onclick="executeBackupDownload()" class="w-full mt-2 py-2 bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 text-rose-200 font-bold rounded-xl text-xs transition">
+          🔄 إعادة المحاولة الآن
+        </button>
+      </div>
+
+      <!-- نافذة النجاح وروابط التنزيل المباشر للهاتف والكمبيوتر -->
+      <div id="backupDownloadSuccess" class="hidden space-y-3 py-1">
+        <div class="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl text-center space-y-1">
+          <div class="text-emerald-400 text-xl font-black">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <p class="text-xs font-black text-white">تم تجهيز ملف النسخة الاحتياطية بنجاح!</p>
+          <p id="backupSuccessMeta" class="text-[11px] text-emerald-300 font-mono"></p>
+        </div>
+
+        <!-- الزر المباشر للتنزيل (يعمل باللمس المباشر على جميع الهواتف والمتصفحات بدون حظر) -->
+        <a id="btnDirectDownloadNow" href="#" download="ProSoft_Backup.zip" target="_blank"
+           class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 active:scale-95 transition">
+          <i class="fa-solid fa-cloud-arrow-down text-base"></i>
+          <span>اضغط هنا لتنزيل الملف الآن 📥</span>
+        </a>
+
+        <!-- زر الحفظ والمشاركة المباشر للهواتف الذكية (iOS Files / Android) -->
+        <button type="button" id="btnNativeShareBackup" onclick="triggerNativeShare()"
+                class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 active:scale-95 transition">
+          <i class="fa-solid fa-share-nodes"></i>
+          <span>حفظ في تطبيق الملفات / مشاركة 📱</span>
+        </button>
+      </div>
+
+      <!-- أزرار الإجراء الأولية -->
       <div class="flex items-center gap-3 pt-1" id="modalBackupActionButtons">
         <button type="button" onclick="closeBackupModal()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs transition">
           إلغاء
         </button>
-        <button type="button" id="btnConfirmDownload" onclick="executeBackupDownload()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+        <button type="button" id="btnConfirmDownload" onclick="executeBackupDownload()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 active:scale-95 transition">
           <i class="fa-solid fa-circle-check"></i>
           <span>نعم، تحميل الآن</span>
         </button>
@@ -2207,8 +2251,12 @@
     // ──────────────────────────────────────────
     // 6. إدارة النسخ الاحتياطي السحابي (Cloud Backup Logic)
     // ──────────────────────────────────────────
+    window._currentBackupBlob = null;
+    window._currentBackupUrl = null;
+    window._currentBackupFileName = 'ProSoft_Backup.zip';
+
     function renderCloudBackupInfo() {
-      const bInfo = rawData.LatestBackup || {};
+      const bInfo = (rawData && rawData.LatestBackup) ? rawData.LatestBackup : {};
       const lblFileName = document.getElementById('lblBackupFileName');
       const lblFileSize = document.getElementById('lblBackupFileSize');
       const lblTime = document.getElementById('lblBackupTime');
@@ -2216,7 +2264,7 @@
 
       const fileName = bInfo.FileName || 'ProSoft_Backup.zip';
       const fileSize = bInfo.FileSizeMB ? `${bInfo.FileSizeMB} ميجابايت` : (bInfo.FileSizeKB ? `${Math.round(bInfo.FileSizeKB)} ك.ب` : 'متوفرة سحابياً');
-      const backupTime = bInfo.FormattedTime || bInfo.BackupDate || rawData.SyncTime || 'اليوم';
+      const backupTime = bInfo.FormattedTime || bInfo.BackupDate || (rawData ? rawData.SyncTime : '') || 'اليوم';
 
       if (lblFileName) lblFileName.textContent = fileName;
       if (lblFileSize) lblFileSize.textContent = fileSize;
@@ -2241,81 +2289,200 @@
     }
 
     function confirmDownloadBackup() {
-      renderCloudBackupInfo();
+      try {
+        renderCloudBackupInfo();
+      } catch (e) {
+        console.warn("renderCloudBackupInfo note:", e);
+      }
+
       const modal = document.getElementById('backupConfirmModal');
-      if (modal) modal.classList.remove('hidden');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.visibility = 'visible';
+        modal.style.opacity = '1';
+      }
+
+      // إعادة ضبط حالة عناصر النافذة
+      document.getElementById('backupDownloadProgress')?.classList.add('hidden');
+      document.getElementById('backupDownloadError')?.classList.add('hidden');
+      document.getElementById('backupDownloadSuccess')?.classList.add('hidden');
+      document.getElementById('modalBackupActionButtons')?.classList.remove('hidden');
+      document.getElementById('modalBackupInitialPrompt')?.classList.remove('hidden');
     }
 
     function closeBackupModal() {
       const modal = document.getElementById('backupConfirmModal');
-      if (modal) modal.classList.add('hidden');
-      const progressBox = document.getElementById('backupDownloadProgress');
-      if (progressBox) progressBox.classList.add('hidden');
-      const actionBtns = document.getElementById('modalBackupActionButtons');
-      if (actionBtns) actionBtns.classList.remove('hidden');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      }
+      document.getElementById('backupDownloadProgress')?.classList.add('hidden');
+      document.getElementById('backupDownloadError')?.classList.add('hidden');
+      document.getElementById('backupDownloadSuccess')?.classList.add('hidden');
+      document.getElementById('modalBackupActionButtons')?.classList.remove('hidden');
+      document.getElementById('modalBackupInitialPrompt')?.classList.remove('hidden');
     }
 
     async function executeBackupDownload() {
       const progressBox = document.getElementById('backupDownloadProgress');
       const progressText = document.getElementById('backupProgressText');
       const actionBtns = document.getElementById('modalBackupActionButtons');
+      const initialPrompt = document.getElementById('modalBackupInitialPrompt');
+      const errorBox = document.getElementById('backupDownloadError');
+      const errorText = document.getElementById('backupErrorText');
+      const successBox = document.getElementById('backupDownloadSuccess');
+      const successMeta = document.getElementById('backupSuccessMeta');
+      const btnDirect = document.getElementById('btnDirectDownloadNow');
 
       try {
-        if (progressBox) progressBox.classList.remove('hidden');
-        if (actionBtns) actionBtns.classList.add('hidden');
-        if (progressText) progressText.textContent = "جاري الاتصال بالسحابة وجلب ملف الباكب...";
+        errorBox?.classList.add('hidden');
+        successBox?.classList.add('hidden');
+        initialPrompt?.classList.add('hidden');
+        actionBtns?.classList.add('hidden');
+        progressBox?.classList.remove('hidden');
 
-        // جلب أحدث ملف من السحابة
-        const backupUrl = `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`;
-        let resp = null;
-        try {
-          resp = await fetch(backupUrl);
-        } catch (e1) {
-          // تجربة الرابط الاحتياطي
-          const fallbackUrl = `https://${FIREBASE_PROJECT_ID}.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`;
-          resp = await fetch(fallbackUrl);
+        if (progressText) progressText.textContent = "1/3: 🔄 جاري الاتصال بالسحابة والبحث عن أحدث نسخة احتياطية...";
+
+        // قائمة روابط السحابة بالترتيب للأمان والتوافق المطلق
+        const candidateUrls = [
+          `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
+          `https://${FIREBASE_PROJECT_ID}.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
+          `https://elra7ma-grop-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
+          `https://elra7ma-erp-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
+          `https://checkin-192ab-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`
+        ];
+
+        let backupData = null;
+        let lastError = null;
+
+        for (const url of candidateUrls) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const resp = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (resp && resp.ok) {
+              const d = await resp.json();
+              if (d && (d.Base64Data || d.FileName)) {
+                backupData = d;
+                break;
+              }
+            }
+          } catch (fetchEx) {
+            lastError = fetchEx;
+          }
         }
 
-        if (!resp || !resp.ok) {
-          throw new Error("تعذر الوصول لملف النسخة الاحتياطية على السحابة.");
-        }
-
-        const backupData = await resp.json();
         if (!backupData || !backupData.Base64Data) {
-          throw new Error("لم يتم العثور على نسخة احتياطية مرفوعة على السحابة بعد. يرجى تشغيل النسخ الاحتياطي من البرنامج أولاً.");
+          throw new Error("لم يتم العثور على ملف نسخة احتياطية مرفوعة على السحابة بعد. يرجى الضغط على زر (النسخ الاحتياطي) داخل البرنامج أولاً لرفع النسخة.");
         }
-
-        if (progressText) progressText.textContent = "جاري فك وتجهيز ملف ZIP للتحميل...";
-
-        // فك تشفير Base64 إلى Blob وتنزيله
-        const binaryStr = atob(backupData.Base64Data);
-        const len = binaryStr.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-        const blob = new Blob([bytes], { type: 'application/zip' });
 
         const fileName = backupData.FileName || 'ProSoft_Database_Backup.zip';
-        const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(downloadUrl);
-        }, 2000);
+        const fileSizeMB = backupData.FileSizeMB ? `${backupData.FileSizeMB} MB` : (backupData.FileSizeKB ? `${Math.round(backupData.FileSizeKB)} KB` : 'ملف مضغوط');
 
-        closeBackupModal();
-        showToast("✅ تم تنزيل ملف النسخة الاحتياطية بنجاح إلى جهازك!");
+        if (progressText) progressText.textContent = `2/3: 📦 جاري فك وتجهيز ملف الباكب (${fileSizeMB})...`;
+
+        // فك تشفير Base64 إلى Blob بسرعة وأمان وبدون استهلاك للرام
+        const cleanB64 = backupData.Base64Data.replace(/[\r\n\s]/g, '');
+        let blob = null;
+        try {
+          const dataUri = 'data:application/zip;base64,' + cleanB64;
+          const r = await fetch(dataUri);
+          blob = await r.blob();
+        } catch (eUri) {
+          const binaryStr = atob(cleanB64);
+          const len = binaryStr.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          blob = new Blob([bytes], { type: 'application/zip' });
+        }
+
+        window._currentBackupBlob = blob;
+        window._currentBackupFileName = fileName;
+
+        const downloadUrl = URL.createObjectURL(blob);
+        window._currentBackupUrl = downloadUrl;
+
+        // تحديث رابط التنزيل المباشر
+        if (btnDirect) {
+          btnDirect.href = downloadUrl;
+          btnDirect.download = fileName;
+        }
+
+        if (successMeta) {
+          successMeta.textContent = `${fileName} • ${fileSizeMB}`;
+        }
+
+        if (progressText) progressText.textContent = "3/3: ✅ تم تجهيز الملف بنجاح!";
+
+        // محاولة بدء التنزيل التلقائي (يعمل على أجهزة الكمبيوتر وبعض المتصفحات)
+        try {
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = fileName;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            try { document.body.removeChild(a); } catch (e) {}
+          }, 1500);
+        } catch (autoDlErr) {
+          console.warn("Auto click download note:", autoDlErr);
+        }
+
+        // عرض واجهة النجاح والأزرار المباشرة فوراً
+        progressBox?.classList.add('hidden');
+        successBox?.classList.remove('hidden');
+
+        showToast("✅ تم تجهيز النسخة الاحتياطية! اضغط الزر الأخضر للتنزيل");
       } catch (err) {
         console.error("Backup download error:", err);
-        alert("❌ تعذر تحميل ملف النسخة الاحتياطية:\n" + (err.message || err));
-      } finally {
-        if (progressBox) progressBox.classList.add('hidden');
-        if (actionBtns) actionBtns.classList.remove('hidden');
+        progressBox?.classList.add('hidden');
+        if (errorBox) {
+          if (errorText) errorText.textContent = err.message || err.toString();
+          errorBox.classList.remove('hidden');
+        }
+        actionBtns?.classList.remove('hidden');
+      }
+    }
+
+    async function triggerNativeShare() {
+      const fileName = window._currentBackupFileName || 'ProSoft_Backup.zip';
+      const blob = window._currentBackupBlob;
+      const url = window._currentBackupUrl;
+
+      // 1. محاولة استخدام Web Share API الأصلية في الهاتف الذكي
+      if (navigator.share && blob) {
+        try {
+          const file = new File([blob], fileName, { type: 'application/zip' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: 'نسخة احتياطية ProSoft ERP',
+              text: `ملف النسخة الاحتياطية لقاعدة البيانات: ${fileName}`,
+              files: [file]
+            });
+            return;
+          }
+        } catch (shErr) {
+          if (shErr.name !== 'AbortError') {
+            console.warn("Native share note:", shErr);
+          } else {
+            return; // المستخدم ألغى بنفسه
+          }
+        }
+      }
+
+      // 2. بديل: التنزيل المباشر أو فتح الرابط في نافذة جديدة
+      if (url) {
+        const directBtn = document.getElementById('btnDirectDownloadNow');
+        if (directBtn) {
+          directBtn.click();
+        } else {
+          window.open(url, '_blank');
+        }
       }
     }
 

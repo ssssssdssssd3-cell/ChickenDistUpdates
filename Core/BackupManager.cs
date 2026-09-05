@@ -417,8 +417,11 @@ namespace ChickenDist.Core
                 byte[] fileBytes = File.ReadAllBytes(filePath);
                 string base64Data = Convert.ToBase64String(fileBytes);
 
-                string projectId = AppConfig.Get("FirebaseProjectId", "elra7ma-grop");
-                if (string.IsNullOrWhiteSpace(projectId)) projectId = "elra7ma-grop";
+                string configuredPid = AppConfig.Get("FirebaseProjectId", "elra7ma-grop");
+                var targetProjects = new System.Collections.Generic.List<string>();
+                if (!string.IsNullOrWhiteSpace(configuredPid)) targetProjects.Add(configuredPid);
+                if (!targetProjects.Contains("elra7ma-grop")) targetProjects.Add("elra7ma-grop");
+                if (!targetProjects.Contains("checkin-192ab")) targetProjects.Add("checkin-192ab");
 
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
@@ -435,36 +438,38 @@ namespace ChickenDist.Core
                         "\"Base64Data\": \"" + base64Data + "\"" +
                         "}";
 
-                    var content = new System.Net.Http.StringContent(latestPayload, System.Text.Encoding.UTF8, "application/json");
-
-                    // الرفع للمسار الأساسي default-rtdb
-                    bool uploadOk = false;
-                    try
+                    bool anyUploadOk = false;
+                    foreach (var pid in targetProjects)
                     {
-                        var resp = httpClient.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/cloud_backups/latest.json", content).Result;
-                        if (resp != null && resp.IsSuccessStatusCode)
-                        {
-                            uploadOk = true;
-                        }
-                    }
-                    catch { }
-
-                    // تجربة الرابط الاحتياطي
-                    if (!uploadOk)
-                    {
+                        var content = new System.Net.Http.StringContent(latestPayload, System.Text.Encoding.UTF8, "application/json");
+                        bool currentPidOk = false;
                         try
                         {
-                            var contentFallback = new System.Net.Http.StringContent(latestPayload, System.Text.Encoding.UTF8, "application/json");
-                            var respFallback = httpClient.PutAsync($"https://{projectId}.firebaseio.com/cloud_backups/latest.json", contentFallback).Result;
-                            if (respFallback != null && respFallback.IsSuccessStatusCode)
+                            var resp = httpClient.PutAsync($"https://{pid}-default-rtdb.firebaseio.com/cloud_backups/latest.json", content).Result;
+                            if (resp != null && resp.IsSuccessStatusCode)
                             {
-                                uploadOk = true;
+                                currentPidOk = true;
+                                anyUploadOk = true;
                             }
                         }
                         catch { }
+
+                        if (!currentPidOk)
+                        {
+                            try
+                            {
+                                var contentFallback = new System.Net.Http.StringContent(latestPayload, System.Text.Encoding.UTF8, "application/json");
+                                var respFallback = httpClient.PutAsync($"https://{pid}.firebaseio.com/cloud_backups/latest.json", contentFallback).Result;
+                                if (respFallback != null && respFallback.IsSuccessStatusCode)
+                                {
+                                    anyUploadOk = true;
+                                }
+                            }
+                            catch { }
+                        }
                     }
 
-                    if (!uploadOk)
+                    if (!anyUploadOk)
                     {
                         errorMessage = "تعذر إرسال ملف الباكب إلى سيرفر Firebase Realtime Database.";
                         return false;
@@ -481,10 +486,10 @@ namespace ChickenDist.Core
                             "\"FormattedTime\": \"" + formattedTime + "\"" +
                             "}";
                         var metaContent = new System.Net.Http.StringContent(metaPayload, System.Text.Encoding.UTF8, "application/json");
-                        httpClient.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/cloud_backups/history/{backupId}.json", metaContent).Wait();
+                        httpClient.PutAsync($"https://{configuredPid}-default-rtdb.firebaseio.com/cloud_backups/history/{backupId}.json", metaContent).Wait();
 
                         // فحص النسخ السحابية القديمة وحذف ما يتجاوز الـ 5 نسخ
-                        CleanOldCloudBackups(httpClient, projectId, keepCount: 5);
+                        CleanOldCloudBackups(httpClient, configuredPid, keepCount: 5);
                     }
                     catch (Exception exHist)
                     {
