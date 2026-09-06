@@ -123,9 +123,29 @@ namespace ChickenDist.Core
             _perms.Clear();
             if (IsAdmin)
             {
-                // المدير لديه كل الصلاحيات
+                // المدير لديه كل الصلاحيات للشاشات العادية
                 foreach (var s in AllScreens)
-                    _perms[s] = new PermInfo { CanAccess = true, CanAdd = true, CanEdit = true, CanDelete = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true, CanViewDetails = true, CanViewBalance = true, CanChangeSafe = true, CanViewSalesTotals = true, CanViewQuickItems = true };
+                {
+                    // شاشات الأصول والشركاء حساسة ولا تظهر لأي حساب إلا بعد تفعيلها صراحة في شاشة الصلاحيات
+                    bool defaultAccess = (s != "FixedAssets" && s != "Shareholders");
+                    _perms[s] = new PermInfo { CanAccess = defaultAccess, CanAdd = true, CanEdit = true, CanDelete = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true, CanViewDetails = true, CanViewBalance = true, CanChangeSafe = true, CanViewSalesTotals = true, CanViewQuickItems = true };
+                }
+
+                // قراءة الصلاحيات المخصصة لحساب المدير (لتفعيل الأصول والشركاء عند اختيارها له)
+                try
+                {
+                    var dtAdmin = DbHelper.Query("SELECT ScreenName, CanAccess FROM Permissions WHERE EmpID=@id AND ScreenName IN ('FixedAssets', 'Shareholders')", DbHelper.P("@id", empID));
+                    foreach (System.Data.DataRow row in dtAdmin.Rows)
+                    {
+                        string sName = row["ScreenName"]?.ToString();
+                        if (!string.IsNullOrEmpty(sName) && _perms.ContainsKey(sName))
+                        {
+                            _perms[sName].CanAccess = row["CanAccess"] != DBNull.Value && Convert.ToBoolean(row["CanAccess"]);
+                        }
+                    }
+                }
+                catch { }
+
                 return;
             }
 
@@ -166,7 +186,6 @@ namespace ChickenDist.Core
 
         public static bool CanAccess(string screen)
         {
-            if (IsAdmin) return true;
             if (string.IsNullOrEmpty(screen)) return true;
 
             // Handle comma-separated screen checks (e.g., "Reports,Financials")
@@ -179,6 +198,15 @@ namespace ChickenDist.Core
                 }
                 return true;
             }
+
+            // شاشات الأصول والشركاء: حساسة جداً ولا تظهر لأي حساب إلا بعد تفعيلها صراحة في شاشة الصلاحيات
+            if (screen == "FixedAssets" || screen == "Shareholders")
+            {
+                if (_perms.ContainsKey(screen)) return _perms[screen].CanAccess;
+                return false;
+            }
+
+            if (IsAdmin) return true;
 
             if (_perms.ContainsKey(screen) && _perms[screen].CanAccess) return true;
 
@@ -642,6 +670,9 @@ namespace ChickenDist.Core
             
             // Finance, Safes & Shifts
             "CashBox", "SafeAccounts", "ActualBalances", "DailyAccounts", "ReceiptVoucher", "FinancialPosition", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory",
+            
+            // Assets & Shareholders (🏢 الأصول والشركاء)
+            "FixedAssets", "Shareholders",
             
             // Detailed Reports
             "RepDailySales", "RepSalesByPeriod", "RepDetailedSales", "RepDetailedSaleItems", "RepSalesByProduct", "RepSalesByCategory", "RepSalesByClient", "RepSalesByUser",

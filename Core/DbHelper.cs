@@ -510,8 +510,20 @@ namespace ChickenDist.Core
             catch { }
         }
 
+        public static void EnsurePendingSaleColExists()
+        {
+            try
+            {
+                SafeMigrate("Products.PendingSaleCol.Immediate", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL AND COL_LENGTH('Products','PendingSaleCol') IS NULL
+                    ALTER TABLE Products ADD PendingSaleCol NVARCHAR(50) NULL;");
+            }
+            catch { }
+        }
+
         public static void EnsurePurchaseColumnsExist()
         {
+            EnsurePendingSaleColExists();
             EnsureAppSettingsTable();
             ProductionDAL.EnsureProductionTables();
 

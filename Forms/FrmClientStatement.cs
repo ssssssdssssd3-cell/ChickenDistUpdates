@@ -98,6 +98,34 @@ namespace ChickenDist.Forms
                 Margin = new Padding(2, 2, 0, 0)
             };
             cmbClientSelector.SelectedIndexChanged += CmbClientSelector_SelectedIndexChanged;
+            cmbClientSelector.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    string txt = cmbClientSelector.Text.Trim();
+                    if (!string.IsNullOrEmpty(txt) && cmbClientSelector.DataSource is DataTable dt)
+                    {
+                        foreach (DataRow r in dt.Rows)
+                        {
+                            string code = r.Table.Columns.Contains("ClientCode") && r["ClientCode"] != DBNull.Value ? r["ClientCode"].ToString().Trim() : "";
+                            string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString().Trim() : "";
+                            string phone2 = r.Table.Columns.Contains("Phone2") && r["Phone2"] != DBNull.Value ? r["Phone2"].ToString().Trim() : "";
+                            string name = r["ClientName"] != null ? r["ClientName"].ToString().Trim() : "";
+
+                            if (string.Equals(code, txt, StringComparison.OrdinalIgnoreCase) ||
+                                (!string.IsNullOrEmpty(phone) && phone.Contains(txt)) ||
+                                (!string.IsNullOrEmpty(phone2) && phone2.Contains(txt)) ||
+                                name.IndexOf(txt, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                cmbClientSelector.SelectedValue = r["ClientID"];
+                                e.Handled = true;
+                                e.SuppressKeyPress = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
             pnlFilter.Controls.Add(cmbClientSelector);
 
             var btnSearchClient = new Button

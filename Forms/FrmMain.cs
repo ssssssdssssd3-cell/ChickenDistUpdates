@@ -1307,6 +1307,19 @@ namespace ChickenDist.Forms
             base.OnFormClosed(e);
         }
 
+        private class PartyLookupItem
+        {
+            public int ID { get; set; }
+            public string Name { get; set; } = "";
+            public string Code { get; set; } = "";
+            public string Phone { get; set; } = "";
+            public string Phone2 { get; set; } = "";
+            public decimal Balance { get; set; }
+            public string DisplayText { get; set; } = "";
+
+            public override string ToString() => DisplayText;
+        }
+
         private void OpenSupplierStatementSelector()
         {
             try
@@ -1318,10 +1331,36 @@ namespace ChickenDist.Forms
                     return;
                 }
 
+                var supplierList = new System.Collections.Generic.List<PartyLookupItem>();
+                foreach (DataRow r in dt.Rows)
+                {
+                    int id = Convert.ToInt32(r["SupplierID"]);
+                    string name = r["SupplierName"] != null ? r["SupplierName"].ToString().Trim() : "";
+                    string code = r.Table.Columns.Contains("SupplierCode") && r["SupplierCode"] != DBNull.Value ? r["SupplierCode"].ToString().Trim() : "";
+                    string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString().Trim() : "";
+                    decimal balance = 0;
+                    if (r.Table.Columns.Contains("Balance") && r["Balance"] != DBNull.Value)
+                        decimal.TryParse(r["Balance"].ToString(), out balance);
+
+                    string display = $"[كود: {code}]  {name}";
+                    if (!string.IsNullOrEmpty(phone)) display += $"  |  📱 {phone}";
+                    if (balance != 0) display += $"  |  💰 الرصيد: {balance:N2} ج";
+
+                    supplierList.Add(new PartyLookupItem
+                    {
+                        ID = id,
+                        Name = name,
+                        Code = code,
+                        Phone = phone,
+                        Balance = balance,
+                        DisplayText = display
+                    });
+                }
+
                 using (var dlg = new Form())
                 {
-                    dlg.Text = "📊 اختر المورد لعرض كشف الحساب";
-                    dlg.Size = new Size(480, 210);
+                    dlg.Text = "📊 اختيار المورد لعرض كشف الحساب";
+                    dlg.Size = new Size(620, 290);
                     dlg.StartPosition = FormStartPosition.CenterParent;
                     dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                     dlg.MaximizeBox = false; dlg.MinimizeBox = false;
@@ -1329,40 +1368,237 @@ namespace ChickenDist.Forms
                     dlg.BackColor = Theme.BgMain;
                     dlg.Font = Theme.FontMain;
 
-                    var lbl = new Label { Text = "🔍 ابحث بالاسم أو رقم الموبايل أو الكود:", Location = new Point(20, 18), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
-                    var cbo = new ComboBox
+                    var lblSearchHint = new Label
                     {
-                        Location = new Point(20, 46),
-                        Width = 420,
-                        DropDownStyle = ComboBoxStyle.DropDown,
-                        AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                        AutoCompleteSource = AutoCompleteSource.ListItems,
-                        BackColor = Theme.BgInput,
+                        Text = "🔍 ابحث بالاسم أو رقم الموبايل أو الكود:",
+                        Location = new Point(20, 14),
+                        AutoSize = true,
                         ForeColor = Theme.TextMain,
-                        Font = new Font("Segoe UI", 10.5f)
+                        Font = Theme.FontBold
                     };
 
-                    foreach (DataRow r in dt.Rows)
+                    var cboSearchType = new ComboBox
                     {
-                        string code = r.Table.Columns.Contains("SupplierCode") ? r["SupplierCode"].ToString() : "";
-                        string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
-                        string display = string.IsNullOrEmpty(phone) ? $"{r["SupplierName"]} (كود: {code})" : $"{r["SupplierName"]}  |  📱 {phone}  |  (كود: {code})";
-                        cbo.Items.Add(new ComboItem((int)r["SupplierID"], display));
-                    }
-                    cbo.DisplayMember = "Text";
-                    if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
+                        Location = new Point(430, 40),
+                        Width = 154,
+                        Height = 32,
+                        DropDownStyle = ComboBoxStyle.DropDownList,
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                    };
+                    cboSearchType.Items.AddRange(new object[] { "🔍 الكل (شامل)", "🏢 بالاسم فقط", "📱 بالموبايل", "🔢 بالكود" });
+                    cboSearchType.SelectedIndex = 0;
 
-                    var btnOk = Theme.MakeButton("🔍 عرض كشف حساب المورد", 220, 105, 220, 36, Theme.Accent);
-                    btnOk.Click += (senderDlg, eDlg) => {
-                        if (cbo.SelectedItem is ComboItem ci)
+                    var txtSearch = new TextBox
+                    {
+                        Location = new Point(74, 40),
+                        Width = 348,
+                        Height = 30,
+                        Font = new Font("Segoe UI", 11.5f),
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        BorderStyle = BorderStyle.FixedSingle
+                    };
+
+                    var btnAdvSearch = new Button
+                    {
+                        Text = "🔍",
+                        Location = new Point(20, 39),
+                        Width = 46,
+                        Height = 32,
+                        Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Theme.Accent,
+                        ForeColor = Color.White,
+                        Cursor = Cursors.Hand
+                    };
+                    btnAdvSearch.FlatAppearance.BorderSize = 0;
+
+                    var tt = new ToolTip();
+                    tt.SetToolTip(btnAdvSearch, "فتح نافذة البحث المتقدم والجدول الشامل [F3]");
+
+                    var lblDropdown = new Label
+                    {
+                        Text = "المورد المختار من النتائج المطابقة:",
+                        Location = new Point(20, 82),
+                        AutoSize = true,
+                        ForeColor = Theme.TextSearchLabel,
+                        Font = Theme.FontBold
+                    };
+
+                    var cboResults = new ComboBox
+                    {
+                        Location = new Point(20, 106),
+                        Width = 564,
+                        Height = 32,
+                        DropDownStyle = ComboBoxStyle.DropDownList,
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                        DisplayMember = "DisplayText",
+                        ValueMember = "ID"
+                    };
+
+                    var lblStatus = new Label
+                    {
+                        Location = new Point(20, 146),
+                        Width = 564,
+                        Height = 22,
+                        Font = new Font("Segoe UI", 9.5f),
+                        ForeColor = Color.FromArgb(34, 197, 94)
+                    };
+
+                    var btnOk = Theme.MakeButton("📊 عرض كشف حساب المورد [Enter]", 270, 182, 314, 42, Theme.Accent);
+                    btnOk.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+
+                    var btnCancel = Theme.MakeButton("❌ إلغاء [Esc]", 20, 182, 130, 42, Color.FromArgb(140, 40, 40));
+                    btnCancel.Font = new Font("Segoe UI", 10f);
+
+                    void ApplyFilter()
+                    {
+                        string query = txtSearch.Text.Trim();
+                        int filterType = cboSearchType.SelectedIndex;
+
+                        cboResults.BeginUpdate();
+                        cboResults.Items.Clear();
+
+                        foreach (var item in supplierList)
                         {
-                            dlg.DialogResult = DialogResult.OK;
-                            dlg.Close();
-                            new FrmSupplierStatement(ci.ID, ci.Text).ShowDialog(this);
+                            bool match = false;
+                            if (string.IsNullOrEmpty(query))
+                            {
+                                match = true;
+                            }
+                            else
+                            {
+                                switch (filterType)
+                                {
+                                    case 1: // بالاسم
+                                        match = item.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+                                        break;
+                                    case 2: // بالموبايل
+                                        match = (!string.IsNullOrEmpty(item.Phone) && item.Phone.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                                (!string.IsNullOrEmpty(item.Phone2) && item.Phone2.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
+                                        break;
+                                    case 3: // بالكود
+                                        match = !string.IsNullOrEmpty(item.Code) && item.Code.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+                                        break;
+                                    default: // الكل شامل
+                                        match = item.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                (!string.IsNullOrEmpty(item.Phone) && item.Phone.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                                (!string.IsNullOrEmpty(item.Code) && item.Code.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
+                                        break;
+                                }
+                            }
+
+                            if (match)
+                            {
+                                cboResults.Items.Add(item);
+                            }
+                        }
+                        cboResults.EndUpdate();
+
+                        if (cboResults.Items.Count > 0)
+                        {
+                            cboResults.SelectedIndex = 0;
+                            lblStatus.Text = $"✅ تم العثور على {cboResults.Items.Count} مورد مطابق";
+                            lblStatus.ForeColor = Color.FromArgb(34, 197, 94);
+                            btnOk.Enabled = true;
+                        }
+                        else
+                        {
+                            lblStatus.Text = "⚠️ لا توجد نتائج مطابقة، جرب كتابة اسم آخر أو رقم هاتف أو كود مختلف";
+                            lblStatus.ForeColor = Color.FromArgb(239, 68, 68);
+                            btnOk.Enabled = false;
+                        }
+                    }
+
+                    txtSearch.TextChanged += (s, e) => ApplyFilter();
+                    cboSearchType.SelectedIndexChanged += (s, e) => ApplyFilter();
+
+                    btnAdvSearch.Click += (s, e) =>
+                    {
+                        using (var frm = new FrmSupplierSearch())
+                        {
+                            if (frm.ShowDialog(dlg) == DialogResult.OK && frm.SelectedSupplierID > 0)
+                            {
+                                dlg.DialogResult = DialogResult.OK;
+                                dlg.Close();
+                                new FrmSupplierStatement(frm.SelectedSupplierID, frm.SelectedSupplierName).ShowDialog(this);
+                            }
                         }
                     };
 
-                    dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                    txtSearch.KeyDown += (s, e) =>
+                    {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            if (btnOk.Enabled)
+                            {
+                                btnOk.PerformClick();
+                                e.Handled = true;
+                                e.SuppressKeyPress = true;
+                            }
+                        }
+                        else if (e.KeyCode == Keys.Down)
+                        {
+                            if (cboResults.Items.Count > 0)
+                            {
+                                cboResults.Focus();
+                                cboResults.DroppedDown = true;
+                                e.Handled = true;
+                            }
+                        }
+                        else if (e.KeyCode == Keys.F3)
+                        {
+                            btnAdvSearch.PerformClick();
+                            e.Handled = true;
+                        }
+                    };
+
+                    cboResults.KeyDown += (s, e) =>
+                    {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            if (btnOk.Enabled)
+                            {
+                                btnOk.PerformClick();
+                                e.Handled = true;
+                                e.SuppressKeyPress = true;
+                            }
+                        }
+                    };
+
+                    dlg.KeyDown += (s, e) =>
+                    {
+                        if (e.KeyCode == Keys.Escape)
+                        {
+                            dlg.Close();
+                        }
+                        else if (e.KeyCode == Keys.F3)
+                        {
+                            btnAdvSearch.PerformClick();
+                        }
+                    };
+                    dlg.KeyPreview = true;
+
+                    btnOk.Click += (s, e) =>
+                    {
+                        if (cboResults.SelectedItem is PartyLookupItem pItem && pItem.ID > 0)
+                        {
+                            dlg.DialogResult = DialogResult.OK;
+                            dlg.Close();
+                            new FrmSupplierStatement(pItem.ID, pItem.Name).ShowDialog(this);
+                        }
+                    };
+
+                    btnCancel.Click += (s, e) => dlg.Close();
+
+                    ApplyFilter();
+
+                    dlg.Controls.AddRange(new Control[] { lblSearchHint, btnAdvSearch, txtSearch, cboSearchType, lblDropdown, cboResults, lblStatus, btnOk, btnCancel });
+                    dlg.Shown += (s, e) => txtSearch.Focus();
                     dlg.ShowDialog(this);
                 }
             }
@@ -1383,10 +1619,38 @@ namespace ChickenDist.Forms
                     return;
                 }
 
+                var clientList = new System.Collections.Generic.List<PartyLookupItem>();
+                foreach (DataRow r in dt.Rows)
+                {
+                    int id = Convert.ToInt32(r["ClientID"]);
+                    string name = r["ClientName"] != null ? r["ClientName"].ToString().Trim() : "";
+                    string code = r.Table.Columns.Contains("ClientCode") && r["ClientCode"] != DBNull.Value ? r["ClientCode"].ToString().Trim() : "";
+                    string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString().Trim() : "";
+                    string phone2 = r.Table.Columns.Contains("Phone2") && r["Phone2"] != DBNull.Value ? r["Phone2"].ToString().Trim() : "";
+                    decimal balance = 0;
+                    if (r.Table.Columns.Contains("Balance") && r["Balance"] != DBNull.Value)
+                        decimal.TryParse(r["Balance"].ToString(), out balance);
+
+                    string display = $"[كود: {code}]  {name}";
+                    if (!string.IsNullOrEmpty(phone)) display += $"  |  📱 {phone}";
+                    if (balance != 0) display += $"  |  💰 الرصيد: {balance:N2} ج";
+
+                    clientList.Add(new PartyLookupItem
+                    {
+                        ID = id,
+                        Name = name,
+                        Code = code,
+                        Phone = phone,
+                        Phone2 = phone2,
+                        Balance = balance,
+                        DisplayText = display
+                    });
+                }
+
                 using (var dlg = new Form())
                 {
-                    dlg.Text = "📊 اختر العميل لعرض كشف الحساب والمسحوبات التفصيلية";
-                    dlg.Size = new Size(480, 210);
+                    dlg.Text = "📊 اختيار العميل لعرض كشف الحساب والمسحوبات";
+                    dlg.Size = new Size(620, 290);
                     dlg.StartPosition = FormStartPosition.CenterParent;
                     dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                     dlg.MaximizeBox = false; dlg.MinimizeBox = false;
@@ -1394,40 +1658,238 @@ namespace ChickenDist.Forms
                     dlg.BackColor = Theme.BgMain;
                     dlg.Font = Theme.FontMain;
 
-                    var lbl = new Label { Text = "🔍 ابحث بالاسم أو رقم الموبايل أو الكود:", Location = new Point(20, 18), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
-                    var cbo = new ComboBox
+                    var lblSearchHint = new Label
                     {
-                        Location = new Point(20, 46),
-                        Width = 420,
-                        DropDownStyle = ComboBoxStyle.DropDown,
-                        AutoCompleteMode = AutoCompleteMode.SuggestAppend,
-                        AutoCompleteSource = AutoCompleteSource.ListItems,
-                        BackColor = Theme.BgInput,
+                        Text = "🔍 ابحث بالاسم أو رقم الموبايل أو الكود:",
+                        Location = new Point(20, 14),
+                        AutoSize = true,
                         ForeColor = Theme.TextMain,
-                        Font = new Font("Segoe UI", 10.5f)
+                        Font = Theme.FontBold
                     };
 
-                    foreach (DataRow r in dt.Rows)
+                    var cboSearchType = new ComboBox
                     {
-                        string code = r.Table.Columns.Contains("ClientCode") ? r["ClientCode"].ToString() : "";
-                        string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
-                        string display = string.IsNullOrEmpty(phone) ? $"{r["ClientName"]} (كود: {code})" : $"{r["ClientName"]}  |  📱 {phone}  |  (كود: {code})";
-                        cbo.Items.Add(new ComboItem((int)r["ClientID"], display));
-                    }
-                    cbo.DisplayMember = "Text";
-                    if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
+                        Location = new Point(430, 40),
+                        Width = 154,
+                        Height = 32,
+                        DropDownStyle = ComboBoxStyle.DropDownList,
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                    };
+                    cboSearchType.Items.AddRange(new object[] { "🔍 الكل (شامل)", "👤 بالاسم فقط", "📱 بالموبايل", "🔢 بالكود" });
+                    cboSearchType.SelectedIndex = 0;
 
-                    var btnOk = Theme.MakeButton("🔍 عرض كشف حساب العميل", 220, 105, 220, 36, Theme.Accent);
-                    btnOk.Click += (senderDlg, eDlg) => {
-                        if (cbo.SelectedItem is ComboItem ci)
+                    var txtSearch = new TextBox
+                    {
+                        Location = new Point(74, 40),
+                        Width = 348,
+                        Height = 30,
+                        Font = new Font("Segoe UI", 11.5f),
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        BorderStyle = BorderStyle.FixedSingle
+                    };
+
+                    var btnAdvSearch = new Button
+                    {
+                        Text = "🔍",
+                        Location = new Point(20, 39),
+                        Width = 46,
+                        Height = 32,
+                        Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Theme.Accent,
+                        ForeColor = Color.White,
+                        Cursor = Cursors.Hand
+                    };
+                    btnAdvSearch.FlatAppearance.BorderSize = 0;
+
+                    var tt = new ToolTip();
+                    tt.SetToolTip(btnAdvSearch, "فتح نافذة البحث المتقدم والجدول الشامل [F3]");
+
+                    var lblDropdown = new Label
+                    {
+                        Text = "العميل المختار من النتائج المطابقة:",
+                        Location = new Point(20, 82),
+                        AutoSize = true,
+                        ForeColor = Theme.TextSearchLabel,
+                        Font = Theme.FontBold
+                    };
+
+                    var cboResults = new ComboBox
+                    {
+                        Location = new Point(20, 106),
+                        Width = 564,
+                        Height = 32,
+                        DropDownStyle = ComboBoxStyle.DropDownList,
+                        BackColor = Theme.BgInput,
+                        ForeColor = Theme.TextMain,
+                        Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                        DisplayMember = "DisplayText",
+                        ValueMember = "ID"
+                    };
+
+                    var lblStatus = new Label
+                    {
+                        Location = new Point(20, 146),
+                        Width = 564,
+                        Height = 22,
+                        Font = new Font("Segoe UI", 9.5f),
+                        ForeColor = Color.FromArgb(34, 197, 94)
+                    };
+
+                    var btnOk = Theme.MakeButton("📊 عرض كشف الحساب [Enter]", 290, 182, 294, 42, Theme.Primary);
+                    btnOk.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
+
+                    var btnCancel = Theme.MakeButton("❌ إلغاء [Esc]", 20, 182, 130, 42, Color.FromArgb(140, 40, 40));
+                    btnCancel.Font = new Font("Segoe UI", 10f);
+
+                    void ApplyFilter()
+                    {
+                        string query = txtSearch.Text.Trim();
+                        int filterType = cboSearchType.SelectedIndex;
+
+                        cboResults.BeginUpdate();
+                        cboResults.Items.Clear();
+
+                        foreach (var item in clientList)
                         {
-                            dlg.DialogResult = DialogResult.OK;
-                            dlg.Close();
-                            new FrmClientStatement(ci.ID, ci.Text).ShowDialog(this);
+                            bool match = false;
+                            if (string.IsNullOrEmpty(query))
+                            {
+                                match = true;
+                            }
+                            else
+                            {
+                                switch (filterType)
+                                {
+                                    case 1: // بالاسم
+                                        match = item.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+                                        break;
+                                    case 2: // بالموبايل
+                                        match = (!string.IsNullOrEmpty(item.Phone) && item.Phone.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                                (!string.IsNullOrEmpty(item.Phone2) && item.Phone2.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
+                                        break;
+                                    case 3: // بالكود
+                                        match = !string.IsNullOrEmpty(item.Code) && item.Code.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+                                        break;
+                                    default: // الكل شامل
+                                        match = item.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                (!string.IsNullOrEmpty(item.Phone) && item.Phone.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                                (!string.IsNullOrEmpty(item.Phone2) && item.Phone2.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                                (!string.IsNullOrEmpty(item.Code) && item.Code.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
+                                        break;
+                                }
+                            }
+
+                            if (match)
+                            {
+                                cboResults.Items.Add(item);
+                            }
+                        }
+                        cboResults.EndUpdate();
+
+                        if (cboResults.Items.Count > 0)
+                        {
+                            cboResults.SelectedIndex = 0;
+                            lblStatus.Text = $"✅ تم العثور على {cboResults.Items.Count} عميل مطابق";
+                            lblStatus.ForeColor = Color.FromArgb(34, 197, 94);
+                            btnOk.Enabled = true;
+                        }
+                        else
+                        {
+                            lblStatus.Text = "⚠️ لا توجد نتائج مطابقة، جرب كتابة اسم آخر أو رقم هاتف أو كود مختلف";
+                            lblStatus.ForeColor = Color.FromArgb(239, 68, 68);
+                            btnOk.Enabled = false;
+                        }
+                    }
+
+                    txtSearch.TextChanged += (s, e) => ApplyFilter();
+                    cboSearchType.SelectedIndexChanged += (s, e) => ApplyFilter();
+
+                    btnAdvSearch.Click += (s, e) =>
+                    {
+                        using (var frm = new FrmClientSearch())
+                        {
+                            if (frm.ShowDialog(dlg) == DialogResult.OK && frm.SelectedClientID > 0)
+                            {
+                                dlg.DialogResult = DialogResult.OK;
+                                dlg.Close();
+                                new FrmClientStatement(frm.SelectedClientID, frm.SelectedClientName).ShowDialog(this);
+                            }
                         }
                     };
 
-                    dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk });
+                    txtSearch.KeyDown += (s, e) =>
+                    {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            if (btnOk.Enabled)
+                            {
+                                btnOk.PerformClick();
+                                e.Handled = true;
+                                e.SuppressKeyPress = true;
+                            }
+                        }
+                        else if (e.KeyCode == Keys.Down)
+                        {
+                            if (cboResults.Items.Count > 0)
+                            {
+                                cboResults.Focus();
+                                cboResults.DroppedDown = true;
+                                e.Handled = true;
+                            }
+                        }
+                        else if (e.KeyCode == Keys.F3)
+                        {
+                            btnAdvSearch.PerformClick();
+                            e.Handled = true;
+                        }
+                    };
+
+                    cboResults.KeyDown += (s, e) =>
+                    {
+                        if (e.KeyCode == Keys.Enter)
+                        {
+                            if (btnOk.Enabled)
+                            {
+                                btnOk.PerformClick();
+                                e.Handled = true;
+                                e.SuppressKeyPress = true;
+                            }
+                        }
+                    };
+
+                    dlg.KeyDown += (s, e) =>
+                    {
+                        if (e.KeyCode == Keys.Escape)
+                        {
+                            dlg.Close();
+                        }
+                        else if (e.KeyCode == Keys.F3)
+                        {
+                            btnAdvSearch.PerformClick();
+                        }
+                    };
+                    dlg.KeyPreview = true;
+
+                    btnOk.Click += (s, e) =>
+                    {
+                        if (cboResults.SelectedItem is PartyLookupItem pItem && pItem.ID > 0)
+                        {
+                            dlg.DialogResult = DialogResult.OK;
+                            dlg.Close();
+                            new FrmClientStatement(pItem.ID, pItem.Name).ShowDialog(this);
+                        }
+                    };
+
+                    btnCancel.Click += (s, e) => dlg.Close();
+
+                    ApplyFilter();
+
+                    dlg.Controls.AddRange(new Control[] { lblSearchHint, btnAdvSearch, txtSearch, cboSearchType, lblDropdown, cboResults, lblStatus, btnOk, btnCancel });
+                    dlg.Shown += (s, e) => txtSearch.Focus();
                     dlg.ShowDialog(this);
                 }
             }

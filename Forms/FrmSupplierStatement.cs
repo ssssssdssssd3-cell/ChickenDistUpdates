@@ -68,6 +68,32 @@ namespace ChickenDist.Forms
                 Margin = new Padding(2, 2, 0, 0)
             };
             cmbSupplierSelector.SelectedIndexChanged += CmbSupplierSelector_SelectedIndexChanged;
+            cmbSupplierSelector.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    string txt = cmbSupplierSelector.Text.Trim();
+                    if (!string.IsNullOrEmpty(txt) && cmbSupplierSelector.DataSource is DataTable dt)
+                    {
+                        foreach (DataRow r in dt.Rows)
+                        {
+                            string code = r.Table.Columns.Contains("SupplierCode") && r["SupplierCode"] != DBNull.Value ? r["SupplierCode"].ToString().Trim() : "";
+                            string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString().Trim() : "";
+                            string name = r["SupplierName"] != null ? r["SupplierName"].ToString().Trim() : "";
+
+                            if (string.Equals(code, txt, StringComparison.OrdinalIgnoreCase) ||
+                                (!string.IsNullOrEmpty(phone) && phone.Contains(txt)) ||
+                                name.IndexOf(txt, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                cmbSupplierSelector.SelectedValue = r["SupplierID"];
+                                e.Handled = true;
+                                e.SuppressKeyPress = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            };
             pnlFilter.Controls.Add(cmbSupplierSelector);
 
             var btnSearchSupplier = new Button

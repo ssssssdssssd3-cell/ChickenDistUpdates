@@ -1127,6 +1127,24 @@ namespace ChickenDist.Forms
                 HasViewBalance = true, HasViewCost = true
             },
 
+            // ── 🏢 الأصول والشركاء ────────────────────────────────────────
+            new ScreenDef {
+                Key = "FixedAssets", Name = "سجل وإهلاك الأصول الثابتة", Category = "🏢 الأصول والشركاء", Icon = "🏢",
+                Description = "تسجيل ومتابعة الأصول الثابتة وحساب الإهلاك السنوي وإدارة قيمة الأصول والممتلكات.",
+                HasAdd = true, HasEdit = true, HasDelete = true, HasViewCost = true, HasViewBalance = true,
+                AddLabel = "➕ إضافة أصل ثابت جديد",
+                EditLabel = "✏️ تعديل بيانات وقيمة الأصل",
+                DeleteLabel = "🗑️ حذف أو استبعاد أصل"
+            },
+            new ScreenDef {
+                Key = "Shareholders", Name = "حسابات الشركاء ورأس المال والأرباح", Category = "🏢 الأصول والشركاء", Icon = "🤝",
+                Description = "إدارة حصص الشركاء ورأس المال وحساب المسحوبات الدورية وتوزيع الأرباح السنوية.",
+                HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true, HasViewDetails = true,
+                AddLabel = "➕ إضافة شريك أو حركة رأس مال جديدة",
+                EditLabel = "✏️ تعديل حركة شريك أو نسبة أرباح",
+                DeleteLabel = "🗑️ حذف حركة شريك"
+            },
+
             // ── 📊 5. التقارير التفصيلية الشاملة ─────────────────────────
             new ScreenDef {
                 Key = "Reports", Name = "بوابة التقارير والإحصائيات الشاملة", Category = "📊 التقارير التفصيلية الشاملة", Icon = "📊",
@@ -1570,7 +1588,7 @@ namespace ChickenDist.Forms
         private void BuildCategoryChips()
         {
             pnlCategories.Controls.Clear();
-            string[] cats = { "الكل", "🛒 المبيعات", "📥 المشتريات", "📦 المخازن", "🏭 التصنيع", "💰 المالية", "📊 التقارير", "🚚 الإدارة" };
+            string[] cats = { "الكل", "🛒 المبيعات", "📥 المشتريات", "📦 المخازن", "🏭 التصنيع", "💰 المالية", "🏢 الأصول والشركاء", "📊 التقارير", "🚚 الإدارة" };
 
             foreach (var cat in cats)
             {
@@ -1664,7 +1682,7 @@ namespace ChickenDist.Forms
 
             foreach (var def in AllScreens)
             {
-                if (_activeCategoryFilter != "الكل" && !def.Category.Contains(_activeCategoryFilter.Replace("🛒", "").Replace("📥", "").Replace("📦", "").Replace("🏭", "").Replace("💰", "").Replace("📊", "").Replace("🚚", "").Trim()))
+                if (_activeCategoryFilter != "الكل" && !def.Category.Contains(_activeCategoryFilter.Replace("🛒", "").Replace("📥", "").Replace("📦", "").Replace("🏭", "").Replace("💰", "").Replace("🏢", "").Replace("📊", "").Replace("🚚", "").Trim()))
                     continue;
 
                 if (!string.IsNullOrEmpty(q) && !def.Name.ToLowerInvariant().Contains(q) && !def.Key.ToLowerInvariant().Contains(q) && !def.Category.ToLowerInvariant().Contains(q))
