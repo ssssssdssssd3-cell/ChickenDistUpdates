@@ -425,70 +425,8 @@
     <!-- ── TAB 1: لوحة المؤشرات (DASHBOARD) ── -->
     <div id="tabContent-dashboard" class="tab-pane space-y-4">
       
-      <!-- بطاقة تثبيت التطبيق على الهاتف وشريط حالة الربط المباشر -->
-      <div class="glass-card rounded-2xl p-3.5 sm:p-4 bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 border border-blue-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-md">
-        <div class="flex items-center gap-3 w-full sm:w-auto">
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30 flex-shrink-0">
-            <i class="fa-solid fa-mobile-screen-button"></i>
-          </div>
-          <div>
-            <div class="font-black text-white text-sm flex items-center gap-2">
-              <span>تطبيق المالك السريع على شاشة هاتفك</span>
-              <span class="px-2 py-0.5 rounded-full bg-blue-900/80 border border-blue-500/40 text-blue-300 text-[10px] font-bold">تثبيت فوري PWA</span>
-            </div>
-            <p class="text-slate-400 text-[11px] mt-0.5">ثبّت التطبيق بأيقونة ولوجو المكان على شاشة هاتفك لفتحه بضغطة واحدة دون الحاجة للمتصفح</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
-          <button onclick="triggerInstallApp()" class="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/30 transition">
-            <i class="fa-solid fa-download"></i>
-            <span>تثبيت على الشاشة الرئيسية</span>
-          </button>
-          <button onclick="openQrModal()" title="رمز QR للمشاركة" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition text-xs flex items-center justify-center border border-slate-700">
-            <i class="fa-solid fa-qrcode text-base text-blue-400"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- بطاقة النسخ الاحتياطي السحابي (CLOUD BACKUP & DOWNLOAD CARD) -->
-      <div id="cloudBackupCard" class="glass-card rounded-2xl p-4 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3.5 w-full sm:w-auto">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-600/30 flex-shrink-0">
-            <i class="fa-solid fa-cloud-arrow-down"></i>
-          </div>
-          <div>
-            <div class="font-extrabold text-white text-sm flex items-center gap-2">
-              <span>النسخ الاحتياطي السحابي لقاعدة البيانات</span>
-              <span id="backupStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">محمية سحابياً ✅</span>
-            </div>
-            <div class="text-slate-300 text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span><i class="fa-solid fa-file-zipper text-indigo-400 text-[11px]"></i> <span id="lblBackupFileName">ProSoft_Backup.zip</span></span>
-              <span><i class="fa-solid fa-weight-hanging text-sky-400 text-[11px]"></i> الحجم: <span id="lblBackupFileSize">--</span></span>
-              <span><i class="fa-solid fa-clock text-amber-400 text-[11px]"></i> التوقيت: <span id="lblBackupTime">--</span></span>
-            </div>
-          </div>
-        </div>
-        <button type="button" onclick="confirmDownloadBackup()" 
-                class="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition cursor-pointer">
-          <i class="fa-solid fa-download"></i>
-          <span>تحميل أحدث نسخة احتياطية</span>
-        </button>
-      </div>
-
-      <!-- تنبيه الفترة المحددة وزر الواتساب السريع -->
-      <div class="glass-card rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-slate-300">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-calendar-check text-brand-500 text-base"></i>
-          <div>
-            <div class="font-bold text-white text-sm">بيانات الفترة: <span id="lblActivePeriodText" class="text-brand-400">اليوم</span></div>
-            <span class="text-[11px] text-slate-400">محدثة لحظياً ومطابقة لقاعدة بيانات السيرفر (SQL Server)</span>
-          </div>
-        </div>
-        <button onclick="shareExecutiveReportWhatsApp()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition transform active:scale-95">
-          <i class="fa-brands fa-whatsapp text-base"></i>
-          <span>إرسال ملخص الفترة واتساب</span>
-        </button>
-      </div>
+      <!-- عنصر خفي لحفظ اسم الفترة النشطة للتوافق البرمجي ومشاركة الواتساب -->
+      <span id="lblActivePeriodText" class="hidden">اليوم</span>
 
       <!-- كروت الإحصائيات الرئيسية للفترة -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -625,7 +563,7 @@
                 <th class="py-2">العميل</th>
                 <th class="py-2">الإجمالي</th>
                 <th class="py-2">النوع</th>
-                <th class="py-2 text-center">واتساب</th>
+                <th class="py-2 text-center">الإجراءات</th>
               </tr>
             </thead>
             <tbody id="tblRecentSalesPreview" class="divide-y divide-slate-800/60 text-slate-300">
@@ -669,7 +607,7 @@
                 <th class="p-3">المتبقي</th>
                 <th class="p-3">الدفع</th>
                 <th class="p-3">النوع</th>
-                <th class="p-3 text-center">مشاركة</th>
+                <th class="p-3 text-center">الإجراءات</th>
               </tr>
             </thead>
             <tbody id="tblSalesFull" class="divide-y divide-slate-800 text-slate-300">
@@ -1142,6 +1080,88 @@
     </div>
 
   </main>
+
+  <!-- ========================================== -->
+  <!-- 5.0 نافذة تفاصيل أصناف الفاتورة وحالة المرتجع (INVOICE ITEMS & RETURNS MODAL) -->
+  <!-- ========================================== -->
+  <div id="saleDetailsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4">
+    <div class="glass-card rounded-2xl p-4 sm:p-5 w-full max-w-2xl shadow-2xl border border-slate-700 text-right relative overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-file-invoice"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-sm sm:text-base flex items-center gap-2">
+              <span id="modalSaleTitle">فاتورة مبيعات #0</span>
+              <span id="modalSalePaymentBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">نقدي</span>
+            </h3>
+            <span class="text-[11px] text-slate-400" id="modalSaleDate">--</span>
+          </div>
+        </div>
+        <button onclick="closeSaleDetailsModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Quick Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/90 rounded-xl p-3 border border-slate-800 mb-3 flex-shrink-0 text-xs">
+        <div>
+          <span class="text-slate-400 text-[10px] block">العميل</span>
+          <span class="font-bold text-white truncate block" id="modalSaleClient">عميل نقدي</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">إجمالي الفاتورة</span>
+          <span class="font-black text-emerald-400 block" id="modalSaleTotal">0.00 ج.م</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">المدفوع</span>
+          <span class="font-bold text-slate-200 block" id="modalSalePaid">0.00 ج.م</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">المتبقي</span>
+          <span class="font-bold text-rose-400 block" id="modalSaleRemaining">0.00 ج.م</span>
+        </div>
+      </div>
+
+      <!-- Scrollable Items Table -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-slate-800 mb-3">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-slate-900 text-slate-400 sticky top-0 border-b border-slate-800">
+            <tr>
+              <th class="p-2.5 text-center">#</th>
+              <th class="p-2.5">الصنف</th>
+              <th class="p-2.5 text-center">الكمية</th>
+              <th class="p-2.5 text-center">السعر</th>
+              <th class="p-2.5 text-center">الإجمالي</th>
+              <th class="p-2.5 text-center">حالة الصنف</th>
+            </tr>
+          </thead>
+          <tbody id="modalSaleItemsBody" class="divide-y divide-slate-800 text-slate-300">
+            <tr><td colspan="6" class="p-4 text-center text-slate-500">جاري التحميل...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Returns Indicator / Legend -->
+      <div id="modalSaleReturnLegend" class="hidden mb-3 p-2.5 bg-amber-500/15 border border-amber-500/40 rounded-xl text-xs text-amber-300 flex items-center gap-2 flex-shrink-0">
+        <i class="fa-solid fa-triangle-exclamation text-amber-400 text-sm"></i>
+        <span><strong>تنبيه:</strong> الأصناف المظللة باللون الأصفر تم تسجيل حركة مرتجع عليها</span>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between gap-2 flex-shrink-0">
+        <button id="modalSaleBtnWhatsApp" onclick="" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition text-xs">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span>مشاركة الفاتورة واتساب</span>
+        </button>
+        <button onclick="closeSaleDetailsModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition text-xs">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ========================================== -->
   <!-- 5. نافذة منبثقة لكشف الحساب والتفاصيل (MODAL) -->
@@ -2530,9 +2550,14 @@
           <td class="py-2.5 font-black text-emerald-400">${parseFloat(s.TotalAmount || 0).toFixed(2)} ج.م</td>
           <td class="py-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.PaymentType === 'آجل' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}">${s.PaymentType || 'نقدي'}</span></td>
           <td class="py-2.5 text-center">
-            <button onclick="shareSaleInvoiceWhatsApp(${s.SaleID}, '${escapeQuotes(s.ClientName)}', ${s.TotalAmount}, ${s.PaidAmount}, ${s.RemainingAmount}, '${s.SaleDate}')" class="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition" title="مشاركة الفاتورة واتساب">
-              <i class="fa-brands fa-whatsapp text-xs"></i>
-            </button>
+            <div class="flex items-center justify-center gap-1">
+              <button onclick="openSaleItemsModal(${s.SaleID})" class="p-1.5 bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg transition" title="عرض أصناف الفاتورة">
+                <i class="fa-solid fa-eye text-xs"></i>
+              </button>
+              <button onclick="shareSaleInvoiceWhatsApp(${s.SaleID}, '${escapeQuotes(s.ClientName)}', ${s.TotalAmount}, ${s.PaidAmount}, ${s.RemainingAmount}, '${s.SaleDate}')" class="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition" title="مشاركة الفاتورة واتساب">
+                <i class="fa-brands fa-whatsapp text-xs"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `).join('');
@@ -2564,13 +2589,105 @@
           <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.PaymentType === 'آجل' ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'}">${s.PaymentType || 'نقدي'}</span></td>
           <td class="p-3 text-slate-400 text-[11px]">${s.InvoiceType || 'مبيعات'}</td>
           <td class="p-3 text-center">
-            <button onclick="shareSaleInvoiceWhatsApp(${s.SaleID}, '${escapeQuotes(s.ClientName)}', ${s.TotalAmount}, ${s.PaidAmount}, ${s.RemainingAmount}, '${s.SaleDate}')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition text-[11px] font-bold inline-flex items-center gap-1" title="مشاركة الفاتورة واتساب">
-              <i class="fa-brands fa-whatsapp"></i>
-              <span>واتساب</span>
-            </button>
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="openSaleItemsModal(${s.SaleID})" class="px-2.5 py-1.5 bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg transition text-[11px] font-bold inline-flex items-center gap-1 shadow-sm" title="عرض أصناف الفاتورة">
+                <i class="fa-solid fa-eye"></i>
+                <span class="hidden sm:inline">الأصناف</span>
+              </button>
+              <button onclick="shareSaleInvoiceWhatsApp(${s.SaleID}, '${escapeQuotes(s.ClientName)}', ${s.TotalAmount}, ${s.PaidAmount}, ${s.RemainingAmount}, '${s.SaleDate}')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition text-[11px] font-bold inline-flex items-center gap-1 shadow-sm" title="مشاركة الفاتورة واتساب">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span class="hidden sm:inline">واتساب</span>
+              </button>
+            </div>
           </td>
         </tr>
       `).join('');
+    }
+
+    function openSaleItemsModal(saleId) {
+      const allSales = (rawData && rawData.RecentSales) ? rawData.RecentSales : [];
+      const sale = allSales.find(s => s.SaleID == saleId);
+      if (!sale) return;
+
+      document.getElementById('modalSaleTitle').textContent = `فاتورة مبيعات #${sale.SaleID}`;
+      document.getElementById('modalSaleDate').textContent = sale.SaleDate || '';
+      document.getElementById('modalSaleClient').textContent = sale.ClientName || 'عميل نقدي';
+      document.getElementById('modalSaleTotal').textContent = `${parseFloat(sale.TotalAmount || 0).toFixed(2)} ج.م`;
+      document.getElementById('modalSalePaid').textContent = `${parseFloat(sale.PaidAmount || 0).toFixed(2)} ج.م`;
+      document.getElementById('modalSaleRemaining').textContent = `${parseFloat(sale.RemainingAmount || 0).toFixed(2)} ج.م`;
+
+      const badge = document.getElementById('modalSalePaymentBadge');
+      if (badge) {
+        if (sale.PaymentType === 'آجل') {
+          badge.textContent = 'آجل';
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800';
+        } else {
+          badge.textContent = 'نقدي';
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800';
+        }
+      }
+
+      const btnWa = document.getElementById('modalSaleBtnWhatsApp');
+      if (btnWa) {
+        btnWa.onclick = () => shareSaleInvoiceWhatsApp(sale.SaleID, sale.ClientName || '', sale.TotalAmount, sale.PaidAmount, sale.RemainingAmount, sale.SaleDate);
+      }
+
+      const items = sale.Items || [];
+      const tbody = document.getElementById('modalSaleItemsBody');
+      const legend = document.getElementById('modalSaleReturnLegend');
+
+      let hasAnyReturn = false;
+
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">
+          <i class="fa-solid fa-boxes-stacked text-3xl text-slate-600 mb-2 block"></i>
+          <p class="font-bold text-xs text-slate-300">لم يتم تضمين أصناف هذه الفاتورة بعد</p>
+          <span class="text-[11px] text-slate-500 block mt-1">ستظهر تفاصيل الأصناف والمرتجعات فور إتمام أول مزامنة تلقائية من البرنامج المكتبي المحدث 🔄</span>
+        </td></tr>`;
+        if (legend) legend.classList.add('hidden');
+      } else {
+        tbody.innerHTML = items.map((it, idx) => {
+          const retQty = parseFloat(it.ReturnedQty || 0);
+          const isReturned = it.IsReturned === true || retQty > 0;
+          if (isReturned) hasAnyReturn = true;
+
+          // تمييز الأصناف التي حصل عليها مرتجع باللون الأصفر بدقة
+          const rowClass = isReturned 
+            ? 'bg-amber-400/20 text-amber-200 font-bold border-r-4 border-r-amber-400' 
+            : 'hover:bg-slate-800/40 text-slate-300';
+
+          const statusBadge = isReturned
+            ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 shadow-sm inline-flex items-center gap-1">
+                 <i class="fa-solid fa-rotate-left"></i> مرتجع ${retQty > 0 ? `(${retQty})` : ''}
+               </span>`
+            : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-400">مباع</span>`;
+
+          return `
+            <tr class="${rowClass} transition">
+              <td class="p-2.5 text-center text-slate-400 text-[11px]">${idx + 1}</td>
+              <td class="p-2.5">
+                <div class="font-bold ${isReturned ? 'text-amber-200' : 'text-white'}">${it.ProductName || 'صنف بدون اسم'}</div>
+                ${it.UnitName ? `<span class="text-[10px] ${isReturned ? 'text-amber-300/80' : 'text-slate-400'}">${it.UnitName}</span>` : ''}
+              </td>
+              <td class="p-2.5 text-center font-bold">${parseFloat(it.Quantity || 0).toFixed(2)}</td>
+              <td class="p-2.5 text-center">${parseFloat(it.UnitPrice || 0).toFixed(2)}</td>
+              <td class="p-2.5 text-center font-black ${isReturned ? 'text-amber-300' : 'text-emerald-400'}">${parseFloat(it.TotalPrice || 0).toFixed(2)}</td>
+              <td class="p-2.5 text-center">${statusBadge}</td>
+            </tr>
+          `;
+        }).join('');
+
+        if (legend) {
+          if (hasAnyReturn) legend.classList.remove('hidden');
+          else legend.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('saleDetailsModal').classList.remove('hidden');
+    }
+
+    function closeSaleDetailsModal() {
+      document.getElementById('saleDetailsModal').classList.add('hidden');
     }
 
     function renderPurchasesTable() {
@@ -3121,12 +3238,25 @@
 
     function shareSaleInvoiceWhatsApp(saleId, clientName, total, paid, remaining, date) {
       const storeName = rawData.StoreName || "شركة برو سوفت";
+      const allSales = (rawData && rawData.RecentSales) ? rawData.RecentSales : [];
+      const sObj = allSales.find(x => x.SaleID == saleId);
+
+      let itemsSection = '';
+      if (sObj && sObj.Items && sObj.Items.length > 0) {
+        itemsSection = '\n📦 *أصناف الفاتورة:*\n' + sObj.Items.map(it => {
+          const retQty = parseFloat(it.ReturnedQty || 0);
+          const isRet = it.IsReturned === true || retQty > 0;
+          const retTag = isRet ? ` [مرتجع ⚠️ ${retQty > 0 ? `(${retQty})` : ''}]` : '';
+          return `• ${it.ProductName} (${parseFloat(it.Quantity || 0)} ${it.UnitName || ''}) = ${parseFloat(it.TotalPrice || 0).toFixed(2)} ج.م${retTag}`;
+        }).join('\n') + '\n━━━━━━━━━━━━━━━━━━';
+      }
+
       const text = 
 `🧾 *فاتورة مبيعات رقم #${saleId}*
 🏢 *${storeName}*
 👤 *العميل:* ${clientName || 'عميل نقدي'}
 🗓️ *التاريخ:* ${date || ''}
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━${itemsSection}
 💵 *إجمالي الفاتورة:* ${parseFloat(total || 0).toFixed(2)} ج.م
 ✅ *المدفوع:* ${parseFloat(paid || 0).toFixed(2)} ج.م
 ⏳ *المتبقي:* ${parseFloat(remaining || 0).toFixed(2)} ج.م

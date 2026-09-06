@@ -505,7 +505,7 @@ self.addEventListener('fetch', (event) => {
                 }
                 string usersJson = DataTableToJson(dtUsers);
 
-                // 10. سجل فواتير المبيعات
+                // 10. سجل فواتير المبيعات مع تفاصيل الأصناف وحالة المرتجع
                 DataTable dtRecentSales = DbHelper.Query(@"
                     SELECT TOP 400 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
                            ISNULL(NULLIF(s.CustomClientName, ''), ISNULL(c.ClientName, N'عميل نقدي')) AS ClientName,
@@ -520,7 +520,51 @@ self.addEventListener('fetch', (event) => {
                     FROM Sales s WITH (NOLOCK)
                     LEFT JOIN Clients c WITH (NOLOCK) ON s.ClientID = c.ClientID
                     ORDER BY s.SaleID DESC");
-                string recentSalesJson = DataTableToJson(dtRecentSales);
+
+                DataTable dtSaleItems = null;
+                try
+                {
+                    dtSaleItems = DbHelper.Query(@"
+                        SELECT si.SaleID, si.ProductID, p.ProductName,
+                               ISNULL(si.Quantity, 0) AS Quantity,
+                               ISNULL(si.UnitPrice, 0) AS UnitPrice,
+                               ISNULL(si.TotalPrice, 0) AS TotalPrice,
+                               ISNULL(si.UnitName, ISNULL(p.Unit, N'قطعة')) AS UnitName,
+                               ISNULL(ret.ReturnedQty, 0.0) AS ReturnedQty,
+                               CASE WHEN ISNULL(ret.ReturnedQty, 0.0) > 0 THEN 1 ELSE 0 END AS IsReturned
+                        FROM SaleItems si WITH (NOLOCK)
+                        JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
+                        LEFT JOIN (
+                            SELECT sr.SaleID, ri.ProductID, ISNULL(SUM(ri.Quantity), 0.0) AS ReturnedQty
+                            FROM SalesReturns sr WITH (NOLOCK)
+                            JOIN ReturnItems ri WITH (NOLOCK) ON sr.ReturnID = ri.ReturnID
+                            WHERE sr.SaleID IS NOT NULL
+                            GROUP BY sr.SaleID, ri.ProductID
+                        ) ret ON ret.SaleID = si.SaleID AND ret.ProductID = si.ProductID
+                        WHERE si.SaleID IN (SELECT TOP 400 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
+                        ORDER BY si.SaleID DESC, si.ItemID ASC");
+                }
+                catch
+                {
+                    try
+                    {
+                        dtSaleItems = DbHelper.Query(@"
+                            SELECT si.SaleID, si.ProductID, p.ProductName,
+                                   ISNULL(si.Quantity, 0) AS Quantity,
+                                   ISNULL(si.UnitPrice, 0) AS UnitPrice,
+                                   ISNULL(si.TotalPrice, 0) AS TotalPrice,
+                                   ISNULL(si.UnitName, ISNULL(p.Unit, N'قطعة')) AS UnitName,
+                                   0.0 AS ReturnedQty,
+                                   0 AS IsReturned
+                            FROM SaleItems si WITH (NOLOCK)
+                            JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
+                            WHERE si.SaleID IN (SELECT TOP 400 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
+                            ORDER BY si.SaleID DESC, si.ItemID ASC");
+                    }
+                    catch { }
+                }
+
+                string recentSalesJson = SalesWithItemsToJson(dtRecentSales, dtSaleItems);
 
                 // 11. سجل فواتير المشتريات
                 DataTable dtRecentPurchases = DbHelper.Query(@"
@@ -866,6 +910,90 @@ self.addEventListener('fetch', (event) => {
         public static async Task<bool> PushLiveStatsToFirestoreAsync(string projectId = null)
         {
             return await PushLiveStatsToFirebaseAsync(projectId);
+        }
+
+        private static string SalesWithItemsToJson(DataTable dtSales, DataTable dtItems)
+        {
+            if (dtSales == null || dtSales.Rows.Count == 0) return "[]";
+
+            // تجميع الأصناف والمرتجعات لكل فاتورة
+            var itemsBySaleId = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>();
+            if (dtItems != null && dtItems.Rows.Count > 0)
+            {
+                foreach (DataRow ir in dtItems.Rows)
+                {
+                    if (ir["SaleID"] == DBNull.Value) continue;
+                    int sId = Convert.ToInt32(ir["SaleID"]);
+                    if (!itemsBySaleId.ContainsKey(sId))
+                        itemsBySaleId[sId] = new System.Collections.Generic.List<string>();
+
+                    string pName = EscapeJsonString(ir["ProductName"] != DBNull.Value ? ir["ProductName"].ToString() : "");
+                    string uName = EscapeJsonString(ir["UnitName"] != DBNull.Value ? ir["UnitName"].ToString() : "");
+                    decimal qty = ir["Quantity"] != DBNull.Value ? Convert.ToDecimal(ir["Quantity"]) : 0m;
+                    decimal uPrice = ir["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(ir["UnitPrice"]) : 0m;
+                    decimal tPrice = ir["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(ir["TotalPrice"]) : 0m;
+                    decimal retQty = ir["ReturnedQty"] != DBNull.Value ? Convert.ToDecimal(ir["ReturnedQty"]) : 0m;
+                    bool isRet = (ir["IsReturned"] != DBNull.Value && Convert.ToInt32(ir["IsReturned"]) == 1) || retQty > 0m;
+
+                    string itemJson = "{" +
+                        "\"ProductID\":" + (ir["ProductID"] != DBNull.Value ? ir["ProductID"].ToString() : "0") + "," +
+                        "\"ProductName\":\"" + pName + "\"," +
+                        "\"UnitName\":\"" + uName + "\"," +
+                        "\"Quantity\":" + qty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"UnitPrice\":" + uPrice.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TotalPrice\":" + tPrice.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"ReturnedQty\":" + retQty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"IsReturned\":" + (isRet ? "true" : "false") +
+                        "}";
+                    itemsBySaleId[sId].Add(itemJson);
+                }
+            }
+
+            var sb = new StringBuilder("[");
+            for (int i = 0; i < dtSales.Rows.Count; i++)
+            {
+                if (i > 0) sb.Append(",");
+                sb.Append("{");
+                for (int j = 0; j < dtSales.Columns.Count; j++)
+                {
+                    if (j > 0) sb.Append(",");
+                    string colName = dtSales.Columns[j].ColumnName;
+                    object val = dtSales.Rows[i][j];
+                    sb.Append($"\"{EscapeJsonString(colName)}\":");
+                    if (val == DBNull.Value || val == null)
+                    {
+                        sb.Append("null");
+                    }
+                    else if (val is bool b)
+                    {
+                        sb.Append(b ? "true" : "false");
+                    }
+                    else if (val is int || val is long || val is short || val is decimal || val is double || val is float)
+                    {
+                        sb.Append(val.ToString().Replace(",", "."));
+                    }
+                    else
+                    {
+                        sb.Append($"\"{EscapeJsonString(val.ToString())}\"");
+                    }
+                }
+
+                // تضمين مصفوفة أصناف الفاتورة وحالة المرتجع
+                int saleId = Convert.ToInt32(dtSales.Rows[i]["SaleID"]);
+                sb.Append(",\"Items\":");
+                if (itemsBySaleId.TryGetValue(saleId, out var itemList) && itemList.Count > 0)
+                {
+                    sb.Append("[" + string.Join(",", itemList) + "]");
+                }
+                else
+                {
+                    sb.Append("[]");
+                }
+
+                sb.Append("}");
+            }
+            sb.Append("]");
+            return sb.ToString();
         }
 
         private static string DataTableToJson(DataTable dt)
