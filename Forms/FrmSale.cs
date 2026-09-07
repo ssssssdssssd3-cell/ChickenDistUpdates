@@ -101,6 +101,7 @@ namespace ChickenDist.Forms
         private bool _isDirty = false;
         private int _editSaleID = 0;
         private int _loadedQuoteID = 0; // معرف عرض الأسعار المحول
+        private int _loadedOnlineOrderID = 0; // معرف طلب المتجر الإلكتروني المحول
         private bool _isCopyMode = false;
         private bool _isScanningBarcode = false;
         private DateTime _loadedLastModified;
@@ -4281,6 +4282,55 @@ namespace ChickenDist.Forms
 			RefreshGrid();
 		}
 
+		public void LoadFromOnlineOrder(int onlineOrderID, string orderNumber, string customerName, string customerPhone, string customerAddress, decimal deliveryCharge, string priceTier, List<SaleItemDTO> orderItems, string notes)
+		{
+			_loadedOnlineOrderID = onlineOrderID;
+			if (!string.IsNullOrEmpty(priceTier))
+			{
+				SetTierButtons(priceTier);
+			}
+
+			if (nudShippingCharge != null)
+			{
+				try { nudShippingCharge.Value = Math.Max(0, deliveryCharge); } catch { }
+			}
+
+			string fullNotes = $"طلب أونلاين: {orderNumber}";
+			if (!string.IsNullOrEmpty(customerPhone)) fullNotes += $" | هاتف: {customerPhone}";
+			if (!string.IsNullOrEmpty(customerAddress)) fullNotes += $" | عنوان: {customerAddress}";
+			if (!string.IsNullOrEmpty(notes)) fullNotes += $" | ملاحظات: {notes}";
+			if (txtNotes != null) txtNotes.Text = fullNotes;
+
+			if (!string.IsNullOrEmpty(customerName) && cboClient != null)
+			{
+				cboClient.Text = $"{customerName} ({customerPhone})".Trim();
+			}
+
+			_items.Clear();
+			if (orderItems != null)
+			{
+				foreach (var item in orderItems)
+				{
+					_items.Add(new SaleItemDTO
+					{
+						ProductID = item.ProductID,
+						ProductName = item.ProductName,
+						ProductCode = item.ProductCode,
+						ShelfLocation = item.ShelfLocation,
+						UnitName = item.UnitName,
+						Quantity = item.Quantity,
+						UnitPrice = item.UnitPrice,
+						DiscountAmt = 0m,
+						DiscountPct = 0m,
+						Factor = item.Factor > 0 ? item.Factor : 1m
+					});
+				}
+			}
+
+			RefreshGrid();
+			CalculateNet();
+		}
+
 
 		private void SaveInvoiceLogic(bool isDraft)
 		{
@@ -4697,6 +4747,11 @@ namespace ChickenDist.Forms
 					{
 						try { PriceQuoteDAL.MarkAsConverted(_loadedQuoteID, num3); } catch { }
 						_loadedQuoteID = 0;
+					}
+					if (_loadedOnlineOrderID > 0)
+					{
+						try { OnlineOrdersDAL.LinkToSale(_loadedOnlineOrderID, num3); } catch { }
+						_loadedOnlineOrderID = 0;
 					}
 					if (isDraft)
 					{

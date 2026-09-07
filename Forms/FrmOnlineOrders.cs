@@ -48,6 +48,7 @@ namespace ChickenDist.Forms
         private Label lblDetailDelivery;
         private Label lblDetailTotal;
         private DataGridView dgvItems;
+        private Label lblStockWarning;
 
         // Action Buttons
         private Button btnConvertToSale;
@@ -482,13 +483,100 @@ namespace ChickenDist.Forms
             // 4.3 بنود وأصناف الطلب (Items Table - Fill)
             var grpItems = new GroupBox
             {
-                Text = "🛒 بنود الطلب",
+                Text = "🛒 بنود الطلب وإدارة الأصناف",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 Padding = new Padding(4)
             };
+
+            lblStockWarning = new Label
+            {
+                Text = "⚠️ تنبيه: الطلب يحتوي على أصناف غير متوفرة في المخزن بالكمية المطلوبة (مظللة بالأحمر). يمكنك استبدالها أو تعديلها.",
+                Dock = DockStyle.Top,
+                Height = 26,
+                BackColor = Color.FromArgb(88, 28, 28),
+                ForeColor = Color.FromArgb(254, 202, 202),
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible = false
+            };
+
+            var pnlItemsToolbar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 32,
+                FlowDirection = FlowDirection.RightToLeft,
+                BackColor = Color.FromArgb(15, 23, 42),
+                Padding = new Padding(2, 2, 2, 2),
+                Margin = new Padding(0)
+            };
+
+            var btnAddAltItem = new Button
+            {
+                Text = "➕ إضافة صنف بديل",
+                Height = 26,
+                AutoSize = true,
+                BackColor = Color.FromArgb(79, 70, 229),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
+            };
+            btnAddAltItem.FlatAppearance.BorderSize = 0;
+            btnAddAltItem.Click += (s, e) => AddAlternativeItem();
+
+            var btnEditQty = new Button
+            {
+                Text = "✏️ تعديل الكمية",
+                Height = 26,
+                AutoSize = true,
+                BackColor = Color.FromArgb(217, 119, 6),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
+            };
+            btnEditQty.FlatAppearance.BorderSize = 0;
+            btnEditQty.Click += (s, e) => EditCurrentItemQuantity();
+
+            var btnDeleteItem = new Button
+            {
+                Text = "🗑️ حذف صنف",
+                Height = 26,
+                AutoSize = true,
+                BackColor = Color.FromArgb(220, 38, 38),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
+            };
+            btnDeleteItem.FlatAppearance.BorderSize = 0;
+            btnDeleteItem.Click += (s, e) => DeleteCurrentItem();
+
+            var btnOpenInSales = new Button
+            {
+                Text = "🛒 تعديل في شاشة المبيعات",
+                Height = 26,
+                AutoSize = true,
+                BackColor = Color.FromArgb(5, 150, 105),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
+            };
+            btnOpenInSales.FlatAppearance.BorderSize = 0;
+            btnOpenInSales.Click += (s, e) => ConvertOrderToSaleInvoice(forceOpenInSalesScreen: true);
+
+            pnlItemsToolbar.Controls.Add(btnAddAltItem);
+            pnlItemsToolbar.Controls.Add(btnEditQty);
+            pnlItemsToolbar.Controls.Add(btnDeleteItem);
+            pnlItemsToolbar.Controls.Add(btnOpenInSales);
 
             dgvItems = new DataGridView
             {
@@ -511,8 +599,25 @@ namespace ChickenDist.Forms
             dgvItems.ColumnHeadersHeight = 26;
             dgvItems.RowTemplate.Height = 24;
             dgvItems.DefaultCellStyle.BackColor = Color.FromArgb(15, 23, 42);
+            dgvItems.CellDoubleClick += (s, e) => EditCurrentItemQuantity();
+            dgvItems.CellFormatting += DgvItems_CellFormatting;
+            dgvItems.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.F2) { EditCurrentItemQuantity(); e.Handled = true; }
+                else if (e.KeyCode == Keys.Delete) { DeleteCurrentItem(); e.Handled = true; }
+            };
+
+            var ctxItems = new ContextMenuStrip();
+            ctxItems.Items.Add(new ToolStripMenuItem("✏️ تعديل الكمية (F2)", null, (s, e) => EditCurrentItemQuantity()));
+            ctxItems.Items.Add(new ToolStripMenuItem("🗑️ حذف الصنف من الطلب (Delete)", null, (s, e) => DeleteCurrentItem()));
+            ctxItems.Items.Add(new ToolStripSeparator());
+            ctxItems.Items.Add(new ToolStripMenuItem("➕ إضافة صنف بديل للطلب", null, (s, e) => AddAlternativeItem()));
+            ctxItems.Items.Add(new ToolStripMenuItem("🛒 فتح الطلب في شاشة المبيعات للتعديل الحر", null, (s, e) => ConvertOrderToSaleInvoice(forceOpenInSalesScreen: true)));
+            dgvItems.ContextMenuStrip = ctxItems;
 
             grpItems.Controls.Add(dgvItems);
+            grpItems.Controls.Add(pnlItemsToolbar);
+            grpItems.Controls.Add(lblStockWarning);
 
             // 4.4 ملخص الحسابات المالي (Financial Totals - 28px)
             var pnlTotals = new TableLayoutPanel
@@ -995,7 +1100,7 @@ namespace ChickenDist.Forms
         {
             try
             {
-                DataTable dt = OnlineOrdersDAL.GetOrderItems(orderId);
+                DataTable dt = OnlineOrdersDAL.GetOrderItems(orderId, includeStock: true);
                 dgvItems.DataSource = dt;
 
                 if (dgvItems.Columns["ItemRowID"] != null) dgvItems.Columns["ItemRowID"].Visible = false;
@@ -1006,47 +1111,117 @@ namespace ChickenDist.Forms
                 if (dgvItems.Columns["ProductName"] != null)
                 {
                     dgvItems.Columns["ProductName"].HeaderText = "اسم الصنف";
-                    dgvItems.Columns["ProductName"].FillWeight = 140;
+                    dgvItems.Columns["ProductName"].FillWeight = 130;
                     dgvItems.Columns["ProductName"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
                 }
                 if (dgvItems.Columns["UnitName"] != null)
                 {
                     dgvItems.Columns["UnitName"].HeaderText = "الوحدة";
-                    dgvItems.Columns["UnitName"].FillWeight = 65;
+                    dgvItems.Columns["UnitName"].FillWeight = 55;
                     dgvItems.Columns["UnitName"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                 }
                 if (dgvItems.Columns["Quantity"] != null)
                 {
-                    dgvItems.Columns["Quantity"].HeaderText = "الكمية";
+                    dgvItems.Columns["Quantity"].HeaderText = "المطلوب";
                     dgvItems.Columns["Quantity"].DefaultCellStyle.Format = "G29";
-                    dgvItems.Columns["Quantity"].FillWeight = 60;
+                    dgvItems.Columns["Quantity"].FillWeight = 55;
                     dgvItems.Columns["Quantity"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
+                if (dgvItems.Columns["AvailableStock"] != null)
+                {
+                    dgvItems.Columns["AvailableStock"].HeaderText = "المتاح بالمخزن";
+                    dgvItems.Columns["AvailableStock"].DefaultCellStyle.Format = "G29";
+                    dgvItems.Columns["AvailableStock"].FillWeight = 65;
+                    dgvItems.Columns["AvailableStock"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                    dgvItems.Columns["AvailableStock"].DefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+                }
+                if (dgvItems.Columns["StockStatus"] != null)
+                {
+                    dgvItems.Columns["StockStatus"].HeaderText = "حالة التوفر";
+                    dgvItems.Columns["StockStatus"].FillWeight = 70;
+                    dgvItems.Columns["StockStatus"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                    dgvItems.Columns["StockStatus"].DefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
                 if (dgvItems.Columns["UnitPrice"] != null)
                 {
                     dgvItems.Columns["UnitPrice"].HeaderText = "السعر";
                     dgvItems.Columns["UnitPrice"].DefaultCellStyle.Format = "N2";
-                    dgvItems.Columns["UnitPrice"].FillWeight = 70;
+                    dgvItems.Columns["UnitPrice"].FillWeight = 60;
                     dgvItems.Columns["UnitPrice"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
                 }
                 if (dgvItems.Columns["TotalPrice"] != null)
                 {
                     dgvItems.Columns["TotalPrice"].HeaderText = "الإجمالي";
                     dgvItems.Columns["TotalPrice"].DefaultCellStyle.Format = "N2";
-                    dgvItems.Columns["TotalPrice"].FillWeight = 80;
+                    dgvItems.Columns["TotalPrice"].FillWeight = 65;
                     dgvItems.Columns["TotalPrice"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
                     dgvItems.Columns["TotalPrice"].DefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
                 if (dgvItems.Columns["ProductCode"] != null)
                 {
                     dgvItems.Columns["ProductCode"].HeaderText = "الكود";
-                    dgvItems.Columns["ProductCode"].FillWeight = 60;
+                    dgvItems.Columns["ProductCode"].FillWeight = 50;
                     dgvItems.Columns["ProductCode"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                 }
+
+                // فحص وجود أصناف غير متوفرة لإظهار شريط التحذير
+                bool hasOutOfStock = false;
+                if (dt != null)
+                {
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        decimal req = r["Quantity"] != DBNull.Value ? Convert.ToDecimal(r["Quantity"]) : 0m;
+                        decimal avail = r["AvailableStock"] != DBNull.Value ? Convert.ToDecimal(r["AvailableStock"]) : 0m;
+                        if (avail < req)
+                        {
+                            hasOutOfStock = true;
+                            break;
+                        }
+                    }
+                }
+                if (lblStockWarning != null) lblStockWarning.Visible = hasOutOfStock;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("LoadOrderItems error: " + ex.Message);
+            }
+        }
+
+        private void DgvItems_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= dgvItems.Rows.Count) return;
+
+            var row = dgvItems.Rows[e.RowIndex];
+            decimal reqQty = 0m;
+            decimal availStock = 0m;
+
+            if (row.Cells["Quantity"] != null && row.Cells["Quantity"].Value != DBNull.Value)
+                decimal.TryParse(row.Cells["Quantity"].Value.ToString(), out reqQty);
+
+            if (row.Cells["AvailableStock"] != null && row.Cells["AvailableStock"].Value != DBNull.Value)
+                decimal.TryParse(row.Cells["AvailableStock"].Value.ToString(), out availStock);
+
+            string colName = dgvItems.Columns[e.ColumnIndex].Name;
+
+            if (colName == "StockStatus" || colName == "AvailableStock")
+            {
+                if (availStock <= 0)
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(239, 68, 68);
+                }
+                else if (availStock < reqQty)
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(245, 158, 11);
+                }
+                else
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(16, 185, 129);
+                }
+            }
+
+            if (availStock < reqQty && colName == "ProductName")
+            {
+                e.CellStyle.ForeColor = availStock <= 0 ? Color.FromArgb(248, 113, 113) : Color.FromArgb(251, 191, 36);
             }
         }
 
@@ -1089,7 +1264,204 @@ namespace ChickenDist.Forms
             RefreshStats();
         }
 
-        private void ConvertOrderToSaleInvoice()
+        private void EditCurrentItemQuantity()
+        {
+            if (_selectedOrderID <= 0 || _selectedOrderRow == null) return;
+            if (dgvItems.CurrentRow == null)
+            {
+                MessageBox.Show("يرجى اختيار صنف لتعديل كميته!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int existingSaleId = _selectedOrderRow["CreatedSaleID"] != DBNull.Value ? Convert.ToInt32(_selectedOrderRow["CreatedSaleID"]) : 0;
+            if (existingSaleId > 0)
+            {
+                MessageBox.Show("لا يمكن تعديل أصناف طلب تم تحويله مسبقاً إلى فاتورة مبيعات!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var row = dgvItems.CurrentRow;
+            int itemRowId = Convert.ToInt32(row.Cells["ItemRowID"].Value);
+            string pName = row.Cells["ProductName"].Value?.ToString() ?? "";
+            decimal curQty = Convert.ToDecimal(row.Cells["Quantity"].Value);
+            decimal unitPrice = Convert.ToDecimal(row.Cells["UnitPrice"].Value);
+            decimal curStock = row.Cells["AvailableStock"] != null && row.Cells["AvailableStock"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["AvailableStock"].Value) : 0m;
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "تعديل كمية الصنف بالطلب";
+                dlg.Size = new Size(380, 220);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.BackColor = Color.FromArgb(15, 23, 42);
+                dlg.ForeColor = Color.White;
+                dlg.Font = new Font("Segoe UI", 9f);
+
+                var lblInfo = new Label
+                {
+                    Text = $"الصنف: {pName}\nالسعر: {unitPrice:N2} ج.م | الرصيد المتاح بالمخزن: {curStock:G29}",
+                    Dock = DockStyle.Top,
+                    Height = 45,
+                    Padding = new Padding(12, 8, 12, 0),
+                    ForeColor = Color.FromArgb(148, 163, 184)
+                };
+
+                var lblPrompt = new Label
+                {
+                    Text = "الكمية الجديدة المطلوبة:",
+                    Location = new Point(20, 60),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(56, 189, 248)
+                };
+
+                var nudQty = new NumericUpDown
+                {
+                    Location = new Point(20, 85),
+                    Size = new Size(320, 28),
+                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    DecimalPlaces = 2,
+                    Minimum = 0.01m,
+                    Maximum = 99999m,
+                    Value = Math.Max(0.01m, curQty),
+                    BackColor = Color.FromArgb(30, 41, 59),
+                    ForeColor = Color.White
+                };
+
+                var btnOk = new Button
+                {
+                    Text = "حفظ التعديل",
+                    DialogResult = DialogResult.OK,
+                    Location = new Point(20, 130),
+                    Size = new Size(150, 34),
+                    BackColor = Color.FromArgb(16, 185, 129),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCancel = new Button
+                {
+                    Text = "إلغاء",
+                    DialogResult = DialogResult.Cancel,
+                    Location = new Point(190, 130),
+                    Size = new Size(150, 34),
+                    BackColor = Color.FromArgb(51, 65, 85),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                    Cursor = Cursors.Hand
+                };
+                btnCancel.FlatAppearance.BorderSize = 0;
+
+                dlg.Controls.Add(lblInfo);
+                dlg.Controls.Add(lblPrompt);
+                dlg.Controls.Add(nudQty);
+                dlg.Controls.Add(btnOk);
+                dlg.Controls.Add(btnCancel);
+                dlg.AcceptButton = btnOk;
+                dlg.CancelButton = btnCancel;
+
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    decimal newQty = nudQty.Value;
+                    OnlineOrdersDAL.UpdateOrderItem(itemRowId, newQty, unitPrice, _selectedOrderID);
+                    RefreshCurrentOrderData();
+                }
+            }
+        }
+
+        private void DeleteCurrentItem()
+        {
+            if (_selectedOrderID <= 0 || _selectedOrderRow == null) return;
+            if (dgvItems.CurrentRow == null)
+            {
+                MessageBox.Show("يرجى اختيار صنف لحذفه من الطلب!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int existingSaleId = _selectedOrderRow["CreatedSaleID"] != DBNull.Value ? Convert.ToInt32(_selectedOrderRow["CreatedSaleID"]) : 0;
+            if (existingSaleId > 0)
+            {
+                MessageBox.Show("لا يمكن حذف أصناف من طلب تم تحويله مسبقاً إلى فاتورة مبيعات!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var row = dgvItems.CurrentRow;
+            int itemRowId = Convert.ToInt32(row.Cells["ItemRowID"].Value);
+            string pName = row.Cells["ProductName"].Value?.ToString() ?? "";
+
+            var ask = MessageBox.Show($"هل أنت متأكد من حذف الصنف:\n({pName})\nمن الطلب؟ سيتم استبعاده وتحديث إجمالي الطلب فوراً.", "حذف صنف من الطلب", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (ask == DialogResult.Yes)
+            {
+                OnlineOrdersDAL.DeleteOrderItem(itemRowId, _selectedOrderID);
+                RefreshCurrentOrderData();
+            }
+        }
+
+        private void AddAlternativeItem()
+        {
+            if (_selectedOrderID <= 0 || _selectedOrderRow == null) return;
+
+            int existingSaleId = _selectedOrderRow["CreatedSaleID"] != DBNull.Value ? Convert.ToInt32(_selectedOrderRow["CreatedSaleID"]) : 0;
+            if (existingSaleId > 0)
+            {
+                MessageBox.Show("لا يمكن إضافة أصناف لطلب تم تحويله مسبقاً إلى فاتورة مبيعات!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new FrmProductSearch(warehouseID: null, isPurchaseMode: false, defaultShowZeroStock: false))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                {
+                    int pid = dlg.SelectedProductID;
+                    decimal qty = dlg.SelectedQuantity > 0 ? dlg.SelectedQuantity : 1m;
+                    decimal price = dlg.SelectedPrice;
+                    string unit = dlg.SelectedUnitName;
+
+                    string pName = "صنف بديل";
+                    var dtProd = DbHelper.Query("SELECT ProductName, Unit, SalePrice, WholesalePrice FROM Products WITH (NOLOCK) WHERE ProductID = @id", DbHelper.P("@id", pid));
+                    if (dtProd != null && dtProd.Rows.Count > 0)
+                    {
+                        pName = dtProd.Rows[0]["ProductName"]?.ToString() ?? pName;
+                        if (string.IsNullOrEmpty(unit)) unit = dtProd.Rows[0]["Unit"]?.ToString() ?? "قطعة";
+                        if (price <= 0)
+                        {
+                            string tier = _selectedOrderRow["PriceTier"]?.ToString() ?? "قطاعي";
+                            if (tier == "جملة" || tier == "Wholesale")
+                                price = dtProd.Rows[0]["WholesalePrice"] != DBNull.Value ? Convert.ToDecimal(dtProd.Rows[0]["WholesalePrice"]) : 0m;
+                            if (price <= 0)
+                                price = dtProd.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dtProd.Rows[0]["SalePrice"]) : 0m;
+                        }
+                    }
+
+                    OnlineOrdersDAL.AddOrderItem(_selectedOrderID, pid, pName, unit, qty, price);
+                    RefreshCurrentOrderData();
+                    MessageBox.Show($"تمت إضافة الصنف البديل ({pName}) إلى الطلب بنجاح ✅", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void RefreshCurrentOrderData()
+        {
+            if (_selectedOrderID <= 0) return;
+            DataRow updatedRow = OnlineOrdersDAL.GetOrderRow(_selectedOrderID);
+            if (updatedRow != null)
+            {
+                _selectedOrderRow = updatedRow;
+                DisplayOrderDetails(_selectedOrderRow);
+                LoadOrders();
+                RefreshStats();
+            }
+        }
+
+        private void ConvertOrderToSaleInvoice(bool forceOpenInSalesScreen = false)
         {
             if (_selectedOrderID <= 0 || _selectedOrderRow == null)
             {
@@ -1111,7 +1483,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            DataTable dtItems = OnlineOrdersDAL.GetOrderItems(_selectedOrderID);
+            DataTable dtItems = OnlineOrdersDAL.GetOrderItems(_selectedOrderID, includeStock: true);
             if (dtItems == null || dtItems.Rows.Count == 0)
             {
                 MessageBox.Show("الطلب لا يحتوي على أصناف صالحة!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1128,6 +1500,8 @@ namespace ChickenDist.Forms
             string tier = _selectedOrderRow["PriceTier"]?.ToString() ?? "قطاعي";
 
             var saleItemsList = new List<SaleItemDTO>();
+            var outOfStockList = new List<string>();
+
             foreach (DataRow r in dtItems.Rows)
             {
                 int pid = r["ProductID"] != DBNull.Value ? Convert.ToInt32(r["ProductID"]) : 0;
@@ -1135,6 +1509,12 @@ namespace ChickenDist.Forms
                 string uName = r["UnitName"]?.ToString() ?? "قطعة";
                 decimal qty = r["Quantity"] != DBNull.Value ? Convert.ToDecimal(r["Quantity"]) : 1m;
                 decimal price = r["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(r["UnitPrice"]) : 0m;
+                decimal curStock = r["AvailableStock"] != DBNull.Value ? Convert.ToDecimal(r["AvailableStock"]) : 0m;
+
+                if (curStock < qty)
+                {
+                    outOfStockList.Add($"• {pName}: المطلوب ({qty:G29}) - المتاح ({curStock:G29})");
+                }
 
                 saleItemsList.Add(new SaleItemDTO
                 {
@@ -1145,6 +1525,36 @@ namespace ChickenDist.Forms
                     UnitPrice = price,
                     Factor = 1m
                 });
+            }
+
+            bool shouldOpenInSaleScreen = forceOpenInSalesScreen;
+
+            if (!shouldOpenInSaleScreen && outOfStockList.Count > 0)
+            {
+                string warningMsg = "⚠️ تنبيه: يحتوي الطلب على أصناف غير متوفرة في المخزن بالكمية المطلوبة:\n\n"
+                    + string.Join("\n", outOfStockList)
+                    + "\n\n💡 يُفضل فتح الطلب في شاشة المبيعات لاستبدال النواقص أو تعديل الكميات والأسعار.\n\nهل ترغب في فتح الطلب الآن في شاشة المبيعات للتعديل والاستبدال؟\n(اختر [نعم] للتعديل في شاشة المبيعات، أو [لا] للتحويل المباشر السريع)";
+
+                var choice = MessageBox.Show(warningMsg, "أصناف غير متوفرة بالطلب", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+                if (choice == DialogResult.Cancel) return;
+                if (choice == DialogResult.Yes) shouldOpenInSaleScreen = true;
+            }
+
+            if (shouldOpenInSaleScreen)
+            {
+                using (var frm = new FrmSale())
+                {
+                    frm.LoadFromOnlineOrder(_selectedOrderID, orderNum, custName, custPhone, custAddr, delivery, tier, saleItemsList, notes);
+                    frm.ShowDialog(this);
+                }
+                LoadOrders();
+                RefreshStats();
+                if (_selectedOrderID > 0)
+                {
+                    DataRow refreshed = OnlineOrdersDAL.GetOrderRow(_selectedOrderID);
+                    if (refreshed != null) DisplayOrderDetails(refreshed);
+                }
+                return;
             }
 
             string saleNotes = $"طلب أونلاين: {orderNum} | العميل: {custName} - هاتف: {custPhone} - عنوان: {custAddr}";

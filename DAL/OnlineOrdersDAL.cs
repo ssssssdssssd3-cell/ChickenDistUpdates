@@ -94,9 +94,9 @@ namespace ChickenDist.DAL
             return DbHelper.Query(sql, prms.ToArray());
         }
 
-        public static DataTable GetOrderItems(int onlineOrderID)
+        public static DataTable GetOrderItems(int onlineOrderID, bool includeStock = true)
         {
-            return DbHelper.Query(@"
+            var dt = DbHelper.Query(@"
                 SELECT oi.ItemRowID,
                        oi.OnlineOrderID,
                        oi.ProductID,
@@ -112,6 +112,93 @@ namespace ChickenDist.DAL
                 WHERE oi.OnlineOrderID = @id
                 ORDER BY oi.ItemRowID ASC",
                 DbHelper.P("@id", onlineOrderID));
+
+            if (includeStock && dt != null)
+            {
+                if (!dt.Columns.Contains("AvailableStock"))
+                    dt.Columns.Add("AvailableStock", typeof(decimal));
+                if (!dt.Columns.Contains("StockStatus"))
+                    dt.Columns.Add("StockStatus", typeof(string));
+
+                foreach (DataRow r in dt.Rows)
+                {
+                    int pid = r["ProductID"] != DBNull.Value ? Convert.ToInt32(r["ProductID"]) : 0;
+                    decimal qty = r["Quantity"] != DBNull.Value ? Convert.ToDecimal(r["Quantity"]) : 0m;
+                    if (pid > 0)
+                    {
+                        decimal curStock = InventoryDAL.GetProductStock(pid);
+                        r["AvailableStock"] = curStock;
+                        if (curStock <= 0)
+                            r["StockStatus"] = "❌ غير متوفر";
+                        else if (curStock < qty)
+                            r["StockStatus"] = "⚠️ عجز بالرصيد";
+                        else
+                            r["StockStatus"] = "✅ متاح";
+                    }
+                    else
+                    {
+                        r["AvailableStock"] = 0m;
+                        r["StockStatus"] = "❓ صنف يدوي";
+                    }
+                }
+            }
+
+            return dt;
+        }
+
+        public static void UpdateOrderItem(int itemRowID, decimal newQuantity, decimal unitPrice, int orderID)
+        {
+            decimal total = Math.Round(newQuantity * unitPrice, 2);
+            DbHelper.Execute(@"
+                UPDATE OnlineOrderItems 
+                SET Quantity = @qty, UnitPrice = @price, TotalPrice = @tot 
+                WHERE ItemRowID = @rowId",
+                DbHelper.P("@qty", newQuantity),
+                DbHelper.P("@price", unitPrice),
+                DbHelper.P("@tot", total),
+                DbHelper.P("@rowId", itemRowID));
+
+            RecalculateOrderTotals(orderID);
+        }
+
+        public static void DeleteOrderItem(int itemRowID, int orderID)
+        {
+            DbHelper.Execute("DELETE FROM OnlineOrderItems WHERE ItemRowID = @rowId", DbHelper.P("@rowId", itemRowID));
+            RecalculateOrderTotals(orderID);
+        }
+
+        public static void AddOrderItem(int orderID, int? productID, string productName, string unitName, decimal quantity, decimal unitPrice)
+        {
+            decimal total = Math.Round(quantity * unitPrice, 2);
+            DbHelper.Execute(@"
+                INSERT INTO OnlineOrderItems (OnlineOrderID, ProductID, ProductName, UnitName, Quantity, UnitPrice, TotalPrice, Notes)
+                VALUES (@oid, @pid, @name, @unit, @qty, @price, @tot, NULL)",
+                DbHelper.P("@oid", orderID),
+                DbHelper.P("@pid", productID.HasValue && productID.Value > 0 ? (object)productID.Value : DBNull.Value),
+                DbHelper.P("@name", productName ?? "صنف"),
+                DbHelper.P("@unit", (object)unitName ?? DBNull.Value),
+                DbHelper.P("@qty", quantity),
+                DbHelper.P("@price", unitPrice),
+                DbHelper.P("@tot", total));
+
+            RecalculateOrderTotals(orderID);
+        }
+
+        public static void RecalculateOrderTotals(int orderID)
+        {
+            DbHelper.Execute(@"
+                UPDATE OnlineOrders
+                SET SubTotal = ISNULL((SELECT SUM(TotalPrice) FROM OnlineOrderItems WHERE OnlineOrderID = @id), 0),
+                    TotalAmount = ISNULL((SELECT SUM(TotalPrice) FROM OnlineOrderItems WHERE OnlineOrderID = @id), 0) + ISNULL(DeliveryCharge, 0),
+                    UpdatedAt = GETDATE()
+                WHERE OnlineOrderID = @id",
+                DbHelper.P("@id", orderID));
+        }
+
+        public static DataRow GetOrderRow(int orderID)
+        {
+            DataTable dt = DbHelper.Query("SELECT * FROM OnlineOrders WITH (NOLOCK) WHERE OnlineOrderID = @id", DbHelper.P("@id", orderID));
+            return (dt != null && dt.Rows.Count > 0) ? dt.Rows[0] : null;
         }
 
         public static bool OrderExists(string remoteId)
