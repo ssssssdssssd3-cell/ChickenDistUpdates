@@ -785,22 +785,11 @@ namespace ChickenDist.Forms
             string phone = _selectedRow["CustomerPhone"]?.ToString();
             if (string.IsNullOrWhiteSpace(phone)) return;
 
-            string clean = phone.Replace(" ", "").Replace("-", "").Replace("+", "");
-            if (clean.StartsWith("01")) clean = "2" + clean;
-            else if (clean.StartsWith("1") && clean.Length == 10) clean = "20" + clean;
-
             string name = _selectedRow["CustomerName"]?.ToString() ?? "عميلنا العزيز";
-            string text = Uri.EscapeDataString($"مرحباً بك أستاذ {name}، تواصل معك بخصوص طلبك من المتجر الإلكتروني.");
-            string url = $"https://wa.me/{clean}?text={text}";
+            string coName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المتجر الإلكتروني";
+            string msg = $"مرحباً بك أستاذ {name} 👋\nنتواصل معك من {coName} بخصوص طلباتكم عبر المتجر الإلكتروني.\nنسعد دائماً بخدمتكم وتلبية كافة احتياجاتكم! 🙏";
 
-            try
-            {
-                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"تعذر فتح تطبيق واتساب:\n{ex.Message}", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+            WhatsAppSender.OpenWhatsApp(phone, msg);
         }
 
         private void ViewCustomerOrders()

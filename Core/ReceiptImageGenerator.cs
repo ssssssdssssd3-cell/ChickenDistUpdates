@@ -2095,6 +2095,217 @@ namespace ChickenDist.Core
             }
         }
 
+        public static Bitmap GenerateOnlineOrderReceiptImage(int onlineOrderID)
+        {
+            try
+            {
+                var dtOrder = DbHelper.Query(@"
+                    SELECT OnlineOrderID,
+                           ISNULL(OrderNumber, '#' + CAST(OnlineOrderID AS NVARCHAR(20))) AS OrderNumber,
+                           OrderDate, CustomerName, CustomerPhone,
+                           ISNULL(CustomerAddress, '') AS CustomerAddress,
+                           ISNULL(Notes, '') AS Notes,
+                           ISNULL(SubTotal, 0) AS SubTotal,
+                           ISNULL(DeliveryCharge, 0) AS DeliveryCharge,
+                           ISNULL(TotalAmount, 0) AS TotalAmount,
+                           ISNULL(PriceTier, N'قطاعي') AS PriceTier,
+                           ISNULL(Status, N'جديد') AS Status,
+                           CreatedSaleID
+                    FROM OnlineOrders WITH (NOLOCK)
+                    WHERE OnlineOrderID = @id", DbHelper.P("@id", onlineOrderID));
+
+                if (dtOrder == null || dtOrder.Rows.Count == 0) return null;
+                var row = dtOrder.Rows[0];
+
+                var dtItems = OnlineOrdersDAL.GetOrderItems(onlineOrderID, false);
+                int itemCount = dtItems != null ? dtItems.Rows.Count : 0;
+
+                int width = 640;
+                int baseHeight = 440;
+                int rowH = 28;
+                int totalH = baseHeight + (itemCount * rowH);
+
+                var bmp = new Bitmap(width, totalH);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    g.Clear(Color.White);
+
+                    // 1. Header Gradient
+                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 90), Color.FromArgb(15, 23, 42), Color.FromArgb(30, 41, 59), LinearGradientMode.Vertical))
+                    {
+                        g.FillRectangle(brHeader, 0, 0, width, 90);
+                    }
+
+                    string companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المتجر الإلكتروني";
+                    using (var fTitle = new Font("Segoe UI", 16f, FontStyle.Bold))
+                    using (var fSub = new Font("Segoe UI", 10.5f, FontStyle.Bold))
+                    using (var fSmall = new Font("Segoe UI", 8.5f))
+                    {
+                        g.DrawString(companyName, fTitle, Brushes.White, new RectangleF(0, 10, width, 32), SfCenter);
+                        g.DrawString("إشعار تأكيد طلب المتجر الإلكتروني", fSub, new SolidBrush(Color.FromArgb(56, 189, 248)), new RectangleF(0, 44, width, 24), SfCenter);
+                        string coPhone = !string.IsNullOrWhiteSpace(AppConfig.Store_OrderNotificationWhatsApp) ? AppConfig.Store_OrderNotificationWhatsApp : AppConfig.CompanyPhone;
+                        if (!string.IsNullOrWhiteSpace(coPhone))
+                        {
+                            g.DrawString($"خدمة العملاء والواتساب: {coPhone}", fSmall, Brushes.LightGray, new RectangleF(0, 68, width, 18), SfCenter);
+                        }
+                    }
+
+                    int y = 100;
+                    int tLeft = 20;
+                    int tWidth = width - 40;
+
+                    using (var pBorder = new Pen(Color.FromArgb(203, 213, 225)))
+                    using (var pThin = new Pen(Color.FromArgb(226, 232, 240)))
+                    using (var fBold = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+                    using (var fNorm = new Font("Segoe UI", 9f))
+                    using (var fTotal = new Font("Segoe UI", 13f, FontStyle.Bold))
+                    using (var brNavy = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    using (var brBlue = new SolidBrush(Color.FromArgb(37, 99, 235)))
+                    using (var brEmerald = new SolidBrush(Color.FromArgb(5, 150, 105)))
+                    {
+                        // 2. Order Metadata Box
+                        int metaH = 80;
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), tLeft, y, tWidth, metaH);
+                        g.DrawRectangle(pBorder, tLeft, y, tWidth, metaH);
+
+                        string orderNum = row["OrderNumber"]?.ToString() ?? "";
+                        DateTime oDate = row["OrderDate"] != DBNull.Value ? Convert.ToDateTime(row["OrderDate"]) : DateTime.Now;
+                        string custName = row["CustomerName"]?.ToString() ?? "";
+                        string custPhone = row["CustomerPhone"]?.ToString() ?? "";
+                        string custAddr = row["CustomerAddress"]?.ToString() ?? "";
+                        string status = row["Status"]?.ToString() ?? "جديد";
+
+                        // Line 1: Order Num & Date
+                        g.DrawString($"رقم الطلب:  {orderNum}", fBold, brBlue, new RectangleF(tLeft + tWidth / 2, y + 6, tWidth / 2 - 10, 22), SfRtlRight);
+                        g.DrawString($"تاريخ الطلب:  {oDate:yyyy/MM/dd HH:mm}", fNorm, brNavy, new RectangleF(tLeft + 10, y + 6, tWidth / 2 - 10, 22), SfRtlRight);
+
+                        // Line 2: Customer Name & Phone
+                        g.DrawString($"اسم العميل:  {custName}", fBold, brNavy, new RectangleF(tLeft + tWidth / 2, y + 30, tWidth / 2 - 10, 22), SfRtlRight);
+                        g.DrawString($"رقم الهاتف:  {custPhone}", fBold, brNavy, new RectangleF(tLeft + 10, y + 30, tWidth / 2 - 10, 22), SfRtlRight);
+
+                        // Line 3: Address & Status
+                        string addrStr = string.IsNullOrWhiteSpace(custAddr) ? "استلام من المحل" : custAddr;
+                        g.DrawString($"العنوان:  {addrStr}", fNorm, Brushes.DarkSlateGray, new RectangleF(tLeft + tWidth / 2, y + 54, tWidth / 2 - 10, 22), SfRtlRight);
+                        g.DrawString($"حالة الطلب:  {status}", fBold, brEmerald, new RectangleF(tLeft + 10, y + 54, tWidth / 2 - 10, 22), SfRtlRight);
+
+                        y += metaH + 12;
+
+                        // 3. Items Table Header
+                        int tableH = 28;
+                        int wSeq = 35;
+                        int wName = 250;
+                        int wUnit = 70;
+                        int wQty = 65;
+                        int wPrice = 80;
+                        int wTot = tWidth - (wSeq + wName + wUnit + wQty + wPrice);
+
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(30, 41, 59)), tLeft, y, tWidth, tableH);
+                        g.DrawRectangle(pBorder, tLeft, y, tWidth, tableH);
+
+                        int curX = tLeft + tWidth;
+                        DrawCell(g, "م", ref curX, wSeq, fBold, Brushes.White, y, tableH, SfCenter);
+                        DrawCell(g, "اسم الصنف", ref curX, wName, fBold, Brushes.White, y, tableH, SfRtlRight);
+                        DrawCell(g, "الوحدة", ref curX, wUnit, fBold, Brushes.White, y, tableH, SfCenter);
+                        DrawCell(g, "الكمية", ref curX, wQty, fBold, Brushes.White, y, tableH, SfCenter);
+                        DrawCell(g, "السعر", ref curX, wPrice, fBold, Brushes.White, y, tableH, SfCenter);
+                        DrawCell(g, "الإجمالي", ref curX, wTot, fBold, Brushes.White, y, tableH, SfCenter);
+
+                        y += tableH;
+
+                        // 4. Items Rows
+                        int seq = 1;
+                        if (dtItems != null && dtItems.Rows.Count > 0)
+                        {
+                            foreach (DataRow ir in dtItems.Rows)
+                            {
+                                string pName = ir["ProductName"]?.ToString() ?? "";
+                                string unit = ir["UnitName"]?.ToString() ?? "";
+                                decimal qty = ir["Quantity"] != DBNull.Value ? Convert.ToDecimal(ir["Quantity"]) : 0m;
+                                decimal price = ir["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(ir["UnitPrice"]) : 0m;
+                                decimal tot = ir["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(ir["TotalPrice"]) : (qty * price);
+
+                                if (seq % 2 == 0)
+                                    g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), tLeft, y, tWidth, rowH);
+
+                                g.DrawRectangle(pThin, tLeft, y, tWidth, rowH);
+
+                                curX = tLeft + tWidth;
+                                DrawCell(g, seq.ToString(), ref curX, wSeq, fNorm, Brushes.Black, y, rowH, SfCenter);
+                                DrawCell(g, pName, ref curX, wName, fBold, brNavy, y, rowH, SfRtlRight);
+                                DrawCell(g, unit, ref curX, wUnit, fNorm, Brushes.DarkSlateGray, y, rowH, SfCenter);
+                                DrawCell(g, qty.ToString("0.##"), ref curX, wQty, fBold, brBlue, y, rowH, SfCenter);
+                                DrawCell(g, price.ToString("N2"), ref curX, wPrice, fNorm, Brushes.Black, y, rowH, SfCenter);
+                                DrawCell(g, tot.ToString("N2"), ref curX, wTot, fBold, brEmerald, y, rowH, SfCenter);
+
+                                y += rowH;
+                                seq++;
+                            }
+                        }
+
+                        y += 10;
+
+                        // 5. Totals Box
+                        decimal subTotal = row["SubTotal"] != DBNull.Value ? Convert.ToDecimal(row["SubTotal"]) : 0m;
+                        decimal delivery = row["DeliveryCharge"] != DBNull.Value ? Convert.ToDecimal(row["DeliveryCharge"]) : 0m;
+                        decimal totalAmt = row["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(row["TotalAmount"]) : 0m;
+
+                        if (delivery > 0)
+                        {
+                            g.DrawString($"المجموع الفرعي للأصناف: {subTotal:N2} ج.م", fNorm, brNavy, new RectangleF(tLeft + 10, y, tWidth - 20, 20), SfRtlRight);
+                            y += 22;
+                            g.DrawString($"خدمة التوصيل: {delivery:N2} ج.م", fNorm, Brushes.DarkSlateGray, new RectangleF(tLeft + 10, y, tWidth - 20, 20), SfRtlRight);
+                            y += 24;
+                        }
+
+                        int totBoxH = 42;
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(236, 253, 245)), tLeft, y, tWidth, totBoxH);
+                        g.DrawRectangle(new Pen(Color.FromArgb(16, 185, 129), 1.8f), tLeft, y, tWidth, totBoxH);
+                        g.DrawString($"الإجمالي المطلوب سداده:   {totalAmt:N2} ج.م", fTotal, brEmerald, new RectangleF(tLeft + 15, y + 8, tWidth - 30, 26), SfRtlRight);
+                        y += totBoxH + 6;
+
+                        try
+                        {
+                            string tafqeet = TafqeetHelper.ConvertToArabicWords(totalAmt);
+                            g.DrawString($"فقط وقدره: {tafqeet} لا غير.", fNorm, Brushes.DimGray, new RectangleF(tLeft, y, tWidth, 20), SfCenter);
+                            y += 24;
+                        }
+                        catch { }
+
+                        string notes = row["Notes"]?.ToString();
+                        if (!string.IsNullOrWhiteSpace(notes))
+                        {
+                            g.FillRectangle(new SolidBrush(Color.FromArgb(254, 249, 195)), tLeft, y, tWidth, 26);
+                            g.DrawRectangle(new Pen(Color.FromArgb(234, 179, 8)), tLeft, y, tWidth, 26);
+                            g.DrawString($"ملاحظات العميل: {notes}", fNorm, Brushes.DarkGoldenrod, new RectangleF(tLeft + 8, y + 3, tWidth - 16, 20), SfRtlRight);
+                            y += 32;
+                        }
+
+                        // 6. Footer
+                        y += 10;
+                        g.DrawLine(pBorder, tLeft, y, tLeft + tWidth, y);
+                        y += 8;
+                        g.DrawString("نسعد دائماً بخدمتكم وتلبية طلباتكم | نشكركم لتسوقكم معنا عبر المتجر الإلكتروني", fBold, brNavy, new RectangleF(0, y, width, 22), SfCenter);
+                    }
+
+                    return bmp;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GenerateOnlineOrderReceiptImage", ex);
+                return null;
+            }
+        }
+
+        private static void DrawCell(Graphics g, string text, ref int x, int w, Font f, Brush br, int y, int h, StringFormat sf)
+        {
+            x -= w;
+            var rect = new RectangleF(x + 4, y + (h - f.Height) / 2f, w - 8, f.Height + 2);
+            g.DrawString(text, f, br, rect, sf);
+        }
+
         private static string CleanEmoji(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;

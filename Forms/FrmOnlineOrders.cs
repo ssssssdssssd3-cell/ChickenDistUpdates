@@ -1635,26 +1635,65 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            string rawPhone = System.Text.RegularExpressions.Regex.Replace(phone, "[^0-9]", "");
-            if (rawPhone.StartsWith("0")) rawPhone = "2" + rawPhone;
-            else if (!rawPhone.StartsWith("20")) rawPhone = "20" + rawPhone;
-
+            int orderID = _selectedOrderID;
             string orderNum = _selectedOrderRow["OrderNumber"]?.ToString() ?? "";
-            string custName = _selectedOrderRow["CustomerName"]?.ToString() ?? "";
+            string custName = _selectedOrderRow["CustomerName"]?.ToString() ?? "عميلنا العزيز";
+            string custAddress = _selectedOrderRow["CustomerAddress"]?.ToString() ?? "";
+            string notes = _selectedOrderRow["Notes"]?.ToString() ?? "";
+            decimal subTotal = _selectedOrderRow["SubTotal"] != DBNull.Value ? Convert.ToDecimal(_selectedOrderRow["SubTotal"]) : 0m;
+            decimal delivery = _selectedOrderRow["DeliveryCharge"] != DBNull.Value ? Convert.ToDecimal(_selectedOrderRow["DeliveryCharge"]) : 0m;
             decimal total = _selectedOrderRow["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(_selectedOrderRow["TotalAmount"]) : 0m;
             string status = _selectedOrderRow["Status"]?.ToString() ?? "قيد التجهيز";
+            DateTime orderDate = _selectedOrderRow["OrderDate"] != DBNull.Value ? Convert.ToDateTime(_selectedOrderRow["OrderDate"]) : DateTime.Now;
 
-            string msg = $"السلام عليكم أستاذ {custName} 👋\nبخصوص طلبكم رقم ({orderNum}) بقيمة {total:N2} ج.م.\nحالة الطلب الحالية: {status}.\nنشكركم لتسوقكم معنا في {AppConfig.CompanyName}!";
+            // بناء نص الرسالة الاحترافي للطلب
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"🏪 *{AppConfig.CompanyName}*");
+            sb.AppendLine($"📦 *إشعار طلب من المتجر الإلكتروني:* {orderNum}");
+            sb.AppendLine($"📅 *التاريخ:* {orderDate:yyyy/MM/dd HH:mm}");
+            sb.AppendLine($"👤 *العميل:* {custName}");
+            if (!string.IsNullOrWhiteSpace(custAddress)) sb.AppendLine($"📍 *العنوان:* {custAddress}");
+            sb.AppendLine($"📌 *حالة الطلب:* {status}");
+            sb.AppendLine("━━━━━━━━━━━━━━━━");
 
-            string url = $"https://wa.me/{rawPhone}?text={Uri.EscapeDataString(msg)}";
-            try
+            var dtItems = OnlineOrdersDAL.GetOrderItems(orderID, false);
+            if (dtItems != null && dtItems.Rows.Count > 0)
             {
-                System.Diagnostics.Process.Start(url);
+                sb.AppendLine("📋 *الأصناف المطلوبة:*");
+                foreach (DataRow item in dtItems.Rows)
+                {
+                    string pName = item["ProductName"]?.ToString() ?? "صنف";
+                    string unit = item["UnitName"]?.ToString() ?? "";
+                    decimal qty = item["Quantity"] != DBNull.Value ? Convert.ToDecimal(item["Quantity"]) : 0m;
+                    decimal price = item["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(item["UnitPrice"]) : 0m;
+                    decimal tot = item["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(item["TotalPrice"]) : (qty * price);
+                    sb.AppendLine($"• {pName} ({qty:0.##} {unit}) × {price:N2} = {tot:N2} ج.م");
+                }
+                sb.AppendLine("━━━━━━━━━━━━━━━━");
             }
-            catch (Exception ex)
+
+            if (delivery > 0)
             {
-                MessageBox.Show("تعذر فتح الواتساب: " + ex.Message, "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                sb.AppendLine($"💵 *المجموع الفرعي:* {subTotal:N2} ج.م");
+                sb.AppendLine($"🚚 *خدمة التوصيل:* {delivery:N2} ج.م");
             }
+            sb.AppendLine($"💰 *الإجمالي المستحق:* {total:N2} ج.م");
+
+            if (!string.IsNullOrWhiteSpace(notes))
+            {
+                sb.AppendLine($"📝 *ملاحظات:* {notes}");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("نشكركم لتسوقكم معنا عبر متجرنا الإلكتروني! 🙏");
+
+            // فتح نافذة خيارات الإرسال الموحدة (نص أو صورة كارت عالي الدقة مع فتح ابلكيشن الواتساب المباشر)
+            WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                this,
+                phone,
+                sb.ToString(),
+                () => ReceiptImageGenerator.GenerateOnlineOrderReceiptImage(orderID),
+                "📱 إرسال تفاصيل الطلب عبر الواتساب");
         }
 
         private void PrintPreparationSlip()
