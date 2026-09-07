@@ -270,6 +270,28 @@ namespace ChickenDist.Core
             set => Set("Store_MinimumOrder", value.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
+        /// <summary>مصاريف التوصيل / الشحن الافتراضية للطلبات أونلاين</summary>
+        public static decimal Store_DeliveryCharge
+        {
+            get
+            {
+                string val = Get("Store_DeliveryCharge", "0");
+                return decimal.TryParse(val, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal d) ? d : 0m;
+            }
+            set => Set("Store_DeliveryCharge", value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>حد التوصيل المجاني للطلبات (0 = معطل، أي قيمة أكبر تصبح مصاريف الشحن مجاناً عند تجاوزها)</summary>
+        public static decimal Store_FreeDeliveryThreshold
+        {
+            get
+            {
+                string val = Get("Store_FreeDeliveryThreshold", "0");
+                return decimal.TryParse(val, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal d) ? d : 0m;
+            }
+            set => Set("Store_FreeDeliveryThreshold", value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
         public static string Store_Announcement
         {
             get => Get("Store_Announcement", "أهلاً بكم في متجرنا الإلكتروني! خدمة التوصيل متوفرة.");

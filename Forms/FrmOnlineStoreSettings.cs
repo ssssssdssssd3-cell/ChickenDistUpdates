@@ -26,6 +26,8 @@ namespace ChickenDist.Forms
         private CheckedListBox clbCategories;
         private TextBox txtSearchCategory;
         private NumericUpDown nudMinimumOrder;
+        private NumericUpDown nudDeliveryCharge;
+        private NumericUpDown nudFreeDeliveryThreshold;
         private TextBox txtAnnouncement;
         private TextBox txtNotificationWhatsApp;
         private TextBox txtStoreUrl;
@@ -283,11 +285,71 @@ namespace ChickenDist.Forms
             grpVisibility.Controls.Add(chkOnlyInStock);
             pnlRight.Controls.Add(grpVisibility);
 
-            // د. تفاصيل إضافية ورقم الواتساب والحد الأدنى
+            // د. مصاريف الشحن والتوصيل (Delivery & Shipping)
+            var grpDelivery = new GroupBox
+            {
+                Text = "🚚 مصاريف الشحن والتوصيل",
+                Location = new Point(10, 372),
+                Size = new Size(470, 105),
+                ForeColor = Color.FromArgb(96, 165, 250),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Padding = new Padding(10)
+            };
+
+            var lblDel = new Label
+            {
+                Text = "مصاريف التوصيل الافتراضية (ج.م):",
+                Location = new Point(250, 26),
+                Size = new Size(210, 22),
+                ForeColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            nudDeliveryCharge = new NumericUpDown
+            {
+                Location = new Point(15, 24),
+                Size = new Size(230, 26),
+                Maximum = 10000,
+                DecimalPlaces = 2,
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(56, 189, 248),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            };
+
+            var lblFree = new Label
+            {
+                Text = "توصيل مجاني للطلبات أكثر من (ج.م):",
+                Location = new Point(250, 62),
+                Size = new Size(210, 22),
+                ForeColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            nudFreeDeliveryThreshold = new NumericUpDown
+            {
+                Location = new Point(15, 60),
+                Size = new Size(230, 26),
+                Maximum = 100000,
+                DecimalPlaces = 2,
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(52, 211, 153),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            };
+
+            grpDelivery.Controls.Add(lblDel);
+            grpDelivery.Controls.Add(nudDeliveryCharge);
+            grpDelivery.Controls.Add(lblFree);
+            grpDelivery.Controls.Add(nudFreeDeliveryThreshold);
+            pnlRight.Controls.Add(grpDelivery);
+
+            // هـ. تفاصيل إضافية ورقم الواتساب والحد الأدنى
             var grpExtra = new GroupBox
             {
                 Text = "📢 تفاصيل المتجر والتواصل",
-                Location = new Point(10, 375),
+                Location = new Point(10, 485),
                 Size = new Size(470, 265),
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
@@ -668,6 +730,8 @@ namespace ChickenDist.Forms
             chkOnlyInStock.Checked = AppConfig.Store_OnlyInStockProducts;
 
             nudMinimumOrder.Value = Math.Max(0, AppConfig.Store_MinimumOrder);
+            nudDeliveryCharge.Value = Math.Max(0, AppConfig.Store_DeliveryCharge);
+            nudFreeDeliveryThreshold.Value = Math.Max(0, AppConfig.Store_FreeDeliveryThreshold);
             txtAnnouncement.Text = AppConfig.Store_Announcement ?? "";
             string storePhone = AppConfig.Store_OrderNotificationWhatsApp;
             if (string.IsNullOrEmpty(storePhone)) storePhone = AppConfig.CompanyPhone;
@@ -769,6 +833,8 @@ namespace ChickenDist.Forms
                 AppConfig.Store_ShowStockQty = chkShowStockQty.Checked;
                 AppConfig.Store_OnlyInStockProducts = chkOnlyInStock.Checked;
                 AppConfig.Store_MinimumOrder = nudMinimumOrder.Value;
+                AppConfig.Store_DeliveryCharge = nudDeliveryCharge.Value;
+                AppConfig.Store_FreeDeliveryThreshold = nudFreeDeliveryThreshold.Value;
                 AppConfig.Store_Announcement = txtAnnouncement.Text.Trim();
                 string enteredPhone = txtNotificationWhatsApp.Text.Trim();
                 AppConfig.Store_OrderNotificationWhatsApp = enteredPhone;

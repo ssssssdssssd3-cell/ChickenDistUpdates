@@ -1139,6 +1139,8 @@ self.addEventListener('fetch', (event) => {
                     "\"ShowStockQty\":" + (AppConfig.Store_ShowStockQty ? "true" : "false") + "," +
                     "\"OnlyInStockProducts\":" + (AppConfig.Store_OnlyInStockProducts ? "true" : "false") + "," +
                     "\"MinimumOrder\":" + AppConfig.Store_MinimumOrder.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                    "\"DeliveryCharge\":" + AppConfig.Store_DeliveryCharge.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                    "\"FreeDeliveryThreshold\":" + AppConfig.Store_FreeDeliveryThreshold.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                     "\"Announcement\":\"" + EscapeJsonString(AppConfig.Store_Announcement ?? "") + "\"," +
                     "\"LastUpdated\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") + "\"," +
                     "\"UpdatedTimestamp\":" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() +

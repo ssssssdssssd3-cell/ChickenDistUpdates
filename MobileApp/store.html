@@ -296,12 +296,18 @@
           <span>المجموع الفرعي:</span>
           <span id="lblCartSubtotal" class="font-bold text-white">0.00 ج.م</span>
         </div>
-        <div class="flex justify-between items-center text-slate-300">
-          <span>رسوم التوصيل:</span>
-          <span class="font-bold text-emerald-400">حسب المنطقة</span>
+        <div id="rowDelivery" class="flex justify-between items-center text-slate-300">
+          <span class="flex items-center gap-1.5">
+            <i class="fa-solid fa-truck text-slate-400"></i>
+            <span>رسوم التوصيل:</span>
+          </span>
+          <span id="lblCartDelivery" class="font-bold text-emerald-400">0.00 ج.م</span>
+        </div>
+        <div id="freeDeliveryNotice" class="hidden text-[11px] text-emerald-300 bg-emerald-500/10 p-1.5 rounded-lg border border-emerald-500/20 text-center font-bold">
+          <!-- تنبيه الشحن المجاني -->
         </div>
         <div id="rowTotal" class="flex justify-between items-center pt-2 border-t border-slate-800 text-sm font-black">
-          <span class="text-white">الإجمالي التقديري:</span>
+          <span class="text-white">الإجمالي الكلي:</span>
           <span id="lblCartTotal" class="text-emerald-400">0.00 ج.م</span>
         </div>
       </div>
@@ -347,6 +353,26 @@
 
       <!-- حقول الإدخال -->
       <form id="checkoutForm" onsubmit="submitOrder(event)" class="space-y-3 overflow-y-auto custom-scrollbar flex-1 text-xs">
+        
+        <!-- ملخص الحساب في نافذة إتمام الطلب -->
+        <div id="checkoutSummaryBox" class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 space-y-1.5 text-xs">
+          <div class="flex justify-between items-center text-slate-400">
+            <span>المجموع الفرعي للأصناف:</span>
+            <span id="lblCheckoutSubtotal" class="font-bold text-white">0.00 ج.م</span>
+          </div>
+          <div class="flex justify-between items-center text-slate-400">
+            <span class="flex items-center gap-1">
+              <i class="fa-solid fa-truck text-slate-500 text-[10px]"></i>
+              <span>مصاريف التوصيل:</span>
+            </span>
+            <span id="lblCheckoutDelivery" class="font-bold text-emerald-400">0.00 ج.م</span>
+          </div>
+          <div class="flex justify-between items-center pt-1.5 border-t border-slate-800 font-extrabold text-sm">
+            <span class="text-white">المبلغ المطلوب سداده:</span>
+            <span id="lblCheckoutTotal" class="text-emerald-400">0.00 ج.م</span>
+          </div>
+        </div>
+
         <div>
           <label class="block font-bold text-slate-300 mb-1">الاسم بالكامل <span class="text-rose-400">*</span></label>
           <input type="text" id="custName" required placeholder="مثال: أحمد محمد علي" 
@@ -409,8 +435,16 @@
           <span class="text-slate-400">رقم الطلب:</span>
           <span id="lblSuccessOrderNum" class="font-mono font-black text-blue-400 text-sm dir-ltr">#ORD-0000</span>
         </div>
-        <div id="successOrderTotalRow" class="flex justify-between items-center">
-          <span class="text-slate-400">إجمالي الطلب:</span>
+        <div id="successOrderSubtotalRow" class="flex justify-between items-center">
+          <span class="text-slate-400">المجموع الفرعي للأصناف:</span>
+          <span id="lblSuccessSubtotal" class="font-bold text-white text-xs">0.00 ج.م</span>
+        </div>
+        <div id="successOrderDeliveryRow" class="flex justify-between items-center">
+          <span class="text-slate-400">مصاريف التوصيل:</span>
+          <span id="lblSuccessDelivery" class="font-bold text-emerald-400 text-xs">0.00 ج.م</span>
+        </div>
+        <div id="successOrderTotalRow" class="flex justify-between items-center pt-1.5 border-t border-slate-800 font-black">
+          <span class="text-slate-200">إجمالي الطلب:</span>
           <span id="lblSuccessOrderTotal" class="font-black text-emerald-400 text-sm">0.00 ج.م</span>
         </div>
         <div class="flex justify-between items-center">
@@ -559,9 +593,20 @@
       ShowPrices: true,
       ShowStockQty: false,
       MinimumOrder: 0,
+      DeliveryCharge: 0,
+      FreeDeliveryThreshold: 0,
       Announcement: "",
       NotificationWhatsApp: ""
     };
+
+    function calculateDeliveryFee(subTotal) {
+      if (subTotal <= 0) return 0;
+      const freeThreshold = parseFloat(storeConfig.FreeDeliveryThreshold || 0);
+      if (freeThreshold > 0 && subTotal >= freeThreshold) {
+        return 0;
+      }
+      return parseFloat(storeConfig.DeliveryCharge || 0);
+    }
 
     let categories = [];
     let products = [];
@@ -609,6 +654,9 @@
             if (cfg.WhatsApp) storeConfig.WhatsApp = cfg.WhatsApp;
             if (cfg.StorePhone) storeConfig.StorePhone = cfg.StorePhone;
             if (cfg.NotificationWhatsApp) storeConfig.NotificationWhatsApp = cfg.NotificationWhatsApp;
+            if (cfg.DeliveryCharge !== undefined) storeConfig.DeliveryCharge = parseFloat(cfg.DeliveryCharge) || 0;
+            if (cfg.FreeDeliveryThreshold !== undefined) storeConfig.FreeDeliveryThreshold = parseFloat(cfg.FreeDeliveryThreshold) || 0;
+            if (cfg.MinimumOrder !== undefined) storeConfig.MinimumOrder = parseFloat(cfg.MinimumOrder) || 0;
           }
         }
 
@@ -986,16 +1034,47 @@
       const container = document.getElementById('cartItemsList');
       const totalSum = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
       const totalQty = cart.reduce((sum, it) => sum + it.Quantity, 0);
+      const deliveryFee = calculateDeliveryFee(totalSum);
+      const finalTotal = totalSum + deliveryFee;
 
       document.getElementById('cartItemCountLabel').textContent = `${totalQty} أصناف مختارة`;
       document.getElementById('lblCartSubtotal').textContent = `${totalSum.toFixed(2)} ج.م`;
-      document.getElementById('lblCartTotal').textContent = `${totalSum.toFixed(2)} ج.م`;
+
+      const freeThreshold = parseFloat(storeConfig.FreeDeliveryThreshold || 0);
+      const baseDelivery = parseFloat(storeConfig.DeliveryCharge || 0);
+      const delElem = document.getElementById('lblCartDelivery');
+      const freeNotice = document.getElementById('freeDeliveryNotice');
+
+      if (deliveryFee === 0 && totalSum > 0 && freeThreshold > 0 && totalSum >= freeThreshold) {
+        delElem.innerHTML = '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-black">مجاناً 🎉</span>';
+        if (freeNotice) {
+          freeNotice.textContent = "🎉 تهانينا! طلبك مؤهل للتوصيل المجاني";
+          freeNotice.classList.remove('hidden');
+        }
+      } else if (deliveryFee === 0 && baseDelivery === 0) {
+        delElem.textContent = "مجاناً";
+        if (freeNotice) freeNotice.classList.add('hidden');
+      } else {
+        delElem.textContent = `${deliveryFee.toFixed(2)} ج.م`;
+        if (freeNotice && freeThreshold > totalSum && freeThreshold > 0) {
+          const rem = freeThreshold - totalSum;
+          freeNotice.textContent = `💡 أضف منتجات بقيمة ${rem.toFixed(2)} ج.م إضافية للحصول على توصيل مجاني! 🚚`;
+          freeNotice.classList.remove('hidden');
+        } else if (freeNotice) {
+          freeNotice.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('lblCartTotal').textContent = `${finalTotal.toFixed(2)} ج.م`;
 
       if (!storeConfig.ShowPrices) {
         document.getElementById('rowSubtotal').classList.add('hidden');
+        document.getElementById('rowDelivery').classList.add('hidden');
+        if (freeNotice) freeNotice.classList.add('hidden');
         document.getElementById('rowTotal').classList.add('hidden');
       } else {
         document.getElementById('rowSubtotal').classList.remove('hidden');
+        document.getElementById('rowDelivery').classList.remove('hidden');
         document.getElementById('rowTotal').classList.remove('hidden');
       }
 
@@ -1075,6 +1154,30 @@
         if (lastCust.address) document.getElementById('custAddress').value = lastCust.address;
       } catch(e) {}
 
+      // تحديث ملخص الحساب داخل نافذة إتمام الطلب
+      const subTotal = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
+      const deliveryFee = calculateDeliveryFee(subTotal);
+      const finalTotal = subTotal + deliveryFee;
+      const freeThreshold = parseFloat(storeConfig.FreeDeliveryThreshold || 0);
+      const baseDelivery = parseFloat(storeConfig.DeliveryCharge || 0);
+
+      document.getElementById('lblCheckoutSubtotal').textContent = `${subTotal.toFixed(2)} ج.م`;
+      const checkoutDelElem = document.getElementById('lblCheckoutDelivery');
+      if (deliveryFee === 0 && subTotal > 0 && freeThreshold > 0 && subTotal >= freeThreshold) {
+        checkoutDelElem.innerHTML = '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-black">مجاناً 🎉</span>';
+      } else if (deliveryFee === 0 && baseDelivery === 0) {
+        checkoutDelElem.textContent = "مجاناً";
+      } else {
+        checkoutDelElem.textContent = `${deliveryFee.toFixed(2)} ج.م`;
+      }
+      document.getElementById('lblCheckoutTotal').textContent = `${finalTotal.toFixed(2)} ج.م`;
+
+      if (!storeConfig.ShowPrices) {
+        document.getElementById('checkoutSummaryBox').classList.add('hidden');
+      } else {
+        document.getElementById('checkoutSummaryBox').classList.remove('hidden');
+      }
+
       document.getElementById('checkoutModal').classList.remove('hidden');
     }
 
@@ -1138,6 +1241,8 @@
       } catch(e) {}
 
       const totalSum = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
+      const deliveryCharge = calculateDeliveryFee(totalSum);
+      const finalTotalAmount = totalSum + deliveryCharge;
       const orderNum = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
       const nowIso = new Date().toISOString();
 
@@ -1148,8 +1253,8 @@
         CustomerAddress: address,
         Notes: notes,
         SubTotal: totalSum,
-        DeliveryCharge: 0,
-        TotalAmount: totalSum,
+        DeliveryCharge: deliveryCharge,
+        TotalAmount: finalTotalAmount,
         PriceTier: storeConfig.PriceTier || "Retail",
         OrderDate: nowIso,
         Status: "جديد",
@@ -1226,11 +1331,28 @@
 
     function showSuccessModal(order) {
       document.getElementById('lblSuccessOrderNum').textContent = `#${order.OrderNumber}`;
+      document.getElementById('lblSuccessSubtotal').textContent = `${parseFloat(order.SubTotal || 0).toFixed(2)} ج.م`;
+
+      const del = parseFloat(order.DeliveryCharge || 0);
+      const freeThreshold = parseFloat(storeConfig.FreeDeliveryThreshold || 0);
+      const sub = parseFloat(order.SubTotal || 0);
+      if (del === 0 && sub > 0 && freeThreshold > 0 && sub >= freeThreshold) {
+        document.getElementById('lblSuccessDelivery').innerHTML = '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-black">مجاناً 🎉</span>';
+      } else if (del > 0) {
+        document.getElementById('lblSuccessDelivery').textContent = `${del.toFixed(2)} ج.م`;
+      } else {
+        document.getElementById('lblSuccessDelivery').textContent = "مجاناً";
+      }
+
       document.getElementById('lblSuccessOrderTotal').textContent = `${parseFloat(order.TotalAmount || 0).toFixed(2)} ج.م`;
 
       if (!storeConfig.ShowPrices) {
+        document.getElementById('successOrderSubtotalRow').classList.add('hidden');
+        document.getElementById('successOrderDeliveryRow').classList.add('hidden');
         document.getElementById('successOrderTotalRow').classList.add('hidden');
       } else {
+        document.getElementById('successOrderSubtotalRow').classList.remove('hidden');
+        document.getElementById('successOrderDeliveryRow').classList.remove('hidden');
         document.getElementById('successOrderTotalRow').classList.remove('hidden');
       }
 
@@ -1253,7 +1375,26 @@
         return `• ${it.ProductName} (${it.Quantity} ${it.UnitName || ''})${prText}`;
       }).join('\n');
 
-      const totalLine = storeConfig.ShowPrices ? `\n💵 *إجمالي الحساب:* ${lastCreatedOrder.TotalAmount.toFixed(2)} ج.م` : '';
+      let pricingDetails = '';
+      if (storeConfig.ShowPrices) {
+        const sub = parseFloat(lastCreatedOrder.SubTotal || 0);
+        const del = parseFloat(lastCreatedOrder.DeliveryCharge || 0);
+        const tot = parseFloat(lastCreatedOrder.TotalAmount || 0);
+        const freeThreshold = parseFloat(storeConfig.FreeDeliveryThreshold || 0);
+
+        let delText = `${del.toFixed(2)} ج.م`;
+        if (del === 0 && sub > 0 && freeThreshold > 0 && sub >= freeThreshold) {
+          delText = "مجاناً 🎉";
+        } else if (del === 0) {
+          delText = "مجاناً";
+        }
+
+        if (del > 0 || (freeThreshold > 0 && sub >= freeThreshold)) {
+          pricingDetails = `\n🧾 *المجموع الفرعي:* ${sub.toFixed(2)} ج.م\n🚚 *مصاريف التوصيل:* ${delText}\n💵 *إجمالي الحساب المطلوب:* ${tot.toFixed(2)} ج.م`;
+        } else {
+          pricingDetails = `\n💵 *إجمالي الحساب المطلوب:* ${tot.toFixed(2)} ج.م`;
+        }
+      }
 
       const text = 
 `📦 *طلب جديد من المتجر الإلكتروني*
@@ -1265,7 +1406,7 @@
 ${lastCreatedOrder.Notes ? `📝 *ملاحظات:* ${lastCreatedOrder.Notes}\n` : ''}━━━━━━━━━━━━━━━━━━
 🛍️ *الأصناف المطلوبة:*
 ${itemsText}
-━━━━━━━━━━━━━━━━━━${totalLine}
+━━━━━━━━━━━━━━━━━━${pricingDetails}
 ⏰ *التوقيت:* ${new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}
 يرجى تأكيد استلام الطلب وتجهيزه للتوصيل.`;
 

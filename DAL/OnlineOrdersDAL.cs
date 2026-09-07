@@ -195,6 +195,18 @@ namespace ChickenDist.DAL
                 DbHelper.P("@id", orderID));
         }
 
+        public static void UpdateDeliveryCharge(int orderID, decimal newDelivery)
+        {
+            DbHelper.Execute(@"
+                UPDATE OnlineOrders
+                SET DeliveryCharge = @del,
+                    TotalAmount = ISNULL(SubTotal, 0) + @del,
+                    UpdatedAt = GETDATE()
+                WHERE OnlineOrderID = @id",
+                DbHelper.P("@del", newDelivery),
+                DbHelper.P("@id", orderID));
+        }
+
         public static DataRow GetOrderRow(int orderID)
         {
             DataTable dt = DbHelper.Query("SELECT * FROM OnlineOrders WITH (NOLOCK) WHERE OnlineOrderID = @id", DbHelper.P("@id", orderID));

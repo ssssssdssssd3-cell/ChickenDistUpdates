@@ -579,6 +579,21 @@ namespace ChickenDist.Forms
             btnDeleteItem.FlatAppearance.BorderSize = 0;
             btnDeleteItem.Click += (s, e) => DeleteCurrentItem();
 
+            var btnEditDelivery = new Button
+            {
+                Text = "🚚 تعديل التوصيل",
+                Height = 26,
+                AutoSize = true,
+                BackColor = Color.FromArgb(14, 116, 144),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
+            };
+            btnEditDelivery.FlatAppearance.BorderSize = 0;
+            btnEditDelivery.Click += (s, e) => EditDeliveryCharge();
+
             var btnOpenInSales = new Button
             {
                 Text = "🛒 تعديل في شاشة المبيعات",
@@ -597,6 +612,7 @@ namespace ChickenDist.Forms
             pnlItemsToolbar.Controls.Add(btnAddAltItem);
             pnlItemsToolbar.Controls.Add(btnEditQty);
             pnlItemsToolbar.Controls.Add(btnDeleteItem);
+            pnlItemsToolbar.Controls.Add(btnEditDelivery);
             pnlItemsToolbar.Controls.Add(btnOpenInSales);
 
             dgvItems = new DataGridView
@@ -667,11 +683,13 @@ namespace ChickenDist.Forms
             lblDetailDelivery = new Label
             {
                 Text = "التوصيل: 0.00 ج.م",
-                Font = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(148, 163, 184),
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand
             };
+            lblDetailDelivery.Click += (s, e) => EditDeliveryCharge();
 
             lblDetailTotal = new Label
             {
@@ -994,7 +1012,13 @@ namespace ChickenDist.Forms
                     dgvOrders.Columns["ItemsCount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                 }
                 if (dgvOrders.Columns["SubTotal"] != null) dgvOrders.Columns["SubTotal"].Visible = false;
-                if (dgvOrders.Columns["DeliveryCharge"] != null) dgvOrders.Columns["DeliveryCharge"].Visible = false;
+                if (dgvOrders.Columns["DeliveryCharge"] != null)
+                {
+                    dgvOrders.Columns["DeliveryCharge"].HeaderText = "التوصيل";
+                    dgvOrders.Columns["DeliveryCharge"].DefaultCellStyle.Format = "N2";
+                    dgvOrders.Columns["DeliveryCharge"].FillWeight = 65;
+                    dgvOrders.Columns["DeliveryCharge"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
                 if (dgvOrders.Columns["TotalAmount"] != null)
                 {
                     dgvOrders.Columns["TotalAmount"].HeaderText = "الإجمالي";
@@ -1093,7 +1117,7 @@ namespace ChickenDist.Forms
             txtDetailNotes.Text = string.IsNullOrEmpty(notes) ? "ملاحظات: لا توجد" : $"ملاحظات: {notes}";
 
             lblDetailSubtotal.Text = $"المجموع: {sub:N2} ج.م";
-            lblDetailDelivery.Text = $"التوصيل: {del:N2} ج.م";
+            lblDetailDelivery.Text = $"التوصيل: {del:N2} ج.م ✏️";
             lblDetailTotal.Text = $"الإجمالي: {tot:N2} ج.م";
 
             // تعطيل زر التحويل إذا كان محولاً مسبقاً
@@ -1465,6 +1489,103 @@ namespace ChickenDist.Forms
                     OnlineOrdersDAL.AddOrderItem(_selectedOrderID, pid, pName, unit, qty, price);
                     RefreshCurrentOrderData();
                     MessageBox.Show($"تمت إضافة الصنف البديل ({pName}) إلى الطلب بنجاح ✅", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void EditDeliveryCharge()
+        {
+            if (_selectedOrderID <= 0 || _selectedOrderRow == null)
+            {
+                MessageBox.Show("يرجى اختيار طلب أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int existingSaleId = _selectedOrderRow["CreatedSaleID"] != DBNull.Value ? Convert.ToInt32(_selectedOrderRow["CreatedSaleID"]) : 0;
+            if (existingSaleId > 0)
+            {
+                MessageBox.Show("لا يمكن تعديل مصاريف التوصيل لطلب تم تحويله مسبقاً إلى فاتورة مبيعات!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            decimal curDel = _selectedOrderRow["DeliveryCharge"] != DBNull.Value ? Convert.ToDecimal(_selectedOrderRow["DeliveryCharge"]) : 0m;
+            string orderNum = _selectedOrderRow["OrderNumber"]?.ToString() ?? "";
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "🚚 تعديل مصاريف الشحن والتوصيل";
+                dlg.Size = new Size(380, 230);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.RightToLeft = RightToLeft.Yes;
+                dlg.RightToLeftLayout = true;
+                dlg.BackColor = Color.FromArgb(15, 23, 42);
+                dlg.Font = new Font("Segoe UI", 9.5f);
+
+                var lblPrompt = new Label
+                {
+                    Text = $"تعديل مصاريف التوصيل للطلب {orderNum}:",
+                    Location = new Point(20, 20),
+                    Size = new Size(325, 26),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                };
+
+                var nudFee = new NumericUpDown
+                {
+                    Location = new Point(20, 56),
+                    Size = new Size(325, 30),
+                    Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                    DecimalPlaces = 2,
+                    Minimum = 0m,
+                    Maximum = 10000m,
+                    Value = Math.Max(0m, curDel),
+                    BackColor = Color.FromArgb(30, 41, 59),
+                    ForeColor = Color.FromArgb(52, 211, 153)
+                };
+
+                var btnOk = new Button
+                {
+                    Text = "💾 حفظ التعديل",
+                    DialogResult = DialogResult.OK,
+                    Location = new Point(20, 115),
+                    Size = new Size(155, 38),
+                    BackColor = Color.FromArgb(16, 185, 129),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCancel = new Button
+                {
+                    Text = "إلغاء",
+                    DialogResult = DialogResult.Cancel,
+                    Location = new Point(190, 115),
+                    Size = new Size(155, 38),
+                    BackColor = Color.FromArgb(51, 65, 85),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                    Cursor = Cursors.Hand
+                };
+                btnCancel.FlatAppearance.BorderSize = 0;
+
+                dlg.Controls.Add(lblPrompt);
+                dlg.Controls.Add(nudFee);
+                dlg.Controls.Add(btnOk);
+                dlg.Controls.Add(btnCancel);
+                dlg.AcceptButton = btnOk;
+                dlg.CancelButton = btnCancel;
+
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    decimal newDel = nudFee.Value;
+                    OnlineOrdersDAL.UpdateDeliveryCharge(_selectedOrderID, newDel);
+                    RefreshCurrentOrderData();
                 }
             }
         }
