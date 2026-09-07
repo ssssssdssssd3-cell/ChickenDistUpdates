@@ -73,38 +73,77 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "🌐 استقبال وإدارة طلبات المتجر الإلكتروني | ProSoft Online Orders";
-            this.Size = new Size(1200, 800);
-            this.MinimumSize = new Size(1050, 700);
+            this.Size = new Size(1180, 680);
+            this.MinimumSize = new Size(900, 500);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Color.FromArgb(15, 23, 42);
-            this.Font = new Font("Segoe UI", 9.5f);
+            this.Font = new Font("Segoe UI", 9f);
             this.KeyPreview = true;
             this.KeyDown += FrmOnlineOrders_KeyDown;
 
-            // 1. الشريط العلوي (Header Bar)
-            var pnlHeader = new Panel
+            // ==========================================
+            // 1. الشريط العلوي المدمج (Header Bar - 40px)
+            // ==========================================
+            var pnlHeader = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 65,
+                Height = 40,
+                RowCount = 1,
+                ColumnCount = 2,
                 BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(16, 8, 16, 8)
+                Padding = new Padding(8, 3, 8, 3),
+                Margin = new Padding(0)
             };
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Right: Title
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // Left: Action buttons flow
+
+            var pnlTitle = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Margin = new Padding(0),
+                Padding = new Padding(0, 4, 0, 0)
+            };
+
+            var lblTitle = new Label
+            {
+                Text = "🌐 طلبات المتجر الإلكتروني",
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(56, 189, 248),
+                AutoSize = true,
+                Margin = new Padding(0, 0, 8, 0)
+            };
+
+            var lblSubtitle = new Label
+            {
+                Text = "متابعة الطلبات، أذون التحضير والتحويل لفواتير (F10)",
+                Font = new Font("Segoe UI", 8.25f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                AutoSize = true,
+                Padding = new Padding(0, 3, 0, 0)
+            };
+
+            pnlTitle.Controls.Add(lblTitle);
+            pnlTitle.Controls.Add(lblSubtitle);
 
             var pnlHeaderButtons = new FlowLayoutPanel
             {
-                Dock = DockStyle.Left,
-                AutoSize = true,
-                FlowDirection = FlowDirection.RightToLeft,
-                Padding = new Padding(0, 5, 0, 0)
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0),
+                Padding = new Padding(0, 2, 0, 0)
             };
 
             btnRefresh = CreateTopButton("🔄 تحديث (F5)", Color.FromArgb(37, 99, 235));
             btnRefresh.Click += async (s, e) =>
             {
                 btnRefresh.Enabled = false;
-                btnRefresh.Text = "⏳ جاري السحب...";
+                btnRefresh.Text = "⏳ سحب...";
                 try
                 {
                     await CloudSyncService.PullOnlineOrdersFromFirebaseAsync();
@@ -116,7 +155,7 @@ namespace ChickenDist.Forms
                 btnRefresh.Enabled = true;
             };
 
-            btnSettings = CreateTopButton("⚙️ إعدادات المتجر (F2)", Color.FromArgb(51, 65, 85));
+            btnSettings = CreateTopButton("⚙️ الإعدادات (F2)", Color.FromArgb(51, 65, 85));
             btnSettings.Click += (s, e) =>
             {
                 using (var dlg = new FrmOnlineStoreSettings())
@@ -142,7 +181,7 @@ namespace ChickenDist.Forms
                 if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
                 string url = $"https://{projectId}.web.app/store.html";
                 Clipboard.SetText(url);
-                MessageBox.Show("تم نسخ رابط المتجر الإلكتروني للحافظة بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ رابط المتجر الإلكتروني بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             pnlHeaderButtons.Controls.Add(btnRefresh);
@@ -150,82 +189,67 @@ namespace ChickenDist.Forms
             pnlHeaderButtons.Controls.Add(btnOpenStore);
             pnlHeaderButtons.Controls.Add(btnCopyUrl);
 
-            var pnlTitle = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(0, 4, 10, 0)
-            };
+            pnlHeader.Controls.Add(pnlTitle, 0, 0);
+            pnlHeader.Controls.Add(pnlHeaderButtons, 1, 0);
 
-            var lblTitle = new Label
-            {
-                Text = "🌐 استقبال وإدارة طلبات المتجر الإلكتروني للعملاء",
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(56, 189, 248),
-                Dock = DockStyle.Top,
-                Height = 26,
-                TextAlign = ContentAlignment.MiddleRight
-            };
-
-            var lblSubtitle = new Label
-            {
-                Text = "متابعة لحظية لطلبات العملاء عبر الويب، طباعة أذون التحضير، ومراسلة العملاء وتحويلها لفواتير مبيعات F10",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(148, 163, 184),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight
-            };
-
-            pnlTitle.Controls.Add(lblSubtitle);
-            pnlTitle.Controls.Add(lblTitle);
-
-            pnlHeader.Controls.Add(pnlTitle);
-            pnlHeader.Controls.Add(pnlHeaderButtons);
-
-            // 2. بطاقات KPI السريعة (Summary Cards)
+            // ==========================================
+            // 2. بطاقات المؤشرات المدمجة (KPIs - 42px)
+            // ==========================================
             var pnlKpi = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 85,
+                Height = 42,
                 ColumnCount = 4,
                 RowCount = 1,
-                Padding = new Padding(12, 6, 12, 6),
-                BackColor = Color.FromArgb(18, 26, 43)
+                Padding = new Padding(8, 2, 8, 2),
+                BackColor = Color.FromArgb(18, 26, 43),
+                Margin = new Padding(0)
             };
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            lblKpiNew = MakeKPICard("طلبات جديدة واردة 🔴", "0", Color.FromArgb(244, 63, 94), out Panel pKpi1);
-            lblKpiInPrep = MakeKPICard("قيد التجهيز والتوصيل 🟡", "0", Color.FromArgb(245, 158, 11), out Panel pKpi2);
-            lblKpiCompleted = MakeKPICard("طلبات مكتملة ومسلمة 🟢", "0", Color.FromArgb(16, 185, 129), out Panel pKpi3);
-            lblKpiTodayTotal = MakeKPICard("إجمالي مبيعات اليوم 💰", "0.00 ج.م", Color.FromArgb(56, 189, 248), out Panel pKpi4);
+            lblKpiNew = MakeKPICard("طلبات جديدة 🔴", "0", Color.FromArgb(244, 63, 94), out Panel pKpi1);
+            lblKpiInPrep = MakeKPICard("قيد التجهيز 🟡", "0", Color.FromArgb(245, 158, 11), out Panel pKpi2);
+            lblKpiCompleted = MakeKPICard("طلبات مكتملة 🟢", "0", Color.FromArgb(16, 185, 129), out Panel pKpi3);
+            lblKpiTodayTotal = MakeKPICard("إجمالي اليوم 💰", "0.00 ج.م", Color.FromArgb(56, 189, 248), out Panel pKpi4);
 
             pnlKpi.Controls.Add(pKpi1, 0, 0);
             pnlKpi.Controls.Add(pKpi2, 1, 0);
             pnlKpi.Controls.Add(pKpi3, 2, 0);
             pnlKpi.Controls.Add(pKpi4, 3, 0);
 
-            // 3. شريط الفلاتر والبحث (Toolbar)
-            var pnlToolbar = new Panel
+            // ==========================================
+            // 3. شريط الفلاتر والبحث (Toolbar - 34px)
+            // ==========================================
+            var pnlToolbar = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 48,
+                Height = 34,
+                RowCount = 1,
+                ColumnCount = 3,
                 BackColor = Color.FromArgb(24, 33, 53),
-                Padding = new Padding(12, 8, 12, 8)
+                Padding = new Padding(8, 2, 8, 2),
+                Margin = new Padding(0)
             };
+            pnlToolbar.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Filters on Right
+            pnlToolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // Space in between
+            pnlToolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 260f)); // Search box on Left
 
             var flowFilters = new FlowLayoutPanel
             {
-                Dock = DockStyle.Right,
+                Dock = DockStyle.Fill,
                 AutoSize = true,
-                FlowDirection = FlowDirection.RightToLeft
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Margin = new Padding(0)
             };
 
             btnFilterAll = CreateFilterButton("الكل", true);
             btnFilterNew = CreateFilterButton("جديدة 🔴", false);
             btnFilterInPrep = CreateFilterButton("قيد التجهيز 🟡", false);
-            btnFilterDelivery = CreateFilterButton("جاري التوصيل 🚚", false);
+            btnFilterDelivery = CreateFilterButton("توصيل 🚚", false);
             btnFilterCompleted = CreateFilterButton("مكتمل 🟢", false);
             btnFilterCancelled = CreateFilterButton("ملغي ⚪", false);
 
@@ -245,8 +269,8 @@ namespace ChickenDist.Forms
 
             var pnlSearch = new Panel
             {
-                Dock = DockStyle.Left,
-                Width = 320
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 1, 0, 1)
             };
 
             txtSearch = new TextBox
@@ -254,41 +278,48 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(30, 41, 59),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f)
+                Font = new Font("Segoe UI", 9f),
+                BorderStyle = BorderStyle.FixedSingle
             };
             txtSearch.TextChanged += (s, e) => LoadOrders();
 
             var lblSearch = new Label
             {
-                Text = "🔍 بحث:",
+                Text = "🔍",
                 Dock = DockStyle.Right,
-                Width = 55,
+                Width = 26,
                 ForeColor = Color.FromArgb(203, 213, 225),
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 9.5f)
             };
 
             pnlSearch.Controls.Add(txtSearch);
             pnlSearch.Controls.Add(lblSearch);
 
-            pnlToolbar.Controls.Add(flowFilters);
-            pnlToolbar.Controls.Add(pnlSearch);
+            pnlToolbar.Controls.Add(flowFilters, 0, 0);
+            pnlToolbar.Controls.Add(new Panel { Dock = DockStyle.Fill }, 1, 0);
+            pnlToolbar.Controls.Add(pnlSearch, 2, 0);
 
+            // ==========================================
             // 4. المحتوى المنقسم (Master - Detail Split)
+            // ==========================================
             var splitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 650,
-                SplitterWidth = 6,
+                SplitterDistance = 720,
+                SplitterWidth = 5,
+                Panel1MinSize = 420,
+                Panel2MinSize = 340,
                 BackColor = Color.FromArgb(30, 41, 59)
             };
 
-            // الجانب الأيمن: جدول الطلبات
+            // الجانب الأيمن (Panel1): جدول الطلبات الرئيسي
             var pnlOrdersGrid = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(8)
+                Padding = new Padding(6, 4, 6, 4)
             };
 
             dgvOrders = new DataGridView
@@ -304,113 +335,121 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                EnableHeadersVisualStyles = false
+                EnableHeadersVisualStyles = false,
+                Font = new Font("Segoe UI", 8.5f)
             };
             dgvOrders.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
             dgvOrders.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(56, 189, 248);
-            dgvOrders.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            dgvOrders.ColumnHeadersHeight = 36;
-            dgvOrders.RowTemplate.Height = 36;
+            dgvOrders.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            dgvOrders.ColumnHeadersHeight = 30;
+            dgvOrders.RowTemplate.Height = 28;
             dgvOrders.DefaultCellStyle.BackColor = Color.FromArgb(15, 23, 42);
             dgvOrders.DefaultCellStyle.SelectionBackColor = Color.FromArgb(37, 99, 235);
             dgvOrders.DefaultCellStyle.SelectionForeColor = Color.White;
+            dgvOrders.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(20, 29, 47);
             dgvOrders.SelectionChanged += DgvOrders_SelectionChanged;
             dgvOrders.CellFormatting += DgvOrders_CellFormatting;
 
             pnlOrdersGrid.Controls.Add(dgvOrders);
             splitContainer.Panel1.Controls.Add(pnlOrdersGrid);
 
-            // الجانب الأيسر: تفاصيل الطلب والأصناف والإجراءات
+            // الجانب الأيسر (Panel2): كارت تفاصيل الطلب والأصناف والإجراءات
             var pnlDetails = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(20, 29, 47),
-                Padding = new Padding(12),
-                AutoScroll = true
+                Padding = new Padding(6)
             };
 
-            // رأس كارت التفاصيل
-            var pnlDetailHeader = new Panel
+            // 4.1 رأس كارت التفاصيل (Order Header - 32px)
+            var pnlDetailHeader = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 85,
+                Height = 32,
+                RowCount = 1,
+                ColumnCount = 3,
                 BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(10)
+                Padding = new Padding(6, 2, 6, 2),
+                Margin = new Padding(0, 0, 0, 4)
             };
+            pnlDetailHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f));
+            pnlDetailHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f));
+            pnlDetailHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
             lblDetailOrderNum = new Label
             {
                 Text = "طلب: ---",
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
-                Location = new Point(180, 8),
-                Size = new Size(250, 24)
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             lblDetailStatus = new Label
             {
                 Text = "الحالة: ---",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(244, 63, 94),
-                Location = new Point(10, 8),
-                Size = new Size(160, 24),
-                TextAlign = ContentAlignment.MiddleLeft
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter
             };
 
             lblDetailTier = new Label
             {
-                Text = "فئة السعر: ---",
-                Font = new Font("Segoe UI", 9f),
+                Text = "فئة: ---",
+                Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(148, 163, 184),
-                Location = new Point(180, 36),
-                Size = new Size(250, 20)
-            };
-
-            var lblDateTime = new Label
-            {
-                Text = "العميل والبيانات:",
-                Font = new Font("Segoe UI", 9f),
-                ForeColor = Color.FromArgb(148, 163, 184),
-                Location = new Point(10, 36),
-                Size = new Size(160, 20),
+                Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            pnlDetailHeader.Controls.Add(lblDetailOrderNum);
-            pnlDetailHeader.Controls.Add(lblDetailStatus);
-            pnlDetailHeader.Controls.Add(lblDetailTier);
-            pnlDetailHeader.Controls.Add(lblDateTime);
+            pnlDetailHeader.Controls.Add(lblDetailOrderNum, 0, 0);
+            pnlDetailHeader.Controls.Add(lblDetailStatus, 1, 0);
+            pnlDetailHeader.Controls.Add(lblDetailTier, 2, 0);
 
-            // بيانات العميل
+            // 4.2 بيانات العميل والتوصيل (Customer Card - 78px)
             var grpCustomer = new GroupBox
             {
                 Text = "👤 بيانات العميل والتوصيل",
                 Dock = DockStyle.Top,
-                Height = 135,
+                Height = 78,
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Padding = new Padding(8)
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Padding = new Padding(6, 2, 6, 2),
+                Margin = new Padding(0, 0, 0, 4)
             };
+
+            var tblCustomer = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 2,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(2)
+            };
+            tblCustomer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f));
+            tblCustomer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));
+            tblCustomer.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+            tblCustomer.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
             lblDetailCustName = new Label
             {
                 Text = "الاسم: ---",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.White,
-                BackColor = Color.FromArgb(24, 33, 53),
-                Location = new Point(10, 22),
-                Size = new Size(420, 20)
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             lblDetailCustPhone = new Label
             {
-                Text = "الهاتف: ---",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Text = "الهاتف: --- 📱",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(52, 211, 153),
-                BackColor = Color.FromArgb(24, 33, 53),
-                Location = new Point(10, 44),
-                Size = new Size(420, 20),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight,
                 Cursor = Cursors.Hand
             };
             lblDetailCustPhone.Click += (s, e) => SendWhatsAppMessage();
@@ -418,39 +457,38 @@ namespace ChickenDist.Forms
             lblDetailCustAddress = new Label
             {
                 Text = "العنوان: ---",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(226, 232, 240),
-                BackColor = Color.FromArgb(24, 33, 53),
-                Location = new Point(10, 66),
-                Size = new Size(420, 32)
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             txtDetailNotes = new TextBox
             {
-                Location = new Point(10, 100),
-                Size = new Size(420, 24),
+                Dock = DockStyle.Fill,
                 ReadOnly = true,
                 BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.FromArgb(253, 224, 71),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle,
                 Text = "ملاحظات: ---"
             };
 
-            grpCustomer.Controls.Add(lblDetailCustName);
-            grpCustomer.Controls.Add(lblDetailCustPhone);
-            grpCustomer.Controls.Add(lblDetailCustAddress);
-            grpCustomer.Controls.Add(txtDetailNotes);
+            tblCustomer.Controls.Add(lblDetailCustName, 0, 0);
+            tblCustomer.Controls.Add(lblDetailCustPhone, 1, 0);
+            tblCustomer.Controls.Add(lblDetailCustAddress, 0, 1);
+            tblCustomer.Controls.Add(txtDetailNotes, 1, 1);
+            grpCustomer.Controls.Add(tblCustomer);
 
-            // جدول الأصناف
+            // 4.3 بنود وأصناف الطلب (Items Table - Fill)
             var grpItems = new GroupBox
             {
-                Text = "🛒 أصناف وبنود الطلب",
+                Text = "🛒 بنود الطلب",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Padding = new Padding(8)
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Padding = new Padding(4)
             };
 
             dgvItems = new DataGridView
@@ -465,140 +503,169 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                EnableHeadersVisualStyles = false
+                EnableHeadersVisualStyles = false,
+                Font = new Font("Segoe UI", 8.5f)
             };
             dgvItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
             dgvItems.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(56, 189, 248);
-            dgvItems.ColumnHeadersHeight = 32;
-            dgvItems.RowTemplate.Height = 30;
+            dgvItems.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            dgvItems.ColumnHeadersHeight = 26;
+            dgvItems.RowTemplate.Height = 24;
             dgvItems.DefaultCellStyle.BackColor = Color.FromArgb(15, 23, 42);
 
             grpItems.Controls.Add(dgvItems);
 
-            // ملخص الحسابات (Financial Summary)
-            var pnlTotals = new Panel
+            // 4.4 ملخص الحسابات المالي (Financial Totals - 28px)
+            var pnlTotals = new TableLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 65,
+                Height = 28,
+                RowCount = 1,
+                ColumnCount = 3,
                 BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(10, 6, 10, 6)
+                Padding = new Padding(6, 2, 6, 2),
+                Margin = new Padding(0)
             };
+            pnlTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35f));
+            pnlTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f));
+            pnlTotals.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35f));
 
             lblDetailSubtotal = new Label
             {
                 Text = "المجموع: 0.00 ج.م",
-                Font = new Font("Segoe UI", 9f),
+                Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(148, 163, 184),
-                Location = new Point(230, 8),
-                Size = new Size(200, 22)
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleRight
             };
 
             lblDetailDelivery = new Label
             {
                 Text = "التوصيل: 0.00 ج.م",
-                Font = new Font("Segoe UI", 9f),
+                Font = new Font("Segoe UI", 8f),
                 ForeColor = Color.FromArgb(148, 163, 184),
-                Location = new Point(230, 34),
-                Size = new Size(200, 22)
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter
             };
 
             lblDetailTotal = new Label
             {
                 Text = "الإجمالي: 0.00 ج.م",
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(52, 211, 153),
-                Location = new Point(10, 16),
-                Size = new Size(210, 34),
+                Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            pnlTotals.Controls.Add(lblDetailSubtotal);
-            pnlTotals.Controls.Add(lblDetailDelivery);
-            pnlTotals.Controls.Add(lblDetailTotal);
+            pnlTotals.Controls.Add(lblDetailSubtotal, 0, 0);
+            pnlTotals.Controls.Add(lblDetailDelivery, 1, 0);
+            pnlTotals.Controls.Add(lblDetailTotal, 2, 0);
 
-            // أزرار الإجراءات السريعة (Actions Panel)
-            var pnlActions = new Panel
+            // 4.5 أزرار الإجراءات السريعة (Actions Panel - 68px)
+            var pnlActions = new TableLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 110,
-                BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(8)
+                Height = 68,
+                RowCount = 2,
+                ColumnCount = 2,
+                BackColor = Color.FromArgb(20, 29, 47),
+                Padding = new Padding(2, 2, 2, 2),
+                Margin = new Padding(0)
             };
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52f));
+            pnlActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48f));
+            pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 52f));
+            pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 48f));
 
             btnConvertToSale = new Button
             {
-                Text = "⚡ تحويل لفاتورة مبيعات (F10)",
-                Location = new Point(220, 8),
-                Size = new Size(215, 42),
+                Text = "⚡ تحويل لفاتورة (F10)",
+                Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
             };
             btnConvertToSale.FlatAppearance.BorderSize = 0;
             btnConvertToSale.Click += (s, e) => ConvertOrderToSaleInvoice();
 
             btnPrintPrepSlip = new Button
             {
-                Text = "🖨️ طباعة إذن تحضير (F9)",
-                Location = new Point(10, 8),
-                Size = new Size(200, 42),
+                Text = "🖨️ طباعة تحضير (F9)",
+                Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
             };
             btnPrintPrepSlip.FlatAppearance.BorderSize = 0;
             btnPrintPrepSlip.Click += (s, e) => PrintPreparationSlip();
 
             btnWhatsApp = new Button
             {
-                Text = "💬 مراسلة العميل واتساب",
-                Location = new Point(220, 56),
-                Size = new Size(215, 38),
+                Text = "💬 واتساب العميل",
+                Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(5, 150, 105),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 2, 1)
             };
             btnWhatsApp.FlatAppearance.BorderSize = 0;
             btnWhatsApp.Click += (s, e) => SendWhatsAppMessage();
 
+            var pnlStatusMini = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                Margin = new Padding(2, 1, 2, 1)
+            };
+            pnlStatusMini.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            pnlStatusMini.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+
             var lblChangeStatus = new Label
             {
-                Text = "تغيير الحالة:",
-                Location = new Point(140, 64),
-                Size = new Size(70, 22),
+                Text = "الحالة:",
+                Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(203, 213, 225),
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font("Segoe UI", 8f),
+                AutoSize = true,
+                Margin = new Padding(0, 0, 4, 0)
             };
 
             cboChangeStatus = new ComboBox
             {
-                Location = new Point(10, 62),
-                Size = new Size(125, 26),
+                Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(30, 41, 59),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f)
+                Font = new Font("Segoe UI", 8.5f)
             };
             cboChangeStatus.Items.AddRange(new object[] { "جديد", "قيد التجهيز", "جاري التوصيل", "مكتمل", "ملغي" });
             cboChangeStatus.SelectedIndexChanged += CboChangeStatus_SelectedIndexChanged;
 
-            pnlActions.Controls.Add(btnConvertToSale);
-            pnlActions.Controls.Add(btnPrintPrepSlip);
-            pnlActions.Controls.Add(btnWhatsApp);
-            pnlActions.Controls.Add(lblChangeStatus);
-            pnlActions.Controls.Add(cboChangeStatus);
+            pnlStatusMini.Controls.Add(lblChangeStatus, 0, 0);
+            pnlStatusMini.Controls.Add(cboChangeStatus, 1, 0);
 
+            pnlActions.Controls.Add(btnConvertToSale, 0, 0);
+            pnlActions.Controls.Add(btnPrintPrepSlip, 1, 0);
+            pnlActions.Controls.Add(btnWhatsApp, 0, 1);
+            pnlActions.Controls.Add(pnlStatusMini, 1, 1);
+
+            // ترتيب الإضافة إلى pnlDetails (قاعدة WinForms Docking)
+            // نُضيف Fill أولاً ثم عناصر Bottom ثم عناصر Top حتى لا تحجب أي مساحة
             pnlDetails.Controls.Add(grpItems);
             pnlDetails.Controls.Add(pnlTotals);
+            pnlDetails.Controls.Add(pnlActions);
             pnlDetails.Controls.Add(grpCustomer);
             pnlDetails.Controls.Add(pnlDetailHeader);
-            pnlDetails.Controls.Add(pnlActions);
 
             splitContainer.Panel2.Controls.Add(pnlDetails);
 
@@ -613,13 +680,15 @@ namespace ChickenDist.Forms
             var btn = new Button
             {
                 Text = text,
-                Size = new Size(125, 34),
+                AutoSize = true,
+                Height = 28,
                 BackColor = bg,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(4, 2, 4, 2)
+                Margin = new Padding(3, 1, 3, 1),
+                Padding = new Padding(6, 0, 6, 0)
             };
             btn.FlatAppearance.BorderSize = 0;
             return btn;
@@ -631,13 +700,14 @@ namespace ChickenDist.Forms
             {
                 Text = text,
                 AutoSize = true,
-                Height = 32,
+                Height = 26,
                 BackColor = active ? Color.FromArgb(37, 99, 235) : Color.FromArgb(30, 41, 59),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(3, 0, 3, 0)
+                Margin = new Padding(2, 1, 2, 1),
+                Padding = new Padding(5, 0, 5, 0)
             };
             btn.FlatAppearance.BorderSize = 0;
             return btn;
@@ -649,24 +719,34 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(8),
-                Margin = new Padding(4)
+                Padding = new Padding(4, 2, 4, 2),
+                Margin = new Padding(2, 1, 2, 1)
             };
 
             var pnlAccent = new Panel
             {
                 Dock = DockStyle.Right,
-                Width = 4,
+                Width = 3,
                 BackColor = accent
             };
+
+            var pnlText = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                Margin = new Padding(0),
+                Padding = new Padding(2, 0, 4, 0)
+            };
+            pnlText.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f));
+            pnlText.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));
 
             var lblTitle = new Label
             {
                 Text = title,
                 ForeColor = Color.FromArgb(148, 163, 184),
-                Font = new Font("Segoe UI", 8.5f),
-                Dock = DockStyle.Top,
-                Height = 20,
+                Font = new Font("Segoe UI", 7.5f),
+                Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight
             };
 
@@ -674,13 +754,15 @@ namespace ChickenDist.Forms
             {
                 Text = value,
                 ForeColor = accent,
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleLeft
             };
 
-            card.Controls.Add(lblVal);
-            card.Controls.Add(lblTitle);
+            pnlText.Controls.Add(lblTitle, 0, 0);
+            pnlText.Controls.Add(lblVal, 1, 0);
+
+            card.Controls.Add(pnlText);
             card.Controls.Add(pnlAccent);
 
             return lblVal;
@@ -732,26 +814,71 @@ namespace ChickenDist.Forms
                 if (dgvOrders.Columns["Notes"] != null) dgvOrders.Columns["Notes"].Visible = false;
                 if (dgvOrders.Columns["CreatedAt"] != null) dgvOrders.Columns["CreatedAt"].Visible = false;
 
-                if (dgvOrders.Columns["OrderNumber"] != null) dgvOrders.Columns["OrderNumber"].HeaderText = "رقم الطلب";
+                if (dgvOrders.Columns["OrderNumber"] != null)
+                {
+                    dgvOrders.Columns["OrderNumber"].HeaderText = "رقم الطلب";
+                    dgvOrders.Columns["OrderNumber"].FillWeight = 85;
+                    dgvOrders.Columns["OrderNumber"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
                 if (dgvOrders.Columns["OrderDate"] != null)
                 {
                     dgvOrders.Columns["OrderDate"].HeaderText = "تاريخ الطلب";
                     dgvOrders.Columns["OrderDate"].DefaultCellStyle.Format = "yyyy-MM-dd HH:mm";
+                    dgvOrders.Columns["OrderDate"].FillWeight = 110;
+                    dgvOrders.Columns["OrderDate"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                 }
-                if (dgvOrders.Columns["CustomerName"] != null) dgvOrders.Columns["CustomerName"].HeaderText = "اسم العميل";
-                if (dgvOrders.Columns["CustomerPhone"] != null) dgvOrders.Columns["CustomerPhone"].HeaderText = "الهاتف";
-                if (dgvOrders.Columns["CustomerAddress"] != null) dgvOrders.Columns["CustomerAddress"].HeaderText = "العنوان";
-                if (dgvOrders.Columns["ItemsCount"] != null) dgvOrders.Columns["ItemsCount"].HeaderText = "الأصناف";
+                if (dgvOrders.Columns["CustomerName"] != null)
+                {
+                    dgvOrders.Columns["CustomerName"].HeaderText = "اسم العميل";
+                    dgvOrders.Columns["CustomerName"].FillWeight = 135;
+                    dgvOrders.Columns["CustomerName"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+                if (dgvOrders.Columns["CustomerPhone"] != null)
+                {
+                    dgvOrders.Columns["CustomerPhone"].HeaderText = "الهاتف";
+                    dgvOrders.Columns["CustomerPhone"].FillWeight = 95;
+                    dgvOrders.Columns["CustomerPhone"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
+                if (dgvOrders.Columns["CustomerAddress"] != null)
+                {
+                    dgvOrders.Columns["CustomerAddress"].HeaderText = "العنوان";
+                    dgvOrders.Columns["CustomerAddress"].FillWeight = 135;
+                    dgvOrders.Columns["CustomerAddress"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+                if (dgvOrders.Columns["ItemsCount"] != null)
+                {
+                    dgvOrders.Columns["ItemsCount"].HeaderText = "الأصناف";
+                    dgvOrders.Columns["ItemsCount"].FillWeight = 55;
+                    dgvOrders.Columns["ItemsCount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
                 if (dgvOrders.Columns["SubTotal"] != null) dgvOrders.Columns["SubTotal"].Visible = false;
                 if (dgvOrders.Columns["DeliveryCharge"] != null) dgvOrders.Columns["DeliveryCharge"].Visible = false;
                 if (dgvOrders.Columns["TotalAmount"] != null)
                 {
                     dgvOrders.Columns["TotalAmount"].HeaderText = "الإجمالي";
                     dgvOrders.Columns["TotalAmount"].DefaultCellStyle.Format = "N2";
+                    dgvOrders.Columns["TotalAmount"].FillWeight = 85;
+                    dgvOrders.Columns["TotalAmount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                    dgvOrders.Columns["TotalAmount"].DefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
-                if (dgvOrders.Columns["PriceTier"] != null) dgvOrders.Columns["PriceTier"].HeaderText = "الفئة";
-                if (dgvOrders.Columns["Status"] != null) dgvOrders.Columns["Status"].HeaderText = "الحالة";
-                if (dgvOrders.Columns["CreatedSaleID"] != null) dgvOrders.Columns["CreatedSaleID"].HeaderText = "رقم الفاتورة";
+                if (dgvOrders.Columns["PriceTier"] != null)
+                {
+                    dgvOrders.Columns["PriceTier"].HeaderText = "الفئة";
+                    dgvOrders.Columns["PriceTier"].FillWeight = 60;
+                    dgvOrders.Columns["PriceTier"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
+                if (dgvOrders.Columns["Status"] != null)
+                {
+                    dgvOrders.Columns["Status"].HeaderText = "الحالة";
+                    dgvOrders.Columns["Status"].FillWeight = 85;
+                    dgvOrders.Columns["Status"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
+                if (dgvOrders.Columns["CreatedSaleID"] != null)
+                {
+                    dgvOrders.Columns["CreatedSaleID"].HeaderText = "رقم الفاتورة";
+                    dgvOrders.Columns["CreatedSaleID"].FillWeight = 70;
+                    dgvOrders.Columns["CreatedSaleID"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
 
                 if (dgvOrders.Rows.Count > 0 && _selectedOrderID <= 0)
                 {
@@ -860,24 +987,46 @@ namespace ChickenDist.Forms
                 if (dgvItems.Columns["ProductID"] != null) dgvItems.Columns["ProductID"].Visible = false;
                 if (dgvItems.Columns["Notes"] != null) dgvItems.Columns["Notes"].Visible = false;
 
-                if (dgvItems.Columns["ProductName"] != null) dgvItems.Columns["ProductName"].HeaderText = "اسم الصنف";
-                if (dgvItems.Columns["UnitName"] != null) dgvItems.Columns["UnitName"].HeaderText = "الوحدة";
+                if (dgvItems.Columns["ProductName"] != null)
+                {
+                    dgvItems.Columns["ProductName"].HeaderText = "اسم الصنف";
+                    dgvItems.Columns["ProductName"].FillWeight = 140;
+                    dgvItems.Columns["ProductName"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+                if (dgvItems.Columns["UnitName"] != null)
+                {
+                    dgvItems.Columns["UnitName"].HeaderText = "الوحدة";
+                    dgvItems.Columns["UnitName"].FillWeight = 65;
+                    dgvItems.Columns["UnitName"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
                 if (dgvItems.Columns["Quantity"] != null)
                 {
                     dgvItems.Columns["Quantity"].HeaderText = "الكمية";
                     dgvItems.Columns["Quantity"].DefaultCellStyle.Format = "G29";
+                    dgvItems.Columns["Quantity"].FillWeight = 60;
+                    dgvItems.Columns["Quantity"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                 }
                 if (dgvItems.Columns["UnitPrice"] != null)
                 {
                     dgvItems.Columns["UnitPrice"].HeaderText = "السعر";
                     dgvItems.Columns["UnitPrice"].DefaultCellStyle.Format = "N2";
+                    dgvItems.Columns["UnitPrice"].FillWeight = 70;
+                    dgvItems.Columns["UnitPrice"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
                 }
                 if (dgvItems.Columns["TotalPrice"] != null)
                 {
                     dgvItems.Columns["TotalPrice"].HeaderText = "الإجمالي";
                     dgvItems.Columns["TotalPrice"].DefaultCellStyle.Format = "N2";
+                    dgvItems.Columns["TotalPrice"].FillWeight = 80;
+                    dgvItems.Columns["TotalPrice"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                    dgvItems.Columns["TotalPrice"].DefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
-                if (dgvItems.Columns["ProductCode"] != null) dgvItems.Columns["ProductCode"].HeaderText = "الكود";
+                if (dgvItems.Columns["ProductCode"] != null)
+                {
+                    dgvItems.Columns["ProductCode"].HeaderText = "الكود";
+                    dgvItems.Columns["ProductCode"].FillWeight = 60;
+                    dgvItems.Columns["ProductCode"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
             }
             catch (Exception ex)
             {
