@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "3.3.3"
+$VERSION   = "3.3.4"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -134,6 +134,10 @@ foreach ($dest in $releaseDestinations) {
 $botPublicMobile = Join-Path $REPO_ROOT "bot\public\mobile.html"
 Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\index.html") -Destination $botPublicMobile -Force
 Write-OK "Synced MobileApp/index.html to bot/public/mobile.html"
+
+$botPublicStore = Join-Path $REPO_ROOT "bot\public\store.html"
+Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\store.html") -Destination $botPublicStore -Force
+Write-OK "Synced MobileApp/store.html to bot/public/store.html"
 
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory
 $finalReleaseExe = "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"

@@ -8,7 +8,9 @@
     ],
     "rewrites": [
       { "source": "/mobile", "destination": "/mobile.html" },
-      { "source": "/admin", "destination": "/admin.html" }
+      { "source": "/admin", "destination": "/admin.html" },
+      { "source": "/store", "destination": "/store.html" },
+      { "source": "/store/**", "destination": "/store.html" }
     ]
   }
 }

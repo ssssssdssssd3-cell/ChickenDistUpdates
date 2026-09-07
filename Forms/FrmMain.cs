@@ -14,6 +14,7 @@ namespace ChickenDist.Forms
         private FlowLayoutPanel pnlNavBar;
         private Panel pnlTabBar;
         private Button _btnOpenPages;
+        private Button _btnOnlineOrders;
         private ToolStripDropDown _pnlDropdown;
         private FlowLayoutPanel pnlHeaderRight;
         private Label lblUserInfo, lblCompany, lblTitle;
@@ -32,6 +33,8 @@ namespace ChickenDist.Forms
             NavigateTo(new FrmDashboard());
             InitializePeriodicBackup();
             try { ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync(); } catch {}
+            try { ChickenDist.Services.CloudSyncService.OnNewOrdersReceived += count => UpdateOnlineOrdersBadge(); } catch {}
+            try { UpdateOnlineOrdersBadge(); } catch {}
             try { System.Threading.Tasks.Task.Run(() => InventoryDAL.SyncAllProductStock()); } catch {}
         }
 
@@ -196,7 +199,7 @@ namespace ChickenDist.Forms
             var pnlTabActions = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 230,
+                Width = 365,
                 BackColor = Color.Transparent
             };
             pnlTabBar.Controls.Add(pnlTabActions);
@@ -208,7 +211,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(220, 38, 38),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Size = new Size(110, 34),
+                Size = new Size(100, 34),
                 Location = new Point(0, 1),
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -231,8 +234,8 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(45, 55, 72),
                 ForeColor = Color.FromArgb(226, 232, 240),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Size = new Size(115, 34),
-                Location = new Point(114, 1),
+                Size = new Size(110, 34),
+                Location = new Point(104, 1),
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -241,6 +244,22 @@ namespace ChickenDist.Forms
             _btnOpenPages.FlatAppearance.MouseOverBackColor = Color.FromArgb(55, 65, 81);
             _btnOpenPages.Click += BtnOpenPages_Click;
             pnlTabActions.Controls.Add(_btnOpenPages);
+
+            _btnOnlineOrders = new Button
+            {
+                Text = "🌐 طلبات أونلاين",
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Size = new Size(140, 34),
+                Location = new Point(218, 1),
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            _btnOnlineOrders.FlatAppearance.BorderSize = 0;
+            _btnOnlineOrders.Click += (s, e) => NavigateTo(new FrmOnlineOrders());
+            pnlTabActions.Controls.Add(_btnOnlineOrders);
 
             // Center Horizontal Tabs Container
             flowTabs = new FlowLayoutPanel
@@ -285,6 +304,34 @@ namespace ChickenDist.Forms
             this.Text = $"{newName} - النظام الرئيسي";
         }
 
+        public void UpdateOnlineOrdersBadge()
+        {
+            if (_btnOnlineOrders == null || _btnOnlineOrders.IsDisposed) return;
+            try
+            {
+                if (_btnOnlineOrders.InvokeRequired)
+                {
+                    _btnOnlineOrders.BeginInvoke(new Action(() => UpdateOnlineOrdersBadge()));
+                    return;
+                }
+
+                int newCount = OnlineOrdersDAL.GetNewOrdersCount();
+                if (newCount > 0)
+                {
+                    _btnOnlineOrders.Text = $"🌐 طلبات ({newCount}) 🔴";
+                    _btnOnlineOrders.BackColor = Color.FromArgb(220, 38, 38);
+                    _btnOnlineOrders.ForeColor = Color.White;
+                }
+                else
+                {
+                    _btnOnlineOrders.Text = "🌐 طلبات أونلاين";
+                    _btnOnlineOrders.BackColor = Color.FromArgb(37, 99, 235);
+                    _btnOnlineOrders.ForeColor = Color.White;
+                }
+            }
+            catch { }
+        }
+
         private void HighlightActiveGroup(string className)
         {
             string targetGroup = "";
@@ -293,6 +340,8 @@ namespace ChickenDist.Forms
                 case "FrmDashboard":
                     targetGroup = "الرئيسية";
                     break;
+                case "FrmOnlineOrders":
+                case "FrmOnlineStoreSettings":
                 case "FrmSale":
                 case "FrmReturn":
                 case "FrmInstallments":
@@ -439,6 +488,8 @@ namespace ChickenDist.Forms
                 }),
 
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
+                    ("🌐 طلبات المتجر الإلكتروني (أونلاين)", "Sales", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
+                    ("⚙️ إعدادات المتجر الإلكتروني للعملاء", "Settings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
@@ -563,6 +614,8 @@ namespace ChickenDist.Forms
                     ("🎛️ لوحة الإعدادات الشاملة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
                     ("📱 تطبيق المالك وخدمات السحاب (Firebase)", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
+                    ("🌐 طلبات المتجر الإلكتروني", "OnlineOrders", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
+                    ("⚙️ إعدادات المتجر الإلكتروني للعملاء", "Settings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
                     ("📚 إدارة الجداول المرجعية", "LookupManager", (Action)(() => NavigateTo(new FrmLookupManager()))),
                     ("🔄 تحديث البرنامج", "Settings", (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),

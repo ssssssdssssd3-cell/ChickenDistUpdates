@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using ChickenDist.Core;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Services
 {
@@ -21,6 +23,7 @@ namespace ChickenDist.Services
 
     public static class CloudSyncService
     {
+        public static event Action<int> OnNewOrdersReceived;
         public static void EnsureMobileAppFolderExists()
         {
             EnsureMobileAppFiles();
@@ -80,6 +83,16 @@ namespace ChickenDist.Services
             ""value"": ""*""
           }
         ]
+      }
+    ],
+    ""rewrites"": [
+      {
+        ""source"": ""/store"",
+        ""destination"": ""/store.html""
+      },
+      {
+        ""source"": ""/store/**"",
+        ""destination"": ""/store.html""
       }
     ]
   },
@@ -203,6 +216,67 @@ self.addEventListener('fetch', (event) => {
                     }
                 }
                 catch { }
+
+                // 7. استخراج وتحديث ملف متجر العملاء store.html
+                string storeHtmlPath = System.IO.Path.Combine(mobileAppDir, "store.html");
+                string devStore = @"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\store.html";
+                bool storeUpdated = false;
+
+                if (System.IO.File.Exists(devStore))
+                {
+                    try
+                    {
+                        System.IO.File.Copy(devStore, storeHtmlPath, true);
+                        storeUpdated = true;
+                    }
+                    catch { }
+                }
+
+                if (!storeUpdated)
+                {
+                    try
+                    {
+                        var asm = typeof(CloudSyncService).Assembly;
+                        foreach (var resName in asm.GetManifestResourceNames())
+                        {
+                            if (resName.EndsWith("store.html", StringComparison.OrdinalIgnoreCase))
+                            {
+                                using (var stream = asm.GetManifestResourceStream(resName))
+                                using (var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8))
+                                {
+                                    string content = reader.ReadToEnd();
+                                    if (!string.IsNullOrEmpty(content) && content.Contains("prosoft_store"))
+                                    {
+                                        System.IO.File.WriteAllText(storeHtmlPath, content, new System.Text.UTF8Encoding(false));
+                                        storeUpdated = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                if (!storeUpdated)
+                {
+                    try
+                    {
+                        using (var wc = new System.Net.WebClient())
+                        {
+                            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls | (System.Net.SecurityProtocolType)12288;
+                            wc.Encoding = System.Text.Encoding.UTF8;
+                            wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                            string html = wc.DownloadString("https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/MobileApp/store.html?t=" + DateTime.Now.Ticks);
+                            if (!string.IsNullOrEmpty(html) && html.Contains("prosoft_store"))
+                            {
+                                System.IO.File.WriteAllText(storeHtmlPath, html, new System.Text.UTF8Encoding(false));
+                                storeUpdated = true;
+                            }
+                        }
+                    }
+                    catch { }
+                }
             }
             catch (Exception ex)
             {
@@ -1033,17 +1107,333 @@ self.addEventListener('fetch', (event) => {
             return sb.ToString();
         }
 
+        public static async Task<bool> SyncStoreCatalogToFirebaseAsync(string projectId = null)
+        {
+            if (string.IsNullOrEmpty(projectId))
+            {
+                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+            }
+            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+
+            try
+            {
+                // 1. إعدادات المتجر الحالية
+                string storeConfigJson = "{" +
+                    "\"IsActive\":" + (AppConfig.Store_IsActive ? "true" : "false") + "," +
+                    "\"StoreName\":\"" + EscapeJsonString(AppConfig.CompanyName) + "\"," +
+                    "\"StoreLogo\":\"" + GetStoreLogoBase64() + "\"," +
+                    "\"Phone\":\"" + EscapeJsonString(AppConfig.CompanyPhone) + "\"," +
+                    "\"WhatsApp\":\"" + EscapeJsonString(string.IsNullOrEmpty(AppConfig.Store_OrderNotificationWhatsApp) ? AppConfig.CompanyPhone : AppConfig.Store_OrderNotificationWhatsApp) + "\"," +
+                    "\"PriceTier\":\"" + EscapeJsonString(AppConfig.Store_PriceTier ?? "Retail") + "\"," +
+                    "\"ShowPrices\":" + (AppConfig.Store_ShowPrices ? "true" : "false") + "," +
+                    "\"ShowStockQty\":" + (AppConfig.Store_ShowStockQty ? "true" : "false") + "," +
+                    "\"MinimumOrder\":" + AppConfig.Store_MinimumOrder.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                    "\"Announcement\":\"" + EscapeJsonString(AppConfig.Store_Announcement ?? "") + "\"," +
+                    "\"LastUpdated\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") + "\"," +
+                    "\"UpdatedTimestamp\":" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() +
+                    "}";
+
+                // 2. الأقسام المسموح بظهورها في المتجر فقط
+                DataTable dtCategories = DbHelper.Query(@"
+                    SELECT CategoryID, CategoryName 
+                    FROM Categories WITH (NOLOCK) 
+                    WHERE ISNULL(ShowInOnlineStore, 1) = 1 
+                    ORDER BY CategoryName ASC");
+
+                var sbCategories = new StringBuilder("[");
+                if (dtCategories != null)
+                {
+                    for (int i = 0; i < dtCategories.Rows.Count; i++)
+                    {
+                        if (i > 0) sbCategories.Append(",");
+                        int catId = Convert.ToInt32(dtCategories.Rows[i]["CategoryID"]);
+                        string catName = EscapeJsonString(dtCategories.Rows[i]["CategoryName"]?.ToString() ?? "");
+                        sbCategories.Append("{\"CategoryID\":" + catId + ",\"CategoryName\":\"" + catName + "\"}");
+                    }
+                }
+                sbCategories.Append("]");
+
+                // 3. الأصناف التابعة للأقسام المسموح بها مع احتساب فئة السعر والرصيد
+                string priceCol;
+                string tier = AppConfig.Store_PriceTier;
+                if (tier == "Wholesale")
+                    priceCol = "COALESCE(NULLIF(p.WholesalePrice, 0), p.SalePrice, 0)";
+                else if (tier == "SemiWholesale")
+                    priceCol = "COALESCE(NULLIF(p.SemiWholesalePrice, 0), p.SalePrice, 0)";
+                else
+                    priceCol = "COALESCE(p.SalePrice, 0)";
+
+                DataTable dtProducts = DbHelper.Query($@"
+                    SELECT p.ProductID, p.ProductName, ISNULL(p.ProductCode, '') AS ProductCode,
+                           ISNULL(p.CategoryID, 0) AS CategoryID, ISNULL(c.CategoryName, N'عام') AS CategoryName,
+                           ISNULL(p.Unit, N'قطعة') AS Unit,
+                           {priceCol} AS Price,
+                           ISNULL(stk.TotalStock, 0) AS StockQty
+                    FROM Products p WITH (NOLOCK)
+                    LEFT JOIN Categories c WITH (NOLOCK) ON p.CategoryID = c.CategoryID
+                    OUTER APPLY (
+                        SELECT COALESCE(
+                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID),
+                            (SELECT SUM(pb.Quantity) FROM ProductBatches pb WITH (NOLOCK) WHERE pb.ProductID = p.ProductID),
+                            p.Quantity, 0
+                        ) AS TotalStock
+                    ) stk
+                    WHERE p.IsActive = 1
+                      AND (p.CategoryID IS NULL OR ISNULL(c.ShowInOnlineStore, 1) = 1)
+                    ORDER BY c.CategoryName ASC, p.ProductName ASC");
+
+                var sbProducts = new StringBuilder("[");
+                if (dtProducts != null)
+                {
+                    for (int i = 0; i < dtProducts.Rows.Count; i++)
+                    {
+                        if (i > 0) sbProducts.Append(",");
+                        DataRow r = dtProducts.Rows[i];
+                        int pId = Convert.ToInt32(r["ProductID"]);
+                        string pName = EscapeJsonString(r["ProductName"]?.ToString() ?? "");
+                        string pCode = EscapeJsonString(r["ProductCode"]?.ToString() ?? "");
+                        int cId = Convert.ToInt32(r["CategoryID"]);
+                        string cName = EscapeJsonString(r["CategoryName"]?.ToString() ?? "");
+                        string unit = EscapeJsonString(r["Unit"]?.ToString() ?? "قطعة");
+                        decimal price = r["Price"] != DBNull.Value ? Convert.ToDecimal(r["Price"]) : 0m;
+                        decimal stock = r["StockQty"] != DBNull.Value ? Convert.ToDecimal(r["StockQty"]) : 0m;
+
+                        sbProducts.Append("{" +
+                            "\"ProductID\":" + pId + "," +
+                            "\"ProductName\":\"" + pName + "\"," +
+                            "\"ProductCode\":\"" + pCode + "\"," +
+                            "\"CategoryID\":" + cId + "," +
+                            "\"CategoryName\":\"" + cName + "\"," +
+                            "\"Unit\":\"" + unit + "\"," +
+                            "\"Price\":" + price.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                            "\"StockQty\":" + stock.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                            "}");
+                    }
+                }
+                sbProducts.Append("]");
+
+                string storeCatalogJson = "{" +
+                    "\"categories\":" + sbCategories.ToString() + "," +
+                    "\"products\":" + sbProducts.ToString() +
+                    "}";
+
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(30);
+
+                    // A. رفع إعدادات المتجر store_config.json
+                    var configContent = new StringContent(storeConfigJson, Encoding.UTF8, "application/json");
+                    try
+                    {
+                        await client.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/store_config.json", configContent);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            var configFallback = new StringContent(storeConfigJson, Encoding.UTF8, "application/json");
+                            await client.PutAsync($"https://{projectId}.firebaseio.com/store_config.json", configFallback);
+                        }
+                        catch { }
+                    }
+
+                    // B. رفع كتالوج الأصناف store_catalog.json
+                    var catalogContent = new StringContent(storeCatalogJson, Encoding.UTF8, "application/json");
+                    try
+                    {
+                        var resp = await client.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/store_catalog.json", catalogContent);
+                        if (resp != null && resp.IsSuccessStatusCode) return true;
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            var catalogFallback = new StringContent(storeCatalogJson, Encoding.UTF8, "application/json");
+                            var respFallback = await client.PutAsync($"https://{projectId}.firebaseio.com/store_catalog.json", catalogFallback);
+                            if (respFallback != null && respFallback.IsSuccessStatusCode) return true;
+                        }
+                        catch { }
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("خطأ في رفع كتالوج وإعدادات المتجر الإلكتروني", ex, "SyncStoreCatalogToFirebaseAsync");
+                return false;
+            }
+        }
+
+        public static async Task<int> PullOnlineOrdersFromFirebaseAsync(string projectId = null)
+        {
+            if (string.IsNullOrEmpty(projectId))
+            {
+                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+            }
+            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+
+            int newlySaved = 0;
+
+            try
+            {
+                string json = null;
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(20);
+                    try
+                    {
+                        var resp = await client.GetAsync($"https://{projectId}-default-rtdb.firebaseio.com/online_orders.json");
+                        if (resp != null && resp.IsSuccessStatusCode)
+                        {
+                            json = await resp.Content.ReadAsStringAsync();
+                        }
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            var respFallback = await client.GetAsync($"https://{projectId}.firebaseio.com/online_orders.json");
+                            if (respFallback != null && respFallback.IsSuccessStatusCode)
+                            {
+                                json = await respFallback.Content.ReadAsStringAsync();
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(json) || json == "null" || json.Trim() == "{}")
+                    return 0;
+
+                var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+                var ordersDict = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(json);
+                if (ordersDict == null || ordersDict.Count == 0) return 0;
+
+                foreach (var entry in ordersDict)
+                {
+                    string remoteId = entry.Key;
+                    if (string.IsNullOrEmpty(remoteId)) continue;
+                    if (OnlineOrdersDAL.OrderExists(remoteId)) continue;
+
+                    if (!(entry.Value is System.Collections.Generic.Dictionary<string, object> orderObj))
+                        continue;
+
+                    string orderNum = GetDictString(orderObj, "OrderNumber", $"#{remoteId}");
+                    string custName = GetDictString(orderObj, "CustomerName", "عميل أونلاين");
+                    string custPhone = GetDictString(orderObj, "CustomerPhone", "");
+                    string custAddress = GetDictString(orderObj, "CustomerAddress", "");
+                    string notes = GetDictString(orderObj, "Notes", "");
+                    string priceTier = GetDictString(orderObj, "PriceTier", "قطاعي");
+
+                    decimal subTotal = GetDictDecimal(orderObj, "SubTotal", 0m);
+                    decimal delivery = GetDictDecimal(orderObj, "DeliveryCharge", 0m);
+                    decimal totalAmount = GetDictDecimal(orderObj, "TotalAmount", subTotal);
+
+                    DateTime orderDate = DateTime.Now;
+                    string dateStr = GetDictString(orderObj, "OrderDate", "");
+                    if (!string.IsNullOrEmpty(dateStr) && DateTime.TryParse(dateStr, out var parsedDate))
+                    {
+                        orderDate = parsedDate.ToLocalTime();
+                    }
+
+                    var itemsList = new System.Collections.Generic.List<OnlineOrderItemDTO>();
+                    if (orderObj.TryGetValue("Items", out var itemsObj) && itemsObj is System.Collections.ArrayList rawItems)
+                    {
+                        foreach (var it in rawItems)
+                        {
+                            if (it is System.Collections.Generic.Dictionary<string, object> itDict)
+                            {
+                                int? pid = null;
+                                if (itDict.TryGetValue("ProductID", out var pVal) && pVal != null)
+                                {
+                                    if (int.TryParse(pVal.ToString(), out int parsedPid) && parsedPid > 0)
+                                        pid = parsedPid;
+                                }
+
+                                itemsList.Add(new OnlineOrderItemDTO
+                                {
+                                    ProductID = pid,
+                                    ProductName = GetDictString(itDict, "ProductName", "صنف"),
+                                    UnitName = GetDictString(itDict, "UnitName", "قطعة"),
+                                    Quantity = GetDictDecimal(itDict, "Quantity", 1m),
+                                    UnitPrice = GetDictDecimal(itDict, "UnitPrice", 0m),
+                                    TotalPrice = GetDictDecimal(itDict, "TotalPrice", 0m),
+                                    Notes = GetDictString(itDict, "Notes", "")
+                                });
+                            }
+                        }
+                    }
+
+                    int newId = OnlineOrdersDAL.SaveIncomingOrder(
+                        remoteId, orderNum, orderDate, custName, custPhone, custAddress, notes,
+                        subTotal, delivery, totalAmount, priceTier, itemsList);
+
+                    if (newId > 0)
+                    {
+                        newlySaved++;
+                    }
+                }
+
+                if (newlySaved > 0)
+                {
+                    try
+                    {
+                        System.Media.SystemSounds.Asterisk.Play();
+                    }
+                    catch { }
+
+                    try
+                    {
+                        OnNewOrdersReceived?.Invoke(newlySaved);
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("PullOnlineOrdersFromFirebase error: " + ex.Message);
+            }
+
+            return newlySaved;
+        }
+
+        private static string GetDictString(System.Collections.Generic.Dictionary<string, object> dict, string key, string fallback = "")
+        {
+            if (dict != null && dict.TryGetValue(key, out var val) && val != null)
+                return val.ToString().Trim();
+            return fallback;
+        }
+
+        private static decimal GetDictDecimal(System.Collections.Generic.Dictionary<string, object> dict, string key, decimal fallback = 0m)
+        {
+            if (dict != null && dict.TryGetValue(key, out var val) && val != null)
+            {
+                if (decimal.TryParse(val.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var d))
+                    return d;
+            }
+            return fallback;
+        }
+
         private static System.Threading.Timer _autoSyncTimer;
+        private static int _syncCounter = 0;
 
         public static void StartAutoBackgroundSync()
         {
             if (_autoSyncTimer != null) return;
-            // Push live stats to Firebase RTDB and Firestore every 15 seconds
+            // Push live stats and pull online orders every 15 seconds
             _autoSyncTimer = new System.Threading.Timer(async _ =>
             {
                 try
                 {
                     await PushLiveStatsToFirebaseAsync();
+                    await PullOnlineOrdersFromFirebaseAsync();
+
+                    _syncCounter++;
+                    if (_syncCounter % 4 == 0)
+                    {
+                        await SyncStoreCatalogToFirebaseAsync();
+                    }
                 }
                 catch {}
             }, null, 1000, 15000);
@@ -1058,6 +1448,8 @@ self.addEventListener('fetch', (event) => {
                     try
                     {
                         await PushLiveStatsToFirebaseAsync();
+                        await SyncStoreCatalogToFirebaseAsync();
+                        await PullOnlineOrdersFromFirebaseAsync();
                     }
                     catch { }
                 });

@@ -42,5 +42,28 @@ namespace ChickenDist.DAL
         {
             DbHelper.Execute("UPDATE Categories SET IsActive = 0 WHERE CategoryID = @id", DbHelper.P("@id", id));
         }
+
+        public static DataTable GetAllForStore()
+        {
+            return DbHelper.Query(@"
+                SELECT CategoryID, CategoryName, IsActive, 
+                       ISNULL(ShowInOnlineStore, 1) AS ShowInOnlineStore,
+                       (SELECT COUNT(*) FROM Products p WHERE p.CategoryID = Categories.CategoryID AND p.IsActive = 1) AS ProductsCount
+                FROM Categories 
+                WHERE IsActive = 1 
+                ORDER BY CategoryName ASC");
+        }
+
+        public static void SetStoreVisibility(int categoryID, bool show)
+        {
+            DbHelper.Execute(
+                "UPDATE Categories SET ShowInOnlineStore = @show WHERE CategoryID = @id",
+                DbHelper.P("@show", show), DbHelper.P("@id", categoryID));
+        }
+
+        public static void SetAllStoreVisibility(bool show)
+        {
+            DbHelper.Execute("UPDATE Categories SET ShowInOnlineStore = @show", DbHelper.P("@show", show));
+        }
     }
 }

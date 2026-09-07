@@ -229,6 +229,53 @@ namespace ChickenDist.Core
             set => Set("POSQuickInStockOnly", value ? "true" : "false");
         }
 
+        // ===== إعدادات المتجر الإلكتروني للعملاء (Online Web Store) =====
+        public static bool Store_IsActive
+        {
+            get => Get("Store_IsActive", "true") == "true";
+            set => Set("Store_IsActive", value ? "true" : "false");
+        }
+
+        public static string Store_PriceTier
+        {
+            get => Get("Store_PriceTier", "Retail"); // "Retail" (قطاعي), "SemiWholesale" (نصف جملة), "Wholesale" (جملة)
+            set => Set("Store_PriceTier", value);
+        }
+
+        public static bool Store_ShowPrices
+        {
+            get => Get("Store_ShowPrices", "true") == "true";
+            set => Set("Store_ShowPrices", value ? "true" : "false");
+        }
+
+        public static bool Store_ShowStockQty
+        {
+            get => Get("Store_ShowStockQty", "false") == "true";
+            set => Set("Store_ShowStockQty", value ? "true" : "false");
+        }
+
+        public static decimal Store_MinimumOrder
+        {
+            get
+            {
+                string val = Get("Store_MinimumOrder", "0");
+                return decimal.TryParse(val, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal d) ? d : 0m;
+            }
+            set => Set("Store_MinimumOrder", value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        public static string Store_Announcement
+        {
+            get => Get("Store_Announcement", "أهلاً بكم في متجرنا الإلكتروني! خدمة التوصيل متوفرة.");
+            set => Set("Store_Announcement", value);
+        }
+
+        public static string Store_OrderNotificationWhatsApp
+        {
+            get => Get("Store_OrderNotificationWhatsApp", "");
+            set => Set("Store_OrderNotificationWhatsApp", value);
+        }
+
         /// <summary>إظهار عمود الخصم في جدول أصناف الريسيت</summary>
         public static bool ReceiptShowDiscount
         {

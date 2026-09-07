@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title id="pageTitle">متجر العملاء الإلكتروني | ProSoft</title>
+  
+  <!-- Meta tags for PWA and Mobile Browsers -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 4px;
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .active-pill {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+      color: #ffffff !important;
+      border-color: #3b82f6 !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pb-24">
+
+  <!-- ========================================== -->
+  <!-- 1. شريط الهيدر العلوي (STORE HEADER) -->
+  <!-- ========================================== -->
+  <header class="sticky top-0 z-40 glass-card border-b border-slate-800/80 px-3 py-2.5 sm:px-6 sm:py-3 shadow-lg">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-3">
+      
+      <!-- شعار واسم المتجر -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div id="storeLogoContainer" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-md shadow-blue-500/20 flex-shrink-0 overflow-hidden">
+          <i id="storeLogoIcon" class="fa-solid fa-store"></i>
+          <img id="storeLogoImg" src="" alt="شعار" class="w-full h-full object-cover hidden">
+        </div>
+        <div class="min-w-0">
+          <h1 id="lblStoreName" class="font-black text-sm sm:text-base text-white truncate">متجرنا الإلكتروني</h1>
+          <div class="flex items-center gap-2 text-[10px] sm:text-xs">
+            <span id="storeStatusBadge" class="inline-flex items-center gap-1 text-emerald-400 font-bold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              مفتوح للطلبات
+            </span>
+            <span class="text-slate-600">•</span>
+            <span id="lblStorePhone" class="text-slate-400 truncate">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- أزرار الإجراءات العلوية -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <!-- زر التواصل واتساب -->
+        <a id="btnWhatsAppDirect" href="#" target="_blank" title="تواصل عبر واتساب" class="p-2 sm:px-3 sm:py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span class="hidden md:inline">مراسلة</span>
+        </a>
+
+        <!-- زر طلباتي السابقة -->
+        <button onclick="openMyOrdersModal()" title="متابعة طلباتي" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="hidden md:inline">طلباتي</span>
+        </button>
+
+        <!-- زر سلة المشتريات -->
+        <button onclick="openCartDrawer()" class="px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-600/30 transition flex items-center gap-2 transform active:scale-95">
+          <i class="fa-solid fa-cart-shopping text-sm"></i>
+          <span>السلة</span>
+          <span id="cartCountBadge" class="px-1.5 py-0.2 bg-white text-blue-900 rounded-full text-[10px] font-black">0</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- شريط الإعلان الترويجي إذا وُجد -->
+    <div id="storeAnnouncementBanner" class="hidden mt-2 p-2 bg-blue-950/60 border border-blue-500/30 rounded-xl text-[11px] sm:text-xs text-blue-200 text-center font-bold flex items-center justify-center gap-2">
+      <i class="fa-solid fa-bullhorn text-amber-400"></i>
+      <span id="lblAnnouncementText">خدمة التوصيل السريع متوفرة لجميع المناطق</span>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 2. شريط البحث والأقسام (SEARCH & CATEGORIES) -->
+  <!-- ========================================== -->
+  <section class="max-w-6xl w-full mx-auto px-3 sm:px-6 pt-4 pb-2 space-y-3">
+    <!-- حقل البحث الذكي -->
+    <div class="relative">
+      <input type="text" id="searchInput" oninput="filterProducts()" placeholder="ابحث باسم الصنف أو الكود..." 
+             class="w-full pl-4 pr-10 py-3 bg-slate-900/90 border border-slate-700/80 rounded-2xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner">
+      <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3.5 text-slate-400 text-sm"></i>
+      <button onclick="clearSearch()" id="btnClearSearch" class="hidden absolute left-3.5 top-3 text-slate-400 hover:text-white text-xs">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- شريط الأقسام المسموح بها (Category Pills) -->
+    <div id="categoryPillsContainer" class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 text-xs">
+      <button onclick="selectCategory(0)" id="pill-cat-0" class="active-pill px-3.5 py-2 rounded-xl bg-slate-900 text-slate-300 border border-slate-700 font-bold whitespace-nowrap transition">
+        🌟 الكل (<span id="totalProductsCount">0</span>)
+      </button>
+      <!-- سيتم حقن الأقسام المسموح بها ديناميكياً هنا -->
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 3. شبكة المنتجات (PRODUCTS GRID) -->
+  <!-- ========================================== -->
+  <main class="max-w-6xl w-full mx-auto px-3 sm:px-6 py-2 flex-1">
+    
+    <!-- حالة التحميل -->
+    <div id="loadingState" class="py-16 text-center space-y-3">
+      <div class="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p class="text-xs font-bold text-slate-400">جاري تحميل أصناف المتجر...</p>
+    </div>
+
+    <!-- حالة عدم وجود أصناف مطابقة -->
+    <div id="emptyState" class="hidden py-16 text-center space-y-3">
+      <i class="fa-solid fa-box-open text-4xl text-slate-600 block"></i>
+      <p class="text-sm font-bold text-slate-300">لا توجد أصناف مطابقة لبحثك</p>
+      <button onclick="clearSearch(); selectCategory(0);" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold text-xs rounded-xl transition">
+        عرض جميع المنتجات
+      </button>
+    </div>
+
+    <!-- كروت الأصناف -->
+    <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      <!-- يتم رسم كروت الأصناف هنا عبر جافاسكريبت -->
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 4. الشريط السفلي العائم عند وجود عناصر بالسلة -->
+  <!-- ========================================== -->
+  <div id="floatingCartBar" class="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:right-6 sm:w-96 z-40 hidden">
+    <div class="glass-card bg-slate-900/95 border border-blue-500/40 rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm">
+          <span id="floatCartCount">0</span>
+        </div>
+        <div>
+          <span class="text-[11px] text-slate-400 block font-bold">إجمالي السلة</span>
+          <span id="floatCartTotal" class="text-sm font-black text-emerald-400">0.00 ج.م</span>
+        </div>
+      </div>
+      <button onclick="openCartDrawer()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 transition">
+        <span>عرض السلة والطلب</span>
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5. درج سلة المشتريات (CART DRAWER / MODAL) -->
+  <!-- ========================================== -->
+  <div id="cartModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4">
+    <div class="glass-card rounded-2xl p-4 sm:p-5 w-full max-w-lg shadow-2xl border border-slate-700 text-right relative overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- الهيدر -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-cart-shopping"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-sm sm:text-base">سلة مشترياتك</h3>
+            <span class="text-[11px] text-slate-400" id="cartItemCountLabel">0 أصناف مختارة</span>
+          </div>
+        </div>
+        <button onclick="closeCartDrawer()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- قائمة بنود السلة -->
+      <div id="cartItemsList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 mb-3 divide-y divide-slate-800/60">
+        <!-- بنود السلة تحقن هنا -->
+      </div>
+
+      <!-- ملخص الحساب -->
+      <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 mb-3 space-y-1.5 text-xs flex-shrink-0">
+        <div id="rowSubtotal" class="flex justify-between items-center text-slate-300">
+          <span>المجموع الفرعي:</span>
+          <span id="lblCartSubtotal" class="font-bold text-white">0.00 ج.م</span>
+        </div>
+        <div class="flex justify-between items-center text-slate-300">
+          <span>رسوم التوصيل:</span>
+          <span class="font-bold text-emerald-400">حسب المنطقة</span>
+        </div>
+        <div id="rowTotal" class="flex justify-between items-center pt-2 border-t border-slate-800 text-sm font-black">
+          <span class="text-white">الإجمالي التقديري:</span>
+          <span id="lblCartTotal" class="text-emerald-400">0.00 ج.م</span>
+        </div>
+      </div>
+
+      <!-- تنبيه الحد الأدنى إن وجد -->
+      <div id="minOrderWarning" class="hidden p-2 bg-amber-500/15 border border-amber-500/30 rounded-lg text-[11px] text-amber-300 flex items-center gap-2 mb-3 flex-shrink-0">
+        <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+        <span>الحد الأدنى للطلب هو <strong id="lblMinOrderVal">0</strong> ج.م</span>
+      </div>
+
+      <!-- أزرار الإجراء -->
+      <div class="flex items-center gap-2 pt-1 flex-shrink-0">
+        <button onclick="openCheckoutModal()" id="btnProceedCheckout" class="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 active:scale-95 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+          <span>المتابعة لكتابة العنوان وإتمام الطلب</span>
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 6. نافذة كتابة العنوان وإتمام الطلب (CHECKOUT) -->
+  <!-- ========================================== -->
+  <div id="checkoutModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4">
+    <div class="glass-card rounded-2xl p-4 sm:p-5 w-full max-w-md shadow-2xl border border-slate-700 text-right relative overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- هيدر -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-truck-fast"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-sm">بيانات التوصيل والطلب</h3>
+            <span class="text-[10px] text-slate-400">سيصل طلبك مباشرة لكاشير المحل لتجهيزه فوراً</span>
+          </div>
+        </div>
+        <button onclick="closeCheckoutModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- حقول الإدخال -->
+      <form id="checkoutForm" onsubmit="submitOrder(event)" class="space-y-3 overflow-y-auto custom-scrollbar flex-1 text-xs">
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">الاسم بالكامل <span class="text-rose-400">*</span></label>
+          <input type="text" id="custName" required placeholder="مثال: أحمد محمد علي" 
+                 class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">رقم الهاتف / الواتساب <span class="text-rose-400">*</span></label>
+          <input type="tel" id="custPhone" required placeholder="01xxxxxxxxx" dir="ltr"
+                 class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-right focus:border-blue-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">العنوان بالتفصيل <span class="text-rose-400">*</span></label>
+          <textarea id="custAddress" required rows="2" placeholder="المنطقة، اسم الشارع، رقم العمارة، الشقة، علامة مميزة..." 
+                    class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">ملاحظات خاصة بالطلب (اختياري)</label>
+          <input type="text" id="custNotes" placeholder="أي تعليمات خاصة بالتحضير أو التوصيل..." 
+                 class="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none">
+        </div>
+
+        <!-- زر الإرسال -->
+        <div class="pt-2">
+          <button type="submit" id="btnSubmitOrder" 
+                  class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition cursor-pointer">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span id="btnSubmitOrderText">تأكيد وإرسال الطلب الآن</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 7. نافذة نجاح الطلب ومشاركته (ORDER SUCCESS) -->
+  <!-- ========================================== -->
+  <div id="orderSuccessModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+    <div class="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl border border-emerald-500/40 text-center relative overflow-hidden space-y-4">
+      
+      <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mx-auto shadow-lg shadow-emerald-500/30">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+
+      <div>
+        <h3 class="text-base sm:text-lg font-black text-white">تم استلام طلبك بنجاح! 🎉</h3>
+        <p class="text-xs text-slate-300 mt-1">طلبك الآن مسجل لدى الكاشير وجاري مراجعته وتجهيزه</p>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 space-y-2 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-400">رقم الطلب:</span>
+          <span id="lblSuccessOrderNum" class="font-mono font-black text-blue-400 text-sm dir-ltr">#ORD-0000</span>
+        </div>
+        <div id="successOrderTotalRow" class="flex justify-between items-center">
+          <span class="text-slate-400">إجمالي الطلب:</span>
+          <span id="lblSuccessOrderTotal" class="font-black text-emerald-400 text-sm">0.00 ج.م</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-400">حالة الطلب:</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">جديد ⏳</span>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <!-- زر إرسال واتساب للمحل -->
+        <button onclick="shareOrderWithStoreWhatsApp()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+          <i class="fa-brands fa-whatsapp text-base"></i>
+          <span>إرسال نسخة من الطلب للمحل عبر واتساب</span>
+        </button>
+
+        <!-- زر متابعة التسوق -->
+        <button onclick="closeSuccessModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          متابعة التسوق
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 8. نافذة طلباتي السابقة (MY ORDERS MODAL) -->
+  <!-- ========================================== -->
+  <div id="myOrdersModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4">
+    <div class="glass-card rounded-2xl p-4 sm:p-5 w-full max-w-lg shadow-2xl border border-slate-700 text-right relative overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-sm">سجل طلباتي السابقة</h3>
+            <span class="text-[10px] text-slate-400">الطلبات المسجلة من هذا الجهاز</span>
+          </div>
+        </div>
+        <button onclick="closeMyOrdersModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="myOrdersList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 text-xs">
+        <!-- يتم ملؤها من localStorage -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- JavaScript Logic -->
+  <!-- ========================================== -->
+  <script>
+    // ──────────────────────────────────────────
+    // 1. المتغيرات العامة والحالة (State)
+    // ──────────────────────────────────────────
+    let storeConfig = {
+      StoreName: "متجرنا الإلكتروني",
+      StoreLogo: "",
+      Phone: "",
+      Address: "",
+      IsActive: true,
+      PriceTier: "Retail",
+      ShowPrices: true,
+      ShowStockQty: false,
+      MinimumOrder: 0,
+      Announcement: "",
+      NotificationWhatsApp: ""
+    };
+
+    let categories = [];
+    let products = [];
+    let cart = []; // [{ ProductID, ProductName, Unit, Price, Quantity, TotalPrice }]
+    let selectedCatID = 0;
+    let lastCreatedOrder = null;
+
+    // تحديد مشروع Firebase تلقائياً من اسم الدومين أو من Query Param
+    function getFirebaseProjectId() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('p')) return urlParams.get('p');
+      const host = window.location.hostname;
+      if (host.includes('elra7ma-grop')) return 'elra7ma-grop';
+      if (host.includes('checkin-192ab')) return 'checkin-192ab';
+      return 'elra7ma-grop';
+    }
+
+    const projectId = getFirebaseProjectId();
+    const RTDB_BASE = `https://${projectId}-default-rtdb.firebaseio.com`;
+    const RTDB_FALLBACK = `https://${projectId}.firebaseio.com`;
+
+    // ──────────────────────────────────────────
+    // 2. تحميل البيانات من السحابة (Firebase RTDB)
+    // ──────────────────────────────────────────
+    async function loadStoreData() {
+      showLoading(true);
+      try {
+        let configRes = null;
+        let catalogRes = null;
+
+        // 1. محاولة جلب store_config و store_catalog
+        try {
+          configRes = await fetch(`${RTDB_BASE}/store_config.json`, { cache: 'no-store' });
+          catalogRes = await fetch(`${RTDB_BASE}/store_catalog.json`, { cache: 'no-store' });
+        } catch (e) {
+          configRes = await fetch(`${RTDB_FALLBACK}/store_config.json`, { cache: 'no-store' });
+          catalogRes = await fetch(`${RTDB_FALLBACK}/store_catalog.json`, { cache: 'no-store' });
+        }
+
+        if (configRes && configRes.ok) {
+          const cfg = await configRes.json();
+          if (cfg) storeConfig = { ...storeConfig, ...cfg };
+        }
+
+        if (catalogRes && catalogRes.ok) {
+          const catData = await catalogRes.json();
+          if (catData) {
+            categories = catData.categories || [];
+            products = catData.products || [];
+          }
+        }
+
+        // إذا لم تكن البيانات مخصصة بعد، نحاول جلب erp_data.json كبديل
+        if (!products || products.length === 0) {
+          try {
+            const erpRes = await fetch(`${RTDB_BASE}/erp_data.json`, { cache: 'no-store' });
+            if (erpRes && erpRes.ok) {
+              const erp = await erpRes.json();
+              if (erp) {
+                if (erp.StoreName) storeConfig.StoreName = erp.StoreName;
+                if (erp.StoreLogo) storeConfig.StoreLogo = erp.StoreLogo;
+                if (erp.ProductsCatalog) {
+                  products = erp.ProductsCatalog.map(p => ({
+                    ProductID: p.ProductID,
+                    ProductName: p.ProductName,
+                    ProductCode: p.ProductCode || '',
+                    CategoryID: 1,
+                    CategoryName: 'عام',
+                    Unit: 'قطعة',
+                    Price: parseFloat(p.SalePrice || 0),
+                    StockQty: parseFloat(p.Quantity || 0)
+                  }));
+                }
+              }
+            }
+          } catch(e) {}
+        }
+
+      } catch (err) {
+        console.error("Error loading store data:", err);
+      } finally {
+        showLoading(false);
+        renderStoreHeader();
+        renderCategoryPills();
+        renderProducts();
+        loadCartFromStorage();
+      }
+    }
+
+    function showLoading(show) {
+      document.getElementById('loadingState').classList.toggle('hidden', !show);
+    }
+
+    // ──────────────────────────────────────────
+    // 3. رسم واجهة المتجر (Render UI)
+    // ──────────────────────────────────────────
+    function renderStoreHeader() {
+      document.getElementById('pageTitle').textContent = `${storeConfig.StoreName || 'المتجر الإلكتروني'} | طلبات أونلاين`;
+      document.getElementById('lblStoreName').textContent = storeConfig.StoreName || 'المتجر الإلكتروني';
+
+      if (storeConfig.StoreLogo) {
+        const img = document.getElementById('storeLogoImg');
+        img.src = storeConfig.StoreLogo;
+        img.classList.remove('hidden');
+        document.getElementById('storeLogoIcon').classList.add('hidden');
+      }
+
+      if (storeConfig.Phone) {
+        document.getElementById('lblStorePhone').textContent = storeConfig.Phone;
+        document.getElementById('btnWhatsAppDirect').href = `https://wa.me/2${storeConfig.Phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن منتجات المتجر.')}`;
+      } else {
+        document.getElementById('lblStorePhone').textContent = 'خدمة التوصيل السريع';
+        document.getElementById('btnWhatsAppDirect').classList.add('hidden');
+      }
+
+      const statusBadge = document.getElementById('storeStatusBadge');
+      if (storeConfig.IsActive === false) {
+        statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> مغلق مؤقتاً`;
+        statusBadge.className = "inline-flex items-center gap-1 text-rose-400 font-bold";
+      } else {
+        statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> مفتوح للطلبات`;
+        statusBadge.className = "inline-flex items-center gap-1 text-emerald-400 font-bold";
+      }
+
+      if (storeConfig.Announcement) {
+        document.getElementById('lblAnnouncementText').textContent = storeConfig.Announcement;
+        document.getElementById('storeAnnouncementBanner').classList.remove('hidden');
+      }
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById('categoryPillsContainer');
+      document.getElementById('totalProductsCount').textContent = products.length;
+
+      const html = categories.map(cat => {
+        const count = products.filter(p => p.CategoryID == cat.CategoryID).length;
+        return `
+          <button onclick="selectCategory(${cat.CategoryID})" id="pill-cat-${cat.CategoryID}" 
+                  class="px-3.5 py-2 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-700/80 font-bold whitespace-nowrap transition">
+            ${cat.CategoryName} (${count})
+          </button>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <button onclick="selectCategory(0)" id="pill-cat-0" class="active-pill px-3.5 py-2 rounded-xl bg-slate-900 text-slate-300 border border-slate-700 font-bold whitespace-nowrap transition">
+          🌟 الكل (${products.length})
+        </button>
+        ${html}
+      `;
+    }
+
+    function selectCategory(catId) {
+      selectedCatID = catId;
+      document.querySelectorAll('#categoryPillsContainer button').forEach(b => b.classList.remove('active-pill'));
+      const activeBtn = document.getElementById(`pill-cat-${catId}`);
+      if (activeBtn) activeBtn.classList.add('active-pill');
+      renderProducts();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('btnClearSearch').classList.add('hidden');
+      renderProducts();
+    }
+
+    function filterProducts() {
+      const q = document.getElementById('searchInput').value.trim();
+      document.getElementById('btnClearSearch').classList.toggle('hidden', q.length === 0);
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+      const grid = document.getElementById('productsGrid');
+      const empty = document.getElementById('emptyState');
+
+      const filtered = products.filter(p => {
+        if (selectedCatID !== 0 && p.CategoryID != selectedCatID) return false;
+        if (q && !(p.ProductName || '').toLowerCase().includes(q) && !(p.ProductCode || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      if (!filtered.length) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(p => {
+        const inCartItem = cart.find(c => c.ProductID == p.ProductID);
+        const inCartQty = inCartItem ? inCartItem.Quantity : 0;
+
+        // فحص إظهار السعر
+        const priceHtml = storeConfig.ShowPrices
+          ? `<div class="font-black text-emerald-400 text-sm sm:text-base">${parseFloat(p.Price || 0).toFixed(2)} <span class="text-[10px] text-slate-400">ج.م</span></div>`
+          : `<div class="text-[11px] font-bold text-amber-300/90">السعر عند الطلب 📞</div>`;
+
+        // فحص إظهار رصيد المخزون
+        let stockHtml = '';
+        if (storeConfig.ShowStockQty) {
+          const qty = parseFloat(p.StockQty || 0);
+          if (qty > 0) {
+            stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 font-bold">المتاح: ${qty} ${p.Unit || ''}</span>`;
+          } else {
+            stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-500/30 font-bold">غير متوفر حالياً</span>`;
+          }
+        } else {
+          stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-500/30 font-bold">متوفر للطلب ✅</span>`;
+        }
+
+        return `
+          <div class="glass-card rounded-2xl p-3 sm:p-4 border border-slate-800 hover:border-blue-500/40 transition flex flex-col justify-between shadow-md relative overflow-hidden group">
+            
+            <!-- معلومات الصنف -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[10px] text-slate-400 font-semibold truncate">${p.CategoryName || 'عام'}</span>
+                ${stockHtml}
+              </div>
+
+              <h4 class="font-bold text-white text-xs sm:text-sm line-clamp-2 leading-tight min-h-[2.5rem] group-hover:text-blue-300 transition">
+                ${p.ProductName}
+              </h4>
+
+              <div class="pt-1 flex items-baseline justify-between">
+                ${priceHtml}
+                <span class="text-[10px] text-slate-400">${p.Unit ? `لكل ${p.Unit}` : ''}</span>
+              </div>
+            </div>
+
+            <!-- أزرار الإضافة والتحكم بالكمية -->
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80">
+              ${inCartQty > 0 ? `
+                <div class="flex items-center justify-between bg-slate-900 rounded-xl p-1 border border-blue-500/40">
+                  <button onclick="updateItemQuantity(${p.ProductID}, -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-90 text-white font-bold flex items-center justify-center transition">
+                    <i class="fa-solid fa-minus text-[10px]"></i>
+                  </button>
+                  <span class="font-black text-white text-xs px-2">${inCartQty}</span>
+                  <button onclick="updateItemQuantity(${p.ProductID}, 1)" class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-bold flex items-center justify-center transition">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                  </button>
+                </div>
+              ` : `
+                <button onclick="addToCart(${p.ProductID})" class="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 transition">
+                  <i class="fa-solid fa-cart-plus text-xs"></i>
+                  <span>إضافة للسلة</span>
+                </button>
+              `}
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ──────────────────────────────────────────
+    // 4. إدارة سلة المشتريات (Cart Operations)
+    // ──────────────────────────────────────────
+    function addToCart(productId) {
+      const prod = products.find(p => p.ProductID == productId);
+      if (!prod) return;
+
+      const existing = cart.find(c => c.ProductID == productId);
+      if (existing) {
+        existing.Quantity += 1;
+        existing.TotalPrice = existing.Quantity * existing.Price;
+      } else {
+        cart.push({
+          ProductID: prod.ProductID,
+          ProductName: prod.ProductName,
+          Unit: prod.Unit || 'قطعة',
+          Price: parseFloat(prod.Price || 0),
+          Quantity: 1,
+          TotalPrice: parseFloat(prod.Price || 0)
+        });
+      }
+
+      saveCartToStorage();
+      renderProducts();
+      updateCartBadge();
+    }
+
+    function updateItemQuantity(productId, delta) {
+      const idx = cart.findIndex(c => c.ProductID == productId);
+      if (idx === -1) return;
+
+      cart[idx].Quantity += delta;
+      if (cart[idx].Quantity <= 0) {
+        cart.splice(idx, 1);
+      } else {
+        cart[idx].TotalPrice = cart[idx].Quantity * cart[idx].Price;
+      }
+
+      saveCartToStorage();
+      renderProducts();
+      renderCartDrawer();
+      updateCartBadge();
+    }
+
+    function removeFromCart(productId) {
+      cart = cart.filter(c => c.ProductID != productId);
+      saveCartToStorage();
+      renderProducts();
+      renderCartDrawer();
+      updateCartBadge();
+    }
+
+    function updateCartBadge() {
+      const totalQty = cart.reduce((sum, it) => sum + it.Quantity, 0);
+      const totalSum = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
+
+      document.getElementById('cartCountBadge').textContent = totalQty;
+      document.getElementById('floatCartCount').textContent = totalQty;
+      document.getElementById('floatCartTotal').textContent = `${totalSum.toFixed(2)} ج.م`;
+
+      const floatBar = document.getElementById('floatingCartBar');
+      if (totalQty > 0) {
+        floatBar.classList.remove('hidden');
+      } else {
+        floatBar.classList.add('hidden');
+      }
+    }
+
+    function saveCartToStorage() {
+      try {
+        localStorage.setItem(`prosoft_store_cart_${projectId}`, JSON.stringify(cart));
+      } catch(e) {}
+    }
+
+    function loadCartFromStorage() {
+      try {
+        const saved = localStorage.getItem(`prosoft_store_cart_${projectId}`);
+        if (saved) cart = JSON.parse(saved) || [];
+      } catch(e) {}
+      updateCartBadge();
+    }
+
+    function openCartDrawer() {
+      renderCartDrawer();
+      document.getElementById('cartModal').classList.remove('hidden');
+    }
+
+    function closeCartDrawer() {
+      document.getElementById('cartModal').classList.add('hidden');
+    }
+
+    function renderCartDrawer() {
+      const container = document.getElementById('cartItemsList');
+      const totalSum = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
+      const totalQty = cart.reduce((sum, it) => sum + it.Quantity, 0);
+
+      document.getElementById('cartItemCountLabel').textContent = `${totalQty} أصناف مختارة`;
+      document.getElementById('lblCartSubtotal').textContent = `${totalSum.toFixed(2)} ج.م`;
+      document.getElementById('lblCartTotal').textContent = `${totalSum.toFixed(2)} ج.م`;
+
+      if (!storeConfig.ShowPrices) {
+        document.getElementById('rowSubtotal').classList.add('hidden');
+        document.getElementById('rowTotal').classList.add('hidden');
+      } else {
+        document.getElementById('rowSubtotal').classList.remove('hidden');
+        document.getElementById('rowTotal').classList.remove('hidden');
+      }
+
+      const minOrder = parseFloat(storeConfig.MinimumOrder || 0);
+      const minWarn = document.getElementById('minOrderWarning');
+      const btnProceed = document.getElementById('btnProceedCheckout');
+
+      if (minOrder > 0 && totalSum < minOrder && storeConfig.ShowPrices) {
+        document.getElementById('lblMinOrderVal').textContent = minOrder.toFixed(2);
+        minWarn.classList.remove('hidden');
+        btnProceed.disabled = true;
+        btnProceed.classList.add('opacity-50', 'cursor-not-allowed');
+      } else {
+        minWarn.classList.add('hidden');
+        btnProceed.disabled = false;
+        btnProceed.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+
+      if (!cart.length) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-500 space-y-2">
+            <i class="fa-solid fa-cart-shopping text-3xl block text-slate-600"></i>
+            <p class="font-bold text-xs">سلتك فارغة حالياً</p>
+            <span class="text-[11px] block">اختر الأصناف التي تريدها وأضفها للسلة</span>
+          </div>
+        `;
+        btnProceed.disabled = true;
+        btnProceed.classList.add('opacity-50', 'cursor-not-allowed');
+        return;
+      }
+
+      container.innerHTML = cart.map(it => `
+        <div class="flex items-center justify-between py-2.5 gap-2">
+          <div class="min-w-0 flex-1">
+            <h5 class="font-bold text-white text-xs truncate">${it.ProductName}</h5>
+            <div class="text-[10px] text-slate-400 mt-0.5">
+              ${storeConfig.ShowPrices ? `${it.Price.toFixed(2)} ج.م × ` : ''}
+              ${it.Quantity} ${it.Unit || 'قطعة'}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            ${storeConfig.ShowPrices ? `
+              <span class="font-black text-emerald-400 text-xs">${it.TotalPrice.toFixed(2)} ج.م</span>
+            ` : ''}
+            
+            <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700">
+              <button onclick="updateItemQuantity(${it.ProductID}, -1)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white">
+                <i class="fa-solid fa-minus text-[9px]"></i>
+              </button>
+              <span class="text-xs font-bold px-1.5 text-white">${it.Quantity}</span>
+              <button onclick="updateItemQuantity(${it.ProductID}, 1)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white">
+                <i class="fa-solid fa-plus text-[9px]"></i>
+              </button>
+            </div>
+
+            <button onclick="removeFromCart(${it.ProductID})" title="حذف" class="p-1.5 text-slate-500 hover:text-rose-400 transition text-xs">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ──────────────────────────────────────────
+    // 5. إتمام الطلب والدفع (Checkout Submission)
+    // ──────────────────────────────────────────
+    function openCheckoutModal() {
+      if (!cart.length) return;
+      closeCartDrawer();
+
+      // ملء بيانات العميل المحفوظة مسبقاً للتسهيل عليه
+      try {
+        const lastCust = JSON.parse(localStorage.getItem('prosoft_store_cust_info') || '{}');
+        if (lastCust.name) document.getElementById('custName').value = lastCust.name;
+        if (lastCust.phone) document.getElementById('custPhone').value = lastCust.phone;
+        if (lastCust.address) document.getElementById('custAddress').value = lastCust.address;
+      } catch(e) {}
+
+      document.getElementById('checkoutModal').classList.remove('hidden');
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById('checkoutModal').classList.add('hidden');
+    }
+
+    async function submitOrder(e) {
+      e.preventDefault();
+      if (!cart.length) return;
+
+      const name = document.getElementById('custName').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+      const address = document.getElementById('custAddress').value.trim();
+      const notes = document.getElementById('custNotes').value.trim();
+
+      if (!name || !phone || !address) {
+        alert("يرجى ملء الاسم ورقم الهاتف والعنوان بالكامل!");
+        return;
+      }
+
+      // حفظ بيانات العميل محلياً للمرات القادمة
+      try {
+        localStorage.setItem('prosoft_store_cust_info', JSON.stringify({ name, phone, address }));
+      } catch(e) {}
+
+      const totalSum = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
+      const orderNum = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+      const nowIso = new Date().toISOString();
+
+      const orderPayload = {
+        OrderNumber: orderNum,
+        CustomerName: name,
+        CustomerPhone: phone,
+        CustomerAddress: address,
+        Notes: notes,
+        SubTotal: totalSum,
+        DeliveryCharge: 0,
+        TotalAmount: totalSum,
+        PriceTier: storeConfig.PriceTier || "Retail",
+        OrderDate: nowIso,
+        Status: "جديد",
+        Items: cart.map(it => ({
+          ProductID: it.ProductID,
+          ProductName: it.ProductName,
+          UnitName: it.Unit || "قطعة",
+          Quantity: it.Quantity,
+          UnitPrice: it.Price,
+          TotalPrice: it.TotalPrice,
+          Notes: ""
+        }))
+      };
+
+      const btn = document.getElementById('btnSubmitOrder');
+      const btnText = document.getElementById('btnSubmitOrderText');
+      btn.disabled = true;
+      btnText.textContent = "جاري إرسال الطلب للكاشير...";
+
+      try {
+        let ok = false;
+        let remoteKey = '';
+
+        try {
+          const resp = await fetch(`${RTDB_BASE}/online_orders.json`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderPayload)
+          });
+          if (resp.ok) {
+            const resData = await resp.json();
+            remoteKey = resData.name;
+            ok = true;
+          }
+        } catch(ePrimary) {
+          const respFallback = await fetch(`${RTDB_FALLBACK}/online_orders.json`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderPayload)
+          });
+          if (respFallback.ok) {
+            const resData = await respFallback.json();
+            remoteKey = resData.name;
+            ok = true;
+          }
+        }
+
+        if (ok) {
+          orderPayload.remoteKey = remoteKey;
+          lastCreatedOrder = orderPayload;
+
+          // حفظ الطلب في سجل طلبات العميل المحلية
+          saveMyOrder(orderPayload);
+
+          // إفراغ السلة
+          cart = [];
+          saveCartToStorage();
+          updateCartBadge();
+          renderProducts();
+
+          closeCheckoutModal();
+          showSuccessModal(orderPayload);
+        } else {
+          alert("تعذر إرسال الطلب، يرجى التأكد من اتصال الإنترنت والمحاولة مرة أخرى.");
+        }
+      } catch (err) {
+        console.error("Order submit error:", err);
+        alert("حدث خطأ أثناء إرسال الطلب: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = "تأكيد وإرسال الطلب الآن";
+      }
+    }
+
+    function showSuccessModal(order) {
+      document.getElementById('lblSuccessOrderNum').textContent = `#${order.OrderNumber}`;
+      document.getElementById('lblSuccessOrderTotal').textContent = `${parseFloat(order.TotalAmount || 0).toFixed(2)} ج.م`;
+
+      if (!storeConfig.ShowPrices) {
+        document.getElementById('successOrderTotalRow').classList.add('hidden');
+      } else {
+        document.getElementById('successOrderTotalRow').classList.remove('hidden');
+      }
+
+      document.getElementById('orderSuccessModal').classList.remove('hidden');
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('orderSuccessModal').classList.add('hidden');
+    }
+
+    // ──────────────────────────────────────────
+    // 6. مشاركة الطلب واتساب مع المحل
+    // ──────────────────────────────────────────
+    function shareOrderWithStoreWhatsApp() {
+      if (!lastCreatedOrder) return;
+      const targetPhone = storeConfig.NotificationWhatsApp || storeConfig.Phone || '';
+
+      const itemsText = lastCreatedOrder.Items.map(it => {
+        const prText = storeConfig.ShowPrices ? ` = ${it.TotalPrice.toFixed(2)} ج.م` : '';
+        return `• ${it.ProductName} (${it.Quantity} ${it.UnitName || ''})${prText}`;
+      }).join('\n');
+
+      const totalLine = storeConfig.ShowPrices ? `\n💵 *إجمالي الحساب:* ${lastCreatedOrder.TotalAmount.toFixed(2)} ج.م` : '';
+
+      const text = 
+`📦 *طلب جديد من المتجر الإلكتروني*
+━━━━━━━━━━━━━━━━━━
+🔢 *رقم الطلب:* #${lastCreatedOrder.OrderNumber}
+👤 *اسم العميل:* ${lastCreatedOrder.CustomerName}
+📱 *رقم الهاتف:* ${lastCreatedOrder.CustomerPhone}
+📍 *العنوان:* ${lastCreatedOrder.CustomerAddress}
+${lastCreatedOrder.Notes ? `📝 *ملاحظات:* ${lastCreatedOrder.Notes}\n` : ''}━━━━━━━━━━━━━━━━━━
+🛍️ *الأصناف المطلوبة:*
+${itemsText}
+━━━━━━━━━━━━━━━━━━${totalLine}
+⏰ *التوقيت:* ${new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}
+يرجى تأكيد استلام الطلب وتجهيزه للتوصيل.`;
+
+      const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
+      const waUrl = cleanPhone 
+        ? `https://wa.me/2${cleanPhone}?text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+      window.open(waUrl, '_blank');
+    }
+
+    // ──────────────────────────────────────────
+    // 7. سجل طلباتي السابقة (My Orders Storage)
+    // ──────────────────────────────────────────
+    function saveMyOrder(order) {
+      try {
+        const key = `prosoft_my_orders_${projectId}`;
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        existing.unshift(order);
+        if (existing.length > 20) existing.pop();
+        localStorage.setItem(key, JSON.stringify(existing));
+      } catch(e) {}
+    }
+
+    function openMyOrdersModal() {
+      const container = document.getElementById('myOrdersList');
+      try {
+        const key = `prosoft_my_orders_${projectId}`;
+        const orders = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!orders.length) {
+          container.innerHTML = `
+            <div class="py-12 text-center text-slate-500 space-y-2">
+              <i class="fa-solid fa-receipt text-3xl block text-slate-600"></i>
+              <p class="font-bold">لا توجد طلبات سابقة مسجلة</p>
+              <span class="text-[11px] block">طلباتك الجديدة ستظهر هنا لمتابعة حالتها</span>
+            </div>
+          `;
+        } else {
+          container.innerHTML = orders.map(o => `
+            <div class="glass-card rounded-xl p-3 border border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-black text-blue-400 font-mono text-xs">#${o.OrderNumber}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">${o.Status || 'جديد'}</span>
+              </div>
+              <div class="text-[11px] text-slate-300">
+                <div class="text-slate-400 text-[10px]">${(o.OrderDate || '').substring(0, 16).replace('T', ' ')}</div>
+                <div class="mt-1">${(o.Items || []).map(it => `${it.ProductName} (${it.Quantity})`).join('، ')}</div>
+              </div>
+              ${storeConfig.ShowPrices ? `
+                <div class="flex justify-between items-center pt-1 border-t border-slate-800/80 font-bold">
+                  <span class="text-slate-400 text-[10px]">الإجمالي:</span>
+                  <span class="text-emerald-400 font-black">${parseFloat(o.TotalAmount || 0).toFixed(2)} ج.م</span>
+                </div>
+              ` : ''}
+            </div>
+          `).join('');
+        }
+      } catch(e) {}
+
+      document.getElementById('myOrdersModal').classList.remove('hidden');
+    }
+
+    function closeMyOrdersModal() {
+      document.getElementById('myOrdersModal').classList.add('hidden');
+    }
+
+    // ──────────────────────────────────────────
+    // بدء التشغيل
+    // ──────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStoreData();
+    });
+  </script>
+</body>
+</html>

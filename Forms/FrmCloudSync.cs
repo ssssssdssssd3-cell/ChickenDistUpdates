@@ -167,8 +167,20 @@ namespace ChickenDist.Forms
             btnCloudBackup.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCloudBackup.Click += BtnCloudBackup_Click;
 
+            var btnOnlineStore = Theme.MakeButton("🌐 إعدادات المتجر الإلكتروني", Color.FromArgb(56, 189, 248));
+            btnOnlineStore.Size = new Size(190, 36);
+            btnOnlineStore.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnOnlineStore.ForeColor = Color.Black;
+            btnOnlineStore.Click += (s, e) => new FrmOnlineStoreSettings().ShowDialog();
+
+            var btnOpenOrders = Theme.MakeButton("🛒 طلبات المتجر أونلاين", Color.FromArgb(244, 63, 94));
+            btnOpenOrders.Size = new Size(160, 36);
+            btnOpenOrders.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnOpenOrders.Click += (s, e) => new FrmOnlineOrders().ShowDialog();
+
             pnlActions.Controls.AddRange(new Control[] {
                 btnSyncNow, btnDeployFirebase, btnOpenMobileApp, btnCopyUrl, btnSave,
+                btnOnlineStore, btnOpenOrders,
                 btnCloudBackup, btnInstallTools, btnLoginFirebase, btnEnsureFiles
             });
 

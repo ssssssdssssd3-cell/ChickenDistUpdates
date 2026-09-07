@@ -4449,6 +4449,15 @@ namespace ChickenDist.Core
                 {
                     AppLogger.Error("DbHelper.EnsureFixedAssetsAndShareholdersSchema", ex);
                 }
+
+                try
+                {
+                    EnsureOnlineOrdersSchema();
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("DbHelper.EnsureOnlineOrdersSchema", ex);
+                }
             }
         }
 
@@ -4614,6 +4623,69 @@ namespace ChickenDist.Core
             catch (Exception ex)
             {
                 AppLogger.Error("DbHelper.EnsureFixedAssetsAndShareholdersSchema", ex);
+            }
+        }
+
+        public static void EnsureOnlineOrdersSchema()
+        {
+            try
+            {
+                Execute(@"
+                    -- 1. جدول الطلبات الإلكترونية الواردة من المتجر
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'OnlineOrders')
+                    BEGIN
+                        CREATE TABLE OnlineOrders (
+                            OnlineOrderID INT IDENTITY(1,1) PRIMARY KEY,
+                            RemoteOrderID NVARCHAR(100) NULL,
+                            OrderNumber NVARCHAR(50) NULL,
+                            OrderDate DATETIME DEFAULT GETDATE(),
+                            CustomerName NVARCHAR(150) NOT NULL,
+                            CustomerPhone NVARCHAR(50) NOT NULL,
+                            CustomerAddress NVARCHAR(300) NULL,
+                            Notes NVARCHAR(500) NULL,
+                            SubTotal DECIMAL(18, 2) DEFAULT 0,
+                            DeliveryCharge DECIMAL(18, 2) DEFAULT 0,
+                            TotalAmount DECIMAL(18, 2) DEFAULT 0,
+                            PriceTier NVARCHAR(50) DEFAULT N'قطاعي',
+                            Status NVARCHAR(50) DEFAULT N'جديد',
+                            CreatedSaleID INT NULL,
+                            CreatedAt DATETIME DEFAULT GETDATE(),
+                            UpdatedAt DATETIME DEFAULT GETDATE()
+                        );
+                        CREATE INDEX IX_OnlineOrders_Status ON OnlineOrders(Status);
+                        CREATE INDEX IX_OnlineOrders_Date ON OnlineOrders(OrderDate);
+                    END
+
+                    -- 2. جدول أصناف الطلبات الإلكترونية
+                    IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'OnlineOrderItems')
+                    BEGIN
+                        CREATE TABLE OnlineOrderItems (
+                            ItemRowID INT IDENTITY(1,1) PRIMARY KEY,
+                            OnlineOrderID INT NOT NULL REFERENCES OnlineOrders(OnlineOrderID) ON DELETE CASCADE,
+                            ProductID INT NULL,
+                            ProductName NVARCHAR(200) NOT NULL,
+                            UnitName NVARCHAR(50) NULL,
+                            Quantity DECIMAL(18, 3) NOT NULL,
+                            UnitPrice DECIMAL(18, 2) NOT NULL,
+                            TotalPrice DECIMAL(18, 2) NOT NULL,
+                            Notes NVARCHAR(200) NULL
+                        );
+                    END
+
+                    -- 3. إضافة عمود التحكم في ظهور الأقسام على المتجر الإلكتروني
+                    IF OBJECT_ID('Categories', 'U') IS NOT NULL
+                    BEGIN
+                        IF COL_LENGTH('Categories', 'ShowInOnlineStore') IS NULL
+                        BEGIN
+                            ALTER TABLE Categories ADD ShowInOnlineStore BIT NOT NULL DEFAULT 1;
+                            EXEC('UPDATE Categories SET ShowInOnlineStore = 1 WHERE ShowInOnlineStore IS NULL');
+                        END
+                    END
+                ");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureOnlineOrdersSchema", ex);
             }
         }
     }

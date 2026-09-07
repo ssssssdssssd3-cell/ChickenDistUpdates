@@ -1,0 +1,255 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using ChickenDist.Core;
+
+namespace ChickenDist.DAL
+{
+    public class OnlineOrderItemDTO
+    {
+        public int ItemRowID { get; set; }
+        public int OnlineOrderID { get; set; }
+        public int? ProductID { get; set; }
+        public string ProductName { get; set; }
+        public string UnitName { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalPrice { get; set; }
+        public string Notes { get; set; }
+    }
+
+    public class OnlineOrderDTO
+    {
+        public int OnlineOrderID { get; set; }
+        public string RemoteOrderID { get; set; }
+        public string OrderNumber { get; set; }
+        public DateTime OrderDate { get; set; }
+        public string CustomerName { get; set; }
+        public string CustomerPhone { get; set; }
+        public string CustomerAddress { get; set; }
+        public string Notes { get; set; }
+        public decimal SubTotal { get; set; }
+        public decimal DeliveryCharge { get; set; }
+        public decimal TotalAmount { get; set; }
+        public string PriceTier { get; set; }
+        public string Status { get; set; }
+        public int? CreatedSaleID { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<OnlineOrderItemDTO> Items { get; set; } = new List<OnlineOrderItemDTO>();
+    }
+
+    public static class OnlineOrdersDAL
+    {
+        public static DataTable GetOrders(string status = null, DateTime? from = null, DateTime? to = null, string searchTerm = null)
+        {
+            var prms = new List<SqlParameter>();
+            string sql = @"
+                SELECT o.OnlineOrderID,
+                       ISNULL(o.OrderNumber, '#' + CAST(o.OnlineOrderID AS NVARCHAR(20))) AS OrderNumber,
+                       o.RemoteOrderID,
+                       o.OrderDate,
+                       o.CustomerName,
+                       o.CustomerPhone,
+                       ISNULL(o.CustomerAddress, '') AS CustomerAddress,
+                       ISNULL(o.Notes, '') AS Notes,
+                       ISNULL(o.SubTotal, 0) AS SubTotal,
+                       ISNULL(o.DeliveryCharge, 0) AS DeliveryCharge,
+                       ISNULL(o.TotalAmount, 0) AS TotalAmount,
+                       ISNULL(o.PriceTier, N'قطاعي') AS PriceTier,
+                       ISNULL(o.Status, N'جديد') AS Status,
+                       o.CreatedSaleID,
+                       o.CreatedAt,
+                       (SELECT COUNT(*) FROM OnlineOrderItems oi WHERE oi.OnlineOrderID = o.OnlineOrderID) AS ItemsCount
+                FROM OnlineOrders o WITH (NOLOCK)
+                WHERE 1 = 1 ";
+
+            if (!string.IsNullOrEmpty(status) && status != "الكل")
+            {
+                sql += " AND o.Status = @status ";
+                prms.Add(DbHelper.P("@status", status));
+            }
+
+            if (from.HasValue)
+            {
+                sql += " AND o.OrderDate >= @from ";
+                prms.Add(DbHelper.P("@from", from.Value.Date));
+            }
+
+            if (to.HasValue)
+            {
+                sql += " AND o.OrderDate <= @to ";
+                prms.Add(DbHelper.P("@to", to.Value.Date.AddDays(1).AddSeconds(-1)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                string term = "%" + searchTerm.Trim() + "%";
+                sql += " AND (o.CustomerName LIKE @term OR o.CustomerPhone LIKE @term OR o.OrderNumber LIKE @term OR o.CustomerAddress LIKE @term) ";
+                prms.Add(DbHelper.P("@term", term));
+            }
+
+            sql += " ORDER BY o.OnlineOrderID DESC";
+
+            return DbHelper.Query(sql, prms.ToArray());
+        }
+
+        public static DataTable GetOrderItems(int onlineOrderID)
+        {
+            return DbHelper.Query(@"
+                SELECT oi.ItemRowID,
+                       oi.OnlineOrderID,
+                       oi.ProductID,
+                       oi.ProductName,
+                       ISNULL(oi.UnitName, ISNULL(p.Unit, N'قطعة')) AS UnitName,
+                       oi.Quantity,
+                       oi.UnitPrice,
+                       oi.TotalPrice,
+                       ISNULL(oi.Notes, '') AS Notes,
+                       ISNULL(p.ProductCode, '') AS ProductCode
+                FROM OnlineOrderItems oi WITH (NOLOCK)
+                LEFT JOIN Products p WITH (NOLOCK) ON oi.ProductID = p.ProductID
+                WHERE oi.OnlineOrderID = @id
+                ORDER BY oi.ItemRowID ASC",
+                DbHelper.P("@id", onlineOrderID));
+        }
+
+        public static bool OrderExists(string remoteId)
+        {
+            if (string.IsNullOrEmpty(remoteId)) return false;
+            object obj = DbHelper.Scalar("SELECT TOP 1 OnlineOrderID FROM OnlineOrders WITH (NOLOCK) WHERE RemoteOrderID = @rid", DbHelper.P("@rid", remoteId));
+            return obj != null && obj != DBNull.Value;
+        }
+
+        public static int SaveIncomingOrder(
+            string remoteId,
+            string orderNum,
+            DateTime orderDate,
+            string custName,
+            string custPhone,
+            string custAddress,
+            string notes,
+            decimal subTotal,
+            decimal delivery,
+            decimal total,
+            string priceTier,
+            List<OnlineOrderItemDTO> items)
+        {
+            if (OrderExists(remoteId)) return 0;
+
+            int newOrderId = 0;
+
+            DbHelper.RunInTransaction((con, trans) =>
+            {
+                var prms = new[]
+                {
+                    DbHelper.P("@rid", (object)remoteId ?? DBNull.Value),
+                    DbHelper.P("@onum", (object)orderNum ?? DBNull.Value),
+                    DbHelper.P("@odate", orderDate),
+                    DbHelper.P("@name", custName ?? "عميل أونلاين"),
+                    DbHelper.P("@phone", custPhone ?? ""),
+                    DbHelper.P("@addr", (object)custAddress ?? DBNull.Value),
+                    DbHelper.P("@notes", (object)notes ?? DBNull.Value),
+                    DbHelper.P("@sub", subTotal),
+                    DbHelper.P("@del", delivery),
+                    DbHelper.P("@tot", total),
+                    DbHelper.P("@tier", string.IsNullOrEmpty(priceTier) ? "قطاعي" : priceTier),
+                    DbHelper.P("@status", "جديد")
+                };
+
+                object res = DbHelper.ScalarTrans(trans, @"
+                    INSERT INTO OnlineOrders
+                    (RemoteOrderID, OrderNumber, OrderDate, CustomerName, CustomerPhone, CustomerAddress, Notes, SubTotal, DeliveryCharge, TotalAmount, PriceTier, Status, CreatedAt, UpdatedAt)
+                    VALUES
+                    (@rid, @onum, @odate, @name, @phone, @addr, @notes, @sub, @del, @tot, @tier, @status, GETDATE(), GETDATE());
+                    SELECT SCOPE_IDENTITY();", prms);
+
+                if (res != null && res != DBNull.Value)
+                {
+                    newOrderId = Convert.ToInt32(res);
+                }
+
+                if (newOrderId > 0 && items != null && items.Count > 0)
+                {
+                    foreach (var it in items)
+                    {
+                        DbHelper.ExecuteTrans(trans, @"
+                            INSERT INTO OnlineOrderItems
+                            (OnlineOrderID, ProductID, ProductName, UnitName, Quantity, UnitPrice, TotalPrice, Notes)
+                            VALUES
+                            (@oid, @pid, @pname, @uname, @qty, @price, @tot, @notes)",
+                            DbHelper.P("@oid", newOrderId),
+                            DbHelper.P("@pid", it.ProductID.HasValue && it.ProductID.Value > 0 ? (object)it.ProductID.Value : DBNull.Value),
+                            DbHelper.P("@pname", it.ProductName ?? "صنف"),
+                            DbHelper.P("@uname", (object)it.UnitName ?? DBNull.Value),
+                            DbHelper.P("@qty", it.Quantity),
+                            DbHelper.P("@price", it.UnitPrice),
+                            DbHelper.P("@tot", it.TotalPrice),
+                            DbHelper.P("@notes", (object)it.Notes ?? DBNull.Value));
+                    }
+                }
+            });
+
+            return newOrderId;
+        }
+
+        public static void UpdateStatus(int onlineOrderID, string status)
+        {
+            DbHelper.Execute(@"
+                UPDATE OnlineOrders 
+                SET Status = @status, UpdatedAt = GETDATE() 
+                WHERE OnlineOrderID = @id",
+                DbHelper.P("@status", status),
+                DbHelper.P("@id", onlineOrderID));
+        }
+
+        public static void LinkToSale(int onlineOrderID, int saleID)
+        {
+            DbHelper.Execute(@"
+                UPDATE OnlineOrders 
+                SET CreatedSaleID = @saleId, Status = N'مكتمل', UpdatedAt = GETDATE() 
+                WHERE OnlineOrderID = @id",
+                DbHelper.P("@saleId", saleID),
+                DbHelper.P("@id", onlineOrderID));
+        }
+
+        public static void GetStats(out int newCount, out int inPrepCount, out int completedCount, out decimal todayTotal)
+        {
+            newCount = 0;
+            inPrepCount = 0;
+            completedCount = 0;
+            todayTotal = 0m;
+
+            try
+            {
+                DataTable dt = DbHelper.Query(@"
+                    SELECT 
+                        ISNULL(SUM(CASE WHEN Status = N'جديد' THEN 1 ELSE 0 END), 0) AS NewOrders,
+                        ISNULL(SUM(CASE WHEN Status IN (N'قيد التجهيز', N'جاري التوصيل') THEN 1 ELSE 0 END), 0) AS InPrep,
+                        ISNULL(SUM(CASE WHEN Status = N'مكتمل' THEN 1 ELSE 0 END), 0) AS Completed,
+                        ISNULL(SUM(CASE WHEN CAST(OrderDate AS DATE) = CAST(GETDATE() AS DATE) AND Status <> N'ملغي' THEN TotalAmount ELSE 0 END), 0) AS TodayTotal
+                    FROM OnlineOrders WITH (NOLOCK)");
+
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    DataRow r = dt.Rows[0];
+                    newCount = Convert.ToInt32(r["NewOrders"]);
+                    inPrepCount = Convert.ToInt32(r["InPrep"]);
+                    completedCount = Convert.ToInt32(r["Completed"]);
+                    todayTotal = Convert.ToDecimal(r["TodayTotal"]);
+                }
+            }
+            catch { }
+        }
+
+        public static int GetNewOrdersCount()
+        {
+            try
+            {
+                object obj = DbHelper.Scalar("SELECT COUNT(*) FROM OnlineOrders WITH (NOLOCK) WHERE Status = N'جديد'");
+                return (obj != null && obj != DBNull.Value) ? Convert.ToInt32(obj) : 0;
+            }
+            catch { return 0; }
+        }
+    }
+}

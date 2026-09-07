@@ -29,6 +29,7 @@
     <EmbeddedResource Include="Forms\driver_sales.html" />
     <EmbeddedResource Include="Forms\accountant_orders.html" />
     <EmbeddedResource Include="MobileApp\index.html" />
+    <EmbeddedResource Include="MobileApp\store.html" />
     <EmbeddedResource Include="MobileApp\sw.js" />
     <EmbeddedResource Include="MobileApp\firebase.json" />
     <EmbeddedResource Include="MobileApp\database.rules.json" />
