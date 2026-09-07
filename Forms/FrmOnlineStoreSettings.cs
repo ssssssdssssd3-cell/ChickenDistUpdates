@@ -54,8 +54,8 @@ namespace ChickenDist.Forms
             this.StartPosition = FormStartPosition.CenterParent;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Theme.BgMain;
-            this.Font = Theme.FontMain;
+            this.BackColor = Color.FromArgb(15, 23, 42);
+            this.Font = new Font("Segoe UI", 9.5f);
 
             // 1. الشريط العلوي (Header)
             var pnlHeader = new Panel
@@ -69,7 +69,7 @@ namespace ChickenDist.Forms
             var lblTitle = new Label
             {
                 Text = "🌐 إعدادات وتحكم المتجر الإلكتروني للعملاء (Web Store)",
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Top,
                 Height = 26,
@@ -80,7 +80,7 @@ namespace ChickenDist.Forms
             {
                 Text = "التحكم في فئات الأسعار، ظهور رصيد المخزن، خصوصية الأسعار، وتحديد الأقسام المعروضة للعملاء",
                 Font = new Font("Segoe UI", 9f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(148, 163, 184),
+                ForeColor = Color.FromArgb(203, 213, 225),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight
             };
@@ -118,7 +118,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(51, 65, 85),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
                 Dock = DockStyle.Left
             };
@@ -146,7 +146,7 @@ namespace ChickenDist.Forms
                 ColumnCount = 2,
                 RowCount = 1,
                 Padding = new Padding(12),
-                BackColor = Theme.BgMain
+                BackColor = Color.FromArgb(15, 23, 42)
             };
             tableMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f)); // اليمين: الإعدادات العامة والأسعار
             tableMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f)); // اليسار: الأقسام و QR Code
@@ -156,38 +156,51 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true,
-                Padding = new Padding(6)
+                Padding = new Padding(6),
+                BackColor = Color.FromArgb(15, 23, 42)
             };
 
             // أ. تفعيل المتجر
+            var pnlStoreActive = new Panel
+            {
+                Location = new Point(10, 6),
+                Size = new Size(470, 40),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Padding = new Padding(10, 8, 10, 8)
+            };
+
             chkStoreActive = new CheckBox
             {
                 Text = "تفعيل المتجر الإلكتروني واستقبال طلبات العملاء أونلاين",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(52, 211, 153),
-                Location = new Point(10, 8),
-                AutoSize = true,
+                BackColor = Color.FromArgb(24, 33, 53),
+                Dock = DockStyle.Fill,
                 Cursor = Cursors.Hand
             };
-            pnlRight.Controls.Add(chkStoreActive);
+            pnlStoreActive.Controls.Add(chkStoreActive);
+            pnlRight.Controls.Add(pnlStoreActive);
 
             // ب. فئة السعر المعروض للعملاء (Price Tier)
             var grpPriceTier = new GroupBox
             {
                 Text = "🏷️ فئة السعر المعروض للعملاء في المتجر",
-                Location = new Point(10, 45),
-                Size = new Size(470, 115),
-                ForeColor = Color.FromArgb(56, 189, 248),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                Location = new Point(10, 52),
+                Size = new Size(470, 120),
+                ForeColor = Color.FromArgb(96, 165, 250),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Padding = new Padding(10)
             };
 
             rbRetail = new RadioButton
             {
                 Text = "🔘 سعر القطاعي (سعر البيع العادي للمستهلك)",
                 Location = new Point(15, 25),
-                Size = new Size(440, 24),
+                Size = new Size(440, 26),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Checked = true,
                 Cursor = Cursors.Hand
             };
@@ -195,20 +208,22 @@ namespace ChickenDist.Forms
             rbSemiWholesale = new RadioButton
             {
                 Text = "🔘 سعر نصف الجملة (للتجار الصغار ومحلات التجزئة)",
-                Location = new Point(15, 52),
-                Size = new Size(440, 24),
+                Location = new Point(15, 55),
+                Size = new Size(440, 26),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
 
             rbWholesale = new RadioButton
             {
                 Text = "🔘 سعر الجملة (أسعار كبار العملاء والتوزيع)",
-                Location = new Point(15, 79),
-                Size = new Size(440, 24),
+                Location = new Point(15, 85),
+                Size = new Size(440, 26),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
 
@@ -221,29 +236,33 @@ namespace ChickenDist.Forms
             var grpVisibility = new GroupBox
             {
                 Text = "👁️ خيارات إظهار الأسعار ورصيد المخزون للعملاء",
-                Location = new Point(10, 170),
-                Size = new Size(470, 130),
-                ForeColor = Color.FromArgb(56, 189, 248),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                Location = new Point(10, 180),
+                Size = new Size(470, 135),
+                ForeColor = Color.FromArgb(96, 165, 250),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Padding = new Padding(10)
             };
 
             chkShowPrices = new CheckBox
             {
                 Text = "عرض أسعار البيع للعملاء في الموقع\n(إذا أُلغي الخيار، يظهر 'السعر عند الطلب 📞')",
                 Location = new Point(15, 25),
-                Size = new Size(440, 42),
+                Size = new Size(440, 44),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
 
             chkShowStockQty = new CheckBox
             {
                 Text = "إظهار رصيد الأصناف والكميات المتاحة في المخزن للعملاء\n(إذا أُلغي الخيار، يظهر 'متوفر للطلب ✅' دون كشف رصيد المخزن الحقيقي)",
-                Location = new Point(15, 72),
+                Location = new Point(15, 75),
                 Size = new Size(440, 48),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
 
@@ -255,88 +274,105 @@ namespace ChickenDist.Forms
             var grpExtra = new GroupBox
             {
                 Text = "📢 تفاصيل المتجر والتواصل",
-                Location = new Point(10, 310),
-                Size = new Size(470, 245),
-                ForeColor = Color.FromArgb(56, 189, 248),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                Location = new Point(10, 325),
+                Size = new Size(470, 265),
+                ForeColor = Color.FromArgb(96, 165, 250),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Padding = new Padding(10)
             };
 
             var lblMin = new Label
             {
                 Text = "الحد الأدنى لقيمة الطلب (ج.م):",
-                Location = new Point(310, 28),
-                Size = new Size(150, 20),
-                ForeColor = Color.FromArgb(203, 213, 225),
-                Font = new Font("Segoe UI", 8.5f)
+                Location = new Point(290, 26),
+                Size = new Size(170, 22),
+                ForeColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
             };
             nudMinimumOrder = new NumericUpDown
             {
-                Location = new Point(15, 25),
-                Size = new Size(290, 25),
+                Location = new Point(15, 24),
+                Size = new Size(270, 26),
                 Maximum = 100000,
                 DecimalPlaces = 2,
-                BackColor = Color.FromArgb(30, 41, 59),
-                ForeColor = Color.White
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(52, 211, 153),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
             };
 
             var lblWa = new Label
             {
                 Text = "رقم واتساب إشعارات الطلبات:",
-                Location = new Point(310, 63),
-                Size = new Size(150, 20),
-                ForeColor = Color.FromArgb(203, 213, 225),
-                Font = new Font("Segoe UI", 8.5f)
+                Location = new Point(290, 62),
+                Size = new Size(170, 22),
+                ForeColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
             };
             txtNotificationWhatsApp = new TextBox
             {
                 Location = new Point(15, 60),
-                Size = new Size(290, 25),
-                BackColor = Color.FromArgb(30, 41, 59),
-                ForeColor = Color.White
+                Size = new Size(270, 26),
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle
             };
 
             var lblAnnounce = new Label
             {
                 Text = "نص الإعلان الترويجي ورسالة الترحيب في أعلى الموقع:",
                 Location = new Point(15, 98),
-                Size = new Size(440, 20),
-                ForeColor = Color.FromArgb(203, 213, 225),
-                Font = new Font("Segoe UI", 8.5f)
+                Size = new Size(440, 22),
+                ForeColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             txtAnnouncement = new TextBox
             {
                 Location = new Point(15, 122),
-                Size = new Size(440, 55),
+                Size = new Size(440, 52),
                 Multiline = true,
-                BackColor = Color.FromArgb(30, 41, 59),
-                ForeColor = Color.White
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f),
+                BorderStyle = BorderStyle.FixedSingle
             };
 
             var lblUrlTitle = new Label
             {
                 Text = "رابط المتجر المباشر:",
-                Location = new Point(350, 185),
-                Size = new Size(110, 20),
-                ForeColor = Color.FromArgb(203, 213, 225),
-                Font = new Font("Segoe UI", 8.5f)
+                Location = new Point(340, 185),
+                Size = new Size(115, 22),
+                ForeColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
             };
             txtStoreUrl = new TextBox
             {
-                Location = new Point(15, 208),
-                Size = new Size(270, 25),
+                Location = new Point(15, 212),
+                Size = new Size(260, 27),
                 ReadOnly = true,
                 BackColor = Color.FromArgb(15, 23, 42),
-                ForeColor = Color.FromArgb(56, 189, 248)
+                ForeColor = Color.FromArgb(56, 189, 248),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle
             };
 
             btnCopyUrl = new Button
             {
                 Text = "📋 نسخ",
-                Location = new Point(290, 207),
-                Size = new Size(75, 27),
-                BackColor = Color.FromArgb(51, 65, 85),
+                Location = new Point(282, 210),
+                Size = new Size(78, 30),
+                BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnCopyUrl.FlatAppearance.BorderSize = 0;
@@ -352,11 +388,12 @@ namespace ChickenDist.Forms
             btnOpenStore = new Button
             {
                 Text = "🌐 فتح",
-                Location = new Point(370, 207),
-                Size = new Size(85, 27),
+                Location = new Point(366, 210),
+                Size = new Size(88, 30),
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnOpenStore.FlatAppearance.BorderSize = 0;
@@ -384,7 +421,8 @@ namespace ChickenDist.Forms
             var pnlLeft = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(6)
+                Padding = new Padding(6),
+                BackColor = Color.FromArgb(15, 23, 42)
             };
 
             // أ. تحديد الأقسام المسموح بظهورها في المتجر (Category Filter)
@@ -392,24 +430,27 @@ namespace ChickenDist.Forms
             {
                 Text = "📂 الأقسام المعروضة في المتجر (تحديد قسم معين أو استبعاده)",
                 Dock = DockStyle.Fill,
-                ForeColor = Color.FromArgb(56, 189, 248),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(96, 165, 250),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Padding = new Padding(10)
             };
 
             var pnlCatToolbar = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 36,
-                Padding = new Padding(0, 0, 0, 5)
+                Height = 38,
+                Padding = new Padding(0, 0, 0, 6),
+                BackColor = Color.FromArgb(24, 33, 53)
             };
 
             txtSearchCategory = new TextBox
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(30, 41, 59),
+                BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f)
+                Font = new Font("Segoe UI", 9.5f),
+                BorderStyle = BorderStyle.FixedSingle
             };
             txtSearchCategory.TextChanged += (s, e) => FilterCategoriesList();
 
@@ -417,11 +458,11 @@ namespace ChickenDist.Forms
             {
                 Text = "تحديد الكل",
                 Dock = DockStyle.Left,
-                Width = 80,
-                BackColor = Color.FromArgb(51, 65, 85),
+                Width = 85,
+                BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 8.5f),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnSelectAllCats.FlatAppearance.BorderSize = 0;
@@ -431,11 +472,11 @@ namespace ChickenDist.Forms
             {
                 Text = "إلغاء الكل",
                 Dock = DockStyle.Left,
-                Width = 80,
-                BackColor = Color.FromArgb(51, 65, 85),
+                Width = 85,
+                BackColor = Color.FromArgb(71, 85, 105),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 8.5f),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnDeselectAllCats.FlatAppearance.BorderSize = 0;
@@ -450,7 +491,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 CheckOnClick = true,
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -459,8 +500,8 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Bottom,
                 Height = 160,
-                Padding = new Padding(5),
-                BackColor = Color.FromArgb(15, 23, 42)
+                Padding = new Padding(8),
+                BackColor = Color.FromArgb(18, 26, 43)
             };
 
             picQR = new PictureBox
@@ -475,8 +516,9 @@ namespace ChickenDist.Forms
             {
                 Text = "📱 رمز الاستجابة السريع (QR Code)\nامسح الرمز بكاميرا الهاتف لفتح المتجر مباشرة، أو التقط لقطة شاشة لطباعته في المحل.",
                 Dock = DockStyle.Fill,
-                ForeColor = Color.FromArgb(148, 163, 184),
-                Font = new Font("Segoe UI", 9f),
+                ForeColor = Color.FromArgb(226, 232, 240),
+                BackColor = Color.FromArgb(18, 26, 43),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 

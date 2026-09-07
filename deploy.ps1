@@ -140,7 +140,8 @@ Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\store.html") -Destination $botP
 Write-OK "Synced MobileApp/store.html to bot/public/store.html"
 
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory
-$finalReleaseExe = "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"
+$baseRoot = Split-Path (Split-Path $REPO_ROOT -Parent) -Parent
+$finalReleaseExe = Join-Path $baseRoot "FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"
 if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
     Write-Step "Updating FINAL_RELEASE"
     try {

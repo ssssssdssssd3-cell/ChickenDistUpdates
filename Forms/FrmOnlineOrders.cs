@@ -78,8 +78,8 @@ namespace ChickenDist.Forms
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Theme.BgMain;
-            this.Font = Theme.FontMain;
+            this.BackColor = Color.FromArgb(15, 23, 42);
+            this.Font = new Font("Segoe UI", 9.5f);
             this.KeyPreview = true;
             this.KeyDown += FrmOnlineOrders_KeyDown;
 
@@ -287,7 +287,7 @@ namespace ChickenDist.Forms
             var pnlOrdersGrid = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgMain,
+                BackColor = Color.FromArgb(15, 23, 42),
                 Padding = new Padding(8)
             };
 
@@ -387,7 +387,8 @@ namespace ChickenDist.Forms
                 Text = "👤 بيانات العميل والتوصيل",
                 Dock = DockStyle.Top,
                 Height = 135,
-                ForeColor = Color.FromArgb(56, 189, 248),
+                ForeColor = Color.FromArgb(96, 165, 250),
+                BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Padding = new Padding(8)
             };
@@ -395,8 +396,9 @@ namespace ChickenDist.Forms
             lblDetailCustName = new Label
             {
                 Text = "الاسم: ---",
-                Font = new Font("Segoe UI", 9.5f),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.White,
+                BackColor = Color.FromArgb(24, 33, 53),
                 Location = new Point(10, 22),
                 Size = new Size(420, 20)
             };
@@ -404,8 +406,9 @@ namespace ChickenDist.Forms
             lblDetailCustPhone = new Label
             {
                 Text = "الهاتف: ---",
-                Font = new Font("Segoe UI", 9.5f),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(52, 211, 153),
+                BackColor = Color.FromArgb(24, 33, 53),
                 Location = new Point(10, 44),
                 Size = new Size(420, 20),
                 Cursor = Cursors.Hand
@@ -415,8 +418,9 @@ namespace ChickenDist.Forms
             lblDetailCustAddress = new Label
             {
                 Text = "العنوان: ---",
-                Font = new Font("Segoe UI", 9f),
-                ForeColor = Color.FromArgb(203, 213, 225),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(226, 232, 240),
+                BackColor = Color.FromArgb(24, 33, 53),
                 Location = new Point(10, 66),
                 Size = new Size(420, 32)
             };
@@ -426,9 +430,10 @@ namespace ChickenDist.Forms
                 Location = new Point(10, 100),
                 Size = new Size(420, 24),
                 ReadOnly = true,
-                BackColor = Color.FromArgb(30, 41, 59),
+                BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.FromArgb(253, 224, 71),
-                Font = new Font("Segoe UI", 8.5f),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle,
                 Text = "ملاحظات: ---"
             };
 
@@ -442,7 +447,8 @@ namespace ChickenDist.Forms
             {
                 Text = "🛒 أصناف وبنود الطلب",
                 Dock = DockStyle.Fill,
-                ForeColor = Color.FromArgb(56, 189, 248),
+                ForeColor = Color.FromArgb(96, 165, 250),
+                BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Padding = new Padding(8)
             };
