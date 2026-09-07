@@ -5,10 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title id="pageTitle">متجر العملاء الإلكتروني | ProSoft</title>
   
-  <!-- Meta tags for PWA and Mobile Browsers -->
+  <!-- Meta tags for PWA and Mobile Browsers (iOS & Android) -->
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="المتجر الإلكتروني">
+  <link rel="manifest" href="manifest_store.json">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="logo.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="logo.png">
+
+  <script>
+    let deferredInstallPrompt = null;
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Note:', err));
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('btnInstallStoreApp');
+      if (btn) btn.classList.remove('hidden');
+    });
+  </script>
   
   <!-- Tailwind CSS & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -105,6 +127,13 @@
 
       <!-- أزرار الإجراءات العلوية -->
       <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <!-- زر تثبيت المتجر كأيقونة على الموبايل (iPhone & Android) -->
+        <button onclick="triggerStoreAppInstall()" id="btnInstallStoreApp" title="تثبيت المتجر كأيقونة على الشاشة الرئيسية" 
+                class="px-2.5 sm:px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-purple-600/30 cursor-pointer">
+          <i class="fa-solid fa-mobile-screen-button text-sm"></i>
+          <span class="hidden sm:inline">تثبيت كأيقونة</span>
+        </button>
+
         <!-- زر التواصل واتساب -->
         <a id="btnWhatsAppDirect" href="#" target="_blank" title="تواصل عبر واتساب" class="p-2 sm:px-3 sm:py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
           <i class="fa-brands fa-whatsapp text-sm"></i>
@@ -131,6 +160,19 @@
     <div id="storeAnnouncementBanner" class="hidden mt-2 p-2 bg-blue-950/60 border border-blue-500/30 rounded-xl text-[11px] sm:text-xs text-blue-200 text-center font-bold flex items-center justify-center gap-2">
       <i class="fa-solid fa-bullhorn text-amber-400"></i>
       <span id="lblAnnouncementText">خدمة التوصيل السريع متوفرة لجميع المناطق</span>
+    </div>
+
+    <!-- بانر تثبيت الآيفون الذكي (يظهر تلقائياً لمستخدمي Safari على هواتف iPhone) -->
+    <div id="iosInstallBanner" class="hidden mt-2 p-2.5 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border border-indigo-500/40 rounded-xl text-[11px] sm:text-xs text-indigo-200 font-bold flex items-center justify-between gap-2 shadow-lg animate-pulse">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-sm flex-shrink-0">
+          <i class="fa-brands fa-apple text-base text-white"></i>
+        </div>
+        <span class="truncate">احفظ المتجر كأيقونة على شاشة الآيفون لفتحه كتطبيق بنقرة واحدة!</span>
+      </div>
+      <button onclick="triggerStoreAppInstall()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-extrabold whitespace-nowrap transition shadow flex-shrink-0 cursor-pointer">
+        كيفية التثبيت 📲
+      </button>
     </div>
   </header>
 
@@ -312,9 +354,14 @@
         </div>
 
         <div>
-          <label class="block font-bold text-slate-300 mb-1">رقم الهاتف / الواتساب <span class="text-rose-400">*</span></label>
-          <input type="tel" id="custPhone" required placeholder="01xxxxxxxxx" dir="ltr"
-                 class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-right focus:border-blue-500 focus:outline-none">
+          <label class="block font-bold text-slate-300 mb-1 flex items-center justify-between">
+            <span>رقم الهاتف / الواتساب <span class="text-rose-400">*</span></span>
+            <span id="phoneValidationTip" class="text-[10px] text-slate-400">11 رقماً (مثال: 01012345678)</span>
+          </label>
+          <input type="tel" id="custPhone" required placeholder="01xxxxxxxxx (11 رقماً)" dir="ltr" maxlength="14" inputmode="numeric"
+                 oninput="validatePhoneLive(this)"
+                 class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-right focus:border-blue-500 focus:outline-none transition">
+          <p id="phoneErrorNotice" class="hidden text-[11px] text-rose-400 mt-1 font-bold">⚠️ يرجى إدخال 11 رقماً يبدأ بـ (010 أو 011 أو 012 أو 015)</p>
         </div>
 
         <div>
@@ -411,6 +458,87 @@
       <div id="myOrdersList" class="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 text-xs">
         <!-- يتم ملؤها من localStorage -->
       </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 9. نافذة تثبيت المتجر كأيقونة (PWA INSTALL MODAL) -->
+  <!-- ========================================== -->
+  <div id="pwaInstallModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4">
+    <div class="glass-card rounded-2xl p-5 w-full max-w-md shadow-2xl border border-indigo-500/40 text-right relative overflow-hidden flex flex-col space-y-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg shadow-inner">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-white text-sm sm:text-base">تثبيت المتجر كأيقونة تطبيق</h3>
+            <span class="text-[10px] text-slate-400">للوصول السريع والطلب بنقرة واحدة من شاشة هاتفك</span>
+          </div>
+        </div>
+        <button onclick="closePwaInstallModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- قسم هواتف الآيفون (iOS Safari) -->
+      <div id="iosInstallGuideSection" class="hidden space-y-3">
+        <div class="p-3 bg-indigo-950/50 border border-indigo-500/30 rounded-xl text-xs text-indigo-200 leading-relaxed">
+          <p class="font-bold mb-2 flex items-center gap-1.5 text-white">
+            <i class="fa-brands fa-apple text-base"></i>
+            خطوات التثبيت على هواتف الآيفون (Safari):
+          </p>
+          <ol class="space-y-2 text-[11px] text-slate-300 list-decimal list-inside pr-1">
+            <li>
+              اضغط على أيقونة المشاركة 
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-600/30 text-blue-300 font-bold rounded border border-blue-500/40 text-xs">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i> المشاركة (Share)
+              </span> 
+              في أسفل متصفح Safari.
+            </li>
+            <li>
+              مرر القائمة للأعلى قليلاً واختر 
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-600/30 text-emerald-300 font-bold rounded border border-emerald-500/40 text-xs">
+                <i class="fa-regular fa-square-plus"></i> إضافة إلى الشاشة الرئيسية (Add to Home Screen)
+              </span>
+            </li>
+            <li>
+              اضغط على كلمة 
+              <span class="inline-flex items-center px-2 py-0.5 bg-slate-800 text-white font-bold rounded border border-slate-700 text-xs">
+                إضافة (Add)
+              </span> 
+              في أعلى اليمين.
+            </li>
+          </ol>
+        </div>
+        <p class="text-[11px] text-emerald-400 font-bold text-center">
+          ✨ ستظهر أيقونة المتجر فوراً على شاشة هاتفك وتفتح كتطبيق كامل بدون شريط متصفح!
+        </p>
+      </div>
+
+      <!-- قسم هواتف الأندرويد والكمبيوتر (Android & Chrome) -->
+      <div id="androidInstallGuideSection" class="space-y-3">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          يمكنك إضافة هذا المتجر كتطبيق خفيف على شاشة هاتفك الرئيسية، يفتح بسرعة فائقة ويعمل حتى مع ضعف الإنترنت.
+        </p>
+        <button onclick="executeBrowserPwaInstall()" id="btnAutoInstall" 
+                class="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition cursor-pointer">
+          <i class="fa-solid fa-download"></i>
+          <span>تثبيت التطبيق على الشاشة الرئيسية الآن</span>
+        </button>
+        <div class="text-[11px] text-slate-400 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 space-y-1">
+          <span class="font-bold text-slate-300 block">💡 إذا لم يظهر خيار التثبيت التلقائي:</span>
+          <span>من قائمة المتصفح (الثلاث نقاط ⋮ أعلى يسار المتصفح) اختر <b>"تثبيت التطبيق"</b> أو <b>"إضافة إلى الشاشة الرئيسية"</b>.</span>
+        </div>
+      </div>
+
+      <div class="pt-1">
+        <button onclick="closePwaInstallModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          إغلاق
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -959,7 +1087,7 @@
       if (!cart.length) return;
 
       const name = document.getElementById('custName').value.trim();
-      const phone = document.getElementById('custPhone').value.trim();
+      let phone = document.getElementById('custPhone').value.trim();
       const address = document.getElementById('custAddress').value.trim();
       const notes = document.getElementById('custNotes').value.trim();
 
@@ -967,6 +1095,42 @@
         alert("يرجى ملء الاسم ورقم الهاتف والعنوان بالكامل!");
         return;
       }
+
+      // 1. تحويل الأرقام المكتوبة بالأرقام العربية/الهندية (٠١٢٣٤٥٦٧٨٩) إلى أرقام إنجليزية
+      const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+      for (let i = 0; i < 10; i++) {
+        phone = phone.replace(new RegExp(arabicNumerals[i], 'g'), i.toString());
+      }
+
+      // 2. تنظيف الرقم من المسافات والرموز الزائدة
+      let cleanPhone = phone.replace(/[\s\-\(\)\.]/g, '');
+
+      // 3. تصحيح ذكي: إذا كان 10 أرقام ويبدأ بـ 1 (نسي الصفر الأول مثل 1012345678) نضيف الصفر تلقائياً
+      if (/^1[0125][0-9]{8}$/.test(cleanPhone)) {
+        cleanPhone = '0' + cleanPhone;
+      }
+
+      // 4. التحقق الصارم من صحة رقم الموبايل المصري
+      // يجب أن يكون 11 رقماً يبدأ بـ (010 أو 011 أو 012 أو 015) أو بالصيغة الدولية (+201... أو 201...)
+      const isEgyptian11Digits = /^01[0125][0-9]{8}$/.test(cleanPhone);
+      const isEgyptianInternational = /^(\+?20)?1[0125][0-9]{8}$/.test(cleanPhone);
+
+      if (!isEgyptian11Digits && !isEgyptianInternational) {
+        const phoneInput = document.getElementById('custPhone');
+        phoneInput.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/40');
+        phoneInput.focus();
+
+        let errMsg = "⚠️ رقم الموبايل غير صحيح!\n";
+        if (cleanPhone.length === 10 && cleanPhone.startsWith('01')) {
+          errMsg += "الرقم المدخل يتكون من 10 أرقام فقط (ناقص رقم).\n";
+        }
+        errMsg += "يجب إدخال رقم موبايل مصري صحيح مكون من 11 رقماً يبدأ بـ (010 أو 011 أو 012 أو 015).\nمثال: 01012345678";
+
+        alert(errMsg);
+        return;
+      }
+
+      phone = cleanPhone; // اعتماد الرقم المنظف والمصحح
 
       // حفظ بيانات العميل محلياً للمرات القادمة
       try {
@@ -1173,10 +1337,98 @@ ${itemsText}
     }
 
     // ──────────────────────────────────────────
+    // 10. دعم تثبيت المتجر كأيقونة (PWA Install Engine)
+    // ──────────────────────────────────────────
+    function checkIosBanner() {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (isIos && !isStandalone) {
+        const banner = document.getElementById('iosInstallBanner');
+        if (banner) banner.classList.remove('hidden');
+      }
+    }
+
+    function triggerStoreAppInstall() {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const iosSection = document.getElementById('iosInstallGuideSection');
+      const androidSection = document.getElementById('androidInstallGuideSection');
+
+      if (isIos) {
+        if (iosSection) iosSection.classList.remove('hidden');
+        if (androidSection) androidSection.classList.add('hidden');
+      } else {
+        if (iosSection) iosSection.classList.add('hidden');
+        if (androidSection) androidSection.classList.remove('hidden');
+      }
+
+      document.getElementById('pwaInstallModal')?.classList.remove('hidden');
+    }
+
+    function closePwaInstallModal() {
+      document.getElementById('pwaInstallModal')?.classList.add('hidden');
+    }
+
+    async function executeBrowserPwaInstall() {
+      if (deferredInstallPrompt) {
+        try {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            closePwaInstallModal();
+            const btn = document.getElementById('btnInstallStoreApp');
+            if (btn) btn.classList.add('hidden');
+          }
+          deferredInstallPrompt = null;
+          return;
+        } catch (err) {
+          console.log("Install prompt error:", err);
+        }
+      }
+      alert("📱 من قائمة متصفحك (⋮) اضغط على: 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'");
+    }
+
+    function validatePhoneLive(input) {
+      let val = input.value;
+      const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+      for (let i = 0; i < 10; i++) {
+        val = val.replace(new RegExp(arabicNumerals[i], 'g'), i.toString());
+      }
+      val = val.replace(/[^0-9+]/g, '');
+      input.value = val;
+
+      const notice = document.getElementById('phoneErrorNotice');
+      const tip = document.getElementById('phoneValidationTip');
+
+      let clean = val.replace(/[^0-9]/g, '');
+      if (clean.length === 10 && /^1[0125]/.test(clean)) {
+        clean = '0' + clean;
+      }
+
+      const isValid = /^01[0125][0-9]{8}$/.test(clean) || /^201[0125][0-9]{8}$/.test(clean);
+
+      if (val.length >= 10 && !isValid) {
+        input.classList.add('border-rose-500');
+        input.classList.remove('border-slate-700', 'border-emerald-500');
+        if (notice) notice.classList.remove('hidden');
+      } else if (isValid) {
+        input.classList.remove('border-rose-500', 'border-slate-700');
+        input.classList.add('border-emerald-500');
+        if (notice) notice.classList.add('hidden');
+        if (tip) tip.textContent = "✅ رقم موبايل صحيح";
+      } else {
+        input.classList.remove('border-rose-500', 'border-emerald-500');
+        input.classList.add('border-slate-700');
+        if (notice) notice.classList.add('hidden');
+        if (tip) tip.textContent = "11 رقماً (مثال: 01012345678)";
+      }
+    }
+
+    // ──────────────────────────────────────────
     // بدء التشغيل
     // ──────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {
       loadStoreData();
+      checkIosBanner();
     });
   </script>
 </body>

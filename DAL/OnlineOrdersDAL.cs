@@ -338,5 +338,175 @@ namespace ChickenDist.DAL
             }
             catch { return 0; }
         }
+
+        /// <summary>
+        /// تقرير عملاء المتجر الإلكتروني مع إحصائيات الطلبات والمشتريات
+        /// </summary>
+        public static DataTable GetStoreCustomersReport(DateTime? from = null, DateTime? to = null, string searchTerm = null, string filterType = "الكل", string sortBy = "LastOrderDate")
+        {
+            var prms = new List<SqlParameter>();
+            string sql = @"
+                SELECT 
+                    ISNULL(o.CustomerPhone, '') AS CustomerPhone,
+                    MAX(o.CustomerName) AS CustomerName,
+                    MAX(ISNULL(o.CustomerAddress, '')) AS CustomerAddress,
+                    COUNT(o.OnlineOrderID) AS TotalOrdersCount,
+                    SUM(CASE WHEN o.Status = N'مكتمل' THEN 1 ELSE 0 END) AS CompletedOrdersCount,
+                    SUM(CASE WHEN o.Status = N'ملغي' THEN 1 ELSE 0 END) AS CanceledOrdersCount,
+                    SUM(CASE WHEN o.Status NOT IN (N'مكتمل', N'ملغي') THEN 1 ELSE 0 END) AS PendingOrdersCount,
+                    SUM(ISNULL(o.TotalAmount, 0)) AS TotalAmountSpent,
+                    SUM(CASE WHEN o.Status = N'مكتمل' THEN ISNULL(o.TotalAmount, 0) ELSE 0 END) AS CompletedAmountSpent,
+                    MIN(o.OrderDate) AS FirstOrderDate,
+                    MAX(o.OrderDate) AS LastOrderDate,
+                    c.ClientID,
+                    c.ClientCode,
+                    c.ClientName AS RegisteredClientName,
+                    CASE WHEN c.ClientID IS NOT NULL THEN 1 ELSE 0 END AS IsRegisteredClient
+                FROM OnlineOrders o WITH (NOLOCK)
+                LEFT JOIN Clients c WITH (NOLOCK) ON (
+                    (ISNULL(o.CustomerPhone, '') <> '' AND (c.Phone = o.CustomerPhone OR c.Phone2 = o.CustomerPhone))
+                )
+                WHERE 1 = 1 ";
+
+            if (from.HasValue)
+            {
+                sql += " AND o.OrderDate >= @from ";
+                prms.Add(DbHelper.P("@from", from.Value.Date));
+            }
+
+            if (to.HasValue)
+            {
+                sql += " AND o.OrderDate <= @to ";
+                prms.Add(DbHelper.P("@to", to.Value.Date.AddDays(1).AddSeconds(-1)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                string term = "%" + searchTerm.Trim() + "%";
+                sql += " AND (o.CustomerName LIKE @term OR o.CustomerPhone LIKE @term OR o.CustomerAddress LIKE @term OR c.ClientName LIKE @term) ";
+                prms.Add(DbHelper.P("@term", term));
+            }
+
+            sql += @" GROUP BY ISNULL(o.CustomerPhone, ''), c.ClientID, c.ClientCode, c.ClientName ";
+
+            // HAVING filters based on client status or registration
+            if (filterType == "مسجلين بالمنظومة")
+            {
+                sql += " HAVING c.ClientID IS NOT NULL ";
+            }
+            else if (filterType == "غير مسجلين")
+            {
+                sql += " HAVING c.ClientID IS NULL ";
+            }
+            else if (filterType == "أكثر من طلب")
+            {
+                sql += " HAVING COUNT(o.OnlineOrderID) > 1 ";
+            }
+            else if (filterType == "لديهم طلبات مكتملة")
+            {
+                sql += " HAVING SUM(CASE WHEN o.Status = N'مكتمل' THEN 1 ELSE 0 END) > 0 ";
+            }
+
+            // ORDER BY
+            switch (sortBy)
+            {
+                case "TotalSpent":
+                    sql += " ORDER BY TotalAmountSpent DESC";
+                    break;
+                case "TotalOrders":
+                    sql += " ORDER BY TotalOrdersCount DESC";
+                    break;
+                case "Name":
+                    sql += " ORDER BY CustomerName ASC";
+                    break;
+                case "LastOrderDate":
+                default:
+                    sql += " ORDER BY LastOrderDate DESC";
+                    break;
+            }
+
+            return DbHelper.Query(sql, prms.ToArray());
+        }
+
+        /// <summary>
+        /// جلب كافة طلبات عميل متجر محدد بواسطة رقم هاتفه
+        /// </summary>
+        public static DataTable GetCustomerOrders(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return new DataTable();
+
+            return DbHelper.Query(@"
+                SELECT o.OnlineOrderID,
+                       ISNULL(o.OrderNumber, '#' + CAST(o.OnlineOrderID AS NVARCHAR(20))) AS OrderNumber,
+                       o.OrderDate,
+                       o.CustomerName,
+                       o.CustomerPhone,
+                       ISNULL(o.CustomerAddress, '') AS CustomerAddress,
+                       ISNULL(o.Notes, '') AS Notes,
+                       ISNULL(o.SubTotal, 0) AS SubTotal,
+                       ISNULL(o.DeliveryCharge, 0) AS DeliveryCharge,
+                       ISNULL(o.TotalAmount, 0) AS TotalAmount,
+                       ISNULL(o.PriceTier, N'قطاعي') AS PriceTier,
+                       ISNULL(o.Status, N'جديد') AS Status,
+                       o.CreatedSaleID,
+                       o.CreatedAt,
+                       (SELECT COUNT(*) FROM OnlineOrderItems oi WHERE oi.OnlineOrderID = o.OnlineOrderID) AS ItemsCount
+                FROM OnlineOrders o WITH (NOLOCK)
+                WHERE o.CustomerPhone = @phone
+                ORDER BY o.OnlineOrderID DESC",
+                DbHelper.P("@phone", phone.Trim()));
+        }
+
+        /// <summary>
+        /// تسجيل عميل متجر كعميل رسمي في جدول العملاء Clients
+        /// </summary>
+        public static int RegisterStoreCustomerAsClient(string name, string phone, string address, out string error)
+        {
+            error = null;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    error = "يرجى كتابة اسم العميل";
+                    return 0;
+                }
+                if (string.IsNullOrWhiteSpace(phone))
+                {
+                    error = "يرجى تحديد رقم الهاتف للعميل";
+                    return 0;
+                }
+
+                if (ClientDAL.IsDuplicatePhone(phone))
+                {
+                    error = "رقم الهاتف مسجل بالفعل لعميل آخر بالمنظومة!";
+                    return 0;
+                }
+
+                string nextCode = ClientDAL.GetNextClientCode();
+                int newId = ClientDAL.Save(
+                    id: 0,
+                    code: nextCode,
+                    name: name.Trim(),
+                    phone: phone.Trim(),
+                    phone2: "",
+                    address: address?.Trim() ?? "",
+                    opening: 0m,
+                    active: true,
+                    driverID: null,
+                    maxCreditLimit: 0m,
+                    notes: "عميل تم تسجيله تلقائياً من تقرير عملاء المتجر الإلكتروني",
+                    defaultPriceTier: "قطاعي",
+                    openingCrates: 0,
+                    defaultPaymentType: "Any"
+                );
+
+                return newId;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return 0;
+            }
+        }
     }
 }

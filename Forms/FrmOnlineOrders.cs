@@ -57,6 +57,7 @@ namespace ChickenDist.Forms
         private ComboBox cboChangeStatus;
         private Button btnRefresh;
         private Button btnSettings;
+        private Button btnCustomersReport;
         private Button btnOpenStore;
         private Button btnCopyUrl;
 
@@ -194,8 +195,18 @@ namespace ChickenDist.Forms
                 }
             };
 
+            btnCustomersReport = CreateTopButton("👥 عملاء المتجر (F3)", Color.FromArgb(236, 72, 153));
+            btnCustomersReport.Click += (s, e) =>
+            {
+                using (var dlg = new FrmOnlineStoreCustomersReport())
+                {
+                    dlg.ShowDialog(this);
+                }
+            };
+
             pnlHeaderButtons.Controls.Add(btnRefresh);
             pnlHeaderButtons.Controls.Add(btnSettings);
+            pnlHeaderButtons.Controls.Add(btnCustomersReport);
             pnlHeaderButtons.Controls.Add(btnStoreQR);
             pnlHeaderButtons.Controls.Add(btnOpenStore);
             pnlHeaderButtons.Controls.Add(btnCopyUrl);
@@ -1790,6 +1801,11 @@ namespace ChickenDist.Forms
             else if (e.KeyCode == Keys.F2)
             {
                 btnSettings.PerformClick();
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.F3)
+            {
+                btnCustomersReport?.PerformClick();
                 e.Handled = true;
             }
             else if (e.KeyCode == Keys.Escape)

@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
 # ────────────────────────────────────────────────────────────
-$VERSION   = "3.3.7"
+$VERSION   = "3.3.8"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -138,6 +138,17 @@ Write-OK "Synced MobileApp/index.html to bot/public/mobile.html"
 $botPublicStore = Join-Path $REPO_ROOT "bot\public\store.html"
 Copy-Item -Path (Join-Path $REPO_ROOT "MobileApp\store.html") -Destination $botPublicStore -Force
 Write-OK "Synced MobileApp/store.html to bot/public/store.html"
+
+# PWA Assets (manifests, logo, service worker)
+$pwaAssets = @("manifest.json", "manifest_store.json", "logo.png", "sw.js")
+foreach ($asset in $pwaAssets) {
+    $src = Join-Path $REPO_ROOT "MobileApp\$asset"
+    $dst = Join-Path $REPO_ROOT "bot\public\$asset"
+    if (Test-Path $src) {
+        Copy-Item -Path $src -Destination $dst -Force
+        Write-OK "Synced MobileApp/$asset to bot/public/$asset"
+    }
+}
 
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory
 $baseRoot = Split-Path (Split-Path $REPO_ROOT -Parent) -Parent

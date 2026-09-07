@@ -35,6 +35,7 @@
     <EmbeddedResource Include="MobileApp\database.rules.json" />
     <EmbeddedResource Include="MobileApp\firestore.rules" />
     <EmbeddedResource Include="MobileApp\manifest.json" />
+    <EmbeddedResource Include="MobileApp\manifest_store.json" />
     <EmbeddedResource Include="MobileApp\logo.png" />
     <EmbeddedResource Include="pro_soft_logo.png" />
     <!-- QRCoder.dll محجوزة داخل الـ EXE نفسه حتى لا يحتاج المستخدم لتوزيعها -->
