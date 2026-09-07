@@ -489,6 +489,9 @@
           if (catData) {
             categories = catData.categories || [];
             products = catData.products || [];
+            if (storeConfig.OnlyInStockProducts) {
+              products = products.filter(p => (parseFloat(p.StockQty) || 0) > 0);
+            }
           }
         }
 

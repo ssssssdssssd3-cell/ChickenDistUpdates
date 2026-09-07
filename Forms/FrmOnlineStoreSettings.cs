@@ -22,6 +22,7 @@ namespace ChickenDist.Forms
         private RadioButton rbWholesale;
         private CheckBox chkShowPrices;
         private CheckBox chkShowStockQty;
+        private CheckBox chkOnlyInStock;
         private CheckedListBox clbCategories;
         private TextBox txtSearchCategory;
         private NumericUpDown nudMinimumOrder;
@@ -237,7 +238,7 @@ namespace ChickenDist.Forms
             {
                 Text = "👁️ خيارات إظهار الأسعار ورصيد المخزون للعملاء",
                 Location = new Point(10, 180),
-                Size = new Size(470, 135),
+                Size = new Size(470, 185),
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -247,7 +248,7 @@ namespace ChickenDist.Forms
             chkShowPrices = new CheckBox
             {
                 Text = "عرض أسعار البيع للعملاء في الموقع\n(إذا أُلغي الخيار، يظهر 'السعر عند الطلب 📞')",
-                Location = new Point(15, 25),
+                Location = new Point(15, 22),
                 Size = new Size(440, 44),
                 ForeColor = Color.White,
                 BackColor = Color.FromArgb(24, 33, 53),
@@ -258,7 +259,7 @@ namespace ChickenDist.Forms
             chkShowStockQty = new CheckBox
             {
                 Text = "إظهار رصيد الأصناف والكميات المتاحة في المخزن للعملاء\n(إذا أُلغي الخيار، يظهر 'متوفر للطلب ✅' دون كشف رصيد المخزن الحقيقي)",
-                Location = new Point(15, 75),
+                Location = new Point(15, 70),
                 Size = new Size(440, 48),
                 ForeColor = Color.White,
                 BackColor = Color.FromArgb(24, 33, 53),
@@ -266,15 +267,27 @@ namespace ChickenDist.Forms
                 Cursor = Cursors.Hand
             };
 
+            chkOnlyInStock = new CheckBox
+            {
+                Text = "رفع الأصناف ذات الرصيد المتوفر فقط بالمخزن\n(إذا تم تفعيله، لن يتم عرض أو رفع أي صنف رصيده صفر إلى المتجر)",
+                Location = new Point(15, 124),
+                Size = new Size(440, 48),
+                ForeColor = Color.FromArgb(251, 191, 36),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+
             grpVisibility.Controls.Add(chkShowPrices);
             grpVisibility.Controls.Add(chkShowStockQty);
+            grpVisibility.Controls.Add(chkOnlyInStock);
             pnlRight.Controls.Add(grpVisibility);
 
             // د. تفاصيل إضافية ورقم الواتساب والحد الأدنى
             var grpExtra = new GroupBox
             {
                 Text = "📢 تفاصيل المتجر والتواصل",
-                Location = new Point(10, 325),
+                Location = new Point(10, 375),
                 Size = new Size(470, 265),
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
@@ -499,7 +512,7 @@ namespace ChickenDist.Forms
             var pnlQR = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 160,
+                Height = 175,
                 Padding = new Padding(8),
                 BackColor = Color.FromArgb(18, 26, 43)
             };
@@ -509,20 +522,122 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Left,
                 Width = 150,
                 SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.White
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Cursor = Cursors.Hand
+            };
+            picQR.Click += (s, e) =>
+            {
+                using (var dlg = new FrmStoreQRDialog())
+                {
+                    dlg.ShowDialog();
+                }
+            };
+
+            var pnlQrDetails = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(8, 0, 8, 0),
+                BackColor = Color.FromArgb(18, 26, 43)
             };
 
             var lblQrInfo = new Label
             {
-                Text = "📱 رمز الاستجابة السريع (QR Code)\nامسح الرمز بكاميرا الهاتف لفتح المتجر مباشرة، أو التقط لقطة شاشة لطباعته في المحل.",
-                Dock = DockStyle.Fill,
+                Text = "📱 رمز المتجر الإلكتروني (Store QR Code)\nامسح الرمز بكاميرا الهاتف لفتح المتجر مباشرة، أو استخدم خيارات الطباعة والمشاركة:",
+                Dock = DockStyle.Top,
+                Height = 44,
                 ForeColor = Color.FromArgb(226, 232, 240),
                 BackColor = Color.FromArgb(18, 26, 43),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleCenter
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.TopRight
             };
 
-            pnlQR.Controls.Add(lblQrInfo);
+            var flpQrButtons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true,
+                BackColor = Color.FromArgb(18, 26, 43),
+                Padding = new Padding(0, 4, 0, 0)
+            };
+
+            var btnOpenQRDialog = new Button
+            {
+                Text = "🔍 تكبير وطباعة ومشاركة الرمز",
+                Size = new Size(225, 34),
+                BackColor = Color.FromArgb(99, 102, 241),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(3, 3, 3, 3)
+            };
+            btnOpenQRDialog.FlatAppearance.BorderSize = 0;
+            btnOpenQRDialog.Click += (s, e) =>
+            {
+                using (var dlg = new FrmStoreQRDialog())
+                {
+                    dlg.ShowDialog();
+                }
+            };
+
+            var btnCopyQrImage = new Button
+            {
+                Text = "📋 نسخ الصورة",
+                Size = new Size(110, 34),
+                BackColor = Color.FromArgb(147, 51, 234),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(3, 3, 3, 3)
+            };
+            btnCopyQrImage.FlatAppearance.BorderSize = 0;
+            btnCopyQrImage.Click += (s, e) =>
+            {
+                if (picQR.Image != null)
+                {
+                    Clipboard.SetImage(picQR.Image);
+                    MessageBox.Show("تم نسخ صورة كود المتجر للحافظة بنجاح 📋\nيمكنك لصقها الآن في واتساب أو أي برنامج آخر (Ctrl + V).", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+
+            var btnSaveQrImage = new Button
+            {
+                Text = "💾 حفظ كصورة",
+                Size = new Size(110, 34),
+                BackColor = Color.FromArgb(217, 119, 6),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(3, 3, 3, 3)
+            };
+            btnSaveQrImage.FlatAppearance.BorderSize = 0;
+            btnSaveQrImage.Click += (s, e) =>
+            {
+                if (picQR.Image == null) return;
+                using (var sfd = new SaveFileDialog())
+                {
+                    sfd.Title = "حفظ كود المتجر كصورة";
+                    sfd.Filter = "ملف صورة PNG (*.png)|*.png";
+                    sfd.FileName = "Store_QR_" + DateTime.Now.ToString("yyyyMMdd") + ".png";
+                    if (sfd.ShowDialog() == DialogResult.OK)
+                    {
+                        picQR.Image.Save(sfd.FileName, System.Drawing.Imaging.ImageFormat.Png);
+                        MessageBox.Show("تم حفظ الصورة بنجاح ✅", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            };
+
+            flpQrButtons.Controls.Add(btnOpenQRDialog);
+            flpQrButtons.Controls.Add(btnCopyQrImage);
+            flpQrButtons.Controls.Add(btnSaveQrImage);
+
+            pnlQrDetails.Controls.Add(flpQrButtons);
+            pnlQrDetails.Controls.Add(lblQrInfo);
+
+            pnlQR.Controls.Add(pnlQrDetails);
             pnlQR.Controls.Add(picQR);
 
             grpCategories.Controls.Add(clbCategories);
@@ -550,6 +665,7 @@ namespace ChickenDist.Forms
 
             chkShowPrices.Checked = AppConfig.Store_ShowPrices;
             chkShowStockQty.Checked = AppConfig.Store_ShowStockQty;
+            chkOnlyInStock.Checked = AppConfig.Store_OnlyInStockProducts;
 
             nudMinimumOrder.Value = Math.Max(0, AppConfig.Store_MinimumOrder);
             txtAnnouncement.Text = AppConfig.Store_Announcement ?? "";
@@ -651,6 +767,7 @@ namespace ChickenDist.Forms
 
                 AppConfig.Store_ShowPrices = chkShowPrices.Checked;
                 AppConfig.Store_ShowStockQty = chkShowStockQty.Checked;
+                AppConfig.Store_OnlyInStockProducts = chkOnlyInStock.Checked;
                 AppConfig.Store_MinimumOrder = nudMinimumOrder.Value;
                 AppConfig.Store_Announcement = txtAnnouncement.Text.Trim();
                 string enteredPhone = txtNotificationWhatsApp.Text.Trim();

@@ -254,6 +254,12 @@ namespace ChickenDist.Core
             set => Set("Store_ShowStockQty", value ? "true" : "false");
         }
 
+        public static bool Store_OnlyInStockProducts
+        {
+            get => Get("Store_OnlyInStockProducts", "false") == "true";
+            set => Set("Store_OnlyInStockProducts", value ? "true" : "false");
+        }
+
         public static decimal Store_MinimumOrder
         {
             get

@@ -185,8 +185,18 @@ namespace ChickenDist.Forms
                 MessageBox.Show("تم نسخ رابط المتجر الإلكتروني بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
+            var btnStoreQR = CreateTopButton("📱 كود المتجر (QR)", Color.FromArgb(139, 92, 246));
+            btnStoreQR.Click += (s, e) =>
+            {
+                using (var dlg = new FrmStoreQRDialog())
+                {
+                    dlg.ShowDialog();
+                }
+            };
+
             pnlHeaderButtons.Controls.Add(btnRefresh);
             pnlHeaderButtons.Controls.Add(btnSettings);
+            pnlHeaderButtons.Controls.Add(btnStoreQR);
             pnlHeaderButtons.Controls.Add(btnOpenStore);
             pnlHeaderButtons.Controls.Add(btnCopyUrl);
 

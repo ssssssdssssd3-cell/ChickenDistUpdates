@@ -1137,6 +1137,7 @@ self.addEventListener('fetch', (event) => {
                     "\"PriceTier\":\"" + EscapeJsonString(AppConfig.Store_PriceTier ?? "Retail") + "\"," +
                     "\"ShowPrices\":" + (AppConfig.Store_ShowPrices ? "true" : "false") + "," +
                     "\"ShowStockQty\":" + (AppConfig.Store_ShowStockQty ? "true" : "false") + "," +
+                    "\"OnlyInStockProducts\":" + (AppConfig.Store_OnlyInStockProducts ? "true" : "false") + "," +
                     "\"MinimumOrder\":" + AppConfig.Store_MinimumOrder.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                     "\"Announcement\":\"" + EscapeJsonString(AppConfig.Store_Announcement ?? "") + "\"," +
                     "\"LastUpdated\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") + "\"," +
@@ -1164,6 +1165,9 @@ self.addEventListener('fetch', (event) => {
                 sbCategories.Append("]");
 
                 // 3. الأصناف التابعة للأقسام المسموح بها مع احتساب فئة السعر والرصيد
+                bool onlyInStock = AppConfig.Store_OnlyInStockProducts;
+                string stockFilter = onlyInStock ? " AND ISNULL(stk.TotalStock, 0) > 0 " : "";
+
                 string priceCol;
                 string tier = AppConfig.Store_PriceTier;
                 if (tier == "Wholesale")
@@ -1190,15 +1194,22 @@ self.addEventListener('fetch', (event) => {
                     ) stk
                     WHERE p.IsActive = 1
                       AND (p.CategoryID IS NULL OR ISNULL(c.ShowInOnlineStore, 1) = 1)
+                      {stockFilter}
                     ORDER BY c.CategoryName ASC, p.ProductName ASC");
 
                 var sbProducts = new StringBuilder("[");
                 if (dtProducts != null)
                 {
+                    bool firstProduct = true;
                     for (int i = 0; i < dtProducts.Rows.Count; i++)
                     {
-                        if (i > 0) sbProducts.Append(",");
                         DataRow r = dtProducts.Rows[i];
+                        decimal stock = r["StockQty"] != DBNull.Value ? Convert.ToDecimal(r["StockQty"]) : 0m;
+                        if (onlyInStock && stock <= 0) continue;
+
+                        if (!firstProduct) sbProducts.Append(",");
+                        firstProduct = false;
+
                         int pId = Convert.ToInt32(r["ProductID"]);
                         string pName = EscapeJsonString(r["ProductName"]?.ToString() ?? "");
                         string pCode = EscapeJsonString(r["ProductCode"]?.ToString() ?? "");
@@ -1206,7 +1217,6 @@ self.addEventListener('fetch', (event) => {
                         string cName = EscapeJsonString(r["CategoryName"]?.ToString() ?? "");
                         string unit = EscapeJsonString(r["Unit"]?.ToString() ?? "قطعة");
                         decimal price = r["Price"] != DBNull.Value ? Convert.ToDecimal(r["Price"]) : 0m;
-                        decimal stock = r["StockQty"] != DBNull.Value ? Convert.ToDecimal(r["StockQty"]) : 0m;
 
                         sbProducts.Append("{" +
                             "\"ProductID\":" + pId + "," +
