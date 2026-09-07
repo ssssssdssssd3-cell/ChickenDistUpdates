@@ -95,7 +95,10 @@
               مفتوح للطلبات
             </span>
             <span class="text-slate-600">•</span>
-            <span id="lblStorePhone" class="text-slate-400 truncate">--</span>
+            <a id="lblStorePhoneLink" href="#" class="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-bold transition">
+              <i class="fa-solid fa-phone text-[10px]"></i>
+              <span id="lblStorePhone" class="truncate">--</span>
+            </a>
           </div>
         </div>
       </div>
@@ -174,9 +177,25 @@
       </button>
     </div>
 
-    <!-- كروت الأصناف -->
-    <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
-      <!-- يتم رسم كروت الأصناف هنا عبر جافاسكريبت -->
+    <!-- كارت التواصل المباشر مع المتجر -->
+    <div id="storeContactCard" class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 text-center space-y-3 mt-8">
+      <div class="inline-flex items-center justify-center w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-400 text-xl mx-auto shadow-md shadow-emerald-500/10">
+        <i class="fa-solid fa-headset"></i>
+      </div>
+      <div>
+        <h4 class="font-black text-white text-sm sm:text-base">خدمة العملاء والطلبات الخاصة</h4>
+        <p class="text-xs text-slate-400 mt-1">تواصل معنا مباشرة عبر الهاتف أو واتساب لتأكيد الطلب أو الاستفسار</p>
+      </div>
+      <div class="flex items-center justify-center gap-3 pt-1 flex-wrap">
+        <a id="cardBtnCall" href="#" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs flex items-center gap-2 transition shadow-lg shadow-blue-600/30 active:scale-95">
+          <i class="fa-solid fa-phone"></i>
+          <span id="cardPhoneText">اتصل بالمتجر</span>
+        </a>
+        <a id="cardBtnWhatsApp" href="#" target="_blank" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-2 transition shadow-lg shadow-emerald-600/30 active:scale-95">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span>مراسلة واتساب</span>
+        </a>
+      </div>
     </div>
 
   </main>
@@ -456,7 +475,13 @@
 
         if (configRes && configRes.ok) {
           const cfg = await configRes.json();
-          if (cfg) storeConfig = { ...storeConfig, ...cfg };
+          if (cfg) {
+            storeConfig = { ...storeConfig, ...cfg };
+            if (cfg.Phone) storeConfig.Phone = cfg.Phone;
+            if (cfg.WhatsApp) storeConfig.WhatsApp = cfg.WhatsApp;
+            if (cfg.StorePhone) storeConfig.StorePhone = cfg.StorePhone;
+            if (cfg.NotificationWhatsApp) storeConfig.NotificationWhatsApp = cfg.NotificationWhatsApp;
+          }
         }
 
         if (catalogRes && catalogRes.ok) {
@@ -476,6 +501,9 @@
               if (erp) {
                 if (erp.StoreName) storeConfig.StoreName = erp.StoreName;
                 if (erp.StoreLogo) storeConfig.StoreLogo = erp.StoreLogo;
+                if (erp.Phone) storeConfig.Phone = erp.Phone;
+                if (erp.WhatsApp) storeConfig.WhatsApp = erp.WhatsApp;
+                if (erp.StorePhone) storeConfig.StorePhone = erp.StorePhone;
                 if (erp.ProductsCatalog) {
                   products = erp.ProductsCatalog.map(p => ({
                     ProductID: p.ProductID,
@@ -511,6 +539,10 @@
     // ──────────────────────────────────────────
     // 3. رسم واجهة المتجر (Render UI)
     // ──────────────────────────────────────────
+    function getStorePhoneNumber() {
+      return storeConfig.Phone || storeConfig.WhatsApp || storeConfig.StorePhone || storeConfig.NotificationWhatsApp || '';
+    }
+
     function renderStoreHeader() {
       document.getElementById('pageTitle').textContent = `${storeConfig.StoreName || 'المتجر الإلكتروني'} | طلبات أونلاين`;
       document.getElementById('lblStoreName').textContent = storeConfig.StoreName || 'المتجر الإلكتروني';
@@ -522,12 +554,42 @@
         document.getElementById('storeLogoIcon').classList.add('hidden');
       }
 
-      if (storeConfig.Phone) {
-        document.getElementById('lblStorePhone').textContent = storeConfig.Phone;
-        document.getElementById('btnWhatsAppDirect').href = `https://wa.me/2${storeConfig.Phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن منتجات المتجر.')}`;
+      const rawPhone = getStorePhoneNumber();
+      const phoneElem = document.getElementById('lblStorePhone');
+      const phoneLink = document.getElementById('lblStorePhoneLink');
+      const btnWa = document.getElementById('btnWhatsAppDirect');
+      const cardCall = document.getElementById('cardBtnCall');
+      const cardWa = document.getElementById('cardBtnWhatsApp');
+      const cardPhoneText = document.getElementById('cardPhoneText');
+
+      if (rawPhone) {
+        if (phoneElem) phoneElem.textContent = rawPhone;
+        if (phoneLink) {
+          phoneLink.href = `tel:${rawPhone.replace(/[^0-9]/g, '')}`;
+        }
+
+        const cleanDigits = rawPhone.replace(/[^0-9]/g, '');
+        let waNumber = cleanDigits;
+        if (waNumber.startsWith('0')) waNumber = '2' + waNumber;
+        else if (!waNumber.startsWith('20')) waNumber = '20' + waNumber;
+
+        const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن منتجات المتجر.')}`;
+        if (btnWa) {
+          btnWa.href = waUrl;
+          btnWa.classList.remove('hidden');
+        }
+        if (cardCall) {
+          cardCall.href = `tel:${rawPhone.replace(/[^0-9]/g, '')}`;
+        }
+        if (cardPhoneText) {
+          cardPhoneText.textContent = `اتصال: ${rawPhone}`;
+        }
+        if (cardWa) {
+          cardWa.href = waUrl;
+        }
       } else {
-        document.getElementById('lblStorePhone').textContent = 'خدمة التوصيل السريع';
-        document.getElementById('btnWhatsAppDirect').classList.add('hidden');
+        if (phoneElem) phoneElem.textContent = 'خدمة التوصيل السريع';
+        if (btnWa) btnWa.classList.add('hidden');
       }
 
       const statusBadge = document.getElementById('storeStatusBadge');
@@ -991,7 +1053,7 @@
     // ──────────────────────────────────────────
     function shareOrderWithStoreWhatsApp() {
       if (!lastCreatedOrder) return;
-      const targetPhone = storeConfig.NotificationWhatsApp || storeConfig.Phone || '';
+      const targetPhone = getStorePhoneNumber();
 
       const itemsText = lastCreatedOrder.Items.map(it => {
         const prText = storeConfig.ShowPrices ? ` = ${it.TotalPrice.toFixed(2)} ج.م` : '';
@@ -1014,9 +1076,13 @@ ${itemsText}
 ⏰ *التوقيت:* ${new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}
 يرجى تأكيد استلام الطلب وتجهيزه للتوصيل.`;
 
-      const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
-      const waUrl = cleanPhone 
-        ? `https://wa.me/2${cleanPhone}?text=${encodeURIComponent(text)}`
+      const cleanDigits = targetPhone.replace(/[^0-9]/g, '');
+      let waNumber = cleanDigits;
+      if (waNumber.startsWith('0')) waNumber = '2' + waNumber;
+      else if (!waNumber.startsWith('20')) waNumber = '20' + waNumber;
+
+      const waUrl = waNumber 
+        ? `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`
         : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 
       window.open(waUrl, '_blank');

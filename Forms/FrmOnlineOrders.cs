@@ -307,10 +307,9 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 720,
                 SplitterWidth = 5,
-                Panel1MinSize = 420,
-                Panel2MinSize = 340,
+                Panel1MinSize = 50,
+                Panel2MinSize = 50,
                 BackColor = Color.FromArgb(30, 41, 59)
             };
 
@@ -673,6 +672,23 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlToolbar);
             this.Controls.Add(pnlKpi);
             this.Controls.Add(pnlHeader);
+
+            this.Load += (s, e) =>
+            {
+                try
+                {
+                    int w = splitContainer.Width;
+                    if (w > 300)
+                    {
+                        int targetDist = (int)(w * 0.62);
+                        if (targetDist > 50 && targetDist < (w - 50))
+                        {
+                            splitContainer.SplitterDistance = targetDist;
+                        }
+                    }
+                }
+                catch { }
+            };
         }
 
         private Button CreateTopButton(string text, Color bg)

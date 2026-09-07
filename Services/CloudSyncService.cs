@@ -803,6 +803,9 @@ self.addEventListener('fetch', (event) => {
                         "\"LowStockCount\": " + dto.LowStockCount + "," +
                         "\"StoreName\": \"" + storeName + "\"," +
                         "\"StoreLogo\": \"" + storeLogoBase64 + "\"," +
+                        "\"Phone\": \"" + EscapeJsonString(!string.IsNullOrEmpty(AppConfig.Store_OrderNotificationWhatsApp) ? AppConfig.Store_OrderNotificationWhatsApp : AppConfig.CompanyPhone) + "\"," +
+                        "\"WhatsApp\": \"" + EscapeJsonString(!string.IsNullOrEmpty(AppConfig.Store_OrderNotificationWhatsApp) ? AppConfig.Store_OrderNotificationWhatsApp : AppConfig.CompanyPhone) + "\"," +
+                        "\"StorePhone\": \"" + EscapeJsonString(!string.IsNullOrEmpty(AppConfig.Store_OrderNotificationWhatsApp) ? AppConfig.Store_OrderNotificationWhatsApp : AppConfig.CompanyPhone) + "\"," +
                         "\"MasterUserName\": \"" + EscapeJsonString(masterUserName) + "\"," +
                         "\"MasterPassword\": \"" + EscapeJsonString(ComputeSha256(masterPassword)) + "\"," +
                         "\"OwnerPassword\": \"" + EscapeJsonString(ComputeSha256(ownerPassword)) + "\"," +
@@ -1118,12 +1121,19 @@ self.addEventListener('fetch', (event) => {
             try
             {
                 // 1. إعدادات المتجر الحالية
+                string effectivePhone = !string.IsNullOrEmpty(AppConfig.Store_OrderNotificationWhatsApp)
+                    ? AppConfig.Store_OrderNotificationWhatsApp
+                    : AppConfig.CompanyPhone;
+                if (string.IsNullOrEmpty(effectivePhone)) effectivePhone = "";
+
                 string storeConfigJson = "{" +
                     "\"IsActive\":" + (AppConfig.Store_IsActive ? "true" : "false") + "," +
                     "\"StoreName\":\"" + EscapeJsonString(AppConfig.CompanyName) + "\"," +
                     "\"StoreLogo\":\"" + GetStoreLogoBase64() + "\"," +
-                    "\"Phone\":\"" + EscapeJsonString(AppConfig.CompanyPhone) + "\"," +
-                    "\"WhatsApp\":\"" + EscapeJsonString(string.IsNullOrEmpty(AppConfig.Store_OrderNotificationWhatsApp) ? AppConfig.CompanyPhone : AppConfig.Store_OrderNotificationWhatsApp) + "\"," +
+                    "\"Phone\":\"" + EscapeJsonString(effectivePhone) + "\"," +
+                    "\"WhatsApp\":\"" + EscapeJsonString(effectivePhone) + "\"," +
+                    "\"StorePhone\":\"" + EscapeJsonString(effectivePhone) + "\"," +
+                    "\"NotificationWhatsApp\":\"" + EscapeJsonString(effectivePhone) + "\"," +
                     "\"PriceTier\":\"" + EscapeJsonString(AppConfig.Store_PriceTier ?? "Retail") + "\"," +
                     "\"ShowPrices\":" + (AppConfig.Store_ShowPrices ? "true" : "false") + "," +
                     "\"ShowStockQty\":" + (AppConfig.Store_ShowStockQty ? "true" : "false") + "," +

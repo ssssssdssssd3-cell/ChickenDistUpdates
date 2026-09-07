@@ -305,9 +305,9 @@ namespace ChickenDist.Forms
 
             var lblWa = new Label
             {
-                Text = "رقم واتساب إشعارات الطلبات:",
-                Location = new Point(290, 62),
-                Size = new Size(170, 22),
+                Text = "رقم هاتف وواتساب المتجر للتواصل:",
+                Location = new Point(240, 62),
+                Size = new Size(220, 22),
                 ForeColor = Color.FromArgb(241, 245, 249),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -316,7 +316,7 @@ namespace ChickenDist.Forms
             txtNotificationWhatsApp = new TextBox
             {
                 Location = new Point(15, 60),
-                Size = new Size(270, 26),
+                Size = new Size(220, 26),
                 BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -553,7 +553,9 @@ namespace ChickenDist.Forms
 
             nudMinimumOrder.Value = Math.Max(0, AppConfig.Store_MinimumOrder);
             txtAnnouncement.Text = AppConfig.Store_Announcement ?? "";
-            txtNotificationWhatsApp.Text = AppConfig.Store_OrderNotificationWhatsApp ?? AppConfig.CompanyPhone;
+            string storePhone = AppConfig.Store_OrderNotificationWhatsApp;
+            if (string.IsNullOrEmpty(storePhone)) storePhone = AppConfig.CompanyPhone;
+            txtNotificationWhatsApp.Text = storePhone ?? "";
 
             string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
             if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
@@ -651,7 +653,12 @@ namespace ChickenDist.Forms
                 AppConfig.Store_ShowStockQty = chkShowStockQty.Checked;
                 AppConfig.Store_MinimumOrder = nudMinimumOrder.Value;
                 AppConfig.Store_Announcement = txtAnnouncement.Text.Trim();
-                AppConfig.Store_OrderNotificationWhatsApp = txtNotificationWhatsApp.Text.Trim();
+                string enteredPhone = txtNotificationWhatsApp.Text.Trim();
+                AppConfig.Store_OrderNotificationWhatsApp = enteredPhone;
+                if (!string.IsNullOrEmpty(enteredPhone) && string.IsNullOrEmpty(AppConfig.CompanyPhone1))
+                {
+                    AppConfig.CompanyPhone1 = enteredPhone;
+                }
 
                 // 2. حفظ رؤية الأقسام في قاعدة البيانات
                 for (int i = 0; i < clbCategories.Items.Count; i++)
