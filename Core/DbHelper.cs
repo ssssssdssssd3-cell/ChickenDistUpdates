@@ -552,41 +552,29 @@ namespace ChickenDist.Core
             EnsureAppSettingsTable();
             ProductionDAL.EnsureProductionTables();
 
-            SafeMigrate("DecimalExpansion.Safety", @"
-            IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
+            // 1. إضافة الأعمدة الحرجة (PendingSaleCol و Barcode) في خطوة منفصلة أولاً
+            SafeMigrate("Products.Columns.Safety", @"
+            IF OBJECT_ID('Products', 'U') IS NOT NULL
             BEGIN
-                IF COL_LENGTH('StockAdjustments', 'DiffQty') IS NOT NULL
-                BEGIN
-                    EXEC sp_executesql N'ALTER TABLE StockAdjustments DROP COLUMN DiffQty;';
-                END
+                IF COL_LENGTH('Products', 'PendingSaleCol') IS NULL
+                    ALTER TABLE Products ADD PendingSaleCol NVARCHAR(50) NULL;
+                IF COL_LENGTH('Products', 'Barcode') IS NULL
+                    ALTER TABLE Products ADD Barcode NVARCHAR(100) NULL;
+            END");
 
-                ALTER TABLE StockAdjustments ALTER COLUMN BookQty DECIMAL(18, 4) NOT NULL;
-                ALTER TABLE StockAdjustments ALTER COLUMN ActualQty DECIMAL(18, 4) NOT NULL;
-                IF COL_LENGTH('StockAdjustments', 'Factor') IS NOT NULL
-                    ALTER TABLE StockAdjustments ALTER COLUMN Factor DECIMAL(18, 4) NULL;
-
-                IF COL_LENGTH('StockAdjustments', 'DiffQty') IS NULL
-                BEGIN
-                    EXEC sp_executesql N'ALTER TABLE StockAdjustments ADD DiffQty AS (ActualQty - BookQty);';
-                END
-            END
-
-            IF OBJECT_ID('ProductStock', 'U') IS NOT NULL
-            BEGIN
-                ALTER TABLE ProductStock ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
-            END
-
-            IF OBJECT_ID('ProductBatches', 'U') IS NOT NULL
-            BEGIN
-                ALTER TABLE ProductBatches ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
-            END
+            // 2. إسقاط الفهارس المتعارضة قبل تعديل أنواع الأعمدة
+            SafeMigrate("DecimalExpansion.DropIndexes", @"
+            IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
+                DROP INDEX IX_Products_Search ON Products;
+            IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
+                DROP INDEX IX_PurchaseItems_Opt ON PurchaseItems;
+            IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_Opt' AND object_id = OBJECT_ID('ReturnItems'))
+                DROP INDEX IX_ReturnItems_Opt ON ReturnItems;
+            IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_ReturnID' AND object_id = OBJECT_ID('ReturnItems'))
+                DROP INDEX IX_ReturnItems_ReturnID ON ReturnItems;
 
             IF OBJECT_ID('Products', 'U') IS NOT NULL
             BEGIN
-                -- Drop dependent indexes before altering column data types
-                IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
-                    DROP INDEX IX_Products_Search ON Products;
-
                 DECLARE @dropIdxSql NVARCHAR(MAX) = N'';
                 SELECT @dropIdxSql = @dropIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
                 FROM (
@@ -599,10 +587,77 @@ namespace ChickenDist.Core
                       AND i.is_unique_constraint = 0
                       AND c.name IN ('SalePrice', 'PurchasePrice', 'WholesalePrice', 'SemiWholesalePrice', 'CostPrice', 'PendingSalePrice', 'MinStockLimit', 'PendingQtyThreshold', 'Unit2Factor', 'Unit3Factor')
                 ) t;
+                IF LEN(@dropIdxSql) > 0 EXEC sp_executesql @dropIdxSql;
+            END
 
-                IF LEN(@dropIdxSql) > 0
-                    EXEC sp_executesql @dropIdxSql;
+            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+            BEGIN
+                DECLARE @dropPiIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropPiIdxSql = @dropPiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('PurchaseItems')
+                      AND i.is_primary_key = 0 AND i.is_unique_constraint = 0
+                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
+                ) t;
+                IF LEN(@dropPiIdxSql) > 0 EXEC sp_executesql @dropPiIdxSql;
+            END
 
+            IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
+            BEGIN
+                DECLARE @dropSiIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropSiIdxSql = @dropSiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('SaleItems')
+                      AND i.is_primary_key = 0 AND i.is_unique_constraint = 0
+                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
+                ) t;
+                IF LEN(@dropSiIdxSql) > 0 EXEC sp_executesql @dropSiIdxSql;
+            END
+
+            IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
+            BEGIN
+                DECLARE @dropRiIdxSql NVARCHAR(MAX) = N'';
+                SELECT @dropRiIdxSql = @dropRiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
+                FROM (
+                    SELECT DISTINCT i.name, i.object_id
+                    FROM sys.indexes i
+                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+                    WHERE i.object_id = OBJECT_ID('ReturnItems')
+                      AND i.is_primary_key = 0 AND i.is_unique_constraint = 0
+                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
+                ) t;
+                IF LEN(@dropRiIdxSql) > 0 EXEC sp_executesql @dropRiIdxSql;
+            END");
+
+            // 3. تسوية حقول تسوية المخزون
+            SafeMigrate("StockAdjustments.DecimalExpansion", @"
+            IF OBJECT_ID('StockAdjustments', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('StockAdjustments', 'DiffQty') IS NOT NULL
+                    EXEC sp_executesql N'ALTER TABLE StockAdjustments DROP COLUMN DiffQty;';
+
+                ALTER TABLE StockAdjustments ALTER COLUMN BookQty DECIMAL(18, 4) NOT NULL;
+                ALTER TABLE StockAdjustments ALTER COLUMN ActualQty DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('StockAdjustments', 'Factor') IS NOT NULL
+                    ALTER TABLE StockAdjustments ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+
+                IF COL_LENGTH('StockAdjustments', 'DiffQty') IS NULL
+                    EXEC sp_executesql N'ALTER TABLE StockAdjustments ADD DiffQty AS (ActualQty - BookQty);';
+            END");
+
+            // 4. تعديل دقة أعمدة جدول الأصناف Products
+            SafeMigrate("Products.DecimalExpansion", @"
+            IF OBJECT_ID('Products', 'U') IS NOT NULL
+            BEGIN
                 IF COL_LENGTH('Products', 'PurchasePrice') IS NOT NULL
                     ALTER TABLE Products ALTER COLUMN PurchasePrice DECIMAL(18, 4) NULL;
                 IF COL_LENGTH('Products', 'SalePrice') IS NOT NULL
@@ -623,29 +678,18 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ALTER COLUMN Unit2Factor DECIMAL(18, 4) NULL;
                 IF COL_LENGTH('Products', 'Unit3Factor') IS NOT NULL
                     ALTER TABLE Products ALTER COLUMN Unit3Factor DECIMAL(18, 4) NULL;
-            END
+            END");
+
+            // 5. تعديل دقة أعمدة جداول البنود والحركات
+            SafeMigrate("Items.DecimalExpansion", @"
+            IF OBJECT_ID('ProductStock', 'U') IS NOT NULL
+                ALTER TABLE ProductStock ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+
+            IF OBJECT_ID('ProductBatches', 'U') IS NOT NULL
+                ALTER TABLE ProductBatches ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
 
             IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
             BEGIN
-                IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
-                    DROP INDEX IX_PurchaseItems_Opt ON PurchaseItems;
-
-                DECLARE @dropPiIdxSql NVARCHAR(MAX) = N'';
-                SELECT @dropPiIdxSql = @dropPiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
-                FROM (
-                    SELECT DISTINCT i.name, i.object_id
-                    FROM sys.indexes i
-                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                    WHERE i.object_id = OBJECT_ID('PurchaseItems')
-                      AND i.is_primary_key = 0 
-                      AND i.is_unique_constraint = 0
-                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
-                ) t;
-
-                IF LEN(@dropPiIdxSql) > 0
-                    EXEC sp_executesql @dropPiIdxSql;
-
                 ALTER TABLE PurchaseItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('PurchaseItems', 'UnitPrice') IS NOT NULL
                     ALTER TABLE PurchaseItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
@@ -657,22 +701,6 @@ namespace ChickenDist.Core
 
             IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
             BEGIN
-                DECLARE @dropSiIdxSql NVARCHAR(MAX) = N'';
-                SELECT @dropSiIdxSql = @dropSiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
-                FROM (
-                    SELECT DISTINCT i.name, i.object_id
-                    FROM sys.indexes i
-                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                    WHERE i.object_id = OBJECT_ID('SaleItems')
-                      AND i.is_primary_key = 0 
-                      AND i.is_unique_constraint = 0
-                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
-                ) t;
-
-                IF LEN(@dropSiIdxSql) > 0
-                    EXEC sp_executesql @dropSiIdxSql;
-
                 ALTER TABLE SaleItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('SaleItems', 'UnitPrice') IS NOT NULL
                     ALTER TABLE SaleItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
@@ -680,6 +708,28 @@ namespace ChickenDist.Core
                     ALTER TABLE SaleItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('SaleItems', 'Factor') IS NOT NULL
                     ALTER TABLE SaleItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE ReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('ReturnItems', 'UnitPrice') IS NOT NULL
+                    ALTER TABLE ReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('ReturnItems', 'TotalPrice') IS NOT NULL
+                    ALTER TABLE ReturnItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('ReturnItems', 'Factor') IS NOT NULL
+                    ALTER TABLE ReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
+            END
+
+            IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
+            BEGIN
+                ALTER TABLE PurchaseReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseReturnItems', 'UnitPrice') IS NOT NULL
+                    ALTER TABLE PurchaseReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseReturnItems', 'TotalPrice') IS NOT NULL
+                    ALTER TABLE PurchaseReturnItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
+                IF COL_LENGTH('PurchaseReturnItems', 'Factor') IS NOT NULL
+                    ALTER TABLE PurchaseReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
             END
 
             IF OBJECT_ID('WastageLossItems', 'U') IS NOT NULL
@@ -698,67 +748,12 @@ namespace ChickenDist.Core
                 ALTER TABLE WarehouseTransferItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
                 IF COL_LENGTH('WarehouseTransferItems', 'Factor') IS NOT NULL
                     ALTER TABLE WarehouseTransferItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
-            END
+            END");
 
-            IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
-            BEGIN
-                DECLARE @dropRiIdxSql NVARCHAR(MAX) = N'';
-                SELECT @dropRiIdxSql = @dropRiIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
-                FROM (
-                    SELECT DISTINCT i.name, i.object_id
-                    FROM sys.indexes i
-                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                    WHERE i.object_id = OBJECT_ID('ReturnItems')
-                      AND i.is_primary_key = 0 
-                      AND i.is_unique_constraint = 0
-                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
-                ) t;
-
-                IF LEN(@dropRiIdxSql) > 0
-                    EXEC sp_executesql @dropRiIdxSql;
-
-                ALTER TABLE ReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
-                IF COL_LENGTH('ReturnItems', 'UnitPrice') IS NOT NULL
-                    ALTER TABLE ReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
-                IF COL_LENGTH('ReturnItems', 'TotalPrice') IS NOT NULL
-                    ALTER TABLE ReturnItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
-                IF COL_LENGTH('ReturnItems', 'Factor') IS NOT NULL
-                    ALTER TABLE ReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
-            END
-
-            IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
-            BEGIN
-                DECLARE @dropPriIdxSql NVARCHAR(MAX) = N'';
-                SELECT @dropPriIdxSql = @dropPriIdxSql + N'DROP INDEX ' + QUOTENAME(name) + N' ON ' + QUOTENAME(OBJECT_SCHEMA_NAME(object_id)) + N'.' + QUOTENAME(OBJECT_NAME(object_id)) + N'; '
-                FROM (
-                    SELECT DISTINCT i.name, i.object_id
-                    FROM sys.indexes i
-                    JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                    JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                    WHERE i.object_id = OBJECT_ID('PurchaseReturnItems')
-                      AND i.is_primary_key = 0 
-                      AND i.is_unique_constraint = 0
-                      AND c.name IN ('Quantity', 'UnitPrice', 'TotalPrice', 'Factor')
-                ) t;
-
-                IF LEN(@dropPriIdxSql) > 0
-                    EXEC sp_executesql @dropPriIdxSql;
-
-                ALTER TABLE PurchaseReturnItems ALTER COLUMN Quantity DECIMAL(18, 4) NOT NULL;
-                IF COL_LENGTH('PurchaseReturnItems', 'UnitPrice') IS NOT NULL
-                    ALTER TABLE PurchaseReturnItems ALTER COLUMN UnitPrice DECIMAL(18, 4) NOT NULL;
-                IF COL_LENGTH('PurchaseReturnItems', 'TotalPrice') IS NOT NULL
-                    ALTER TABLE PurchaseReturnItems ALTER COLUMN TotalPrice DECIMAL(18, 4) NOT NULL;
-                IF COL_LENGTH('PurchaseReturnItems', 'Factor') IS NOT NULL
-                    ALTER TABLE PurchaseReturnItems ALTER COLUMN Factor DECIMAL(18, 4) NULL;
-            END
-
+            // 6. إعادة إنشاء الفهارس بأفضل أداء وبدون أي تعارض
+            SafeMigrate("Recreate.OptimizedIndexes", @"
             IF OBJECT_ID('Products', 'U') IS NOT NULL
             BEGIN
-                IF COL_LENGTH('Products', 'Barcode') IS NULL
-                    ALTER TABLE Products ADD Barcode NVARCHAR(100) NULL;
-
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))
                 BEGIN
                     IF COL_LENGTH('Products', 'Quantity') IS NOT NULL
@@ -766,6 +761,12 @@ namespace ChickenDist.Core
                     ELSE
                         EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_Products_Search ON Products(ProductName, ProductCode, Barcode) INCLUDE (SalePrice, PurchasePrice);';
                 END
+            END
+
+            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
+                    EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_PurchaseItems_Opt ON PurchaseItems(PurchaseID) INCLUDE (ProductID, Quantity, UnitPrice, TotalPrice);';
             END
 
             IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
@@ -780,12 +781,6 @@ namespace ChickenDist.Core
             BEGIN
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_ReturnID' AND object_id = OBJECT_ID('ReturnItems'))
                     EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_ReturnItems_ReturnID ON ReturnItems(ReturnID) INCLUDE (Quantity, UnitPrice);';
-            END
-
-            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
-            BEGIN
-                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseItems_Opt' AND object_id = OBJECT_ID('PurchaseItems'))
-                    EXEC sp_executesql N'CREATE NONCLUSTERED INDEX IX_PurchaseItems_Opt ON PurchaseItems(PurchaseID) INCLUDE (ProductID, Quantity, UnitPrice);';
             END");
 
             SafeMigrate("HR.CompleteModule", @"
