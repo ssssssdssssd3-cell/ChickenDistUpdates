@@ -510,6 +510,30 @@ namespace ChickenDist.Core
             catch { }
         }
 
+        private static bool? _hasPendingSaleColCached = null;
+        public static bool HasPendingSaleCol()
+        {
+            if (_hasPendingSaleColCached.HasValue) return _hasPendingSaleColCached.Value;
+            try
+            {
+                object col = Scalar("SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PendingSaleCol'");
+                if (col != null && col != DBNull.Value)
+                {
+                    _hasPendingSaleColCached = true;
+                    return true;
+                }
+                EnsurePendingSaleColExists();
+                object verify = Scalar("SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PendingSaleCol'");
+                bool exists = (verify != null && verify != DBNull.Value);
+                _hasPendingSaleColCached = exists;
+                return exists;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static void EnsurePendingSaleColExists()
         {
             try
@@ -517,6 +541,7 @@ namespace ChickenDist.Core
                 SafeMigrate("Products.PendingSaleCol.Immediate", @"
                 IF OBJECT_ID('Products', 'U') IS NOT NULL AND COL_LENGTH('Products','PendingSaleCol') IS NULL
                     ALTER TABLE Products ADD PendingSaleCol NVARCHAR(50) NULL;");
+                _hasPendingSaleColCached = null;
             }
             catch { }
         }

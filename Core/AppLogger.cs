@@ -43,6 +43,13 @@ namespace ChickenDist.Core
             Write("AUDIT", $"{action} | المستخدم: {user} | {details}");
         }
 
+        /// <summary>تسجيل تحذير</summary>
+        public static void Warn(string message, string source = "")
+        {
+            string text = string.IsNullOrEmpty(source) ? message : $"[{source}] {message}";
+            Write("WARN", text);
+        }
+
         /// <summary>تسجيل رسالة معلوماتية</summary>
         public static void Info(string message)
         {

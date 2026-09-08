@@ -13,7 +13,7 @@ namespace ChickenDist.Core
     public static class UpdateManager
     {
         // الإصدار الحالي للبرنامج
-        public const string CurrentVersion = "3.4.0";
+        public const string CurrentVersion = "3.4.1";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -508,13 +508,16 @@ del /f /q ""{newExePath}"" > nul 2>&1
                     using (var cmd = new System.Data.SqlClient.SqlCommand(
                         "SELECT TOP 1 [AppBinary], [BinarySha256], [BinaryLength] FROM [versions] WHERE [version] = @ver AND [AppBinary] IS NOT NULL", conn))
                     {
+                        cmd.CommandTimeout = 180;
                         cmd.Parameters.AddWithValue("@ver", targetVersion);
-                        using (var r = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
+                        using (var r = cmd.ExecuteReader())
                         {
-                            if (r.Read() && r["AppBinary"] != DBNull.Value)
+                            if (r.Read())
                             {
-                                bytes = (byte[])r["AppBinary"];
-                                expectedSha = r["BinarySha256"] != DBNull.Value ? r["BinarySha256"].ToString() : null;
+                                if (!r.IsDBNull(0))
+                                    bytes = (byte[])r.GetValue(0);
+                                if (!r.IsDBNull(1))
+                                    expectedSha = r.GetString(1);
                             }
                         }
                     }

@@ -1,5 +1,5 @@
-version=3.4.0
+version=3.4.1
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.4.0&t=1788808894
-sha256=F33BF9FE88F2364C2616AFB9A1EBB96665D26F4C30F85221FE641828F503AA48
-changelog=v3.4.0 - 2026-09-07: Bug fixes and UI improvements
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.4.1&t=1788883120
+sha256=C8083C7BC4CBAEDABDE194E287F9CB848D2698473E130B056958B02FEAE4D2CF
+changelog=v3.4.1 - 2026-09-08: Critical bug fixes for sales saving, auto-updater and return form

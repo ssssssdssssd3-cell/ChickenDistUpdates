@@ -345,48 +345,47 @@ namespace ChickenDist.DAL
                         // Atomic update to subtract from PendingQtyThreshold if sold at old price
                         try
                         {
-                            DbHelper.ExecuteTrans(trans,
-                                @"UPDATE Products
-                                  SET PendingQtyThreshold = CASE 
-                                      WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
-                                      ELSE PendingQtyThreshold - @qty
-                                      END,
-                                      SalePrice = CASE
-                                      WHEN PendingQtyThreshold - @qty <= 0 AND (PendingSaleCol IS NULL OR PendingSaleCol = 'SalePrice') THEN PendingSalePrice
-                                      ELSE SalePrice
-                                      END,
-                                      Unit1SalePrice = CASE
-                                      WHEN PendingQtyThreshold - @qty <= 0 AND PendingSaleCol = 'Unit1SalePrice' THEN PendingSalePrice
-                                      ELSE Unit1SalePrice
-                                      END,
-                                      Unit2SalePrice = CASE
-                                      WHEN PendingQtyThreshold - @qty <= 0 AND PendingSaleCol = 'Unit2SalePrice' THEN PendingSalePrice
-                                      ELSE Unit2SalePrice
-                                      END,
-                                      PendingSalePrice = CASE
-                                      WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
-                                      ELSE PendingSalePrice
-                                      END,
-                                      PendingPriceSourceRefID = CASE
-                                      WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
-                                      ELSE PendingPriceSourceRefID
-                                      END,
-                                      PendingSaleCol = CASE
-                                      WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
-                                      ELSE PendingSaleCol
-                                      END
-                                  WHERE ProductID = @pid 
-                                    AND PendingSalePrice IS NOT NULL 
-                                    AND PendingQtyThreshold > 0 
-                                    AND @qty > 0",
-                                DbHelper.P("@qty", item.Quantity),
-                                DbHelper.P("@pid", item.ProductID));
-                        }
-                        catch (Exception exPending)
-                        {
-                            if (exPending.Message.Contains("PendingSaleCol"))
+                            if (DbHelper.HasPendingSaleCol())
                             {
-                                DbHelper.EnsurePendingSaleColExists();
+                                DbHelper.ExecuteTrans(trans,
+                                    @"UPDATE Products
+                                      SET PendingQtyThreshold = CASE 
+                                          WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                          ELSE PendingQtyThreshold - @qty
+                                          END,
+                                          SalePrice = CASE
+                                          WHEN PendingQtyThreshold - @qty <= 0 AND (PendingSaleCol IS NULL OR PendingSaleCol = 'SalePrice') THEN PendingSalePrice
+                                          ELSE SalePrice
+                                          END,
+                                          Unit1SalePrice = CASE
+                                          WHEN PendingQtyThreshold - @qty <= 0 AND PendingSaleCol = 'Unit1SalePrice' THEN PendingSalePrice
+                                          ELSE Unit1SalePrice
+                                          END,
+                                          Unit2SalePrice = CASE
+                                          WHEN PendingQtyThreshold - @qty <= 0 AND PendingSaleCol = 'Unit2SalePrice' THEN PendingSalePrice
+                                          ELSE Unit2SalePrice
+                                          END,
+                                          PendingSalePrice = CASE
+                                          WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                          ELSE PendingSalePrice
+                                          END,
+                                          PendingPriceSourceRefID = CASE
+                                          WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                          ELSE PendingPriceSourceRefID
+                                          END,
+                                          PendingSaleCol = CASE
+                                          WHEN PendingQtyThreshold - @qty <= 0 THEN NULL
+                                          ELSE PendingSaleCol
+                                          END
+                                      WHERE ProductID = @pid 
+                                        AND PendingSalePrice IS NOT NULL 
+                                        AND PendingQtyThreshold > 0 
+                                        AND @qty > 0",
+                                    DbHelper.P("@qty", item.Quantity),
+                                    DbHelper.P("@pid", item.ProductID));
+                            }
+                            else
+                            {
                                 DbHelper.ExecuteTrans(trans,
                                     @"UPDATE Products
                                       SET PendingQtyThreshold = CASE 
@@ -412,10 +411,10 @@ namespace ChickenDist.DAL
                                     DbHelper.P("@qty", item.Quantity),
                                     DbHelper.P("@pid", item.ProductID));
                             }
-                            else
-                            {
-                                throw;
-                            }
+                        }
+                        catch (Exception exPending)
+                        {
+                            AppLogger.Warn($"Failed to update PendingQtyThreshold for ProductID {item.ProductID}: {exPending.Message}", "SalesDAL");
                         }
                     }
                 }

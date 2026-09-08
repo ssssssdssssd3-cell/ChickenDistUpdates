@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
             DbHelper.EnsureShiftSchema();
             InitUI();
             LoadCombos();
-            LoadSales();
+            this.Shown += (s, e) => { if (!_isLoadingSales) LoadSales(); };
         }
 
         private void LoadCombos()
@@ -1139,6 +1139,7 @@ namespace ChickenDist.Forms
 
         private void LoadSales()
         {
+            if (!this.IsHandleCreated) return;
             if (_isLoadingSales || _isFilteringCombo) return;
             if (cboMode != null && cboMode.SelectedIndex != 0) return;
             try
