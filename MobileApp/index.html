@@ -2239,11 +2239,17 @@
       document.getElementById('cardPeriodCashIn').textContent = periodCashIn.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardPeriodCashOut').textContent = periodCashOut.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      const clientDebts = parseFloat(rawData.ClientDebts || 0);
+      let clientDebts = parseFloat(rawData.ClientDebts || 0);
+      if ((!clientDebts || clientDebts <= 0) && rawData.ClientsList && rawData.ClientsList.length > 0) {
+        clientDebts = rawData.ClientsList.reduce((acc, c) => acc + Math.max(0, parseFloat(c.Balance || c.CurrentDebt || 0)), 0);
+      }
       document.getElementById('cardClientDebts').textContent = clientDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('contactsTotalClientDebts').textContent = clientDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      const suppDebts = parseFloat(rawData.SupplierDebts || 0);
+      let suppDebts = parseFloat(rawData.SupplierDebts || 0);
+      if ((!suppDebts || suppDebts <= 0) && rawData.SuppliersList && rawData.SuppliersList.length > 0) {
+        suppDebts = rawData.SuppliersList.reduce((acc, s) => acc + Math.max(0, parseFloat(s.Balance || 0)), 0);
+      }
       document.getElementById('cardSupplierDebts').textContent = suppDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('contactsTotalSupplierDebts').textContent = suppDebts.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
@@ -2994,9 +3000,9 @@
       let clients = (rawData.ClientsList || []).slice();
 
       if (clientFilterType === 'debts') {
-        clients = clients.filter(c => parseFloat(c.Balance || 0) > 0);
+        clients = clients.filter(c => parseFloat(c.Balance || c.CurrentDebt || 0) > 0);
       } else if (clientFilterType === 'top10') {
-        clients = clients.filter(c => parseFloat(c.Balance || 0) > 0).slice(0, 10);
+        clients = clients.filter(c => parseFloat(c.Balance || c.CurrentDebt || 0) > 0).slice(0, 10);
       }
 
       const sTypeC = document.getElementById('clientSearchType')?.value || 'all';
@@ -3019,7 +3025,7 @@
         tblC.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا يوجد عملاء مطابقين لخيارات البحث</td></tr>`;
       } else {
         tblC.innerHTML = clients.map(c => {
-          const bal = parseFloat(c.Balance || 0);
+          const bal = parseFloat(c.Balance || c.CurrentDebt || 0);
           const phone = (c.Phone || c.Phone2 || '').trim();
           return `
             <tr class="hover:bg-slate-800/50 transition">

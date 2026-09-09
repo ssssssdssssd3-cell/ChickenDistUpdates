@@ -453,11 +453,43 @@ self.addEventListener('fetch', (event) => {
                 int todayPurInvoicesCount = purCountObj != null && purCountObj != DBNull.Value ? Convert.ToInt32(purCountObj) : 0;
 
                 // 3. ديون العملاء
-                object clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Clients WITH (NOLOCK) WHERE Balance > 0");
+                object clientDebtsObj = null;
+                try
+                {
+                    clientDebtsObj = DbHelper.Scalar(@"
+                        SELECT ISNULL(SUM(CASE WHEN ISNULL(cb.Balance, c.OpeningBalance) > 0 THEN ISNULL(cb.Balance, c.OpeningBalance) ELSE 0 END), 0)
+                        FROM Clients c WITH (NOLOCK)
+                        LEFT JOIN vw_ClientBalance cb WITH (NOLOCK) ON c.ClientID = cb.ClientID
+                        WHERE c.IsActive = 1");
+                }
+                catch
+                {
+                    clientDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(CASE WHEN ISNULL(CurrentDebt, ISNULL(Balance, 0)) > 0 THEN ISNULL(CurrentDebt, ISNULL(Balance, 0)) ELSE 0 END), 0) FROM Clients WITH (NOLOCK) WHERE IsActive = 1");
+                }
                 decimal clientDebts = clientDebtsObj != null && clientDebtsObj != DBNull.Value ? Convert.ToDecimal(clientDebtsObj) : 0m;
 
-                // 4. مستحقات الموردين
-                object suppDebtsObj = DbHelper.Scalar("SELECT ISNULL(SUM(ISNULL(Balance, 0)), 0) FROM Suppliers WITH (NOLOCK) WHERE Balance > 0");
+                // 4. مستحقات الموردين (حساب حقيقي من حركات الموردين والرصيد الافتتاحي)
+                object suppDebtsObj = null;
+                try
+                {
+                    suppDebtsObj = DbHelper.Scalar(@"
+                        SELECT ISNULL(SUM(CASE WHEN ISNULL(sb.Balance, s.OpeningBalance) > 0 THEN ISNULL(sb.Balance, s.OpeningBalance) ELSE 0 END), 0)
+                        FROM Suppliers s WITH (NOLOCK)
+                        LEFT JOIN vw_SupplierBalance sb WITH (NOLOCK) ON s.SupplierID = sb.SupplierID
+                        WHERE s.IsActive = 1");
+                }
+                catch
+                {
+                    suppDebtsObj = DbHelper.Scalar(@"
+                        SELECT ISNULL(SUM(CASE WHEN (ISNULL(s.OpeningBalance, 0) + ISNULL(st.NetCredit, 0)) > 0 THEN (ISNULL(s.OpeningBalance, 0) + ISNULL(st.NetCredit, 0)) ELSE 0 END), 0)
+                        FROM Suppliers s WITH (NOLOCK)
+                        OUTER APPLY (
+                            SELECT SUM(ISNULL(Credit, 0)) - SUM(ISNULL(Debit, 0)) AS NetCredit
+                            FROM SupplierTransactions WITH (NOLOCK)
+                            WHERE SupplierID = s.SupplierID
+                        ) st
+                        WHERE s.IsActive = 1");
+                }
                 decimal suppDebts = suppDebtsObj != null && suppDebtsObj != DBNull.Value ? Convert.ToDecimal(suppDebtsObj) : 0m;
 
                 // مقبوضات ومصروفات اليوم في الخزنة
@@ -531,14 +563,81 @@ self.addEventListener('fetch', (event) => {
                     ORDER BY p.ProductName ASC");
                 string productsJson = DataTableToJson(dtProducts);
 
-                // 7. قائمة الموردين
-                DataTable dtSuppliers = DbHelper.Query(
-                    "SELECT TOP 150 SupplierID, ISNULL(SupplierCode,'') AS SupplierCode, SupplierName, ISNULL(Phone,'') AS Phone, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance FROM Suppliers WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, SupplierName ASC");
+                // 7. قائمة الموردين (استعلام الرصيد الفعلي من vw_SupplierBalance مع دعم حركات SupplierTransactions)
+                DataTable dtSuppliers = null;
+                try
+                {
+                    dtSuppliers = DbHelper.Query(@"
+                        SELECT TOP 300 
+                            s.SupplierID, 
+                            ISNULL(s.SupplierCode, '') AS SupplierCode, 
+                            s.SupplierName, 
+                            ISNULL(s.Phone, '') AS Phone, 
+                            ISNULL(s.Address, '') AS Address, 
+                            ISNULL(sb.Balance, ISNULL(s.OpeningBalance, 0)) AS Balance 
+                        FROM Suppliers s WITH (NOLOCK)
+                        LEFT JOIN vw_SupplierBalance sb WITH (NOLOCK) ON s.SupplierID = sb.SupplierID
+                        WHERE s.IsActive = 1 
+                        ORDER BY ISNULL(sb.Balance, ISNULL(s.OpeningBalance, 0)) DESC, s.SupplierName ASC");
+                }
+                catch
+                {
+                    dtSuppliers = DbHelper.Query(@"
+                        SELECT TOP 300 
+                            s.SupplierID, 
+                            ISNULL(s.SupplierCode, '') AS SupplierCode, 
+                            s.SupplierName, 
+                            ISNULL(s.Phone, '') AS Phone, 
+                            ISNULL(s.Address, '') AS Address, 
+                            (ISNULL(s.OpeningBalance, 0) + ISNULL(st.NetCredit, 0)) AS Balance 
+                        FROM Suppliers s WITH (NOLOCK)
+                        OUTER APPLY (
+                            SELECT SUM(ISNULL(Credit, 0)) - SUM(ISNULL(Debit, 0)) AS NetCredit
+                            FROM SupplierTransactions WITH (NOLOCK)
+                            WHERE SupplierID = s.SupplierID
+                        ) st
+                        WHERE s.IsActive = 1 
+                        ORDER BY (ISNULL(s.OpeningBalance, 0) + ISNULL(st.NetCredit, 0)) DESC, s.SupplierName ASC");
+                }
                 string suppliersJson = DataTableToJson(dtSuppliers);
 
-                // 8. ديون وقائمة العملاء
-                DataTable dtClients = DbHelper.Query(
-                    "SELECT TOP 300 ClientID, ISNULL(ClientCode,'') AS ClientCode, ClientName, ISNULL(Phone,'') AS Phone, ISNULL(Phone2,'') AS Phone2, ISNULL(Address,'') AS Address, ISNULL(Balance,0) AS Balance, ISNULL(CurrentDebt,0) AS CurrentDebt, ISNULL(MaxCreditLimit,0) AS MaxCreditLimit FROM Clients WITH (NOLOCK) WHERE IsActive=1 ORDER BY Balance DESC, ClientName ASC");
+                // 8. ديون وقائمة العملاء (استعلام الرصيد الفعلي من vw_ClientBalance)
+                DataTable dtClients = null;
+                try
+                {
+                    dtClients = DbHelper.Query(@"
+                        SELECT TOP 300 
+                            c.ClientID, 
+                            ISNULL(c.ClientCode, '') AS ClientCode, 
+                            c.ClientName, 
+                            ISNULL(c.Phone, '') AS Phone, 
+                            ISNULL(c.Phone2, '') AS Phone2, 
+                            ISNULL(c.Address, '') AS Address, 
+                            ISNULL(cb.Balance, ISNULL(c.OpeningBalance, 0)) AS Balance, 
+                            ISNULL(c.CurrentDebt, ISNULL(cb.Balance, ISNULL(c.OpeningBalance, 0))) AS CurrentDebt, 
+                            ISNULL(c.MaxCreditLimit, 0) AS MaxCreditLimit 
+                        FROM Clients c WITH (NOLOCK)
+                        LEFT JOIN vw_ClientBalance cb WITH (NOLOCK) ON c.ClientID = cb.ClientID
+                        WHERE c.IsActive = 1 
+                        ORDER BY ISNULL(cb.Balance, ISNULL(c.OpeningBalance, 0)) DESC, c.ClientName ASC");
+                }
+                catch
+                {
+                    dtClients = DbHelper.Query(@"
+                        SELECT TOP 300 
+                            ClientID, 
+                            ISNULL(ClientCode, '') AS ClientCode, 
+                            ClientName, 
+                            ISNULL(Phone, '') AS Phone, 
+                            ISNULL(Phone2, '') AS Phone2, 
+                            ISNULL(Address, '') AS Address, 
+                            ISNULL(Balance, 0) AS Balance, 
+                            ISNULL(CurrentDebt, 0) AS CurrentDebt, 
+                            ISNULL(MaxCreditLimit, 0) AS MaxCreditLimit 
+                        FROM Clients WITH (NOLOCK) 
+                        WHERE IsActive = 1 
+                        ORDER BY Balance DESC, ClientName ASC");
+                }
                 string clientsJson = DataTableToJson(dtClients);
 
                 // 9. بيانات حساب المالك والمدراء والماستر لتسجيل الدخول في تطبيق الموبايل

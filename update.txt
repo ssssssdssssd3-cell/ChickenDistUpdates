@@ -1,5 +1,5 @@
-version=3.4.2
+version=3.4.3
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.4.2&t=1788884028
-sha256=80C42837D6E64CC74C7D0FDB7B3CA9E33BB9576B341AD8B4B393E276BFF99C14
-changelog=v3.4.2 - 2026-09-08: Critical bug fixes for sales saving, auto-updater and return form
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.4.3&t=1788998087
+sha256=7083E2943921DD4774FC687264DD8DFB57F911DE7D392DECA3119B7C1A4438ED
+changelog=v3.4.3 - 2026-09-10: Modern Price Checker Kiosk UI and Mobile Supplier Debts Sync fixes
