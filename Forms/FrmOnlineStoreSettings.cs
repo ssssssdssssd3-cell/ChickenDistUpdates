@@ -51,7 +51,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "⚙️ لوحة التحكم في المتجر الإلكتروني للعملاء (Online Store)";
+            this.Text = AppConfig.IsRestaurant ? "⚙️ لوحة التحكم في المنيو الإلكتروني والطلب أونلاين (Online Menu)" : "⚙️ لوحة التحكم في المتجر الإلكتروني للعملاء (Online Store)";
             this.Size = new Size(950, 750);
             this.MinimumSize = new Size(880, 680);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -71,7 +71,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "🌐 إعدادات وتحكم المتجر الإلكتروني للعملاء (Web Store)",
+                Text = AppConfig.IsRestaurant ? "🌐 إعدادات وتحكم المنيو الإلكتروني والطلب أونلاين (Online Menu)" : "🌐 إعدادات وتحكم المتجر الإلكتروني للعملاء (Web Store)",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Top,
@@ -81,7 +81,7 @@ namespace ChickenDist.Forms
 
             var lblSubtitle = new Label
             {
-                Text = "التحكم في فئات الأسعار، ظهور رصيد المخزن، خصوصية الأسعار، وتحديد الأقسام المعروضة للعملاء",
+                Text = AppConfig.IsRestaurant ? "التحكم في أسعار المنيو، خصوصية الأسعار، وتحديد أقسام المأكولات والمشروبات المعروضة للزبائن" : "التحكم في فئات الأسعار، ظهور رصيد المخزن، خصوصية الأسعار، وتحديد الأقسام المعروضة للعملاء",
                 Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(203, 213, 225),
                 Dock = DockStyle.Fill,
@@ -816,6 +816,12 @@ namespace ChickenDist.Forms
 
         private async System.Threading.Tasks.Task SaveSettingsAndSyncAsync()
         {
+            if (!Session.IsAdmin && !Session.CanEdit("OnlineStoreSettings") && !Session.CanAccess("OnlineStoreSettings"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية تعديل وحفظ إعدادات المتجر والمنيو الإلكتروني.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             btnSaveAndSync.Enabled = false;
             lblSyncStatus.ForeColor = Color.FromArgb(56, 189, 248);
             lblSyncStatus.Text = "⏳ جاري حفظ الإعدادات ومزامنة المتجر مع السحابة...";

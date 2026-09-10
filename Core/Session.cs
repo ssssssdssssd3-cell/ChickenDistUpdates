@@ -210,6 +210,18 @@ namespace ChickenDist.Core
 
             if (_perms.ContainsKey(screen) && _perms[screen].CanAccess) return true;
 
+            // شاشات المتجر والمنيو الإلكتروني: فحص الصلاحية المخصصة أو التوافق العكسي
+            if (screen == "OnlineOrders")
+            {
+                if (_perms.ContainsKey("OnlineOrders")) return _perms["OnlineOrders"].CanAccess;
+                if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanAccess;
+            }
+            if (screen == "OnlineStoreSettings")
+            {
+                if (_perms.ContainsKey("OnlineStoreSettings")) return _perms["OnlineStoreSettings"].CanAccess;
+                if (_perms.ContainsKey("Settings")) return _perms["Settings"].CanAccess;
+            }
+
             // Synonym mapping for backwards-compatibility or UI mismatches
             if (screen == "DriverSales" && _perms.ContainsKey("DriverPortal") && _perms["DriverPortal"].CanAccess) return true;
             if (screen == "DriverPortal" && _perms.ContainsKey("DriverSales") && _perms["DriverSales"].CanAccess) return true;
@@ -658,7 +670,7 @@ namespace ChickenDist.Core
         public static readonly string[] AllScreens = {
             // Sales & POS
             "Sales", "POS", "PriceQuote", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "Maintenance",
-            "Clients", "ClientStatement", "InactiveClients", "Vehicles",
+            "Clients", "ClientStatement", "InactiveClients", "Vehicles", "OnlineOrders", "OnlineStoreSettings",
             
             // Purchases & Suppliers
             "Purchases", "PurchaseReturn", "PurchasesList",

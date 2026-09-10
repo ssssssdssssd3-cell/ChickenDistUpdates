@@ -247,7 +247,7 @@ namespace ChickenDist.Forms
 
             _btnOnlineOrders = new Button
             {
-                Text = "🌐 طلبات أونلاين",
+                Text = AppConfig.IsRestaurant ? "🌐 طلبات المنيو" : "🌐 طلبات أونلاين",
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -258,7 +258,15 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleCenter
             };
             _btnOnlineOrders.FlatAppearance.BorderSize = 0;
-            _btnOnlineOrders.Click += (s, e) => NavigateTo(new FrmOnlineOrders());
+            _btnOnlineOrders.Click += (s, e) => 
+            {
+                if (!Session.CanAccess("OnlineOrders"))
+                {
+                    MessageBox.Show("عذراً، ليس لديك صلاحية الوصول لشاشة طلبات المتجر والمنيو الإلكتروني.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                NavigateTo(new FrmOnlineOrders());
+            };
             pnlTabActions.Controls.Add(_btnOnlineOrders);
 
             // Center Horizontal Tabs Container
@@ -315,16 +323,24 @@ namespace ChickenDist.Forms
                     return;
                 }
 
+                if (!Session.CanAccess("OnlineOrders"))
+                {
+                    _btnOnlineOrders.Visible = false;
+                    return;
+                }
+                _btnOnlineOrders.Visible = true;
+
                 int newCount = OnlineOrdersDAL.GetNewOrdersCount();
+                string label = AppConfig.IsRestaurant ? "طلبات المنيو" : "طلبات أونلاين";
                 if (newCount > 0)
                 {
-                    _btnOnlineOrders.Text = $"🌐 طلبات ({newCount}) 🔴";
+                    _btnOnlineOrders.Text = $"🌐 {label} ({newCount}) 🔴";
                     _btnOnlineOrders.BackColor = Color.FromArgb(220, 38, 38);
                     _btnOnlineOrders.ForeColor = Color.White;
                 }
                 else
                 {
-                    _btnOnlineOrders.Text = "🌐 طلبات أونلاين";
+                    _btnOnlineOrders.Text = $"🌐 {label}";
                     _btnOnlineOrders.BackColor = Color.FromArgb(37, 99, 235);
                     _btnOnlineOrders.ForeColor = Color.White;
                 }
@@ -488,8 +504,8 @@ namespace ChickenDist.Forms
                 }),
 
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
-                    ("🌐 طلبات المتجر الإلكتروني (أونلاين)", "Sales", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
-                    ("⚙️ إعدادات المتجر الإلكتروني للعملاء", "Settings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
+                    (AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني (أونلاين)" : "🌐 طلبات المتجر الإلكتروني (أونلاين)", "OnlineOrders", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
+                    (AppConfig.IsRestaurant ? "⚙️ إعدادات المنيو الإلكتروني للزبائن" : "⚙️ إعدادات المتجر الإلكتروني للعملاء", "OnlineStoreSettings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
                     ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
@@ -614,8 +630,8 @@ namespace ChickenDist.Forms
                     ("🎛️ لوحة الإعدادات الشاملة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
                     ("📱 تطبيق المالك وخدمات السحاب (Firebase)", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
-                    ("🌐 طلبات المتجر الإلكتروني", "OnlineOrders", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
-                    ("⚙️ إعدادات المتجر الإلكتروني للعملاء", "Settings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
+                    (AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني", "OnlineOrders", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
+                    (AppConfig.IsRestaurant ? "⚙️ إعدادات المنيو الإلكتروني للزبائن" : "⚙️ إعدادات المتجر الإلكتروني للعملاء", "OnlineStoreSettings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
                     ("📚 إدارة الجداول المرجعية", "LookupManager", (Action)(() => NavigateTo(new FrmLookupManager()))),
                     ("🔄 تحديث البرنامج", "Settings", (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),

@@ -74,7 +74,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "🌐 استقبال وإدارة طلبات المتجر الإلكتروني | ProSoft Online Orders";
+            this.Text = AppConfig.IsRestaurant ? "🌐 استقبال وإدارة طلبات المنيو الإلكتروني | Online Menu Orders" : "🌐 استقبال وإدارة طلبات المتجر الإلكتروني | ProSoft Online Orders";
             this.Size = new Size(1180, 680);
             this.MinimumSize = new Size(900, 500);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -113,7 +113,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "🌐 طلبات المتجر الإلكتروني",
+                Text = AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 AutoSize = true,
@@ -122,7 +122,7 @@ namespace ChickenDist.Forms
 
             var lblSubtitle = new Label
             {
-                Text = "متابعة الطلبات، أذون التحضير والتحويل لفواتير (F10)",
+                Text = AppConfig.IsRestaurant ? "متابعة طلبات المنيو، بونات التحضير للمطبخ والتحويل لفواتير (F10)" : "متابعة الطلبات، أذون التحضير والتحويل لفواتير (F10)",
                 Font = new Font("Segoe UI", 8.25f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(148, 163, 184),
                 AutoSize = true,
@@ -1301,6 +1301,12 @@ namespace ChickenDist.Forms
         {
             if (_selectedOrderID <= 0) return;
 
+            if (!Session.IsAdmin && !Session.CanEdit("OnlineOrders"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية تعديل حالة الطلب.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string newStatus = cboChangeStatus.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(newStatus)) return;
 
@@ -1312,6 +1318,11 @@ namespace ChickenDist.Forms
         private void EditCurrentItemQuantity()
         {
             if (_selectedOrderID <= 0 || _selectedOrderRow == null) return;
+            if (!Session.IsAdmin && !Session.CanEdit("OnlineOrders"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية تعديل كمية الصنف بالطلب.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (dgvItems.CurrentRow == null)
             {
                 MessageBox.Show("يرجى اختيار صنف لتعديل كميته!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1425,6 +1436,11 @@ namespace ChickenDist.Forms
         private void DeleteCurrentItem()
         {
             if (_selectedOrderID <= 0 || _selectedOrderRow == null) return;
+            if (!Session.IsAdmin && !Session.CanDelete("OnlineOrders"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية حذف أصناف من الطلب.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (dgvItems.CurrentRow == null)
             {
                 MessageBox.Show("يرجى اختيار صنف لحذفه من الطلب!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1453,6 +1469,11 @@ namespace ChickenDist.Forms
         private void AddAlternativeItem()
         {
             if (_selectedOrderID <= 0 || _selectedOrderRow == null) return;
+            if (!Session.IsAdmin && !Session.CanAdd("OnlineOrders"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية إضافة أصناف للطلب.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             int existingSaleId = _selectedOrderRow["CreatedSaleID"] != DBNull.Value ? Convert.ToInt32(_selectedOrderRow["CreatedSaleID"]) : 0;
             if (existingSaleId > 0)
@@ -1498,6 +1519,12 @@ namespace ChickenDist.Forms
             if (_selectedOrderID <= 0 || _selectedOrderRow == null)
             {
                 MessageBox.Show("يرجى اختيار طلب أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!Session.IsAdmin && !Session.CanEdit("OnlineOrders"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية تعديل مصاريف الشحن والتوصيل.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -1608,6 +1635,12 @@ namespace ChickenDist.Forms
             if (_selectedOrderID <= 0 || _selectedOrderRow == null)
             {
                 MessageBox.Show("يرجى اختيار طلب أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!Session.IsAdmin && !Session.CanAdd("OnlineOrders") && !Session.CanAdd("Sales"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية اعتماد وتحويل الطلبات لفواتير بيع.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 

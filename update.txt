@@ -1,5 +1,5 @@
-version=3.4.6
+version=3.4.7
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.4.6&t=1789011810
-sha256=2585517B10CC05789E19FE6DE61D5092BC5D99097AC26FBE5248022061FF7393
-changelog=v3.4.6 - 2026-09-10: Modern Price Checker Kiosk UI and Mobile Supplier Debts Sync fixes
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.4.7&t=1789053833
+sha256=CF9AC836DE182997B67B47B1735EDE90CEAA42A53157EFE13BF5F2B277AB40C9
+changelog=v3.4.7 - 2026-09-10: Modern Price Checker Kiosk UI and Mobile Supplier Debts Sync fixes

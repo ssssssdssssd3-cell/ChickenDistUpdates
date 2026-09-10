@@ -1,3 +1,11 @@
+v3.4.7 - 2026-09-10
+- [Employee Permissions & Restaurant/Store Separation for Online Store & Orders]:
+  - Registered 'Online Store / Menu Settings' and 'Online Orders / Menu Orders' screens in Employee Permissions (FrmPermissions).
+  - Categorized under both 'Sales' and 'Management' categories for quick discovery and full access control.
+  - Added granular permission checks (Add, Edit, Delete) across Online Orders and Online Store Settings.
+  - Dynamic adaptation for restaurant activity: displays 'Online Menu' and kitchen preparation receipts when restaurant mode is active.
+  - Added dedicated permission check for converting online orders into confirmed sales invoices.
+
 v3.4.6 - 2026-09-10
 - [Purchases Product Search - Default Zero Stock Option]:
   - Enabled 'Show Zero Stock' option by default in Purchases product search screen.
