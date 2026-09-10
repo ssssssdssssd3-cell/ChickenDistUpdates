@@ -64,12 +64,26 @@
     }
   </script>
 
+  <script>
+    // تحميل وتطبيق مظهر المتجر فوراً قبل اكتمال رسم الصفحة لمنع الوميض
+    (function() {
+      const savedTheme = localStorage.getItem('prosoft_store_theme') || 'dark';
+      document.documentElement.classList.add('theme-' + savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        meta.setAttribute('content', savedTheme === 'light' ? '#f8fafc' : (savedTheme === 'gold' ? '#07080a' : '#090d16'));
+      }
+    })();
+  </script>
+
   <style>
     body {
       font-family: 'Cairo', sans-serif;
       background-color: #090d16;
       color: #f1f5f9;
       -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
     .custom-scrollbar::-webkit-scrollbar {
       height: 4px;
@@ -86,12 +100,169 @@
       background: rgba(17, 24, 39, 0.75);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
     .active-pill {
       background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
       color: #ffffff !important;
       border-color: #3b82f6 !important;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* ☀️ THEME: LIGHT (الوضع النهاري للمتجر والمنيو)     */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-light, html.theme-light body {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+    }
+    html.theme-light .glass-card {
+      background: rgba(255, 255, 255, 0.95) !important;
+      border-color: #e2e8f0 !important;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05) !important;
+    }
+    html.theme-light .bg-slate-950,
+    html.theme-light .bg-slate-900,
+    html.theme-light .bg-slate-850,
+    html.theme-light .bg-slate-800,
+    html.theme-light [class*="bg-slate-900/"],
+    html.theme-light [class*="bg-slate-950/"] {
+      background-color: #ffffff !important;
+    }
+    html.theme-light [class*="bg-slate-800/"] {
+      background-color: #f8fafc !important;
+    }
+    html.theme-light [class*="border-slate-800"],
+    html.theme-light [class*="border-slate-700"],
+    html.theme-light [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: #e2e8f0 !important;
+    }
+    html.theme-light .text-white {
+      color: #0f172a !important;
+    }
+    html.theme-light .text-slate-100,
+    html.theme-light .text-slate-200,
+    html.theme-light .text-slate-300 {
+      color: #1e293b !important;
+    }
+    html.theme-light .text-slate-400 {
+      color: #64748b !important;
+    }
+    html.theme-light .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    html.theme-light input,
+    html.theme-light select,
+    html.theme-light textarea {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+    }
+    html.theme-light input::placeholder,
+    html.theme-light textarea::placeholder {
+      color: #94a3b8 !important;
+    }
+    html.theme-light .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9 !important;
+    }
+    html.theme-light .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1 !important;
+    }
+    html.theme-light .active-pill {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+      color: #ffffff !important;
+      border-color: #3b82f6 !important;
+    }
+    html.theme-light .active-pill * {
+      color: #ffffff !important;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* 👑 THEME: BLACK & GOLD LUXURY (أسود في ذهبي فاخر)  */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-gold, html.theme-gold body {
+      background-color: #07080a !important;
+      color: #fdfaf3 !important;
+    }
+    html.theme-gold .glass-card {
+      background: rgba(18, 18, 24, 0.94) !important;
+      border-color: rgba(212, 175, 55, 0.28) !important;
+      box-shadow: 0 4px 22px rgba(0, 0, 0, 0.75), 0 0 16px rgba(212, 175, 55, 0.08) !important;
+    }
+    html.theme-gold .bg-slate-950,
+    html.theme-gold .bg-slate-900,
+    html.theme-gold [class*="bg-slate-900/"],
+    html.theme-gold [class*="bg-slate-950/"] {
+      background-color: #0c0d12 !important;
+    }
+    html.theme-gold .bg-slate-800,
+    html.theme-gold [class*="bg-slate-800/"] {
+      background-color: #15161d !important;
+    }
+    html.theme-gold [class*="border-slate-800"],
+    html.theme-gold [class*="border-slate-700"],
+    html.theme-gold [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(212, 175, 55, 0.24) !important;
+    }
+    html.theme-gold .text-white {
+      color: #fffef7 !important;
+    }
+    html.theme-gold .text-slate-100,
+    html.theme-gold .text-slate-200,
+    html.theme-gold .text-slate-300 {
+      color: #f7eedc !important;
+    }
+    html.theme-gold .text-slate-400 {
+      color: #c9bca4 !important;
+    }
+    html.theme-gold .text-slate-500 {
+      color: #8f836d !important;
+    }
+    html.theme-gold input,
+    html.theme-gold select,
+    html.theme-gold textarea {
+      background-color: #111218 !important;
+      color: #fdfaf3 !important;
+      border-color: rgba(212, 175, 55, 0.35) !important;
+    }
+    html.theme-gold input:focus,
+    html.theme-gold select:focus,
+    html.theme-gold textarea:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 1px #f59e0b !important;
+    }
+    html.theme-gold .active-pill {
+      background: linear-gradient(135deg, #d4af37 0%, #f59e0b 50%, #b45309 100%) !important;
+      color: #000000 !important;
+      border-color: #ffd700 !important;
+      box-shadow: 0 4px 18px rgba(212, 175, 55, 0.45) !important;
+    }
+    html.theme-gold .active-pill * {
+      color: #000000 !important;
+      font-weight: 900 !important;
+    }
+    html.theme-gold button[onclick*="addToCart"],
+    html.theme-gold [class*="from-blue-600"][class*="to-indigo-600"] {
+      background: linear-gradient(135deg, #d4af37 0%, #f59e0b 60%, #d97706 100%) !important;
+      color: #000000 !important;
+      font-weight: 900 !important;
+      box-shadow: 0 4px 16px rgba(212, 175, 55, 0.35) !important;
+    }
+    html.theme-gold button[onclick*="addToCart"] *,
+    html.theme-gold [class*="from-blue-600"][class*="to-indigo-600"] * {
+      color: #000000 !important;
+    }
+    html.theme-gold .text-emerald-400 {
+      color: #fbbf24 !important;
+    }
+    html.theme-gold .text-blue-400 {
+      color: #f59e0b !important;
+    }
+    html.theme-gold .custom-scrollbar::-webkit-scrollbar-track {
+      background: #090a0e !important;
+    }
+    html.theme-gold .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #854d0e !important;
     }
   </style>
 </head>
@@ -139,6 +310,12 @@
           <i class="fa-brands fa-whatsapp text-sm"></i>
           <span class="hidden md:inline">مراسلة</span>
         </a>
+
+        <!-- زر اختيار المظهر (الثيمات: ليلي / نهاري / أسود وذهبي) -->
+        <button onclick="openThemeSelectorModal()" id="btnThemeSelector" title="تغيير مظهر المتجر (ليلي / نهاري / أسود وذهبي فاخر)" class="p-2 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+          <i id="themeIcon" class="fa-solid fa-moon text-sm text-indigo-400"></i>
+          <span id="themeLabel" class="hidden sm:inline">المظهر</span>
+        </button>
 
         <!-- زر طلباتي السابقة -->
         <button onclick="openMyOrdersModal()" title="متابعة طلباتي" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
@@ -218,6 +395,9 @@
         عرض جميع المنتجات
       </button>
     </div>
+
+    <!-- شبكة كروت المنتجات -->
+    <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"></div>
 
     <!-- كارت التواصل المباشر مع المتجر -->
     <div id="storeContactCard" class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 text-center space-y-3 mt-8">
@@ -570,6 +750,90 @@
       <div class="pt-1">
         <button onclick="closePwaInstallModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
           إغلاق
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 9. نافذة اختيار المظهر (THEME SELECTOR MODAL) -->
+  <!-- ========================================== -->
+  <div id="themeSelectorModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all duration-300">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-slate-700 text-right relative overflow-hidden space-y-4">
+      
+      <!-- هيدر المودال -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-palette"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-sm sm:text-base">مظهر المتجر والمنيو</h3>
+            <span class="text-[10px] sm:text-[11px] text-slate-400">اختر الثيم المفضل لتجربة تصفح مميزة</span>
+          </div>
+        </div>
+        <button onclick="closeThemeSelectorModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- خيارات الثيمات الثلاثة -->
+      <div class="space-y-2.5">
+        <!-- 1. الوضع الليلي -->
+        <button onclick="selectTheme('dark')" id="themeCard-dark" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-blue-500 cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-indigo-400 text-lg shadow-inner group-hover:scale-105 transition">
+              <i class="fa-solid fa-moon"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-xs sm:text-sm">🌙 الوضع الليلي (Dark)</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">مريح للعينين في الإضاءة المنخفضة</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs hidden">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 2. الوضع النهاري -->
+        <button onclick="selectTheme('light')" id="themeCard-light" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-500 cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 text-lg shadow-inner group-hover:scale-105 transition">
+              <i class="fa-solid fa-sun"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-xs sm:text-sm">☀️ الوضع النهاري (Light)</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">ناصع وأنيق وتباين عالي نهاراً</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs hidden">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 3. أسود في ذهبي فاخر -->
+        <button onclick="selectTheme('gold')" id="themeCard-gold" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-400 cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md shadow-amber-500/20 group-hover:scale-105 transition">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+            <div>
+              <div class="font-black text-amber-400 text-xs sm:text-sm flex items-center gap-1.5">
+                <span>👑 أسود وذهبي فاخر (Royal Gold)</span>
+              </div>
+              <div class="text-[10px] text-amber-200/70 mt-0.5">طابع ملكي فخم للمطاعم والبراندات الراقية</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black flex items-center justify-center text-xs hidden">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+      </div>
+
+      <div class="pt-1">
+        <button onclick="closeThemeSelectorModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          تم
         </button>
       </div>
 
@@ -1565,9 +1829,90 @@ ${itemsText}
     }
 
     // ──────────────────────────────────────────
+    // 11. محرك إدارة المظهر (Theme Engine: Dark, Light, Black & Gold)
+    // ──────────────────────────────────────────
+    const STORE_THEME_KEY = 'prosoft_store_theme';
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem(STORE_THEME_KEY) || 'dark';
+      applyTheme(savedTheme);
+    }
+
+    function applyTheme(theme) {
+      if (!['dark', 'light', 'gold'].includes(theme)) theme = 'dark';
+
+      document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-gold');
+      document.documentElement.classList.add('theme-' + theme);
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(STORE_THEME_KEY, theme);
+
+      // تحديث شريط حالة متصفح الهاتف
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        if (theme === 'light') meta.setAttribute('content', '#f8fafc');
+        else if (theme === 'gold') meta.setAttribute('content', '#07080a');
+        else meta.setAttribute('content', '#090d16');
+      }
+
+      // تحديث أيقونة وزر الهيدر
+      const icon = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+      if (icon) {
+        if (theme === 'light') {
+          icon.className = 'fa-solid fa-sun text-sm text-amber-500';
+          if (label) label.textContent = 'نهاري';
+        } else if (theme === 'gold') {
+          icon.className = 'fa-solid fa-crown text-sm text-amber-400';
+          if (label) label.textContent = 'ذهبي';
+        } else {
+          icon.className = 'fa-solid fa-moon text-sm text-indigo-400';
+          if (label) label.textContent = 'ليلي';
+        }
+      }
+
+      // تحديث مؤشرات الاختيار في المودال
+      ['dark', 'light', 'gold'].forEach(t => {
+        const card = document.getElementById(`themeCard-${t}`);
+        if (!card) return;
+        const check = card.querySelector('.theme-check-icon');
+        if (t === theme) {
+          card.classList.add('ring-2');
+          if (t === 'gold') card.classList.add('ring-amber-400', 'border-amber-500/50');
+          else if (t === 'light') card.classList.add('ring-amber-500', 'border-amber-500/50');
+          else card.classList.add('ring-blue-500', 'border-blue-500/50');
+
+          if (check) check.classList.remove('hidden');
+        } else {
+          card.classList.remove('ring-2', 'ring-amber-400', 'ring-amber-500', 'ring-blue-500', 'border-amber-500/50', 'border-blue-500/50');
+          if (check) check.classList.add('hidden');
+        }
+      });
+    }
+
+    function selectTheme(theme) {
+      applyTheme(theme);
+      setTimeout(() => closeThemeSelectorModal(), 250);
+    }
+
+    function openThemeSelectorModal() {
+      const modal = document.getElementById('themeSelectorModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        const currentTheme = localStorage.getItem(STORE_THEME_KEY) || 'dark';
+        applyTheme(currentTheme);
+      }
+    }
+
+    function closeThemeSelectorModal() {
+      const modal = document.getElementById('themeSelectorModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // ──────────────────────────────────────────
     // بدء التشغيل
     // ──────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
       loadStoreData();
       checkIosBanner();
     });

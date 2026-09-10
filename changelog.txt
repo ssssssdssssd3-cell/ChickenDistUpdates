@@ -1,3 +1,14 @@
+v3.4.8 - 2026-09-10
+- [Mobile Companion App & Online Menu - Light/Dark Mode & Luxury Black & Gold Theme]:
+  - Added comprehensive theme switcher with 3 themes:
+    1. Dark Mode (الوضع الليلي): Slate and navy palette optimized for low-light environments.
+    2. Light Mode (الوضع النهاري): Clean, crisp, high-contrast palette for daytime browsing.
+    3. Luxury Black & Gold Theme (أسود في ذهبي فاخر): Rich obsidian black with royal metallic gold gradients, glowing accents, and premium aesthetics for VIP restaurants & luxury brands.
+  - Implemented interactive Theme Selector modal with real-time preview cards in both mobile apps.
+  - Added theme toggle buttons directly in mobile headers and login screen for instant switching.
+  - Theme choices permanently saved in localStorage with zero-flash early initialization.
+  - Fixed productsGrid container in online store for seamless menu catalog rendering.
+
 v3.4.7 - 2026-09-10
 - [Employee Permissions & Restaurant/Store Separation for Online Store & Orders]:
   - Registered 'Online Store / Menu Settings' and 'Online Orders / Menu Orders' screens in Employee Permissions (FrmPermissions).

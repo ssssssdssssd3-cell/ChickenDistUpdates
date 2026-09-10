@@ -88,6 +88,19 @@
     }
   </script>
 
+  <script>
+    // تحميل وتطبيق مظهر التطبيق فوراً قبل اكتمال رسم الصفحة لمنع الوميض
+    (function() {
+      const savedTheme = localStorage.getItem('prosoft_app_theme') || 'dark';
+      document.documentElement.classList.add('theme-' + savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        meta.setAttribute('content', savedTheme === 'light' ? '#f8fafc' : (savedTheme === 'gold' ? '#07080a' : '#0b0f19'));
+      }
+    })();
+  </script>
+
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -95,6 +108,7 @@
       color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 5px;
@@ -111,6 +125,7 @@
       background: rgba(30, 41, 59, 0.85);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
     .active-tab {
       background: linear-gradient(135deg, #16a34a, #15803d);
@@ -135,6 +150,163 @@
       visibility: hidden !important;
       pointer-events: none !important;
       opacity: 0 !important;
+    }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* ☀️ THEME: LIGHT (الوضع النهاري لتطبيق المالك)         */
+    /* ══════════════════════════════════════════════════════ */
+    html.theme-light, html.theme-light body {
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+    html.theme-light .glass-card {
+      background: rgba(255, 255, 255, 0.96) !important;
+      border-color: #e2e8f0 !important;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05) !important;
+    }
+    html.theme-light .bg-slate-950,
+    html.theme-light .bg-slate-900,
+    html.theme-light .bg-slate-850,
+    html.theme-light .bg-slate-800,
+    html.theme-light .bg-dark-bg,
+    html.theme-light .bg-dark-card,
+    html.theme-light [class*="bg-slate-900/"],
+    html.theme-light [class*="bg-slate-950/"] {
+      background-color: #ffffff !important;
+    }
+    html.theme-light [class*="bg-slate-800/"],
+    html.theme-light .bg-slate-900\/60,
+    html.theme-light .bg-slate-800\/50,
+    html.theme-light .bg-slate-800\/60 {
+      background-color: #f8fafc !important;
+    }
+    html.theme-light [class*="border-slate-800"],
+    html.theme-light [class*="border-slate-700"],
+    html.theme-light [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]),
+    html.theme-light [class*="divide-slate-700"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: #e2e8f0 !important;
+    }
+    html.theme-light .text-white {
+      color: #0f172a !important;
+    }
+    html.theme-light .text-slate-100,
+    html.theme-light .text-slate-200,
+    html.theme-light .text-slate-300 {
+      color: #1e293b !important;
+    }
+    html.theme-light .text-slate-400 {
+      color: #64748b !important;
+    }
+    html.theme-light .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    html.theme-light input,
+    html.theme-light select,
+    html.theme-light textarea {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+    }
+    html.theme-light input::placeholder,
+    html.theme-light textarea::placeholder {
+      color: #94a3b8 !important;
+    }
+    html.theme-light input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: none !important;
+    }
+    html.theme-light .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9 !important;
+    }
+    html.theme-light .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1 !important;
+    }
+    html.theme-light .active-tab {
+      background: linear-gradient(135deg, #16a34a, #15803d) !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3) !important;
+    }
+    html.theme-light .active-tab * {
+      color: #ffffff !important;
+    }
+
+    /* ══════════════════════════════════════════════════════ */
+    /* 👑 THEME: BLACK & GOLD LUXURY (أسود في ذهبي فاخر)     */
+    /* ══════════════════════════════════════════════════════ */
+    html.theme-gold, html.theme-gold body {
+      background-color: #07080a !important;
+      color: #fdfaf3 !important;
+    }
+    html.theme-gold .glass-card {
+      background: rgba(18, 18, 24, 0.94) !important;
+      border-color: rgba(212, 175, 55, 0.3) !important;
+      box-shadow: 0 4px 22px rgba(0, 0, 0, 0.75), 0 0 15px rgba(212, 175, 55, 0.08) !important;
+    }
+    html.theme-gold .bg-slate-950,
+    html.theme-gold .bg-slate-900,
+    html.theme-gold .bg-slate-850,
+    html.theme-gold .bg-dark-bg,
+    html.theme-gold [class*="bg-slate-900/"],
+    html.theme-gold [class*="bg-slate-950/"] {
+      background-color: #0c0d12 !important;
+    }
+    html.theme-gold .bg-slate-800,
+    html.theme-gold .bg-dark-card,
+    html.theme-gold [class*="bg-slate-800/"] {
+      background-color: #14151c !important;
+      border-color: rgba(212, 175, 55, 0.22) !important;
+    }
+    html.theme-gold [class*="border-slate-800"],
+    html.theme-gold [class*="border-slate-700"],
+    html.theme-gold [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]),
+    html.theme-gold [class*="divide-slate-700"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(212, 175, 55, 0.25) !important;
+    }
+    html.theme-gold .text-white {
+      color: #fffef7 !important;
+    }
+    html.theme-gold .text-slate-100,
+    html.theme-gold .text-slate-200,
+    html.theme-gold .text-slate-300 {
+      color: #f7eedc !important;
+    }
+    html.theme-gold .text-slate-400 {
+      color: #c9bca4 !important;
+    }
+    html.theme-gold .text-slate-500 {
+      color: #8f836d !important;
+    }
+    html.theme-gold input,
+    html.theme-gold select,
+    html.theme-gold textarea {
+      background-color: #111218 !important;
+      color: #fdfaf3 !important;
+      border-color: rgba(212, 175, 55, 0.35) !important;
+    }
+    html.theme-gold input:focus,
+    html.theme-gold select:focus,
+    html.theme-gold textarea:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 1px #f59e0b !important;
+    }
+    html.theme-gold .custom-scrollbar::-webkit-scrollbar-track {
+      background: #090a0e !important;
+    }
+    html.theme-gold .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #854d0e !important;
+    }
+    html.theme-gold .active-tab {
+      background: linear-gradient(135deg, #d4af37 0%, #f59e0b 50%, #b45309 100%) !important;
+      color: #000000 !important;
+      border-color: #ffd700 !important;
+      box-shadow: 0 4px 18px rgba(212, 175, 55, 0.45) !important;
+    }
+    html.theme-gold .active-tab * {
+      color: #000000 !important;
+      font-weight: 800 !important;
+    }
+    html.theme-gold .text-amber-400,
+    html.theme-gold .text-yellow-400 {
+      color: #fbbf24 !important;
     }
   </style>
 </head>
@@ -246,8 +418,14 @@
       </form>
 
       <div class="mt-5 pt-3.5 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
-        <span>🔒 بيانات مشفرة ومحمية بالكامل</span>
-        <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.2.4</span>
+        <button type="button" onclick="openThemeSelectorModal()" class="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-palette text-xs"></i>
+          <span>تغيير المظهر</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <span>🔒 بيانات مشفرة ومحمية</span>
+          <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.2.5</span>
+        </div>
       </div>
     </div>
   </div>
@@ -306,6 +484,13 @@
                 class="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-slate-200 rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-sm">
           <i id="btnRefreshIcon" class="fa-solid fa-rotate"></i>
           <span class="hidden lg:inline">تحديث</span>
+        </button>
+
+        <!-- زر اختيار المظهر (الثيمات: ليلي / نهاري / أسود وذهبي فاخر) -->
+        <button onclick="openThemeSelectorModal()" id="btnThemeSelector" title="تغيير مظهر التطبيق (ليلي / نهاري / أسود وذهبي فاخر)"
+                class="p-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 text-amber-400 rounded-xl transition text-xs flex items-center gap-1.5 font-bold shadow-sm cursor-pointer">
+          <i id="themeIcon" class="fa-solid fa-moon text-sm text-indigo-400"></i>
+          <span id="themeLabel" class="hidden lg:inline">المظهر</span>
         </button>
 
         <!-- زر قفل الشاشة -->
@@ -1492,6 +1677,90 @@
     </div>
   </div>
 
+  <!-- ========================================== -->
+  <!-- 5.6 نافذة اختيار المظهر (THEME SELECTOR MODAL) -->
+  <!-- ========================================== -->
+  <div id="themeSelectorModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all duration-300">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-slate-700 text-right relative overflow-hidden space-y-4">
+      
+      <!-- هيدر المودال -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-palette"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-sm sm:text-base">مظهر لوحة التحكم</h3>
+            <span class="text-[10px] sm:text-[11px] text-slate-400">اختر الثيم المفضل لعرض المؤشرات والتقارير</span>
+          </div>
+        </div>
+        <button onclick="closeThemeSelectorModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- خيارات الثيمات الثلاثة -->
+      <div class="space-y-2.5">
+        <!-- 1. الوضع الليلي -->
+        <button onclick="selectAppTheme('dark')" id="appThemeCard-dark" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-blue-500 cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-indigo-400 text-lg shadow-inner group-hover:scale-105 transition">
+              <i class="fa-solid fa-moon"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-xs sm:text-sm">🌙 الوضع الليلي (Dark)</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">مريح للعينين وألوان كلاسيكية هادئة</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs hidden">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 2. الوضع النهاري -->
+        <button onclick="selectAppTheme('light')" id="appThemeCard-light" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-500 cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 text-lg shadow-inner group-hover:scale-105 transition">
+              <i class="fa-solid fa-sun"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-xs sm:text-sm">☀️ الوضع النهاري (Light)</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">ناصع وأنيق ووضوح فائق للتقارير والأرقام</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs hidden">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 3. أسود في ذهبي فاخر -->
+        <button onclick="selectAppTheme('gold')" id="appThemeCard-gold" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-400 cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md shadow-amber-500/20 group-hover:scale-105 transition">
+              <i class="fa-solid fa-crown"></i>
+            </div>
+            <div>
+              <div class="font-black text-amber-400 text-xs sm:text-sm flex items-center gap-1.5">
+                <span>👑 أسود وذهبي فاخر (Royal Gold)</span>
+              </div>
+              <div class="text-[10px] text-amber-200/70 mt-0.5">تصميم ملكي فاخر للمالك والإدارة العليا</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black flex items-center justify-center text-xs hidden">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+      </div>
+
+      <div class="pt-1">
+        <button onclick="closeThemeSelectorModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          تم
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toastNotification" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 border border-emerald-500/50 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2">
     <i class="fa-solid fa-circle-check text-emerald-400"></i>
@@ -1546,9 +1815,90 @@
     const AUTO_LOCK_MS = 30 * 60 * 1000; // 30 دقيقة
 
     // ──────────────────────────────────────────
+    // 0. محرك إدارة مظهر التطبيق (App Theme Engine: Dark, Light, Black & Gold)
+    // ──────────────────────────────────────────
+    const APP_THEME_KEY = 'prosoft_app_theme';
+
+    function initAppTheme() {
+      const savedTheme = localStorage.getItem(APP_THEME_KEY) || 'dark';
+      applyAppTheme(savedTheme);
+    }
+
+    function applyAppTheme(theme) {
+      if (!['dark', 'light', 'gold'].includes(theme)) theme = 'dark';
+
+      document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-gold');
+      document.documentElement.classList.add('theme-' + theme);
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(APP_THEME_KEY, theme);
+
+      // تحديث شريط حالة متصفح الهاتف
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        if (theme === 'light') meta.setAttribute('content', '#f8fafc');
+        else if (theme === 'gold') meta.setAttribute('content', '#07080a');
+        else meta.setAttribute('content', '#0b0f19');
+      }
+
+      // تحديث أيقونة وزر الهيدر
+      const icon = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+      if (icon) {
+        if (theme === 'light') {
+          icon.className = 'fa-solid fa-sun text-sm text-amber-500';
+          if (label) label.textContent = 'نهاري';
+        } else if (theme === 'gold') {
+          icon.className = 'fa-solid fa-crown text-sm text-amber-400';
+          if (label) label.textContent = 'ذهبي';
+        } else {
+          icon.className = 'fa-solid fa-moon text-sm text-indigo-400';
+          if (label) label.textContent = 'ليلي';
+        }
+      }
+
+      // تحديث مؤشرات كروت الاختيار في المودال
+      ['dark', 'light', 'gold'].forEach(t => {
+        const card = document.getElementById(`appThemeCard-${t}`);
+        if (!card) return;
+        const check = card.querySelector('.theme-check-icon');
+        if (t === theme) {
+          card.classList.add('ring-2');
+          if (t === 'gold') card.classList.add('ring-amber-400', 'border-amber-500/50');
+          else if (t === 'light') card.classList.add('ring-amber-500', 'border-amber-500/50');
+          else card.classList.add('ring-blue-500', 'border-blue-500/50');
+
+          if (check) check.classList.remove('hidden');
+        } else {
+          card.classList.remove('ring-2', 'ring-amber-400', 'ring-amber-500', 'ring-blue-500', 'border-amber-500/50', 'border-blue-500/50');
+          if (check) check.classList.add('hidden');
+        }
+      });
+    }
+
+    function selectAppTheme(theme) {
+      applyAppTheme(theme);
+      setTimeout(() => closeThemeSelectorModal(), 250);
+    }
+
+    function openThemeSelectorModal() {
+      const modal = document.getElementById('themeSelectorModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        const currentTheme = localStorage.getItem(APP_THEME_KEY) || 'dark';
+        applyAppTheme(currentTheme);
+      }
+    }
+
+    function closeThemeSelectorModal() {
+      const modal = document.getElementById('themeSelectorModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // ──────────────────────────────────────────
     // 1. التهيئة الأولية عند تحميل الصفحة
     // ──────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {
+      initAppTheme();
       // إعداد التواريخ الافتراضية
       setDateRange('today');
       
