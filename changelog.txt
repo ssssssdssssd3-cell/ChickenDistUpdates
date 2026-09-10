@@ -1,3 +1,11 @@
+v3.4.5 - 2026-09-10
+- [DB Connection Guard - Single Error Message on Startup]:
+  - Added TryTestConnection() in DbHelper that uses a 5-second timeout for early connection check.
+  - Added early DB connectivity check in Program.cs before any DB operations.
+  - If SQL Server is unreachable (main or sub-device), app now shows exactly ONE error message then exits cleanly.
+  - Error message guides the user to check SQL Server service, Settings.ini config, and network (for sub-devices).
+  - Prevents multiple overlapping error dialogs that previously appeared when DB was offline.
+
 v3.4.4 - 2026-09-10
 - [Price Checker Kiosk UI - Color Redesign & Alternatives Toggle]:
   - Replaced all dark purple/violet colors with professional Slate Navy palette across FrmPriceChecker.

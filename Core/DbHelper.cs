@@ -44,6 +44,33 @@ namespace ChickenDist.Core
             return true;
         }
 
+        /// <summary>
+        /// يحاول الاتصال بقاعدة البيانات مرة واحدة بـ timeout قصير (5 ثوانٍ).
+        /// يُستخدم في بداية التطبيق قبل أي عملية لإظهار رسالة خطأ واحدة فقط عند فشل الاتصال.
+        /// </summary>
+        public static bool TryTestConnection(out string errorMessage)
+        {
+            errorMessage = "";
+            try
+            {
+                // نبني connection string مؤقت بـ timeout=5 ثوانٍ فقط للفحص السريع
+                var builder = new SqlConnectionStringBuilder(_connStr)
+                {
+                    ConnectTimeout = 5
+                };
+                using (var con = new SqlConnection(builder.ToString()))
+                {
+                    con.Open();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
         public static DateTime? ParseExpiryInput(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return null;

@@ -22,6 +22,17 @@ namespace ChickenDist
             // تطبيق RTL على كل الشاشات التي ستُفتح
             Application.AddMessageFilter(new RtlMessageFilter());
 
+            // ===== فحص الاتصال بقاعدة البيانات مرة واحدة قبل أي عملية =====
+            // هذا يمنع ظهور رسائل خطأ متعددة عند فشل الاتصال بـ SQL Server
+            if (!ChickenDist.Core.DbHelper.TryTestConnection(out string dbConnError))
+            {
+                MessageBox.Show(
+                    "تعذّر الاتصال بقاعدة البيانات.\n\nيرجى التأكد من:\n• تشغيل خدمة SQL Server\n• صحة إعدادات ملف Settings.ini\n• الاتصال بالشبكة (للأجهزة الفرعية)\n\nيُرجى التواصل مع الدعم الفني.",
+                    "خطأ الاتصال بقاعدة البيانات",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             // فحص تطابق إصدار البرنامج الحالي مع قاعدة البيانات المحدثة
             if (!ChickenDist.Core.DbHelper.CheckAndEnforceVersion(ChickenDist.Core.UpdateManager.CurrentVersion))
             {
