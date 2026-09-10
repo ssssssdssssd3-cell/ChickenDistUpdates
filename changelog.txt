@@ -1,3 +1,11 @@
+v3.4.4 - 2026-09-10
+- [Price Checker Kiosk UI - Color Redesign & Alternatives Toggle]:
+  - Replaced all dark purple/violet colors with professional Slate Navy palette across FrmPriceChecker.
+  - Main background: Slate Navy (15,23,42), cards/panels: Slate 800 (30,41,59), accent: Blue (59,130,246).
+  - Prices now displayed in Emerald green (52,211,153) instead of yellow; unit cards and alternative cards updated.
+  - Added 'KioskShowAlternatives' setting in General Settings to show/hide alternatives section in Price Checker.
+  - Alternatives section visibility now controlled by the new toggle in settings (shown by default).
+
 v3.4.3 - 2026-09-10
 - [تطوير واجهة كشك فحص الأصناف وإصلاح مزامنة مديونيات الموردين لتطبيق الموبايل]:
   - [كشك فحص الأصناف والأسعار FrmPriceChecker]:

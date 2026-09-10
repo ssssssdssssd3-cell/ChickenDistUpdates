@@ -94,7 +94,7 @@ namespace ChickenDist.Forms
             this.Size = new Size(1150, 760);
             this.MinimumSize = new Size(950, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(18, 12, 38);   // Deep Royal Background
+            this.BackColor = Color.FromArgb(15, 23, 42);   // Deep Slate Navy
             this.ForeColor = Color.White;
             this.Font = new Font("Segoe UI", 10f, FontStyle.Regular);
             this.RightToLeft = RightToLeft.Yes;
@@ -116,13 +116,13 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 85,
-                BackColor = Color.FromArgb(36, 18, 75),   // Rich Royal Purple
+                BackColor = Color.FromArgb(30, 41, 59),   // Slate 800
                 Padding = new Padding(20, 10, 20, 10)
             };
 
             pnlHeader.Paint += (s, e) =>
             {
-                using (var pen = new Pen(Color.FromArgb(126, 58, 242), 2))
+                using (var pen = new Pen(Color.FromArgb(59, 130, 246), 2))
                 {
                     e.Graphics.DrawLine(pen, 0, pnlHeader.Height - 1, pnlHeader.Width, pnlHeader.Height - 1);
                 }
@@ -149,7 +149,7 @@ namespace ChickenDist.Forms
             {
                 Text = compName,
                 Font = new Font("Segoe UI", 16f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),   // Bright Gold
+                ForeColor = Color.FromArgb(248, 250, 252),   // Near White
                 AutoSize = true,
                 Location = new Point(90, 14)
             };
@@ -159,7 +159,7 @@ namespace ChickenDist.Forms
             {
                 Text = "كشك فحص الأسعار والخدمة الذاتية | Self-Service Price Checker",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(216, 180, 254), // Light Lilac
+                ForeColor = Color.FromArgb(148, 163, 184), // Slate 400
                 AutoSize = true,
                 Location = new Point(92, 46)
             };
@@ -169,7 +169,7 @@ namespace ChickenDist.Forms
             {
                 Text = DateTime.Now.ToString("hh:mm:ss tt  |  yyyy/MM/dd"),
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(233, 213, 255),
+                ForeColor = Color.FromArgb(203, 213, 225),  // Slate 300
                 AutoSize = true
             };
 
@@ -178,8 +178,8 @@ namespace ChickenDist.Forms
             {
                 Text = _isFullscreen ? "🗗 نافذة" : "🗖 ملء الشاشة",
                 Size = new Size(115, 38),
-                BackColor = Color.FromArgb(67, 34, 128),
-                ForeColor = Color.FromArgb(243, 232, 255),
+                BackColor = Color.FromArgb(51, 65, 85),     // Slate 700
+                ForeColor = Color.FromArgb(226, 232, 240),  // Slate 200
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand
@@ -218,13 +218,13 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Bottom,
                 Height = 68,
-                BackColor = Color.FromArgb(26, 14, 56),   // Dark Violet
+                BackColor = Color.FromArgb(30, 41, 59),   // Slate 800
                 Padding = new Padding(15, 8, 15, 8)
             };
 
             pnlFooter.Paint += (s, e) =>
             {
-                using (var pen = new Pen(Color.FromArgb(109, 40, 217), 1))
+                using (var pen = new Pen(Color.FromArgb(59, 130, 246), 1))
                 {
                     e.Graphics.DrawLine(pen, 0, 0, pnlFooter.Width, 0);
                 }
@@ -235,7 +235,7 @@ namespace ChickenDist.Forms
             {
                 Text = "✨ نسعد دائماً بزيارتكم الكريمة.. نتشرف بخدمتكم ونتمنى لكم تجربة تسوق ممتعة ويوم سعيد 🌟",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(254, 240, 138),  // Glowing Warm Gold
+                ForeColor = Color.FromArgb(167, 243, 208),  // Emerald 200
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 AutoEllipsis = true
@@ -254,7 +254,7 @@ namespace ChickenDist.Forms
             {
                 Text = "⏳ العودة للاستقبال بعد 12 ثانية...",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(216, 180, 254),
+                ForeColor = Color.FromArgb(148, 163, 184),  // Slate 400
                 Dock = DockStyle.Top,
                 Height = 22,
                 TextAlign = ContentAlignment.MiddleRight
@@ -276,8 +276,8 @@ namespace ChickenDist.Forms
                 Text = "🔍 فحص صنف آخر",
                 Dock = DockStyle.Right,
                 Width = 155,
-                BackColor = Color.FromArgb(234, 179, 8),   // Bright Gold
-                ForeColor = Color.FromArgb(20, 14, 45),    // Dark text
+                BackColor = Color.FromArgb(37, 99, 235),    // Blue 600
+                ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
@@ -296,7 +296,7 @@ namespace ChickenDist.Forms
             pnlContent = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(18, 12, 38),  // Deep Indigo
+                BackColor = Color.FromArgb(15, 23, 42),    // Deep Slate Navy
                 Padding = new Padding(12)
             };
 
@@ -354,7 +354,7 @@ namespace ChickenDist.Forms
             pnlStandbyCard = new Panel
             {
                 Size = new Size(820, 480),
-                BackColor = Color.FromArgb(36, 20, 76),   // Deep Royal Purple Card
+                BackColor = Color.FromArgb(30, 41, 59),   // Slate 800
                 Padding = new Padding(22)
             };
 
@@ -362,7 +362,7 @@ namespace ChickenDist.Forms
             {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Color.FromArgb(147, 51, 234), 2))
+                using (var pen = new Pen(Color.FromArgb(59, 130, 246), 2))
                 {
                     var rect = pnlStandbyCard.ClientRectangle;
                     rect.Width -= 2;
@@ -376,8 +376,8 @@ namespace ChickenDist.Forms
             {
                 Text = "⚡ الاستعلام الفوري والمباشر عن الأسعار والخدمة الذاتية",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),
-                BackColor = Color.FromArgb(60, 30, 120),
+                ForeColor = Color.FromArgb(248, 250, 252),   // Near White
+                BackColor = Color.FromArgb(37, 99, 235),     // Blue 600
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 34
@@ -388,7 +388,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 240,
-                BackColor = Color.FromArgb(24, 14, 52),
+                BackColor = Color.FromArgb(15, 23, 42),      // Deep Navy
                 Margin = new Padding(0, 10, 0, 10),
                 Padding = new Padding(12)
             };
@@ -398,7 +398,7 @@ namespace ChickenDist.Forms
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
-                Color glowColor = _laserPulseState ? Color.FromArgb(239, 68, 68) : Color.FromArgb(168, 85, 247);
+                Color glowColor = _laserPulseState ? Color.FromArgb(239, 68, 68) : Color.FromArgb(59, 130, 246);
                 using (var pen = new Pen(glowColor, 2) { DashStyle = DashStyle.Dash })
                 {
                     var r = pnlScannerZone.ClientRectangle;
@@ -412,7 +412,7 @@ namespace ChickenDist.Forms
             {
                 Text = "║▌║█║▌│║▌║▌█║ ▌│║▌║▌║",
                 Font = new Font("Segoe UI", 26f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(216, 180, 254),
+                ForeColor = Color.FromArgb(148, 163, 184),  // Slate 400
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 44
@@ -434,7 +434,7 @@ namespace ChickenDist.Forms
             {
                 Text = "وجّه باركود الصنف هنا نحو شعاع القارئ",
                 Font = new Font("Segoe UI", 20f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),   // Bright Gold
+                ForeColor = Color.FromArgb(248, 250, 252),   // Near White
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 50
@@ -445,7 +445,7 @@ namespace ChickenDist.Forms
             {
                 Text = "مرر باركود أي سلعة وسيظهر الاسم والسعر والتفاصيل فوراً في منتصف الشاشة",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(233, 213, 255),
+                ForeColor = Color.FromArgb(203, 213, 225),  // Slate 300
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 32
@@ -461,7 +461,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Bottom,
                 Height = 105,
-                BackColor = Color.FromArgb(26, 15, 58),
+                BackColor = Color.FromArgb(15, 23, 42),      // Deep Navy
                 Padding = new Padding(15, 8, 15, 8)
             };
 
@@ -469,7 +469,7 @@ namespace ChickenDist.Forms
             {
                 Text = "أو أدخل كود الصنف / الاسم يدوياً باللمس:",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(216, 180, 254),
+                ForeColor = Color.FromArgb(148, 163, 184),  // Slate 400
                 Dock = DockStyle.Top,
                 Height = 24
             };
@@ -480,7 +480,7 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-                BackColor = Color.FromArgb(55, 32, 110),
+                BackColor = Color.FromArgb(30, 41, 59),      // Slate 800
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle,
                 TextAlign = HorizontalAlignment.Center
@@ -498,8 +498,8 @@ namespace ChickenDist.Forms
                 Text = "🔍 استعلام",
                 Dock = DockStyle.Left,
                 Width = 125,
-                BackColor = Color.FromArgb(234, 179, 8),    // Gold
-                ForeColor = Color.FromArgb(20, 14, 45),     // Dark text
+                BackColor = Color.FromArgb(37, 99, 235),     // Blue 600
+                ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 Cursor = Cursors.Hand
@@ -547,7 +547,7 @@ namespace ChickenDist.Forms
             pnlHeroCard = new Panel
             {
                 Size = new Size(900, 520),
-                BackColor = Color.FromArgb(36, 20, 76),   // Rich Violet
+                BackColor = Color.FromArgb(30, 41, 59),   // Slate 800
                 Padding = new Padding(20, 15, 20, 15)
             };
 
@@ -555,7 +555,7 @@ namespace ChickenDist.Forms
             {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Color.FromArgb(234, 179, 8), 2)) // Gold Border
+                using (var pen = new Pen(Color.FromArgb(59, 130, 246), 2)) // Blue Border
                 {
                     var r = pnlHeroCard.ClientRectangle;
                     r.Width -= 2;
@@ -569,8 +569,8 @@ namespace ChickenDist.Forms
             {
                 Text = "⚡ قارئ الباركود نشط الآن: يمكنك تمرير باركود أي صنف آخر فوراً للاستعلام في أي وقت",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),  // Gold
-                BackColor = Color.FromArgb(50, 25, 105),
+                ForeColor = Color.FromArgb(167, 243, 208),  // Emerald 200
+                BackColor = Color.FromArgb(15, 23, 42),     // Deep Navy
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 28
@@ -585,10 +585,10 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 3, 0, 0)
             };
 
-            lblBarcodeBadge = CreateBadge("🏷️ كود: ----", Color.FromArgb(24, 14, 52), Color.FromArgb(216, 180, 254));
-            lblCategoryBadge = CreateBadge("📂 القسم: ----", Color.FromArgb(24, 14, 52), Color.FromArgb(250, 204, 21));
-            lblShelfLocation = CreateBadge("📍 مكان الرف: ----", Color.FromArgb(79, 45, 143), Color.FromArgb(253, 224, 71));
-            lblStockStatus = CreateBadge("🟢 متوفر بالفرع", Color.FromArgb(20, 83, 45), Color.FromArgb(134, 239, 172));
+            lblBarcodeBadge = CreateBadge("🏷️ كود: ----", Color.FromArgb(15, 23, 42), Color.FromArgb(148, 163, 184));
+            lblCategoryBadge = CreateBadge("📂 القسم: ----", Color.FromArgb(15, 23, 42), Color.FromArgb(203, 213, 225));
+            lblShelfLocation = CreateBadge("📍 مكان الرف: ----", Color.FromArgb(30, 64, 115), Color.FromArgb(147, 197, 253));
+            lblStockStatus = CreateBadge("🟢 متوفر بالفرع", Color.FromArgb(6, 78, 59), Color.FromArgb(110, 231, 183));
 
             pnlBadges.Controls.Add(lblBarcodeBadge);
             pnlBadges.Controls.Add(lblCategoryBadge);
@@ -612,7 +612,7 @@ namespace ChickenDist.Forms
             {
                 Text = "English Name",
                 Font = new Font("Segoe UI", 11f, FontStyle.Italic),
-                ForeColor = Color.FromArgb(216, 180, 254),
+                ForeColor = Color.FromArgb(148, 163, 184),  // Slate 400
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 22,
@@ -624,14 +624,14 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 152,
-                BackColor = Color.FromArgb(25, 14, 55),
+                BackColor = Color.FromArgb(15, 23, 42),     // Deep Navy
                 Margin = new Padding(0, 6, 0, 6),
                 Padding = new Padding(12, 4, 12, 4)
             };
 
             pnlPriceHero.Paint += (s, e) =>
             {
-                using (var pen = new Pen(Color.FromArgb(126, 58, 242), 1.5f))
+                using (var pen = new Pen(Color.FromArgb(59, 130, 246), 1.5f))
                 {
                     var r = pnlPriceHero.ClientRectangle;
                     r.Inflate(-2, -2);
@@ -643,7 +643,7 @@ namespace ChickenDist.Forms
             {
                 Text = "0.00 ج.م",
                 Font = new Font("Segoe UI", 50f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),   // Bright Glowing Gold
+                ForeColor = Color.FromArgb(52, 211, 153),   // Emerald 400
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 74
@@ -653,7 +653,7 @@ namespace ChickenDist.Forms
             {
                 Text = "لكل (قطعة)",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(233, 213, 255),
+                ForeColor = Color.FromArgb(203, 213, 225),  // Slate 300
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Top,
                 Height = 25
@@ -718,7 +718,7 @@ namespace ChickenDist.Forms
             {
                 Text = "✨ بدائل متوفرة وخيارات اقتصادية في نفس القسم:",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),
+                ForeColor = Color.FromArgb(167, 243, 208),  // Emerald 200
                 Dock = DockStyle.Top,
                 Height = 22
             };
@@ -970,6 +970,7 @@ namespace ChickenDist.Forms
 
             // Populate Alternatives
             LoadAlternatives(productID, catID, salePrice, totalStock <= 0);
+            pnlAlternativesSection.Visible = AppConfig.KioskShowAlternatives;
 
             // Switch to Product View
             pnlStandby.Visible = false;
@@ -995,7 +996,7 @@ namespace ChickenDist.Forms
             var pnl = new Panel
             {
                 Size = new Size(165, 40),
-                BackColor = Color.FromArgb(24, 14, 52),
+                BackColor = Color.FromArgb(30, 41, 59),
                 Margin = new Padding(0, 0, 10, 0),
                 Padding = new Padding(8, 2, 8, 2)
             };
@@ -1004,7 +1005,7 @@ namespace ChickenDist.Forms
             {
                 Text = unitName,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(216, 180, 254),
+                ForeColor = Color.FromArgb(148, 163, 184),
                 Dock = DockStyle.Top,
                 Height = 16
             };
@@ -1013,7 +1014,7 @@ namespace ChickenDist.Forms
             {
                 Text = $"{price:N2} ج.م",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),
+                ForeColor = Color.FromArgb(52, 211, 153),
                 Dock = DockStyle.Bottom,
                 Height = 18
             };
@@ -1035,7 +1036,7 @@ namespace ChickenDist.Forms
             else
             {
                 lblAlternativesTitle.Text = "✨ بدائل متوفرة وخيارات اقتصادية أوفر في نفس القسم:";
-                lblAlternativesTitle.ForeColor = Color.FromArgb(250, 204, 21);
+                lblAlternativesTitle.ForeColor = Color.FromArgb(167, 243, 208);
             }
 
             try
@@ -1098,7 +1099,7 @@ namespace ChickenDist.Forms
             var card = new Panel
             {
                 Size = new Size(195, 76),
-                BackColor = Color.FromArgb(48, 26, 96),
+                BackColor = Color.FromArgb(30, 41, 59),
                 Margin = new Padding(0, 0, 10, 4),
                 Padding = new Padding(6),
                 Cursor = Cursors.Hand
@@ -1110,8 +1111,8 @@ namespace ChickenDist.Forms
                 if (dr != null) DisplayProduct(dr);
             };
 
-            card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(70, 38, 140);
-            card.MouseLeave += (s, e) => card.BackColor = Color.FromArgb(48, 26, 96);
+            card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(51, 65, 85);
+            card.MouseLeave += (s, e) => card.BackColor = Color.FromArgb(30, 41, 59);
             card.Click += onClick;
 
             var lblName = new Label
@@ -1130,7 +1131,7 @@ namespace ChickenDist.Forms
             {
                 Text = $"{price:N2} ج.م",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),
+                ForeColor = Color.FromArgb(52, 211, 153),
                 Dock = DockStyle.Top,
                 Height = 20,
                 Cursor = Cursors.Hand
@@ -1144,7 +1145,7 @@ namespace ChickenDist.Forms
             {
                 Text = stockText,
                 Font = new Font("Segoe UI", 7.5f),
-                ForeColor = Color.FromArgb(216, 180, 254),
+                ForeColor = Color.FromArgb(148, 163, 184),
                 Dock = DockStyle.Bottom,
                 Height = 16,
                 Cursor = Cursors.Hand

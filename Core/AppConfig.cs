@@ -229,6 +229,13 @@ namespace ChickenDist.Core
             set => Set("POSQuickInStockOnly", value ? "true" : "false");
         }
 
+        /// <summary>إظهار قسم البدائل والمنتجات المشابهة في كشك فحص الأسعار</summary>
+        public static bool KioskShowAlternatives
+        {
+            get => Get("KioskShowAlternatives", "true") == "true";
+            set => Set("KioskShowAlternatives", value ? "true" : "false");
+        }
+
         // ===== إعدادات المتجر الإلكتروني للعملاء (Online Web Store) =====
         public static bool Store_IsActive
         {

@@ -17,6 +17,7 @@ namespace ChickenDist.Forms
         private CheckBox chkShiftRequired;
         private CheckBox chkAllowSellExpired;
         private ComboBox cboWhatsAppInvoiceTemplate;
+        private CheckBox chkKioskShowAlternatives;
 
         public FrmGeneralSettings()
         {
@@ -96,6 +97,18 @@ namespace ChickenDist.Forms
                 Checked = AppConfig.EnableCratesTracking
             };
             pnlBody.Controls.Add(chkEnableCrates);
+            y += 30;
+
+            chkKioskShowAlternatives = new CheckBox
+            {
+                Text = "إظهار البدائل والمنتجات المشابهة في كشك فحص الأسعار",
+                Location = new Point(15, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.KioskShowAlternatives
+            };
+            pnlBody.Controls.Add(chkKioskShowAlternatives);
             y += 40;
 
             var sep1 = new Panel { Location = new Point(15, y), Size = new Size(560, 2), BackColor = Theme.BorderColor };
@@ -340,6 +353,7 @@ namespace ChickenDist.Forms
         private void BtnSave_Click(object sender, EventArgs e)
         {
             AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
+            AppConfig.KioskShowAlternatives = chkKioskShowAlternatives.Checked;
             AppConfig.ShiftRequired = chkShiftRequired.Checked;
             AppConfig.AllowSellExpired = chkAllowSellExpired.Checked;
 
