@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 
         public string SearchText => txtSearch?.Text ?? "";
 
-        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool defaultShowZeroStock = false, int? clientID = null, string initialSearchText = "")
+        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool? defaultShowZeroStock = null, int? clientID = null, string initialSearchText = "")
         {
             _warehouseID = warehouseID;
             _clientID = clientID;
@@ -65,9 +65,11 @@ namespace ChickenDist.Forms
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
             InitUI();
+            
+            bool showZero = defaultShowZeroStock ?? (_isPurchaseMode ? AppConfig.PurchaseSearchShowZeroStock : false);
             if (chkShowZeroStock != null)
             {
-                chkShowZeroStock.Checked = defaultShowZeroStock;
+                chkShowZeroStock.Checked = showZero;
             }
             LoadCategories();
             LoadProducts();
@@ -148,7 +150,14 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes,
                 Checked = false
             };
-            chkShowZeroStock.CheckedChanged += (s, e) => { if (_dvProducts != null) RefreshGrid(); };
+            chkShowZeroStock.CheckedChanged += (s, e) => 
+            { 
+                if (_isPurchaseMode)
+                {
+                    AppConfig.PurchaseSearchShowZeroStock = chkShowZeroStock.Checked;
+                }
+                if (_dvProducts != null) RefreshGrid(); 
+            };
             
             pnlSearch.Controls.AddRange(new Control[] { 
                 lblSearch, txtSearch, lblCat, cboCategory, 

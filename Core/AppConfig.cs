@@ -236,6 +236,13 @@ namespace ChickenDist.Core
             set => Set("KioskShowAlternatives", value ? "true" : "false");
         }
 
+        /// <summary>إظهار الأصناف ذات الرصيد الصفري افتراضياً في شاشة بحث الأصناف بفواتير المشتريات</summary>
+        public static bool PurchaseSearchShowZeroStock
+        {
+            get => Get("PurchaseSearchShowZeroStock", "true") == "true";
+            set => Set("PurchaseSearchShowZeroStock", value ? "true" : "false");
+        }
+
         // ===== إعدادات المتجر الإلكتروني للعملاء (Online Web Store) =====
         public static bool Store_IsActive
         {

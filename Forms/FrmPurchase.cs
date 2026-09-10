@@ -497,7 +497,7 @@ namespace ChickenDist.Forms
                     string lastSearchText = "";
                     while (true)
                     {
-                        using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true, initialSearchText: lastSearchText))
+                        using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true, defaultShowZeroStock: AppConfig.PurchaseSearchShowZeroStock, initialSearchText: lastSearchText))
                         {
                             if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                             {

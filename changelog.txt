@@ -1,3 +1,9 @@
+v3.4.6 - 2026-09-10
+- [Purchases Product Search - Default Zero Stock Option]:
+  - Enabled 'Show Zero Stock' option by default in Purchases product search screen.
+  - Added 'PurchaseSearchShowZeroStock' configuration to permanently remember the user preference.
+  - Automatically loads and preserves the zero-stock visibility state across purchases search sessions.
+
 v3.4.5 - 2026-09-10
 - [DB Connection Guard - Single Error Message on Startup]:
   - Added TryTestConnection() in DbHelper that uses a 5-second timeout for early connection check.
