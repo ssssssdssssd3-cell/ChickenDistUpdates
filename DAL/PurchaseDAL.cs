@@ -12,6 +12,8 @@ namespace ChickenDist.DAL
         public string ProductCode { get; set; } = "";
         public string ProductName { get; set; }
         public decimal Quantity { get; set; }
+        /// <summary>كمية البونص المجانية الإضافية الممنوحة من المورد</summary>
+        public decimal BonusQuantity { get; set; } = 0m;
         public decimal UnitPrice { get; set; }
         /// <summary>نسبة خصم الصنف % (0 = لا خصم)</summary>
         public decimal DiscountPct { get; set; } = 0m;
@@ -145,11 +147,13 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int purchaseID)
         {
              return DbHelper.Query(
-                 @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity, pi.UnitPrice, pi.TotalPrice,
-                           COALESCE(pi.DiscountPct, 0) AS DiscountPct,
-                           COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
-                           pi.SuggestedSalePrice,
-                           pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate
+                 @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity, 
+                          ISNULL(pi.BonusQuantity, 0) AS BonusQuantity,
+                          pi.UnitPrice, pi.TotalPrice,
+                          COALESCE(pi.DiscountPct, 0) AS DiscountPct,
+                          COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
+                          pi.SuggestedSalePrice,
+                          pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate
                     FROM PurchaseItems pi
                     JOIN Products pr ON pi.ProductID = pr.ProductID
                     WHERE pi.PurchaseID = @id",
@@ -248,11 +252,12 @@ namespace ChickenDist.DAL
                 {
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO PurchaseItems
-                            (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI)
-                          VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei)",
+                            (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI)
+                          VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei)",
                         DbHelper.P("@pid",    purchaseID),
                         DbHelper.P("@prodid", item.ProductID),
                         DbHelper.P("@qty",    item.Quantity),
+                        DbHelper.P("@bqty",   item.BonusQuantity),
                         DbHelper.P("@up",     item.UnitPrice),
                         DbHelper.P("@tp",     item.TotalPrice),
                         DbHelper.P("@dpct",   item.DiscountPct),
@@ -281,7 +286,7 @@ namespace ChickenDist.DAL
                         if (item.ExpiryDate.HasValue)
                     {
                         decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
-                        decimal baseQty = item.Quantity * factor;
+                        decimal baseQty = (item.Quantity + item.BonusQuantity) * factor;
                         int wid = warehouseID ?? 1;
 
                         var existingBatchId = DbHelper.ScalarTrans(trans,
@@ -491,14 +496,15 @@ namespace ChickenDist.DAL
             {
                 DbHelper.RunInTransaction((con, trans) =>
                 {
-                    var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, ISNULL(BonusQuantity, 0) AS BonusQuantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     int wid = warehouseID ?? 1;
                     foreach (DataRow iRow in dtOldItems.Rows)
                     {
                         int productID = Convert.ToInt32(iRow["ProductID"]);
                         decimal qty = Convert.ToDecimal(iRow["Quantity"]);
+                        decimal bonusQty = Convert.ToDecimal(iRow["BonusQuantity"]);
                         decimal factor = Convert.ToDecimal(iRow["Factor"]);
-                        decimal baseQty = qty * factor;
+                        decimal baseQty = (qty + bonusQty) * factor;
                         DateTime? expDate = iRow["ExpiryDate"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(iRow["ExpiryDate"]);
 
                         if (expDate.HasValue)
@@ -538,11 +544,12 @@ namespace ChickenDist.DAL
                     {
                         DbHelper.ExecuteTrans(trans,
                             @"INSERT INTO PurchaseItems
-                                (PurchaseID, ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate)
-                              VALUES (@pid, @prodid, @qty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp)",
+                                (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate)
+                              VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp)",
                             DbHelper.P("@pid",    purchaseID),
                             DbHelper.P("@prodid", item.ProductID),
                             DbHelper.P("@qty",    item.Quantity),
+                            DbHelper.P("@bqty",   item.BonusQuantity),
                             DbHelper.P("@up",     item.UnitPrice),
                             DbHelper.P("@tp",     item.TotalPrice),
                             DbHelper.P("@dpct",   item.DiscountPct),
@@ -555,7 +562,7 @@ namespace ChickenDist.DAL
                         if (item.ExpiryDate.HasValue)
                         {
                             decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
-                            decimal baseQty = item.Quantity * factor;
+                            decimal baseQty = (item.Quantity + item.BonusQuantity) * factor;
 
                             var existingBatchId = DbHelper.ScalarTrans(trans,
                                 "SELECT BatchID FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND ExpiryDate=@exp",
@@ -1027,6 +1034,89 @@ namespace ChickenDist.DAL
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value));
         }
+
+        /// <summary>12. تقرير بونص المشتريات — ترتيب الموردين الأكثر تقديماً للبونص مع نسب وقيم البونص</summary>
+        public static DataTable GetPurchaseBonusReport(DateTime from, DateTime to, int? supplierID = null, int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    ISNULL(s.SupplierName, CASE WHEN p.PurchaseSource = 'Client' THEN ISNULL(c.ClientName, N'عميل') ELSE N'مورد نقدي/عام' END) AS SupplierName,
+                    ISNULL(s.Phone, ISNULL(c.Phone, N'---')) AS Phone,
+                    COUNT(DISTINCT p.PurchaseID) AS TotalInvoicesCount,
+                    COUNT(DISTINCT CASE WHEN pi.BonusQuantity > 0 THEN p.PurchaseID END) AS BonusInvoicesCount,
+                    ISNULL(SUM(pi.Quantity), 0) AS TotalPurchasedQty,
+                    ISNULL(SUM(pi.BonusQuantity), 0) AS TotalBonusQty,
+                    ISNULL((SELECT SUM(pri.BonusQuantity) 
+                            FROM PurchaseReturnItems pri 
+                            JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID 
+                            WHERE (pr.SupplierID = p.SupplierID OR (p.SupplierID IS NULL AND pr.SupplierID IS NULL)) 
+                              AND CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t), 0) AS TotalReturnedBonusQty,
+                    (ISNULL(SUM(pi.BonusQuantity), 0) - 
+                     ISNULL((SELECT SUM(pri.BonusQuantity) 
+                             FROM PurchaseReturnItems pri 
+                             JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID 
+                             WHERE (pr.SupplierID = p.SupplierID OR (p.SupplierID IS NULL AND pr.SupplierID IS NULL)) 
+                               AND CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t), 0)
+                    ) AS NetBonusQty,
+                    CASE 
+                        WHEN ISNULL(SUM(pi.Quantity), 0) > 0 
+                        THEN ROUND((ISNULL(SUM(pi.BonusQuantity), 0) / SUM(pi.Quantity)) * 100.0, 2) 
+                        ELSE 0 
+                    END AS BonusRatio,
+                    ISNULL(SUM(pi.BonusQuantity * pi.UnitPrice), 0) AS EstimatedBonusValue,
+                    ISNULL(SUM(pi.TotalPrice), 0) AS TotalPurchasesAmount
+                FROM Purchases p
+                JOIN PurchaseItems pi ON p.PurchaseID = pi.PurchaseID
+                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                WHERE p.IsPosted = 1
+                  AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND (@supID IS NULL OR p.SupplierID = @supID)
+                  AND (@wid IS NULL OR p.WarehouseID = @wid)
+                GROUP BY s.SupplierID, s.SupplierName, s.Phone, p.PurchaseSource, p.SupplierID, c.ClientName, c.Phone
+                HAVING ISNULL(SUM(pi.BonusQuantity), 0) > 0 OR ISNULL(SUM(pi.Quantity), 0) > 0
+                ORDER BY TotalBonusQty DESC, EstimatedBonusValue DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
+
+        /// <summary>13. تفاصيل بنود بونص المشتريات بكل فاتورة</summary>
+        public static DataTable GetPurchaseBonusDetails(DateTime from, DateTime to, int? supplierID = null, int? warehouseID = null)
+        {
+            DateTime f = from.Date;
+            DateTime t = to.Date;
+            return DbHelper.Query(
+                @"SELECT 
+                    p.PurchaseCode,
+                    p.PurchaseDate,
+                    ISNULL(s.SupplierName, CASE WHEN p.PurchaseSource = 'Client' THEN ISNULL(c.ClientName, N'عميل') ELSE N'مورد نقدي/عام' END) AS SupplierName,
+                    pr.ProductCode,
+                    pr.ProductName,
+                    ISNULL(pi.UnitName, pr.Unit) AS UnitName,
+                    pi.Quantity AS PurchasedQty,
+                    pi.BonusQuantity AS BonusQty,
+                    pi.UnitPrice,
+                    ROUND(pi.BonusQuantity * pi.UnitPrice, 2) AS EstimatedBonusValue,
+                    pi.TotalPrice AS LineTotal,
+                    p.TotalAmount AS InvoiceTotal
+                FROM Purchases p
+                JOIN PurchaseItems pi ON p.PurchaseID = pi.PurchaseID
+                JOIN Products pr ON pi.ProductID = pr.ProductID
+                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                WHERE p.IsPosted = 1
+                  AND pi.BonusQuantity > 0
+                  AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
+                  AND (@supID IS NULL OR p.SupplierID = @supID)
+                  AND (@wid IS NULL OR p.WarehouseID = @wid)
+                ORDER BY p.PurchaseDate DESC, p.PurchaseID DESC",
+                DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -1054,7 +1144,9 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int returnID)
         {
             return DbHelper.Query(
-                @"SELECT pri.ProductID, p.ProductName, pri.Quantity, pri.UnitPrice, pri.TotalPrice,
+                @"SELECT pri.ProductID, p.ProductName, pri.Quantity, 
+                         ISNULL(pri.BonusQuantity, 0) AS BonusQuantity,
+                         pri.UnitPrice, pri.TotalPrice,
                          pri.UnitName, COALESCE(pri.Factor, 1.0) AS Factor
                   FROM PurchaseReturnItems pri
                   JOIN Products p ON pri.ProductID = p.ProductID
@@ -1132,17 +1224,18 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor)" +
-                        " VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac)",
-                        DbHelper.P("@rid", retID),
-                        DbHelper.P("@pid", item.ProductID),
-                        DbHelper.P("@qty", item.Quantity),
-                        DbHelper.P("@up",  item.UnitPrice),
-                        DbHelper.P("@tp",  item.TotalPrice),
-                        DbHelper.P("@un",  item.UnitName),
-                        DbHelper.P("@fac", item.Factor));
+                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,BonusQuantity,UnitPrice,TotalPrice,UnitName,Factor)" +
+                        " VALUES(@rid,@pid,@qty,@bqty,@up,@tp,@un,@fac)",
+                        DbHelper.P("@rid",  retID),
+                        DbHelper.P("@pid",  item.ProductID),
+                        DbHelper.P("@qty",  item.Quantity),
+                        DbHelper.P("@bqty", item.BonusQuantity),
+                        DbHelper.P("@up",   item.UnitPrice),
+                        DbHelper.P("@tp",   item.TotalPrice),
+                        DbHelper.P("@un",   item.UnitName),
+                        DbHelper.P("@fac",  item.Factor));
 
-                    decimal baseQty = item.Quantity * (item.Factor > 0 ? item.Factor : 1m);
+                    decimal baseQty = (item.Quantity + item.BonusQuantity) * (item.Factor > 0 ? item.Factor : 1m);
                     var targetBatchObj = DbHelper.ScalarTrans(trans,
                         "SELECT TOP 1 BatchID FROM ProductBatches WHERE ProductID = @pid AND WarehouseID = @wid AND Quantity >= @qty ORDER BY ExpiryDate ASC, BatchID ASC",
                         DbHelper.P("@pid", item.ProductID), DbHelper.P("@wid", whID), DbHelper.P("@qty", baseQty));

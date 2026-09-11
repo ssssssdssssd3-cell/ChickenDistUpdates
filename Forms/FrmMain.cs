@@ -542,6 +542,7 @@ namespace ChickenDist.Forms
                     ("📥 فاتورة شراء",    "Purchases",      (Action)(() => NavigateTo(new FrmPurchase()))),
                     ("↩ مرتجع شراء",     "PurchaseReturn", (Action)(() => NavigateTo(new FrmPurchaseReturn()))),
                     ("📋 سجل المشتريات", "PurchasesList",  (Action)(() => NavigateTo(new FrmPurchasesList()))),
+                    ("🎁 تقرير بونص المشتريات", "RepPurchases", (Action)(() => NavigateTo(new FrmReports("Purchases", defaultTabTag: "PurchaseBonusReport")))),
                     ("📊 تقارير المشتريات", "RepPurchases",      (Action)(() => NavigateTo(new FrmReports("Purchases")))),
                 }),
 

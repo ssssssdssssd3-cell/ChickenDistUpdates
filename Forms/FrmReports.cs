@@ -72,6 +72,7 @@ namespace ChickenDist.Forms
 			{ "SupplierPayments", Color.FromArgb(15, 118, 110) },      // Dark Teal
 			{ "PurchasePricesTracking", Color.FromArgb(30, 64, 175) }, // Navy Blue
 			{ "CreditPurchases", Color.FromArgb(190, 24, 93) },        // Pink-Red
+			{ "PurchaseBonusReport", Color.FromArgb(16, 185, 129) },   // Emerald Green
 
 			// Financials & Shifts
 			{ "DailyClosing", Color.FromArgb(180, 83, 9) },            // Amber
@@ -143,6 +144,7 @@ namespace ChickenDist.Forms
 			{ "SupplierPayments", ("💵 المدفوعات للموردين والتسويات", "سجل سندات الصرف والتحويلات المالية المسددة للموردين لتسوية الأرصدة.") },
 			{ "PurchasePricesTracking", ("📈 أسعار الشراء وتغير الأسعار", "مراقبة تقلبات وتغيرات أسعار شراء الأصناف عبر الزمن لتفادي ارتفاع التكاليف.") },
 			{ "CreditPurchases", ("⏳ المشتريات الآجلة والمديونيات", "حصر المشتريات الآجلة ومتابعة مواعيد استحقاق السداد للموردين.") },
+			{ "PurchaseBonusReport", ("🎁 تقرير بونص المشتريات والموردين", "متابعة وتحليل بونص المشتريات (الكميات المجانية الممنوحة من الموردين) ومعرفة أكثر الموردين تقديماً للبونص ونسبته وقيمته التقديرية.") },
 
 			// Financials & Shifts
 			{ "DailyClosing", ("📑 تقرير التقفيل اليومي", "مراجعة واعتماد إقفال اليومية ومطابقة النقدية الفعلية مع مبيعات البرنامج.") },
@@ -621,6 +623,7 @@ namespace ChickenDist.Forms
 				("💵 المدفوعات للموردين والتسويات", "SupplierPayments"),
 				("📈 أسعار الشراء وتغير الأسعار", "PurchasePricesTracking"),
 				("⏳ المشتريات الآجلة والمديونيات", "CreditPurchases"),
+				("🎁 تقرير بونص المشتريات", "PurchaseBonusReport"),
 
 				// ══════════════════════════════════════════════════════════════
 				// تقارير الحسابات والمالية والتقفيل
@@ -664,7 +667,7 @@ namespace ChickenDist.Forms
 				}
 				else if (_targetModule == "Purchases")
 				{
-					keep = (report.tag == "DailyPurchasesSummary" || report.tag == "PurchasesByPeriod" || report.tag == "DetailedPurchases" || report.tag == "DetailedPurchaseItems" || report.tag == "PurchasesBySupplier" || report.tag == "PurchasesByProduct" || report.tag == "PurchasesByCategory" || report.tag == "DetailedPurchaseReturns" || report.tag == "SupplierPayments" || report.tag == "PurchasePricesTracking" || report.tag == "CreditPurchases" || report.tag == "StagnantProducts");
+					keep = (report.tag == "DailyPurchasesSummary" || report.tag == "PurchasesByPeriod" || report.tag == "DetailedPurchases" || report.tag == "DetailedPurchaseItems" || report.tag == "PurchasesBySupplier" || report.tag == "PurchasesByProduct" || report.tag == "PurchasesByCategory" || report.tag == "DetailedPurchaseReturns" || report.tag == "SupplierPayments" || report.tag == "PurchasePricesTracking" || report.tag == "CreditPurchases" || report.tag == "PurchaseBonusReport" || report.tag == "StagnantProducts");
 				}
 				else if (_targetModule == "Stores")
 				{
@@ -1830,6 +1833,25 @@ namespace ChickenDist.Forms
 						("SupplierTotalBalance", "إجمالي رصيد المورد"),
 						("Notes", "الملاحظات")
 					}, dataGridView);
+					break;
+				case "PurchaseBonusReport":
+					int? bonusSuppID = (_preFilteredID > 0) ? _preFilteredID : (int?)null;
+					_currentDt = PurchaseDAL.GetPurchaseBonusReport(dtpFrom.Value, dtpTo.Value, bonusSuppID, warehouseID);
+					SetupGrid(new(string, string)[]
+					{
+						("SupplierName", "المورد"),
+						("Phone", "الهاتف"),
+						("InvoicesCount", "عدد الفواتير"),
+						("TotalPurchasedQty", "الكميات المشتراة"),
+						("TotalBonusQty", "إجمالي البونص المجاني 🎁"),
+						("ReturnedBonusQty", "مرتجع البونص"),
+						("NetBonusQty", "صافي البونص"),
+						("BonusRatioPct", "نسبة البونص %"),
+						("EstimatedBonusValue", "القيمة التقديرية للبونص"),
+						("TotalPurchasesAmount", "إجمالي المشتريات"),
+						("SupplierID", "معرف المورد")
+					}, dataGridView);
+					if (dataGridView.Columns["SupplierID"] != null) dataGridView.Columns["SupplierID"].Visible = false;
 					break;
 
 				case "DetailedPurchases":

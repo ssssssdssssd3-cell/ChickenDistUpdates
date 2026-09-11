@@ -90,7 +90,8 @@ namespace ChickenDist.Forms
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Theme.BgMain;
+            // لون مميز لشاشة البحث - بترولي/كحلي فاخر يختلف عن الشاشات العادية
+            this.BackColor = Color.FromArgb(15, 30, 50);
             this.Font = Theme.FontMain;
 
             this.Shown += (s, e) =>
@@ -168,12 +169,12 @@ namespace ChickenDist.Forms
             Theme.StyleSearchPanel(pnlSearch);
 
             // ── Grid Panel (Full Height) ──────────────────────────────────────
-            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8, 4, 8, 4) };
+            var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8, 4, 8, 4), BackColor = Color.FromArgb(15, 30, 50) };
             
             dgProducts = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Color.White,
+                BackgroundColor = Color.FromArgb(18, 36, 58),
                 BorderStyle = BorderStyle.FixedSingle,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -181,12 +182,22 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
-                GridColor = Color.FromArgb(226, 232, 240),
+                GridColor = Color.FromArgb(40, 70, 100),
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.White,
-                    ForeColor = Color.FromArgb(15, 23, 42),
-                    SelectionBackColor = Theme.Primary,
+                    // سطور فاتحة (زرقاء بترولية فاتحة جداً)
+                    BackColor = Color.FromArgb(22, 42, 65),
+                    ForeColor = Color.FromArgb(220, 235, 255),
+                    SelectionBackColor = Color.FromArgb(0, 150, 200),
+                    SelectionForeColor = Color.White,
+                    Font = Theme.FontMain
+                },
+                AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    // سطور غامقة بعض الشيء للتمييز بين السطور
+                    BackColor = Color.FromArgb(14, 28, 46),
+                    ForeColor = Color.FromArgb(220, 235, 255),
+                    SelectionBackColor = Color.FromArgb(0, 150, 200),
                     SelectionForeColor = Color.White,
                     Font = Theme.FontMain
                 },
@@ -194,7 +205,7 @@ namespace ChickenDist.Forms
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Theme.Primary,
+                    BackColor = Color.FromArgb(0, 90, 140),
                     ForeColor = Color.White,
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
@@ -256,11 +267,11 @@ namespace ChickenDist.Forms
             pnlGrid.Controls.Add(dgProducts);
 
             // ── Bottom Actions & Input Panel ─────────────────────────────────
-            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 105, BackColor = Color.FromArgb(241, 245, 249), Padding = new Padding(8, 4, 8, 4) };
+            var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 105, BackColor = Color.FromArgb(10, 22, 38), Padding = new Padding(8, 4, 8, 4) };
 
-            var pnlEditInputs = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Color.FromArgb(226, 232, 240), Padding = new Padding(6, 6, 6, 6) };
+            var pnlEditInputs = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Color.FromArgb(18, 36, 58), Padding = new Padding(6, 6, 6, 6) };
 
-            Color labelDark = Color.FromArgb(15, 23, 42);
+            Color labelDark = Color.FromArgb(180, 210, 255);
 
             // Unit Selector Dropdown
             var lblUnitSelect = new Label { Text = "📐 الوحدة:", Location = new Point(915, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
@@ -305,11 +316,11 @@ namespace ChickenDist.Forms
             if (!canEditPrice)
             {
                 txtSelectedPurchasePrice.ReadOnly = true;
-                txtSelectedPurchasePrice.BackColor = Color.FromArgb(226, 232, 240);
-                txtSelectedPurchasePrice.ForeColor = Color.FromArgb(100, 116, 139);
+                txtSelectedPurchasePrice.BackColor = Color.FromArgb(30, 50, 75);
+                txtSelectedPurchasePrice.ForeColor = Color.FromArgb(130, 160, 200);
                 txtSelectedSalePrice.ReadOnly = true;
-                txtSelectedSalePrice.BackColor = Color.FromArgb(226, 232, 240);
-                txtSelectedSalePrice.ForeColor = Color.FromArgb(100, 116, 139);
+                txtSelectedSalePrice.BackColor = Color.FromArgb(30, 50, 75);
+                txtSelectedSalePrice.ForeColor = Color.FromArgb(130, 160, 200);
                 lblPricePermissionNotice.Visible = true;
             }
             else

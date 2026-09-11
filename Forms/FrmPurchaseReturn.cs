@@ -324,13 +324,29 @@ namespace ChickenDist.Forms
                 Name = "NewReturnedQty",
                 HeaderText = "المرتجع الجديد (تعديل مباشر)",
                 ReadOnly = false,
-                FillWeight = 65,
+                FillWeight = 60,
                 ValueType = typeof(decimal)
             };
             colNew.DefaultCellStyle.BackColor = Color.FromArgb(40, 60, 45);
             colNew.DefaultCellStyle.ForeColor = Color.LightGreen;
             colNew.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             dgItems.Columns.Add(colNew);
+
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedBonusQty", HeaderText = "بونص الفاتورة", ReadOnly = true, FillWeight = 45 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedBonusQty", HeaderText = "مرتجع بونص سابق", ReadOnly = true, FillWeight = 45 });
+
+            var colNewBonus = new DataGridViewTextBoxColumn
+            {
+                Name = "NewReturnedBonusQty",
+                HeaderText = "مرتجع البونص (تعديل)",
+                ReadOnly = false,
+                FillWeight = 55,
+                ValueType = typeof(decimal)
+            };
+            colNewBonus.DefaultCellStyle.BackColor = Color.FromArgb(45, 55, 40);
+            colNewBonus.DefaultCellStyle.ForeColor = Color.FromArgb(160, 255, 160);
+            colNewBonus.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            dgItems.Columns.Add(colNewBonus);
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "GrossUnitPrice", HeaderText = "سعر الشراء الأصلي", ReadOnly = true, FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "نسبة الخصم %", ReadOnly = true, FillWeight = 45 });
@@ -584,25 +600,38 @@ namespace ChickenDist.Forms
             // تحميل أصناف الفاتورة مع المرتجع السابق
             var dtItems = PurchaseDAL.GetItems(purchaseID);
             var dtPrevRet = DbHelper.Query(
-                @"SELECT pri.ProductID, ISNULL(SUM(pri.Quantity),0) AS ReturnedQty
+                @"SELECT pri.ProductID, 
+                         ISNULL(SUM(pri.Quantity),0) AS ReturnedQty,
+                         ISNULL(SUM(pri.BonusQuantity),0) AS ReturnedBonusQty
                   FROM PurchaseReturnItems pri
                   JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
                   WHERE pr.PurchaseID = @pid
                   GROUP BY pri.ProductID",
                 DbHelper.P("@pid", purchaseID));
 
-            var prevMap = new Dictionary<int, decimal>();
+            var prevMap = new Dictionary<int, (decimal ReturnedQty, decimal ReturnedBonusQty)>();
             foreach (DataRow r in dtPrevRet.Rows)
-                prevMap[Convert.ToInt32(r["ProductID"])] = Convert.ToDecimal(r["ReturnedQty"]);
+            {
+                prevMap[Convert.ToInt32(r["ProductID"])] = (
+                    Convert.ToDecimal(r["ReturnedQty"]),
+                    Convert.ToDecimal(r["ReturnedBonusQty"])
+                );
+            }
 
             foreach (DataRow r in dtItems.Rows)
             {
                 int pid = Convert.ToInt32(r["ProductID"]);
                 decimal purQty = Convert.ToDecimal(r["Quantity"]);
-                decimal prevRet = prevMap.ContainsKey(pid) ? prevMap[pid] : 0m;
-                decimal remaining = purQty - prevRet;
+                decimal purBonus = r.Table.Columns.Contains("BonusQuantity") && r["BonusQuantity"] != DBNull.Value 
+                    ? Convert.ToDecimal(r["BonusQuantity"]) : 0m;
 
-                if (remaining <= 0) continue; // تم إرجاع الفاتورة بالكامل مسبقاً
+                decimal prevRet = prevMap.ContainsKey(pid) ? prevMap[pid].ReturnedQty : 0m;
+                decimal prevRetBonus = prevMap.ContainsKey(pid) ? prevMap[pid].ReturnedBonusQty : 0m;
+
+                decimal remainingQty = purQty - prevRet;
+                decimal remainingBonus = purBonus - prevRetBonus;
+
+                if (remainingQty <= 0 && remainingBonus <= 0) continue; // تم إرجاع الفاتورة والبونص بالكامل مسبقاً
 
                 decimal grossUnitPrice = Convert.ToDecimal(r["UnitPrice"]);
                 decimal itemDiscPct = Convert.ToDecimal(r["DiscountPct"]);
@@ -616,17 +645,20 @@ namespace ChickenDist.Forms
 
                 int rowIdx = dgItems.Rows.Add();
                 var row = dgItems.Rows[rowIdx];
-                row.Cells["ProductID"].Value       = pid;
-                row.Cells["ProductName"].Value     = r["ProductName"].ToString();
-                row.Cells["PurchasedQty"].Value    = purQty.ToString("N3");
-                row.Cells["PrevReturnedQty"].Value = prevRet.ToString("N3");
-                row.Cells["NewReturnedQty"].Value  = 0;
-                row.Cells["GrossUnitPrice"].Value  = grossUnitPrice.ToString("N2");
-                row.Cells["DiscountPct"].Value     = effectiveDiscPct > 0 ? (effectiveDiscPct.ToString("N2") + "%") : "0%";
-                row.Cells["NetUnitPrice"].Value    = netUnitPrice.ToString("N2");
-                row.Cells["TotalPrice"].Value      = "0.00";
-                row.Cells["UnitName"].Value        = r["UnitName"]?.ToString() ?? "";
-                row.Cells["Factor"].Value          = r["Factor"] != DBNull.Value ? r["Factor"] : 1.0m;
+                row.Cells["ProductID"].Value           = pid;
+                row.Cells["ProductName"].Value         = r["ProductName"].ToString();
+                row.Cells["PurchasedQty"].Value        = purQty.ToString("N3");
+                row.Cells["PrevReturnedQty"].Value     = prevRet.ToString("N3");
+                row.Cells["NewReturnedQty"].Value      = 0;
+                row.Cells["PurchasedBonusQty"].Value   = purBonus.ToString("N3");
+                row.Cells["PrevReturnedBonusQty"].Value = prevRetBonus.ToString("N3");
+                row.Cells["NewReturnedBonusQty"].Value  = 0;
+                row.Cells["GrossUnitPrice"].Value      = grossUnitPrice.ToString("N2");
+                row.Cells["DiscountPct"].Value         = effectiveDiscPct > 0 ? (effectiveDiscPct.ToString("N2") + "%") : "0%";
+                row.Cells["NetUnitPrice"].Value        = netUnitPrice.ToString("N2");
+                row.Cells["TotalPrice"].Value          = "0.00";
+                row.Cells["UnitName"].Value            = r["UnitName"]?.ToString() ?? "";
+                row.Cells["Factor"].Value              = r["Factor"] != DBNull.Value ? r["Factor"] : 1.0m;
             }
 
             if (dgItems.Rows.Count > 0)
@@ -696,17 +728,20 @@ namespace ChickenDist.Forms
 
             int rowIdx = dgItems.Rows.Add();
             var newRow = dgItems.Rows[rowIdx];
-            newRow.Cells["ProductID"].Value       = productID;
-            newRow.Cells["ProductName"].Value     = name;
-            newRow.Cells["PurchasedQty"].Value    = "عام";
-            newRow.Cells["PrevReturnedQty"].Value = "0";
-            newRow.Cells["GrossUnitPrice"].Value  = price.ToString("N2");
-            newRow.Cells["DiscountPct"].Value     = "0%";
-            newRow.Cells["NetUnitPrice"].Value    = price.ToString("N2");
-            newRow.Cells["NewReturnedQty"].Value  = defaultQty;
-            newRow.Cells["TotalPrice"].Value      = (defaultQty * price).ToString("N2");
-            newRow.Cells["UnitName"].Value        = unitName;
-            newRow.Cells["Factor"].Value          = 1.0m;
+            newRow.Cells["ProductID"].Value           = productID;
+            newRow.Cells["ProductName"].Value         = name;
+            newRow.Cells["PurchasedQty"].Value        = "عام";
+            newRow.Cells["PrevReturnedQty"].Value     = "0";
+            newRow.Cells["NewReturnedQty"].Value      = defaultQty;
+            newRow.Cells["PurchasedBonusQty"].Value   = "0";
+            newRow.Cells["PrevReturnedBonusQty"].Value = "0";
+            newRow.Cells["NewReturnedBonusQty"].Value  = 0;
+            newRow.Cells["GrossUnitPrice"].Value      = price.ToString("N2");
+            newRow.Cells["DiscountPct"].Value         = "0%";
+            newRow.Cells["NetUnitPrice"].Value        = price.ToString("N2");
+            newRow.Cells["TotalPrice"].Value          = (defaultQty * price).ToString("N2");
+            newRow.Cells["UnitName"].Value            = unitName;
+            newRow.Cells["Factor"].Value              = 1.0m;
 
             RecalcTotal();
 
@@ -746,7 +781,7 @@ namespace ChickenDist.Forms
         private void DgItems_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
         {
             string colName = dgItems.Columns[e.ColumnIndex].Name;
-            if (colName != "NewReturnedQty" && colName != "NetUnitPrice" && colName != "GrossUnitPrice") return;
+            if (colName != "NewReturnedQty" && colName != "NewReturnedBonusQty" && colName != "NetUnitPrice" && colName != "GrossUnitPrice") return;
             if (string.IsNullOrWhiteSpace(e.FormattedValue?.ToString())) return;
 
             if (!decimal.TryParse(e.FormattedValue.ToString(), out decimal val) || val < 0)
@@ -817,19 +852,32 @@ namespace ChickenDist.Forms
                 int prodID  = Convert.ToInt32(row.Cells["ProductID"].Value);
                 string name = row.Cells["ProductName"].Value.ToString();
                 decimal.TryParse(row.Cells["NewReturnedQty"].Value?.ToString(), out decimal newQty);
-                if (newQty <= 0) continue;
+                decimal.TryParse(row.Cells["NewReturnedBonusQty"].Value?.ToString(), out decimal newBonusQty);
+                if (newQty <= 0 && newBonusQty <= 0) continue;
 
                 if (!isGeneral)
                 {
                     decimal.TryParse(row.Cells["PurchasedQty"].Value?.ToString(), out decimal purQty);
                     decimal.TryParse(row.Cells["PrevReturnedQty"].Value?.ToString(), out decimal prevQty);
 
-                    if (newQty + prevQty > purQty)
+                    if (newQty > 0 && (newQty + prevQty > purQty))
                     {
                         MessageBox.Show(
                             $"الكمية المرتجعة للصنف ({name}) تتجاوز الكمية الأصلية بالفاتورة!\n" +
                             $"المشتريات: {purQty:N3} | السابق: {prevQty:N3} | الجديد: {newQty:N3}",
                             "تجاوز الكمية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    decimal.TryParse(row.Cells["PurchasedBonusQty"].Value?.ToString(), out decimal purBonusQty);
+                    decimal.TryParse(row.Cells["PrevReturnedBonusQty"].Value?.ToString(), out decimal prevBonusQty);
+
+                    if (newBonusQty > 0 && (newBonusQty + prevBonusQty > purBonusQty))
+                    {
+                        MessageBox.Show(
+                            $"كمية البونص المرتجعة للصنف ({name}) تتجاوز كمية البونص الأصلية بالفاتورة!\n" +
+                            $"بونص الفاتورة: {purBonusQty:N3} | مرتجع سابق: {prevBonusQty:N3} | الجديد: {newBonusQty:N3}",
+                            "تجاوز كمية البونص", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
                 }
@@ -844,6 +892,7 @@ namespace ChickenDist.Forms
                     ProductID = prodID,
                     ProductName = name,
                     Quantity = newQty,
+                    BonusQuantity = newBonusQty,
                     UnitPrice = netPrice,
                     UnitName = unitName,
                     Factor = fac
@@ -853,7 +902,7 @@ namespace ChickenDist.Forms
 
             if (returnItems.Count == 0)
             {
-                MessageBox.Show("يرجى إدخال كمية مرتجعة صالحة (أكبر من صفر) لصنف واحد على الأقل.",
+                MessageBox.Show("يرجى إدخال كمية مرتجعة أو بونص مرتجع صالح (أكبر من صفر) لصنف واحد على الأقل.",
                     "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }

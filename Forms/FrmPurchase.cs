@@ -154,7 +154,7 @@ namespace ChickenDist.Forms
             var pnlHeader = new Panel
             {
                 Dock    = DockStyle.Top,
-                Height  = 165,
+                Height  = 200,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(12, 5, 12, 5)
             };
@@ -556,7 +556,20 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(btnSearchProduct, 2, 2);
             tbl.SetColumnSpan(btnSearchProduct, 2);
 
-            // ── تمت إزالة صف الإضافة ────────────────────────────────────────────────
+            // ── صف 3: الصنف (كومبو) | زر إضافة سطر فارغ ────────────────────────────
+            // إضافة صف الصنف — الصف 3
+            tbl.Controls.Add(lblProd,       0, 3);
+            tbl.Controls.Add(pnlProduct,    1, 3);
+            tbl.SetColumnSpan(pnlProduct, 3);
+
+            // زر إضافة سطر فارغ في الصف الثالث (عمود 4-5)
+            var btnAddEmptyRow = Theme.MakeButton("➕ سطر جديد [Ins]", 0, 0, 0, 0, Theme.Success);
+            btnAddEmptyRow.Dock = DockStyle.Fill;
+            btnAddEmptyRow.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnAddEmptyRow.Margin = new Padding(3, 3, 3, 3);
+            btnAddEmptyRow.Click += (s, e) => AddNewCodeRow();
+            tbl.Controls.Add(btnAddEmptyRow, 4, 3);
+            tbl.SetColumnSpan(btnAddEmptyRow, 2);
 
             pnlHeader.Controls.Add(tbl);
 
@@ -599,6 +612,20 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",  HeaderText = "الصنف",       ReadOnly = true, FillWeight = 120 });
             dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",     HeaderText = "الكمية",      FillWeight = 55 });
+            var colBonus = new DataGridViewTextBoxColumn
+            {
+                Name = "BonusQuantity",
+                HeaderText = "بونص",
+                FillWeight = 45,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(240, 253, 244),
+                    ForeColor = Color.FromArgb(22, 101, 52),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                }
+            };
+            dgItems.Columns.Add(colBonus);
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",    HeaderText = "سعر الشراء",  FillWeight = 65 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct",  HeaderText = "خصم %",       FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",   HeaderText = "الإجمالي",    ReadOnly = true, FillWeight = 65 });
@@ -1046,11 +1073,11 @@ namespace ChickenDist.Forms
 
             var lblHotkeys = new Label
             {
-                Text = "[F2] جديد\n[F5] حفظ\n[F7] تعليق\n[F8] معلقات\n[F12] بحث صنف",
+                Text = "[F2] جديد\n[F3] بحث\n[F4] كومبو الصنف\n[F5] حفظ\n[F7] تعليق\n[F8] معلقات\n[F12] سطر جديد\n[↓] سطر جديد\n[Ins] سطر جديد",
                 ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 9f),
+                Font = new Font("Segoe UI", 8.5f),
                 Dock = DockStyle.Bottom,
-                Height = 90,
+                Height = 115,
                 TextAlign = ContentAlignment.BottomCenter,
                 Margin = new Padding(0)
             };
@@ -1168,11 +1195,12 @@ namespace ChickenDist.Forms
 				}
 			}
 
-            if      (e.KeyCode == Keys.F2)  { ClearInvoice();           e.Handled = true; }
-            else if (e.KeyCode == Keys.F5)  { BtnSave_Click(null,null); e.Handled = true; }
-            else if (e.KeyCode == Keys.F7)  { BtnHold_Click(null,null); e.Handled = true; }
+            if      (e.KeyCode == Keys.F2)  { ClearInvoice();              e.Handled = true; }
+            else if (e.KeyCode == Keys.F5)  { BtnSave_Click(null,null);    e.Handled = true; }
+            else if (e.KeyCode == Keys.F7)  { BtnHold_Click(null,null);    e.Handled = true; }
             else if (e.KeyCode == Keys.F8)  { BtnLoadHold_Click(null,null); e.Handled = true; }
-            else if (e.KeyCode == Keys.F12) { cboProduct.Focus();       e.Handled = true; }
+            else if (e.KeyCode == Keys.F12) { AddNewCodeRow();              e.Handled = true; } // F12 = سطر إدخال جديد
+            else if (e.KeyCode == Keys.F4)  { cboProduct.Focus();          e.Handled = true; } // F4 = التركيز على كومبو الصنف
             else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = شاشة البحث
         }
 
@@ -1825,6 +1853,7 @@ namespace ChickenDist.Forms
                     item.ProductName,
                     null, // UnitName
                     item.Quantity.ToString("F3"),
+                    item.BonusQuantity.ToString("F3"),
                     item.UnitPrice.ToString("F2"),
                     item.DiscountPct.ToString("F2"),
                     item.TotalPrice.ToString("F2"),
@@ -2077,6 +2106,13 @@ namespace ChickenDist.Forms
                     item.Quantity = q;
                 else
                     dgItems.Rows[e.RowIndex].Cells["Quantity"].Value = item.Quantity.ToString("F3");
+            }
+            else if (colName == "BonusQuantity")
+            {
+                if (decimal.TryParse(cellVal, out decimal b) && b >= 0)
+                    item.BonusQuantity = b;
+                else
+                    dgItems.Rows[e.RowIndex].Cells["BonusQuantity"].Value = item.BonusQuantity.ToString("F3");
             }
             else if (colName == "UnitPrice")
             {
@@ -2482,6 +2518,7 @@ namespace ChickenDist.Forms
                         ProductCode = iRow["ProductCode"].ToString(),
                         ProductName = iRow["ProductName"].ToString(),
                         Quantity    = Convert.ToDecimal(iRow["Quantity"]),
+                        BonusQuantity = iRow.Table.Columns.Contains("BonusQuantity") && iRow["BonusQuantity"] != DBNull.Value ? Convert.ToDecimal(iRow["BonusQuantity"]) : 0m,
                         UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
                         DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
                         DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
@@ -3540,6 +3577,7 @@ namespace ChickenDist.Forms
                     ProductCode = iRow["ProductCode"].ToString(),
                     ProductName = iRow["ProductName"].ToString(),
                     Quantity    = Convert.ToDecimal(iRow["Quantity"]),
+                    BonusQuantity = iRow.Table.Columns.Contains("BonusQuantity") && iRow["BonusQuantity"] != DBNull.Value ? Convert.ToDecimal(iRow["BonusQuantity"]) : 0m,
                     UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
                     DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
                     DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,

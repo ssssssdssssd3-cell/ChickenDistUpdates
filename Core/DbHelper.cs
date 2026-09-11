@@ -1127,6 +1127,18 @@ namespace ChickenDist.Core
                     ALTER TABLE PurchaseItems ADD IMEI NVARCHAR(255) NULL;
             END");
 
+            SafeMigrate("PurchaseItems.BonusQuantityColumn", @"
+            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('PurchaseItems', 'BonusQuantity') IS NULL
+                    ALTER TABLE PurchaseItems ADD BonusQuantity DECIMAL(18, 4) NOT NULL DEFAULT 0;
+            END
+            IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('PurchaseReturnItems', 'BonusQuantity') IS NULL
+                    ALTER TABLE PurchaseReturnItems ADD BonusQuantity DECIMAL(18, 4) NOT NULL DEFAULT 0;
+            END");
+
             SafeMigrate("SaleItems.IMEIColumn", @"
             IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
             BEGIN
@@ -1188,7 +1200,7 @@ namespace ChickenDist.Core
                                 WHERE sa.ProductID = ps.ProductID AND sa.WarehouseID = ps.WarehouseID
                                   AND (sa.Notes IS NULL OR sa.Notes NOT LIKE N'مطابقة آلية%')), 0)
                         -- مشتريات
-                        + ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, 1.0))
+                        + ISNULL((SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * COALESCE(pi.Factor, 1.0))
                                  FROM PurchaseItems pi WITH (NOLOCK) 
                                  JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID
                                  WHERE pi.ProductID = ps.ProductID AND pu.WarehouseID = ps.WarehouseID AND pu.IsPosted = 1), 0)
@@ -1209,7 +1221,7 @@ namespace ChickenDist.Core
                                  WHERE si.ProductID = ps.ProductID AND s.WarehouseID = ps.WarehouseID AND s.IsPosted = 1
                                    AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID))))), 0)
                         -- مرتجع مشتريات
-                        - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, 1.0))
+                        - ISNULL((SELECT SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(pri.Factor, 1.0))
                                  FROM PurchaseReturnItems pri WITH (NOLOCK) 
                                  JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID
                                  WHERE pri.ProductID = ps.ProductID AND pr.WarehouseID = ps.WarehouseID), 0)
@@ -2596,12 +2608,12 @@ namespace ChickenDist.Core
                     + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND sr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate)), 0)
                     + ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND dl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
                     + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi JOIN DriverHandovers dh ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND dl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate)), 0)
-                    + ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND pu.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
-                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND pu.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
+                    + ISNULL((SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND pu.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
+                    + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity + ISNULL(pi.BonusQuantity, 0)) FROM PurchaseItems pi JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND pu.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate)), 0)
                     + ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND t.ToWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
                     + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND t.ToWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
+                    - ISNULL((SELECT SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity + ISNULL(pri.BonusQuantity, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted IN (0, 1) AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted IN (0, 1) AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(ti2.Quantity * ISNULL(ti2.Factor, 0)) FROM WarehouseTransferItems ti2 JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID WHERE ti2.ProductID = p.ProductID AND t2.IsPosted = 1 AND t2.FromWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)

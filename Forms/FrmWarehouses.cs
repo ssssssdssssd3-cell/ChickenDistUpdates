@@ -64,7 +64,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(8)
             };
             tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 310f));
+            tblMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 370f));
 
             // ══════ العمود الأيسر: قائمة المخازن + لوحة الكميات ══════
             var tblLeft = new TableLayoutPanel
@@ -338,67 +338,138 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(16)
+                Padding = new Padding(14, 10, 14, 10)
             };
 
             lblFormTitle = new Label
             {
                 Text = "➕ مخزن جديد",
-                Dock = DockStyle.Top, 
-                Height = 36,
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 42,
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Theme.Primary,
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                BorderStyle = BorderStyle.None
             };
+            // خط فاصل تحت العنوان
+            var sepTitle = new Panel { Dock = DockStyle.Top, Height = 2, BackColor = Theme.Primary };
 
-            var flowForm = new FlowLayoutPanel
+            // ─── حقل اسم المخزن ───
+            var lblName = new Label
             {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
+                Text = "اسم المخزن:",
+                Dock = DockStyle.Top, Height = 26,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                TextAlign = ContentAlignment.MiddleRight,
                 Padding = new Padding(0, 8, 0, 0)
             };
+            txtName = new TextBox
+            {
+                Dock = DockStyle.Top, Height = 32,
+                Font = new Font("Segoe UI", 11f),
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.Yes
+            };
+            var sepName = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = Theme.BorderColor };
 
-            flowForm.Controls.Add(FieldLabel("اسم المخزن:"));
-            txtName = FieldTextBox(flowForm, false);
+            // ─── حقل الموقع ───
+            var lblLocation = new Label
+            {
+                Text = "الموقع:",
+                Dock = DockStyle.Top, Height = 26,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                TextAlign = ContentAlignment.MiddleRight,
+                Padding = new Padding(0, 8, 0, 0)
+            };
+            txtLocation = new TextBox
+            {
+                Dock = DockStyle.Top, Height = 32,
+                Font = new Font("Segoe UI", 11f),
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.Yes
+            };
+            var sepLocation = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = Theme.BorderColor };
 
-            flowForm.Controls.Add(FieldLabel("الموقع:"));
-            txtLocation = FieldTextBox(flowForm, false);
+            // ─── حقل الملاحظات ───
+            var lblNotes = new Label
+            {
+                Text = "ملاحظات:",
+                Dock = DockStyle.Top, Height = 26,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                TextAlign = ContentAlignment.MiddleRight,
+                Padding = new Padding(0, 8, 0, 0)
+            };
+            txtNotes = new TextBox
+            {
+                Dock = DockStyle.Top, Height = 80,
+                Multiline = true,
+                Font = new Font("Segoe UI", 10.5f),
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.Yes,
+                ScrollBars = ScrollBars.Vertical
+            };
+            var sepNotes = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = Theme.BorderColor };
 
-            flowForm.Controls.Add(FieldLabel("ملاحظات:"));
-            txtNotes = FieldTextBox(flowForm, true);
-
+            // ─── تيك نشط ───
             chkActive = new CheckBox
             {
-                Text = "✔ مخزن نشط",
-                AutoSize = false, 
-                Size = new Size(270, 30),
-                Margin = new Padding(0, 10, 0, 14),
-                ForeColor = Theme.TextMain, 
-                Checked = true, 
-                Font = Theme.FontMain
+                Text = "✔  مخزن نشط",
+                Dock = DockStyle.Top, Height = 36,
+                ForeColor = Theme.TextMain,
+                Checked = true,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Padding = new Padding(0, 4, 0, 0)
             };
-            flowForm.Controls.Add(chkActive);
 
             // ─── أزرار الإجراءات ───
-            var pnlBtns = new FlowLayoutPanel
+            var pnlBtns = new Panel
             {
-                AutoSize = true, 
-                FlowDirection = FlowDirection.RightToLeft,
-                Margin = new Padding(0, 6, 0, 0), 
-                Width = 275
+                Dock = DockStyle.Top, Height = 46,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 6, 0, 0)
             };
             btnNew    = ActionBtn("➕ إضافة",  Color.FromArgb(40, 120, 60));
-            btnSave   = ActionBtn("➕ حفظ",   Theme.Accent);
+            btnSave   = ActionBtn("💾 حفظ",   Theme.Accent);
             btnDelete = ActionBtn("⛔ إيقاف", Color.FromArgb(170, 45, 45));
+
+            // نجعل الأزرار أكبر وأوضح
+            btnNew.Size    = new Size(100, 36);
+            btnSave.Size   = new Size(100, 36);
+            btnDelete.Size = new Size(100, 36);
+            btnNew.Font    = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnSave.Font   = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnDelete.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+
+            // نرتب الأزرار يدوياً من اليمين
+            btnNew.Location    = new Point(pnlForm.Padding.Left, 4);
+            btnSave.Location   = new Point(pnlForm.Padding.Left + 108, 4);
+            btnDelete.Location = new Point(pnlForm.Padding.Left + 216, 4);
+            pnlBtns.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
+
             btnNew.Click    += (s, e) => ClearDetail();
             btnSave.Click   += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
-            pnlBtns.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete });
-            flowForm.Controls.Add(pnlBtns);
 
-            pnlForm.Controls.Add(flowForm);
+            // ─── تجميع العناصر بالترتيب (من أسفل لأعلى لأن Dock=Top يعكس) ───
+            // يجب إضافة العناصر بعكس ترتيب الظهور بسبب DockStyle.Top
+            pnlForm.Controls.Add(pnlBtns);         // سيظهر في الأسفل نسبياً
+            pnlForm.Controls.Add(chkActive);
+            pnlForm.Controls.Add(sepNotes);
+            pnlForm.Controls.Add(txtNotes);
+            pnlForm.Controls.Add(lblNotes);
+            pnlForm.Controls.Add(sepLocation);
+            pnlForm.Controls.Add(txtLocation);
+            pnlForm.Controls.Add(lblLocation);
+            pnlForm.Controls.Add(sepName);
+            pnlForm.Controls.Add(txtName);
+            pnlForm.Controls.Add(lblName);
+            pnlForm.Controls.Add(sepTitle);
             pnlForm.Controls.Add(lblFormTitle);
 
             tblMain.Controls.Add(tblLeft, 0, 0);

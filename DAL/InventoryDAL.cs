@@ -154,14 +154,14 @@ namespace ChickenDist.DAL
                     ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi WITH (NOLOCK) JOIN DriverHandovers dh WITH (NOLOCK) ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl WITH (NOLOCK) ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
                     COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi WITH (NOLOCK) JOIN DriverHandovers dh WITH (NOLOCK) ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl WITH (NOLOCK) ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Purchases
-                    ISNULL((SELECT SUM(pi.Quantity * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi WITH (NOLOCK) JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
-                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity) FROM PurchaseItems pi WITH (NOLOCK) JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    ISNULL((SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi WITH (NOLOCK) JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
+                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity + ISNULL(pi.BonusQuantity, 0)) FROM PurchaseItems pi WITH (NOLOCK) JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
                     -- Incoming since adjustment: Warehouse Transfers
                     ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0) +
                     COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Purchase Returns
-                    - ISNULL((SELECT SUM(pri.Quantity * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri WITH (NOLOCK) JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity) FROM PurchaseReturnItems pri WITH (NOLOCK) JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - ISNULL((SELECT SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri WITH (NOLOCK) JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity + ISNULL(pri.BonusQuantity, 0)) FROM PurchaseReturnItems pri WITH (NOLOCK) JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
                     - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si WITH (NOLOCK) JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si WITH (NOLOCK) JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
@@ -215,7 +215,7 @@ namespace ChickenDist.DAL
 
                     UNION ALL
 
-                    SELECT pi.ProductID, SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) AS NetQty
+                    SELECT pi.ProductID, SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * COALESCE(pi.Factor, 1.0)) AS NetQty
                     FROM PurchaseItems pi WITH (NOLOCK)
                     JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID
                     LEFT JOIN LatestAdj l ON pi.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pu.WarehouseID" : "")}
@@ -267,7 +267,7 @@ namespace ChickenDist.DAL
 
                     UNION ALL
 
-                    SELECT pri.ProductID, -SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) AS NetQty
+                    SELECT pri.ProductID, -SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(pri.Factor, 1.0)) AS NetQty
                     FROM PurchaseReturnItems pri WITH (NOLOCK)
                     JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID
                     LEFT JOIN LatestAdj l ON pri.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pr.WarehouseID" : "")}
@@ -331,7 +331,7 @@ namespace ChickenDist.DAL
 
                     UNION ALL
 
-                    SELECT pi.ProductID, SUM(pi.Quantity * COALESCE(pi.Factor, 1.0)) AS NetQty
+                    SELECT pi.ProductID, SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * COALESCE(pi.Factor, 1.0)) AS NetQty
                     FROM PurchaseItems pi WITH (NOLOCK)
                     JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID
                     LEFT JOIN LatestAdj l ON pi.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pu.WarehouseID" : "")}
@@ -381,7 +381,7 @@ namespace ChickenDist.DAL
 
                     UNION ALL
 
-                    SELECT pri.ProductID, -SUM(pri.Quantity * COALESCE(pri.Factor, 1.0)) AS NetQty
+                    SELECT pri.ProductID, -SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(pri.Factor, 1.0)) AS NetQty
                     FROM PurchaseReturnItems pri WITH (NOLOCK)
                     JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID
                     LEFT JOIN LatestAdj l ON pri.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = pr.WarehouseID" : "")}
@@ -686,7 +686,8 @@ namespace ChickenDist.DAL
                         pu.PurchaseCode AS RefCode,
                         ISNULL(sup.SupplierName, N'---') AS PersonName,
                         w.WarehouseName,
-                        pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
+                        pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) +
+                        ISNULL(pi.BonusQuantity, 0) * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         pu.Notes
                     FROM PurchaseItems pi
@@ -707,7 +708,8 @@ namespace ChickenDist.DAL
                         ISNULL(sup.SupplierName, N'---') AS PersonName,
                         w.WarehouseName,
                         0.00 AS QtyIn,
-                        pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
+                        pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) +
+                        ISNULL(pri.BonusQuantity, 0) * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
                         pr.Notes
                     FROM PurchaseReturnItems pri
                     JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
@@ -962,7 +964,7 @@ namespace ChickenDist.DAL
                                   AND (sa.Notes IS NULL OR sa.Notes NOT LIKE N'مطابقة آلية%')
                                   {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}), 0) +
                         -- Incoming: Purchases
-                        ISNULL((SELECT SUM(pi.Quantity * COALESCE(pi.Factor, @defFactor))
+                        ISNULL((SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * COALESCE(pi.Factor, @defFactor))
                                 FROM PurchaseItems pi WITH (NOLOCK) 
                                 JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID
                                 WHERE pi.ProductID = @pid AND pu.IsPosted = 1 {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
@@ -990,7 +992,7 @@ namespace ChickenDist.DAL
                                     AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID))))
                                     {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
                         -- Outgoing: Purchase Returns
-                        - ISNULL((SELECT SUM(pri.Quantity * COALESCE(pri.Factor, @defFactor))
+                        - ISNULL((SELECT SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(pri.Factor, @defFactor))
                                   FROM PurchaseReturnItems pri WITH (NOLOCK) 
                                   JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID
                                   WHERE pri.ProductID = @pid {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
