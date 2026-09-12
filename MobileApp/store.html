@@ -20,15 +20,27 @@
     let deferredInstallPrompt = null;
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Note:', err));
+        navigator.serviceWorker.register('./sw.js?v=3.2.5').then(reg => {
+          reg.update();
+        }).catch(err => console.log('SW Note:', err));
       });
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
+      console.log('PWA beforeinstallprompt captured for store!');
       const btn = document.getElementById('btnInstallStoreApp');
-      if (btn) btn.classList.remove('hidden');
+      if (btn) btn.classList.remove('opacity-50');
+      if (typeof checkAutoInstallPrompt === 'function') {
+        checkAutoInstallPrompt();
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      if (typeof dismissAutoInstallBanner === 'function') dismissAutoInstallBanner();
+      if (typeof showToast === 'function') showToast("🎉 تم تثبيت تطبيق المتجر بنجاح على الشاشة الرئيسية!");
     });
   </script>
   
@@ -311,6 +323,13 @@
           <span class="hidden md:inline">مراسلة</span>
         </a>
 
+        <!-- زر تثبيت تطبيق المتجر على الموبايل -->
+        <button onclick="triggerStoreAppInstall()" id="btnInstallStoreApp" title="تثبيت تطبيق المتجر على الشاشة الرئيسية" class="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-blue-600/30 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-mobile-screen-button text-xs sm:text-sm"></i>
+          <span class="hidden sm:inline">تثبيت التطبيق</span>
+          <span class="sm:hidden">تثبيت 📲</span>
+        </button>
+
         <!-- زر اختيار المظهر (الثيمات: ليلي / نهاري / أسود وذهبي) -->
         <button onclick="openThemeSelectorModal()" id="btnThemeSelector" title="تغيير مظهر المتجر (ليلي / نهاري / أسود وذهبي فاخر)" class="p-2 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
           <i id="themeIcon" class="fa-solid fa-moon text-sm text-indigo-400"></i>
@@ -440,6 +459,33 @@
         <span>عرض السلة والطلب</span>
         <i class="fa-solid fa-arrow-left text-xs"></i>
       </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 4.1 بانر التثبيت التلقائي الذكي على الموبايل (PWA Auto Install Floating Banner) -->
+  <!-- ========================================== -->
+  <div id="pwaAutoInstallBanner" class="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:left-6 sm:w-96 z-40 hidden transition-all duration-300 transform translate-y-0">
+    <div class="glass-card bg-slate-900/95 border-2 border-indigo-500/70 rounded-2xl p-3 shadow-2xl backdrop-blur-md flex items-center justify-between gap-2.5 text-right">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div id="autoInstallIconContainer" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white text-base font-black shadow-md flex-shrink-0 overflow-hidden border border-indigo-400/40">
+          <img id="autoInstallLogoImg" src="" class="w-full h-full object-contain hidden" />
+          <i id="autoInstallFallbackIcon" class="fa-solid fa-mobile-screen-button"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs font-black text-white truncate" id="autoInstallTitle">تثبيت تطبيق المتجر</div>
+          <div class="text-[10px] text-slate-300 truncate">تثبيت التطبيق على هاتفك للطلب السريع بنقرة واحدة</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button onclick="executeBrowserPwaInstall()" class="px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 active:scale-95 text-white font-black rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1 cursor-pointer">
+          <i class="fa-solid fa-download text-[11px]"></i>
+          <span>تثبيت 📲</span>
+        </button>
+        <button onclick="dismissAutoInstallBanner()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition cursor-pointer" title="لاحقاً">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1048,14 +1094,21 @@
         document.getElementById('lblAnnouncementText').textContent = storeConfig.Announcement;
         document.getElementById('storeAnnouncementBanner').classList.remove('hidden');
       }
+
+      // توليد أيقونة التطبيق والمانيفيست الخاص بالمتجر تلقائياً
+      if (typeof generateStoreAppIconCanvas === 'function') {
+        generateStoreAppIconCanvas();
+      }
     }
 
     function renderCategoryPills() {
       const container = document.getElementById('categoryPillsContainer');
-      document.getElementById('totalProductsCount').textContent = products.length;
+      const totalCountElem = document.getElementById('totalProductsCount');
+      if (totalCountElem) totalCountElem.textContent = products.length;
+      if (!container) return;
 
       const html = categories.map(cat => {
-        const count = products.filter(p => p.CategoryID == cat.CategoryID).length;
+        const count = products.filter(p => String(p.CategoryID) === String(cat.CategoryID)).length;
         return `
           <button onclick="selectCategory(${cat.CategoryID})" id="pill-cat-${cat.CategoryID}" 
                   class="px-3.5 py-2 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-700/80 font-bold whitespace-nowrap transition">
@@ -1081,104 +1134,126 @@
     }
 
     function clearSearch() {
-      document.getElementById('searchInput').value = '';
-      document.getElementById('btnClearSearch').classList.add('hidden');
+      const input = document.getElementById('searchInput');
+      if (input) input.value = '';
+      const btn = document.getElementById('btnClearSearch');
+      if (btn) btn.classList.add('hidden');
       renderProducts();
     }
 
     function filterProducts() {
-      const q = document.getElementById('searchInput').value.trim();
-      document.getElementById('btnClearSearch').classList.toggle('hidden', q.length === 0);
+      const q = (document.getElementById('searchInput')?.value || '').trim();
+      const btn = document.getElementById('btnClearSearch');
+      if (btn) btn.classList.toggle('hidden', q.length === 0);
       renderProducts();
     }
 
     function renderProducts() {
       const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
-      const grid = document.getElementById('productsGrid');
+      let grid = document.getElementById('productsGrid');
       const empty = document.getElementById('emptyState');
 
+      // حماية فائقة: إذا لم تكن شبكة الأصناف موجودة في DOM لسبب ما، يتم إنشاؤها فوراً
+      if (!grid) {
+        const main = document.querySelector('main') || document.body;
+        const contact = document.getElementById('storeContactCard');
+        grid = document.createElement('div');
+        grid.id = 'productsGrid';
+        grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4';
+        if (contact && main.contains(contact)) {
+          main.insertBefore(grid, contact);
+        } else {
+          main.appendChild(grid);
+        }
+      }
+
       const filtered = products.filter(p => {
-        if (selectedCatID !== 0 && p.CategoryID != selectedCatID) return false;
+        if (selectedCatID !== 0 && selectedCatID !== '0' && String(p.CategoryID) !== String(selectedCatID)) return false;
         if (q && !(p.ProductName || '').toLowerCase().includes(q) && !(p.ProductCode || '').toLowerCase().includes(q)) return false;
         return true;
       });
 
       if (!filtered.length) {
         grid.innerHTML = '';
-        empty.classList.remove('hidden');
+        if (empty) empty.classList.remove('hidden');
         return;
       }
-      empty.classList.add('hidden');
+      if (empty) empty.classList.add('hidden');
 
       grid.innerHTML = filtered.map(p => {
-        const inCartItem = cart.find(c => c.ProductID == p.ProductID);
-        const inCartQty = inCartItem ? inCartItem.Quantity : 0;
+        try {
+          const inCartItem = cart.find(c => c.ProductID == p.ProductID);
+          const inCartQty = inCartItem ? inCartItem.Quantity : 0;
 
-        // فحص إظهار السعر
-        const priceHtml = storeConfig.ShowPrices
-          ? `<div class="font-black text-emerald-400 text-sm sm:text-base">${parseFloat(p.Price || 0).toFixed(2)} <span class="text-[10px] text-slate-400">ج.م</span></div>`
-          : `<div class="text-[11px] font-bold text-amber-300/90">السعر عند الطلب 📞</div>`;
+          // فحص إظهار السعر
+          const priceHtml = storeConfig.ShowPrices
+            ? `<div class="font-black text-emerald-400 text-sm sm:text-base">${parseFloat(p.Price || 0).toFixed(2)} <span class="text-[10px] text-slate-400">ج.م</span></div>`
+            : `<div class="text-[11px] font-bold text-amber-300/90">السعر عند الطلب 📞</div>`;
 
-        // فحص إظهار رصيد المخزون
-        let stockHtml = '';
-        if (storeConfig.ShowStockQty) {
-          const qty = parseFloat(p.StockQty || 0);
-          if (qty > 0) {
-            stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 font-bold">المتاح: ${qty} ${p.Unit || ''}</span>`;
+          // فحص إظهار رصيد المخزون
+          let stockHtml = '';
+          if (storeConfig.ShowStockQty) {
+            const qty = parseFloat(p.StockQty || 0);
+            if (qty > 0) {
+              stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 font-bold">المتاح: ${qty} ${p.Unit || ''}</span>`;
+            } else {
+              stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-500/30 font-bold">غير متوفر حالياً</span>`;
+            }
           } else {
-            stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-500/30 font-bold">غير متوفر حالياً</span>`;
+            stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-500/30 font-bold">متوفر للطلب ✅</span>`;
           }
-        } else {
-          stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-500/30 font-bold">متوفر للطلب ✅</span>`;
-        }
 
-        return `
-          <div class="glass-card rounded-2xl p-3 sm:p-4 border border-slate-800 hover:border-blue-500/40 transition flex flex-col justify-between shadow-md relative overflow-hidden group">
-            
-            <!-- معلومات الصنف -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-1">
-                <span class="text-[10px] text-slate-400 font-semibold truncate">${p.CategoryName || 'عام'}</span>
-                ${stockHtml}
-              </div>
-
-              <h4 class="font-bold text-white text-xs sm:text-sm line-clamp-2 leading-tight min-h-[2.5rem] group-hover:text-blue-300 transition">
-                ${p.ProductName}
-              </h4>
-
-              <div class="pt-1 flex items-baseline justify-between">
-                ${priceHtml}
-                <span class="text-[10px] text-slate-400">${p.Unit ? `لكل ${p.Unit}` : ''}</span>
-              </div>
-            </div>
-
-            <!-- أزرار الإضافة والتحكم بالكمية -->
-            <div class="mt-3 pt-2.5 border-t border-slate-800/80">
-              ${inCartQty > 0 ? `
-                <div class="flex items-center justify-between bg-slate-900 rounded-xl p-1 border border-blue-500/40">
-                  <button onclick="updateItemQuantity(${p.ProductID}, -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-90 text-white font-bold flex items-center justify-center transition">
-                    <i class="fa-solid fa-minus text-[10px]"></i>
-                  </button>
-                  <span class="font-black text-white text-xs px-2">${inCartQty}</span>
-                  <button onclick="updateItemQuantity(${p.ProductID}, 1)" class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-bold flex items-center justify-center transition">
-                    <i class="fa-solid fa-plus text-[10px]"></i>
-                  </button>
+          return `
+            <div class="glass-card rounded-2xl p-3 sm:p-4 border border-slate-800 hover:border-blue-500/40 transition flex flex-col justify-between shadow-md relative overflow-hidden group">
+              
+              <!-- معلومات الصنف -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[10px] text-slate-400 font-semibold truncate">${p.CategoryName || 'عام'}</span>
+                  ${stockHtml}
                 </div>
-              ` : (storeConfig.ShowStockQty && parseFloat(p.StockQty || 0) <= 0) ? `
-                <button disabled class="w-full py-2 bg-slate-800/80 text-rose-400 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-not-allowed border border-rose-900/30">
-                  <i class="fa-solid fa-ban text-xs text-rose-500"></i>
-                  <span>غير متوفر حالياً</span>
-                </button>
-              ` : `
-                <button onclick="addToCart(${p.ProductID})" class="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 transition">
-                  <i class="fa-solid fa-cart-plus text-xs"></i>
-                  <span>إضافة للسلة</span>
-                </button>
-              `}
-            </div>
 
-          </div>
-        `;
+                <h4 class="font-bold text-white text-xs sm:text-sm line-clamp-2 leading-tight min-h-[2.5rem] group-hover:text-blue-300 transition">
+                  ${p.ProductName}
+                </h4>
+
+                <div class="pt-1 flex items-baseline justify-between">
+                  ${priceHtml}
+                  <span class="text-[10px] text-slate-400">${p.Unit ? `لكل ${p.Unit}` : ''}</span>
+                </div>
+              </div>
+
+              <!-- أزرار الإضافة والتحكم بالكمية -->
+              <div class="mt-3 pt-2.5 border-t border-slate-800/80">
+                ${inCartQty > 0 ? `
+                  <div class="flex items-center justify-between bg-slate-900 rounded-xl p-1 border border-blue-500/40">
+                    <button onclick="updateItemQuantity(${p.ProductID}, -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-90 text-white font-bold flex items-center justify-center transition">
+                      <i class="fa-solid fa-minus text-[10px]"></i>
+                    </button>
+                    <span class="font-black text-white text-xs px-2">${inCartQty}</span>
+                    <button onclick="updateItemQuantity(${p.ProductID}, 1)" class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-bold flex items-center justify-center transition">
+                      <i class="fa-solid fa-plus text-[10px]"></i>
+                    </button>
+                  </div>
+                ` : (storeConfig.ShowStockQty && parseFloat(p.StockQty || 0) <= 0) ? `
+                  <button disabled class="w-full py-2 bg-slate-800/80 text-rose-400 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-not-allowed border border-rose-900/30">
+                    <i class="fa-solid fa-ban text-xs text-rose-500"></i>
+                    <span>غير متوفر حالياً</span>
+                  </button>
+                ` : `
+                  <button onclick="addToCart(${p.ProductID})" class="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 transition">
+                    <i class="fa-solid fa-cart-plus text-xs"></i>
+                    <span>إضافة للسلة</span>
+                  </button>
+                `}
+              </div>
+
+            </div>
+          `;
+        } catch (itemErr) {
+          console.warn("Error rendering item card:", p, itemErr);
+          return '';
+        }
       }).join('');
     }
 
@@ -1742,8 +1817,11 @@ ${itemsText}
     }
 
     // ──────────────────────────────────────────
-    // 10. دعم تثبيت المتجر كأيقونة (PWA Install Engine)
     // ──────────────────────────────────────────
+    // 10. دعم وتثبيت المتجر كأيقونة PWA تلقائياً (PWA Engine)
+    // ──────────────────────────────────────────
+    let cachedStoreAppIconUrl = null;
+
     function checkIosBanner() {
       const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -1753,7 +1831,59 @@ ${itemsText}
       }
     }
 
-    function triggerStoreAppInstall() {
+    function checkAutoInstallPrompt() {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (isStandalone) return;
+
+      const dismissed = sessionStorage.getItem('pwa_store_install_dismissed');
+      if (dismissed) return;
+
+      setTimeout(() => {
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+        const banner = document.getElementById('pwaAutoInstallBanner');
+        if (banner && (isMobile || deferredInstallPrompt)) {
+          const titleEl = document.getElementById('autoInstallTitle');
+          if (titleEl && storeConfig.StoreName) {
+            titleEl.textContent = storeConfig.StoreName;
+          }
+          const logoImg = document.getElementById('autoInstallLogoImg');
+          const fallbackIcon = document.getElementById('autoInstallFallbackIcon');
+          if (storeConfig.StoreLogo && logoImg) {
+            logoImg.src = storeConfig.StoreLogo;
+            logoImg.classList.remove('hidden');
+            if (fallbackIcon) fallbackIcon.classList.add('hidden');
+          }
+          banner.classList.remove('hidden');
+        }
+      }, 1500);
+    }
+
+    function dismissAutoInstallBanner() {
+      const banner = document.getElementById('pwaAutoInstallBanner');
+      if (banner) banner.classList.add('hidden');
+      try {
+        sessionStorage.setItem('pwa_store_install_dismissed', 'true');
+      } catch (e) {}
+    }
+
+    async function triggerStoreAppInstall() {
+      // 1. تجربة التثبيت التلقائي المباشر (مثل تطبيق المالك)
+      if (deferredInstallPrompt) {
+        try {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            showToast("🎉 تم تثبيت تطبيق المتجر بنجاح على الشاشة الرئيسية!");
+            deferredInstallPrompt = null;
+            dismissAutoInstallBanner();
+            return;
+          }
+        } catch (err) {
+          console.log("Install prompt note:", err);
+        }
+      }
+
+      // 2. إذا لم يكن متاحاً أو على جهاز iPhone، فتح نافذة الخطوات الإرشادية
       const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
       const iosSection = document.getElementById('iosInstallGuideSection');
       const androidSection = document.getElementById('androidInstallGuideSection');
@@ -1779,17 +1909,172 @@ ${itemsText}
           deferredInstallPrompt.prompt();
           const { outcome } = await deferredInstallPrompt.userChoice;
           if (outcome === 'accepted') {
+            showToast("🎉 تم تثبيت تطبيق المتجر بنجاح على الشاشة الرئيسية!");
             closePwaInstallModal();
-            const btn = document.getElementById('btnInstallStoreApp');
-            if (btn) btn.classList.add('hidden');
+            dismissAutoInstallBanner();
+            deferredInstallPrompt = null;
+            return;
           }
-          deferredInstallPrompt = null;
-          return;
         } catch (err) {
           console.log("Install prompt error:", err);
         }
       }
-      alert("📱 من قائمة متصفحك (⋮) اضغط على: 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'");
+
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIos) {
+        triggerStoreAppInstall();
+      } else {
+        showToast("📱 من قائمة المتصفح (⋮) اختر: 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'");
+      }
+    }
+
+    function generateStoreAppIconCanvas() {
+      const storeName = storeConfig.StoreName || "المتجر الإلكتروني";
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // خلفية داكنة متدرجة
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(0.5, '#0b0f19');
+      grad.addColorStop(1, '#020617');
+      ctx.fillStyle = grad;
+
+      const radius = 100;
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // إطار دائري أزرق نيون
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2 - 25, 175, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fill();
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#3b82f6';
+      ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+      ctx.shadowBlur = 20;
+      ctx.stroke();
+      ctx.restore();
+
+      const finalizeIcon = (hasCustomLogo, logoImg = null) => {
+        if (hasCustomLogo && logoImg) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2 - 25, 155, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(logoImg, size / 2 - 150, size / 2 - 175, 300, 300);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = '#3b82f6';
+          ctx.font = 'bold 130px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🛍️', size / 2, size / 2 - 35);
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 36px "Cairo", "Segoe UI", Tahoma, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        let displayTitle = storeName;
+        if (displayTitle.length > 18) displayTitle = displayTitle.substring(0, 16) + '...';
+        ctx.fillText(displayTitle, size / 2, size - 70);
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 20px "Cairo", "Segoe UI", Tahoma, Arial, sans-serif';
+        ctx.fillText('PROSOFT ONLINE STORE', size / 2, size - 32);
+
+        cachedStoreAppIconUrl = canvas.toDataURL('image/png');
+        updatePageFaviconAndPwa(cachedStoreAppIconUrl, storeName);
+      };
+
+      if (storeConfig.StoreLogo && storeConfig.StoreLogo.startsWith('data:image')) {
+        const img = new Image();
+        img.onload = () => finalizeIcon(true, img);
+        img.onerror = () => finalizeIcon(false);
+        img.src = storeConfig.StoreLogo;
+      } else {
+        finalizeIcon(false);
+      }
+    }
+
+    function updatePageFaviconAndPwa(iconUrl, storeName) {
+      let fav = document.querySelector("link[rel*='icon']");
+      if (!fav) {
+        fav = document.createElement('link');
+        fav.rel = 'shortcut icon';
+        document.head.appendChild(fav);
+      }
+      fav.href = iconUrl;
+
+      let appleIcon = document.querySelector("link[rel='apple-touch-icon']");
+      if (!appleIcon) {
+        appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        document.head.appendChild(appleIcon);
+      }
+      appleIcon.href = iconUrl;
+
+      try {
+        const manifestObj = {
+          name: storeName + " - المتجر الإلكتروني",
+          short_name: storeName.substring(0, 14),
+          description: "متجر الطلبات الأونلاين - " + storeName,
+          start_url: window.location.href,
+          display: "standalone",
+          background_color: "#0f172a",
+          theme_color: "#0f172a",
+          icons: [
+            {
+              src: iconUrl,
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable"
+            }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        let manifestLink = document.querySelector("link[rel='manifest']");
+        if (!manifestLink) {
+          manifestLink = document.createElement('link');
+          manifestLink.rel = 'manifest';
+          document.head.appendChild(manifestLink);
+        }
+        manifestLink.href = manifestUrl;
+      } catch (e) {
+        console.warn("Manifest update error:", e);
+      }
+    }
+
+    function showToast(msg) {
+      let toast = document.getElementById('toastNotification');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toastNotification';
+        toast.className = 'fixed top-5 left-1/2 -translate-x-1/2 z-[99999] max-w-sm w-[90%] bg-slate-900/95 border border-emerald-500/50 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-3 text-xs font-bold transition-all';
+        toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-base flex-shrink-0"></i><span id="toastMessage"></span>`;
+        document.body.appendChild(toast);
+      }
+      const msgEl = document.getElementById('toastMessage') || toast;
+      msgEl.textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3500);
     }
 
     function validatePhoneLive(input) {
@@ -1915,6 +2200,7 @@ ${itemsText}
       initTheme();
       loadStoreData();
       checkIosBanner();
+      checkAutoInstallPrompt();
     });
   </script>
 </body>
