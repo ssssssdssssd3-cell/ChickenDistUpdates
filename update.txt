@@ -1,5 +1,5 @@
-version=3.5.0
+version=3.5.1
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.0&t=1789235251
-sha256=B98AA716C75F02820921421B05596E38DB1442485A20C80FBD71C681500D9124
-changelog=v3.5.0 - 2026-09-12: Purchase & Return Bonus items, Purchase Bonus Report, Scanner & Warehouse UI enhancements
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.1&t=1789235604
+sha256=29E3F28BD94A5A432C4839419D9AE9981732B3F8E2219127628975BF83E7A3BF
+changelog=v3.5.1 - 2026-09-12: Purchase & Return Bonus items, Purchase Bonus Report, Scanner & Warehouse UI enhancements

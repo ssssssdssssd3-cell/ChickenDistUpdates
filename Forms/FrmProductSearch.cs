@@ -174,7 +174,7 @@ namespace ChickenDist.Forms
             dgProducts = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Color.FromArgb(18, 36, 58),
+                BackgroundColor = Color.FromArgb(245, 247, 250),
                 BorderStyle = BorderStyle.FixedSingle,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -182,30 +182,31 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
-                GridColor = Color.FromArgb(40, 70, 100),
+                GridColor = Color.FromArgb(220, 225, 235),
+                RowTemplate = { Height = 32 },
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    // سطور فاتحة (زرقاء بترولية فاتحة جداً)
-                    BackColor = Color.FromArgb(22, 42, 65),
-                    ForeColor = Color.FromArgb(220, 235, 255),
-                    SelectionBackColor = Color.FromArgb(0, 150, 200),
+                    // السطر الأول: أبيض ناصع مع خط داكن مريح جداً للعين
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(20, 25, 35),
+                    SelectionBackColor = Color.FromArgb(0, 120, 215),
                     SelectionForeColor = Color.White,
-                    Font = Theme.FontMain
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Regular)
                 },
                 AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    // سطور غامقة بعض الشيء للتمييز بين السطور
-                    BackColor = Color.FromArgb(14, 28, 46),
-                    ForeColor = Color.FromArgb(220, 235, 255),
-                    SelectionBackColor = Color.FromArgb(0, 150, 200),
+                    // السطر الثاني: رصاصي فاتح هادئ لتمييز السطور بالعين بسهولة
+                    BackColor = Color.FromArgb(240, 243, 248),
+                    ForeColor = Color.FromArgb(20, 25, 35),
+                    SelectionBackColor = Color.FromArgb(0, 120, 215),
                     SelectionForeColor = Color.White,
-                    Font = Theme.FontMain
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Regular)
                 },
                 ColumnHeadersHeight = 38,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.FromArgb(0, 90, 140),
+                    BackColor = Color.FromArgb(24, 43, 73),
                     ForeColor = Color.White,
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
@@ -231,7 +232,8 @@ namespace ChickenDist.Forms
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(10, 85, 170)
                 } 
             });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
@@ -244,7 +246,7 @@ namespace ChickenDist.Forms
                 { 
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
                     Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(230, 126, 34)
+                    ForeColor = Color.FromArgb(190, 85, 0)
                 } 
             });
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
@@ -272,6 +274,7 @@ namespace ChickenDist.Forms
             var pnlEditInputs = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Color.FromArgb(18, 36, 58), Padding = new Padding(6, 6, 6, 6) };
 
             Color labelDark = Color.FromArgb(180, 210, 255);
+            Color textDark = Color.FromArgb(15, 23, 42);
 
             // Unit Selector Dropdown
             var lblUnitSelect = new Label { Text = "📐 الوحدة:", Location = new Point(915, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
@@ -281,30 +284,30 @@ namespace ChickenDist.Forms
                 Width = 195,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.White,
-                ForeColor = labelDark,
+                ForeColor = textDark,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboUnits.SelectedIndexChanged += CboUnits_SelectedIndexChanged;
 
             var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(635, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedQty = new TextBox { Location = new Point(555, 9), Width = 75, Text = "1.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            txtSelectedQty = new TextBox { Location = new Point(555, 9), Width = 75, Text = "1.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
             bool showPurchasePrice = _isPurchaseMode && Session.CanViewCost("Purchases");
             var lblPurchasePrice = new Label { Text = "💰 الشراء:", Location = new Point(475, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Visible = showPurchasePrice };
-            txtSelectedPurchasePrice = new TextBox { Location = new Point(365, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = showPurchasePrice };
+            txtSelectedPurchasePrice = new TextBox { Location = new Point(365, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = showPurchasePrice };
 
             int salePriceLabelX = showPurchasePrice ? 285 : 465;
             int salePriceTxtX = showPurchasePrice ? 175 : 355;
 
             var lblSalePrice = new Label { Text = "🏷️ البيع:", Location = new Point(salePriceLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedSalePrice = new TextBox { Location = new Point(salePriceTxtX, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            txtSelectedSalePrice = new TextBox { Location = new Point(salePriceTxtX, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
             int discLabelX = showPurchasePrice ? 100 : 265;
             int discTxtX = showPurchasePrice ? 15 : 180;
 
             var lblDiscount = new Label { Text = "🎁 الخصم %:", Location = new Point(discLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedDiscount = new TextBox { Location = new Point(discTxtX, 9), Width = 80, Text = "0.00", BackColor = Color.White, ForeColor = labelDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            txtSelectedDiscount = new TextBox { Location = new Point(discTxtX, 9), Width = 80, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
             int permNoticeX = showPurchasePrice ? 175 : 355;
             lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
@@ -514,11 +517,11 @@ namespace ChickenDist.Forms
         {
             var cell = dgProducts.Rows[rowIdx].Cells["StockQty"];
             if (stock <= 0)
-                cell.Style.ForeColor = Color.FromArgb(220, 70, 70);
+                cell.Style.ForeColor = Color.FromArgb(200, 30, 30);
             else if (stock < 10)
-                cell.Style.ForeColor = Color.FromArgb(220, 150, 40);
+                cell.Style.ForeColor = Color.FromArgb(190, 100, 0);
             else
-                cell.Style.ForeColor = Color.FromArgb(60, 190, 100);
+                cell.Style.ForeColor = Color.FromArgb(16, 128, 64);
         }
 
         private void ApplyFilter()

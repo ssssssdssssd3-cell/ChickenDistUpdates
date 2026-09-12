@@ -113,28 +113,28 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
-                BackgroundColor = Color.FromArgb(18, 36, 58),
-                ForeColor = Color.FromArgb(220, 235, 255),
-                GridColor = Color.FromArgb(40, 70, 100),
+                BackgroundColor = Color.FromArgb(245, 247, 250),
+                ForeColor = Color.FromArgb(20, 25, 35),
+                GridColor = Color.FromArgb(220, 225, 235),
                 BorderStyle = BorderStyle.None,
                 RowTemplate = { Height = 32 },
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.FromArgb(22, 42, 65),
-                    ForeColor = Color.FromArgb(220, 235, 255),
-                    SelectionBackColor = Color.FromArgb(0, 150, 200),
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(20, 25, 35),
+                    SelectionBackColor = Color.FromArgb(0, 120, 215),
                     SelectionForeColor = Color.White
                 },
                 AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.FromArgb(14, 28, 46),
-                    ForeColor = Color.FromArgb(220, 235, 255),
-                    SelectionBackColor = Color.FromArgb(0, 150, 200),
+                    BackColor = Color.FromArgb(240, 243, 248),
+                    ForeColor = Color.FromArgb(20, 25, 35),
+                    SelectionBackColor = Color.FromArgb(0, 120, 215),
                     SelectionForeColor = Color.White
                 },
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.FromArgb(0, 90, 140),
+                    BackColor = Color.FromArgb(24, 43, 73),
                     ForeColor = Color.White,
                     Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter
