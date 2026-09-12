@@ -178,6 +178,7 @@ namespace ChickenDist.Forms
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseDate",      HeaderText = "التاريخ والوقت", FillWeight = 80f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseType",      HeaderText = "نوع الفاتورة",   FillWeight = 45f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName",      HeaderText = "المورد",         FillWeight = 110f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierCode",      HeaderText = "كود المورد",     FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount",       HeaderText = "قيمة الفاتورة", FillWeight = 60f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount",      HeaderText = "المرتجع ↩",      FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",         HeaderText = "الصافي ✔",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
@@ -369,18 +370,26 @@ namespace ChickenDist.Forms
 
 				string displayType = (pType == "Credit") ? "آجل" : "نقدي";
 				string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
-				dgPurchases.Rows.Add(
+				string supplierCode = row.Table.Columns.Contains("SupplierCode") ? row["SupplierCode"].ToString() : "";
+				int rowIdx = dgPurchases.Rows.Add(
 					row["PurchaseID"],
 					row["PurchaseCode"],
 					row.Table.Columns.Contains("SupplierInvoiceNo") ? row["SupplierInvoiceNo"].ToString() : "",
 					Convert.ToDateTime(row["PurchaseDate"]).ToString("dd/MM/yyyy HH:mm"),
 					displayType,
 					supplier,
+					supplierCode,
 					amount.ToString("N2") + " ج",
 					retStr,
 					netAmt.ToString("N2") + " ج",
 					row["Notes"]
 				);
+				// لون مميز للفواتير التي عليها مرتجع
+				if (returnAmt > 0)
+				{
+					dgPurchases.Rows[rowIdx].DefaultCellStyle.BackColor = Color.FromArgb(255, 243, 180);
+					dgPurchases.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.FromArgb(100, 60, 0);
+				}
 			}
 
 			UpdateSummary(total, ret, cash, credit);
@@ -415,13 +424,24 @@ namespace ChickenDist.Forms
 				if (itemDiscPct > 0) discText = $"{itemDiscPct:0.##}%";
 				else if (itemDiscAmt > 0) discText = itemDiscAmt.ToString("N2");
 
-				dgItems.Rows.Add(
+				int itemRowIdx = dgItems.Rows.Add(
 					row["ProductName"],
 					Convert.ToDecimal(row["Quantity"]).ToString("N2"),
 					Convert.ToDecimal(row["UnitPrice"]).ToString("N2"),
 					discText,
 					Convert.ToDecimal(row["TotalPrice"]).ToString("N2")
 				);
+
+				// لون مميز للأصناف التي عليها مرتجع جزئي أو كلي
+				if (row.Table.Columns.Contains("ReturnedQty") && row["ReturnedQty"] != DBNull.Value)
+				{
+					decimal retQty = Convert.ToDecimal(row["ReturnedQty"]);
+					if (retQty > 0)
+					{
+						dgItems.Rows[itemRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(255, 220, 150);
+						dgItems.Rows[itemRowIdx].DefaultCellStyle.ForeColor = Color.FromArgb(120, 40, 0);
+					}
+				}
 			}
 		}
 		private void BtnPrintPurchase_Click(object sender, EventArgs e)

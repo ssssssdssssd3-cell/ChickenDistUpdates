@@ -73,6 +73,7 @@ namespace ChickenDist.DAL
             return DbHelper.Query(
                 @"SELECT p.PurchaseID, p.PurchaseCode, ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo, p.PurchaseDate, p.PurchaseType,
                          ISNULL(s.SupplierName, ISNULL(c.ClientName, N'---')) AS SupplierName,
+                         ISNULL(s.SupplierCode, ISNULL(c.ClientCode, N'')) AS SupplierCode,
                          p.TotalAmount, p.Notes, p.SupplierID, p.ClientID, p.PurchaseSource,
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                          COALESCE(p.DiscountPct,   0) AS DiscountPct,
@@ -153,7 +154,13 @@ namespace ChickenDist.DAL
                           COALESCE(pi.DiscountPct, 0) AS DiscountPct,
                           COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
                           pi.SuggestedSalePrice,
-                          pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate
+                          pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate,
+                          ISNULL((
+                              SELECT SUM(pri.Quantity)
+                              FROM PurchaseReturnItems pri
+                              JOIN PurchaseReturns prt ON pri.ReturnID = prt.ReturnID
+                              WHERE prt.PurchaseID = @id AND pri.ProductID = pi.ProductID
+                          ), 0) AS ReturnedQty
                     FROM PurchaseItems pi
                     JOIN Products pr ON pi.ProductID = pr.ProductID
                     WHERE pi.PurchaseID = @id",

@@ -228,6 +228,7 @@ namespace ChickenDist.Forms
             dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierInvoiceNo", HeaderText = "فاتورة المورد", FillWeight = 60 });
             dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseDate", HeaderText = "التاريخ والوقت", FillWeight = 75 });
             dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", HeaderText = "جهة الشراء", FillWeight = 90 });
+            dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierCode", HeaderText = "كود المورد", FillWeight = 45, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
             dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseTypeStr", HeaderText = "نوع الفاتورة", FillWeight = 50 });
             dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SubTotal", HeaderText = "قبل الخصم", FillWeight = 55 });
             dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmount", HeaderText = "الخصم", FillWeight = 45 });
@@ -523,6 +524,7 @@ namespace ChickenDist.Forms
                 row.Cells["SupplierInvoiceNo"].Value = r["SupplierInvoiceNo"] != DBNull.Value ? r["SupplierInvoiceNo"].ToString() : "";
                 row.Cells["PurchaseDate"].Value      = Convert.ToDateTime(r["PurchaseDate"]).ToString("dd/MM/yyyy HH:mm");
                 row.Cells["SupplierName"].Value      = r["SupplierName"];
+                row.Cells["SupplierCode"].Value      = r.Table.Columns.Contains("SupplierCode") && r["SupplierCode"] != DBNull.Value ? r["SupplierCode"].ToString() : "";
                 row.Cells["PurchaseTypeStr"].Value  = r["PurchaseType"].ToString() == "Cash" ? "🟡 نقدي" : "🔵 آجل";
                 row.Cells["SubTotal"].Value         = Convert.ToDecimal(r["SubTotal"]).ToString("N2");
                 row.Cells["DiscountAmount"].Value   = Convert.ToDecimal(r["DiscountAmount"]).ToString("N2");
