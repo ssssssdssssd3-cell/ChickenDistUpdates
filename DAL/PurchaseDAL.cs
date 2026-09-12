@@ -82,11 +82,20 @@ namespace ChickenDist.DAL
                          COALESCE(p.ShippingCost,  0) AS ShippingCost,
                          ISNULL(p.ShippingOn, N'Company') AS ShippingOn,
                          ISNULL((
-                             SELECT SUM(pri.Quantity * pri.UnitPrice)
-                             FROM PurchaseReturnItems pri
-                             JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                             WHERE pr.PurchaseID = p.PurchaseID
+                             SELECT CASE 
+                                 WHEN SUM(ISNULL(pr.TotalAmount, 0)) > 0 THEN SUM(ISNULL(pr.TotalAmount, 0))
+                                 ELSE ISNULL(SUM(pri.Quantity * pri.UnitPrice), 0)
+                             END
+                             FROM PurchaseReturns pr
+                             LEFT JOIN PurchaseReturnItems pri ON pr.ReturnID = pri.ReturnID
+                             WHERE pr.PurchaseID = p.PurchaseID 
+                                OR (pr.PurchaseID IS NULL AND pr.Notes LIKE N'%' + p.PurchaseCode + N'%')
                          ), 0) AS ReturnAmount,
+                         CASE WHEN EXISTS (
+                             SELECT 1 FROM PurchaseReturns pr 
+                             WHERE pr.PurchaseID = p.PurchaseID 
+                                OR (pr.PurchaseID IS NULL AND pr.Notes LIKE N'%' + p.PurchaseCode + N'%')
+                         ) THEN 1 ELSE 0 END AS HasReturns,
                          ISNULL((
                              SELECT SUM(pi.Quantity * pi.UnitPrice)
                              FROM PurchaseItems pi
@@ -156,10 +165,11 @@ namespace ChickenDist.DAL
                           pi.SuggestedSalePrice,
                           pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate,
                           ISNULL((
-                              SELECT SUM(pri.Quantity)
+                              SELECT SUM(pri.Quantity + ISNULL(pri.BonusQuantity, 0))
                               FROM PurchaseReturnItems pri
                               JOIN PurchaseReturns prt ON pri.ReturnID = prt.ReturnID
-                              WHERE prt.PurchaseID = @id AND pri.ProductID = pi.ProductID
+                              WHERE (prt.PurchaseID = @id OR (prt.PurchaseID IS NULL AND prt.Notes LIKE N'%' + (SELECT PurchaseCode FROM Purchases WHERE PurchaseID = @id) + N'%'))
+                                AND pri.ProductID = pi.ProductID
                           ), 0) AS ReturnedQty
                     FROM PurchaseItems pi
                     JOIN Products pr ON pi.ProductID = pr.ProductID

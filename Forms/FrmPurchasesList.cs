@@ -184,6 +184,33 @@ namespace ChickenDist.Forms
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",         HeaderText = "الصافي ✔",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",             HeaderText = "الملاحظات",      FillWeight = 110f });
 			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
+			dgPurchases.CellFormatting += (s, e) =>
+			{
+				if (e.RowIndex >= 0 && e.RowIndex < dgPurchases.Rows.Count)
+				{
+					var row = dgPurchases.Rows[e.RowIndex];
+					if (row.Tag is bool hasRet && hasRet)
+					{
+						e.CellStyle.BackColor = Color.FromArgb(255, 245, 175);
+						e.CellStyle.ForeColor = Color.FromArgb(110, 60, 0);
+						e.CellStyle.SelectionBackColor = Color.FromArgb(235, 205, 90);
+						e.CellStyle.SelectionForeColor = Color.FromArgb(80, 40, 0);
+					}
+				}
+			};
+			dgPurchases.RowPrePaint += (s, e) =>
+			{
+				if (e.RowIndex >= 0 && e.RowIndex < dgPurchases.Rows.Count)
+				{
+					var row = dgPurchases.Rows[e.RowIndex];
+					if (row.Tag is bool hasRet && hasRet)
+					{
+						bool isSelected = row.Selected;
+						row.DefaultCellStyle.BackColor = isSelected ? Color.FromArgb(235, 205, 90) : Color.FromArgb(255, 245, 175);
+						row.DefaultCellStyle.ForeColor = isSelected ? Color.FromArgb(80, 40, 0) : Color.FromArgb(110, 60, 0);
+					}
+				}
+			};
 			SetupPurchasesGridContextMenu();
 
 			// الصف 1: تفاصيل الأصناف (تحت بعض بكامل العرض)
@@ -220,11 +247,41 @@ namespace ChickenDist.Forms
 
 			dgItems = MakeGrid();
 			dgItems.Margin = new Padding(0, 2, 0, 0);
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف",      FillWeight = 130f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",    HeaderText = "الكمية",     FillWeight = 50f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",   HeaderText = "سعر الوحدة", FillWeight = 50f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount",    HeaderText = "الخصم",      FillWeight = 50f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   FillWeight = 60f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف",      FillWeight = 110f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",    HeaderText = "الكمية",     FillWeight = 45f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnedQty", HeaderText = "المرتجع ↩",  FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(220, 50, 50) } });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",   HeaderText = "سعر الوحدة", FillWeight = 45f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount",    HeaderText = "الخصم",      FillWeight = 40f });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   FillWeight = 55f });
+
+			dgItems.CellFormatting += (s, e) =>
+			{
+				if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
+				{
+					var row = dgItems.Rows[e.RowIndex];
+					if (row.Tag is bool hasRet && hasRet)
+					{
+						e.CellStyle.BackColor = Color.FromArgb(255, 218, 175);
+						e.CellStyle.ForeColor = Color.FromArgb(130, 40, 0);
+						e.CellStyle.SelectionBackColor = Color.FromArgb(245, 185, 130);
+						e.CellStyle.SelectionForeColor = Color.FromArgb(100, 30, 0);
+					}
+				}
+			};
+
+			dgItems.RowPrePaint += (s, e) =>
+			{
+				if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
+				{
+					var row = dgItems.Rows[e.RowIndex];
+					if (row.Tag is bool hasRet && hasRet)
+					{
+						bool isSelected = row.Selected;
+						row.DefaultCellStyle.BackColor = isSelected ? Color.FromArgb(245, 185, 130) : Color.FromArgb(255, 218, 175);
+						row.DefaultCellStyle.ForeColor = isSelected ? Color.FromArgb(100, 30, 0) : Color.FromArgb(130, 40, 0);
+					}
+				}
+			};
 
 			tblDetail.Controls.Add(pnlDetailLabel, 0, 0);
 			tblDetail.Controls.Add(dgItems, 0, 1);
@@ -371,6 +428,8 @@ namespace ChickenDist.Forms
 				string displayType = (pType == "Credit") ? "آجل" : "نقدي";
 				string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
 				string supplierCode = row.Table.Columns.Contains("SupplierCode") ? row["SupplierCode"].ToString() : "";
+				bool hasReturn = (returnAmt > 0) || (row.Table.Columns.Contains("HasReturns") && row["HasReturns"] != DBNull.Value && Convert.ToInt32(row["HasReturns"]) > 0);
+
 				int rowIdx = dgPurchases.Rows.Add(
 					row["PurchaseID"],
 					row["PurchaseCode"],
@@ -385,10 +444,21 @@ namespace ChickenDist.Forms
 					row["Notes"]
 				);
 				// لون مميز للفواتير التي عليها مرتجع
-				if (returnAmt > 0)
+				if (hasReturn)
 				{
-					dgPurchases.Rows[rowIdx].DefaultCellStyle.BackColor = Color.FromArgb(255, 243, 180);
-					dgPurchases.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.FromArgb(100, 60, 0);
+					var r = dgPurchases.Rows[rowIdx];
+					r.Tag = true;
+					r.DefaultCellStyle.BackColor = Color.FromArgb(255, 245, 175);
+					r.DefaultCellStyle.ForeColor = Color.FromArgb(110, 60, 0);
+					r.DefaultCellStyle.SelectionBackColor = Color.FromArgb(235, 205, 90);
+					r.DefaultCellStyle.SelectionForeColor = Color.FromArgb(80, 40, 0);
+					foreach (DataGridViewCell c in r.Cells)
+					{
+						c.Style.BackColor = Color.FromArgb(255, 245, 175);
+						c.Style.ForeColor = Color.FromArgb(110, 60, 0);
+						c.Style.SelectionBackColor = Color.FromArgb(235, 205, 90);
+						c.Style.SelectionForeColor = Color.FromArgb(80, 40, 0);
+					}
 				}
 			}
 
@@ -424,22 +494,36 @@ namespace ChickenDist.Forms
 				if (itemDiscPct > 0) discText = $"{itemDiscPct:0.##}%";
 				else if (itemDiscAmt > 0) discText = itemDiscAmt.ToString("N2");
 
+				decimal retQty = 0;
+				if (row.Table.Columns.Contains("ReturnedQty") && row["ReturnedQty"] != DBNull.Value)
+					retQty = Convert.ToDecimal(row["ReturnedQty"]);
+
+				string retQtyStr = retQty > 0 ? (retQty.ToString("N2") + " ↩") : "-";
+
 				int itemRowIdx = dgItems.Rows.Add(
 					row["ProductName"],
 					Convert.ToDecimal(row["Quantity"]).ToString("N2"),
+					retQtyStr,
 					Convert.ToDecimal(row["UnitPrice"]).ToString("N2"),
 					discText,
 					Convert.ToDecimal(row["TotalPrice"]).ToString("N2")
 				);
 
 				// لون مميز للأصناف التي عليها مرتجع جزئي أو كلي
-				if (row.Table.Columns.Contains("ReturnedQty") && row["ReturnedQty"] != DBNull.Value)
+				if (retQty > 0)
 				{
-					decimal retQty = Convert.ToDecimal(row["ReturnedQty"]);
-					if (retQty > 0)
+					var ir = dgItems.Rows[itemRowIdx];
+					ir.Tag = true;
+					ir.DefaultCellStyle.BackColor = Color.FromArgb(255, 218, 175);
+					ir.DefaultCellStyle.ForeColor = Color.FromArgb(130, 40, 0);
+					ir.DefaultCellStyle.SelectionBackColor = Color.FromArgb(245, 185, 130);
+					ir.DefaultCellStyle.SelectionForeColor = Color.FromArgb(100, 30, 0);
+					foreach (DataGridViewCell c in ir.Cells)
 					{
-						dgItems.Rows[itemRowIdx].DefaultCellStyle.BackColor = Color.FromArgb(255, 220, 150);
-						dgItems.Rows[itemRowIdx].DefaultCellStyle.ForeColor = Color.FromArgb(120, 40, 0);
+						c.Style.BackColor = Color.FromArgb(255, 218, 175);
+						c.Style.ForeColor = Color.FromArgb(130, 40, 0);
+						c.Style.SelectionBackColor = Color.FromArgb(245, 185, 130);
+						c.Style.SelectionForeColor = Color.FromArgb(100, 30, 0);
 					}
 				}
 			}
