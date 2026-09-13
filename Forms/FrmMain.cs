@@ -35,7 +35,7 @@ namespace ChickenDist.Forms
             try { ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync(); } catch {}
             try { ChickenDist.Services.CloudSyncService.OnNewOrdersReceived += count => UpdateOnlineOrdersBadge(); } catch {}
             try { UpdateOnlineOrdersBadge(); } catch {}
-            try { System.Threading.Tasks.Task.Run(() => InventoryDAL.SyncAllProductStock()); } catch {}
+            try { System.Threading.Tasks.Task.Run(async () => { await System.Threading.Tasks.Task.Delay(15000); InventoryDAL.SyncAllProductStock(); }); } catch {}
         }
 
         private void InitializeComponent()
@@ -1364,6 +1364,9 @@ namespace ChickenDist.Forms
                     e.Cancel = true;
                     return;
                 }
+
+                // Hide the window immediately so the exit appears instantaneous to the user
+                try { this.Hide(); } catch { }
             }
             base.OnFormClosing(e);
         }
@@ -1371,10 +1374,14 @@ namespace ChickenDist.Forms
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             // إيقاف خادم المندوب بأمان عند إغلاق البرنامج
-            Core.DriverPortalServer.Stop();
-            // النسخ الاحتياطي التلقائي عند الخروج
-            BackupManager.AutoBackupOnExit();
+            try { Core.DriverPortalServer.Stop(); } catch { }
+            // إيقاف خدمة المزامنة السحابية
+            try { Services.CloudSyncService.StopAutoBackgroundSync(); } catch { }
+            // النسخ الاحتياطي التلقائي عند الخروج (محلي فوري بدون تعليق)
+            try { BackupManager.AutoBackupOnExit(); } catch { }
             base.OnFormClosed(e);
+            // إنهاء العملية فوراً وبشكل نظيف من الذاكرة
+            try { Environment.Exit(0); } catch { }
         }
 
         private class PartyLookupItem
@@ -2320,8 +2327,16 @@ namespace ChickenDist.Forms
                 int intervalHours = AppConfig.BackupIntervalHours;
                 if (intervalHours > 0)
                 {
-                    // Run immediate check in a separate task/thread to keep startup fast
-                    System.Threading.Tasks.Task.Run(() => CheckAndRunPeriodicBackup(true));
+                    // Run initial check with a 30-second delay so startup is completely unburdened and instant
+                    System.Threading.Tasks.Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await System.Threading.Tasks.Task.Delay(30000);
+                            CheckAndRunPeriodicBackup(true);
+                        }
+                        catch { }
+                    });
 
                     tmrPeriodicBackup = new Timer();
                     tmrPeriodicBackup.Interval = 5 * 60 * 1000; // Check every 5 minutes
@@ -2345,19 +2360,6 @@ namespace ChickenDist.Forms
                 string folder = BackupManager.BackupFolder;
                 if (string.IsNullOrWhiteSpace(folder) || !System.IO.Directory.Exists(folder))
                 {
-                    if (isStartup)
-                    {
-                        this.BeginInvoke((MethodInvoker)(() =>
-                        {
-                            MessageBox.Show(
-                                "⚠️ تنبيه: النسخ الاحتياطي الدوري مفعل ولكن مجلد النسخ الاحتياطي غير موجود أو غير صالح.\nيرجى تحديد مسار مجلد صحيح من شاشة الإعدادات.",
-                                "تنبيه النسخ الاحتياطي",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning,
-                                MessageBoxDefaultButton.Button1,
-                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-                        }));
-                    }
                     return;
                 }
 
@@ -2368,16 +2370,7 @@ namespace ChickenDist.Forms
                     bool success = BackupManager.DoBackup(silent: true);
                     if (success && isStartup)
                     {
-                        this.BeginInvoke((MethodInvoker)(() =>
-                        {
-                            MessageBox.Show(
-                                "✅ تم عمل نسخة احتياطية دورية تلقائية لقاعدة البيانات بنجاح عند تشغيل النظام.",
-                                "النسخ الاحتياطي التلقائي",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information,
-                                MessageBoxDefaultButton.Button1,
-                                MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
-                        }));
+                        AppLogger.Info("تم عمل نسخة احتياطية دورية تلقائية لقاعدة البيانات بنجاح عند بدء النظام.");
                     }
                 }
             }

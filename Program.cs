@@ -56,9 +56,6 @@ namespace ChickenDist
             ChickenDist.Core.ClientCache.PreWarm();
             ChickenDist.Core.SupplierCache.PreWarm();
 
-            // بدء خدمة المزامنة السحابية اللحظية مع تطبيق المالك بالخلفية
-            ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync();
-
             // التحقق من تفعيل ترخيص البرنامج
             if (!ChickenDist.Core.LicenseManager.CheckLicense())
             {
@@ -72,6 +69,7 @@ namespace ChickenDist
 
             // Open Main
             Application.Run(new FrmMain());
+            try { Environment.Exit(0); } catch { }
         }
     }
 

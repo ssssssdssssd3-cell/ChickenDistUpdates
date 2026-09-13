@@ -106,7 +106,7 @@ namespace ChickenDist.Core
         /// ينفذ نسخة احتياطية كاملة لقاعدة البيانات ويقوم بضغطها ورفعها للتلجرام.
         /// يُرجع true لو نجح.
         /// </summary>
-        public static bool DoBackup(bool silent = false)
+        public static bool DoBackup(bool silent = false, bool isExitBackup = false)
         {
             try
             {
@@ -163,24 +163,27 @@ namespace ChickenDist.Core
                     }
                 }
 
-                // إرسال عبر الواتساب (لو مهيأ)
+                // إرسال عبر الواتساب (فقط في النسخ اليدوي أو الدوري وليس عند إغلاق البرنامج تفادياً لأي تعليق)
                 bool waSuccess = false;
                 string waError = "";
-                if (!string.IsNullOrWhiteSpace(AppConfig.WhatsAppBackupPhone))
+                if (!isExitBackup && !string.IsNullOrWhiteSpace(AppConfig.WhatsAppBackupPhone))
                 {
                     waSuccess = UploadToWhatsApp(zipPath, out waError);
                 }
 
-                // رفع النسخة الاحتياطية للسحاب تلقائياً وإتاحتها للتحميل من تطبيق المالك
+                // رفع النسخة الاحتياطية للسحاب تلقائياً (فقط في النسخ اليدوي أو الدوري وليس عند الخروج)
                 bool cloudSuccess = false;
                 string cloudError = "";
-                try
+                if (!isExitBackup)
                 {
-                    cloudSuccess = UploadToCloudBackup(zipPath, out cloudError);
-                }
-                catch (Exception ex)
-                {
-                    cloudError = ex.Message;
+                    try
+                    {
+                        cloudSuccess = UploadToCloudBackup(zipPath, out cloudError);
+                    }
+                    catch (Exception ex)
+                    {
+                        cloudError = ex.Message;
+                    }
                 }
 
                 // حفظ وقت آخر باكب ناجح
@@ -189,11 +192,14 @@ namespace ChickenDist.Core
                 // حذف الملفات القديمة (الاحتفاظ بأحدث 5 ملفات فقط على مدار اليوم)
                 CleanOldBackups(folder, keepCount: 5);
 
-                // إشعار المزامنة السحابية بتحديث بيانات الباكب في الخلفية
-                System.Threading.ThreadPool.QueueUserWorkItem(async _ =>
+                // إشعار المزامنة السحابية بتحديث بيانات الباكب في الخلفية (في غير أوقات الخروج)
+                if (!isExitBackup)
                 {
-                    try { await ChickenDist.Services.CloudSyncService.PushLiveStatsToFirebaseAsync(); } catch { }
-                });
+                    System.Threading.ThreadPool.QueueUserWorkItem(async _ =>
+                    {
+                        try { await ChickenDist.Services.CloudSyncService.PushLiveStatsToFirebaseAsync(); } catch { }
+                    });
+                }
 
                 if (!silent)
                 {
@@ -308,13 +314,13 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
-        /// ينفذ نسخة احتياطية تلقائية عند إغلاق البرنامج لو كان الخيار مفعلاً
+        /// ينفذ نسخة احتياطية محلية سريعة تلقائية عند إغلاق البرنامج لو كان الخيار مفعلاً دون أي تعليق
         /// </summary>
         public static void AutoBackupOnExit()
         {
             if (AppConfig.BackupOnExit)
             {
-                DoBackup(silent: true);
+                DoBackup(silent: true, isExitBackup: true);
             }
         }
 
@@ -425,7 +431,7 @@ namespace ChickenDist.Core
 
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMinutes(3);
+                    httpClient.Timeout = TimeSpan.FromSeconds(15);
 
                     // 1. تجهيز حزمة النسخة الأحدث (Latest Backup Payload)
                     string latestPayload = "{" +
@@ -450,6 +456,7 @@ namespace ChickenDist.Core
                             {
                                 currentPidOk = true;
                                 anyUploadOk = true;
+                                break;
                             }
                         }
                         catch { }
@@ -463,6 +470,7 @@ namespace ChickenDist.Core
                                 if (respFallback != null && respFallback.IsSuccessStatusCode)
                                 {
                                     anyUploadOk = true;
+                                    break;
                                 }
                             }
                             catch { }

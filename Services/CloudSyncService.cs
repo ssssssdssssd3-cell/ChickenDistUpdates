@@ -1543,6 +1543,7 @@ self.addEventListener('fetch', (event) => {
         {
             if (_autoSyncTimer != null) return;
             // Push live stats and pull online orders every 15 seconds
+            // Initial delay 5 seconds so startup UI renders smoothly without any contention
             _autoSyncTimer = new System.Threading.Timer(async _ =>
             {
                 try
@@ -1557,7 +1558,17 @@ self.addEventListener('fetch', (event) => {
                     }
                 }
                 catch {}
-            }, null, 1000, 15000);
+            }, null, 5000, 15000);
+        }
+
+        public static void StopAutoBackgroundSync()
+        {
+            try
+            {
+                _autoSyncTimer?.Dispose();
+                _autoSyncTimer = null;
+            }
+            catch { }
         }
 
         public static void TriggerSyncNow()

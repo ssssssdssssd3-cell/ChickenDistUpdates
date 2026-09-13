@@ -484,7 +484,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 35;
+        private const int CurrentSchemaVersion = 36;
 
         public static void EnsureAppSettingsTable()
         {
@@ -1265,48 +1265,42 @@ namespace ChickenDist.Core
 
         public static void EnsureDatabaseSchema()
         {
-            EnsurePurchaseColumnsExist();
-
             try
             {
                 // Bypass heavy schema inspection if already initialized to the latest version
                 string cachedVer = AppConfig.Get(SchemaVersionKey, "0");
                 if (int.TryParse(cachedVer, out int parsedVer) && parsedVer >= CurrentSchemaVersion)
                 {
-                    // Double check critical columns to handle database restore / rename cases
+                    // Double check critical columns in a single fast query to handle database restore / rename cases
                     try
                     {
-                        var colExists      = Scalar("SELECT COL_LENGTH('Products', 'DefaultSaleUnit')");
-                        var sinvExists     = Scalar("SELECT COL_LENGTH('Purchases', 'SupplierInvoiceNo')");
-                        var shipExists     = Scalar("SELECT COL_LENGTH('Purchases', 'ShippingCost')");
-                        var qtyExists      = Scalar("SELECT COL_LENGTH('Products', 'Quantity')");
-                        var balClExists    = Scalar("SELECT COL_LENGTH('Clients', 'Balance')");
-                        var balSpExists    = Scalar("SELECT COL_LENGTH('Suppliers', 'Balance')");
-                        var postExists     = Scalar("SELECT COL_LENGTH('Sales', 'IsPosted')");
-                        var visaPaidExists = Scalar("SELECT COL_LENGTH('Sales', 'VisaPaid')");
-                        var visaAccExists  = Scalar("SELECT COL_LENGTH('Sales', 'VisaAccountID')");
-                        var bomExists      = Scalar("SELECT OBJECT_ID('BOMHeader', 'U')");
-                        var prodOrdersExists = Scalar("SELECT OBJECT_ID('ProductionOrders', 'U')");
-                        // Only skip migrations if ALL critical columns and production tables are present
-                        if (colExists      != null && colExists      != DBNull.Value &&
-                            sinvExists     != null && sinvExists     != DBNull.Value &&
-                            shipExists     != null && shipExists     != DBNull.Value &&
-                            qtyExists      != null && qtyExists      != DBNull.Value &&
-                            balClExists    != null && balClExists    != DBNull.Value &&
-                            balSpExists    != null && balSpExists    != DBNull.Value &&
-                            postExists     != null && postExists     != DBNull.Value &&
-                            visaPaidExists != null && visaPaidExists != DBNull.Value &&
-                            visaAccExists  != null && visaAccExists  != DBNull.Value &&
-                            bomExists      != null && bomExists      != DBNull.Value &&
-                            prodOrdersExists != null && prodOrdersExists != DBNull.Value)
+                        var checkResult = Scalar(@"
+                            SELECT CASE WHEN 
+                                COL_LENGTH('Products', 'DefaultSaleUnit') IS NOT NULL AND
+                                COL_LENGTH('Purchases', 'SupplierInvoiceNo') IS NOT NULL AND
+                                COL_LENGTH('Purchases', 'ShippingCost') IS NOT NULL AND
+                                COL_LENGTH('Products', 'Quantity') IS NOT NULL AND
+                                COL_LENGTH('Clients', 'Balance') IS NOT NULL AND
+                                COL_LENGTH('Suppliers', 'Balance') IS NOT NULL AND
+                                COL_LENGTH('Sales', 'IsPosted') IS NOT NULL AND
+                                COL_LENGTH('Sales', 'VisaPaid') IS NOT NULL AND
+                                COL_LENGTH('Sales', 'VisaAccountID') IS NOT NULL AND
+                                OBJECT_ID('BOMHeader', 'U') IS NOT NULL AND
+                                OBJECT_ID('ProductionOrders', 'U') IS NOT NULL
+                            THEN 1 ELSE 0 END");
+
+                        if (checkResult != null && checkResult != DBNull.Value && Convert.ToInt32(checkResult) == 1)
                         {
-                            return;
+                            return; // Schema is up-to-date, fast-exit immediately (< 2ms)
                         }
                     }
                     catch { }
                 }
             }
             catch { }
+
+            // Migrations needed: execute heavy columns and index checks only now
+            EnsurePurchaseColumnsExist();
 
             // كل SafeMigrate مستقلة: فشل أي خطوة لا يوقف الباقي
             try
@@ -3885,6 +3879,13 @@ namespace ChickenDist.Core
                 UPDATE Purchases SET PaidAmount = 0, RemainingAmount = TotalAmount
                 WHERE PaidAmount = 0 AND RemainingAmount = 0 AND PurchaseType = 'Credit';");
 
+                // Save schema version to cache so subsequent launches skip inspection
+                try
+                {
+                    AppConfig.Set(SchemaVersionKey, CurrentSchemaVersion.ToString());
+                }
+                catch { }
+
             }
             catch (Exception ex)
             {
@@ -3896,7 +3897,6 @@ namespace ChickenDist.Core
 
         public static void EnsurePermissionsColumns()
         {
-            EnsurePurchaseColumnsExist();
             try
             {
                 Execute(@"
@@ -4247,7 +4247,7 @@ namespace ChickenDist.Core
                     // إذا كان الجدول فارغاً، نسجل الإصدار الحالي كإصدار رئيسي معتمد ونرفع الـ EXE
                     Execute("DELETE FROM [versions]; INSERT INTO [versions] ([version], [UpdatedAt], [UpdatedBy]) VALUES (@ver, GETDATE(), @by)", 
                         P("@ver", currentAppVersion), P("@by", Environment.MachineName));
-                    TrySyncLocalBinaryToDatabase(currentAppVersion);
+                    System.Threading.Tasks.Task.Run(() => TrySyncLocalBinaryToDatabase(currentAppVersion));
                     return true;
                 }
 
@@ -4268,7 +4268,7 @@ namespace ChickenDist.Core
                             P("@ver", currentAppVersion), P("@by", Environment.MachineName));
                     }
                     // رفع نسخة البرنامج الحالية لقاعدة البيانات لتمكين الأجهزة الفرعية من تحميلها
-                    TrySyncLocalBinaryToDatabase(currentAppVersion);
+                    System.Threading.Tasks.Task.Run(() => TrySyncLocalBinaryToDatabase(currentAppVersion));
                     return true;
                 }
                 else
