@@ -1,5 +1,5 @@
-version=3.5.7
+version=3.5.8
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.7&t=1789323621
-sha256=4B471DF8CBA8D52A77D77AA4F2C2F2EDAC895282CCACC7CB93241CD3CBA28C29
-changelog=v3.5.7 - 2026-09-13: Instant application startup and exit optimizations, eliminating 30s shutdown and startup delays
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.8&t=1789328806
+sha256=D6C0D8B04868FB708CDD9B7FB5665D37029512BBA5F88C721F45A67A2C44708B
+changelog=v3.5.8 - 2026-09-13: Barcode scanner parity with POS across sales & purchases, unit cost calculation fixes, single-click unit selection, and default sale unit enforcement

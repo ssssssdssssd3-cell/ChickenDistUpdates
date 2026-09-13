@@ -1324,8 +1324,8 @@ namespace ChickenDist.Forms
 
             var dt = DbHelper.Query(@"
                 SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice,
-                       p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice,
-                       p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                       p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                       p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor,
                        p.Unit3Factor, p.DefaultSaleUnit,
                        p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                 FROM Products p
@@ -1355,8 +1355,8 @@ namespace ChickenDist.Forms
                     // 1) First try to find product by ScalePLU
                     dt = DbHelper.Query(@"
                         SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                               p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
-                               p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                               p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                               p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor,
                                p.Unit3Factor, p.DefaultSaleUnit,
                                p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
@@ -1373,8 +1373,8 @@ namespace ChickenDist.Forms
                     {
                         dt = DbHelper.Query(@"
                             SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                                   p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
-                                   p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                                   p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                                   p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor,
                                    p.Unit3Factor, p.DefaultSaleUnit,
                                    p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                             FROM Products p 
@@ -1533,7 +1533,7 @@ namespace ChickenDist.Forms
             string code = row["ProductCode"]?.ToString() ?? "";
             string name = row["ProductName"]?.ToString() ?? "";
             decimal price = overridePrice > 0 ? overridePrice : Convert.ToDecimal(row["SalePrice"]);
-            decimal cost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0;
+            decimal majorCost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0;
 
             if (string.IsNullOrEmpty(unitName))
             {
@@ -1565,6 +1565,28 @@ namespace ChickenDist.Forms
                     factor = u2f * u3f;
                     price = overridePrice > 0 ? overridePrice : Convert.ToDecimal(row["SalePrice"]);
                 }
+            }
+
+            decimal u2fVal = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
+            decimal u3fVal = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
+            if (u2fVal <= 0) u2fVal = 1m;
+            if (u3fVal <= 0) u3fVal = 1m;
+            decimal totalFactorVal = u2fVal * u3fVal;
+
+            decimal cost = majorCost;
+            if (row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value && string.Equals(unitName, row["Unit1Name"].ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                if (row.Table.Columns.Contains("Unit1PurchasePrice") && row["Unit1PurchasePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1PurchasePrice"]) > 0)
+                    cost = Convert.ToDecimal(row["Unit1PurchasePrice"]);
+                else if (totalFactorVal > 0)
+                    cost = Math.Round(majorCost / totalFactorVal, 2);
+            }
+            else if (row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value && string.Equals(unitName, row["Unit2Name"].ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                if (row.Table.Columns.Contains("Unit2PurchasePrice") && row["Unit2PurchasePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2PurchasePrice"]) > 0)
+                    cost = Convert.ToDecimal(row["Unit2PurchasePrice"]);
+                else if (u3fVal > 0)
+                    cost = Math.Round(majorCost / u3fVal, 2);
             }
 
             bool hasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]);

@@ -21,7 +21,7 @@ namespace ChickenDist.Forms
         private Label lblSupp;
         private Button btnSupplierAdd;
         private DateTimePicker dtpDate;
-        private TextBox txtNotes, txtSupplierInvoiceNo;
+        private TextBox txtNotes, txtSupplierInvoiceNo, txtBarcode;
         private Label lblCashBalance;
         private Button btnSearchProduct;
 
@@ -76,6 +76,8 @@ namespace ChickenDist.Forms
         // ── Auto-barcode detection ─────────────────────────────────────────────
         private System.Windows.Forms.Timer _barcodeTimer;
         private DateTime _lastKeyTime = DateTime.MinValue;
+        private string _barcodeBuffer = "";
+        private DateTime _barcodeStartTime = DateTime.MinValue;
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
         private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
@@ -96,7 +98,12 @@ namespace ChickenDist.Forms
             {
                 try
                 {
-                    if (cboProduct != null && cboProduct.Visible && cboProduct.Enabled)
+                    if (txtBarcode != null && txtBarcode.Visible && txtBarcode.Enabled)
+                    {
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                    }
+                    else if (cboProduct != null && cboProduct.Visible && cboProduct.Enabled)
                     {
                         this.ActiveControl = cboProduct;
                         cboProduct.Focus();
@@ -554,6 +561,19 @@ namespace ChickenDist.Forms
                     }
                 }
                 catch { }
+                finally
+                {
+                    if (txtBarcode != null)
+                    {
+                        this.BeginInvoke((MethodInvoker)delegate
+                        {
+                            txtBarcode.Clear();
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                            txtBarcode.SelectAll();
+                        });
+                    }
+                }
             };
 
             // إضافة — صف 2
@@ -561,6 +581,23 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(cboWarehouse, 1, 2);
             tbl.Controls.Add(btnSearchProduct, 2, 2);
             tbl.SetColumnSpan(btnSearchProduct, 2);
+
+            var lblBarcode = MakeLabel("📷 باركود الصنف (الاسكنر):", 0, 0);
+            lblBarcode.Dock = DockStyle.Fill;
+            lblBarcode.TextAlign = ContentAlignment.MiddleRight;
+            lblBarcode.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            lblBarcode.Margin = new Padding(2);
+            txtBarcode = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Margin = new Padding(2, 3, 2, 3)
+            };
+            txtBarcode.KeyDown += TxtBarcode_KeyDown;
+            tbl.Controls.Add(lblBarcode, 4, 2);
+            tbl.Controls.Add(txtBarcode, 5, 2);
 
             // ── صف 3: الصنف (كومبو) | زر إضافة سطر فارغ ────────────────────────────
             // إضافة صف الصنف — الصف 3
@@ -589,6 +626,7 @@ namespace ChickenDist.Forms
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                EditMode = DataGridViewEditMode.EditOnEnter,
                 MultiSelect = false,
                 RightToLeft = RightToLeft.Yes,
                 GridColor = Theme.BorderColor,
@@ -659,6 +697,23 @@ namespace ChickenDist.Forms
             dgItems.CellClick         += DgItems_CellClick;
             dgItems.CellEndEdit       += DgItems_CellEndEdit_Purchase;
             dgItems.EditingControlShowing += DgItems_EditingControlShowing;
+            dgItems.CellEnter += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
+                {
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (dgItems.CurrentCell != null && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "UnitName")
+                        {
+                            dgItems.BeginEdit(true);
+                            if (dgItems.EditingControl is ComboBox cbo)
+                            {
+                                cbo.DroppedDown = true;
+                            }
+                        }
+                    });
+                }
+            };
 
             dgItems.CellDoubleClick += (s, e) =>
             {
@@ -1208,11 +1263,52 @@ namespace ChickenDist.Forms
             else if (e.KeyCode == Keys.F12) { AddNewCodeRow();              e.Handled = true; } // F12 = سطر إدخال جديد
             else if (e.KeyCode == Keys.F4)  { cboProduct.Focus();          e.Handled = true; } // F4 = التركيز على كومبو الصنف
             else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = شاشة البحث
+            else if (e.KeyCode == Keys.F11 || (e.Control && e.KeyCode == Keys.B)) { if (txtBarcode != null) { this.ActiveControl = txtBarcode; txtBarcode.Focus(); txtBarcode.SelectAll(); e.Handled = true; } }
         }
 
-        // تنقل بمفتاح Enter داخل الجدول
+        protected override void OnKeyPress(KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar))
+            {
+                double gap = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
+                if (gap > 120)
+                {
+                    _barcodeBuffer = "";
+                    _barcodeStartTime = DateTime.Now;
+                }
+                _barcodeBuffer += e.KeyChar;
+                _lastKeyTime = DateTime.Now;
+            }
+            base.OnKeyPress(e);
+        }
+
+        // تنقل بمفتاح Enter داخل الجدول والتقاط الاسكنر السريع
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            // فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer)
+            if ((keyData == Keys.Enter || keyData == Keys.Return) && !string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
+            {
+                double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
+                if (totalMs < _barcodeBuffer.Length * 80 + 250)
+                {
+                    string scannedCode = _barcodeBuffer.Trim();
+                    _barcodeBuffer = "";
+
+                    if (dgItems.IsCurrentCellInEditMode)
+                        dgItems.CancelEdit();
+
+                    ProcessScannedBarcode(scannedCode);
+                    if (txtBarcode != null)
+                    {
+                        txtBarcode.Clear();
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                    }
+                    return true;
+                }
+                _barcodeBuffer = "";
+            }
+
             if (keyData == Keys.Insert)
             {
                 AddNewCodeRow();
@@ -1234,16 +1330,185 @@ namespace ChickenDist.Forms
                             return true;
                         }
                     }
-                    cboProduct.Focus();
+                    if (txtBarcode != null)
+                    {
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                    }
+                    else
+                    {
+                        cboProduct.Focus();
+                    }
                     return true;
                 }
                 else
                 {
-                    cboProduct.Focus();
+                    if (txtBarcode != null)
+                    {
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                    }
+                    else
+                    {
+                        cboProduct.Focus();
+                    }
                     return true;
                 }
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void TxtBarcode_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                string rawInput = txtBarcode?.Text?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(rawInput))
+                {
+                    decimal multiQty = 1m;
+                    string code = rawInput;
+                    if (rawInput.Contains("*"))
+                    {
+                        var parts = rawInput.Split(new char[] { '*' }, 2);
+                        if (decimal.TryParse(parts[0].Trim(), out decimal q) && q > 0)
+                        {
+                            multiQty = q;
+                            code = parts[1].Trim();
+                        }
+                    }
+                    ProcessScannedBarcode(code, multiQty);
+                }
+            }
+            else if (e.KeyCode == Keys.Down)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                AddNewCodeRow();
+            }
+        }
+
+        private void ProcessScannedBarcode(string code, decimal multiQty = 1m)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return;
+            var dt = ProductDAL.FindByCode(code);
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+                int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
+                string defUnit = dt.Rows[0].Table.Columns.Contains("DefaultSaleUnit") && dt.Rows[0]["DefaultSaleUnit"] != DBNull.Value 
+                    ? dt.Rows[0]["DefaultSaleUnit"].ToString() : "";
+                if (matchedUnit == 3 && !string.IsNullOrEmpty(defUnit))
+                {
+                    if (defUnit == "الصغرى" && dt.Rows[0].Table.Columns.Contains("Unit1Name") && dt.Rows[0]["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit1Name"].ToString()))
+                    {
+                        matchedUnit = 1;
+                    }
+                    else if (defUnit == "الوسطى" && dt.Rows[0].Table.Columns.Contains("Unit2Name") && dt.Rows[0]["Unit2Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit2Name"].ToString()))
+                    {
+                        matchedUnit = 2;
+                    }
+                }
+
+                string pCode = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
+                string pName = dt.Rows[0]["ProductName"]?.ToString() ?? "";
+                decimal majorCost = dt.Rows[0]["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["PurchasePrice"]) : 0m;
+                decimal majorSale = dt.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["SalePrice"]) : 0m;
+                decimal u2f = dt.Rows[0].Table.Columns.Contains("Unit2Factor") && dt.Rows[0]["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit2Factor"]) : 1m;
+                decimal u3f = dt.Rows[0].Table.Columns.Contains("Unit3Factor") && dt.Rows[0]["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit3Factor"]) : 1m;
+                if (u2f <= 0) u2f = 1m;
+                if (u3f <= 0) u3f = 1m;
+                decimal totalFactor = u2f * u3f;
+
+                decimal pp = majorCost;
+                decimal sp = majorSale;
+                string selectedUnit = dt.Rows[0]["Unit"]?.ToString() ?? "";
+
+                if (matchedUnit == 1)
+                {
+                    selectedUnit = dt.Rows[0]["Unit1Name"]?.ToString() ?? "";
+                    if (dt.Rows[0]["Unit1PurchasePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit1PurchasePrice"]) > 0)
+                        pp = Convert.ToDecimal(dt.Rows[0]["Unit1PurchasePrice"]);
+                    else if (totalFactor > 0)
+                        pp = Math.Round(majorCost / totalFactor, 2);
+
+                    if (dt.Rows[0]["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]) > 0)
+                        sp = Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]);
+                    else if (totalFactor > 0)
+                        sp = Math.Round(majorSale / totalFactor, 2);
+                }
+                else if (matchedUnit == 2)
+                {
+                    selectedUnit = dt.Rows[0]["Unit2Name"]?.ToString() ?? "";
+                    if (dt.Rows[0]["Unit2PurchasePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit2PurchasePrice"]) > 0)
+                        pp = Convert.ToDecimal(dt.Rows[0]["Unit2PurchasePrice"]);
+                    else if (u3f > 0)
+                        pp = Math.Round(majorCost / u3f, 2);
+
+                    if (dt.Rows[0]["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]) > 0)
+                        sp = Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]);
+                    else if (u3f > 0)
+                        sp = Math.Round(majorSale / u3f, 2);
+                }
+
+                if (string.IsNullOrEmpty(selectedUnit))
+                    selectedUnit = dt.Rows[0]["Unit"]?.ToString() ?? "";
+
+                // إزالة السطر المعلق إن وجد
+                if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
+                {
+                    dgItems.Rows.RemoveAt(_pendingRowIdx);
+                    _pendingRowIdx = -1;
+                }
+
+                decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value 
+                    ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : multiQty;
+
+                _isScanningBarcode = true;
+                try
+                {
+                    _pendingMatchedUnit = matchedUnit;
+                    AddProductToGrid(productID, pCode, pName, itemQty, pp, 0m, sp);
+
+                    if (!string.IsNullOrEmpty(selectedUnit) && _items.Count > 0)
+                    {
+                        var lastItem = _items.FindLast(i => i.ProductID == productID);
+                        if (lastItem != null)
+                        {
+                            lastItem.UnitName = selectedUnit;
+                            RefreshGrid();
+                        }
+                    }
+                }
+                finally
+                {
+                    _isScanningBarcode = false;
+                }
+
+                try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+
+                if (txtBarcode != null)
+                {
+                    txtBarcode.Clear();
+                    this.ActiveControl = txtBarcode;
+                    txtBarcode.Focus();
+                    txtBarcode.SelectAll();
+                }
+                else
+                {
+                    AddNewCodeRow();
+                }
+            }
+            else
+            {
+                MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                if (txtBarcode != null)
+                {
+                    txtBarcode.SelectAll();
+                    this.ActiveControl = txtBarcode;
+                    txtBarcode.Focus();
+                }
+            }
         }
 
         // تحذير عند الإغلاق بفاتورة غير محفوظة
@@ -1463,41 +1728,44 @@ namespace ChickenDist.Forms
 
             if (product != null)
             {
-                defaultUnit = !string.IsNullOrEmpty(product.Unit1Name) ? product.Unit1Name
-                            : !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName
-                            : null;
+                decimal majorCost = product.PurchasePrice > 0 ? product.PurchasePrice : product.Extra;
+                decimal majorSale = product.Price;
+                decimal u2f = product.Unit2Factor > 0 ? product.Unit2Factor : 1m;
+                decimal u3f = product.Unit3Factor > 0 ? product.Unit3Factor : 1m;
+                decimal totalFactor = u2f * u3f;
+
+                // إذا لم يتم تحديد matchedUnit عبر باركود مخصص، نعتمد DefaultSaleUnit المحدد في كارت الصنف
+                if (matchedUnit == 3 && !string.IsNullOrEmpty(product.DefaultSaleUnit))
+                {
+                    string dsu = product.DefaultSaleUnit.Trim();
+                    if (dsu == "الصغرى" && !string.IsNullOrEmpty(product.Unit1Name)) matchedUnit = 1;
+                    else if (dsu == "الوسطى" && !string.IsNullOrEmpty(product.Unit2Name)) matchedUnit = 2;
+                }
 
                 if (matchedUnit == 1 && !string.IsNullOrEmpty(product.Unit1Name))
                 {
                     defaultUnit = product.Unit1Name;
                     defaultFactor = 1m;
-                    defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : (price > 0 ? price : product.PurchasePrice);
-                    defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : (salePrice > 0 ? salePrice : product.Price);
+                    defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice 
+                        : (price > 0 ? price : (totalFactor > 0 ? Math.Round(majorCost / totalFactor, 2) : majorCost));
+                    defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice 
+                        : (salePrice > 0 ? salePrice : (totalFactor > 0 ? Math.Round(majorSale / totalFactor, 2) : majorSale));
                 }
                 else if (matchedUnit == 2 && !string.IsNullOrEmpty(product.Unit2Name))
                 {
                     defaultUnit = product.Unit2Name;
-                    defaultFactor = product.Unit2Factor > 0 ? product.Unit2Factor : 1m;
-                    defaultPrice = product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice : (price > 0 ? price : product.PurchasePrice);
-                    defaultSalePrice = product.Unit2SalePrice > 0 ? product.Unit2SalePrice : (salePrice > 0 ? salePrice : product.Price);
-                }
-                else if (matchedUnit == 3)
-                {
-                    if (!string.IsNullOrEmpty(product.BaseUnitName))
-                    {
-                        defaultUnit = product.BaseUnitName;
-                        defaultFactor = (product.Unit3Factor > 0 ? product.Unit3Factor : 1m) * (product.Unit2Factor > 0 ? product.Unit2Factor : 1m);
-                        defaultPrice = price > 0 ? price : (product.PurchasePrice > 0 ? product.PurchasePrice : price);
-                        defaultSalePrice = salePrice > 0 ? salePrice : (product.Price > 0 ? product.Price : salePrice);
-                    }
+                    defaultFactor = u2f > 0 ? u2f : 1m;
+                    defaultPrice = product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice 
+                        : (price > 0 ? price : (u3f > 0 ? Math.Round(majorCost / u3f, 2) : majorCost));
+                    defaultSalePrice = product.Unit2SalePrice > 0 ? product.Unit2SalePrice 
+                        : (salePrice > 0 ? salePrice : (u3f > 0 ? Math.Round(majorSale / u3f, 2) : majorSale));
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(product.Unit1Name))
-                    {
-                        defaultPrice = price > 0 ? price : (product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price);
-                        defaultSalePrice = salePrice > 0 ? salePrice : (product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice);
-                    }
+                    defaultUnit = !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName : product.Unit1Name;
+                    defaultFactor = totalFactor > 0 ? totalFactor : 1m;
+                    defaultPrice = price > 0 ? price : (majorCost > 0 ? majorCost : price);
+                    defaultSalePrice = salePrice > 0 ? salePrice : (majorSale > 0 ? majorSale : salePrice);
                 }
             }
 
@@ -1519,7 +1787,19 @@ namespace ChickenDist.Forms
                     if (price > 0) item.UnitPrice = defaultPrice;
                     if (salePrice > 0) item.SuggestedSalePrice = defaultSalePrice;
                     RefreshGrid();
-                    SelectQuantityCell(prodId);
+                    if (_isScanningBarcode || (txtBarcode != null && txtBarcode.Focused))
+                    {
+                        if (txtBarcode != null)
+                        {
+                            txtBarcode.Clear();
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                        }
+                    }
+                    else
+                    {
+                        SelectQuantityCell(prodId);
+                    }
                     return;
                 }
             }
@@ -1549,7 +1829,19 @@ namespace ChickenDist.Forms
             });
 
             RefreshGrid();
-            SelectQuantityCell(prodId);
+            if (_isScanningBarcode || (txtBarcode != null && txtBarcode.Focused))
+            {
+                if (txtBarcode != null)
+                {
+                    txtBarcode.Clear();
+                    this.ActiveControl = txtBarcode;
+                    txtBarcode.Focus();
+                }
+            }
+            else
+            {
+                SelectQuantityCell(prodId);
+            }
             _isDirty = true;
         }
 
@@ -1618,22 +1910,48 @@ namespace ChickenDist.Forms
                             _pendingMatchedUnit = 3; // Default to main/base unit
                         }
 
-                        decimal pp = 0m;
-                        decimal sp = 0m;
+                        string defUnit = dt.Rows[0].Table.Columns.Contains("DefaultSaleUnit") && dt.Rows[0]["DefaultSaleUnit"] != DBNull.Value 
+                            ? dt.Rows[0]["DefaultSaleUnit"].ToString() : "";
+                        if (_pendingMatchedUnit == 3 && !string.IsNullOrEmpty(defUnit))
+                        {
+                            if (defUnit == "الصغرى" && dt.Rows[0].Table.Columns.Contains("Unit1Name") && dt.Rows[0]["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit1Name"].ToString()))
+                            {
+                                _pendingMatchedUnit = 1;
+                            }
+                            else if (defUnit == "الوسطى" && dt.Rows[0].Table.Columns.Contains("Unit2Name") && dt.Rows[0]["Unit2Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit2Name"].ToString()))
+                            {
+                                _pendingMatchedUnit = 2;
+                            }
+                        }
+
+                        decimal majorCost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
+                        decimal majorSale = row["SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["SalePrice"]) : 0m;
+                        decimal u2f = dt.Rows[0].Table.Columns.Contains("Unit2Factor") && dt.Rows[0]["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit2Factor"]) : 1m;
+                        decimal u3f = dt.Rows[0].Table.Columns.Contains("Unit3Factor") && dt.Rows[0]["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit3Factor"]) : 1m;
+                        if (u2f <= 0) u2f = 1m;
+                        if (u3f <= 0) u3f = 1m;
+                        decimal totalFactor = u2f * u3f;
+
+                        decimal pp = majorCost;
+                        decimal sp = majorSale;
                         if (_pendingMatchedUnit == 1)
                         {
-                            pp = row["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit1PurchasePrice"]) : 0m;
-                            sp = row["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit1SalePrice"]) : 0m;
+                            pp = row["Unit1PurchasePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1PurchasePrice"]) > 0 
+                                ? Convert.ToDecimal(row["Unit1PurchasePrice"]) 
+                                : (totalFactor > 0 ? Math.Round(majorCost / totalFactor, 2) : majorCost);
+                            sp = row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0 
+                                ? Convert.ToDecimal(row["Unit1SalePrice"]) 
+                                : (totalFactor > 0 ? Math.Round(majorSale / totalFactor, 2) : majorSale);
                         }
                         else if (_pendingMatchedUnit == 2)
                         {
-                            pp = row["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit2PurchasePrice"]) : 0m;
-                            sp = row["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit2SalePrice"]) : 0m;
+                            pp = row["Unit2PurchasePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2PurchasePrice"]) > 0 
+                                ? Convert.ToDecimal(row["Unit2PurchasePrice"]) 
+                                : (u3f > 0 ? Math.Round(majorCost / u3f, 2) : majorCost);
+                            sp = row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0 
+                                ? Convert.ToDecimal(row["Unit2SalePrice"]) 
+                                : (u3f > 0 ? Math.Round(majorSale / u3f, 2) : majorSale);
                         }
-                        if (pp <= 0m && row["PurchasePrice"] != DBNull.Value)
-                            pp = Convert.ToDecimal(row["PurchasePrice"]);
-                        if (sp <= 0m && row["SalePrice"] != DBNull.Value)
-                            sp = Convert.ToDecimal(row["SalePrice"]);
 
                         if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                             dgItems.Rows.RemoveAt(rowIdx);
@@ -1738,6 +2056,13 @@ namespace ChickenDist.Forms
                     _pendingBarcodeWeight = null;
                     _pendingScaleWeight = null;
 
+                    if (matchedUnit == 3 && !string.IsNullOrEmpty(foundItem.DefaultSaleUnit))
+                    {
+                        string dsu = foundItem.DefaultSaleUnit.Trim();
+                        if (dsu == "الصغرى" && !string.IsNullOrEmpty(foundItem.Unit1Name)) matchedUnit = 1;
+                        else if (dsu == "الوسطى" && !string.IsNullOrEmpty(foundItem.Unit2Name)) matchedUnit = 2;
+                    }
+
                     _pendingMatchedUnit = matchedUnit;
                     decimal price = matchedUnit == 1 && foundItem.Unit1PurchasePrice > 0 ? foundItem.Unit1PurchasePrice
                                   : matchedUnit == 2 && foundItem.Unit2PurchasePrice > 0 ? foundItem.Unit2PurchasePrice
@@ -1755,7 +2080,17 @@ namespace ChickenDist.Forms
                         cboProduct.Items.Clear();
                         cboProduct.Items.AddRange(allItems.ToArray());
                         cboProduct.SelectedIndex = 0;
-                        cboProduct.Focus();
+                        if (txtBarcode != null)
+                        {
+                            txtBarcode.Clear();
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                            txtBarcode.SelectAll();
+                        }
+                        else
+                        {
+                            cboProduct.Focus();
+                        }
                     }
                     finally
                     {
@@ -1846,6 +2181,13 @@ namespace ChickenDist.Forms
                 _pendingBarcodeWeight = null;
                 _pendingScaleWeight = null;
 
+                if (matchedUnit == 3 && !string.IsNullOrEmpty(foundItem.DefaultSaleUnit))
+                {
+                    string dsu = foundItem.DefaultSaleUnit.Trim();
+                    if (dsu == "الصغرى" && !string.IsNullOrEmpty(foundItem.Unit1Name)) matchedUnit = 1;
+                    else if (dsu == "الوسطى" && !string.IsNullOrEmpty(foundItem.Unit2Name)) matchedUnit = 2;
+                }
+
                 _pendingMatchedUnit = matchedUnit;
                 decimal price = matchedUnit == 1 && foundItem.Unit1PurchasePrice > 0 ? foundItem.Unit1PurchasePrice
                               : matchedUnit == 2 && foundItem.Unit2PurchasePrice > 0 ? foundItem.Unit2PurchasePrice
@@ -1863,7 +2205,17 @@ namespace ChickenDist.Forms
                     cboProduct.Items.Clear();
                     cboProduct.Items.AddRange(allItems.ToArray());
                     cboProduct.SelectedIndex = 0;
-                    // لا نستدعي cboProduct.Focus() لأن SelectQuantityCell ستضع التركيز على خلية الكمية
+                    if (txtBarcode != null)
+                    {
+                        txtBarcode.Clear();
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                        txtBarcode.SelectAll();
+                    }
+                    else
+                    {
+                        cboProduct.Focus();
+                    }
                 }
                 finally
                 {
@@ -1979,41 +2331,49 @@ namespace ChickenDist.Forms
 
             dto.UnitName = newUnit;
 
+            decimal majorCost = prod.PurchasePrice > 0 ? prod.PurchasePrice : prod.Extra;
+            decimal majorSale = prod.Price;
+            decimal u2f = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
+            decimal u3f = prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m;
+            decimal totalFactor = u2f * u3f;
+
             if (!string.IsNullOrEmpty(prod.BaseUnitName) && newUnit == prod.BaseUnitName)
             {
                 // 3. الوحدة الكبرى (الأساسية)
-                dto.Factor = (prod.Unit3Factor > 0 ? prod.Unit3Factor : 1m) * (prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m);
-                dto.SuggestedSalePrice = prod.Price * dto.Factor;
+                dto.Factor = totalFactor > 0 ? totalFactor : 1m;
+                dto.SuggestedSalePrice = majorSale;
                 dto.UnitPrice = dto.DiscountPct > 0 
                     ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : (prod.PurchasePrice * dto.Factor);
+                    : majorCost;
             }
             else if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
             {
                 // 1. الوحدة الوسطى
-                dto.Factor = prod.Unit2Factor > 0 ? prod.Unit2Factor : 1m;
-                dto.SuggestedSalePrice = prod.Price * dto.Factor;
+                dto.Factor = u2f > 0 ? u2f : 1m;
+                dto.SuggestedSalePrice = prod.Unit2SalePrice > 0 ? prod.Unit2SalePrice : (u3f > 0 ? Math.Round(majorSale / u3f, 2) : majorSale);
+                decimal baseCost = prod.Unit2PurchasePrice > 0 ? prod.Unit2PurchasePrice : (u3f > 0 ? Math.Round(majorCost / u3f, 2) : majorCost);
                 dto.UnitPrice = dto.DiscountPct > 0 
                     ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : (prod.PurchasePrice * dto.Factor);
+                    : baseCost;
             }
             else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
             {
                 // 2. الوحدة الصغرى (التجزئة)
                 dto.Factor = 1m;
-                dto.SuggestedSalePrice = prod.Price;
+                dto.SuggestedSalePrice = prod.Unit1SalePrice > 0 ? prod.Unit1SalePrice : (totalFactor > 0 ? Math.Round(majorSale / totalFactor, 2) : majorSale);
+                decimal baseCost = prod.Unit1PurchasePrice > 0 ? prod.Unit1PurchasePrice : (totalFactor > 0 ? Math.Round(majorCost / totalFactor, 2) : majorCost);
                 dto.UnitPrice = dto.DiscountPct > 0 
                     ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : prod.PurchasePrice;
+                    : baseCost;
             }
             else
             {
                 // احتياطي
                 dto.Factor = 1m;
-                dto.SuggestedSalePrice = prod.Price;
+                dto.SuggestedSalePrice = majorSale;
                 dto.UnitPrice = dto.DiscountPct > 0 
                     ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : prod.PurchasePrice;
+                    : majorCost;
             }
 
             // تحديث الجدول
@@ -2283,8 +2643,17 @@ namespace ChickenDist.Forms
             }
             else if (e.RowIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
             {
-                dgItems.CurrentCell = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex];
-                dgItems.BeginEdit(true);
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    if (dgItems.CurrentCell != null && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "UnitName")
+                    {
+                        dgItems.BeginEdit(true);
+                        if (dgItems.EditingControl is ComboBox cbo)
+                        {
+                            cbo.DroppedDown = true;
+                        }
+                    }
+                });
             }
         }
 

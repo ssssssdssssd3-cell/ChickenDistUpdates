@@ -454,18 +454,20 @@ namespace ChickenDist.DAL
             var dtDirect = DbHelper.Query(@"
                 SELECT TOP 1 p.*, c.CategoryName,
                     CASE 
-                        WHEN (p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%') THEN 1
-                        WHEN (p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%') THEN 2
+                        WHEN (p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%') THEN 1
+                        WHEN (p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%') THEN 2
+                        WHEN (p.DefaultSaleUnit = N'الصغرى' AND p.Unit1Name IS NOT NULL AND p.Unit1Name <> '') THEN 1
+                        WHEN (p.DefaultSaleUnit = N'الوسطى' AND p.Unit2Name IS NOT NULL AND p.Unit2Name <> '') THEN 2
                         ELSE 3
                     END AS MatchedUnit
                 FROM Products p 
                 LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
                 WHERE p.IsActive = 1 AND (
                     p.ProductCode = @code OR p.ProductCode = @scannedPadded OR p.ProductCode = @scannedTrimmed OR
-                    p.InternationalCode = @code OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%' OR
-                    p.Unit1Barcode = @code OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR
-                    p.Unit2Barcode = @code OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR
-                    p.PartNumber = @code OR
+                    p.InternationalCode = @code OR p.InternationalCode = @scannedTrimmed OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%' OR ',' + p.InternationalCode + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
+                    p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
+                    p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
+                    p.PartNumber = @code OR p.PartNumber = @scannedTrimmed OR
                     p.ScalePLU = @code OR p.ScalePLU = @scannedPadded OR p.ScalePLU = @scannedTrimmed OR
                     (@scannedInt > 0 AND p.ProductID = @scannedInt) OR
                     (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
@@ -522,8 +524,10 @@ namespace ChickenDist.DAL
                 var dtScale = DbHelper.Query(@"
                     SELECT TOP 1 p.*, c.CategoryName,
                         CASE 
-                            WHEN (p.Unit1Barcode = @c OR p.Unit1Barcode = @trimmed OR p.Unit1Barcode = @padded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @c + ',%') THEN 1
-                            WHEN (p.Unit2Barcode = @c OR p.Unit2Barcode = @trimmed OR p.Unit2Barcode = @padded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @c + ',%') THEN 2
+                            WHEN (p.Unit1Barcode = @c OR p.Unit1Barcode = @trimmed OR p.Unit1Barcode = @padded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @c + ',%' OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @trimmed + ',%') THEN 1
+                            WHEN (p.Unit2Barcode = @c OR p.Unit2Barcode = @trimmed OR p.Unit2Barcode = @padded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @c + ',%' OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @trimmed + ',%') THEN 2
+                            WHEN (p.DefaultSaleUnit = N'الصغرى' AND p.Unit1Name IS NOT NULL AND p.Unit1Name <> '') THEN 1
+                            WHEN (p.DefaultSaleUnit = N'الوسطى' AND p.Unit2Name IS NOT NULL AND p.Unit2Name <> '') THEN 2
                             ELSE 3
                         END AS MatchedUnit
                     FROM Products p 
@@ -531,9 +535,9 @@ namespace ChickenDist.DAL
                     WHERE p.IsActive = 1 AND (
                         p.ScalePLU = @c OR p.ScalePLU = @trimmed OR p.ScalePLU = @padded OR (@intVal > 0 AND ISNUMERIC(p.ScalePLU) = 1 AND CAST(p.ScalePLU AS INT) = @intVal) OR
                         p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @intVal) OR
-                        p.InternationalCode = @c OR p.InternationalCode = @trimmed OR ',' + p.InternationalCode + ',' LIKE '%,' + @c + ',%' OR
-                        p.Unit1Barcode = @c OR p.Unit1Barcode = @trimmed OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @c + ',%' OR
-                        p.Unit2Barcode = @c OR p.Unit2Barcode = @trimmed OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @c + ',%' OR
+                        p.InternationalCode = @c OR p.InternationalCode = @trimmed OR ',' + p.InternationalCode + ',' LIKE '%,' + @c + ',%' OR ',' + p.InternationalCode + ',' LIKE '%,' + @trimmed + ',%' OR
+                        p.Unit1Barcode = @c OR p.Unit1Barcode = @trimmed OR p.Unit1Barcode = @padded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @c + ',%' OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @trimmed + ',%' OR
+                        p.Unit2Barcode = @c OR p.Unit2Barcode = @trimmed OR p.Unit2Barcode = @padded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @c + ',%' OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @trimmed + ',%' OR
                         p.PartNumber = @c OR p.PartNumber = @trimmed OR
                         (@intVal > 0 AND p.ProductID = @intVal)
                     )
@@ -759,21 +763,20 @@ namespace ChickenDist.DAL
                 if (BarcodeMatches(u2, code)) return 2;
             }
 
-            // 3. فحص الباركود الدولي أو كود الصنف للوحدة الكبرى
-            if (dr.Table.Columns.Contains("ProductCode") && dr["ProductCode"] != DBNull.Value)
+            // 3. فحص الوحدة الافتراضية المحددة في كارت الصنف (إذا لم يطابق باركوداً خاصاً بوحدة 1 أو 2)
+            if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
             {
-                if (BarcodeMatches(dr["ProductCode"].ToString(), code)) return 3;
-            }
-            if (dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value)
-            {
-                if (BarcodeMatches(dr["InternationalCode"].ToString(), code)) return 3;
+                string dsu = dr["DefaultSaleUnit"].ToString().Trim();
+                if (dsu == "الصغرى") return 1;
+                if (dsu == "الوسطى") return 2;
+                if (dsu == "الكبرى") return 3;
             }
 
             // 4. فحص العمود المحسوب من استعلام SQL إن وُجد
             if (dr.Table.Columns.Contains("MatchedUnit") && dr["MatchedUnit"] != DBNull.Value)
             {
                 int mu = Convert.ToInt32(dr["MatchedUnit"]);
-                if (mu == 1 || mu == 2) return mu;
+                if (mu == 1 || mu == 2 || mu == 3) return mu;
             }
 
             return 3;

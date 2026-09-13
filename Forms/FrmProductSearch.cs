@@ -276,6 +276,20 @@ namespace ChickenDist.Forms
             dgProducts.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) SelectAndClose(); };
             dgProducts.KeyDown += DgProducts_KeyDown;
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
+            dgProducts.CellClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgProducts.Columns[e.ColumnIndex].Name == "Unit")
+                {
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (cboUnits != null && cboUnits.Items.Count > 0)
+                        {
+                            cboUnits.Focus();
+                            cboUnits.DroppedDown = true;
+                        }
+                    });
+                }
+            };
 
             pnlGrid.Controls.Add(dgProducts);
 
@@ -300,6 +314,8 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboUnits.SelectedIndexChanged += CboUnits_SelectedIndexChanged;
+            cboUnits.MouseClick += (s, e) => { cboUnits.DroppedDown = true; };
+            cboUnits.Enter += (s, e) => { this.BeginInvoke((MethodInvoker)delegate { cboUnits.DroppedDown = true; }); };
 
             var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(635, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             txtSelectedQty = new TextBox { Location = new Point(555, 9), Width = 75, Text = "1.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
@@ -696,7 +712,8 @@ namespace ChickenDist.Forms
             decimal unit1PP = prodRow.Table.Columns.Contains("Unit1PurchasePrice") && prodRow["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["Unit1PurchasePrice"]) : 0m;
             decimal unit2PP = prodRow.Table.Columns.Contains("Unit2PurchasePrice") && prodRow["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["Unit2PurchasePrice"]) : 0m;
 
-            if (unit1PP <= 0) unit1PP = basePP;
+            if (unit1PP <= 0) unit1PP = baseFactor > 0 ? Math.Round(basePP / baseFactor, 2) : basePP;
+            if (unit2PP <= 0) unit2PP = unit3FactorVal > 0 ? Math.Round(basePP / unit3FactorVal, 2) : (baseFactor > 0 ? Math.Round(basePP / baseFactor * unit2FactorVal, 2) : basePP);
 
             // 1. Base Unit (الكبرى)
             decimal baseStock = stock / baseFactor;
@@ -802,7 +819,30 @@ namespace ChickenDist.Forms
 
             if (cboUnits.Items.Count > 0)
             {
-                cboUnits.SelectedIndex = 0;
+                string defUnit = prodRow.Table.Columns.Contains("DefaultSaleUnit") && prodRow["DefaultSaleUnit"] != DBNull.Value ? prodRow["DefaultSaleUnit"].ToString().Trim() : "";
+                int selectedIdx = 0;
+                for (int i = 0; i < cboUnits.Items.Count; i++)
+                {
+                    if (cboUnits.Items[i] is UnitComboItem uItem)
+                    {
+                        if (defUnit == "الصغرى" && !string.IsNullOrEmpty(unit1) && uItem.UnitName == unit1)
+                        {
+                            selectedIdx = i;
+                            break;
+                        }
+                        else if (defUnit == "الوسطى" && !string.IsNullOrEmpty(unit2) && uItem.UnitName == unit2)
+                        {
+                            selectedIdx = i;
+                            break;
+                        }
+                        else if ((defUnit == "الكبرى" || string.IsNullOrEmpty(defUnit)) && uItem.UnitName == baseUnit)
+                        {
+                            selectedIdx = i;
+                            break;
+                        }
+                    }
+                }
+                cboUnits.SelectedIndex = selectedIdx;
             }
             else
             {
