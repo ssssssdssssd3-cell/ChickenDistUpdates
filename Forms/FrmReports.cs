@@ -31,6 +31,7 @@ namespace ChickenDist.Forms
 		private Button btnPrint;
 
 		private Button btnWhatsAppReport;
+		private Button btnDailyInvoicesSheet;
 
 		private Button btnExportExcel;
 		private Button btnExportPdf;
@@ -483,10 +484,11 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes
 			};
 
-			var btnDailyInvoicesSheet = Theme.MakeButton("📑 شيت فواتير اليومية", Color.FromArgb(14, 165, 233));
+			btnDailyInvoicesSheet = Theme.MakeButton("📑 شيت فواتير اليومية", Color.FromArgb(14, 165, 233));
 			btnDailyInvoicesSheet.Size = new Size(160, 36);
 			btnDailyInvoicesSheet.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnDailyInvoicesSheet.Margin = new Padding(3, 2, 3, 2);
+			btnDailyInvoicesSheet.Visible = false;
 			btnDailyInvoicesSheet.Click += delegate
 			{
 				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value, dtpTo.Value);
@@ -1427,6 +1429,11 @@ namespace ChickenDist.Forms
 			if (btnWhatsAppReport != null)
 			{
 				btnWhatsAppReport.Visible = (text == "ClientBalances");
+			}
+			if (btnDailyInvoicesSheet != null)
+			{
+				// شيت فواتير اليومية خاص فقط بتقارير المبيعات اليومية وفواتير المبيعات، ويُحجب تماماً من تقارير المشتريات وباقي الأقسام
+				btnDailyInvoicesSheet.Visible = (_targetModule == "Sales" || text == "DailySalesSummary" || text == "DetailedSales" || text == "SalesByPeriod") && _targetModule != "Purchases";
 			}
 			int? warehouseID = null;
 			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
