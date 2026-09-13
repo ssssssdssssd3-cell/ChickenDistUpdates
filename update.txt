@@ -1,5 +1,5 @@
-version=3.5.8
+version=3.5.9
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.8&t=1789328806
-sha256=D6C0D8B04868FB708CDD9B7FB5665D37029512BBA5F88C721F45A67A2C44708B
-changelog=v3.5.8 - 2026-09-13: Barcode scanner parity with POS across sales & purchases, unit cost calculation fixes, single-click unit selection, and default sale unit enforcement
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.9&t=1789341684
+sha256=3DC986AF5CA17460A76F9A8A9086D39E529521804860D28A2F42235626EF4F1D
+changelog=v3.5.9 - 2026-09-14: Fix double-row insertion when scanning unit-specific barcodes in detailed sales screen

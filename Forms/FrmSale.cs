@@ -1579,6 +1579,7 @@ namespace ChickenDist.Forms
 			if (e.KeyCode == Keys.Enter)
 			{
 				e.SuppressKeyPress = true;
+				// ✅ إذا مسح ProcessCmdKey الحقل بالفعل فلا نعيد المعالجة مرة ثانية
 				string code = txtBarcode?.Text?.Trim() ?? "";
 				if (!string.IsNullOrEmpty(code))
 				{
@@ -1586,6 +1587,7 @@ namespace ChickenDist.Forms
 				}
 			}
 		}
+
 
 		private void ProcessScannedBarcode(string code)
 		{
@@ -1676,6 +1678,10 @@ namespace ChickenDist.Forms
 					string scannedCode = _barcodeBuffer.Trim();
 					_barcodeBuffer = "";
 
+					// ✅ مسح حقل الباركود قبل المعالجة لمنع TxtBarcode_KeyDown من تشغيل ProcessScannedBarcode مرة ثانية
+					if (txtBarcode != null)
+						txtBarcode.Clear();
+
 					if (dgItems.IsCurrentCellInEditMode)
 						dgItems.CancelEdit();
 
@@ -1690,6 +1696,7 @@ namespace ChickenDist.Forms
 				}
 				_barcodeBuffer = "";
 			}
+
 
 			if (keyData == Keys.Insert || keyData == Keys.Down)
 			{
