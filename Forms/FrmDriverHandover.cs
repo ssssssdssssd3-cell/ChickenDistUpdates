@@ -293,9 +293,20 @@ namespace ChickenDist.Forms
 
         private void ApplyPermissions()
         {
-            btnExportJson.Visible = Session.CanAccess("DriverSales");
-            btnImportCloud.Visible = Session.CanAccess("ImportPreview");
-            btnImportClipboard.Visible = Session.CanAccess("ImportPreview");
+            if (!Session.IsAdmin && !Session.CanAccess("DriverHandover") && !Session.CanAccess("Drivers"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("عفواً، ليس لديك صلاحية الوصول إلى شاشة تسليم وحمولة المناديب!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Close();
+                };
+                return;
+            }
+
+            btnExportJson.Visible = Session.CanAccess("DriverSales") || Session.CanAccess("Drivers");
+            btnImportCloud.Visible = Session.CanAccess("ImportPreview") || Session.CanAccess("Drivers");
+            btnImportClipboard.Visible = Session.CanAccess("ImportPreview") || Session.CanAccess("Drivers");
+            if (btnSave != null) btnSave.Enabled = Session.CanAdd("DriverHandover") || Session.CanEdit("DriverHandover");
         }
 
         private void CboDriver_SelectedIndexChanged(object sender, EventArgs e)

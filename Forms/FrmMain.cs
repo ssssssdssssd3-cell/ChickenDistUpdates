@@ -2416,14 +2416,14 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 Cursor = Cursors.Hand,
                 Location = new Point(pnlShowcase.Width - 240, 12),
-                Visible = Session.CanAccess("QuickDetails") || Session.CanAccess("Reports") || Session.CanAccess("DashSales") || Session.CanAccess("FinancialPosition")
+                Visible = Session.CanAccess("QuickDetails")
             };
             btnQuickDetails.FlatAppearance.BorderSize = 0;
             btnQuickDetails.Click += (s, e) =>
             {
-                if (!Session.CanAccess("QuickDetails") && !Session.CanAccess("Reports") && !Session.CanAccess("DashSales") && !Session.CanAccess("FinancialPosition"))
+                if (!Session.CanAccess("QuickDetails"))
                 {
-                    MessageBox.Show("عذراً، ليس لديك صلاحية الدخول لهذه الشاشة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عذراً، ليس لديك صلاحية الدخول لشاشة التفاصيل والإحصائيات السريعة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 var frmDetails = new FrmQuickDetails((frm) => NavigateMain(frm));

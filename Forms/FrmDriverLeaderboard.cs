@@ -26,6 +26,16 @@ namespace ChickenDist.Forms
 
         public FrmDriverLeaderboard()
         {
+            if (!Session.IsAdmin && !Session.CanAccess("DriverLeaderboard") && !Session.CanAccess("Drivers"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("عفواً، ليس لديك صلاحية الوصول إلى لوحة أداء المناديب!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Close();
+                };
+                return;
+            }
+
             InitUI();
             LoadData();
         }

@@ -977,8 +977,18 @@ namespace ChickenDist.Forms
             },
             new ScreenDef {
                 Key = "ProductSearch", Name = "شاشة بحث الأصناف السريعة", Category = "🛒 المبيعات والعملاء", Icon = "🔍",
-                Description = "نافذة البحث السريع عن الأصعار والكميات المتاحة في المخازن.",
+                Description = "نافذة البحث السريع عن الأصعار والكميات المتاحة في المخازن وإدراجها بالفاتورة.",
                 HasEditPrice = true, HasViewCost = true
+            },
+            new ScreenDef {
+                Key = "QuickItems", Name = "لوحة وشبكة الأصناف السريعة (POS والمبيعات)", Category = "🛒 المبيعات والعملاء", Icon = "⚡",
+                Description = "إظهار أو إخفاء شبكة أزرار الأصناف السريعة الأكثر طلباً في شاشة الكاشير POS وشاشة المبيعات.",
+                HasViewQuickItems = true
+            },
+            new ScreenDef {
+                Key = "QuickDetails", Name = "نافذة التفاصيل والإحصائيات السريعة", Category = "🛒 المبيعات والعملاء", Icon = "📊",
+                Description = "نافذة عرض ملخص المبيعات والإحصائيات السريعة من الواجهة الرئيسية.",
+                HasViewDetails = true, HasViewSalesTotals = true
             },
             new ScreenDef {
                 Key = "OnlineOrders", 
@@ -1200,34 +1210,74 @@ namespace ChickenDist.Forms
                 HasViewCost = true
             },
 
-            // ── 🚚 6. المناديب والصيانة والإدارة ─────────────────────────
+            // ── 🚚 6. المناديب والتوزيع ─────────────────────────────
             new ScreenDef {
-                Key = "DriverHandover", Name = "تسليم وتحميل بضاعة المندوب", Category = "🚚 المناديب والصيانة والإدارة", Icon = "📦",
-                Description = "تسجيل حمولة بضاعة السيارة للمندوب وتتبع عهدة البضاعة.",
-                HasAdd = true, HasEdit = true, HasDelete = true
+                Key = "Drivers", Name = "شاشة المناديب (بوابة التوزيع والمبيعات)", Category = "🚚 المناديب والتوزيع", Icon = "🚚",
+                Description = "شاشة وإدارة المناديب لمتابعة رحلات التوزيع ومبيعات السيارات وإصدار الفواتير وتحصيل المبالغ.",
+                HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true, HasViewDetails = true,
+                AddLabel = "➕ إصدار فواتير بيع وتحصيل للمندوب",
+                EditLabel = "✏️ تعديل فواتير وحركات المناديب",
+                DeleteLabel = "🗑️ حذف فواتير أو حركات المناديب"
             },
             new ScreenDef {
-                Key = "DriverCustody", Name = "عهدة المناديب والتحصيلات المالية", Category = "🚚 المناديب والصيانة والإدارة", Icon = "💼",
-                Description = "متابعة النقدية والتحصيلات المسلمة من المندوب إلى الخزينة.",
-                HasAdd = true, HasEdit = true, HasViewBalance = true
+                Key = "DriverHandover", Name = "تسليم وتحميل بضاعة المندوب", Category = "🚚 المناديب والتوزيع", Icon = "📦",
+                Description = "تسجيل حمولة بضاعة السيارة للمندوب وتتبع عهدة البضاعة وتصفية الرحلة.",
+                HasAdd = true, HasEdit = true, HasDelete = true,
+                AddLabel = "➕ تسجيل حمولة أو تصفية جديدة للمندوب",
+                EditLabel = "✏️ تعديل حمولة أو تصفية سابقة",
+                DeleteLabel = "🗑️ حذف تسليم أو تصفية حمولة"
             },
             new ScreenDef {
-                Key = "Maintenance", Name = "تذاكر الصيانة وإدارة الأجهزة", Category = "🚚 المناديب والصيانة والإدارة", Icon = "🔧",
+                Key = "DriverCustody", Name = "عهدة المناديب والتحصيلات المالية", Category = "🚚 المناديب والتوزيع", Icon = "💼",
+                Description = "متابعة النقدية والتحصيلات المسلمة من المندوب إلى الخزينة وتوريد العهدة.",
+                HasAdd = true, HasEdit = true, HasViewBalance = true,
+                AddLabel = "➕ توريد عهدة نقدية للمندوب",
+                EditLabel = "✏️ تعديل توريد العهدة"
+            },
+            new ScreenDef {
+                Key = "DriverPortal", Name = "بوابة ومبيعات المندوب الميدانية", Category = "🚚 المناديب والتوزيع", Icon = "📡",
+                Description = "بوابة المندوب الميداني لربط التطبيق والمزامنة وإجراء المبيعات المباشرة.",
+                HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true, HasViewDetails = true
+            },
+            new ScreenDef {
+                Key = "DriversMonitor", Name = "مراقبة وتتبع رحلات وسيارات المناديب", Category = "🚚 المناديب والتوزيع", Icon = "🖥️",
+                Description = "متابعة حركة المناديب المباشرة والكميات المحملة والمباعة في الوقت الفعلي.",
+                HasViewDetails = true
+            },
+            new ScreenDef {
+                Key = "DriverLeaderboard", Name = "لوحة أداء وترتيب المناديب", Category = "🚚 المناديب والتوزيع", Icon = "🏆",
+                Description = "عرض ترتيب المناديب بحسب المبيعات والتحصيلات ونسب الإنجاز والنشاط.",
+                HasViewDetails = true
+            },
+            new ScreenDef {
+                Key = "ImportPreview", Name = "استيراد مبيعات المناديب من السحاب", Category = "🚚 المناديب والتوزيع", Icon = "☁️",
+                Description = "استيراد ومطابقة فواتير وحركات المناديب المرفوعة من تطبيق الموبايل السحابي.",
+                HasAdd = true
+            },
+            new ScreenDef {
+                Key = "RepDrivers", Name = "تقارير المناديب والتوزيع الشاملة", Category = "🚚 المناديب والتوزيع", Icon = "📊",
+                Description = "استعراض تقارير مبيعات وحمولات وعهد المناديب ومقارنة أدائهم خلال فترة.",
+                HasViewCost = true, HasViewBalance = true, HasViewDetails = true
+            },
+
+            // ── ⚙️ 7. النظام والإدارة والصيانة ───────────────────────────
+            new ScreenDef {
+                Key = "Maintenance", Name = "تذاكر الصيانة وإدارة الأجهزة", Category = "⚙️ النظام والإدارة والصيانة", Icon = "🔧",
                 Description = "إدارة كروت وتذاكر صيانة الأجهزة والسيارات ومتابعة مراحل التصليح.",
                 HasAdd = true, HasEdit = true, HasDelete = true
             },
             new ScreenDef {
-                Key = "Employees", Name = "إدارة الموظفين وتعديل الصلاحيات", Category = "🚚 المناديب والصيانة والإدارة", Icon = "👨‍💼",
+                Key = "Employees", Name = "إدارة الموظفين وتعديل الصلاحيات", Category = "⚙️ النظام والإدارة والصيانة", Icon = "👨‍💼",
                 Description = "إضافة المستخدمين وتعيين كلمات المرور وضبط الصلاحيات.",
                 HasAdd = true, HasEdit = true, HasDelete = true
             },
             new ScreenDef {
-                Key = "Settings", Name = "الإعدادات العامة للنظام والطابعات", Category = "🚚 المناديب والصيانة والإدارة", Icon = "⚙️",
+                Key = "Settings", Name = "الإعدادات العامة للنظام والطابعات", Category = "⚙️ النظام والإدارة والصيانة", Icon = "⚙️",
                 Description = "تعديل اسم المنشأة واللوجو وإعدادات الطابعات والنسخ الاحتياطي.",
                 HasEdit = true
             },
             new ScreenDef {
-                Key = "CloudSync", Name = "ربط الموبايل والتزامن السحابي", Category = "🚚 المناديب والصيانة والإدارة", Icon = "☁️",
+                Key = "CloudSync", Name = "ربط الموبايل والتزامن السحابي", Category = "⚙️ النظام والإدارة والصيانة", Icon = "☁️",
                 Description = "إعدادات مزامنة بيانات المالك مع Firebase وتطبيق الموبايل.",
                 HasEdit = true
             },
@@ -1356,6 +1406,7 @@ namespace ChickenDist.Forms
             flowPresets.Controls.Add(lblPresetTitle);
             flowPresets.Controls.Add(MakePresetBtn("👑 مدير كامل", Color.FromArgb(192, 57, 43), () => ApplyPreset("Admin")));
             flowPresets.Controls.Add(MakePresetBtn("🛒 كاشير / بيع", Color.FromArgb(41, 128, 185), () => ApplyPreset("Cashier")));
+            flowPresets.Controls.Add(MakePresetBtn("🚚 مندوب توزيع", Color.FromArgb(109, 40, 217), () => ApplyPreset("Driver")));
             flowPresets.Controls.Add(MakePresetBtn("📥 مشتريات", Color.FromArgb(142, 68, 173), () => ApplyPreset("Purchases")));
             flowPresets.Controls.Add(MakePresetBtn("📦 أمين مخزن", Color.FromArgb(39, 174, 96), () => ApplyPreset("Inventory")));
             flowPresets.Controls.Add(MakePresetBtn("🏭 مدير إنتاج", Color.FromArgb(16, 185, 129), () => ApplyPreset("Manufacturing")));
@@ -1612,7 +1663,7 @@ namespace ChickenDist.Forms
         private void BuildCategoryChips()
         {
             pnlCategories.Controls.Clear();
-            string[] cats = { "الكل", "🛒 المبيعات", "📥 المشتريات", "📦 المخازن", "🏭 التصنيع", "💰 المالية", "🏢 الأصول والشركاء", "📊 التقارير", "🚚 الإدارة" };
+            string[] cats = { "الكل", "🛒 المبيعات", "📥 المشتريات", "📦 المخازن", "🚚 المناديب", "🏭 التصنيع", "💰 المالية", "🏢 الأصول والشركاء", "📊 التقارير", "⚙️ الإدارة" };
 
             foreach (var cat in cats)
             {
@@ -1704,9 +1755,14 @@ namespace ChickenDist.Forms
             dgScreens.Rows.Clear();
             string q = txtSearch.Text.Trim().ToLowerInvariant();
 
+            string catClean = _activeCategoryFilter
+                .Replace("🛒", "").Replace("📥", "").Replace("📦", "")
+                .Replace("🏭", "").Replace("💰", "").Replace("🏢", "")
+                .Replace("📊", "").Replace("🚚", "").Replace("⚙️", "").Trim();
+
             foreach (var def in AllScreens)
             {
-                if (_activeCategoryFilter != "الكل" && !def.Category.Contains(_activeCategoryFilter.Replace("🛒", "").Replace("📥", "").Replace("📦", "").Replace("🏭", "").Replace("💰", "").Replace("🏢", "").Replace("📊", "").Replace("🚚", "").Trim()))
+                if (_activeCategoryFilter != "الكل" && !def.Category.Contains(catClean))
                     continue;
 
                 if (!string.IsNullOrEmpty(q) && !def.Name.ToLowerInvariant().Contains(q) && !def.Key.ToLowerInvariant().Contains(q) && !def.Category.ToLowerInvariant().Contains(q))
@@ -2085,9 +2141,10 @@ namespace ChickenDist.Forms
 
         private void ApplyPreset(string role)
         {
-            var salesScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "Returns", "PriceChecker", "ProductSearch", "Clients", "ClientStatement", "Installments", "SalesList" };
+            var salesScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "Returns", "PriceChecker", "ProductSearch", "QuickItems", "QuickDetails", "Clients", "ClientStatement", "Installments", "SalesList" };
             var purchaseScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
             var inventoryScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "ProductCard", "Categories", "Units", "Warehouses", "Inventory", "ShortageNotebook", "Wastage", "WarehouseTransfer", "BulkPrintBarcodes", "RepStores" };
+            var driverScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Drivers", "DriverHandover", "DriverCustody", "DriverPortal", "DriversMonitor", "DriverLeaderboard", "ImportPreview", "RepDrivers", "Sales", "POS", "PriceChecker", "ProductSearch" };
             var mfgScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "BOM", "FixedProduction", "CustomProduction", "ProductionReports", "Products", "ProductCard", "Warehouses", "Inventory" };
             var accountantScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CashBox", "ReceiptVoucher", "DailyAccounts", "SafeAccounts", "ActualBalances", "DailyClosing", "ShiftClose", "FinancialPosition", "Reports", "Financials", "RepDailySales", "RepSalesByProduct", "RepClientBalances", "RepStores", "ProductionReports" };
 
@@ -2098,6 +2155,7 @@ namespace ChickenDist.Forms
 
                 if (role == "Admin") enable = true;
                 else if (role == "Cashier" && salesScreens.Contains(def.Key)) enable = true;
+                else if (role == "Driver" && driverScreens.Contains(def.Key)) enable = true;
                 else if (role == "Purchases" && purchaseScreens.Contains(def.Key)) enable = true;
                 else if (role == "Inventory" && inventoryScreens.Contains(def.Key)) enable = true;
                 else if (role == "Manufacturing" && mfgScreens.Contains(def.Key)) enable = true;

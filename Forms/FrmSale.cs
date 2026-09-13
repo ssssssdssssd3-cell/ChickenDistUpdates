@@ -845,7 +845,8 @@ namespace ChickenDist.Forms
 				FlatStyle = FlatStyle.Flat,
 				Cursor = Cursors.Hand,
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-				Margin = new Padding(3, 0, 3, 0)
+				Margin = new Padding(3, 0, 3, 0),
+				Visible = Session.CanAccess("ProductSearch")
 			};
 			btnSearchProduct.FlatAppearance.BorderSize = 0;
 			btnSearchProduct.Click += BtnSearchProduct_Click;
@@ -1534,7 +1535,7 @@ namespace ChickenDist.Forms
 			else if (e.KeyCode == Keys.F5)  { btnSave.PerformClick(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F9)  { PrintPreparationSlip(); e.Handled = true; }
 			else if (e.KeyCode == Keys.F12) { AddNewCodeRow(); e.Handled = true; }
-			else if (e.KeyCode == Keys.F3)  { btnSearchProduct.PerformClick(); e.Handled = true; } // F3 = فتح شاشة البحث
+			else if (e.KeyCode == Keys.F3)  { if (Session.CanAccess("ProductSearch")) btnSearchProduct.PerformClick(); else MessageBox.Show("عفواً، ليس لديك صلاحية استخدام شاشة بحث الأصناف السريعة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning); e.Handled = true; } // F3 = فتح شاشة البحث السريع للأصناف
 			else if (e.KeyCode == Keys.F7)  { new FrmPriceChecker(false).ShowDialog(this); e.Handled = true; } // F7 = كشك فحص الأسعار والبدائل
 			else if (e.Control && e.KeyCode == Keys.D) { RawPrinterHelper.OpenCashDrawer(); e.Handled = true; }
 		}
@@ -2711,6 +2712,12 @@ namespace ChickenDist.Forms
 
 		private void BtnSearchProduct_Click(object sender, EventArgs e)
 		{
+			if (!Session.CanAccess("ProductSearch"))
+			{
+				MessageBox.Show("عفواً، ليس لديك صلاحية استخدام شاشة بحث الأصناف السريعة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
 			int? warehouseID = null;
 			if (cboWarehouse.SelectedItem is ComboItem wci) warehouseID = wci.ID;
 

@@ -487,11 +487,17 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
                 Margin = new Padding(2, 3, 2, 3),
-                Font = Theme.FontBold
+                Font = Theme.FontBold,
+                Visible = Session.CanAccess("ProductSearch")
             };
             btnSearchProduct.FlatAppearance.BorderSize = 0;
             btnSearchProduct.Click += (s, e) =>
             {
+                if (!Session.CanAccess("ProductSearch"))
+                {
+                    MessageBox.Show("عفواً، ليس لديك صلاحية استخدام شاشة بحث الأصناف السريعة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 try
                 {
                     string lastSearchText = "";

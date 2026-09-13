@@ -664,6 +664,12 @@ namespace ChickenDist.Forms
 
         private void OpenProductSearch()
         {
+            if (!Session.CanAccess("ProductSearch"))
+            {
+                MessageBox.Show("عفواً، ليس لديك صلاحية استخدام شاشة بحث الأصناف السريعة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (!(cboFromWarehouse.SelectedItem is ComboItem wh) || wh.ID <= 0)
             {
                 MessageBox.Show("⚠️ يرجى اختيار مستودع المصدر أولاً لعرض أرصدة الأصناف المتوفرة به بدقة!", "تحديد مستودع المصدر مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);

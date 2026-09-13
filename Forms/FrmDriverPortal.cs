@@ -32,6 +32,16 @@ namespace ChickenDist.Forms
 
         public FrmDriverPortal()
         {
+            if (!Session.IsAdmin && !Session.CanAccess("DriverPortal") && !Session.CanAccess("Drivers"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("عفواً، ليس لديك صلاحية الوصول إلى شاشة وبوابة المناديب!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Close();
+                };
+                return;
+            }
+
             this.Text             = "📡 بوابة مزامنة المندوب";
             this.Size             = new Size(720, 600);
             this.StartPosition    = FormStartPosition.CenterParent;

@@ -17,6 +17,16 @@ namespace ChickenDist.Forms
 
         public FrmDriversMonitor()
         {
+            if (!Session.IsAdmin && !Session.CanAccess("DriversMonitor") && !Session.CanAccess("Drivers"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("عفواً، ليس لديك صلاحية الوصول إلى شاشة مراقبة المناديب!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Close();
+                };
+                return;
+            }
+
             InitUI();
             LoadMonitorData();
 

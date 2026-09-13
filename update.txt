@@ -1,5 +1,5 @@
-version=3.5.6
+version=3.5.7
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.6&t=1789318397
-sha256=8EF8ECF659F84DA88431F72E11498AFDC24F22C8D49C80ACBF10236CF0CA688F
-changelog=v3.5.6 - 2026-09-13: Instant application startup and exit optimizations, eliminating 30s shutdown and startup delays
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.7&t=1789321744
+sha256=7587A64592AB43F504B7604BAE55286C7C8BCCFBA15537AC99CBAE09DD8C8FC7
+changelog=v3.5.7 - 2026-09-13: Instant application startup and exit optimizations, eliminating 30s shutdown and startup delays

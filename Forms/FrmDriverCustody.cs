@@ -15,6 +15,16 @@ namespace ChickenDist.Forms
 
         public FrmDriverCustody()
         {
+            if (!Session.IsAdmin && !Session.CanAccess("DriverCustody") && !Session.CanAccess("Drivers"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("عفواً، ليس لديك صلاحية الوصول إلى شاشة عهدة المناديب!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Close();
+                };
+                return;
+            }
+
             InitUI();
             LoadData();
         }

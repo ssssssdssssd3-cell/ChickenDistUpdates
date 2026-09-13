@@ -59,6 +59,17 @@ namespace ChickenDist.Forms
 
         public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool? defaultShowZeroStock = null, int? clientID = null, string initialSearchText = "")
         {
+            if (!Session.IsAdmin && !Session.CanAccess("ProductSearch"))
+            {
+                this.Load += (s, e) =>
+                {
+                    MessageBox.Show("عفواً، ليس لديك صلاحية الوصول إلى شاشة بحث الأصناف السريعة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.DialogResult = DialogResult.Cancel;
+                    this.Close();
+                };
+                return;
+            }
+
             _warehouseID = warehouseID;
             _clientID = clientID;
             _isPurchaseMode = isPurchaseMode;

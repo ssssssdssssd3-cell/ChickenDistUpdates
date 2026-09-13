@@ -134,6 +134,7 @@ namespace ChickenDist.Forms
             txtBarcode.KeyDown += TxtBarcode_KeyDown;
 
             btnSearchProduct = Theme.MakeButton("🔍", Theme.Primary, new Point(325, 35), new Size(40, 32));
+            btnSearchProduct.Visible = Session.CanAccess("ProductSearch");
             btnSearchProduct.Click += (s, e) => OpenProductSearch();
 
             pnlTop.Controls.Add(lblTitle);
@@ -855,28 +856,54 @@ namespace ChickenDist.Forms
         {
             int w = this.ClientSize.Width;
             int h = this.ClientSize.Height;
-            int rightW = Math.Max(340, (int)(w * 0.42));
-            int leftW = w - rightW - 30;
 
-            // ضبط مواقع لوحات العميل والأصناف السريعة لتكون على اليمين (X = 10)
-            if (pnlClient != null) { pnlClient.Location = new Point(10, 85); pnlClient.Size = new Size(rightW, 55); }
+            bool showQuick = Session.CanViewQuickItems("POS");
+            if (pnlQuick != null) pnlQuick.Visible = showQuick;
 
-            if (pnlOrderType != null)
+            if (showQuick)
             {
-                pnlOrderType.Location = new Point(10, 142);
-                pnlOrderType.Size = new Size(rightW, 40);
-                pnlQuick.Location = new Point(10, 184);
-                pnlQuick.Size = new Size(rightW, h - 394);
+                int rightW = Math.Max(340, (int)(w * 0.42));
+                int leftW = w - rightW - 30;
+
+                // ضبط مواقع لوحات العميل والأصناف السريعة لتكون على اليمين (X = 10)
+                if (pnlClient != null) { pnlClient.Location = new Point(10, 85); pnlClient.Size = new Size(rightW, 55); }
+
+                if (pnlOrderType != null)
+                {
+                    pnlOrderType.Location = new Point(10, 142);
+                    pnlOrderType.Size = new Size(rightW, 40);
+                    pnlQuick.Location = new Point(10, 184);
+                    pnlQuick.Size = new Size(rightW, h - 394);
+                }
+                else
+                {
+                    pnlQuick.Location = new Point(10, 150);
+                    pnlQuick.Size = new Size(rightW, h - 360);
+                }
+
+                // ضبط موقع جدول الأصناف ليكون على اليسار (X = rightW + 20)
+                dgItems.Location = new Point(rightW + 20, 85);
+                dgItems.Size = new Size(leftW, h - 290);
             }
             else
             {
-                pnlQuick.Location = new Point(10, 150);
-                pnlQuick.Size = new Size(rightW, h - 360);
+                // إذا تم إلغاء صلاحية الأصناف السريعة، يتم إخفاء اللوحة وتوسيع جدول الأصناف لكامل الشاشة
+                int topH = 85;
+                if (pnlClient != null)
+                {
+                    pnlClient.Location = new Point(10, topH);
+                    pnlClient.Size = new Size(Math.Min(480, w - 20), 55);
+                    topH += 60;
+                }
+                if (pnlOrderType != null)
+                {
+                    pnlOrderType.Location = new Point(10, topH);
+                    pnlOrderType.Size = new Size(Math.Min(480, w - 20), 40);
+                    topH += 45;
+                }
+                dgItems.Location = new Point(10, topH);
+                dgItems.Size = new Size(w - 20, h - topH - 215);
             }
-
-            // ضبط موقع جدول الأصناف ليكون على اليسار (X = rightW + 20)
-            dgItems.Location = new Point(rightW + 20, 85);
-            dgItems.Size = new Size(leftW, h - 290);
 
             pnlTotals.Location = new Point(10, h - 210);
             pnlTotals.Size = new Size(w - 20, 200);
@@ -2748,6 +2775,12 @@ namespace ChickenDist.Forms
         // ── بحث أصناف ────────────────────────────────────────
         private void OpenProductSearch()
         {
+            if (!Session.CanAccess("ProductSearch"))
+            {
+                MessageBox.Show("عفواً، ليس لديك صلاحية استخدام شاشة بحث الأصناف السريعة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
                 // تظل الشاشة تُعاد فتحها بعد كل اختيار

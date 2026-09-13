@@ -223,15 +223,42 @@ namespace ChickenDist.Core
             }
 
             // Synonym mapping for backwards-compatibility or UI mismatches
-            if (screen == "DriverSales" && _perms.ContainsKey("DriverPortal") && _perms["DriverPortal"].CanAccess) return true;
-            if (screen == "DriverPortal" && _perms.ContainsKey("DriverSales") && _perms["DriverSales"].CanAccess) return true;
+            if (screen == "Drivers")
+            {
+                if (_perms.ContainsKey("Drivers")) return _perms["Drivers"].CanAccess;
+                if (_perms.ContainsKey("DriverPortal")) return _perms["DriverPortal"].CanAccess;
+                if (_perms.ContainsKey("DriverHandover")) return _perms["DriverHandover"].CanAccess;
+            }
+            if (screen == "DriverPortal")
+            {
+                if (_perms.ContainsKey("DriverPortal")) return _perms["DriverPortal"].CanAccess;
+                if (_perms.ContainsKey("Drivers")) return _perms["Drivers"].CanAccess;
+                if (_perms.ContainsKey("DriverSales")) return _perms["DriverSales"].CanAccess;
+            }
+            if (screen == "DriverSales")
+            {
+                if (_perms.ContainsKey("DriverSales")) return _perms["DriverSales"].CanAccess;
+                if (_perms.ContainsKey("DriverPortal")) return _perms["DriverPortal"].CanAccess;
+                if (_perms.ContainsKey("Drivers")) return _perms["Drivers"].CanAccess;
+            }
+            if (screen == "QuickItems")
+            {
+                if (_perms.ContainsKey("QuickItems")) return _perms["QuickItems"].CanAccess;
+                if (_perms.ContainsKey("POS") && !_perms["POS"].CanViewQuickItems) return false;
+                if (_perms.ContainsKey("Sales") && !_perms["Sales"].CanViewQuickItems) return false;
+            }
             if (screen == "FinancialPosition" && _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess) return true;
             if (screen == "RepFinancials" && _perms.ContainsKey("Financials") && _perms["Financials"].CanAccess) return true;
             if (screen == "Financials" && _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess) return true;
             if (screen == "ScheduleClientDebt" && _perms.ContainsKey("Installments") && _perms["Installments"].CanAccess) return true;
             if (screen == "DuplicateCodesResolver" && _perms.ContainsKey("Products") && _perms["Products"].CanAccess) return true;
             if (screen == "MaintenanceCard" && _perms.ContainsKey("Maintenance") && _perms["Maintenance"].CanAccess) return true;
-            if (screen == "QuickDetails" && (_perms.ContainsKey("DashSales") && _perms["DashSales"].CanAccess || _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess)) return true;
+            if (screen == "QuickDetails")
+            {
+                if (_perms.ContainsKey("QuickDetails")) return _perms["QuickDetails"].CanAccess;
+                if (_perms.ContainsKey("DashSales") && _perms["DashSales"].CanAccess) return true;
+                return false;
+            }
             if (screen == "SupportBot" && _perms.ContainsKey("BotManager") && _perms["BotManager"].CanAccess) return true;
             if (screen == "InventorySessions" && _perms.ContainsKey("Inventory") && _perms["Inventory"].CanAccess) return true;
 
@@ -594,6 +621,7 @@ namespace ChickenDist.Core
         public static bool CanViewQuickItems(string screen = "Sales")
         {
             if (IsAdmin) return true;
+            if (_perms.ContainsKey("QuickItems") && !_perms["QuickItems"].CanAccess) return false;
             if (_perms.ContainsKey(screen)) return _perms[screen].CanViewQuickItems;
             return true;
         }
@@ -669,7 +697,7 @@ namespace ChickenDist.Core
 
         public static readonly string[] AllScreens = {
             // Sales & POS
-            "Sales", "POS", "PriceQuote", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "Maintenance",
+            "Sales", "POS", "PriceQuote", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "QuickItems", "QuickDetails", "Maintenance",
             "Clients", "ClientStatement", "InactiveClients", "Vehicles", "OnlineOrders", "OnlineStoreSettings",
             
             // Purchases & Suppliers
@@ -697,7 +725,7 @@ namespace ChickenDist.Core
             "RepFinancials", "RepDailyClosing", "RepIncomeStatement", "RepFinancialSummary", "RepShiftComparison",
 
             // Drivers & Administration
-            "DriverHandover", "DriverPortal", "DriverSales", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
+            "Drivers", "DriverHandover", "DriverPortal", "DriverSales", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
             "Employees", "EmployeeTransactions",
             "Settings", "BotManager", "CloudSync", "LookupManager", "EditInvoiceDate",
             
