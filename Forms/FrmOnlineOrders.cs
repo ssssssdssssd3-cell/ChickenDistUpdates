@@ -80,7 +80,7 @@ namespace ChickenDist.Forms
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Color.FromArgb(15, 23, 42);
+            this.BackColor = Color.FromArgb(241, 245, 249);
             this.Font = new Font("Segoe UI", 9f);
             this.KeyPreview = true;
             this.KeyDown += FrmOnlineOrders_KeyDown;
@@ -94,7 +94,7 @@ namespace ChickenDist.Forms
                 Height = 40,
                 RowCount = 1,
                 ColumnCount = 2,
-                BackColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(24, 43, 73),
                 Padding = new Padding(8, 3, 8, 3),
                 Margin = new Padding(0)
             };
@@ -115,7 +115,7 @@ namespace ChickenDist.Forms
             {
                 Text = AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(56, 189, 248),
+                ForeColor = Color.White,
                 AutoSize = true,
                 Margin = new Padding(0, 0, 8, 0)
             };
@@ -124,7 +124,7 @@ namespace ChickenDist.Forms
             {
                 Text = AppConfig.IsRestaurant ? "متابعة طلبات المنيو، بونات التحضير للمطبخ والتحويل لفواتير (F10)" : "متابعة الطلبات، أذون التحضير والتحويل لفواتير (F10)",
                 Font = new Font("Segoe UI", 8.25f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(148, 163, 184),
+                ForeColor = Color.FromArgb(186, 230, 253),
                 AutoSize = true,
                 Padding = new Padding(0, 3, 0, 0)
             };
@@ -157,7 +157,7 @@ namespace ChickenDist.Forms
                 btnRefresh.Enabled = true;
             };
 
-            btnSettings = CreateTopButton("⚙️ الإعدادات (F2)", Color.FromArgb(51, 65, 85));
+            btnSettings = CreateTopButton("⚙️ الإعدادات (F2)", Color.FromArgb(71, 85, 105));
             btnSettings.Click += (s, e) =>
             {
                 using (var dlg = new FrmOnlineStoreSettings())
@@ -224,7 +224,7 @@ namespace ChickenDist.Forms
                 ColumnCount = 4,
                 RowCount = 1,
                 Padding = new Padding(8, 2, 8, 2),
-                BackColor = Color.FromArgb(18, 26, 43),
+                BackColor = Color.FromArgb(241, 245, 249),
                 Margin = new Padding(0)
             };
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
@@ -232,10 +232,10 @@ namespace ChickenDist.Forms
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            lblKpiNew = MakeKPICard("طلبات جديدة 🔴", "0", Color.FromArgb(244, 63, 94), out Panel pKpi1);
-            lblKpiInPrep = MakeKPICard("قيد التجهيز 🟡", "0", Color.FromArgb(245, 158, 11), out Panel pKpi2);
+            lblKpiNew = MakeKPICard("طلبات جديدة 🔴", "0", Color.FromArgb(225, 29, 72), out Panel pKpi1);
+            lblKpiInPrep = MakeKPICard("قيد التجهيز 🟡", "0", Color.FromArgb(217, 119, 6), out Panel pKpi2);
             lblKpiCompleted = MakeKPICard("طلبات مكتملة 🟢", "0", Color.FromArgb(16, 185, 129), out Panel pKpi3);
-            lblKpiTodayTotal = MakeKPICard("إجمالي اليوم 💰", "0.00 ج.م", Color.FromArgb(56, 189, 248), out Panel pKpi4);
+            lblKpiTodayTotal = MakeKPICard("إجمالي اليوم 💰", "0.00 ج.م", Color.FromArgb(2, 132, 199), out Panel pKpi4);
 
             pnlKpi.Controls.Add(pKpi1, 0, 0);
             pnlKpi.Controls.Add(pKpi2, 1, 0);
@@ -251,7 +251,7 @@ namespace ChickenDist.Forms
                 Height = 34,
                 RowCount = 1,
                 ColumnCount = 3,
-                BackColor = Color.FromArgb(24, 33, 53),
+                BackColor = Color.FromArgb(241, 245, 249),
                 Padding = new Padding(8, 2, 8, 2),
                 Margin = new Padding(0)
             };
@@ -298,8 +298,8 @@ namespace ChickenDist.Forms
             txtSearch = new TextBox
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(30, 41, 59),
-                ForeColor = Color.White,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 9f),
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -310,7 +310,7 @@ namespace ChickenDist.Forms
                 Text = "🔍",
                 Dock = DockStyle.Right,
                 Width = 26,
-                ForeColor = Color.FromArgb(203, 213, 225),
+                ForeColor = Color.FromArgb(100, 116, 139),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 9.5f)
             };
@@ -332,22 +332,23 @@ namespace ChickenDist.Forms
                 SplitterWidth = 5,
                 Panel1MinSize = 50,
                 Panel2MinSize = 50,
-                BackColor = Color.FromArgb(30, 41, 59)
+                BackColor = Color.FromArgb(226, 232, 240)
             };
 
             // الجانب الأيمن (Panel1): جدول الطلبات الرئيسي
             var pnlOrdersGrid = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(241, 245, 249),
                 Padding = new Padding(6, 4, 6, 4)
             };
 
             dgvOrders = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Color.FromArgb(15, 23, 42),
-                ForeColor = Color.White,
+                BackgroundColor = Color.FromArgb(248, 250, 252),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                GridColor = Color.FromArgb(226, 232, 240),
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -357,17 +358,22 @@ namespace ChickenDist.Forms
                 MultiSelect = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 EnableHeadersVisualStyles = false,
-                Font = new Font("Segoe UI", 8.5f)
+                Font = new Font("Segoe UI", 9f)
             };
-            dgvOrders.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
-            dgvOrders.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(56, 189, 248);
-            dgvOrders.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-            dgvOrders.ColumnHeadersHeight = 30;
-            dgvOrders.RowTemplate.Height = 28;
-            dgvOrders.DefaultCellStyle.BackColor = Color.FromArgb(15, 23, 42);
-            dgvOrders.DefaultCellStyle.SelectionBackColor = Color.FromArgb(37, 99, 235);
-            dgvOrders.DefaultCellStyle.SelectionForeColor = Color.White;
-            dgvOrders.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(20, 29, 47);
+            dgvOrders.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(24, 43, 73);
+            dgvOrders.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgvOrders.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            dgvOrders.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgvOrders.ColumnHeadersHeight = 32;
+            dgvOrders.RowTemplate.Height = 32;
+            dgvOrders.DefaultCellStyle.BackColor = Color.White;
+            dgvOrders.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            dgvOrders.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            dgvOrders.DefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 58, 138);
+            dgvOrders.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+            dgvOrders.AlternatingRowsDefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            dgvOrders.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            dgvOrders.AlternatingRowsDefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 58, 138);
             dgvOrders.SelectionChanged += DgvOrders_SelectionChanged;
             dgvOrders.CellFormatting += DgvOrders_CellFormatting;
 
@@ -378,19 +384,19 @@ namespace ChickenDist.Forms
             var pnlDetails = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(20, 29, 47),
+                BackColor = Color.FromArgb(241, 245, 249),
                 Padding = new Padding(6)
             };
 
-            // 4.1 رأس كارت التفاصيل (Order Header - 32px)
+            // 4.1 رأس كارت التفاصيل (Order Header - 34px)
             var pnlDetailHeader = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 32,
+                Height = 34,
                 RowCount = 1,
                 ColumnCount = 3,
-                BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(6, 2, 6, 2),
+                BackColor = Color.White,
+                Padding = new Padding(6, 3, 6, 3),
                 Margin = new Padding(0, 0, 0, 4)
             };
             pnlDetailHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f));
@@ -401,7 +407,7 @@ namespace ChickenDist.Forms
             {
                 Text = "طلب: ---",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(56, 189, 248),
+                ForeColor = Color.FromArgb(24, 43, 73),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight
             };
@@ -410,7 +416,7 @@ namespace ChickenDist.Forms
             {
                 Text = "الحالة: ---",
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(244, 63, 94),
+                ForeColor = Color.FromArgb(225, 29, 72),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -418,8 +424,8 @@ namespace ChickenDist.Forms
             lblDetailTier = new Label
             {
                 Text = "فئة: ---",
-                Font = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(148, 163, 184),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(71, 85, 105),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -434,8 +440,8 @@ namespace ChickenDist.Forms
                 Text = "👤 بيانات العميل والتوصيل",
                 Dock = DockStyle.Top,
                 Height = 78,
-                ForeColor = Color.FromArgb(96, 165, 250),
-                BackColor = Color.FromArgb(24, 33, 53),
+                ForeColor = Color.FromArgb(24, 43, 73),
+                BackColor = Color.White,
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 Padding = new Padding(6, 2, 6, 2),
                 Margin = new Padding(0, 0, 0, 4)
@@ -459,7 +465,7 @@ namespace ChickenDist.Forms
             {
                 Text = "الاسم: ---",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                ForeColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight
             };
@@ -468,7 +474,7 @@ namespace ChickenDist.Forms
             {
                 Text = "الهاتف: --- 📱",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(52, 211, 153),
+                ForeColor = Color.FromArgb(5, 150, 105),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight,
                 Cursor = Cursors.Hand
@@ -479,7 +485,7 @@ namespace ChickenDist.Forms
             {
                 Text = "العنوان: ---",
                 Font = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(226, 232, 240),
+                ForeColor = Color.FromArgb(71, 85, 105),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight
             };
@@ -488,8 +494,8 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                BackColor = Color.FromArgb(15, 23, 42),
-                ForeColor = Color.FromArgb(253, 224, 71),
+                BackColor = Color.FromArgb(254, 249, 195),
+                ForeColor = Color.FromArgb(113, 63, 18),
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle,
                 Text = "ملاحظات: ---"
@@ -506,8 +512,8 @@ namespace ChickenDist.Forms
             {
                 Text = "🛒 بنود الطلب وإدارة الأصناف",
                 Dock = DockStyle.Fill,
-                ForeColor = Color.FromArgb(96, 165, 250),
-                BackColor = Color.FromArgb(24, 33, 53),
+                ForeColor = Color.FromArgb(24, 43, 73),
+                BackColor = Color.White,
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 Padding = new Padding(4)
             };
@@ -517,8 +523,8 @@ namespace ChickenDist.Forms
                 Text = "⚠️ تنبيه: الطلب يحتوي على أصناف غير متوفرة في المخزن بالكمية المطلوبة (مظللة بالأحمر). يمكنك استبدالها أو تعديلها.",
                 Dock = DockStyle.Top,
                 Height = 26,
-                BackColor = Color.FromArgb(88, 28, 28),
-                ForeColor = Color.FromArgb(254, 202, 202),
+                BackColor = Color.FromArgb(254, 226, 226),
+                ForeColor = Color.FromArgb(153, 27, 27),
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Visible = false
@@ -529,7 +535,7 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Bottom,
                 Height = 32,
                 FlowDirection = FlowDirection.RightToLeft,
-                BackColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(248, 250, 252),
                 Padding = new Padding(2, 2, 2, 2),
                 Margin = new Padding(0)
             };
@@ -618,8 +624,9 @@ namespace ChickenDist.Forms
             dgvItems = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Color.FromArgb(15, 23, 42),
-                ForeColor = Color.White,
+                BackgroundColor = Color.FromArgb(248, 250, 252),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                GridColor = Color.FromArgb(226, 232, 240),
                 BorderStyle = BorderStyle.None,
                 RowHeadersVisible = false,
                 AllowUserToAddRows = false,
@@ -630,12 +637,20 @@ namespace ChickenDist.Forms
                 EnableHeadersVisualStyles = false,
                 Font = new Font("Segoe UI", 8.5f)
             };
-            dgvItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
-            dgvItems.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(56, 189, 248);
+            dgvItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(24, 43, 73);
+            dgvItems.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgvItems.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
-            dgvItems.ColumnHeadersHeight = 26;
-            dgvItems.RowTemplate.Height = 24;
-            dgvItems.DefaultCellStyle.BackColor = Color.FromArgb(15, 23, 42);
+            dgvItems.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgvItems.ColumnHeadersHeight = 28;
+            dgvItems.RowTemplate.Height = 28;
+            dgvItems.DefaultCellStyle.BackColor = Color.White;
+            dgvItems.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            dgvItems.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            dgvItems.DefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 58, 138);
+            dgvItems.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+            dgvItems.AlternatingRowsDefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+            dgvItems.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254);
+            dgvItems.AlternatingRowsDefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 58, 138);
             dgvItems.CellDoubleClick += (s, e) => EditCurrentItemQuantity();
             dgvItems.CellFormatting += DgvItems_CellFormatting;
             dgvItems.KeyDown += (s, e) =>
@@ -663,7 +678,7 @@ namespace ChickenDist.Forms
                 Height = 28,
                 RowCount = 1,
                 ColumnCount = 3,
-                BackColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.White,
                 Padding = new Padding(6, 2, 6, 2),
                 Margin = new Padding(0)
             };
@@ -675,7 +690,7 @@ namespace ChickenDist.Forms
             {
                 Text = "المجموع: 0.00 ج.م",
                 Font = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(148, 163, 184),
+                ForeColor = Color.FromArgb(71, 85, 105),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight
             };
@@ -684,7 +699,7 @@ namespace ChickenDist.Forms
             {
                 Text = "التوصيل: 0.00 ج.م",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(56, 189, 248),
+                ForeColor = Color.FromArgb(2, 132, 199),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
@@ -695,7 +710,7 @@ namespace ChickenDist.Forms
             {
                 Text = "الإجمالي: 0.00 ج.م",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(52, 211, 153),
+                ForeColor = Color.FromArgb(22, 101, 52),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -711,7 +726,7 @@ namespace ChickenDist.Forms
                 Height = 68,
                 RowCount = 2,
                 ColumnCount = 2,
-                BackColor = Color.FromArgb(20, 29, 47),
+                BackColor = Color.FromArgb(241, 245, 249),
                 Padding = new Padding(2, 2, 2, 2),
                 Margin = new Padding(0)
             };
@@ -776,9 +791,9 @@ namespace ChickenDist.Forms
             {
                 Text = "الحالة:",
                 Dock = DockStyle.Fill,
-                ForeColor = Color.FromArgb(203, 213, 225),
+                ForeColor = Color.FromArgb(71, 85, 105),
                 TextAlign = ContentAlignment.MiddleRight,
-                Font = new Font("Segoe UI", 8f),
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 AutoSize = true,
                 Margin = new Padding(0, 0, 4, 0)
             };
@@ -787,8 +802,8 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(30, 41, 59),
-                ForeColor = Color.White,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 8.5f)
             };
             cboChangeStatus.Items.AddRange(new object[] { "جديد", "قيد التجهيز", "جاري التوصيل", "مكتمل", "ملغي" });
@@ -861,15 +876,16 @@ namespace ChickenDist.Forms
                 Text = text,
                 AutoSize = true,
                 Height = 26,
-                BackColor = active ? Color.FromArgb(37, 99, 235) : Color.FromArgb(30, 41, 59),
-                ForeColor = Color.White,
+                BackColor = active ? Color.FromArgb(37, 99, 235) : Color.White,
+                ForeColor = active ? Color.White : Color.FromArgb(51, 65, 85),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
                 Margin = new Padding(2, 1, 2, 1),
                 Padding = new Padding(5, 0, 5, 0)
             };
-            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.BorderColor = active ? Color.FromArgb(29, 78, 216) : Color.FromArgb(203, 213, 225);
+            btn.FlatAppearance.BorderSize = 1;
             return btn;
         }
 
@@ -878,7 +894,7 @@ namespace ChickenDist.Forms
             card = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.White,
                 Padding = new Padding(4, 2, 4, 2),
                 Margin = new Padding(2, 1, 2, 1)
             };
@@ -886,7 +902,7 @@ namespace ChickenDist.Forms
             var pnlAccent = new Panel
             {
                 Dock = DockStyle.Right,
-                Width = 3,
+                Width = 4,
                 BackColor = accent
             };
 
@@ -904,8 +920,8 @@ namespace ChickenDist.Forms
             var lblTitle = new Label
             {
                 Text = title,
-                ForeColor = Color.FromArgb(148, 163, 184),
-                Font = new Font("Segoe UI", 7.5f),
+                ForeColor = Color.FromArgb(71, 85, 105),
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight
             };
@@ -949,14 +965,23 @@ namespace ChickenDist.Forms
         {
             _activeFilter = status;
 
-            btnFilterAll.BackColor = Color.FromArgb(30, 41, 59);
-            btnFilterNew.BackColor = Color.FromArgb(30, 41, 59);
-            btnFilterInPrep.BackColor = Color.FromArgb(30, 41, 59);
-            btnFilterDelivery.BackColor = Color.FromArgb(30, 41, 59);
-            btnFilterCompleted.BackColor = Color.FromArgb(30, 41, 59);
-            btnFilterCancelled.BackColor = Color.FromArgb(30, 41, 59);
+            Button[] filterButtons = { btnFilterAll, btnFilterNew, btnFilterInPrep, btnFilterDelivery, btnFilterCompleted, btnFilterCancelled };
+            foreach (var b in filterButtons)
+            {
+                if (b != null)
+                {
+                    b.BackColor = Color.White;
+                    b.ForeColor = Color.FromArgb(51, 65, 85);
+                    b.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+                }
+            }
 
-            activeBtn.BackColor = Color.FromArgb(37, 99, 235);
+            if (activeBtn != null)
+            {
+                activeBtn.BackColor = Color.FromArgb(37, 99, 235);
+                activeBtn.ForeColor = Color.White;
+                activeBtn.FlatAppearance.BorderColor = Color.FromArgb(29, 78, 216);
+            }
             LoadOrders();
         }
 
@@ -1106,10 +1131,11 @@ namespace ChickenDist.Forms
             lblDetailStatus.Text = $"الحالة: {status}";
             lblDetailTier.Text = $"فئة السعر: {tier}";
 
-            if (status == "جديد") lblDetailStatus.ForeColor = Color.FromArgb(244, 63, 94);
-            else if (status == "قيد التجهيز" || status == "جاري التوصيل") lblDetailStatus.ForeColor = Color.FromArgb(245, 158, 11);
-            else if (status == "مكتمل") lblDetailStatus.ForeColor = Color.FromArgb(52, 211, 153);
-            else lblDetailStatus.ForeColor = Color.FromArgb(148, 163, 184);
+            if (status == "جديد") lblDetailStatus.ForeColor = Color.FromArgb(225, 29, 72);
+            else if (status == "قيد التجهيز") lblDetailStatus.ForeColor = Color.FromArgb(217, 119, 6);
+            else if (status == "جاري التوصيل") lblDetailStatus.ForeColor = Color.FromArgb(2, 132, 199);
+            else if (status == "مكتمل") lblDetailStatus.ForeColor = Color.FromArgb(22, 101, 52);
+            else lblDetailStatus.ForeColor = Color.FromArgb(100, 116, 139);
 
             lblDetailCustName.Text = $"الاسم: {name}";
             lblDetailCustPhone.Text = $"الهاتف: {phone} 📱";
@@ -1124,7 +1150,7 @@ namespace ChickenDist.Forms
             if (saleId > 0)
             {
                 btnConvertToSale.Text = $"✅ محول لفاتورة #{saleId}";
-                btnConvertToSale.BackColor = Color.FromArgb(51, 65, 85);
+                btnConvertToSale.BackColor = Color.FromArgb(100, 116, 139);
             }
             else
             {
@@ -1248,25 +1274,61 @@ namespace ChickenDist.Forms
 
             string colName = dgvItems.Columns[e.ColumnIndex].Name;
 
+            // ألوان الأسطر الفاتحة التبادلية (سطر أبيض وسطر رمادي فاتح جداً)
+            Color baseBg = (e.RowIndex % 2 == 0) ? Color.White : Color.FromArgb(248, 250, 252);
+            Color baseFg = Color.FromArgb(15, 23, 42);
+            Color baseSelBg = Color.FromArgb(219, 234, 254);
+            Color baseSelFg = Color.FromArgb(30, 58, 138);
+
+            // تمييز الأصناف التي لا يتوفر منها رصيد كافٍ بالمخزن
+            if (availStock < reqQty)
+            {
+                if (availStock <= 0)
+                {
+                    // غير متوفر تماماً: لون وردي/أحمر فاتح مع نص كستنائي واضح
+                    baseBg = Color.FromArgb(254, 242, 242);    // #FEF2F2
+                    baseFg = Color.FromArgb(153, 27, 27);      // #991B1B
+                    baseSelBg = Color.FromArgb(254, 205, 211); // #FECDD3
+                    baseSelFg = Color.FromArgb(136, 19, 55);   // #881337
+                }
+                else
+                {
+                    // متوفر جزئياً: لون كهرماني/أصفر فاتح ناعم
+                    baseBg = Color.FromArgb(254, 252, 232);    // #FEFCE8
+                    baseFg = Color.FromArgb(146, 64, 14);      // #92400E
+                    baseSelBg = Color.FromArgb(254, 240, 138); // #FEF08A
+                    baseSelFg = Color.FromArgb(120, 53, 15);   // #78350F
+                }
+            }
+
+            e.CellStyle.BackColor = baseBg;
+            e.CellStyle.ForeColor = baseFg;
+            e.CellStyle.SelectionBackColor = baseSelBg;
+            e.CellStyle.SelectionForeColor = baseSelFg;
+
+            // تمييز نصوص حالة التوفر والأرصدة
             if (colName == "StockStatus" || colName == "AvailableStock")
             {
                 if (availStock <= 0)
                 {
-                    e.CellStyle.ForeColor = Color.FromArgb(239, 68, 68);
+                    e.CellStyle.ForeColor = Color.FromArgb(220, 38, 38);
+                    e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
                 else if (availStock < reqQty)
                 {
-                    e.CellStyle.ForeColor = Color.FromArgb(245, 158, 11);
+                    e.CellStyle.ForeColor = Color.FromArgb(217, 119, 6);
+                    e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
                 else
                 {
                     e.CellStyle.ForeColor = Color.FromArgb(16, 185, 129);
+                    e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
             }
 
-            if (availStock < reqQty && colName == "ProductName")
+            if (colName == "TotalPrice")
             {
-                e.CellStyle.ForeColor = availStock <= 0 ? Color.FromArgb(248, 113, 113) : Color.FromArgb(251, 191, 36);
+                e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             }
         }
 
@@ -1277,23 +1339,65 @@ namespace ChickenDist.Forms
             var row = dgvOrders.Rows[e.RowIndex];
             string status = row.Cells["Status"]?.Value?.ToString() ?? "";
 
+            // تمييز وتلوين فواتير الطلبات بالكامل بألوان فاتحة وراقية ومريحة للعين حسب الحالة
+            Color bg, fg, selBg, selFg;
+
+            if (status == "جديد")
+            {
+                // وردي فاتح ناعم جداً للطلبات الجديدة
+                bg = Color.FromArgb(255, 241, 242);     // #FFF1F2
+                fg = Color.FromArgb(159, 18, 57);       // #9F1239
+                selBg = Color.FromArgb(254, 205, 211);  // #FECDD3
+                selFg = Color.FromArgb(136, 19, 55);    // #881337
+            }
+            else if (status == "قيد التجهيز")
+            {
+                // أصفر/كهرماني فاتح ناعم للطلبات قيد التجهيز
+                bg = Color.FromArgb(254, 252, 232);     // #FEFCE8
+                fg = Color.FromArgb(146, 64, 14);       // #92400E
+                selBg = Color.FromArgb(254, 240, 138);  // #FEF08A
+                selFg = Color.FromArgb(120, 53, 15);    // #78350F
+            }
+            else if (status == "جاري التوصيل")
+            {
+                // أزرق سماوي فاتح وهادئ لطلبات التوصيل
+                bg = Color.FromArgb(240, 249, 255);     // #F0F9FF
+                fg = Color.FromArgb(7, 89, 133);        // #075985
+                selBg = Color.FromArgb(186, 230, 253);  // #BAE6FD
+                selFg = Color.FromArgb(12, 74, 110);    // #0C4A6E
+            }
+            else if (status == "مكتمل")
+            {
+                // أخضر نعناعي هادئ وفاتح للطلبات المكتملة
+                bg = Color.FromArgb(240, 253, 244);     // #F0FDF4
+                fg = Color.FromArgb(22, 101, 52);       // #166534
+                selBg = Color.FromArgb(187, 247, 208);  // #BBF7D0
+                selFg = Color.FromArgb(20, 83, 45);     // #14532D
+            }
+            else if (status == "ملغي")
+            {
+                // رمادي فاتح هادئ للطلبات الملغية
+                bg = Color.FromArgb(241, 245, 249);     // #F1F5F9
+                fg = Color.FromArgb(100, 116, 139);     // #64748B
+                selBg = Color.FromArgb(226, 232, 240);  // #E2E8F0
+                selFg = Color.FromArgb(51, 65, 85);     // #334155
+            }
+            else
+            {
+                bg = (e.RowIndex % 2 == 0) ? Color.White : Color.FromArgb(248, 250, 252);
+                fg = Color.FromArgb(15, 23, 42);
+                selBg = Color.FromArgb(219, 234, 254);
+                selFg = Color.FromArgb(30, 58, 138);
+            }
+
+            e.CellStyle.BackColor = bg;
+            e.CellStyle.ForeColor = fg;
+            e.CellStyle.SelectionBackColor = selBg;
+            e.CellStyle.SelectionForeColor = selFg;
+
             if (dgvOrders.Columns[e.ColumnIndex].Name == "Status")
             {
-                if (status == "جديد")
-                {
-                    e.CellStyle.ForeColor = Color.FromArgb(244, 63, 94);
-                    e.CellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-                }
-                else if (status == "قيد التجهيز" || status == "جاري التوصيل")
-                {
-                    e.CellStyle.ForeColor = Color.FromArgb(245, 158, 11);
-                    e.CellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-                }
-                else if (status == "مكتمل")
-                {
-                    e.CellStyle.ForeColor = Color.FromArgb(52, 211, 153);
-                    e.CellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-                }
+                e.CellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             }
         }
 
@@ -1353,8 +1457,8 @@ namespace ChickenDist.Forms
                 dlg.MinimizeBox = false;
                 dlg.RightToLeft = RightToLeft.Yes;
                 dlg.RightToLeftLayout = true;
-                dlg.BackColor = Color.FromArgb(15, 23, 42);
-                dlg.ForeColor = Color.White;
+                dlg.BackColor = Color.FromArgb(241, 245, 249);
+                dlg.ForeColor = Color.FromArgb(15, 23, 42);
                 dlg.Font = new Font("Segoe UI", 9f);
 
                 var lblInfo = new Label
@@ -1363,7 +1467,7 @@ namespace ChickenDist.Forms
                     Dock = DockStyle.Top,
                     Height = 45,
                     Padding = new Padding(12, 8, 12, 0),
-                    ForeColor = Color.FromArgb(148, 163, 184)
+                    ForeColor = Color.FromArgb(71, 85, 105)
                 };
 
                 var lblPrompt = new Label
@@ -1372,7 +1476,7 @@ namespace ChickenDist.Forms
                     Location = new Point(20, 60),
                     AutoSize = true,
                     Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(56, 189, 248)
+                    ForeColor = Color.FromArgb(24, 43, 73)
                 };
 
                 var nudQty = new NumericUpDown
@@ -1384,8 +1488,8 @@ namespace ChickenDist.Forms
                     Minimum = 0.01m,
                     Maximum = 99999m,
                     Value = Math.Max(0.01m, curQty),
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.White
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(15, 23, 42)
                 };
 
                 var btnOk = new Button
@@ -1408,7 +1512,7 @@ namespace ChickenDist.Forms
                     DialogResult = DialogResult.Cancel,
                     Location = new Point(190, 130),
                     Size = new Size(150, 34),
-                    BackColor = Color.FromArgb(51, 65, 85),
+                    BackColor = Color.FromArgb(100, 116, 139),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9f, FontStyle.Regular),
@@ -1548,7 +1652,7 @@ namespace ChickenDist.Forms
                 dlg.MinimizeBox = false;
                 dlg.RightToLeft = RightToLeft.Yes;
                 dlg.RightToLeftLayout = true;
-                dlg.BackColor = Color.FromArgb(15, 23, 42);
+                dlg.BackColor = Color.FromArgb(241, 245, 249);
                 dlg.Font = new Font("Segoe UI", 9.5f);
 
                 var lblPrompt = new Label
@@ -1556,7 +1660,7 @@ namespace ChickenDist.Forms
                     Text = $"تعديل مصاريف التوصيل للطلب {orderNum}:",
                     Location = new Point(20, 20),
                     Size = new Size(325, 26),
-                    ForeColor = Color.White,
+                    ForeColor = Color.FromArgb(24, 43, 73),
                     Font = new Font("Segoe UI", 10f, FontStyle.Bold)
                 };
 
@@ -1569,8 +1673,8 @@ namespace ChickenDist.Forms
                     Minimum = 0m,
                     Maximum = 10000m,
                     Value = Math.Max(0m, curDel),
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.FromArgb(52, 211, 153)
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(15, 23, 42)
                 };
 
                 var btnOk = new Button
@@ -1593,7 +1697,7 @@ namespace ChickenDist.Forms
                     DialogResult = DialogResult.Cancel,
                     Location = new Point(190, 115),
                     Size = new Size(155, 38),
-                    BackColor = Color.FromArgb(51, 65, 85),
+                    BackColor = Color.FromArgb(100, 116, 139),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
