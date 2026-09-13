@@ -886,6 +886,22 @@ namespace ChickenDist.Forms
             string shelfLoc = dr.Table.Columns.Contains("ShelfLocation") ? dr["ShelfLocation"]?.ToString() : "";
             decimal salePrice = Convert.ToDecimal(dr["SalePrice"]);
             string unit = dr["Unit"]?.ToString() ?? "قطعة";
+            if (dr.Table.Columns.Contains("MatchedUnit") && dr["MatchedUnit"] != DBNull.Value)
+            {
+                int mu = Convert.ToInt32(dr["MatchedUnit"]);
+                if (mu == 1 && dr.Table.Columns.Contains("Unit1Name") && dr["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(dr["Unit1Name"].ToString()))
+                {
+                    unit = dr["Unit1Name"].ToString();
+                    if (dr.Table.Columns.Contains("Unit1SalePrice") && dr["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(dr["Unit1SalePrice"]) > 0)
+                        salePrice = Convert.ToDecimal(dr["Unit1SalePrice"]);
+                }
+                else if (mu == 2 && dr.Table.Columns.Contains("Unit2Name") && dr["Unit2Name"] != DBNull.Value && !string.IsNullOrEmpty(dr["Unit2Name"].ToString()))
+                {
+                    unit = dr["Unit2Name"].ToString();
+                    if (dr.Table.Columns.Contains("Unit2SalePrice") && dr["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(dr["Unit2SalePrice"]) > 0)
+                        salePrice = Convert.ToDecimal(dr["Unit2SalePrice"]);
+                }
+            }
 
             // Stock Check
             decimal totalStock = 0m;

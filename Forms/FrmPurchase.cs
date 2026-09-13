@@ -1471,15 +1471,15 @@ namespace ChickenDist.Forms
                 {
                     defaultUnit = product.Unit1Name;
                     defaultFactor = 1m;
-                    defaultPrice = price > 0 ? price : (product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : price);
-                    defaultSalePrice = salePrice > 0 ? salePrice : (product.Unit1SalePrice > 0 ? product.Unit1SalePrice : salePrice);
+                    defaultPrice = product.Unit1PurchasePrice > 0 ? product.Unit1PurchasePrice : (price > 0 ? price : product.PurchasePrice);
+                    defaultSalePrice = product.Unit1SalePrice > 0 ? product.Unit1SalePrice : (salePrice > 0 ? salePrice : product.Price);
                 }
                 else if (matchedUnit == 2 && !string.IsNullOrEmpty(product.Unit2Name))
                 {
                     defaultUnit = product.Unit2Name;
                     defaultFactor = product.Unit2Factor > 0 ? product.Unit2Factor : 1m;
-                    defaultPrice = price > 0 ? price : (product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice : price);
-                    defaultSalePrice = salePrice > 0 ? salePrice : (product.Unit2SalePrice > 0 ? product.Unit2SalePrice : salePrice);
+                    defaultPrice = product.Unit2PurchasePrice > 0 ? product.Unit2PurchasePrice : (price > 0 ? price : product.PurchasePrice);
+                    defaultSalePrice = product.Unit2SalePrice > 0 ? product.Unit2SalePrice : (salePrice > 0 ? salePrice : product.Price);
                 }
                 else if (matchedUnit == 3)
                 {
@@ -1555,14 +1555,7 @@ namespace ChickenDist.Forms
 
         private bool MatchBarcode(string barcodes, string scanText)
         {
-            if (string.IsNullOrEmpty(barcodes)) return false;
-            var parts = barcodes.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var part in parts)
-            {
-                if (string.Equals(part.Trim(), scanText, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
+            return ProductDAL.BarcodeMatches(barcodes, scanText);
         }
 
         private void BtnManualAdd_Click(object sender, EventArgs e)
@@ -1615,8 +1608,6 @@ namespace ChickenDist.Forms
                         int pid     = Convert.ToInt32(row["ProductID"]);
                         string pCode= row["ProductCode"].ToString();
                         string pName= row["ProductName"].ToString();
-                        decimal pp  = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
-                        decimal sp  = row["SalePrice"]     != DBNull.Value ? Convert.ToDecimal(row["SalePrice"])     : 0m;
 
                         if (dt.Columns.Contains("MatchedUnit") && row["MatchedUnit"] != DBNull.Value)
                         {
@@ -1626,6 +1617,23 @@ namespace ChickenDist.Forms
                         {
                             _pendingMatchedUnit = 3; // Default to main/base unit
                         }
+
+                        decimal pp = 0m;
+                        decimal sp = 0m;
+                        if (_pendingMatchedUnit == 1)
+                        {
+                            pp = row["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit1PurchasePrice"]) : 0m;
+                            sp = row["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit1SalePrice"]) : 0m;
+                        }
+                        else if (_pendingMatchedUnit == 2)
+                        {
+                            pp = row["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit2PurchasePrice"]) : 0m;
+                            sp = row["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit2SalePrice"]) : 0m;
+                        }
+                        if (pp <= 0m && row["PurchasePrice"] != DBNull.Value)
+                            pp = Convert.ToDecimal(row["PurchasePrice"]);
+                        if (sp <= 0m && row["SalePrice"] != DBNull.Value)
+                            sp = Convert.ToDecimal(row["SalePrice"]);
 
                         if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                             dgItems.Rows.RemoveAt(rowIdx);
@@ -1669,6 +1677,7 @@ namespace ChickenDist.Forms
 
 				ComboItem foundItem = null;
 
+                int matchedUnit = 3;
                 if (res.IsScaleBarcode)
                 {
                     _pendingBarcodeWeight = res.WeightOrPrice;
@@ -1685,7 +1694,7 @@ namespace ChickenDist.Forms
                     if (foundItem == null)
                     {
                         MessageBox.Show("لم يتم العثور على الصنف الخاص بباركود الميزان!");
-						_pendingBarcodeWeight = null;
+                        _pendingBarcodeWeight = null;
                         return;
                     }
                 }
@@ -1694,13 +1703,28 @@ namespace ChickenDist.Forms
                     string scanText = cboProduct.Text.Trim();
                     foreach (var ci in allItems)
                     {
-                        if (ci.ID > 0 && 
-                            (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
-                             string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
-                             MatchBarcode(ci.InternationalCode, scanText)))
+                        if (ci.ID > 0)
                         {
-                            foundItem = ci;
-                            break;
+                            if (MatchBarcode(ci.Unit1Barcode, scanText))
+                            {
+                                foundItem = ci;
+                                matchedUnit = 1;
+                                break;
+                            }
+                            else if (MatchBarcode(ci.Unit2Barcode, scanText))
+                            {
+                                foundItem = ci;
+                                matchedUnit = 2;
+                                break;
+                            }
+                            else if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+                                     string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
+                                     MatchBarcode(ci.InternationalCode, scanText))
+                            {
+                                foundItem = ci;
+                                matchedUnit = 3;
+                                break;
+                            }
                         }
                     }
                 }
@@ -1714,11 +1738,17 @@ namespace ChickenDist.Forms
                     _pendingBarcodeWeight = null;
                     _pendingScaleWeight = null;
 
+                    _pendingMatchedUnit = matchedUnit;
+                    decimal price = matchedUnit == 1 && foundItem.Unit1PurchasePrice > 0 ? foundItem.Unit1PurchasePrice
+                                  : matchedUnit == 2 && foundItem.Unit2PurchasePrice > 0 ? foundItem.Unit2PurchasePrice
+                                  : foundItem.Extra;
+                    decimal salePrice = matchedUnit == 1 && foundItem.Unit1SalePrice > 0 ? foundItem.Unit1SalePrice
+                                      : matchedUnit == 2 && foundItem.Unit2SalePrice > 0 ? foundItem.Unit2SalePrice
+                                      : foundItem.Price;
+
                     _isScanningBarcode = true;
                     try
                     {
-                        decimal price = foundItem.Extra;
-                        decimal salePrice = foundItem.Price;
                         AddProductToGrid(foundItem.ID, foundItem.ProductCode, foundItem.Text, qtyToAdd, price, 0m, salePrice);
                         
                         cboProduct.Text = "";
@@ -1764,6 +1794,7 @@ namespace ChickenDist.Forms
             }
 
             ComboItem foundItem = null;
+            int matchedUnit = 3;
 
             if (res.IsScaleBarcode)
             {
@@ -1780,15 +1811,31 @@ namespace ChickenDist.Forms
             }
             else
             {
+                string scanText = text.Trim();
                 foreach (var ci in allItems)
                 {
-                    if (ci.ID > 0 &&
-                        (string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
-                         MatchBarcode(ci.InternationalCode, text)))
+                    if (ci.ID > 0)
                     {
-                        foundItem = ci;
-                        break;
+                        if (MatchBarcode(ci.Unit1Barcode, scanText))
+                        {
+                            foundItem = ci;
+                            matchedUnit = 1;
+                            break;
+                        }
+                        else if (MatchBarcode(ci.Unit2Barcode, scanText))
+                        {
+                            foundItem = ci;
+                            matchedUnit = 2;
+                            break;
+                        }
+                        else if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) ||
+                                 MatchBarcode(ci.InternationalCode, scanText))
+                        {
+                            foundItem = ci;
+                            matchedUnit = 3;
+                            break;
+                        }
                     }
                 }
             }
@@ -1799,11 +1846,17 @@ namespace ChickenDist.Forms
                 _pendingBarcodeWeight = null;
                 _pendingScaleWeight = null;
 
+                _pendingMatchedUnit = matchedUnit;
+                decimal price = matchedUnit == 1 && foundItem.Unit1PurchasePrice > 0 ? foundItem.Unit1PurchasePrice
+                              : matchedUnit == 2 && foundItem.Unit2PurchasePrice > 0 ? foundItem.Unit2PurchasePrice
+                              : foundItem.Extra;
+                decimal salePrice = matchedUnit == 1 && foundItem.Unit1SalePrice > 0 ? foundItem.Unit1SalePrice
+                                  : matchedUnit == 2 && foundItem.Unit2SalePrice > 0 ? foundItem.Unit2SalePrice
+                                  : foundItem.Price;
+
                 _isScanningBarcode = true;
                 try
                 {
-                    decimal price = foundItem.Extra;
-                    decimal salePrice = foundItem.Price;
                     AddProductToGrid(foundItem.ID, foundItem.ProductCode, foundItem.Text, qtyToAdd, price, 0m, salePrice);
 
                     cboProduct.Text = "";

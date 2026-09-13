@@ -452,7 +452,12 @@ namespace ChickenDist.DAL
             // 1. FIRST Priority: Direct Exact Full Barcode / Code / PartNumber Lookup
             // If the scanned barcode matches ProductCode, InternationalCode, Unit1Barcode, Unit2Barcode, PartNumber, or ScalePLU directly
             var dtDirect = DbHelper.Query(@"
-                SELECT TOP 1 p.*, c.CategoryName 
+                SELECT TOP 1 p.*, c.CategoryName,
+                    CASE 
+                        WHEN (p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%') THEN 1
+                        WHEN (p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%') THEN 2
+                        ELSE 3
+                    END AS MatchedUnit
                 FROM Products p 
                 LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
                 WHERE p.IsActive = 1 AND (
@@ -515,7 +520,12 @@ namespace ChickenDist.DAL
                 string padded = itemCodeInt > 0 ? itemCodeInt.ToString("D8") : itemCode;
 
                 var dtScale = DbHelper.Query(@"
-                    SELECT TOP 1 p.*, c.CategoryName 
+                    SELECT TOP 1 p.*, c.CategoryName,
+                        CASE 
+                            WHEN (p.Unit1Barcode = @c OR p.Unit1Barcode = @trimmed OR p.Unit1Barcode = @padded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @c + ',%') THEN 1
+                            WHEN (p.Unit2Barcode = @c OR p.Unit2Barcode = @trimmed OR p.Unit2Barcode = @padded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @c + ',%') THEN 2
+                            ELSE 3
+                        END AS MatchedUnit
                     FROM Products p 
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
                     WHERE p.IsActive = 1 AND (
@@ -704,6 +714,72 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>
+        /// فحص مطابقة الباركود الممسوح مع قائمة الباركودات المسجلة للصنف أو الوحدة
+        /// يدعم الباركودات المتعددة المفصولة بفواصل أو مسافات، ويتعامل بمرونة مع الأصفار البادئة
+        /// </summary>
+        public static bool BarcodeMatches(string registeredBarcodes, string scannedCode)
+        {
+            if (string.IsNullOrWhiteSpace(registeredBarcodes) || string.IsNullOrWhiteSpace(scannedCode)) return false;
+            scannedCode = scannedCode.Trim();
+            string scannedTrimmed = scannedCode.TrimStart('0');
+            if (string.IsNullOrEmpty(scannedTrimmed)) scannedTrimmed = "0";
+
+            var parts = registeredBarcodes.Split(new[] { ',', ';', ' ', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var part in parts)
+            {
+                string p = part.Trim();
+                if (string.Equals(p, scannedCode, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                string pTrimmed = p.TrimStart('0');
+                if (!string.IsNullOrEmpty(pTrimmed) && pTrimmed == scannedTrimmed)
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// تحديد رقم الوحدة التي طابقها الباركود الممسوح (1 = صغرى، 2 = وسطى، 3 = كبرى)
+        /// </summary>
+        public static int DetermineMatchedUnit(DataRow dr, string scannedCode)
+        {
+            if (dr == null || string.IsNullOrWhiteSpace(scannedCode)) return 3;
+            string code = scannedCode.Trim();
+
+            // 1. فحص باركود الوحدة الصغرى (Unit1)
+            if (dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value)
+            {
+                string u1 = dr["Unit1Barcode"].ToString();
+                if (BarcodeMatches(u1, code)) return 1;
+            }
+
+            // 2. فحص باركود الوحدة الوسطى (Unit2)
+            if (dr.Table.Columns.Contains("Unit2Barcode") && dr["Unit2Barcode"] != DBNull.Value)
+            {
+                string u2 = dr["Unit2Barcode"].ToString();
+                if (BarcodeMatches(u2, code)) return 2;
+            }
+
+            // 3. فحص الباركود الدولي أو كود الصنف للوحدة الكبرى
+            if (dr.Table.Columns.Contains("ProductCode") && dr["ProductCode"] != DBNull.Value)
+            {
+                if (BarcodeMatches(dr["ProductCode"].ToString(), code)) return 3;
+            }
+            if (dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value)
+            {
+                if (BarcodeMatches(dr["InternationalCode"].ToString(), code)) return 3;
+            }
+
+            // 4. فحص العمود المحسوب من استعلام SQL إن وُجد
+            if (dr.Table.Columns.Contains("MatchedUnit") && dr["MatchedUnit"] != DBNull.Value)
+            {
+                int mu = Convert.ToInt32(dr["MatchedUnit"]);
+                if (mu == 1 || mu == 2) return mu;
+            }
+
+            return 3;
+        }
+
+        /// <summary>
         /// بحث عن صنف عن طريق الباركود أو كود الصنف أو رقم القطعة (PartNumber).
         /// يُستخدم للقراءة السريعة بجهاز السكنر.
         /// </summary>
@@ -724,7 +800,7 @@ namespace ChickenDist.DAL
                 if (dt.Columns.Contains(col.ColumnName))
                     newRow[col.ColumnName] = dr[col.ColumnName];
             }
-            newRow["MatchedUnit"] = dr.Table.Columns.Contains("MatchedUnit") ? dr["MatchedUnit"] : 3;
+            newRow["MatchedUnit"] = DetermineMatchedUnit(dr, code);
             newRow["ParsedWeight"] = weight;
             dt.Rows.Add(newRow);
 

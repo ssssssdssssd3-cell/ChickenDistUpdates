@@ -1329,7 +1329,12 @@ namespace ChickenDist.Forms
                        p.Unit3Factor, p.DefaultSaleUnit,
                        p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                 FROM Products p
-                WHERE p.IsActive = 1 AND (p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR p.InternationalCode = @c OR p.Unit1Barcode = @c OR p.Unit2Barcode = @c)",
+                WHERE p.IsActive = 1 AND (
+                    p.ProductCode = @c OR p.ProductCode = @trimmed OR p.ProductCode = @padded OR 
+                    p.InternationalCode = @c OR p.InternationalCode = @trimmed OR ',' + p.InternationalCode + ',' LIKE '%,' + @c + ',%' OR 
+                    p.Unit1Barcode = @c OR p.Unit1Barcode = @trimmed OR p.Unit1Barcode = @padded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @c + ',%' OR 
+                    p.Unit2Barcode = @c OR p.Unit2Barcode = @trimmed OR p.Unit2Barcode = @padded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @c + ',%'
+                )",
                 DbHelper.P("@c", code), DbHelper.P("@trimmed", trimmedC), DbHelper.P("@padded", paddedC));
 
             if (dt.Rows.Count == 0)
@@ -1448,16 +1453,23 @@ namespace ChickenDist.Forms
             string unitName = null;
             decimal factor = 1m;
             decimal price = Convert.ToDecimal(row["SalePrice"]);
-            if (row["Unit1Barcode"] != DBNull.Value && code == row["Unit1Barcode"].ToString())
+            string u1b = row["Unit1Barcode"] != DBNull.Value ? row["Unit1Barcode"].ToString() : "";
+            string u2b = row["Unit2Barcode"] != DBNull.Value ? row["Unit2Barcode"].ToString() : "";
+
+            if (!string.IsNullOrEmpty(u1b) && ProductDAL.BarcodeMatches(u1b, code))
             {
                 unitName = row["Unit1Name"]?.ToString();
-                if (row["Unit1SalePrice"] != DBNull.Value) price = Convert.ToDecimal(row["Unit1SalePrice"]);
+                if (row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0) 
+                    price = Convert.ToDecimal(row["Unit1SalePrice"]);
+                factor = 1m;
             }
-            else if (row["Unit2Barcode"] != DBNull.Value && code == row["Unit2Barcode"].ToString())
+            else if (!string.IsNullOrEmpty(u2b) && ProductDAL.BarcodeMatches(u2b, code))
             {
                 unitName = row["Unit2Name"]?.ToString();
-                if (row["Unit2SalePrice"] != DBNull.Value) price = Convert.ToDecimal(row["Unit2SalePrice"]);
-                if (row["Unit2Factor"] != DBNull.Value) factor = Convert.ToDecimal(row["Unit2Factor"]);
+                if (row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0) 
+                    price = Convert.ToDecimal(row["Unit2SalePrice"]);
+                if (row["Unit2Factor"] != DBNull.Value && Convert.ToDecimal(row["Unit2Factor"]) > 0) 
+                    factor = Convert.ToDecimal(row["Unit2Factor"]);
             }
 
             int? batchID = null;
@@ -1896,8 +1908,9 @@ namespace ChickenDist.Forms
                     SELECT TOP 1 ProductID FROM Products
                     WHERE IsActive = 1 AND (
                         ProductCode = @c OR ProductCode = @tr OR ProductCode = @pd
-                        OR InternationalCode = @c
-                        OR Unit1Barcode = @c OR Unit2Barcode = @c
+                        OR InternationalCode = @c OR ',' + InternationalCode + ',' LIKE '%,' + @c + ',%'
+                        OR Unit1Barcode = @c OR Unit1Barcode = @tr OR ',' + Unit1Barcode + ',' LIKE '%,' + @c + ',%'
+                        OR Unit2Barcode = @c OR Unit2Barcode = @tr OR ',' + Unit2Barcode + ',' LIKE '%,' + @c + ',%'
                         OR ScalePLU = @c OR ScalePLU = @tr
                     )",
                     DbHelper.P("@c", text), DbHelper.P("@tr", trimmedC), DbHelper.P("@pd", paddedC));

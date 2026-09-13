@@ -1753,14 +1753,7 @@ namespace ChickenDist.Forms
 
 		private bool MatchBarcode(string barcodes, string scanText)
 		{
-			if (string.IsNullOrEmpty(barcodes)) return false;
-			var parts = barcodes.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-			foreach (var part in parts)
-			{
-				if (string.Equals(part.Trim(), scanText, StringComparison.OrdinalIgnoreCase))
-					return true;
-			}
-			return false;
+			return ProductDAL.BarcodeMatches(barcodes, scanText);
 		}
 
 		// ── اكتشاف الباركود التلقائي ───────────────────────────────────────
@@ -1791,6 +1784,7 @@ namespace ChickenDist.Forms
 			}
 
 			ComboItem foundItem = null;
+			int matchedUnit = 3;
 
 			if (res.IsScaleBarcode)
 			{
@@ -1811,15 +1805,31 @@ namespace ChickenDist.Forms
 			}
 			else
 			{
+				string scanText = text.Trim();
 				foreach (var ci in allItems)
 				{
-					if (ci.ID > 0 &&
-						(string.Equals(ci.ProductCode, text, StringComparison.OrdinalIgnoreCase) ||
-						 string.Equals(ci.PartNumber, text, StringComparison.OrdinalIgnoreCase) ||
-						 MatchBarcode(ci.InternationalCode, text)))
+					if (ci.ID > 0)
 					{
-						foundItem = ci;
-						break;
+						if (MatchBarcode(ci.Unit1Barcode, scanText))
+						{
+							foundItem = ci;
+							matchedUnit = 1;
+							break;
+						}
+						else if (MatchBarcode(ci.Unit2Barcode, scanText))
+						{
+							foundItem = ci;
+							matchedUnit = 2;
+							break;
+						}
+						else if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) ||
+								 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) ||
+								 MatchBarcode(ci.InternationalCode, scanText))
+						{
+							foundItem = ci;
+							matchedUnit = 3;
+							break;
+						}
 					}
 				}
 			}
@@ -1830,10 +1840,23 @@ namespace ChickenDist.Forms
 				_pendingBarcodeWeight = null;
 				_pendingScaleWeight = null;
 
+				decimal? unitPrice = null;
+				string selectedUnit = null;
+				if (matchedUnit == 1)
+				{
+					selectedUnit = foundItem.Unit1Name;
+					if (foundItem.Unit1SalePrice > 0) unitPrice = foundItem.Unit1SalePrice;
+				}
+				else if (matchedUnit == 2)
+				{
+					selectedUnit = foundItem.Unit2Name;
+					if (foundItem.Unit2SalePrice > 0) unitPrice = foundItem.Unit2SalePrice;
+				}
+
 				_isScanningBarcode = true;
 				try
 				{
-					AddOrUpdateProduct(foundItem.ID, qtyToAdd, scannedBarcode: text);
+					AddOrUpdateProduct(foundItem.ID, qtyToAdd, unitPrice, false, selectedUnit, scannedBarcode: text);
 					cboProduct.Text = "";
 					cboProduct.BeginUpdate();
 					cboProduct.Items.Clear();
@@ -1882,10 +1905,10 @@ namespace ChickenDist.Forms
 				string scanText = cboProduct.Text.Trim();
 				ComboItem foundItem = null;
 
+				int matchedUnit = 3;
 				if (res.IsScaleBarcode)
 				{
-					_pendingBarcodeWeight = res.WeightOrPrice;
-					
+					// (Keep existing scale logic)
 					// 1) First check for exact ScalePLU match
 					foreach (var ci in allItems)
 					{
@@ -1926,13 +1949,28 @@ namespace ChickenDist.Forms
 				{
 					foreach (var ci in allItems)
 					{
-						if (ci.ID > 0 && 
-							(string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
-							 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
-							 MatchBarcode(ci.InternationalCode, scanText)))
+						if (ci.ID > 0)
 						{
-							foundItem = ci;
-							break;
+							if (MatchBarcode(ci.Unit1Barcode, scanText))
+							{
+								foundItem = ci;
+								matchedUnit = 1;
+								break;
+							}
+							else if (MatchBarcode(ci.Unit2Barcode, scanText))
+							{
+								foundItem = ci;
+								matchedUnit = 2;
+								break;
+							}
+							else if (string.Equals(ci.ProductCode, scanText, StringComparison.OrdinalIgnoreCase) || 
+									 string.Equals(ci.PartNumber, scanText, StringComparison.OrdinalIgnoreCase) || 
+									 MatchBarcode(ci.InternationalCode, scanText))
+							{
+								foundItem = ci;
+								matchedUnit = 3;
+								break;
+							}
 						}
 					}
 				}
@@ -1946,10 +1984,23 @@ namespace ChickenDist.Forms
 					_pendingBarcodeWeight = null;
 					_pendingScaleWeight = null;
 
+					decimal? unitPrice = null;
+					string selectedUnit = null;
+					if (matchedUnit == 1)
+					{
+						selectedUnit = foundItem.Unit1Name;
+						if (foundItem.Unit1SalePrice > 0) unitPrice = foundItem.Unit1SalePrice;
+					}
+					else if (matchedUnit == 2)
+					{
+						selectedUnit = foundItem.Unit2Name;
+						if (foundItem.Unit2SalePrice > 0) unitPrice = foundItem.Unit2SalePrice;
+					}
+
 					_isScanningBarcode = true;
 					try
 					{
-						AddOrUpdateProduct(foundItem.ID, qtyToAdd, scannedBarcode: scanText);
+						AddOrUpdateProduct(foundItem.ID, qtyToAdd, unitPrice, false, selectedUnit, scannedBarcode: scanText);
 						
 						cboProduct.Text = "";
 						cboProduct.BeginUpdate();
@@ -2173,9 +2224,11 @@ namespace ChickenDist.Forms
 
 				// ── بيانات الوحدات المتعددة (مشتركة بين كل فروع الـ if/else) ──
 				string unit1Name   = row3.Table.Columns.Contains("Unit1Name")   && row3["Unit1Name"]   != DBNull.Value ? row3["Unit1Name"].ToString()   : null;
+				string unit1Barcode = row3.Table.Columns.Contains("Unit1Barcode") && row3["Unit1Barcode"] != DBNull.Value ? row3["Unit1Barcode"].ToString() : "";
 				decimal unit1SP    = row3.Table.Columns.Contains("Unit1SalePrice") && row3["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1SalePrice"]) : 0m;
 				decimal unit1PP    = row3.Table.Columns.Contains("Unit1PurchasePrice") && row3["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1PurchasePrice"]) : 0m;
 				string unit2Name   = row3.Table.Columns.Contains("Unit2Name")   && row3["Unit2Name"]   != DBNull.Value ? row3["Unit2Name"].ToString()   : null;
+				string unit2Barcode = row3.Table.Columns.Contains("Unit2Barcode") && row3["Unit2Barcode"] != DBNull.Value ? row3["Unit2Barcode"].ToString() : "";
 				decimal unit2Factor = row3.Table.Columns.Contains("Unit2Factor") && row3["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2Factor"]) : 1m;
 				decimal unit2SP    = row3.Table.Columns.Contains("Unit2SalePrice") && row3["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2SalePrice"]) : 0m;
 				decimal unit2PP    = row3.Table.Columns.Contains("Unit2PurchasePrice") && row3["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2PurchasePrice"]) : 0m;
@@ -2210,8 +2263,8 @@ namespace ChickenDist.Forms
 					itemOld.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
 					// وحدات متعددة
 					itemOld.BaseUnitName = baseUnit;
-					itemOld.Unit1Name = unit1Name; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
-					itemOld.Unit2Name = unit2Name; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
+					itemOld.Unit1Name = unit1Name; itemOld.Unit1Barcode = unit1Barcode; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
+					itemOld.Unit2Name = unit2Name; itemOld.Unit2Barcode = unit2Barcode; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
 					itemOld.Unit3Factor = unit3Factor;
 					productItems.Add(itemOld);
 
@@ -2239,8 +2292,8 @@ namespace ChickenDist.Forms
 					itemPending.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
 					// وحدات متعددة
 					itemPending.BaseUnitName = baseUnit;
-					itemPending.Unit1Name = unit1Name; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
-					itemPending.Unit2Name = unit2Name; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
+					itemPending.Unit1Name = unit1Name; itemPending.Unit1Barcode = unit1Barcode; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
+					itemPending.Unit2Name = unit2Name; itemPending.Unit2Barcode = unit2Barcode; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
 					itemPending.Unit3Factor = unit3Factor;
 					productItems.Add(itemPending);
 				}
@@ -2271,8 +2324,8 @@ namespace ChickenDist.Forms
 					comboItem.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
 					// وحدات متعددة
 					comboItem.BaseUnitName = baseUnit;
-					comboItem.Unit1Name = unit1Name; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
-					comboItem.Unit2Name = unit2Name; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
+					comboItem.Unit1Name = unit1Name; comboItem.Unit1Barcode = unit1Barcode; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
+					comboItem.Unit2Name = unit2Name; comboItem.Unit2Barcode = unit2Barcode; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
 					comboItem.Unit3Factor = unit3Factor;
 					productItems.Add(comboItem);
 				}
@@ -3567,10 +3620,12 @@ namespace ChickenDist.Forms
 						product.DefaultSaleUnit = pRow.Table.Columns.Contains("DefaultSaleUnit") && pRow["DefaultSaleUnit"] != DBNull.Value ? pRow["DefaultSaleUnit"].ToString() : "";
 						product.BaseUnitName = pRow.Table.Columns.Contains("Unit") && pRow["Unit"] != DBNull.Value ? pRow["Unit"].ToString() : "";
 						product.Unit1Name = pRow.Table.Columns.Contains("Unit1Name") && pRow["Unit1Name"] != DBNull.Value ? pRow["Unit1Name"].ToString() : null;
+						product.Unit1Barcode = pRow.Table.Columns.Contains("Unit1Barcode") && pRow["Unit1Barcode"] != DBNull.Value ? pRow["Unit1Barcode"].ToString() : "";
 						product.Unit1SalePrice = pRow.Table.Columns.Contains("Unit1SalePrice") && pRow["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit1SalePrice"]) : 0m;
 						product.Unit1PurchasePrice = pRow.Table.Columns.Contains("Unit1PurchasePrice") && pRow["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit1PurchasePrice"]) : 0m;
 						product.Unit1Factor = 1m;
 						product.Unit2Name = pRow.Table.Columns.Contains("Unit2Name") && pRow["Unit2Name"] != DBNull.Value ? pRow["Unit2Name"].ToString() : null;
+						product.Unit2Barcode = pRow.Table.Columns.Contains("Unit2Barcode") && pRow["Unit2Barcode"] != DBNull.Value ? pRow["Unit2Barcode"].ToString() : "";
 						product.Unit2Factor = pRow.Table.Columns.Contains("Unit2Factor") && pRow["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2Factor"]) : 1m;
 						product.Unit2SalePrice = pRow.Table.Columns.Contains("Unit2SalePrice") && pRow["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2SalePrice"]) : 0m;
 						product.Unit2PurchasePrice = pRow.Table.Columns.Contains("Unit2PurchasePrice") && pRow["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2PurchasePrice"]) : 0m;
@@ -3596,6 +3651,23 @@ namespace ChickenDist.Forms
 				}
 			}
 			if (product == null) return;
+
+			// إذا لم يتم تمرير اسم الوحدة صراحة وكان هناك باركود ممسوح، نفحص مطابقة الباركود مع الوحدة الصغرى أو الوسطى
+			if (string.IsNullOrEmpty(unitName) && !string.IsNullOrEmpty(scannedBarcode))
+			{
+				if (!string.IsNullOrEmpty(product.Unit1Barcode) && MatchBarcode(product.Unit1Barcode, scannedBarcode))
+				{
+					unitName = product.Unit1Name;
+					if (!manualPrice.HasValue && product.Unit1SalePrice > 0)
+						manualPrice = product.Unit1SalePrice;
+				}
+				else if (!string.IsNullOrEmpty(product.Unit2Barcode) && MatchBarcode(product.Unit2Barcode, scannedBarcode))
+				{
+					unitName = product.Unit2Name;
+					if (!manualPrice.HasValue && product.Unit2SalePrice > 0)
+						manualPrice = product.Unit2SalePrice;
+				}
+			}
 
 			decimal stock = InventoryDAL.GetProductStock(productID, GetSelectedWarehouseID());
 			// التحقق من IsService مباشرة من DB لضمان دقة القيمة

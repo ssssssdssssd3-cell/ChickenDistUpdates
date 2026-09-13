@@ -1691,6 +1691,11 @@ namespace ChickenDist.Forms
                         int pid = Convert.ToInt32(pRow["ProductID"]);
                         string pname = pRow["ProductName"].ToString();
                         decimal price = pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m;
+                        int mu = ProductDAL.DetermineMatchedUnit(pRow, code);
+                        if (mu == 1 && pRow.Table.Columns.Contains("Unit1SalePrice") && pRow["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(pRow["Unit1SalePrice"]) > 0)
+                            price = Convert.ToDecimal(pRow["Unit1SalePrice"]);
+                        else if (mu == 2 && pRow.Table.Columns.Contains("Unit2SalePrice") && pRow["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(pRow["Unit2SalePrice"]) > 0)
+                            price = Convert.ToDecimal(pRow["Unit2SalePrice"]);
                         decimal qty = scanQty > 0 ? scanQty : 1m;
 
                         foreach (DataGridViewRow r in dgItems.Rows)
