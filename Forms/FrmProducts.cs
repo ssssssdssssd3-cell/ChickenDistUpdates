@@ -925,7 +925,64 @@ namespace ChickenDist.Forms
                         displayedCount++;
                         string brandDisplay = !string.IsNullOrEmpty(brand) ? brand : (!string.IsNullOrEmpty(producer) ? producer : "-");
                         string dealDisplay = isTransacted ? "✅ تم التعامل" : "💤 راكد";
-                        string stockDisplay = stock.ToString("G");
+
+                        string unitMajor = r["Unit"] != DBNull.Value ? r["Unit"].ToString() : "";
+                        string unit1 = r.Table.Columns.Contains("Unit1Name") && r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : "";
+                        string unit2 = r.Table.Columns.Contains("Unit2Name") && r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : "";
+
+                        decimal u2Factor = r.Table.Columns.Contains("Unit2Factor") && r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 0m;
+                        decimal u3Factor = r.Table.Columns.Contains("Unit3Factor") && r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 0m;
+
+                        decimal majorFactor = 1m;
+                        if (!string.IsNullOrWhiteSpace(unit2))
+                        {
+                            decimal f2 = u2Factor > 0 ? u2Factor : 1m;
+                            decimal f3 = u3Factor > 0 ? u3Factor : 1m;
+                            majorFactor = f2 * f3;
+                        }
+                        else
+                        {
+                            if (u3Factor > 0) majorFactor = u3Factor;
+                            else if (u2Factor > 0) majorFactor = u2Factor;
+                            else majorFactor = 1m;
+                        }
+                        if (majorFactor <= 0) majorFactor = 1m;
+
+                        string stockDisplay;
+                        string stockTooltip;
+
+                        if (majorFactor > 1m)
+                        {
+                            decimal majorStock = stock / majorFactor;
+                            if (stock % majorFactor == 0)
+                            {
+                                stockDisplay = majorStock.ToString("G29");
+                            }
+                            else
+                            {
+                                stockDisplay = majorStock.ToString("0.##");
+                            }
+
+                            decimal wholeMajor = Math.Truncate(stock / majorFactor);
+                            decimal remainder = stock - (wholeMajor * majorFactor);
+                            string subUnit = !string.IsNullOrWhiteSpace(unit1) ? unit1 : "قطعة";
+
+                            if (!string.IsNullOrWhiteSpace(unit2) && u2Factor > 1m)
+                            {
+                                decimal mediumQty = Math.Truncate(remainder / u2Factor);
+                                decimal minorQty = remainder - (mediumQty * u2Factor);
+                                stockTooltip = $"الرصيد بالتفصيل:\n📦 {wholeMajor:G29} {unitMajor}\n⚙️ {mediumQty:G29} {unit2}\n🔹 {minorQty:G29} {subUnit}\n(الإجمالي بالصغرى: {stock:G29} {subUnit})";
+                            }
+                            else
+                            {
+                                stockTooltip = $"الرصيد بالتفصيل:\n📦 {wholeMajor:G29} {unitMajor} و {remainder:G29} {subUnit}\n(الإجمالي بالصغرى: {stock:G29} {subUnit})";
+                            }
+                        }
+                        else
+                        {
+                            stockDisplay = stock.ToString("G29");
+                            stockTooltip = $"الرصيد: {stock:G29} {unitMajor}";
+                        }
 
                         var ri = dgProducts.Rows.Add(
                             pid, 
@@ -940,6 +997,9 @@ namespace ChickenDist.Forms
                             stockDisplay,
                             dealDisplay,
                             active ? "✓" : "✗");
+
+                        dgProducts.Rows[ri].Cells["TotalStock"].ToolTipText = stockTooltip;
+                        dgProducts.Rows[ri].Cells["Unit"].ToolTipText = stockTooltip;
 
                         // Row visual indicators
                         if (!active)

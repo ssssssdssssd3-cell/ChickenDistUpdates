@@ -477,11 +477,16 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2Factor",       Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit3Factor",       Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "CurrentFactor",     Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "MajorFactor",       Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseBookQty",           Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BasePurchasePrice",     Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseSalePrice",         Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseWholesalePrice",    Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseSemiWholesalePrice",Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1SalePrice",        Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1PurchasePrice",    Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2SalePrice",        Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit2PurchasePrice",    Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "HasExpiry",             Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DefaultExpiryDays",     Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1Barcode",         Visible = false });
@@ -796,27 +801,51 @@ namespace ChickenDist.Forms
                 int priceTypeIdx = (cboPriceType != null && cboPriceType.SelectedIndex >= 0) ? cboPriceType.SelectedIndex : 0;
                 // 0 = قطاعي (SalePrice), 1 = نص جملة (SemiWholesalePrice), 2 = جملة (WholesalePrice)
                 decimal selectedBaseSP = priceTypeIdx == 2 ? baseWP : (priceTypeIdx == 1 ? baseSWP : baseSP);
-
-                totalCost += (baseBookQty * basePP);
-                totalSale += (baseBookQty * selectedBaseSP);
                 int pid = Convert.ToInt32(r["ProductID"]);
 
                 string baseUnit = r["Unit"] != DBNull.Value ? r["Unit"].ToString() : "";
                 string unit1    = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : "";
                 string unit2    = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : "";
 
-                decimal u2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
-                decimal u3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
+                decimal u2Factor = r.Table.Columns.Contains("Unit2Factor") && r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 0m;
+                decimal u3Factor = r.Table.Columns.Contains("Unit3Factor") && r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 0m;
 
-                decimal f2 = u2Factor > 0 ? u2Factor : 1m;
-                decimal f3 = u3Factor > 0 ? u3Factor : 1m;
-                decimal majorFactor = (f3 > 0 && f2 > 0 && !string.IsNullOrWhiteSpace(unit2)) ? (f3 * f2) : (f2 > 0 ? f2 : 1m);
-                decimal mediumFactor = f2;
+                decimal unit1PP = r.Table.Columns.Contains("Unit1PurchasePrice") && r["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1PurchasePrice"]) : 0m;
+                decimal unit1SP = r.Table.Columns.Contains("Unit1SalePrice") && r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
+                decimal unit2PP = r.Table.Columns.Contains("Unit2PurchasePrice") && r["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2PurchasePrice"]) : 0m;
+                decimal unit2SP = r.Table.Columns.Contains("Unit2SalePrice") && r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
+
+                decimal majorFactor = 1m;
+                decimal mediumFactor = 1m;
                 decimal smallFactor = 1.0m;
+
+                if (!string.IsNullOrWhiteSpace(unit2))
+                {
+                    decimal f2 = u2Factor > 0 ? u2Factor : 1m;
+                    decimal f3 = u3Factor > 0 ? u3Factor : 1m;
+                    mediumFactor = f2;
+                    majorFactor = f2 * f3;
+                }
+                else
+                {
+                    if (u3Factor > 0) majorFactor = u3Factor;
+                    else if (u2Factor > 0) majorFactor = u2Factor;
+                    else majorFactor = 1m;
+                    mediumFactor = majorFactor;
+                }
+                if (majorFactor <= 0) majorFactor = 1m;
+                if (mediumFactor <= 0) mediumFactor = 1m;
 
                 string majorName = !string.IsNullOrWhiteSpace(baseUnit) ? baseUnit : "الكبرى";
                 string mediumName = unit2;
                 string smallName = !string.IsNullOrWhiteSpace(unit1) ? unit1 : (!string.IsNullOrWhiteSpace(baseUnit) ? baseUnit : "الصغرى");
+
+                // حساب تكلفة وبيع القطعة الواحدة (الوحدة الصغرى)
+                decimal pieceCost = majorFactor > 0 ? (basePP / majorFactor) : basePP;
+                decimal pieceSale = majorFactor > 0 ? (selectedBaseSP / majorFactor) : selectedBaseSP;
+
+                totalCost += (baseBookQty * pieceCost);
+                totalSale += (baseBookQty * pieceSale);
 
                 string displayUnit;
                 decimal curFactor;
@@ -834,13 +863,34 @@ namespace ChickenDist.Forms
                     curFactor = majorFactor;
                 }
 
-                bool hasMultiUnits = !string.IsNullOrWhiteSpace(unit1) || !string.IsNullOrWhiteSpace(unit2);
+                bool hasMultiUnits = (!string.IsNullOrWhiteSpace(unit1) && !string.Equals(unit1, majorName, StringComparison.OrdinalIgnoreCase))
+                                  || (!string.IsNullOrWhiteSpace(unit2) && !string.Equals(unit2, majorName, StringComparison.OrdinalIgnoreCase))
+                                  || majorFactor > 1m;
                 string unitCellText = displayUnit + (hasMultiUnits ? " 🔽" : "");
 
-                decimal displayedPP  = basePP           * curFactor;
-                decimal displayedSP  = selectedBaseSP   * curFactor; // السعر المحدد من القائمة
-                decimal displayedWP  = baseWP            * curFactor;
-                decimal displayedSWP = baseSWP           * curFactor;
+                decimal displayedPP;
+                decimal displayedSP;
+
+                if (curFactor == majorFactor)
+                {
+                    displayedPP = basePP;
+                    displayedSP = selectedBaseSP;
+                }
+                else if (curFactor == 1.0m)
+                {
+                    displayedPP = unit1PP > 0 ? unit1PP : pieceCost;
+                    displayedSP = unit1SP > 0 ? unit1SP : pieceSale;
+                }
+                else if (u2Factor > 0 && curFactor == u2Factor)
+                {
+                    displayedPP = unit2PP > 0 ? unit2PP : (pieceCost * curFactor);
+                    displayedSP = unit2SP > 0 ? unit2SP : (pieceSale * curFactor);
+                }
+                else
+                {
+                    displayedPP = pieceCost * curFactor;
+                    displayedSP = pieceSale * curFactor;
+                }
 
                 string expiryVal = "";
                 if (dt.Columns.Contains("ExpiryDate") && r["ExpiryDate"] != DBNull.Value)
@@ -880,13 +930,27 @@ namespace ChickenDist.Forms
                     string nameOld = $"{r["ProductName"]} - (سعر: {displayedSP:N2} ج)";
                     AddStockRow(pid, batchIdVal, r["ProductCode"]?.ToString(), scalePlu, nameOld, shelfLoc, expiryVal,
                         unitCellText, displayedPP, displayedSP, displayedBookQtyOld, actualValOld, diffValOld,
-                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, baseBookQtyOld, basePP, baseSP, baseWP, baseSWP,
+                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, majorFactor, baseBookQtyOld, basePP, baseSP, baseWP, baseSWP,
+                        unit1PP, unit1SP, unit2PP, unit2SP,
                         r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, false, pendingSP, pendingThreshold, rowKeyOld, savedActualOld);
 
                     // السطر الثاني: السعر الجديد / المعلق
                     decimal baseBookQtyNew = Math.Max(0m, baseBookQty - baseBookQtyOld);
                     decimal displayedBookQtyNew = baseBookQtyNew / (curFactor > 0 ? curFactor : 1m);
-                    decimal displayedPendingSP = pendingSP * curFactor;
+                    decimal displayedPendingSP;
+                    if (curFactor == majorFactor)
+                    {
+                        displayedPendingSP = pendingSP;
+                    }
+                    else if (curFactor == 1.0m)
+                    {
+                        displayedPendingSP = majorFactor > 0 ? (pendingSP / majorFactor) : pendingSP;
+                    }
+                    else
+                    {
+                        displayedPendingSP = majorFactor > 0 ? ((pendingSP / majorFactor) * curFactor) : pendingSP;
+                    }
+
                     string rowKeyNew = GetRowKey(pid, true);
                     string actualValNew = "";
                     string diffValNew = "";
@@ -902,7 +966,8 @@ namespace ChickenDist.Forms
                     string nameNew = $"{r["ProductName"]} - [سعر جديد] (سعر: {displayedPendingSP:N2} ج)";
                     AddStockRow(pid, batchIdVal, r["ProductCode"]?.ToString(), scalePlu, nameNew, shelfLoc, expiryVal,
                         unitCellText, displayedPP, displayedPendingSP, displayedBookQtyNew, actualValNew, diffValNew,
-                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, baseBookQtyNew, basePP, pendingSP, baseWP, baseSWP,
+                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, majorFactor, baseBookQtyNew, basePP, pendingSP, baseWP, baseSWP,
+                        unit1PP, unit1SP, unit2PP, unit2SP,
                         r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, true, pendingSP, pendingThreshold, rowKeyNew, savedActualNew);
                 }
                 else
@@ -923,7 +988,8 @@ namespace ChickenDist.Forms
 
                     AddStockRow(pid, batchIdVal, r["ProductCode"]?.ToString(), scalePlu, r["ProductName"]?.ToString(), shelfLoc, expiryVal,
                         unitCellText, displayedPP, displayedSP, displayedBookQty, actualVal, diffVal,
-                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, baseBookQty, basePP, baseSP, baseWP, baseSWP,
+                        baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, majorFactor, baseBookQty, basePP, baseSP, baseWP, baseSWP,
+                        unit1PP, unit1SP, unit2PP, unit2SP,
                         r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, false, 0m, 0m, rowKey, savedActual);
                 }
             }
@@ -957,11 +1023,16 @@ namespace ChickenDist.Forms
             decimal u2Factor,
             decimal u3Factor,
             decimal curFactor,
+            decimal majorFactor,
             decimal baseBookQty,
             decimal basePP,
             decimal baseSP,
             decimal baseWP,
             decimal baseSWP,
+            decimal unit1PP,
+            decimal unit1SP,
+            decimal unit2PP,
+            decimal unit2SP,
             object hasExpiry,
             object defaultExpiryDays,
             string u1Bar,
@@ -1008,11 +1079,16 @@ namespace ChickenDist.Forms
             dgStock.Rows[ri].Cells["Unit2Factor"].Value       = u2Factor;
             dgStock.Rows[ri].Cells["Unit3Factor"].Value       = u3Factor;
             dgStock.Rows[ri].Cells["CurrentFactor"].Value     = curFactor;
+            dgStock.Rows[ri].Cells["MajorFactor"].Value       = majorFactor;
             dgStock.Rows[ri].Cells["BaseBookQty"].Value            = baseBookQty;
             dgStock.Rows[ri].Cells["BasePurchasePrice"].Value        = basePP;
             dgStock.Rows[ri].Cells["BaseSalePrice"].Value            = baseSP;
             dgStock.Rows[ri].Cells["BaseWholesalePrice"].Value       = baseWP;
             dgStock.Rows[ri].Cells["BaseSemiWholesalePrice"].Value   = baseSWP;
+            dgStock.Rows[ri].Cells["Unit1SalePrice"].Value           = unit1SP;
+            dgStock.Rows[ri].Cells["Unit1PurchasePrice"].Value       = unit1PP;
+            dgStock.Rows[ri].Cells["Unit2SalePrice"].Value           = unit2SP;
+            dgStock.Rows[ri].Cells["Unit2PurchasePrice"].Value       = unit2PP;
             dgStock.Rows[ri].Cells["HasExpiry"].Value                = hasExpiry;
             dgStock.Rows[ri].Cells["DefaultExpiryDays"].Value        = defaultExpiryDays;
             dgStock.Rows[ri].Cells["Unit1Barcode"].Value            = u1Bar;
@@ -1327,7 +1403,9 @@ namespace ChickenDist.Forms
 
                     if (pid > 0)
                     {
-                        _enteredActualQty[rowKey] = currentActual;
+                        decimal curFactor = targetRow.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(targetRow.Cells["CurrentFactor"].Value) : 1.0m;
+                        if (curFactor <= 0) curFactor = 1.0m;
+                        _enteredActualQty[rowKey] = currentActual * curFactor;
                         _inventoriedProductIDs.Add(pid);
                     }
 
@@ -1368,14 +1446,29 @@ namespace ChickenDist.Forms
             string unit1 = row.Cells["Unit1Name"].Value?.ToString() ?? "";
             string unit2 = row.Cells["Unit2Name"].Value?.ToString() ?? "";
 
-            decimal u2Factor = row.Cells["Unit2Factor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 1m;
-            decimal u3Factor = row.Cells["Unit3Factor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit3Factor"].Value) : 1m;
+            decimal u2Factor = row.Cells["Unit2Factor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 0m;
+            decimal u3Factor = row.Cells["Unit3Factor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit3Factor"].Value) : 0m;
 
-            decimal f2 = u2Factor > 0 ? u2Factor : 1m;
-            decimal f3 = u3Factor > 0 ? u3Factor : 1m;
-            decimal majorFactor = (f3 > 0 && f2 > 0 && !string.IsNullOrWhiteSpace(unit2)) ? (f3 * f2) : (f2 > 0 ? f2 : 1m);
-            decimal mediumFactor = f2;
+            decimal majorFactor = 1m;
+            decimal mediumFactor = 1m;
             decimal smallFactor = 1.0m;
+
+            if (!string.IsNullOrWhiteSpace(unit2))
+            {
+                decimal f2 = u2Factor > 0 ? u2Factor : 1m;
+                decimal f3 = u3Factor > 0 ? u3Factor : 1m;
+                mediumFactor = f2;
+                majorFactor = f2 * f3;
+            }
+            else
+            {
+                if (u3Factor > 0) majorFactor = u3Factor;
+                else if (u2Factor > 0) majorFactor = u2Factor;
+                else majorFactor = 1m;
+                mediumFactor = majorFactor;
+            }
+            if (majorFactor <= 0) majorFactor = 1m;
+            if (mediumFactor <= 0) mediumFactor = 1m;
 
             string majorName = !string.IsNullOrWhiteSpace(baseUnit) ? baseUnit : "الكبرى";
             string mediumName = unit2;
@@ -1419,14 +1512,54 @@ namespace ChickenDist.Forms
             bool isPending = row.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(row.Cells["IsPendingPriceRow"].Value);
             string rowKey = GetRowKey(rowPid, isPending);
 
+            // 1. التقاط المعامل القديم أولاً قبل أي تعديل على الخلية
+            decimal oldFactor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
+            if (oldFactor <= 0) oldFactor = 1.0m;
+
             decimal baseBookQty = row.Cells["BaseBookQty"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseBookQty"].Value) : 0m;
             decimal basePP = row.Cells["BasePurchasePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BasePurchasePrice"].Value) : 0m;
             decimal baseSP = row.Cells["BaseSalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseSalePrice"].Value) : 0m;
+            decimal majorFactor = row.Cells["MajorFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["MajorFactor"].Value) : 1.0m;
+            if (majorFactor <= 0) majorFactor = 1.0m;
 
+            decimal unit1PP = row.Cells["Unit1PurchasePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit1PurchasePrice"].Value) : 0m;
+            decimal unit1SP = row.Cells["Unit1SalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit1SalePrice"].Value) : 0m;
+            decimal unit2PP = row.Cells["Unit2PurchasePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2PurchasePrice"].Value) : 0m;
+            decimal unit2SP = row.Cells["Unit2SalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2SalePrice"].Value) : 0m;
+            decimal u2Factor = row.Cells["Unit2Factor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 0m;
+
+            // 2. حساب الرصيد الدفتري الجديد بالنسبة للوحدة المختارة
             decimal newBookQty = baseBookQty / factor;
-            decimal newPP = basePP * factor;
-            decimal newSP = baseSP * factor;
 
+            // 3. حساب أسعار الشراء والبيع الخاصة بالوحدة المختارة
+            decimal piecePP = majorFactor > 0 ? (basePP / majorFactor) : basePP;
+            decimal pieceSP = majorFactor > 0 ? (baseSP / majorFactor) : baseSP;
+
+            decimal newPP;
+            decimal newSP;
+
+            if (factor == majorFactor)
+            {
+                newPP = basePP;
+                newSP = baseSP;
+            }
+            else if (factor == 1.0m)
+            {
+                newPP = unit1PP > 0 ? unit1PP : piecePP;
+                newSP = unit1SP > 0 ? unit1SP : pieceSP;
+            }
+            else if (u2Factor > 0 && factor == u2Factor)
+            {
+                newPP = unit2PP > 0 ? unit2PP : (piecePP * factor);
+                newSP = unit2SP > 0 ? unit2SP : (pieceSP * factor);
+            }
+            else
+            {
+                newPP = piecePP * factor;
+                newSP = pieceSP * factor;
+            }
+
+            // 4. تحديث خلايا السطر
             row.Cells["Unit"].Value = selectedUnit + " 🔽";
             row.Cells["CurrentFactor"].Value = factor;
             row.Cells["BookQty"].Value = newBookQty.ToString("N3");
@@ -1436,7 +1569,7 @@ namespace ChickenDist.Forms
             row.Cells["PurchasePrice"].Tag = newPP;
             row.Cells["SalePrice"].Tag = newSP;
 
-            // Recalculate and convert ActualQty & DiffQty
+            // 5. تحويل وتحديث الرصيد الفعلي والفارق
             if (rowPid > 0 && _enteredActualQty.ContainsKey(rowKey))
             {
                 decimal baseActual = _enteredActualQty[rowKey];
@@ -1452,7 +1585,6 @@ namespace ChickenDist.Forms
                 string actualText = row.Cells["ActualQty"].Value?.ToString();
                 if (!string.IsNullOrWhiteSpace(actualText) && decimal.TryParse(actualText, numStyles, inv, out decimal actualVal))
                 {
-                    decimal oldFactor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
                     decimal baseActual = actualVal * oldFactor;
                     if (rowPid > 0) _enteredActualQty[rowKey] = baseActual;
 
