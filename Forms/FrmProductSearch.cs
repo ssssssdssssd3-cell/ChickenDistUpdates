@@ -536,6 +536,10 @@ namespace ChickenDist.Forms
             if (dgProducts.Rows.Count > 0)
             {
                 dgProducts.Rows[0].Selected = true;
+                if (txtSelectedQty != null)
+                {
+                    txtSelectedQty.Text = "1.00";
+                }
                 UpdateUnitsCombo();
             }
         }
@@ -652,6 +656,10 @@ namespace ChickenDist.Forms
 
         private void DgProducts_SelectionChanged(object sender, EventArgs e)
         {
+            if (txtSelectedQty != null)
+            {
+                txtSelectedQty.Text = "1.00";
+            }
             UpdateUnitsCombo();
         }
 

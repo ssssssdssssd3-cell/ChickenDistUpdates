@@ -83,6 +83,9 @@ namespace ChickenDist.Forms
 		private ComboBox cboProduct;
 		private string _barcodeBuffer = "";
 		private DateTime _barcodeStartTime = DateTime.MinValue;
+		private string _lastScannedBarcode = null;
+		private DateTime _lastScanTime = DateTime.MinValue;
+		private const int BARCODE_DEBOUNCE_MS = 750;
 
 
 		private NumericUpDown nudQty;
@@ -1583,6 +1586,13 @@ namespace ChickenDist.Forms
 				string code = txtBarcode?.Text?.Trim() ?? "";
 				if (!string.IsNullOrEmpty(code))
 				{
+					if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
+						string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
+						(DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
+					{
+						txtBarcode?.Clear();
+						return;
+					}
 					ProcessScannedBarcode(code);
 				}
 			}
@@ -1592,6 +1602,17 @@ namespace ChickenDist.Forms
 		private void ProcessScannedBarcode(string code)
 		{
 			if (string.IsNullOrWhiteSpace(code)) return;
+
+			if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
+				string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
+				(DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
+			{
+				if (txtBarcode != null) txtBarcode.Clear();
+				return;
+			}
+			_lastScannedBarcode = code;
+			_lastScanTime = DateTime.Now;
+
 			var dt = ProductDAL.FindByCode(code);
 			if (dt != null && dt.Rows.Count > 0)
 			{
@@ -1949,6 +1970,17 @@ namespace ChickenDist.Forms
 		{
 			if (e.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(cboProduct.Text))
 			{
+				string scanText = cboProduct.Text.Trim();
+				if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
+					string.Equals(_lastScannedBarcode, scanText, StringComparison.OrdinalIgnoreCase) &&
+					(DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
+				{
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+					cboProduct.Text = "";
+					return;
+				}
+
 				var res = BarcodeParser.Parse(cboProduct.Text);
 				
 				// Get unfiltered product list
@@ -1962,7 +1994,6 @@ namespace ChickenDist.Forms
 					}
 				}
 
-				string scanText = cboProduct.Text.Trim();
 				ComboItem foundItem = null;
 
 				int matchedUnit = 3;
@@ -2072,6 +2103,8 @@ namespace ChickenDist.Forms
 					_isScanningBarcode = true;
 					try
 					{
+						_lastScannedBarcode = scanText;
+						_lastScanTime = DateTime.Now;
 						AddOrUpdateProduct(foundItem.ID, qtyToAdd, unitPrice, false, selectedUnit, scannedBarcode: scanText);
 						
 						cboProduct.Text = "";
@@ -3942,34 +3975,10 @@ namespace ChickenDist.Forms
 				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate, discountPct, discountAmt);
 				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
-					decimal maxAvailInUnit = stock / (tempItem.Factor > 0 ? tempItem.Factor : 1m);
-					if (!isServiceDB && maxAvailInUnit > 0 && newQty > maxAvailInUnit)
-					{
-						if (existingRow != null)
-						{
-							if (existingRow.Quantity >= maxAvailInUnit)
-							{
-								MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:N2}) للصنف '{product.Name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
-								if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
-								else RefreshGrid();
-								return;
-							}
-							newQty = maxAvailInUnit;
-						}
-						else
-						{
-							qtyToAdd = maxAvailInUnit;
-							newQty = maxAvailInUnit;
-							tempItem.Quantity = maxAvailInUnit;
-						}
-					}
-					else
-					{
-						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-						if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
-						else RefreshGrid();
-						return;
-					}
+					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+					else RefreshGrid();
+					return;
 				}
 
 				if (existingRow != null)
@@ -4023,34 +4032,10 @@ namespace ChickenDist.Forms
 				var tempItem = existingRow ?? CreateSaleItemDTO(product, qtyToAdd, targetPrice, stock, unitName, batchID, expiryDate, discountPct, discountAmt);
 				if (qtyToAdd > 0 && !CheckSaleItemStock(tempItem, newQty, out string err))
 				{
-					decimal maxAvailInUnit = stock / (tempItem.Factor > 0 ? tempItem.Factor : 1m);
-					if (!isServiceDB && maxAvailInUnit > 0 && newQty > maxAvailInUnit)
-					{
-						if (existingRow != null)
-						{
-							if (existingRow.Quantity >= maxAvailInUnit)
-							{
-								MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:N2}) للصنف '{product.Name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
-								if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
-								else RefreshGrid();
-								return;
-							}
-							newQty = maxAvailInUnit;
-						}
-						else
-						{
-							qtyToAdd = maxAvailInUnit;
-							newQty = maxAvailInUnit;
-							tempItem.Quantity = maxAvailInUnit;
-						}
-					}
-					else
-					{
-						MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-						if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
-						else RefreshGrid();
-						return;
-					}
+					MessageBox.Show(err, "تنبيه - رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
+					else RefreshGrid();
+					return;
 				}
 
 				decimal oldPrice = product.Price;

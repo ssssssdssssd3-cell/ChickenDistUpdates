@@ -64,6 +64,9 @@ namespace ChickenDist.Forms
         private DateTime _lastKeyTime = DateTime.MinValue;
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
+        private string _lastScannedBarcode = null;
+        private DateTime _lastScanTime = DateTime.MinValue;
+        private const int BARCODE_DEBOUNCE_MS = 750;
 
         // سطر إدخال الكود الجديد المعلق
         private int _pendingRowIdx = -1;
@@ -1283,6 +1286,14 @@ namespace ChickenDist.Forms
                         }
                     }
 
+                    if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
+                        string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
+                        (DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
+                    {
+                        txtBarcode.Clear();
+                        return;
+                    }
+
                     AddProductByCode(code, multiQty, focusQty: false);
                     txtBarcode.Clear();
                     txtBarcode.Focus();
@@ -1313,6 +1324,18 @@ namespace ChickenDist.Forms
 
         private void AddProductByCode(string code, decimal requestedQty = 1m, bool focusQty = false)
         {
+            if (string.IsNullOrWhiteSpace(code)) return;
+
+            if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
+                string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
+                (DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
+            {
+                if (txtBarcode != null) txtBarcode.Clear();
+                return;
+            }
+            _lastScannedBarcode = code;
+            _lastScanTime = DateTime.Now;
+
             // بحث بالباركود أو الكود
             string trimmedC = code.TrimStart('0');
             if (string.IsNullOrEmpty(trimmedC)) trimmedC = "0";
@@ -1631,23 +1654,10 @@ namespace ChickenDist.Forms
 
                 decimal maxAvailInUnit = availableStock / (factor > 0 ? factor : 1m);
 
-                // إذا كان المطلوب أكبر من المتاح، نضبط الكمية لتكون المتاح بالكامل
                 if (targetQty > maxAvailInUnit)
                 {
-                    if (existing != null)
-                    {
-                        if (existing.Qty >= maxAvailInUnit)
-                        {
-                            MessageBox.Show($"⚠️ تم إضافة كامل الرصيد المتاح بالمخزن ({maxAvailInUnit:G29}) للصنف '{name}'.\nلا يمكن إضافة المزيد لمنع البيع بالسالب.", "الحد الأقصى للرصيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            return;
-                        }
-                        targetQty = maxAvailInUnit;
-                    }
-                    else
-                    {
-                        qty = maxAvailInUnit;
-                        targetQty = qty;
-                    }
+                    MessageBox.Show($"❌ عجز: الكمية المطلوبة ({targetQty:G29}) أكبر من الرصيد المتاح بالمخزن ({maxAvailInUnit:G29}) للصنف '{name}'!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
             }
 
@@ -2050,18 +2060,9 @@ namespace ChickenDist.Forms
                 {
                     if (!CheckAvailableStock(item.ProductID, item.BatchID, newQty * item.Factor, out decimal available, out string err))
                     {
-                        decimal maxAvail = available / (item.Factor > 0 ? item.Factor : 1m);
-                        if (maxAvail > 0)
-                        {
-                            MessageBox.Show($"⚠️ الكمية المطلوبة أكبر من الرصيد المتاح.\nتم ضبط الكمية على أقصى رصيد متاح بالمخزن ({maxAvail:G29}) لمنع البيع بالسالب.", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            item.Qty = maxAvail;
-                        }
-                        else
-                        {
-                            MessageBox.Show(err + "\nالبيع بالسالب غير مسموح.", "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            dgItems.Rows[e.RowIndex].Cells["Qty"].Value = item.Qty.ToString("G");
-                            return;
-                        }
+                        MessageBox.Show(err + "\nالبيع بالسالب غير مسموح.", "تنبيه عجز رصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        dgItems.Rows[e.RowIndex].Cells["Qty"].Value = item.Qty.ToString("G");
+                        return;
                     }
                     else
                     {

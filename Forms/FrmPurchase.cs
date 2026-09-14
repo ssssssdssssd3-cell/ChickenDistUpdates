@@ -78,6 +78,9 @@ namespace ChickenDist.Forms
         private DateTime _lastKeyTime = DateTime.MinValue;
         private string _barcodeBuffer = "";
         private DateTime _barcodeStartTime = DateTime.MinValue;
+        private string _lastScannedBarcode = null;
+        private DateTime _lastScanTime = DateTime.MinValue;
+        private const int BARCODE_DEBOUNCE_MS = 750;
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
         private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
@@ -1377,6 +1380,15 @@ namespace ChickenDist.Forms
                             code = parts[1].Trim();
                         }
                     }
+
+                    if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
+                        string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
+                        (DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
+                    {
+                        txtBarcode?.Clear();
+                        return;
+                    }
+
                     ProcessScannedBarcode(code, multiQty);
                 }
             }
@@ -1391,6 +1403,17 @@ namespace ChickenDist.Forms
         private void ProcessScannedBarcode(string code, decimal multiQty = 1m)
         {
             if (string.IsNullOrWhiteSpace(code)) return;
+
+            if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
+                string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
+                (DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
+            {
+                if (txtBarcode != null) txtBarcode.Clear();
+                return;
+            }
+            _lastScannedBarcode = code;
+            _lastScanTime = DateTime.Now;
+
             var dt = ProductDAL.FindByCode(code);
             if (dt != null && dt.Rows.Count > 0)
             {
