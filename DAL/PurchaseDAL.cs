@@ -1,5 +1,7 @@
 using System;
 using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
 using System.Collections.Generic;
 using ChickenDist.Core;
 
@@ -45,9 +47,34 @@ namespace ChickenDist.DAL
                 decimal gross = Quantity * UnitPrice;
                 if (DiscountAmt > 0m)
                     return Math.Round(Math.Max(0m, gross - DiscountAmt), 2);
+                if (DiscountPct > 0m)
+                    return Math.Round(Math.Max(0m, gross * (1m - DiscountPct / 100m)), 2);
                 return Math.Round(gross, 2);
             }
         }
+    }
+
+    public class CostAuditDetailItem
+    {
+        public int PurchaseID { get; set; }
+        public string PurchaseCode { get; set; } = "";
+        public string SupplierInvoiceNo { get; set; } = "";
+        public DateTime PurchaseDate { get; set; }
+        public string SupplierName { get; set; } = "";
+        public decimal Quantity { get; set; }
+        public decimal BonusQuantity { get; set; }
+        public string UnitName { get; set; } = "";
+        public decimal Factor { get; set; } = 1.0m;
+        public decimal BaseQuantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal LineDiscount { get; set; }
+        public decimal HeaderDiscountShare { get; set; }
+        public decimal ShippingShare { get; set; }
+        public decimal NetLineCost { get; set; }
+        public decimal NetUnitCostInBaseUnit { get; set; }
+        public decimal NetUnitCostInDisplayUnit { get; set; }
+        public decimal CoveredQtyInBaseUnit { get; set; }
+        public string CoverageStatus { get; set; } = "";
     }
 
     public static class PurchaseDAL
@@ -285,24 +312,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value),
                         DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
 
-                    if (!isDraft)
-                    {
-                        if (item.UnitPrice > 0)
-                        {
-                            decimal costPerBaseUnit = item.UnitPrice / (item.Factor > 0 ? item.Factor : 1.0m);
-                            DbHelper.ExecuteTrans(trans,
-                                @"UPDATE Products 
-                                  SET CostPrice = @cp,
-                                      Unit1PurchasePrice = @cp,
-                                      Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
-                                      PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
-                                  WHERE ProductID = @pid",
-                                DbHelper.P("@cp", costPerBaseUnit),
-                                DbHelper.P("@pid", item.ProductID));
-                        }
-
-
-                        if (item.ExpiryDate.HasValue)
+                    if (!isDraft && item.ExpiryDate.HasValue)
                     {
                         decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
                         decimal baseQty = (item.Quantity + item.BonusQuantity) * factor;
@@ -333,7 +343,12 @@ namespace ChickenDist.DAL
                         }
                     }
                 }
-            }
+
+                // ── احتساب وتحديث متوسط تكلفة الشراء المرجح للأصناف ───────────
+                if (!isDraft)
+                {
+                    UpdateMovingWeightedAverageCostsTrans(trans, items, discountAmount, shippingCost, shippingOn);
+                }
 
                 // ── القيود المحاسبية (للفواتير المؤكدة فقط) ─────────────────────
                 if (!isDraft)
@@ -610,6 +625,9 @@ namespace ChickenDist.DAL
                             }
                         }
                     }
+
+                    // ── تحديث متوسط تكلفة الشراء المرجح للأصناف المعدلة ───────────
+                    UpdateMovingWeightedAverageCostsTrans(trans, items, discountAmount, shippingCost, shippingOn);
 
                     var pCodeObj = DbHelper.ScalarTrans(trans, "SELECT PurchaseCode FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     string code = pCodeObj?.ToString() ?? purchaseID.ToString();
@@ -1138,6 +1156,275 @@ namespace ChickenDist.DAL
                 DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
                 DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
+
+        /// <summary>
+        /// احتساب وتحديث متوسط تكلفة الشراء المرجح المتحرك (Moving Weighted Average Cost) لجميع الأصناف الواردة بالفاتورة
+        /// مع التوزيع الدقيق لخصم الفاتورة ومصاريف النقل والكميات المجانية (البونص).
+        /// </summary>
+        public static void UpdateMovingWeightedAverageCostsTrans(
+            SqlTransaction trans,
+            List<PurchaseItemDTO> items,
+            decimal invoiceDiscountAmt,
+            decimal invoiceShippingCost,
+            string shippingOn)
+        {
+            if (items == null || items.Count == 0) return;
+
+            decimal totalLinesGross = 0m;
+            foreach (var item in items)
+            {
+                totalLinesGross += item.TotalPrice;
+            }
+
+            var productGroups = items.GroupBy(i => i.ProductID);
+
+            foreach (var group in productGroups)
+            {
+                int prodId = group.Key;
+                decimal groupIncomingBaseQty = 0m;
+                decimal groupIncomingNetLandedCost = 0m;
+
+                foreach (var item in group)
+                {
+                    decimal factor = item.Factor > 0m ? item.Factor : 1.0m;
+                    decimal baseQty = (item.Quantity + item.BonusQuantity) * factor;
+
+                    decimal lineRatio = totalLinesGross > 0m ? (item.TotalPrice / totalLinesGross) : (1m / items.Count);
+                    decimal headerDiscShare = invoiceDiscountAmt > 0m ? (invoiceDiscountAmt * lineRatio) : 0m;
+
+                    decimal shippingShare = 0m;
+                    if (invoiceShippingCost > 0m && string.Equals(shippingOn, "Company", StringComparison.OrdinalIgnoreCase))
+                    {
+                        shippingShare = invoiceShippingCost * lineRatio;
+                    }
+
+                    decimal lineNetLandedCost = Math.Max(0m, item.TotalPrice - headerDiscShare + shippingShare);
+
+                    groupIncomingBaseQty += baseQty;
+                    groupIncomingNetLandedCost += lineNetLandedCost;
+                }
+
+                if (groupIncomingBaseQty <= 0m && groupIncomingNetLandedCost <= 0m)
+                    continue;
+
+                decimal currentStockAfterInsert = InventoryDAL.GetProductStock(prodId, null, trans);
+                decimal stockBefore = Math.Max(0m, currentStockAfterInsert - groupIncomingBaseQty);
+
+                var costObj = DbHelper.ScalarTrans(trans,
+                    "SELECT CostPrice FROM Products WHERE ProductID = @pid",
+                    DbHelper.P("@pid", prodId));
+                decimal currentCost = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+
+                decimal newAverageCost;
+                if (stockBefore <= 0m || currentCost <= 0m)
+                {
+                    newAverageCost = groupIncomingBaseQty > 0m ? (groupIncomingNetLandedCost / groupIncomingBaseQty) : currentCost;
+                }
+                else
+                {
+                    decimal totalValue = (stockBefore * currentCost) + groupIncomingNetLandedCost;
+                    decimal totalQty = stockBefore + groupIncomingBaseQty;
+                    newAverageCost = totalQty > 0m ? (totalValue / totalQty) : currentCost;
+                }
+
+                newAverageCost = Math.Round(newAverageCost, 4);
+
+                DbHelper.ExecuteTrans(trans,
+                    @"UPDATE Products 
+                      SET CostPrice = @cp,
+                          Unit1PurchasePrice = ROUND(@cp, 2),
+                          Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
+                          PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
+                      WHERE ProductID = @pid",
+                    DbHelper.P("@cp", newAverageCost),
+                    DbHelper.P("@pid", prodId));
+            }
+        }
+
+        /// <summary>
+        /// استخراج تفاصيل حساب متوسط التكلفة للصنف من واقع فواتير المشتريات لتغطية الرصيد المتاح حالياً
+        /// </summary>
+        public static (decimal avgCostInBaseUnit, decimal avgCostInDisplayUnit, string formulaSummary, List<CostAuditDetailItem> items)
+            AuditProductCostFromHistory(int productID, decimal currentAvailableBaseQty, decimal displayUnitFactor)
+        {
+            var list = new List<CostAuditDetailItem>();
+            displayUnitFactor = displayUnitFactor > 0m ? displayUnitFactor : 1.0m;
+
+            string sql = @"
+                SELECT 
+                    pu.PurchaseID,
+                    pu.PurchaseCode,
+                    pu.SupplierInvoiceNo,
+                    pu.PurchaseDate,
+                    pu.PurchaseType,
+                    ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
+                    pi.Quantity,
+                    ISNULL(pi.BonusQuantity, 0) AS BonusQuantity,
+                    pi.UnitPrice,
+                    ISNULL(pi.DiscountPct, 0) AS DiscountPct,
+                    ISNULL(pi.DiscountAmt, 0) AS DiscountAmt,
+                    pi.TotalPrice,
+                    ISNULL(pi.UnitName, p.Unit1Name) AS UnitName,
+                    ISNULL(pi.Factor, 1.0) AS Factor,
+                    pu.TotalAmount AS InvoiceTotal,
+                    ISNULL(pu.DiscountAmount, 0) AS DiscountAmount,
+                    ISNULL(pu.ShippingCost, 0) AS ShippingCost,
+                    ISNULL(pu.ShippingOn, 'Company') AS ShippingOn
+                FROM PurchaseItems pi
+                JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                JOIN Products p ON pi.ProductID = p.ProductID
+                LEFT JOIN Suppliers sup ON pu.SupplierID = sup.SupplierID
+                WHERE pi.ProductID = @pid AND pu.IsPosted = 1
+                ORDER BY pu.PurchaseDate DESC, pu.PurchaseID DESC";
+
+            var dt = DbHelper.Query(sql, DbHelper.P("@pid", productID));
+
+            decimal remainingToCover = currentAvailableBaseQty;
+            decimal coveredCostSum = 0m;
+            decimal coveredBaseQtySum = 0m;
+            var coveredLinesSummary = new List<string>();
+
+            foreach (DataRow row in dt.Rows)
+            {
+                var item = new CostAuditDetailItem
+                {
+                    PurchaseID = Convert.ToInt32(row["PurchaseID"]),
+                    PurchaseCode = row["PurchaseCode"]?.ToString() ?? "",
+                    SupplierInvoiceNo = row["SupplierInvoiceNo"]?.ToString() ?? "",
+                    PurchaseDate = Convert.ToDateTime(row["PurchaseDate"]),
+                    SupplierName = row["SupplierName"]?.ToString() ?? "",
+                    Quantity = Convert.ToDecimal(row["Quantity"]),
+                    BonusQuantity = Convert.ToDecimal(row["BonusQuantity"]),
+                    UnitPrice = Convert.ToDecimal(row["UnitPrice"]),
+                    LineDiscount = Convert.ToDecimal(row["DiscountAmt"]) > 0m
+                        ? Convert.ToDecimal(row["DiscountAmt"])
+                        : (Convert.ToDecimal(row["DiscountPct"]) > 0m ? Math.Round(Convert.ToDecimal(row["Quantity"]) * Convert.ToDecimal(row["UnitPrice"]) * Convert.ToDecimal(row["DiscountPct"]) / 100m, 2) : 0m),
+                    UnitName = row["UnitName"]?.ToString() ?? "",
+                    Factor = Convert.ToDecimal(row["Factor"]) > 0m ? Convert.ToDecimal(row["Factor"]) : 1.0m,
+                };
+
+                item.BaseQuantity = (item.Quantity + item.BonusQuantity) * item.Factor;
+
+                decimal gross = item.Quantity * item.UnitPrice;
+                decimal afterLineDisc = Math.Max(0m, gross - item.LineDiscount);
+                decimal invTotal = Convert.ToDecimal(row["InvoiceTotal"]);
+                decimal lineRatio = invTotal > 0m ? (afterLineDisc / invTotal) : 1.0m;
+
+                decimal invDiscAmt = Convert.ToDecimal(row["DiscountAmount"]);
+                item.HeaderDiscountShare = invDiscAmt > 0m ? Math.Round(invDiscAmt * lineRatio, 2) : 0m;
+
+                decimal invShipCost = Convert.ToDecimal(row["ShippingCost"]);
+                string shipOn = row["ShippingOn"]?.ToString() ?? "Company";
+                if (invShipCost > 0m && string.Equals(shipOn, "Company", StringComparison.OrdinalIgnoreCase))
+                {
+                    item.ShippingShare = Math.Round(invShipCost * lineRatio, 2);
+                }
+                else
+                {
+                    item.ShippingShare = 0m;
+                }
+
+                item.NetLineCost = Math.Max(0m, afterLineDisc - item.HeaderDiscountShare + item.ShippingShare);
+                item.NetUnitCostInBaseUnit = item.BaseQuantity > 0m ? Math.Round(item.NetLineCost / item.BaseQuantity, 4) : item.UnitPrice;
+                item.NetUnitCostInDisplayUnit = Math.Round(item.NetUnitCostInBaseUnit * displayUnitFactor, 2);
+
+                if (remainingToCover > 0m)
+                {
+                    decimal coverQty = Math.Min(item.BaseQuantity, remainingToCover);
+                    item.CoveredQtyInBaseUnit = coverQty;
+                    remainingToCover -= coverQty;
+
+                    if (coverQty >= item.BaseQuantity)
+                    {
+                        item.CoverageStatus = "مشمول بالكامل في الرصيد المتاح";
+                    }
+                    else
+                    {
+                        decimal displayCover = Math.Round(coverQty / displayUnitFactor, 2);
+                        decimal displayTotal = Math.Round(item.BaseQuantity / displayUnitFactor, 2);
+                        item.CoverageStatus = $"مشمول جزئياً ({displayCover:G29} من {displayTotal:G29})";
+                    }
+
+                    coveredCostSum += coverQty * item.NetUnitCostInBaseUnit;
+                    coveredBaseQtySum += coverQty;
+
+                    string invRef = !string.IsNullOrWhiteSpace(item.SupplierInvoiceNo) ? $"فاتورة #{item.PurchaseCode} (مورد: {item.SupplierInvoiceNo})" : $"فاتورة #{item.PurchaseCode}";
+                    decimal lineCoverInDisplay = Math.Round(coverQty / displayUnitFactor, 2);
+                    coveredLinesSummary.Add($"• {invRef} | الكمية المأخوذة: {lineCoverInDisplay:G29} | صافي تكلفة الوحدة: {item.NetUnitCostInDisplayUnit:N2} ج = {coverQty * item.NetUnitCostInBaseUnit:N2} ج");
+                }
+                else
+                {
+                    item.CoveredQtyInBaseUnit = 0m;
+                    item.CoverageStatus = "مستهلك / تم بيعه سابقاً";
+                }
+
+                list.Add(item);
+            }
+
+            decimal finalAvgBase;
+            if (coveredBaseQtySum > 0m)
+            {
+                finalAvgBase = Math.Round(coveredCostSum / coveredBaseQtySum, 4);
+            }
+            else if (list.Count > 0)
+            {
+                finalAvgBase = list[0].NetUnitCostInBaseUnit;
+            }
+            else
+            {
+                var pCost = DbHelper.Scalar("SELECT CostPrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", productID));
+                finalAvgBase = pCost != null && pCost != DBNull.Value ? Convert.ToDecimal(pCost) : 0m;
+            }
+
+            decimal finalAvgDisplay = Math.Round(finalAvgBase * displayUnitFactor, 2);
+
+            var sbFormula = new System.Text.StringBuilder();
+            sbFormula.AppendLine("📐 معادلة احتساب متوسط تكلفة الشراء للرصيد المتاح:");
+            sbFormula.AppendLine("متوسط التكلفة = إجمالي القيمة الشرائية للكميات المغطية للرصيد ÷ إجمالي الكمية المغطية للرصيد");
+            sbFormula.AppendLine();
+            sbFormula.AppendLine("📋 تفصيل الفواتير المعتمدة في تغطية الرصيد الحالي:");
+            if (coveredLinesSummary.Count > 0)
+            {
+                foreach (var line in coveredLinesSummary)
+                {
+                    sbFormula.AppendLine(line);
+                }
+                sbFormula.AppendLine("──────────────────────────────────────────────────");
+                decimal coveredDisplayTotal = Math.Round(coveredBaseQtySum / displayUnitFactor, 2);
+                sbFormula.AppendLine($"المجموع الحسابي: {coveredCostSum:N2} ج ÷ {coveredDisplayTotal:G29} وحدة = {finalAvgDisplay:N2} ج / وحدة");
+                if (remainingToCover > 0m)
+                {
+                    decimal remDisplay = Math.Round(remainingToCover / displayUnitFactor, 2);
+                    sbFormula.AppendLine($"⚠️ تنبيه: يوجد رصيد قدره {remDisplay:G29} وحدة لم تغطه فواتير الشراء المسجلة (يُعامل برصيد/سعر البداية).");
+                }
+            }
+            else
+            {
+                sbFormula.AppendLine("لا توجد فواتير مشتريات سابقة لهذا الصنف، أو أن الرصيد الحالي صفري/سالب.");
+                sbFormula.AppendLine($"التكلفة المعتمدة الحالية: {finalAvgDisplay:N2} ج");
+            }
+
+            return (finalAvgBase, finalAvgDisplay, sbFormula.ToString(), list);
+        }
+
+        /// <summary>
+        /// اعتماد وتحديث متوسط التكلفة للصنف في كارت الصنف وقاعدة البيانات
+        /// </summary>
+        public static void ApplyCalculatedAverageCost(int productID, decimal newAverageBaseCost)
+        {
+            newAverageBaseCost = Math.Round(newAverageBaseCost, 4);
+            DbHelper.Execute(
+                @"UPDATE Products 
+                  SET CostPrice = @cp,
+                      Unit1PurchasePrice = ROUND(@cp, 2),
+                      Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
+                      PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
+                  WHERE ProductID = @pid",
+                DbHelper.P("@cp", newAverageBaseCost),
+                DbHelper.P("@pid", productID));
+
+            ProductCache.Invalidate();
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -1343,3 +1630,4 @@ namespace ChickenDist.DAL
         }
     }
 }
+

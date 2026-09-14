@@ -464,6 +464,17 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",    HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",          HeaderText = "الوحدة 🔽", ReadOnly = true,  FillWeight = 42 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", ReadOnly = false, FillWeight = 40, Visible = Session.CanViewCost("Inventory") });
+            dgStock.Columns.Add(new DataGridViewButtonColumn 
+            { 
+                Name = "BtnCostAudit", 
+                HeaderText = "🧮", 
+                Text = "🧮", 
+                UseColumnTextForButtonValue = true, 
+                ReadOnly = true, 
+                FillWeight = 22, 
+                Visible = Session.CanViewCost("Inventory"),
+                FlatStyle = FlatStyle.Flat
+            });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر البيع", ReadOnly = false,  FillWeight = 40 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",     HeaderText = "الرصيد الدفتري", ReadOnly = true,  FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",   HeaderText = "الرصيد الفعلي", ReadOnly = false, FillWeight = 55, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(255, 255, 225), ForeColor = Color.FromArgb(80, 50, 0) } });
@@ -521,7 +532,17 @@ namespace ChickenDist.Forms
             var itemCard = new ToolStripMenuItem("🏷️ فتح كارت الصنف");
             itemCard.Click += (s, e) => OpenSelectedProductCard();
 
-            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, itemShortage, new ToolStripSeparator(), itemCard });
+            var itemCostAudit = new ToolStripMenuItem("🧮 مراجعة وتدقيق معادلة متوسط التكلفة للصنف");
+            itemCostAudit.Click += (s, e) =>
+            {
+                if (dgStock.SelectedRows.Count > 0)
+                {
+                    OpenCostAuditForRow(dgStock.SelectedRows[0].Index);
+                }
+            };
+            itemCostAudit.Visible = Session.CanViewCost("Inventory");
+
+            ctxStock.Items.AddRange(new ToolStripItem[] { itemMark, itemHide, itemShortage, new ToolStripSeparator(), itemCard, itemCostAudit });
             dgStock.ContextMenuStrip = ctxStock;
 
             dgStock.CellMouseDown += (s, e) =>
@@ -1053,6 +1074,7 @@ namespace ChickenDist.Forms
                 expiryVal,
                 unitCellText,
                 displayedPP.ToString("N2"),
+                "🧮",
                 displayedSP.ToString("N2"),
                 displayedBookQty.ToString("N3"),
                 actualVal,
@@ -1062,6 +1084,10 @@ namespace ChickenDist.Forms
 
             dgStock.Rows[ri].Cells["PurchasePrice"].Tag = displayedPP;
             dgStock.Rows[ri].Cells["SalePrice"].Tag = displayedSP;
+
+            dgStock.Rows[ri].Cells["BtnCostAudit"].Style.BackColor = Color.FromArgb(240, 248, 255);
+            dgStock.Rows[ri].Cells["BtnCostAudit"].Style.ForeColor = Color.FromArgb(13, 110, 253);
+            dgStock.Rows[ri].Cells["BtnCostAudit"].Style.Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 
             dgStock.Rows[ri].Cells["Unit"].Style.BackColor          = Color.FromArgb(225, 238, 254);
             dgStock.Rows[ri].Cells["Unit"].Style.ForeColor          = Color.FromArgb(15, 45, 90);
@@ -1431,10 +1457,73 @@ namespace ChickenDist.Forms
 
         private void DgStock_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgStock.Columns[e.ColumnIndex].Name == "Unit")
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
             {
-                OpenUnitMenuForRow(e.RowIndex);
+                string colName = dgStock.Columns[e.ColumnIndex].Name;
+                if (colName == "Unit")
+                {
+                    OpenUnitMenuForRow(e.RowIndex);
+                }
+                else if (colName == "BtnCostAudit")
+                {
+                    OpenCostAuditForRow(e.RowIndex);
+                }
             }
+        }
+
+        private void OpenCostAuditForRow(int rowIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= dgStock.Rows.Count) return;
+            var row = dgStock.Rows[rowIndex];
+
+            int prodId = Convert.ToInt32(row.Cells["ProductID"].Value);
+            string prodCode = row.Cells["ProductCode"].Value?.ToString() ?? "";
+            string prodName = row.Cells["ProductName"].Value?.ToString() ?? "";
+            string unitName = row.Cells["Unit"].Value?.ToString() ?? "";
+
+            decimal currentFactor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1m;
+            decimal bookQty = row.Cells["BookQty"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BookQty"].Value) : 0m;
+            decimal costPrice = row.Cells["PurchasePrice"].Tag != null ? Convert.ToDecimal(row.Cells["PurchasePrice"].Tag) : 0m;
+
+            using (var dlg = new FrmCostCalculationAudit(prodId, prodCode, prodName, unitName, currentFactor, bookQty, costPrice))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    var dtProd = DbHelper.Query("SELECT CostPrice, Unit1PurchasePrice, Unit2PurchasePrice, PurchasePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", prodId));
+                    if (dtProd.Rows.Count > 0)
+                    {
+                        decimal baseCost = Convert.ToDecimal(dtProd.Rows[0]["CostPrice"]);
+                        decimal u1Cost = dtProd.Rows[0]["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dtProd.Rows[0]["Unit1PurchasePrice"]) : baseCost;
+                        decimal u2Cost = dtProd.Rows[0]["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dtProd.Rows[0]["Unit2PurchasePrice"]) : 0m;
+
+                        decimal displayedCost = Math.Round(baseCost * currentFactor, 2);
+                        row.Cells["PurchasePrice"].Value = displayedCost.ToString("N2");
+                        row.Cells["PurchasePrice"].Tag = displayedCost;
+                        row.Cells["BasePurchasePrice"].Value = baseCost;
+                        row.Cells["Unit1PurchasePrice"].Value = u1Cost;
+                        row.Cells["Unit2PurchasePrice"].Value = u2Cost;
+
+                        RecalculateStockTotals();
+                    }
+                }
+            }
+        }
+
+        private void RecalculateStockTotals()
+        {
+            decimal totalCost = 0m;
+            decimal totalSale = 0m;
+            foreach (DataGridViewRow r in dgStock.Rows)
+            {
+                if (r.IsNewRow) continue;
+                decimal qty = r.Cells["BookQty"].Value != null && decimal.TryParse(r.Cells["BookQty"].Value.ToString(), out decimal q) ? q : 0m;
+                decimal cost = r.Cells["PurchasePrice"].Tag != null ? Convert.ToDecimal(r.Cells["PurchasePrice"].Tag) : 0m;
+                decimal sale = r.Cells["SalePrice"].Tag != null ? Convert.ToDecimal(r.Cells["SalePrice"].Tag) : 0m;
+                totalCost += (qty * cost);
+                totalSale += (qty * sale);
+            }
+            if (lblTotalCost != null) lblTotalCost.Text = $"💰 إجمالي قيمة التكلفة (الشراء): {totalCost:N2} ج";
+            if (lblTotalSale != null) lblTotalSale.Text = $"🏷️ إجمالي قيمة البيع: {totalSale:N2} ج";
         }
 
         private void OpenUnitMenuForRow(int rowIndex)

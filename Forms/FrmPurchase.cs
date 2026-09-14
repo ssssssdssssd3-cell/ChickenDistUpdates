@@ -1792,14 +1792,7 @@ namespace ChickenDist.Forms
                 }
             }
 
-            if (disc > 0 && defaultSalePrice > 0)
-            {
-                defaultPrice = Math.Round(defaultSalePrice * (1m - disc / 100m), 2);
-            }
-            else if (defaultSalePrice > 0 && defaultPrice > 0 && defaultPrice < defaultSalePrice && disc == 0)
-            {
-                disc = Math.Round((defaultSalePrice - defaultPrice) / defaultSalePrice * 100m, 2);
-            }
+            // سعر الشراء هو السعر الفعلي المدخل أو المسجل ولا يشتق من سعر البيع ولا يعامل هامش الربح كخصم
 
             // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم
             foreach (var item in _items)
@@ -2365,9 +2358,7 @@ namespace ChickenDist.Forms
                 // 3. الوحدة الكبرى (الأساسية)
                 dto.Factor = totalFactor > 0 ? totalFactor : 1m;
                 dto.SuggestedSalePrice = majorSale;
-                dto.UnitPrice = dto.DiscountPct > 0 
-                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : majorCost;
+                dto.UnitPrice = majorCost;
             }
             else if (!string.IsNullOrEmpty(prod.Unit2Name) && newUnit == prod.Unit2Name)
             {
@@ -2375,9 +2366,7 @@ namespace ChickenDist.Forms
                 dto.Factor = u2f > 0 ? u2f : 1m;
                 dto.SuggestedSalePrice = prod.Unit2SalePrice > 0 ? prod.Unit2SalePrice : (u3f > 0 ? Math.Round(majorSale / u3f, 2) : majorSale);
                 decimal baseCost = prod.Unit2PurchasePrice > 0 ? prod.Unit2PurchasePrice : (u3f > 0 ? Math.Round(majorCost / u3f, 2) : majorCost);
-                dto.UnitPrice = dto.DiscountPct > 0 
-                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : baseCost;
+                dto.UnitPrice = baseCost;
             }
             else if (!string.IsNullOrEmpty(prod.Unit1Name) && newUnit == prod.Unit1Name)
             {
@@ -2385,18 +2374,14 @@ namespace ChickenDist.Forms
                 dto.Factor = 1m;
                 dto.SuggestedSalePrice = prod.Unit1SalePrice > 0 ? prod.Unit1SalePrice : (totalFactor > 0 ? Math.Round(majorSale / totalFactor, 2) : majorSale);
                 decimal baseCost = prod.Unit1PurchasePrice > 0 ? prod.Unit1PurchasePrice : (totalFactor > 0 ? Math.Round(majorCost / totalFactor, 2) : majorCost);
-                dto.UnitPrice = dto.DiscountPct > 0 
-                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : baseCost;
+                dto.UnitPrice = baseCost;
             }
             else
             {
                 // احتياطي
                 dto.Factor = 1m;
                 dto.SuggestedSalePrice = majorSale;
-                dto.UnitPrice = dto.DiscountPct > 0 
-                    ? Math.Round((dto.SuggestedSalePrice ?? 0m) * (1m - dto.DiscountPct / 100m), 2)
-                    : majorCost;
+                dto.UnitPrice = majorCost;
             }
 
             // تحديث الجدول
@@ -2562,18 +2547,9 @@ namespace ChickenDist.Forms
                 {
                     item.UnitPrice = p;
                     decimal sell = item.SuggestedSalePrice ?? 0m;
-                    if (sell > 0 && sell >= p)
-                    {
-                        item.DiscountPct = Math.Round((sell - p) / sell * 100m, 2);
-                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
-                    }
-                    else if (sell > 0 && p > sell)
-                    {
-                        item.DiscountPct = 0m;
-                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = "0.00";
-                    }
                     decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                    dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
                 }
                 else
                     dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
@@ -2585,11 +2561,6 @@ namespace ChickenDist.Forms
                     item.DiscountPct = d;
                     item.DiscountAmt = 0m; // مسح القيمة المباشرة عند وجود نسبة
                     decimal sell = item.SuggestedSalePrice ?? 0m;
-                    if (sell > 0)
-                    {
-                        item.UnitPrice = Math.Round(sell * (1m - d / 100m), 2);
-                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
-                    }
                     decimal buy = item.UnitPrice;
                     decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
@@ -2603,16 +2574,6 @@ namespace ChickenDist.Forms
                 if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
                 {
                     item.SuggestedSalePrice = s;
-                    if (item.DiscountPct > 0)
-                    {
-                        item.UnitPrice = Math.Round(s * (1m - item.DiscountPct / 100m), 2);
-                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
-                    }
-                    else if (item.UnitPrice > 0 && s >= item.UnitPrice)
-                    {
-                        item.DiscountPct = Math.Round((s - item.UnitPrice) / s * 100m, 2);
-                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
-                    }
                     decimal buy = item.UnitPrice;
                     decimal margin = buy > 0 ? (s - buy) / buy * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
@@ -3163,50 +3124,21 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
-                    decimal headerDiscountFactor = 1m;
-                    if (gross > 0m && discAmt > 0m)
-                    {
-                        headerDiscountFactor = Math.Max(0m, (gross - discAmt) / gross);
-                    }
-
-                    // تطبيق قرار تعديل أسعار البيع بحسب وحدة كل صنف وتحديث صافي تكلفة الشراء بعد الخصم
+                    // تطبيق قرار تعديل أسعار البيع بحسب وحدة كل صنف
                     if (priceDecision == "ApplyNow")
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            decimal lineNetTotal = item.TotalPrice * headerDiscountFactor;
-                            decimal lineNetUnitCost = item.Quantity > 0m ? (lineNetTotal / item.Quantity) : item.UnitPrice;
-                            decimal baseNetCost = item.Factor > 0m ? (lineNetUnitCost / item.Factor) : lineNetUnitCost;
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, baseNetCost, applyNow: true, purchaseID: id, unitName: item.UnitName);
+                            decimal currentAvgCost = Convert.ToDecimal(DbHelper.Scalar("SELECT CostPrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID)) ?? 0m);
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, currentAvgCost, applyNow: true, purchaseID: id, unitName: item.UnitName);
                         }
                     }
                     else if (priceDecision == "Pending")
                     {
                         foreach (var item in itemsToUpdate)
                         {
-                            decimal lineNetTotal = item.TotalPrice * headerDiscountFactor;
-                            decimal lineNetUnitCost = item.Quantity > 0m ? (lineNetTotal / item.Quantity) : item.UnitPrice;
-                            decimal baseNetCost = item.Factor > 0m ? (lineNetUnitCost / item.Factor) : lineNetUnitCost;
-                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, baseNetCost, applyNow: false, purchaseID: id, unitName: item.UnitName);
-                        }
-                    }
-                    else
-                    {
-                        // حتى لو تم تجاهل سعر البيع، نقوم بتحديث سعر التكلفة (سعر الشراء الأخير الصافي بعد الخصم) وأسعار الشراء للوحدات لكل صنف
-                        foreach (var item in _items)
-                        {
-                            decimal lineNetTotal = item.TotalPrice * headerDiscountFactor;
-                            decimal lineNetUnitCost = item.Quantity > 0m ? (lineNetTotal / item.Quantity) : item.UnitPrice;
-                            decimal baseNetCost = item.Factor > 0m ? (lineNetUnitCost / item.Factor) : lineNetUnitCost;
-                            DbHelper.Execute(
-                                @"UPDATE Products 
-                                  SET CostPrice = @cp, 
-                                      Unit1PurchasePrice = @cp,
-                                      Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
-                                      PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
-                                  WHERE ProductID = @id",
-                                DbHelper.P("@cp", baseNetCost),
-                                DbHelper.P("@id", item.ProductID));
+                            decimal currentAvgCost = Convert.ToDecimal(DbHelper.Scalar("SELECT CostPrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID)) ?? 0m);
+                            ProductDAL.SetPendingPrice(item.ProductID, item.SuggestedSalePrice.Value, currentAvgCost, applyNow: false, purchaseID: id, unitName: item.UnitName);
                         }
                     }
 
