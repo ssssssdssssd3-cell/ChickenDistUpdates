@@ -163,7 +163,7 @@ namespace ChickenDist.DAL
                           COALESCE(pi.DiscountPct, 0) AS DiscountPct,
                           COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
                           pi.SuggestedSalePrice,
-                          pi.UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate,
+                          COALESCE(NULLIF(pi.UnitName, N''), NULLIF(pr.Unit, N''), N'قطعة') AS UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate,
                           ISNULL((
                               SELECT SUM(pri.Quantity + ISNULL(pri.BonusQuantity, 0))
                               FROM PurchaseReturnItems pri

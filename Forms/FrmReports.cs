@@ -800,6 +800,7 @@ namespace ChickenDist.Forms
 					ApplyGridZebraStyle(dgDetailedSaleItems);
 
 					dgDetailedSaleItems.Columns.Add("ProductName", "اسم الصنف");
+					dgDetailedSaleItems.Columns.Add("UnitName", "الوحدة");
 					dgDetailedSaleItems.Columns.Add("Quantity", "الكمية");
 					dgDetailedSaleItems.Columns.Add("UnitPrice", "سعر الوحدة");
 					dgDetailedSaleItems.Columns.Add("Discount", "الخصم");
@@ -824,11 +825,14 @@ namespace ChickenDist.Forms
 							foreach (DataRow r in items.Rows)
 							{
 								string pName = r["ProductName"]?.ToString() ?? "";
+								string uName = r.Table.Columns.Contains("UnitName") && r["UnitName"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["UnitName"].ToString())
+									? r["UnitName"].ToString()
+									: (r.Table.Columns.Contains("BaseUnitName") && r["BaseUnitName"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["BaseUnitName"].ToString()) ? r["BaseUnitName"].ToString() : "قطعة");
 								string qty = Convert.ToDecimal(r["Quantity"]).ToString("N2");
 								string price = Convert.ToDecimal(r["UnitPrice"]).ToString("N2") + " ج";
 								string disc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value && Convert.ToDecimal(r["DiscountAmt"]) > 0 ? Convert.ToDecimal(r["DiscountAmt"]).ToString("N2") : "-";
 								string total = Convert.ToDecimal(r["TotalPrice"]).ToString("N2") + " ج";
-								dgDetailedSaleItems.Rows.Add(pName, qty, price, disc, total);
+								dgDetailedSaleItems.Rows.Add(pName, uName, qty, price, disc, total);
 							}
 						}
 					};

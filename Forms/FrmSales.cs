@@ -557,7 +557,14 @@ namespace ChickenDist.Forms
 			{
 				Name = "ProductName",
 				HeaderText = "الصنف",
-				FillWeight = 110f
+				FillWeight = 100f
+			});
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "UnitName",
+				HeaderText = "الوحدة",
+				FillWeight = 38f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(15, 118, 110) }
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -991,8 +998,13 @@ namespace ChickenDist.Forms
 				}
 				string retQtyStr = retQty > 0 ? retQty.ToString("N2") : "-";
 
+				string unitName = row.Table.Columns.Contains("UnitName") && row["UnitName"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["UnitName"].ToString())
+					? row["UnitName"].ToString()
+					: (row.Table.Columns.Contains("BaseUnitName") && row["BaseUnitName"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["BaseUnitName"].ToString()) ? row["BaseUnitName"].ToString() : "قطعة");
+
 				int addedItemIdx = dgItems.Rows.Add(
 					row["ProductName"], 
+					unitName,
 					Convert.ToDecimal(row["Quantity"]).ToString("N2"), 
 					retQtyStr,
 					Convert.ToDecimal(row["UnitPrice"]).ToString("N2") + " ج", 
