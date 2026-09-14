@@ -1,5 +1,5 @@
-version=3.5.9
+version=3.6.0
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.5.9&t=1789341684
-sha256=3DC986AF5CA17460A76F9A8A9086D39E529521804860D28A2F42235626EF4F1D
-changelog=v3.5.9 - 2026-09-14: Fix double-row insertion when scanning unit-specific barcodes in detailed sales screen
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.6.0&t=1789345893
+sha256=DFA6FD947A8766E9776034E636145BBAAE4599159670D425D1EBE3C12447CAEB
+changelog=v3.6.0 - 2026-09-14: Fix purchase price in product card after purchases, fix warehouse transfer Factor error, and enhance transfer product search auto-add

@@ -292,13 +292,15 @@ namespace ChickenDist.DAL
                             decimal costPerBaseUnit = item.UnitPrice / (item.Factor > 0 ? item.Factor : 1.0m);
                             DbHelper.ExecuteTrans(trans,
                                 @"UPDATE Products 
-                                  SET PurchasePrice = @pp, 
-                                      CostPrice = @cp 
+                                  SET CostPrice = @cp,
+                                      Unit1PurchasePrice = @cp,
+                                      Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
+                                      PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
                                   WHERE ProductID = @pid",
-                                DbHelper.P("@pp", item.UnitPrice),
                                 DbHelper.P("@cp", costPerBaseUnit),
                                 DbHelper.P("@pid", item.ProductID));
                         }
+
 
                         if (item.ExpiryDate.HasValue)
                     {

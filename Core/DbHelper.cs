@@ -2072,10 +2072,17 @@ namespace ChickenDist.Core
                         ItemID INT IDENTITY(1,1) PRIMARY KEY,
                         TransferID INT NOT NULL FOREIGN KEY REFERENCES WarehouseTransfers(TransferID) ON DELETE CASCADE,
                         ProductID INT NOT NULL FOREIGN KEY REFERENCES Products(ProductID),
-                        Quantity DECIMAL(10,3) NOT NULL
+                        Quantity DECIMAL(10,3) NOT NULL,
+                        Factor DECIMAL(10,3) NULL
                     );
+                END
+                -- ✅ إضافة عمود Factor لجداول موجودة بدونه (للأجهزة التي سبق تثبيتها)
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('WarehouseTransferItems') AND name = 'Factor')
+                BEGIN
+                    ALTER TABLE WarehouseTransferItems ADD Factor DECIMAL(10,3) NULL;
                 END";
                 Execute(sqlTransfersTable);
+
 
                 // 7. ترحيلات تعديل الفواتير وشرائح الأسعار والأرشفة
                 string sqlInvoiceEditingAndTiers = @"

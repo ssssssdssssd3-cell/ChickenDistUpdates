@@ -3169,14 +3169,19 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        // حتى لو تم تجاهل سعر البيع، نقوم بتحديث سعر التكلفة (سعر الشراء الأخير الصافي بعد الخصم) لكل صنف
+                        // حتى لو تم تجاهل سعر البيع، نقوم بتحديث سعر التكلفة (سعر الشراء الأخير الصافي بعد الخصم) وأسعار الشراء للوحدات لكل صنف
                         foreach (var item in _items)
                         {
                             decimal lineNetTotal = item.TotalPrice * headerDiscountFactor;
                             decimal lineNetUnitCost = item.Quantity > 0m ? (lineNetTotal / item.Quantity) : item.UnitPrice;
                             decimal baseNetCost = item.Factor > 0m ? (lineNetUnitCost / item.Factor) : lineNetUnitCost;
                             DbHelper.Execute(
-                                "UPDATE Products SET CostPrice = @cp, PurchasePrice = @cp WHERE ProductID = @id",
+                                @"UPDATE Products 
+                                  SET CostPrice = @cp, 
+                                      Unit1PurchasePrice = @cp,
+                                      Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
+                                      PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
+                                  WHERE ProductID = @id",
                                 DbHelper.P("@cp", baseNetCost),
                                 DbHelper.P("@id", item.ProductID));
                         }

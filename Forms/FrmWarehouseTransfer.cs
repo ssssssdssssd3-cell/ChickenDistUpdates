@@ -277,12 +277,24 @@ namespace ChickenDist.Forms
             pnlScanner.Controls.Add(txtBarcodeTransfer);
             pnlScanner.Controls.Add(lblScannerTitle);
 
-            // زر بحث الأصناف [F3]
+            // زر بحث الأصناف [F3] — محاط بحاوية مطابقة لباقي العناصر
+            var pnlSearchBtn = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            var lblSearchTitle = new Label
+            {
+                Text = "بحث سريع للأصناف:",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(255, 215, 100),
+                Dock = DockStyle.Top,
+                Height = 20
+            };
             btnSearchProduct = Theme.MakeButton("🔍 بحث الأصناف [F3]", Theme.Primary);
             btnSearchProduct.Dock = DockStyle.Bottom;
             btnSearchProduct.Height = 35;
             btnSearchProduct.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSearchProduct.Click += (s, e) => OpenProductSearch();
+            pnlSearchBtn.Controls.Add(btnSearchProduct);
+            pnlSearchBtn.Controls.Add(lblSearchTitle);
+
 
             // حاوية الصنف المختار
             var pnlSelectedProd = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
@@ -390,7 +402,7 @@ namespace ChickenDist.Forms
             btnAddItem.Click += BtnAddItem_Click;
 
             tblFastEntry.Controls.Add(pnlScanner, 0, 0);
-            tblFastEntry.Controls.Add(btnSearchProduct, 1, 0);
+            tblFastEntry.Controls.Add(pnlSearchBtn, 1, 0);
             tblFastEntry.Controls.Add(pnlSelectedProd, 2, 0);
             tblFastEntry.Controls.Add(pnlStockBadge, 3, 0);
             tblFastEntry.Controls.Add(pnlQty, 4, 0);
@@ -680,9 +692,13 @@ namespace ChickenDist.Forms
             using var frm = new FrmProductSearch(warehouseID: wh.ID, isPurchaseMode: false, defaultShowZeroStock: false);
             if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
             {
-                SelectProductByID(frm.SelectedProductID, wh.ID, frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m);
+                decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
+                // ✅ إضافة تلقائية مباشرة للجدول بمجرد الاختيار من شاشة البحث
+                SelectProductByID(frm.SelectedProductID, wh.ID, qty);
+                AddItemToGrid(_selectedProductID, _selectedProductCode, _selectedProductName, _selectedProductUnit, nudQty.Value, wh.ID);
             }
         }
+
 
         private void SelectProductByID(int productID, int warehouseID, decimal initialQty = 1m)
         {
