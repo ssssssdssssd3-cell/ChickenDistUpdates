@@ -221,14 +221,14 @@ namespace ChickenDist.Forms
             lblLiveWebUrl.Click += (s, e) => BtnOpenMobileApp_Click(s, e);
 
             var lblAuto = new Label { Text = "المزامنة اللحظية المستمرة:", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            chkAutoSync = new CheckBox { Text = "تفعيل الرفع اللحظي التلقائي مع كل فاتورة بيع أو شراء أو حركة نقدية وتقفيل وردية", AutoSize = true, ForeColor = Color.FromArgb(226, 232, 240), Checked = true, Font = new Font("Segoe UI", 9f, FontStyle.Regular) };
+            chkAutoSync = new CheckBox { Text = "تفعيل المزامنة التلقائية بالخلفية ورفع الإحصائيات (يتطلب باقة إنترنت)", AutoSize = true, ForeColor = Color.FromArgb(226, 232, 240), Checked = false, Font = new Font("Segoe UI", 9f, FontStyle.Regular) };
 
             var lblInt = new Label { Text = "معدل التحديث والـ Last Sync:", AutoSize = true, ForeColor = Color.White, Anchor = AnchorStyles.Right, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             
             var pnlIntRow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
-            cboInterval = new ComboBox { Width = 160, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f) };
-            cboInterval.Items.AddRange(new object[] { "كل 15 ثانية (فوري)", "كل 30 ثانية", "كل دقيقة", "كل 5 دقائق" });
-            cboInterval.SelectedIndex = 0;
+            cboInterval = new ComboBox { Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f) };
+            cboInterval.Items.AddRange(new object[] { "كل 15 دقيقة (موصى به)", "كل 30 دقيقة", "كل ساعة", "كل ساعتين" });
+            cboInterval.SelectedIndex = 1;
 
             lblLastSyncTime = new Label { Text = "🕒 آخر تحديث: لم تتم بعد", AutoSize = true, ForeColor = Color.FromArgb(52, 211, 153), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Padding = new Padding(10, 4, 0, 0) };
             pnlIntRow.Controls.Add(cboInterval);
@@ -363,8 +363,8 @@ namespace ChickenDist.Forms
                     DataRow r = dt.Rows[0];
                     chkAutoSync.Checked = r["AutoSyncEnabled"] != DBNull.Value && Convert.ToBoolean(r["AutoSyncEnabled"]);
 
-                    int interval = r["SyncIntervalMinutes"] != DBNull.Value ? Convert.ToInt32(r["SyncIntervalMinutes"]) : 1;
-                    cboInterval.SelectedIndex = interval <= 1 ? 0 : interval <= 2 ? 1 : interval <= 5 ? 2 : 3;
+                    int interval = r["SyncIntervalMinutes"] != DBNull.Value ? Convert.ToInt32(r["SyncIntervalMinutes"]) : 30;
+                    cboInterval.SelectedIndex = interval <= 15 ? 0 : interval <= 30 ? 1 : interval <= 60 ? 2 : 3;
 
                     if (r["LastSyncDate"] != DBNull.Value)
                         lblLastSyncTime.Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: " + Convert.ToDateTime(r["LastSyncDate"]).ToString("yyyy-MM-dd HH:mm:ss");
@@ -894,13 +894,18 @@ namespace ChickenDist.Forms
 
                 AppConfig.Set("FirebaseProjectId", projectId);
 
-                int interval = cboInterval.SelectedIndex == 0 ? 1 : cboInterval.SelectedIndex == 1 ? 2 : cboInterval.SelectedIndex == 2 ? 5 : 15;
+                int interval = cboInterval.SelectedIndex == 0 ? 15 : cboInterval.SelectedIndex == 1 ? 30 : cboInterval.SelectedIndex == 2 ? 60 : 120;
                 DbHelper.Execute(@"
                     UPDATE CloudSyncSettings 
                     SET AutoSyncEnabled = @auto, SyncIntervalMinutes = @int 
                     WHERE SettingID = 1",
                     DbHelper.P("@auto", chkAutoSync.Checked),
                     DbHelper.P("@int", interval));
+
+                if (chkAutoSync.Checked)
+                    CloudSyncService.StartAutoBackgroundSync();
+                else
+                    CloudSyncService.StopAutoBackgroundSync();
 
                 MessageBox.Show("✅ تم حفظ إعدادات تطبيق المالك وربط Firebase بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

@@ -552,9 +552,9 @@ self.addEventListener('fetch', (event) => {
                     ORDER BY ISNULL(stk.TotalStock, 0) ASC, p.ProductName ASC");
                 string missingJson = DataTableToJson(dtMissing);
 
-                // 6. دليل الأصناف
+                // 6. دليل الأصناف (أحدث وأهم الأصناف فقط للداشبورد)
                 DataTable dtProducts = DbHelper.Query(@"
-                    SELECT TOP 300 p.ProductID, p.ProductName, ISNULL(p.ProductCode,'') AS ProductCode, 
+                    SELECT TOP 30 p.ProductID, p.ProductName, ISNULL(p.ProductCode,'') AS ProductCode, 
                            ISNULL(p.SalePrice,0) AS SalePrice, ISNULL(p.PurchasePrice,0) AS PurchasePrice, 
                            ISNULL(ps.TotalQty, ISNULL(p.Quantity, 0)) AS Quantity 
                     FROM Products p WITH (NOLOCK)
@@ -568,7 +568,7 @@ self.addEventListener('fetch', (event) => {
                 try
                 {
                     dtSuppliers = DbHelper.Query(@"
-                        SELECT TOP 300 
+                        SELECT TOP 30 
                             s.SupplierID, 
                             ISNULL(s.SupplierCode, '') AS SupplierCode, 
                             s.SupplierName, 
@@ -583,7 +583,7 @@ self.addEventListener('fetch', (event) => {
                 catch
                 {
                     dtSuppliers = DbHelper.Query(@"
-                        SELECT TOP 300 
+                        SELECT TOP 30 
                             s.SupplierID, 
                             ISNULL(s.SupplierCode, '') AS SupplierCode, 
                             s.SupplierName, 
@@ -606,7 +606,7 @@ self.addEventListener('fetch', (event) => {
                 try
                 {
                     dtClients = DbHelper.Query(@"
-                        SELECT TOP 300 
+                        SELECT TOP 30 
                             c.ClientID, 
                             ISNULL(c.ClientCode, '') AS ClientCode, 
                             c.ClientName, 
@@ -624,7 +624,7 @@ self.addEventListener('fetch', (event) => {
                 catch
                 {
                     dtClients = DbHelper.Query(@"
-                        SELECT TOP 300 
+                        SELECT TOP 30 
                             ClientID, 
                             ISNULL(ClientCode, '') AS ClientCode, 
                             ClientName, 
@@ -678,9 +678,9 @@ self.addEventListener('fetch', (event) => {
                 }
                 string usersJson = DataTableToJson(dtUsers);
 
-                // 10. سجل فواتير المبيعات مع تفاصيل الأصناف وحالة المرتجع
+                // 10. سجل فواتير المبيعات مع تفاصيل الأصناف وحالة المرتجع (أحدث 25 فاتورة فقط)
                 DataTable dtRecentSales = DbHelper.Query(@"
-                    SELECT TOP 400 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
+                    SELECT TOP 25 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
                            ISNULL(NULLIF(s.CustomClientName, ''), ISNULL(c.ClientName, N'عميل نقدي')) AS ClientName,
                            ISNULL(s.TotalAmount, 0) AS TotalAmount,
                            ISNULL(s.CashPaid, 0) + ISNULL(s.VisaPaid, 0) AS PaidAmount,
@@ -714,7 +714,7 @@ self.addEventListener('fetch', (event) => {
                             WHERE sr.SaleID IS NOT NULL
                             GROUP BY sr.SaleID, ri.ProductID
                         ) ret ON ret.SaleID = si.SaleID AND ret.ProductID = si.ProductID
-                        WHERE si.SaleID IN (SELECT TOP 400 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
+                        WHERE si.SaleID IN (SELECT TOP 25 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
                         ORDER BY si.SaleID DESC, si.ItemID ASC");
                 }
                 catch
@@ -731,7 +731,7 @@ self.addEventListener('fetch', (event) => {
                                    0 AS IsReturned
                             FROM SaleItems si WITH (NOLOCK)
                             JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
-                            WHERE si.SaleID IN (SELECT TOP 400 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
+                            WHERE si.SaleID IN (SELECT TOP 25 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
                             ORDER BY si.SaleID DESC, si.ItemID ASC");
                     }
                     catch { }
@@ -741,7 +741,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 11. سجل فواتير المشتريات
                 DataTable dtRecentPurchases = DbHelper.Query(@"
-                    SELECT TOP 200 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
+                    SELECT TOP 15 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
                            ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
                            ISNULL(p.TotalAmount, 0) AS TotalAmount,
                            ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0) AS PaidAmount,
@@ -756,7 +756,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 12. سجل حركات الخزينة
                 DataTable dtRecentCash = DbHelper.Query(@"
-                    SELECT TOP 300 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                    SELECT TOP 25 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
                            ISNULL(cb.AmountIn, 0) AS AmountIn,
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'') AS Notes,
@@ -793,7 +793,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 15. أحدث بنود المصروفات
                 DataTable dtExpenses = DbHelper.Query(@"
-                    SELECT TOP 100 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                    SELECT TOP 15 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'مصروف') AS Notes,
                            ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
@@ -808,7 +808,7 @@ self.addEventListener('fetch', (event) => {
                 try
                 {
                     dtShifts = DbHelper.Query(@"
-                        SELECT TOP 50
+                        SELECT TOP 10
                             s.ShiftID,
                             CONVERT(VARCHAR(19), s.OpenTime, 120) AS OpenTime,
                             CONVERT(VARCHAR(19), ISNULL(s.CloseTime, s.OpenTime), 120) AS CloseTime,
@@ -844,7 +844,7 @@ self.addEventListener('fetch', (event) => {
                     try
                     {
                         dtShifts = DbHelper.Query(@"
-                            SELECT TOP 30
+                            SELECT TOP 10
                                 s.ShiftID,
                                 CONVERT(VARCHAR(19), s.OpenTime, 120) AS OpenTime,
                                 CONVERT(VARCHAR(19), ISNULL(s.CloseTime, s.OpenTime), 120) AS CloseTime,
@@ -1541,32 +1541,72 @@ self.addEventListener('fetch', (event) => {
 
         public static void StartAutoBackgroundSync()
         {
-            if (_autoSyncTimer != null) return;
-            // Push live stats and pull online orders every 15 seconds
-            // Initial delay 5 seconds so startup UI renders smoothly without any contention
-            _autoSyncTimer = new System.Threading.Timer(async _ =>
+            try
             {
-                try
-                {
-                    await PushLiveStatsToFirebaseAsync();
-                    await PullOnlineOrdersFromFirebaseAsync();
+                // إيقاف أي مؤقت سابق أولاً
+                StopAutoBackgroundSync();
 
-                    _syncCounter++;
-                    if (_syncCounter % 4 == 0)
-                    {
-                        await SyncStoreCatalogToFirebaseAsync();
-                    }
+                // 1. التحقق من تفعيل المزامنة التلقائية في قاعدة البيانات
+                DataTable dt = DbHelper.Query("SELECT TOP 1 AutoSyncEnabled, SyncIntervalMinutes FROM CloudSyncSettings WHERE SettingID = 1");
+                if (dt == null || dt.Rows.Count == 0) return;
+
+                bool enabled = dt.Rows[0]["AutoSyncEnabled"] != DBNull.Value && Convert.ToBoolean(dt.Rows[0]["AutoSyncEnabled"]);
+                if (!enabled)
+                {
+                    return; // معطل - لن يتم استهلاك أي إنترنت في الخلفية
                 }
-                catch {}
-            }, null, 5000, 15000);
+
+                // 2. التحقق من ضبط معرف مشروع حقيقي صالح (وليس القيمة التجريبية checkin-192ab أو فارغ)
+                string projectId = AppConfig.Get("FirebaseProjectId", "");
+                if (string.IsNullOrWhiteSpace(projectId) || projectId.Trim() == "checkin-192ab")
+                {
+                    return; // لا يوجد مشروع مخصص - لا يتم تشغيل المزامنة في الخلفية
+                }
+
+                int intervalMinutes = dt.Rows[0]["SyncIntervalMinutes"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["SyncIntervalMinutes"]) : 30;
+                if (intervalMinutes < 15) intervalMinutes = 15; // حد أدنى 15 دقيقة لحماية باقة الإنترنت
+
+                long intervalMs = (long)intervalMinutes * 60 * 1000;
+
+                _autoSyncTimer = new System.Threading.Timer(async _ =>
+                {
+                    try
+                    {
+                        // فحص إضافي للتأكد من استمرار التفعيل
+                        DataTable dtCheck = DbHelper.Query("SELECT TOP 1 AutoSyncEnabled FROM CloudSyncSettings WHERE SettingID = 1");
+                        if (dtCheck == null || dtCheck.Rows.Count == 0 || !Convert.ToBoolean(dtCheck.Rows[0]["AutoSyncEnabled"]))
+                        {
+                            StopAutoBackgroundSync();
+                            return;
+                        }
+
+                        await PushLiveStatsToFirebaseAsync();
+                        await PullOnlineOrdersFromFirebaseAsync();
+
+                        _syncCounter++;
+                        if (_syncCounter % 4 == 0)
+                        {
+                            await SyncStoreCatalogToFirebaseAsync();
+                        }
+                    }
+                    catch { }
+                }, null, 60000, intervalMs); // تبدأ بعد دقيقة كاملة من التشغيل وتتكرر بالدقائق وليس الثواني
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل تشغيل المزامنة التلقائية بالخلفية", ex, "StartAutoBackgroundSync");
+            }
         }
 
         public static void StopAutoBackgroundSync()
         {
             try
             {
-                _autoSyncTimer?.Dispose();
-                _autoSyncTimer = null;
+                if (_autoSyncTimer != null)
+                {
+                    _autoSyncTimer.Dispose();
+                    _autoSyncTimer = null;
+                }
             }
             catch { }
         }

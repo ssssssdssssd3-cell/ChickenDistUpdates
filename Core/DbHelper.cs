@@ -1506,13 +1506,21 @@ namespace ChickenDist.Core
                         SettingID INT PRIMARY KEY DEFAULT 1,
                         ApiUrl NVARCHAR(255) NULL,
                         OwnerSecretKey NVARCHAR(100) NULL,
-                        AutoSyncEnabled BIT NOT NULL DEFAULT 1,
-                        SyncIntervalMinutes INT NOT NULL DEFAULT 5,
+                        AutoSyncEnabled BIT NOT NULL DEFAULT 0,
+                        SyncIntervalMinutes INT NOT NULL DEFAULT 30,
                         LastSyncDate DATETIME NULL,
                         LastSyncStatus NVARCHAR(200) NULL
                     );
                     INSERT INTO CloudSyncSettings (SettingID, ApiUrl, OwnerSecretKey, AutoSyncEnabled, SyncIntervalMinutes, LastSyncStatus)
-                    VALUES (1, 'https://api.chickendist.com/v1', 'OWNER-SECRET-KEY', 1, 5, N'لم يتم إجراء مزامنة بعد');
+                    VALUES (1, 'https://api.chickendist.com/v1', 'OWNER-SECRET-KEY', 0, 30, N'لم يتم إجراء مزامنة بعد');
+                END");
+
+                SafeMigrate("CloudSyncSettings.DisableAggressiveSync", @"
+                IF OBJECT_ID('CloudSyncSettings', 'U') IS NOT NULL
+                BEGIN
+                    UPDATE CloudSyncSettings 
+                    SET AutoSyncEnabled = 0, SyncIntervalMinutes = 30 
+                    WHERE SettingID = 1 AND (AutoSyncEnabled = 1 OR SyncIntervalMinutes < 15);
                 END");
 
                 SafeMigrate("Sales.CashPaid", @"
