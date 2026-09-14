@@ -59,10 +59,11 @@ namespace ChickenDist.Forms
             var pnlTopContainer = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 205,
+                Height = 230,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(12, 6, 12, 6)
             };
+
 
             // 1. شريط العنوان والأزرار السريعة
             var pnlTitleBar = new Panel
@@ -110,7 +111,7 @@ namespace ChickenDist.Forms
             pnlTitleBar.Controls.Add(lblShortcutsHint);
             pnlTitleBar.Controls.Add(btnTransfersHistory);
             pnlTitleBar.Controls.Add(lblTitle);
-            pnlTopContainer.Controls.Add(pnlTitleBar);
+
 
             // 2. بطاقة مسار وبيانات التحويل (Route Card)
             var pnlRouteCard = new Panel
@@ -220,15 +221,16 @@ namespace ChickenDist.Forms
             tblRoute.Controls.Add(lblNotes, 5, 0);
             tblRoute.Controls.Add(txtNotes, 6, 0);
             pnlRouteCard.Controls.Add(tblRoute);
-            pnlTopContainer.Controls.Add(pnlRouteCard);
+
 
             // 3. شريط الإدخال السريع للأصناف (Fast Entry Strip)
             var pnlFastEntryCard = new Panel
             {
-                Dock = DockStyle.Bottom,
-                Height = 82,
+                Dock = DockStyle.Top,
+                Height = 94,
                 BackColor = Color.FromArgb(22, 30, 45),
-                Padding = new Padding(12, 10, 12, 8)
+                Padding = new Padding(8, 6, 8, 6),
+                Margin = new Padding(0, 4, 0, 0)
             };
             pnlFastEntryCard.Paint += (s, e) =>
             {
@@ -239,28 +241,31 @@ namespace ChickenDist.Forms
             var tblFastEntry = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 8,
+                ColumnCount = 7,
                 RowCount = 1,
                 BackColor = Color.Transparent
             };
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));      // 0: الاسكنر
+            tblFastEntry.RowStyles.Clear();
+            tblFastEntry.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblFastEntry.ColumnStyles.Clear();
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));      // 0: الاسكنر
             tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160f));      // 1: زر بحث F3
             tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));       // 2: اسم الصنف المختار (مرن يملأ الشاشة)
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 165f));      // 3: شارة الرصيد المتاح
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105f));      // 4: خانة الكمية
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 65f));       // 5: تسمية الوحدة
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));      // 3: شارة الرصيد المتاح
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f));      // 4: خانة الكمية
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75f));       // 5: تسمية الوحدة
             tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 155f));      // 6: زر الإضافة
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 10f));       // 7: هامش
 
-            // حاوية الاسكنر مع عنوانه
+            // 0: حاوية الاسكنر مع عنوانه
             var pnlScanner = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblScannerTitle = new Label
             {
-                Text = "📷 الاسكنر / الباركود:",
+                Text = "📷 الباركود:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
                 Dock = DockStyle.Top,
-                Height = 20
+                Height = 20,
+                TextAlign = ContentAlignment.MiddleCenter
             };
             txtBarcodeTransfer = new TextBox
             {
@@ -277,17 +282,18 @@ namespace ChickenDist.Forms
             pnlScanner.Controls.Add(txtBarcodeTransfer);
             pnlScanner.Controls.Add(lblScannerTitle);
 
-            // زر بحث الأصناف [F3] — محاط بحاوية مطابقة لباقي العناصر
+            // 1: زر بحث الأصناف [F3]
             var pnlSearchBtn = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblSearchTitle = new Label
             {
-                Text = "بحث سريع للأصناف:",
+                Text = "🔍 بحث الأصناف:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
                 Dock = DockStyle.Top,
-                Height = 20
+                Height = 20,
+                TextAlign = ContentAlignment.MiddleCenter
             };
-            btnSearchProduct = Theme.MakeButton("🔍 بحث الأصناف [F3]", Theme.Primary);
+            btnSearchProduct = Theme.MakeButton("🔍 بحث [F3]", Theme.Primary);
             btnSearchProduct.Dock = DockStyle.Bottom;
             btnSearchProduct.Height = 35;
             btnSearchProduct.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
@@ -295,12 +301,11 @@ namespace ChickenDist.Forms
             pnlSearchBtn.Controls.Add(btnSearchProduct);
             pnlSearchBtn.Controls.Add(lblSearchTitle);
 
-
-            // حاوية الصنف المختار
+            // 2: حاوية الصنف المختار
             var pnlSelectedProd = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblSelectedTitle = new Label
             {
-                Text = "📦 الصنف المحدد للتحويل (انقر للاختيار):",
+                Text = "📦 الصنف المحدد (انقر للاختيار):",
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(200, 220, 245),
                 Dock = DockStyle.Top,
@@ -322,7 +327,7 @@ namespace ChickenDist.Forms
             pnlSelectedProd.Controls.Add(txtSelectedProduct);
             pnlSelectedProd.Controls.Add(lblSelectedTitle);
 
-            // شارة الرصيد المتاح بالمصدر
+            // 3: شارة الرصيد المتاح بالمصدر
             var pnlStockBadge = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblStockTitle = new Label
             {
@@ -347,7 +352,7 @@ namespace ChickenDist.Forms
             pnlStockBadge.Controls.Add(lblAvailableStock);
             pnlStockBadge.Controls.Add(lblStockTitle);
 
-            // حاوية الكمية
+            // 4: حاوية الكمية
             var pnlQty = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblQtyTitle = new Label
             {
@@ -383,34 +388,65 @@ namespace ChickenDist.Forms
             pnlQty.Controls.Add(nudQty);
             pnlQty.Controls.Add(lblQtyTitle);
 
-            // تسمية الوحدة
+            // 5: حاوية الوحدة
+            var pnlUnit = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            var lblUnitTitle = new Label
+            {
+                Text = "الوحدة:",
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = Color.FromArgb(170, 185, 205),
+                Dock = DockStyle.Top,
+                Height = 20,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
             lblUnitTag = new Label
             {
                 Text = "قطعة",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(200, 215, 235),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.BottomCenter,
-                Padding = new Padding(0, 0, 0, 6)
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(220, 235, 255),
+                Dock = DockStyle.Bottom,
+                Height = 32,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.FromArgb(32, 44, 62),
+                BorderStyle = BorderStyle.FixedSingle
             };
+            pnlUnit.Controls.Add(lblUnitTag);
+            pnlUnit.Controls.Add(lblUnitTitle);
 
-            // زر الإضافة
+            // 6: زر الإضافة
+            var pnlAddBtn = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            var lblAddTitle = new Label
+            {
+                Text = "إضافة الصنف:",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(255, 215, 100),
+                Dock = DockStyle.Top,
+                Height = 20,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
             btnAddItem = Theme.MakeButton("➕ إضافة [Enter]", Theme.Accent);
             btnAddItem.Dock = DockStyle.Bottom;
             btnAddItem.Height = 35;
             btnAddItem.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnAddItem.Click += BtnAddItem_Click;
+            pnlAddBtn.Controls.Add(btnAddItem);
+            pnlAddBtn.Controls.Add(lblAddTitle);
 
             tblFastEntry.Controls.Add(pnlScanner, 0, 0);
             tblFastEntry.Controls.Add(pnlSearchBtn, 1, 0);
             tblFastEntry.Controls.Add(pnlSelectedProd, 2, 0);
             tblFastEntry.Controls.Add(pnlStockBadge, 3, 0);
             tblFastEntry.Controls.Add(pnlQty, 4, 0);
-            tblFastEntry.Controls.Add(lblUnitTag, 5, 0);
-            tblFastEntry.Controls.Add(btnAddItem, 6, 0);
+            tblFastEntry.Controls.Add(pnlUnit, 5, 0);
+            tblFastEntry.Controls.Add(pnlAddBtn, 6, 0);
 
             pnlFastEntryCard.Controls.Add(tblFastEntry);
+
+            // إضافة الألواح الثلاثة بترتيب Z-Order سليم من الأعلى للأسفل (TitleBar -> RouteCard -> FastEntryCard)
             pnlTopContainer.Controls.Add(pnlFastEntryCard);
+            pnlTopContainer.Controls.Add(pnlRouteCard);
+            pnlTopContainer.Controls.Add(pnlTitleBar);
+
 
             // ── جدول الأصناف المحولة (DataGrid) ──────────────────────────────
             var pnlGridContainer = new Panel

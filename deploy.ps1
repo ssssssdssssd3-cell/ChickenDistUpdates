@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
-$VERSION   = "3.6.0"
+$VERSION   = "3.6.1"
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -166,7 +166,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix purchase price in product card after purchases, fix warehouse transfer Factor error, and enhance transfer product search auto-add"
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix warehouse transfer fast entry strip visibility and buttons layout"
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"

@@ -1,5 +1,5 @@
-version=3.6.0
+version=3.6.1
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.6.0&t=1789345893
-sha256=DFA6FD947A8766E9776034E636145BBAAE4599159670D425D1EBE3C12447CAEB
-changelog=v3.6.0 - 2026-09-14: Fix purchase price in product card after purchases, fix warehouse transfer Factor error, and enhance transfer product search auto-add
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.6.1&t=1789347198
+sha256=DA927C6031784F03B2C727442E8189B8B18824D7F4B660BCD81C6C2C75B4FEA7
+changelog=v3.6.1 - 2026-09-14: Fix warehouse transfer fast entry strip visibility and buttons layout
