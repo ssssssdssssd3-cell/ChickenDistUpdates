@@ -459,7 +459,7 @@ namespace ChickenDist.Forms
 
             Task.Run(() =>
             {
-                bool ok = BackupManager.DoBackup(silent: true);
+                bool ok = BackupManager.DoBackup(silent: true, isExitBackup: false, uploadToCloud: true);
                 if (ok)
                 {
                     CloudSyncService.PushLiveStatsToFirebaseAsync().Wait();

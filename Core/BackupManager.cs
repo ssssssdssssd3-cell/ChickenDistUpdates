@@ -106,7 +106,7 @@ namespace ChickenDist.Core
         /// ينفذ نسخة احتياطية كاملة لقاعدة البيانات ويقوم بضغطها ورفعها للتلجرام.
         /// يُرجع true لو نجح.
         /// </summary>
-        public static bool DoBackup(bool silent = false, bool isExitBackup = false)
+        public static bool DoBackup(bool silent = false, bool isExitBackup = false, bool uploadToCloud = false)
         {
             try
             {
@@ -171,10 +171,10 @@ namespace ChickenDist.Core
                     waSuccess = UploadToWhatsApp(zipPath, out waError);
                 }
 
-                // رفع النسخة الاحتياطية للسحاب تلقائياً (فقط في النسخ اليدوي أو الدوري وليس عند الخروج)
+                // رفع النسخة الاحتياطية للسحاب فقط إذا تم طلب ذلك صراحة (من شاشة المزامنة السحابية)
                 bool cloudSuccess = false;
                 string cloudError = "";
-                if (!isExitBackup)
+                if (uploadToCloud && !isExitBackup)
                 {
                     try
                     {
@@ -423,11 +423,9 @@ namespace ChickenDist.Core
                 byte[] fileBytes = File.ReadAllBytes(filePath);
                 string base64Data = Convert.ToBase64String(fileBytes);
 
-                string configuredPid = AppConfig.Get("FirebaseProjectId", "elra7ma-grop");
-                var targetProjects = new System.Collections.Generic.List<string>();
-                if (!string.IsNullOrWhiteSpace(configuredPid)) targetProjects.Add(configuredPid);
-                if (!targetProjects.Contains("elra7ma-grop")) targetProjects.Add("elra7ma-grop");
-                if (!targetProjects.Contains("checkin-192ab")) targetProjects.Add("checkin-192ab");
+                string configuredPid = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                if (string.IsNullOrWhiteSpace(configuredPid)) configuredPid = "checkin-192ab";
+                var targetProjects = new System.Collections.Generic.List<string> { configuredPid };
 
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
