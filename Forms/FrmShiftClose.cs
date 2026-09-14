@@ -1300,6 +1300,8 @@ namespace ChickenDist.Forms
                     FrmPrintShift.ShowPrintOptions(shiftID, btnCloseShift);
                 }
 
+                try { BackupManager.CheckAndRunSmartDailyCloudBackup(); } catch { }
+
                 LoadCurrentShift();
             }
             catch (Exception ex) { MessageBox.Show("خطأ عند إغلاق الوردية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error); }

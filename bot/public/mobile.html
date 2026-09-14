@@ -2731,13 +2731,12 @@
 
         if (progressText) progressText.textContent = "1/3: 🔄 جاري الاتصال بالسحابة والبحث عن أحدث نسخة احتياطية...";
 
-        // قائمة روابط السحابة بالترتيب (elra7ma-grop في البداية لسرعة الاستجابة المباشرة)
+        // قائمة روابط السحابة بالترتيب (checkin-192ab في البداية لسرعة الاستجابة المباشرة)
         const candidateUrls = [
-          `https://elra7ma-grop-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
+          `https://checkin-192ab-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
           `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
           `https://${FIREBASE_PROJECT_ID}.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
-          `https://elra7ma-erp-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`,
-          `https://checkin-192ab-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`
+          `https://elra7ma-grop-default-rtdb.firebaseio.com/cloud_backups/latest.json?nocache=${Date.now()}`
         ];
 
         let backupData = null;

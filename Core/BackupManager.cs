@@ -100,6 +100,87 @@ namespace ChickenDist.Core
             }
         }
 
+        private static bool _isCloudBackupRunning = false;
+
+        /// <summary>
+        /// جدولة الرفع السحابي الذكي: مرتان يومياً فقط (واحدة صباحاً، وأخرى مساءً عند ختام اليوم تستبدل القديمة)
+        /// لحماية البيانات من تلف أو احتراق الهارد ديسك، وتوفير نسخة متاحة للتحميل من الموبايل،
+        /// مع الحفاظ التام على باقة الإنترنت ومساحة السحابة (حوالي 30 ميجا فقط في اليوم كاملاً)
+        /// </summary>
+        public static void CheckAndRunSmartDailyCloudBackup()
+        {
+            try
+            {
+                if (_isCloudBackupRunning) return;
+
+                string todayStr = DateTime.Today.ToString("yyyy-MM-dd");
+                int hour = DateTime.Now.Hour;
+
+                // 1. النسخة الصباحية (بين الساعة 6:00 صباحاً وحتى 3:00 عصراً)
+                if (hour >= 6 && hour < 15)
+                {
+                    string lastMorning = AppConfig.Get("LastMorningCloudBackupDate", "");
+                    if (lastMorning != todayStr)
+                    {
+                        _isCloudBackupRunning = true;
+                        System.Threading.Tasks.Task.Run(() =>
+                        {
+                            try
+                            {
+                                bool ok = DoBackup(silent: true, isExitBackup: false, uploadToCloud: true);
+                                if (ok)
+                                {
+                                    AppConfig.Set("LastMorningCloudBackupDate", todayStr);
+                                    AppLogger.Info($"[SmartCloudBackup] تم رفع النسخة الاحتياطية الصباحية بنجاح ليوم {todayStr}");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                AppLogger.Error("فشل رفع النسخة الاحتياطية الصباحية السحابية", ex, "BackupManager");
+                            }
+                            finally
+                            {
+                                _isCloudBackupRunning = false;
+                            }
+                        });
+                    }
+                }
+                // 2. النسخة المسائية / ختام اليوم (من الساعة 3:00 عصراً فصاعداً)
+                else if (hour >= 15 || hour < 6)
+                {
+                    string lastEvening = AppConfig.Get("LastEveningCloudBackupDate", "");
+                    if (lastEvening != todayStr)
+                    {
+                        _isCloudBackupRunning = true;
+                        System.Threading.Tasks.Task.Run(() =>
+                        {
+                            try
+                            {
+                                bool ok = DoBackup(silent: true, isExitBackup: false, uploadToCloud: true);
+                                if (ok)
+                                {
+                                    AppConfig.Set("LastEveningCloudBackupDate", todayStr);
+                                    AppLogger.Info($"[SmartCloudBackup] تم رفع النسخة الاحتياطية المسائية بنجاح ليوم {todayStr}");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                AppLogger.Error("فشل رفع النسخة الاحتياطية المسائية السحابية", ex, "BackupManager");
+                            }
+                            finally
+                            {
+                                _isCloudBackupRunning = false;
+                            }
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("CheckAndRunSmartDailyCloudBackup failed", ex, "BackupManager");
+            }
+        }
+
         // ===== تنفيذ الباكب =====
 
         /// <summary>
@@ -481,7 +562,7 @@ namespace ChickenDist.Core
                         return false;
                     }
 
-                    // 2. تحديث سجل التاريخ السحابي وإدارة سياسة الـ 5 نسخ كحد أقصى
+                    // 2. تحديث سجل التاريخ السحابي وإدارة سياسة الاحتفاظ بآخر نسختين فقط (صباحاً ومساءً)
                     try
                     {
                         string metaPayload = "{" +
@@ -494,8 +575,8 @@ namespace ChickenDist.Core
                         var metaContent = new System.Net.Http.StringContent(metaPayload, System.Text.Encoding.UTF8, "application/json");
                         httpClient.PutAsync($"https://{configuredPid}-default-rtdb.firebaseio.com/cloud_backups/history/{backupId}.json", metaContent).Wait();
 
-                        // فحص النسخ السحابية القديمة وحذف ما يتجاوز الـ 5 نسخ
-                        CleanOldCloudBackups(httpClient, configuredPid, keepCount: 5);
+                        // فحص النسخ السحابية القديمة وحذف ما يتجاوز نسختين فقط
+                        CleanOldCloudBackups(httpClient, configuredPid, keepCount: 2);
                     }
                     catch (Exception exHist)
                     {
@@ -513,9 +594,9 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
-        /// يحذف النسخ الاحتياطية السحابية القديمة ويحتفظ بحد أقصى keepCount نسخ (5 نسخ)
+        /// يحذف النسخ الاحتياطية السحابية القديمة ويحتفظ بحد أقصى keepCount نسخ (نسختين فقط)
         /// </summary>
-        private static void CleanOldCloudBackups(System.Net.Http.HttpClient client, string projectId, int keepCount = 5)
+        private static void CleanOldCloudBackups(System.Net.Http.HttpClient client, string projectId, int keepCount = 2)
         {
             try
             {

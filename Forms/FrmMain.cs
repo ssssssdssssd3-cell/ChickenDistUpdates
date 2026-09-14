@@ -2325,25 +2325,34 @@ namespace ChickenDist.Forms
         {
             try
             {
-                int intervalHours = AppConfig.BackupIntervalHours;
-                if (intervalHours > 0)
+                // فحص أولي بعد 30 ثانية من بدء التشغيل
+                System.Threading.Tasks.Task.Run(async () =>
                 {
-                    // Run initial check with a 30-second delay so startup is completely unburdened and instant
-                    System.Threading.Tasks.Task.Run(async () =>
+                    try
                     {
-                        try
+                        await System.Threading.Tasks.Task.Delay(30000);
+                        int intervalHours = AppConfig.BackupIntervalHours;
+                        if (intervalHours > 0)
                         {
-                            await System.Threading.Tasks.Task.Delay(30000);
                             CheckAndRunPeriodicBackup(true);
                         }
-                        catch { }
-                    });
+                        BackupManager.CheckAndRunSmartDailyCloudBackup();
+                    }
+                    catch { }
+                });
 
-                    tmrPeriodicBackup = new Timer();
-                    tmrPeriodicBackup.Interval = 5 * 60 * 1000; // Check every 5 minutes
-                    tmrPeriodicBackup.Tick += (s, e) => CheckAndRunPeriodicBackup(false);
-                    tmrPeriodicBackup.Start();
-                }
+                tmrPeriodicBackup = new Timer();
+                tmrPeriodicBackup.Interval = 5 * 60 * 1000; // Check every 5 minutes
+                tmrPeriodicBackup.Tick += (s, e) =>
+                {
+                    int intervalHours = AppConfig.BackupIntervalHours;
+                    if (intervalHours > 0)
+                    {
+                        CheckAndRunPeriodicBackup(false);
+                    }
+                    BackupManager.CheckAndRunSmartDailyCloudBackup();
+                };
+                tmrPeriodicBackup.Start();
             }
             catch (Exception ex)
             {
