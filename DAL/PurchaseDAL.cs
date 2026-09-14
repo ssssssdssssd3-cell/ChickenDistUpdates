@@ -410,6 +410,8 @@ namespace ChickenDist.DAL
                     ShortageDAL.ProcessStockReplenishmentAfterPurchase(purchasedPids);
                 }
                 catch { }
+
+                try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
             }
 
             return returnedID;

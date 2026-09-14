@@ -2173,6 +2173,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@n", "توريد نقدية - " + notes), DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
             }
+            try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
         }
 
         public static DataTable GetExpenses(DateTime from, DateTime to, int? vehicleID = null, string vehicleType = null)
@@ -2236,6 +2237,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@by", Session.EmpID),
                         DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID));
                 });
+                try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
                 return newID;
             }
 
@@ -2260,6 +2262,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@d", date), DbHelper.P("@a", amount),
                     DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID), DbHelper.P("@ref", id));
             });
+            try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
             return id;
         }
 

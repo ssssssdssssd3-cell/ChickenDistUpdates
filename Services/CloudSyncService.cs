@@ -1538,6 +1538,47 @@ self.addEventListener('fetch', (event) => {
 
         private static System.Threading.Timer _autoSyncTimer;
         private static int _syncCounter = 0;
+        private static System.Threading.Timer _onlineOrdersTimer = null;
+
+        /// <summary>
+        /// مراقب طلبات المتجر الإلكتروني: فحص خفيف جداً (~300 بايت فقط) كل 60 ثانية لجلب طلبات المتجر لحظياً دون استهلاك باقة الإنترنت (أقل من 0.5 ميجا يومياً)
+        /// </summary>
+        public static void StartOnlineOrdersWatcher()
+        {
+            try
+            {
+                if (_onlineOrdersTimer != null) return;
+
+                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                if (string.IsNullOrWhiteSpace(projectId)) projectId = "checkin-192ab";
+
+                _onlineOrdersTimer = new System.Threading.Timer(async _ =>
+                {
+                    try
+                    {
+                        await PullOnlineOrdersFromFirebaseAsync(projectId);
+                    }
+                    catch { }
+                }, null, 15000, 60000); // يبدأ بعد 15 ثانية ويتكرر كل 60 ثانية
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("فشل تشغيل مراقب طلبات المتجر الإلكتروني", ex, "StartOnlineOrdersWatcher");
+            }
+        }
+
+        public static void StopOnlineOrdersWatcher()
+        {
+            try
+            {
+                if (_onlineOrdersTimer != null)
+                {
+                    _onlineOrdersTimer.Dispose();
+                    _onlineOrdersTimer = null;
+                }
+            }
+            catch { }
+        }
 
         public static void StartAutoBackgroundSync()
         {
@@ -1545,6 +1586,9 @@ self.addEventListener('fetch', (event) => {
             {
                 // إيقاف أي مؤقت سابق أولاً
                 StopAutoBackgroundSync();
+
+                // تشغيل مراقب طلبات المتجر الخفيف دائماً
+                StartOnlineOrdersWatcher();
 
                 // 1. التحقق من تفعيل المزامنة التلقائية في قاعدة البيانات
                 DataTable dt = DbHelper.Query("SELECT TOP 1 AutoSyncEnabled, SyncIntervalMinutes FROM CloudSyncSettings WHERE SettingID = 1");
@@ -1556,9 +1600,9 @@ self.addEventListener('fetch', (event) => {
                     return; // معطل - لن يتم استهلاك أي إنترنت في الخلفية
                 }
 
-                // 2. التحقق من ضبط معرف مشروع حقيقي صالح (وليس القيمة التجريبية checkin-192ab أو فارغ)
-                string projectId = AppConfig.Get("FirebaseProjectId", "");
-                if (string.IsNullOrWhiteSpace(projectId) || projectId.Trim() == "checkin-192ab")
+                // 2. التحقق من ضبط معرف مشروع حقيقي صالح
+                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                if (string.IsNullOrWhiteSpace(projectId))
                 {
                     return; // لا يوجد مشروع مخصص - لا يتم تشغيل المزامنة في الخلفية
                 }

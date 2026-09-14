@@ -2187,6 +2187,11 @@ namespace ChickenDist.DAL
                 }
             });
 
+            if (returnedRetID > 0)
+            {
+                try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
+            }
+
             return returnedRetID;
         }
 

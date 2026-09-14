@@ -33,6 +33,7 @@ namespace ChickenDist.Forms
             NavigateTo(new FrmDashboard());
             InitializePeriodicBackup();
             try { ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync(); } catch {}
+            try { ChickenDist.Services.CloudSyncService.StartOnlineOrdersWatcher(); } catch {}
             try { ChickenDist.Services.CloudSyncService.OnNewOrdersReceived += count => UpdateOnlineOrdersBadge(); } catch {}
             try { UpdateOnlineOrdersBadge(); } catch {}
             try { System.Threading.Tasks.Task.Run(async () => { await System.Threading.Tasks.Task.Delay(15000); InventoryDAL.SyncAllProductStock(); }); } catch {}
