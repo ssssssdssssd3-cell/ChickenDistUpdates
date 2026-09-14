@@ -67,12 +67,20 @@ namespace ChickenDist.Forms
             // المخازن
             if (cboWarehouse != null)
             {
-                var dtWh = WarehouseDAL.GetAll(true);
+                var dtWh = Session.GetAllowedWarehouses(true);
                 cboWarehouse.Items.Clear();
-                foreach (DataRow r in dtWh.Rows)
-                    cboWarehouse.Items.Add(new ComboItem((int)r["WarehouseID"], r["WarehouseName"].ToString()));
+                int defWhId = Session.GetDefaultWarehouseID();
+                int selIdx = 0;
+                for (int i = 0; i < dtWh.Rows.Count; i++)
+                {
+                    int wid = Convert.ToInt32(dtWh.Rows[i]["WarehouseID"]);
+                    string wname = dtWh.Rows[i]["WarehouseName"].ToString();
+                    cboWarehouse.Items.Add(new ComboItem(wid, wname));
+                    if (wid == defWhId) selIdx = i;
+                }
                 cboWarehouse.DisplayMember = "Text";
-                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
+                cboWarehouse.Enabled = Session.IsAdmin || dtWh.Rows.Count > 1;
             }
 
             // تحميل أصناف الكتالوج للمرتجع العام والبديل وتصفية الفواتير بالصنف
@@ -1458,7 +1466,7 @@ namespace ChickenDist.Forms
 
             bool canReturnAll = Session.IsAdmin || Session.CanReturnAllSales();
             int mode = cboMode.SelectedIndex;
-            int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
+            int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : Session.GetDefaultWarehouseID();
             
             string returnType = "Cash";
             if (cboReturnType.SelectedIndex == 1 || cboReturnType.Text.Contains("Visa") || cboReturnType.Text.Contains("فيزا"))

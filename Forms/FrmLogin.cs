@@ -307,6 +307,9 @@ namespace ChickenDist.Forms
 
             Session.DefaultSafeID = row.Table.Columns.Contains("DefaultSafeID") && row["DefaultSafeID"] != DBNull.Value ? (int?)Convert.ToInt32(row["DefaultSafeID"]) : null;
             Session.AllowedSafeIDs = row.Table.Columns.Contains("AllowedSafeIDs") && row["AllowedSafeIDs"] != DBNull.Value ? row["AllowedSafeIDs"].ToString() : "";
+            Session.DefaultWarehouseID = row.Table.Columns.Contains("DefaultWarehouseID") && row["DefaultWarehouseID"] != DBNull.Value ? (int?)Convert.ToInt32(row["DefaultWarehouseID"]) : null;
+            Session.AllowedWarehouseIDs = row.Table.Columns.Contains("AllowedWarehouseIDs") && row["AllowedWarehouseIDs"] != DBNull.Value ? row["AllowedWarehouseIDs"].ToString() : "";
+            Session.DefaultPriceTier = row.Table.Columns.Contains("DefaultPriceTier") && row["DefaultPriceTier"] != DBNull.Value ? row["DefaultPriceTier"].ToString() : "قطاعي";
             Session.CanSellCash = !row.Table.Columns.Contains("CanSellCash") || row["CanSellCash"] == DBNull.Value || Convert.ToBoolean(row["CanSellCash"]);
             Session.CanSellCredit = !row.Table.Columns.Contains("CanSellCredit") || row["CanSellCredit"] == DBNull.Value || Convert.ToBoolean(row["CanSellCredit"]);
             Session.CanSellVisa = !row.Table.Columns.Contains("CanSellVisa") || row["CanSellVisa"] == DBNull.Value || Convert.ToBoolean(row["CanSellVisa"]);

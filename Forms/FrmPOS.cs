@@ -18,6 +18,7 @@ namespace ChickenDist.Forms
     {
         // ── عناصر الواجهة ─────────────────────────────────────
         private TextBox txtBarcode;
+        private ComboBox cboWarehouse, cboPriceTier;
         private DataGridView dgItems;
         private Label lblTotal, lblPaid, lblChange, lblItemCount, lblClientName, lblClientPoints;
         private Label lblInvoiceItemsBadge;
@@ -162,6 +163,86 @@ namespace ChickenDist.Forms
             btnCustomizeCols.Visible = Session.CanOrderColumns("POS");
             pnlTop.Controls.Add(btnCustomizeCols);
             btnCustomizeCols.BringToFront();
+
+            // ── اختيار المخزن وشريحة السعر الافتراضية ──────────
+            var lblWh = new Label
+            {
+                Text = "المخزن:",
+                Location = new Point(480, 12),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Theme.TextMain
+            };
+            cboWarehouse = new ComboBox
+            {
+                Location = new Point(480, 35),
+                Size = new Size(160, 32),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 10f),
+                BackColor = Theme.BgInput
+            };
+
+            var whDt = Session.GetAllowedWarehouses(true);
+            cboWarehouse.Items.Clear();
+            int defWhId = Session.GetDefaultWarehouseID();
+            int selIdx = 0;
+            for (int i = 0; i < whDt.Rows.Count; i++)
+            {
+                int wid = Convert.ToInt32(whDt.Rows[i]["WarehouseID"]);
+                string wname = whDt.Rows[i]["WarehouseName"].ToString();
+                cboWarehouse.Items.Add(new ComboItem(wid, wname));
+                if (wid == defWhId) selIdx = i;
+            }
+            cboWarehouse.DisplayMember = "Text";
+            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
+            cboWarehouse.Enabled = Session.IsAdmin || whDt.Rows.Count > 1;
+            cboWarehouse.SelectedIndexChanged += (s, e) =>
+            {
+                LoadStockCache();
+                RefreshGrid();
+            };
+
+            var lblTier = new Label
+            {
+                Text = "شريحة السعر:",
+                Location = new Point(650, 12),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Theme.TextMain
+            };
+            cboPriceTier = new ComboBox
+            {
+                Location = new Point(650, 35),
+                Size = new Size(115, 32),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 10f),
+                BackColor = Theme.BgInput
+            };
+            cboPriceTier.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
+            cboPriceTier.SelectedItem = Session.GetDefaultPriceTier();
+            if (cboPriceTier.SelectedIndex < 0) cboPriceTier.SelectedIndex = 0;
+            cboPriceTier.SelectedIndexChanged += (s, e) =>
+            {
+                if (_items.Count > 0 && cboPriceTier.SelectedItem != null)
+                {
+                    string newTier = cboPriceTier.SelectedItem.ToString();
+                    foreach (var itm in _items)
+                    {
+                        decimal p = GetProductPriceByTier(itm.ProductID, newTier);
+                        if (p > 0) itm.Price = p;
+                    }
+                    RefreshGrid();
+                }
+            };
+
+            pnlTop.Controls.Add(lblWh);
+            pnlTop.Controls.Add(cboWarehouse);
+            pnlTop.Controls.Add(lblTier);
+            pnlTop.Controls.Add(cboPriceTier);
+            lblWh.BringToFront();
+            cboWarehouse.BringToFront();
+            lblTier.BringToFront();
+            cboPriceTier.BringToFront();
 
             // ── ساعة مباشرة ──────────────────────────────────────
             lblClock = new Label
@@ -1422,7 +1503,7 @@ namespace ChickenDist.Forms
                         bool isInt2 = (row2["InternationalCode"] != DBNull.Value && code == row2["InternationalCode"].ToString());
                         if (row2["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row2["HasExpiry"]))
                         {
-                            var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=1 AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", pid2));
+                            var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", pid2), DbHelper.P("@wid", GetSelectedWarehouseID()));
                             if (batches.Rows.Count > 0)
                             {
                                 int oldestId = Convert.ToInt32(batches.Rows[0]["BatchID"]);
@@ -1500,7 +1581,7 @@ namespace ChickenDist.Forms
             bool isInternational = (row["InternationalCode"] != DBNull.Value && code == row["InternationalCode"].ToString());
             if (row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]))
             {
-                var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=1 AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", productID));
+                var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", productID), DbHelper.P("@wid", GetSelectedWarehouseID()));
                 if (batches.Rows.Count > 0)
                 {
                     int oldestId = Convert.ToInt32(batches.Rows[0]["BatchID"]);
@@ -1555,7 +1636,14 @@ namespace ChickenDist.Forms
             int productID = Convert.ToInt32(row["ProductID"]);
             string code = row["ProductCode"]?.ToString() ?? "";
             string name = row["ProductName"]?.ToString() ?? "";
-            decimal price = overridePrice > 0 ? overridePrice : Convert.ToDecimal(row["SalePrice"]);
+            decimal tierMajorPrice = Convert.ToDecimal(row["SalePrice"]);
+            string curTier = GetSelectedPriceTier();
+            if (curTier == "جملة" && row.Table.Columns.Contains("WholesalePrice") && row["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["WholesalePrice"]) > 0)
+                tierMajorPrice = Convert.ToDecimal(row["WholesalePrice"]);
+            else if (curTier == "نصف جملة" && row.Table.Columns.Contains("SemiWholesalePrice") && row["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["SemiWholesalePrice"]) > 0)
+                tierMajorPrice = Convert.ToDecimal(row["SemiWholesalePrice"]);
+
+            decimal price = overridePrice > 0 ? overridePrice : tierMajorPrice;
             decimal majorCost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0;
 
             if (string.IsNullOrEmpty(unitName))
@@ -1586,7 +1674,7 @@ namespace ChickenDist.Forms
                     decimal u2f = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
                     decimal u3f = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
                     factor = u2f * u3f;
-                    price = overridePrice > 0 ? overridePrice : Convert.ToDecimal(row["SalePrice"]);
+                    price = overridePrice > 0 ? overridePrice : tierMajorPrice;
                 }
             }
 
@@ -2352,7 +2440,8 @@ namespace ChickenDist.Forms
 
                     var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                     string saleCode = nextSaleResult != null ? nextSaleResult.ToString() : "1";
-                    int warehouseID = 1;
+                    int warehouseID = GetSelectedWarehouseID();
+                    string salePriceTier = GetSelectedPriceTier();
 
                     decimal sumItemDiscounts = 0;
                     foreach (var item in _items) sumItemDiscounts += item.DiscountAmt;
@@ -2360,13 +2449,14 @@ namespace ChickenDist.Forms
 
                     int saleID = DbHelper.ExecuteInsertTrans(trans,
                         @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,VisaPaid,VisaAccountID,ShippingCharge,OrderType,TableNumber)
-                          VALUES (@sc,GETDATE(),@stype,@cid,@did,@tot,@disc,0,'POS',@emp,1,@wid,N'قطاعي',@sid,@paid,@vpaid,@vaid,0,@ot,@tn)",
+                          VALUES (@sc,GETDATE(),@stype,@cid,@did,@tot,@disc,0,'POS',@emp,1,@wid,@tier,@sid,@paid,@vpaid,@vaid,0,@ot,@tn)",
                         DbHelper.P("@sc", saleCode),
                         DbHelper.P("@stype", _selectedSaleType),
                         DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
                         DbHelper.P("@did", selectedDriver.HasValue ? (object)selectedDriver.Value : DBNull.Value),
                         DbHelper.P("@tot", total), DbHelper.P("@disc", totalDisc),
                         DbHelper.P("@emp", Session.EmpID), DbHelper.P("@wid", warehouseID),
+                        DbHelper.P("@tier", salePriceTier),
                         DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
                         DbHelper.P("@paid", cashPaidVal),
                         DbHelper.P("@vpaid", visaPaidVal),
@@ -2381,10 +2471,11 @@ namespace ChickenDist.Forms
                     {
                         DbHelper.ExecuteInsertTrans(trans,
                             @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn,@imei)",
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,@tier,@un,@f,@exp,@bid,@kn,@imei)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
                             DbHelper.P("@discAmt", item.DiscountAmt),
+                            DbHelper.P("@tier", salePriceTier),
                             DbHelper.P("@un", (object)item.UnitName ?? DBNull.Value),
                             DbHelper.P("@f", item.Factor),
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
@@ -2636,6 +2727,30 @@ namespace ChickenDist.Forms
                 if (rbDineIn != null) rbDineIn.Checked = true;
                 if (cboDeliveryDriver != null && cboDeliveryDriver.Items.Count > 0) cboDeliveryDriver.SelectedIndex = 0;
             }
+            if (cboWarehouse != null && cboWarehouse.Items.Count > 0)
+            {
+                int defWhId = Session.GetDefaultWarehouseID();
+                for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                {
+                    if (cboWarehouse.Items[i] is ComboItem ci && ci.ID == defWhId)
+                    {
+                        cboWarehouse.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            if (cboPriceTier != null && cboPriceTier.Items.Count > 0)
+            {
+                string defTier = Session.GetDefaultPriceTier();
+                for (int i = 0; i < cboPriceTier.Items.Count; i++)
+                {
+                    if (string.Equals(cboPriceTier.Items[i]?.ToString(), defTier, StringComparison.OrdinalIgnoreCase))
+                    {
+                        cboPriceTier.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
             this.BeginInvoke(new Action(() =>
             {
                 if (txtBarcode != null && !this.IsDisposed)
@@ -2826,7 +2941,7 @@ namespace ChickenDist.Forms
                 while (true)
                 {
                     int posClientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient) ? ciClient.ID : 0;
-                    using var frm = new FrmProductSearch(warehouseID: null, isPurchaseMode: false, defaultShowZeroStock: false, clientID: posClientID > 0 ? posClientID : (int?)null, initialSearchText: lastSearchText);
+                    using var frm = new FrmProductSearch(warehouseID: GetSelectedWarehouseID(), isPurchaseMode: false, defaultShowZeroStock: false, clientID: posClientID > 0 ? posClientID : (int?)null, initialSearchText: lastSearchText);
                     frm.ShowDialog();
 
                     if (frm.DialogResult == DialogResult.OK && frm.SelectedProductID > 0)
@@ -2899,14 +3014,18 @@ namespace ChickenDist.Forms
             flowQuickItems.Controls.Clear();
 
             bool inStockOnly = chkQuickInStockOnly != null && chkQuickInStockOnly.Checked;
+            int whId = GetSelectedWarehouseID();
 
             string query = @"
                 SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice,
-                       COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = 1), p.Quantity, 0) AS StockQty
+                       COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = @whId), p.Quantity, 0) AS StockQty
                 FROM Products p WITH (NOLOCK)
                 WHERE p.IsActive = 1 AND ISNULL(p.IsQuickItem, 0) = 1";
 
-            var pList = new List<System.Data.SqlClient.SqlParameter>();
+            var pList = new List<System.Data.SqlClient.SqlParameter>
+            {
+                DbHelper.P("@whId", whId)
+            };
 
             if (categoryID.HasValue)
             {
@@ -2916,7 +3035,7 @@ namespace ChickenDist.Forms
 
             if (inStockOnly)
             {
-                query += " AND COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = 1), p.Quantity, 0) > 0";
+                query += " AND COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = @whId), p.Quantity, 0) > 0";
             }
 
             query += " ORDER BY p.ProductName";
@@ -2977,7 +3096,8 @@ namespace ChickenDist.Forms
                 DateTime? exp = null;
                 if (row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]))
                 {
-                    var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=1 AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", Convert.ToInt32(row["ProductID"])));
+                    int wid = GetSelectedWarehouseID();
+                    var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", Convert.ToInt32(row["ProductID"])), DbHelper.P("@wid", wid));
                     if (batches.Rows.Count > 0)
                     {
                         bid = Convert.ToInt32(batches.Rows[0]["BatchID"]);
@@ -3179,14 +3299,68 @@ namespace ChickenDist.Forms
 
         private void CboClient_Changed(object sender, EventArgs e)
         {
-            if (AppConfig.LoyaltyEnabled && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+            if (cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
             {
-                var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
-                decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
-                lblClientPoints.Text = $"🎁 {points:N0} نقطة";
+                if (AppConfig.LoyaltyEnabled)
+                {
+                    var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
+                    decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
+                    lblClientPoints.Text = $"🎁 {points:N0} نقطة";
+                }
+                else { lblClientPoints.Text = ""; }
+
+                // تطبيق شريحة السعر الافتراضية للعميل
+                try
+                {
+                    var cr = DbHelper.Query("SELECT DefaultPriceTier FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
+                    if (cr.Rows.Count > 0 && cr.Rows[0]["DefaultPriceTier"] != DBNull.Value && !string.IsNullOrWhiteSpace(cr.Rows[0]["DefaultPriceTier"].ToString()))
+                    {
+                        string clientTier = cr.Rows[0]["DefaultPriceTier"].ToString().Trim();
+                        if (cboPriceTier != null) cboPriceTier.SelectedItem = clientTier;
+                    }
+                }
+                catch { }
             }
-            else { lblClientPoints.Text = ""; }
+            else
+            {
+                lblClientPoints.Text = "";
+                if (cboPriceTier != null) cboPriceTier.SelectedItem = Session.GetDefaultPriceTier();
+            }
             RefreshGrid();
+        }
+
+        public int GetSelectedWarehouseID()
+        {
+            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+                return ci.ID;
+            return Session.GetDefaultWarehouseID();
+        }
+
+        public string GetSelectedPriceTier()
+        {
+            if (cboPriceTier != null && !string.IsNullOrWhiteSpace(cboPriceTier.Text))
+                return cboPriceTier.Text.Trim();
+            return Session.GetDefaultPriceTier();
+        }
+
+        private decimal GetProductPriceByTier(int productID, string tier)
+        {
+            try
+            {
+                var dt = DbHelper.Query("SELECT SalePrice, WholesalePrice, SemiWholesalePrice FROM Products WHERE ProductID=@id", DbHelper.P("@id", productID));
+                if (dt.Rows.Count > 0)
+                {
+                    var r = dt.Rows[0];
+                    if (tier == "جملة" && r["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(r["WholesalePrice"]) > 0)
+                        return Convert.ToDecimal(r["WholesalePrice"]);
+                    if (tier == "نصف جملة" && r["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(r["SemiWholesalePrice"]) > 0)
+                        return Convert.ToDecimal(r["SemiWholesalePrice"]);
+                    if (r["SalePrice"] != DBNull.Value)
+                        return Convert.ToDecimal(r["SalePrice"]);
+                }
+            }
+            catch { }
+            return 0;
         }
 
         private void LoadStockCache()
@@ -3194,7 +3368,8 @@ namespace ChickenDist.Forms
             try
             {
                 _stockCache.Clear();
-                var dt = DbHelper.Query("SELECT ProductID, SUM(Quantity) AS TotalQty FROM ProductStock GROUP BY ProductID");
+                int wid = GetSelectedWarehouseID();
+                var dt = DbHelper.Query("SELECT ProductID, SUM(Quantity) AS TotalQty FROM ProductStock WHERE WarehouseID=@wid GROUP BY ProductID", DbHelper.P("@wid", wid));
                 foreach (DataRow row in dt.Rows) _stockCache[Convert.ToInt32(row["ProductID"])] = Convert.ToDecimal(row["TotalQty"]);
             }
             catch { }
@@ -3642,18 +3817,20 @@ namespace ChickenDist.Forms
 
                     var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
                     string saleCode = nextSaleResult != null ? nextSaleResult.ToString() : "1";
-                    int warehouseID = 1;
+                    int warehouseID = GetSelectedWarehouseID();
+                    string priceTier = GetSelectedPriceTier();
                     decimal total = 0;
                     foreach (var item in _items) total += item.Total;
 
                     // Insert Sales as IsPosted = 0 (Draft)
                     int saleID = DbHelper.ExecuteInsertTrans(trans,
                         @"INSERT INTO Sales (SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,DiscountAmount,DiscountPct,Notes,CreatedBy,IsPosted,WarehouseID,PriceTier,ShiftID,CashPaid,ShippingCharge,OrderType,TableNumber)
-                          VALUES (@sc,GETDATE(),'Cash',@cid,@did,@tot,0,0,'POS_DRAFT',@emp,0,@wid,N'قطاعي',@sid,0,0,@ot,@tn)",
+                          VALUES (@sc,GETDATE(),'Cash',@cid,@did,@tot,0,0,'POS_DRAFT',@emp,0,@wid,@tier,@sid,0,0,@ot,@tn)",
                         DbHelper.P("@sc", saleCode), DbHelper.P("@cid", clientID > 0 ? (object)clientID : DBNull.Value),
                         DbHelper.P("@did", selectedDriver.HasValue ? (object)selectedDriver.Value : DBNull.Value),
                         DbHelper.P("@tot", total),
                         DbHelper.P("@emp", Session.EmpID), DbHelper.P("@wid", warehouseID),
+                        DbHelper.P("@tier", priceTier),
                         DbHelper.P("@sid", Session.CurrentShiftID.HasValue ? (object)Session.CurrentShiftID.Value : DBNull.Value),
                         DbHelper.P("@ot", string.IsNullOrEmpty(orderType) ? DBNull.Value : (object)orderType),
                         DbHelper.P("@tn", string.IsNullOrEmpty(tableNum) ? DBNull.Value : (object)tableNum));
@@ -3664,10 +3841,11 @@ namespace ChickenDist.Forms
                     {
                         DbHelper.ExecuteInsertTrans(trans,
                             @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,N'قطاعي',@un,@f,@exp,@bid,@kn,@imei)",
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,@tier,@un,@f,@exp,@bid,@kn,@imei)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
                             DbHelper.P("@discAmt", item.DiscountAmt),
+                            DbHelper.P("@tier", priceTier),
                             DbHelper.P("@un", (object)item.UnitName ?? DBNull.Value),
                             DbHelper.P("@f", item.Factor),
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),

@@ -103,6 +103,124 @@ namespace ChickenDist.Core
             if (set == null) return true;
             return set.Contains(safeId);
         }
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // إعدادات المخازن وشريحة السعر الافتراضية للموظف
+        // ═══════════════════════════════════════════════════════════════════════════
+        public static int? DefaultWarehouseID { get; set; }
+        public static string AllowedWarehouseIDs { get; set; }
+        public static string DefaultPriceTier { get; set; }
+
+        /// <summary>
+        /// الحصول على المعرف الافتراضي للمخزن للمستخدم الحالي
+        /// </summary>
+        public static int GetDefaultWarehouseID()
+        {
+            if (DefaultWarehouseID.HasValue && DefaultWarehouseID.Value > 0)
+                return DefaultWarehouseID.Value;
+
+            try
+            {
+                object whIdObj = DbHelper.Scalar("SELECT TOP 1 WarehouseID FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
+                if (whIdObj != null && whIdObj != DBNull.Value)
+                {
+                    return Convert.ToInt32(whIdObj);
+                }
+            }
+            catch (Exception ex) { AppLogger.Error("Session.GetDefaultWarehouseID", ex); }
+            return 1;
+        }
+
+        /// <summary>
+        /// الحصول على مجموعة معرّفات المخازن المسموح بها للمستخدم الحالي.
+        /// للمدير: يعيد null (جميع المخازن مسموحة بدون قيود).
+        /// للموظف: يعيد قائمة المخازن المخصصة له فقط.
+        /// </summary>
+        public static HashSet<int> GetAllowedWarehouseIDSet()
+        {
+            if (IsAdmin) return null;
+
+            var set = new HashSet<int>();
+            if (DefaultWarehouseID.HasValue && DefaultWarehouseID.Value > 0)
+            {
+                set.Add(DefaultWarehouseID.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(AllowedWarehouseIDs))
+            {
+                var parts = AllowedWarehouseIDs.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var p in parts)
+                {
+                    if (int.TryParse(p.Trim(), out int id) && id > 0)
+                        set.Add(id);
+                }
+            }
+
+            // إذا لم يكن محدداً له أي مخزن محدد وهو ليس مديراً، يُلزم بالمخزن الافتراضي فقط
+            if (set.Count == 0 && !IsAdmin)
+            {
+                int defId = GetDefaultWarehouseID();
+                if (defId > 0) set.Add(defId);
+            }
+
+            return set;
+        }
+
+        /// <summary>
+        /// التحقق هل المخزن مسموح للمستخدم الحالي بالتعامل عليه في البيع أو الشراء؟
+        /// </summary>
+        public static bool IsWarehouseAllowed(int warehouseId)
+        {
+            if (IsAdmin) return true;
+            if (warehouseId <= 0) return false;
+            var set = GetAllowedWarehouseIDSet();
+            if (set == null) return true;
+            return set.Contains(warehouseId);
+        }
+
+        /// <summary>
+        /// جلب جدول المخازن المصرح بها للمستخدم الحالي
+        /// </summary>
+        public static DataTable GetAllowedWarehouses(bool activeOnly = true)
+        {
+            try
+            {
+                if (IsAdmin)
+                {
+                    string adminSql = activeOnly
+                        ? "SELECT WarehouseID, WarehouseName, Location, Notes FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID"
+                        : "SELECT WarehouseID, WarehouseName, Location, Notes FROM Warehouses ORDER BY WarehouseID";
+                    return DbHelper.Query(adminSql);
+                }
+
+                var set = GetAllowedWarehouseIDSet();
+                if (set == null || set.Count == 0)
+                {
+                    string allSql = activeOnly
+                        ? "SELECT WarehouseID, WarehouseName, Location, Notes FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID"
+                        : "SELECT WarehouseID, WarehouseName, Location, Notes FROM Warehouses ORDER BY WarehouseID";
+                    return DbHelper.Query(allSql);
+                }
+
+                string inClause = string.Join(",", set);
+                string sql = $"SELECT WarehouseID, WarehouseName, Location, Notes FROM Warehouses WHERE {(activeOnly ? "IsActive = 1 AND " : "")}WarehouseID IN ({inClause}) ORDER BY WarehouseID";
+                return DbHelper.Query(sql);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Session.GetAllowedWarehouses", ex);
+                return DbHelper.Query("SELECT WarehouseID, WarehouseName, Location, Notes FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
+            }
+        }
+
+        /// <summary>
+        /// الحصول على شريحة السعر الافتراضية للموظف (قطاعي / نصف جملة / جملة)
+        /// </summary>
+        public static string GetDefaultPriceTier()
+        {
+            return !string.IsNullOrWhiteSpace(DefaultPriceTier) ? DefaultPriceTier.Trim() : "قطاعي";
+        }
+
         public static bool CanSellCash { get; set; }
         public static bool CanSellCredit { get; set; }
         public static bool CanSellVisa { get; set; }
@@ -687,6 +805,7 @@ namespace ChickenDist.Core
         {
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
             DefaultSafeID = null; AllowedSafeIDs = "";
+            DefaultWarehouseID = null; AllowedWarehouseIDs = ""; DefaultPriceTier = "قطاعي";
             CanSellCash = true; CanSellCredit = true; CanSellVisa = true; CanSellDriverLoad = true; CanSellInstallment = true;
             CanEditShippingCharge = true;
             CanSelectDriver = true;

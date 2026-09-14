@@ -469,12 +469,20 @@ namespace ChickenDist.Forms
             cboSupplier.SelectedIndexChanged += (s, e) => LoadPurchasesGrid();
 
             // المخازن
-            var dtWh = WarehouseDAL.GetAll(true);
+            var dtWh = Session.GetAllowedWarehouses(true);
             cboWarehouse.Items.Clear();
-            foreach (DataRow r in dtWh.Rows)
-                cboWarehouse.Items.Add(new ComboItem((int)r["WarehouseID"], r["WarehouseName"].ToString()));
+            int defWhId = Session.GetDefaultWarehouseID();
+            int selIdx = 0;
+            for (int i = 0; i < dtWh.Rows.Count; i++)
+            {
+                int wid = Convert.ToInt32(dtWh.Rows[i]["WarehouseID"]);
+                string wname = dtWh.Rows[i]["WarehouseName"].ToString();
+                cboWarehouse.Items.Add(new ComboItem(wid, wname));
+                if (wid == defWhId) selIdx = i;
+            }
             cboWarehouse.DisplayMember = "Text";
-            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
+            cboWarehouse.Enabled = Session.IsAdmin || dtWh.Rows.Count > 1;
 
             // جميع الأصناف للمرتجع العام
             var dtProd = ProductDAL.GetAll(true);
@@ -911,7 +919,7 @@ namespace ChickenDist.Forms
 
             int purchaseID = isGeneral ? 0 : _selectedPurchaseID;
             int? supplierID = (cboSupplier.SelectedItem is ComboItem cs && cs.ID > 0) ? (int?)cs.ID : null;
-            int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : 1;
+            int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : Session.GetDefaultWarehouseID();
             
             string returnType = "Credit";
             if (cboReturnType.SelectedIndex == 1 || cboReturnType.Text.Contains("Cash") || cboReturnType.Text.Contains("نقدي"))

@@ -446,12 +446,19 @@ namespace ChickenDist.Forms
             try
             {
                 cboWarehouse.Items.Clear();
-                DataTable dtW = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
-                foreach (DataRow r in dtW.Rows)
+                DataTable dtW = Session.GetAllowedWarehouses(true);
+                int defWhId = Session.GetDefaultWarehouseID();
+                int selIdx = 0;
+                for (int i = 0; i < dtW.Rows.Count; i++)
                 {
-                    cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+                    int wid = Convert.ToInt32(dtW.Rows[i]["WarehouseID"]);
+                    string wname = dtW.Rows[i]["WarehouseName"].ToString();
+                    cboWarehouse.Items.Add(new ComboItem(wid, wname));
+                    if (wid == defWhId) selIdx = i;
                 }
-                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+                cboWarehouse.DisplayMember = "Text";
+                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
+                cboWarehouse.Enabled = Session.IsAdmin || dtW.Rows.Count > 1;
             }
             catch { }
 
@@ -485,8 +492,19 @@ namespace ChickenDist.Forms
             txtNotes.Text = "";
             txtProductCode.Clear();
             if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
-            if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
-            SelectTier("قطاعي");
+            if (cboWarehouse.Items.Count > 0)
+            {
+                int defWhId = Session.GetDefaultWarehouseID();
+                for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                {
+                    if (cboWarehouse.Items[i] is ComboItem ci && ci.ID == defWhId)
+                    {
+                        cboWarehouse.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            SelectTier(Session.GetDefaultPriceTier());
             RecalculateTotals();
             txtProductCode.Focus();
 
@@ -745,7 +763,7 @@ namespace ChickenDist.Forms
         private int? GetSelectedWarehouseID()
         {
             if (cboWarehouse.SelectedItem is ComboItem w && w.ID > 0) return w.ID;
-            return null;
+            return Session.GetDefaultWarehouseID();
         }
 
         private bool SaveQuote(bool isSilent = false)

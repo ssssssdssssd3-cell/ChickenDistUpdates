@@ -24,6 +24,11 @@ namespace ChickenDist.Forms
         private CheckedListBox clbAllowedSafes;
         private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge, chkCanSelectDriver;
 
+        // حقول إدارة المخازن وشريحة السعر
+        private ComboBox cboDefaultWarehouse;
+        private CheckedListBox clbAllowedWarehouses;
+        private ComboBox cboDefaultPriceTier;
+
         // حقول إدارة الدوام والشيفتات
         private DateTimePicker dtpWorkStartTime, dtpWorkEndTime;
         private NumericUpDown numGracePeriod;
@@ -241,16 +246,19 @@ namespace ChickenDist.Forms
             var tabShift = new TabPage("🕒 مواعيد الدوام والشيفت");
             var tabFinancial = new TabPage("💰 الراتب والعمولات");
             var tabSafes = new TabPage("🏦 الخزائن والصلاحيات");
+            var tabWarehouses = new TabPage("🏪 المخازن والتسعير");
 
             BuildBasicTab(tabBasic);
             BuildShiftTab(tabShift);
             BuildFinancialTab(tabFinancial);
             BuildSafesTab(tabSafes);
+            BuildWarehousesTab(tabWarehouses);
 
             tabDetails.TabPages.Add(tabBasic);
             tabDetails.TabPages.Add(tabShift);
             tabDetails.TabPages.Add(tabFinancial);
             tabDetails.TabPages.Add(tabSafes);
+            tabDetails.TabPages.Add(tabWarehouses);
             Theme.StyleTabControl(tabDetails);
 
             pnlDetailsCard.Controls.Add(tabDetails);
@@ -263,6 +271,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlTopHeader);
 
             LoadSafesList();
+            LoadWarehousesList();
             Theme.ApplyFormRTL(this);
         }
 
@@ -469,6 +478,76 @@ namespace ChickenDist.Forms
             y += 28;
             chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(250, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
             tab.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellInstallment, chkCanSellDriverLoad, chkCanSelectDriver, chkCanEditShippingCharge });
+        }
+
+        private void BuildWarehousesTab(TabPage tab)
+        {
+            tab.BackColor = Theme.BgCard;
+            tab.AutoScroll = true;
+            int y = 15;
+
+            // 1. مخزن المبيعات الافتراضي
+            tab.Controls.Add(new Label { Text = "مخزن المبيعات الافتراضي:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            cboDefaultWarehouse = new ComboBox { Location = new Point(20, y), Width = 280, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            tab.Controls.Add(cboDefaultWarehouse);
+            y += 42;
+
+            // 2. شريحة البيع الافتراضية
+            tab.Controls.Add(new Label { Text = "شريحة البيع الافتراضية:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            cboDefaultPriceTier = new ComboBox { Location = new Point(20, y), Width = 280, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            cboDefaultPriceTier.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
+            cboDefaultPriceTier.SelectedIndex = 0;
+            tab.Controls.Add(cboDefaultPriceTier);
+            y += 46;
+
+            // 3. المخازن المصرح بها للبيع والشراء
+            var lblAllowedWh = new Label { Text = "المخازن المصرح بالتعامل عليها (بيع وشراء):", Location = new Point(190, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Primary };
+            tab.Controls.Add(lblAllowedWh);
+            y += 24;
+
+            clbAllowedWarehouses = new CheckedListBox { Location = new Point(20, y), Width = 450, Height = 110, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 9.5f) };
+            tab.Controls.Add(clbAllowedWarehouses);
+            y += 116;
+
+            // أزرار تحديد سريع
+            var pnlQuickWh = new FlowLayoutPanel { Location = new Point(20, y), Size = new Size(450, 32), FlowDirection = FlowDirection.RightToLeft, BackColor = Color.Transparent };
+            var btnCheckAllWh = Theme.MakeButton("✔️ تحديد الكل", 0, 0, 100, 28, Color.FromArgb(40, 140, 70));
+            btnCheckAllWh.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnCheckAllWh.Click += (s, e) =>
+            {
+                for (int i = 0; i < clbAllowedWarehouses.Items.Count; i++)
+                    clbAllowedWarehouses.SetItemChecked(i, true);
+            };
+
+            var btnUncheckAllWh = Theme.MakeButton("❌ إلغاء التحديد", 0, 0, 100, 28, Color.FromArgb(160, 50, 50));
+            btnUncheckAllWh.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnUncheckAllWh.Click += (s, e) =>
+            {
+                for (int i = 0; i < clbAllowedWarehouses.Items.Count; i++)
+                    clbAllowedWarehouses.SetItemChecked(i, false);
+            };
+
+            pnlQuickWh.Controls.Add(btnCheckAllWh);
+            pnlQuickWh.Controls.Add(btnUncheckAllWh);
+            tab.Controls.Add(pnlQuickWh);
+            y += 36;
+
+            // توضيح للمستخدم
+            var lblHint = new Label
+            {
+                Text = "💡 توضيح الصلاحيات:\n" +
+                       "• تحديد مخزن واحد فقط: يتم تقييد الموظف بالبيع والشراء من هذا المخزن فقط وتُقفل القائمة.\n" +
+                       "• تحديد أكثر من مخزن: يتمكن الموظف من التبديل بين المخازن المصرح بها فقط.\n" +
+                       "• عدم تحديد أي مخزن: يُلزم بالمخزن الافتراضي فقط (أو كل المخازن لمدير النظام).",
+                Location = new Point(20, y),
+                Size = new Size(450, 85),
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = Color.FromArgb(100, 116, 139),
+                BackColor = Color.FromArgb(241, 245, 249),
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(6)
+            };
+            tab.Controls.Add(lblHint);
         }
 
         private void AddModernField(Control parent, string label, ref int y, out TextBox txt, bool isPassword = false)
@@ -692,6 +771,34 @@ namespace ChickenDist.Forms
                 }
             }
 
+            // Default Warehouse
+            int defaultWhId = dr.Table.Columns.Contains("DefaultWarehouseID") && dr["DefaultWarehouseID"] != DBNull.Value ? Convert.ToInt32(dr["DefaultWarehouseID"]) : 0;
+            cboDefaultWarehouse.SelectedIndex = 0;
+            for (int i = 0; i < cboDefaultWarehouse.Items.Count; i++)
+            {
+                if (cboDefaultWarehouse.Items[i] is ComboItem item && item.ID == defaultWhId)
+                {
+                    cboDefaultWarehouse.SelectedIndex = i;
+                    break;
+                }
+            }
+
+            // Allowed Warehouses
+            string allowedWhStr = dr.Table.Columns.Contains("AllowedWarehouseIDs") && dr["AllowedWarehouseIDs"] != DBNull.Value ? dr["AllowedWarehouseIDs"].ToString() : "";
+            var allowedWhIds = new System.Collections.Generic.HashSet<string>(allowedWhStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
+            for (int i = 0; i < clbAllowedWarehouses.Items.Count; i++)
+            {
+                if (clbAllowedWarehouses.Items[i] is ComboItem item)
+                {
+                    bool shouldCheck = allowedWhIds.Contains(item.ID.ToString());
+                    clbAllowedWarehouses.SetItemChecked(i, shouldCheck);
+                }
+            }
+
+            // Default Price Tier
+            string priceTier = dr.Table.Columns.Contains("DefaultPriceTier") && dr["DefaultPriceTier"] != DBNull.Value ? dr["DefaultPriceTier"].ToString() : "قطاعي";
+            cboDefaultPriceTier.Text = string.IsNullOrWhiteSpace(priceTier) ? "قطاعي" : priceTier.Trim();
+
             // Selling Permissions Checkboxes
             chkCanSellCash.Checked = dr["CanSellCash"] == DBNull.Value || Convert.ToBoolean(dr["CanSellCash"]);
             chkCanSellCredit.Checked = dr["CanSellCredit"] == DBNull.Value || Convert.ToBoolean(dr["CanSellCredit"]);
@@ -728,6 +835,14 @@ namespace ChickenDist.Forms
             {
                 clbAllowedSafes.SetItemChecked(i, false);
             }
+
+            if (cboDefaultWarehouse != null && cboDefaultWarehouse.Items.Count > 0) cboDefaultWarehouse.SelectedIndex = 0;
+            if (clbAllowedWarehouses != null)
+            {
+                for (int i = 0; i < clbAllowedWarehouses.Items.Count; i++)
+                    clbAllowedWarehouses.SetItemChecked(i, false);
+            }
+            if (cboDefaultPriceTier != null && cboDefaultPriceTier.Items.Count > 0) cboDefaultPriceTier.SelectedIndex = 0;
             chkCanSellCash.Checked = true;
             chkCanSellCredit.Checked = true;
             chkCanSellVisa.Checked = true;
@@ -765,6 +880,26 @@ namespace ChickenDist.Forms
             }
             string allowedSafeIDs = string.Join(",", allowedList);
 
+            int? defaultWarehouseID = null;
+            if (cboDefaultWarehouse != null && cboDefaultWarehouse.SelectedItem is ComboItem whItem && whItem.ID > 0)
+            {
+                defaultWarehouseID = whItem.ID;
+            }
+
+            var allowedWhList = new System.Collections.Generic.List<string>();
+            if (clbAllowedWarehouses != null)
+            {
+                for (int i = 0; i < clbAllowedWarehouses.CheckedItems.Count; i++)
+                {
+                    if (clbAllowedWarehouses.CheckedItems[i] is ComboItem item)
+                    {
+                        allowedWhList.Add(item.ID.ToString());
+                    }
+                }
+            }
+            string allowedWarehouseIDs = string.Join(",", allowedWhList);
+            string defaultPriceTier = (cboDefaultPriceTier != null && !string.IsNullOrWhiteSpace(cboDefaultPriceTier.Text)) ? cboDefaultPriceTier.Text.Trim() : "قطاعي";
+
             decimal.TryParse(txtSalary.Text.Trim(), out decimal sal);
             decimal.TryParse(txtDailyHours.Text.Trim(), out decimal dwh);
             if (dwh <= 0) dwh = 8;
@@ -786,7 +921,8 @@ namespace ChickenDist.Forms
                     chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked, chkCanEditShippingCharge.Checked,
                     chkCanSelectDriver.Checked, chkCanSellVisa.Checked,
                     sal, dwh, hourlyRate, crate, target, jobTitle, null, nationalID,
-                    workStartTime, workEndTime, gracePeriod);
+                    workStartTime, workEndTime, gracePeriod,
+                    defaultWarehouseID, allowedWarehouseIDs, defaultPriceTier);
                 if (id > 0) { MessageBox.Show("✅ تم حفظ بيانات الموظف بنجاح"); _selectedID = id; LoadEmployees(); }
                 else MessageBox.Show("❌ فشل الحفظ");
             }
@@ -825,6 +961,31 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("LoadSafesList failed", ex);
+            }
+        }
+
+        private void LoadWarehousesList()
+        {
+            try
+            {
+                DataTable dtWh = WarehouseDAL.GetAll(activeOnly: true);
+                cboDefaultWarehouse.Items.Clear();
+                cboDefaultWarehouse.Items.Add(new ComboItem(0, "--- بدون تحديد (المخزن الافتراضي للنظام) ---"));
+                clbAllowedWarehouses.Items.Clear();
+                foreach (DataRow r in dtWh.Rows)
+                {
+                    int id = Convert.ToInt32(r["WarehouseID"]);
+                    string name = r["WarehouseName"].ToString();
+                    var item = new ComboItem(id, name);
+                    cboDefaultWarehouse.Items.Add(item);
+                    clbAllowedWarehouses.Items.Add(item);
+                }
+                cboDefaultWarehouse.DisplayMember = "Text";
+                cboDefaultWarehouse.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadWarehousesList failed", ex);
             }
         }
 

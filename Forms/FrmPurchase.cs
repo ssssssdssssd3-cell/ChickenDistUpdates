@@ -1701,15 +1701,21 @@ namespace ChickenDist.Forms
             // المخازن
             try
             {
-                var whDt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
+                var whDt = Session.GetAllowedWarehouses(true);
                 cboWarehouse.BeginUpdate();
                 cboWarehouse.Items.Clear();
-                List<ComboItem> warehouseItems = new List<ComboItem>();
-                foreach (DataRow whRow in whDt.Rows)
-                    warehouseItems.Add(new ComboItem(Convert.ToInt32(whRow["WarehouseID"]), whRow["WarehouseName"].ToString()));
-                cboWarehouse.Items.AddRange(warehouseItems.ToArray());
+                int defWhId = Session.GetDefaultWarehouseID();
+                int selIdx = 0;
+                for (int i = 0; i < whDt.Rows.Count; i++)
+                {
+                    int wid = Convert.ToInt32(whDt.Rows[i]["WarehouseID"]);
+                    string wname = whDt.Rows[i]["WarehouseName"].ToString();
+                    cboWarehouse.Items.Add(new ComboItem(wid, wname));
+                    if (wid == defWhId) selIdx = i;
+                }
                 cboWarehouse.DisplayMember = "Text";
-                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
+                cboWarehouse.Enabled = Session.IsAdmin || whDt.Rows.Count > 1;
                 cboWarehouse.EndUpdate();
             }
             catch { /* تجاهل لو مافيش مخازن */ }
@@ -2702,6 +2708,20 @@ namespace ChickenDist.Forms
             RefreshGrid();
             if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
             if (cboProduct.Items.Count  > 0) cboProduct.SelectedIndex  = 0;
+            if (cboWarehouse != null && cboWarehouse.Items.Count > 0)
+            {
+                int defWhId = Session.GetDefaultWarehouseID();
+                for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                {
+                    if (cboWarehouse.Items[i] is ComboItem ci && ci.ID == defWhId)
+                    {
+                        cboWarehouse.SelectedIndex = i;
+                        break;
+                    }
+                }
+                var whDt = Session.GetAllowedWarehouses(true);
+                cboWarehouse.Enabled = Session.IsAdmin || whDt.Rows.Count > 1;
+            }
             txtNotes.Clear();
             if (txtSupplierInvoiceNo != null) txtSupplierInvoiceNo.Clear();
             if (txtShippingCost != null) txtShippingCost.Text = "0";

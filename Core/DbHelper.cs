@@ -484,7 +484,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 36;
+        private const int CurrentSchemaVersion = 37;
 
         public static void EnsureAppSettingsTable()
         {
@@ -3893,6 +3893,25 @@ namespace ChickenDist.Core
                 WHERE PaidAmount = 0 AND PurchaseType = 'Cash';
                 UPDATE Purchases SET PaidAmount = 0, RemainingAmount = TotalAmount
                 WHERE PaidAmount = 0 AND RemainingAmount = 0 AND PurchaseType = 'Credit';");
+
+                // ── إعدادات المخازن وشريحة السعر الافتراضية للموظف ──
+                SafeMigrate("Employees.DefaultWarehouseID", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'DefaultWarehouseID')
+                BEGIN
+                    ALTER TABLE Employees ADD DefaultWarehouseID INT NULL;
+                END");
+
+                SafeMigrate("Employees.AllowedWarehouseIDs", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'AllowedWarehouseIDs')
+                BEGIN
+                    ALTER TABLE Employees ADD AllowedWarehouseIDs NVARCHAR(250) NULL;
+                END");
+
+                SafeMigrate("Employees.DefaultPriceTier", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'DefaultPriceTier')
+                BEGIN
+                    ALTER TABLE Employees ADD DefaultPriceTier NVARCHAR(50) NULL DEFAULT N'قطاعي';
+                END");
 
                 // Save schema version to cache so subsequent launches skip inspection
                 try

@@ -793,6 +793,7 @@ namespace ChickenDist.Forms
 
 			pnlTierGroup.Controls.Add(tblTierButtons);
 			tblTierButtons.BringToFront();
+			SetTierButtons(Session.GetDefaultPriceTier());
 
 			tblOptions.Controls.Add(tblTypeAndShift, 0, 0);
 			tblOptions.Controls.Add(pnlTierGroup, 1, 0);
@@ -2254,8 +2255,9 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        if (_selectedTier != "قطاعي")
-                            SetTierButtons("قطاعي");
+                        string defEmpTier = Session.GetDefaultPriceTier();
+                        if (_selectedTier != defEmpTier)
+                            SetTierButtons(defEmpTier);
                     }
 
                     // تطبيق طريقة الدفع الافتراضية للعميل (كاش أو آجل)
@@ -2292,8 +2294,9 @@ namespace ChickenDist.Forms
                     if (txtClientAddress != null)
                         txtClientAddress.Text = "";
 
-                    if (_selectedTier != "قطاعي")
-                        SetTierButtons("قطاعي");
+                    string defEmpTier = Session.GetDefaultPriceTier();
+                    if (_selectedTier != defEmpTier)
+                        SetTierButtons(defEmpTier);
                     this.BackColor = Theme.BgMain;
                     pnlItems.Enabled = true;
                     btnSave.Enabled = true;
@@ -2458,22 +2461,32 @@ namespace ChickenDist.Forms
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType(GetDefaultAllowedInvoiceType());
 
-			// تحميل المخازن
+			// تحميل المخازن المصرح بها للموظف وتحديد المخزن الافتراضي
 			try
 			{
-				var whDt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive=1 ORDER BY WarehouseID");
+				var whDt = Session.GetAllowedWarehouses(true);
 				cboWarehouse.Items.Clear();
 				cboWarehouse.DisplayMember = "Text";
 				cboWarehouse.ValueMember = "Value";
-				foreach (DataRow whRow in whDt.Rows)
+				int defWhId = Session.GetDefaultWarehouseID();
+				int selectedWhIndex = 0;
+				for (int i = 0; i < whDt.Rows.Count; i++)
 				{
+					DataRow whRow = whDt.Rows[i];
+					int wid = Convert.ToInt32(whRow["WarehouseID"]);
 					cboWarehouse.Items.Add(new ComboItem(
-						Convert.ToInt32(whRow["WarehouseID"]),
+						wid,
 						whRow["WarehouseName"].ToString()
 					));
+					if (wid == defWhId)
+						selectedWhIndex = i;
 				}
 				cboWarehouse.DisplayMember = "Text";
-				if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+				if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selectedWhIndex;
+
+				// إذا كان متاحاً له مخزن واحد فقط وهو ليس مديراً، تُقفل القائمة
+				cboWarehouse.Enabled = Session.IsAdmin || whDt.Rows.Count > 1;
+
 				cboWarehouse.SelectedIndexChanged += (s, e) =>
 				{
 					foreach (var item in _items)
@@ -7556,7 +7569,16 @@ namespace ChickenDist.Forms
 			nudQty.Value = 1m;
 			if (nudCratesOut != null) nudCratesOut.Value = 0;
 			if (nudCratesIn != null) nudCratesIn.Value = 0;
-			SetTierButtons("قطاعي");
+			SetTierButtons(Session.GetDefaultPriceTier());
+			int defWhId = Session.GetDefaultWarehouseID();
+			for (int i = 0; i < cboWarehouse.Items.Count; i++)
+			{
+				if (cboWarehouse.Items[i] is ComboItem wci && wci.ID == defWhId)
+				{
+					cboWarehouse.SelectedIndex = i;
+					break;
+				}
+			}
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType(GetDefaultAllowedInvoiceType());
 			Text = "شاشة المبيعات";
