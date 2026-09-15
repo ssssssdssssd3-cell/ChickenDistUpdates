@@ -125,6 +125,8 @@ namespace ChickenDist.Forms
 		private Button btnCustomizeCols; // زر تخصيص الأعمدة
 		private int _pendingRowIdx = -1; // سطر إدخال الكود المعلق
 		private bool _searchSessionActive = false; // جلسة البحث السريع
+		private bool _isRefreshingGrid = false; // مانع تشغيل CellEndEdit أثناء تحديث الجدول
+		private bool _isProcessingScan = false; // مانع تداخل أحداث الجدول أثناء قراءة الاسكنر
 		private Label lblCratesOut;
 		private NumericUpDown nudCratesOut;
 		private Label lblCratesIn;
@@ -1567,7 +1569,7 @@ namespace ChickenDist.Forms
 			if (!char.IsControl(e.KeyChar))
 			{
 				double gap = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
-				if (gap > 120)
+				if (gap > 200)
 				{
 					_barcodeBuffer = "";
 					_barcodeStartTime = DateTime.Now;
@@ -1614,78 +1616,73 @@ namespace ChickenDist.Forms
 			_lastScannedBarcode = code;
 			_lastScanTime = DateTime.Now;
 
-			var dt = ProductDAL.FindByCode(code);
-			if (dt != null && dt.Rows.Count > 0)
+			_isProcessingScan = true;
+			try
 			{
-				int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-				int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
-				string defUnit = dt.Rows[0].Table.Columns.Contains("DefaultSaleUnit") && dt.Rows[0]["DefaultSaleUnit"] != DBNull.Value 
-					? dt.Rows[0]["DefaultSaleUnit"].ToString() : "";
-				if (matchedUnit == 3 && !string.IsNullOrEmpty(defUnit))
+				var dt = ProductDAL.FindByCode(code);
+				if (dt != null && dt.Rows.Count > 0)
 				{
-					if (defUnit == "الصغرى" && dt.Rows[0].Table.Columns.Contains("Unit1Name") && dt.Rows[0]["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit1Name"].ToString()))
-					{
-						matchedUnit = 1;
-					}
-					else if (defUnit == "الوسطى" && dt.Rows[0].Table.Columns.Contains("Unit2Name") && dt.Rows[0]["Unit2Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit2Name"].ToString()))
-					{
-						matchedUnit = 2;
-					}
-				}
+					int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+					int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
 
-				decimal price = 0m;
-				string unitName = "";
-				if (matchedUnit == 1)
-				{
-					price = dt.Rows[0]["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]) : 0m;
-					unitName = dt.Rows[0]["Unit1Name"]?.ToString();
-				}
-				else if (matchedUnit == 2)
-				{
-					price = dt.Rows[0]["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]) : 0m;
-					unitName = dt.Rows[0]["Unit2Name"]?.ToString();
+					decimal price = 0m;
+					string unitName = "";
+					if (matchedUnit == 1)
+					{
+						price = dt.Rows[0]["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]) : 0m;
+						unitName = dt.Rows[0]["Unit1Name"]?.ToString();
+					}
+					else if (matchedUnit == 2)
+					{
+						price = dt.Rows[0]["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]) : 0m;
+						unitName = dt.Rows[0]["Unit2Name"]?.ToString();
+					}
+					else
+					{
+						price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
+						unitName = dt.Rows[0]["Unit"]?.ToString();
+					}
+					if (price <= 0 && matchedUnit == 3) price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
+					if (string.IsNullOrEmpty(unitName)) unitName = dt.Rows[0]["Unit"]?.ToString();
+
+					// إزالة السطر المعلق إن وجد وفوق الأصناف الفعلية
+					if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+					{
+						dgItems.Rows.RemoveAt(_pendingRowIdx);
+						_pendingRowIdx = -1;
+					}
+
+					decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : 1.00m;
+					AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
+
+					try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+
+					if (txtBarcode != null)
+					{
+						txtBarcode.Clear();
+						this.ActiveControl = txtBarcode;
+						txtBarcode.Focus();
+						txtBarcode.SelectAll();
+					}
+					else
+					{
+						AddNewCodeRow();
+					}
 				}
 				else
 				{
-					price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
-					unitName = dt.Rows[0]["Unit"]?.ToString();
-				}
-				if (price <= 0 && matchedUnit == 3) price = Convert.ToDecimal(dt.Rows[0]["SalePrice"]);
-				if (string.IsNullOrEmpty(unitName)) unitName = dt.Rows[0]["Unit"]?.ToString();
-
-				// إزالة السطر المعلق إن وجد وفوق الأصناف الفعلية
-				if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
-				{
-					dgItems.Rows.RemoveAt(_pendingRowIdx);
-					_pendingRowIdx = -1;
-				}
-
-				decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : 1.00m;
-				AddOrUpdateProduct(productID, itemQty, price > 0 ? price : (decimal?)null, false, unitName, scannedBarcode: code);
-
-				try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
-
-				if (txtBarcode != null)
-				{
-					txtBarcode.Clear();
-					this.ActiveControl = txtBarcode;
-					txtBarcode.Focus();
-					txtBarcode.SelectAll();
-				}
-				else
-				{
-					AddNewCodeRow();
+					MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					if (txtBarcode != null)
+					{
+						txtBarcode.SelectAll();
+						this.ActiveControl = txtBarcode;
+						txtBarcode.Focus();
+					}
 				}
 			}
-			else
+			finally
 			{
-				MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-				if (txtBarcode != null)
-				{
-					txtBarcode.SelectAll();
-					this.ActiveControl = txtBarcode;
-					txtBarcode.Focus();
-				}
+				_isProcessingScan = false;
 			}
 		}
 
@@ -1695,7 +1692,7 @@ namespace ChickenDist.Forms
 			if ((keyData == Keys.Enter || keyData == Keys.Return) && !string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
 			{
 				double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
-				if (totalMs < _barcodeBuffer.Length * 80 + 250)
+				if (totalMs < _barcodeBuffer.Length * 150 + 300)
 				{
 					string scannedCode = _barcodeBuffer.Trim();
 					_barcodeBuffer = "";
@@ -2916,6 +2913,13 @@ namespace ChickenDist.Forms
 				if (dgItems.IsCurrentCellInEditMode) dgItems.CancelEdit();
 				dgItems.EndEdit();
 
+				// إزالة السطر المعلق مسبقاً قبل فتح نافذة البحث لمنع أي تداخل مع الكود
+				if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
+				{
+					dgItems.Rows.RemoveAt(_pendingRowIdx);
+					_pendingRowIdx = -1;
+				}
+
 				string lastSearchText = "";
 				while (true)
 				{
@@ -3296,11 +3300,18 @@ namespace ChickenDist.Forms
 			// معالجة خلية كود الصنف (السطر المعلق)
 			if (e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "CodeEntry")
 			{
+				// تجاهل الحدث أثناء تحديث الجدول أو أثناء جلسة البحث أو أثناء معالجة الاسكنر
+				if (_isRefreshingGrid || _searchSessionActive || _isProcessingScan) return;
+				if (e.RowIndex < 0 || e.RowIndex >= dgItems.Rows.Count) return;
+				if (e.RowIndex < _items.Count) return; // سطر صنف عادي وليس سطر إدخال
+				if (e.RowIndex != _pendingRowIdx) return; // ليس السطر المعلق
+
 				string code = dgItems.Rows[e.RowIndex].Cells["CodeEntry"].Value?.ToString()?.Trim() ?? "";
 				int rowIdx  = e.RowIndex;
 				int capturedPending = _pendingRowIdx;
 				this.BeginInvoke((MethodInvoker)delegate
 				{
+					if (_isRefreshingGrid || _searchSessionActive || _isProcessingScan) return;
 					if (string.IsNullOrEmpty(code))
 					{
 						// كود فارغ → حذف السطر المعلق فقط إذا كان هو السطر المعلق ولم يُستبدل بأصناف
@@ -3316,19 +3327,6 @@ namespace ChickenDist.Forms
 					{
 						int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
 						int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
-						string defUnit = dt.Rows[0].Table.Columns.Contains("DefaultSaleUnit") && dt.Rows[0]["DefaultSaleUnit"] != DBNull.Value 
-							? dt.Rows[0]["DefaultSaleUnit"].ToString() : "";
-						if (matchedUnit == 3 && !string.IsNullOrEmpty(defUnit))
-						{
-							if (defUnit == "الصغرى" && dt.Rows[0].Table.Columns.Contains("Unit1Name") && dt.Rows[0]["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit1Name"].ToString()))
-							{
-								matchedUnit = 1;
-							}
-							else if (defUnit == "الوسطى" && dt.Rows[0].Table.Columns.Contains("Unit2Name") && dt.Rows[0]["Unit2Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit2Name"].ToString()))
-							{
-								matchedUnit = 2;
-							}
-						}
 
 						decimal price = 0m;
 						string unitName = "";
@@ -3618,6 +3616,9 @@ namespace ChickenDist.Forms
 
 		private void RefreshGrid()
 		{
+			_isRefreshingGrid = true;
+			try
+			{
 			if (dgItems.IsCurrentCellInEditMode)
 			{
 				dgItems.CancelEdit();
@@ -3782,6 +3783,11 @@ namespace ChickenDist.Forms
 				dgItems.Update();
 			}
 			catch { }
+			}
+			finally
+			{
+				_isRefreshingGrid = false;
+			}
 		}
 
 		private void AddOrUpdateProduct(int productID, decimal qtyToAdd, decimal? manualPrice = null, bool deferRefresh = false, string unitName = null, string scannedBarcode = null, decimal discountPct = 0m, decimal discountAmt = 0m)

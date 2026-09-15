@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
-$VERSION   = "3.7.2";
+$VERSION   = "3.7.3";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -183,18 +183,23 @@ Write-OK "update.txt updated -> version=$VERSION"
 Write-Step "Git commit & push"
 Set-Location $REPO_ROOT
 
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+
 git add -A
 if ($LASTEXITCODE -ne 0) { Write-Fail "git add failed" }
 Write-OK "git add ok"
 
 $commitMsg = "deploy: v$VERSION - " + [System.DateTime]::Now.ToString("yyyy-MM-dd HH:mm")
 git commit -m $commitMsg
-if ($LASTEXITCODE -ne 0) { Write-Fail "git commit failed" }
-Write-OK "git commit ok"
+if ($LASTEXITCODE -ne 0) { Write-Host "  [INFO] git commit note or nothing to commit" }
+else { Write-OK "git commit ok" }
 
 git push origin main
 if ($LASTEXITCODE -ne 0) { Write-Fail "git push failed" }
 Write-OK "git push ok"
+
+$ErrorActionPreference = $prevEAP
 
 # Finish
 Write-Host ""

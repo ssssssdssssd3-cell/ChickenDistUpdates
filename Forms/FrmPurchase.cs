@@ -53,6 +53,9 @@ namespace ChickenDist.Forms
         private int _lastPurchaseID = 0;
         private bool _isDirty = false;
         private bool _isScanningBarcode = false;
+        private bool _isRefreshingGrid = false;
+        private bool _searchSessionActive = false;
+        private bool _isProcessingScan = false;
         private int _supplierId = 0;
         private decimal? _pendingBarcodeWeight = null;
         private decimal? _pendingScaleWeight = null; 
@@ -510,6 +513,16 @@ namespace ChickenDist.Forms
                 }
                 try
                 {
+                    _searchSessionActive = true;
+                    if (dgItems.IsCurrentCellInEditMode) dgItems.CancelEdit();
+                    dgItems.EndEdit();
+
+                    if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
+                    {
+                        dgItems.Rows.RemoveAt(_pendingRowIdx);
+                        _pendingRowIdx = -1;
+                    }
+
                     string lastSearchText = "";
                     while (true)
                     {
@@ -566,6 +579,7 @@ namespace ChickenDist.Forms
                 catch { }
                 finally
                 {
+                    _searchSessionActive = false;
                     if (txtBarcode != null)
                     {
                         this.BeginInvoke((MethodInvoker)delegate
@@ -1274,7 +1288,7 @@ namespace ChickenDist.Forms
             if (!char.IsControl(e.KeyChar))
             {
                 double gap = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
-                if (gap > 120)
+                if (gap > 200)
                 {
                     _barcodeBuffer = "";
                     _barcodeStartTime = DateTime.Now;
@@ -1292,7 +1306,7 @@ namespace ChickenDist.Forms
             if ((keyData == Keys.Enter || keyData == Keys.Return) && !string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
             {
                 double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
-                if (totalMs < _barcodeBuffer.Length * 80 + 250)
+                if (totalMs < _barcodeBuffer.Length * 150 + 300)
                 {
                     string scannedCode = _barcodeBuffer.Trim();
                     _barcodeBuffer = "";
@@ -1414,123 +1428,118 @@ namespace ChickenDist.Forms
             _lastScannedBarcode = code;
             _lastScanTime = DateTime.Now;
 
-            var dt = ProductDAL.FindByCode(code);
-            if (dt != null && dt.Rows.Count > 0)
+            _isProcessingScan = true;
+            try
             {
-                int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-                int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
-                string defUnit = dt.Rows[0].Table.Columns.Contains("DefaultSaleUnit") && dt.Rows[0]["DefaultSaleUnit"] != DBNull.Value 
-                    ? dt.Rows[0]["DefaultSaleUnit"].ToString() : "";
-                if (matchedUnit == 3 && !string.IsNullOrEmpty(defUnit))
+                var dt = ProductDAL.FindByCode(code);
+                if (dt != null && dt.Rows.Count > 0)
                 {
-                    if (defUnit == "الصغرى" && dt.Rows[0].Table.Columns.Contains("Unit1Name") && dt.Rows[0]["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit1Name"].ToString()))
+                    int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+                    int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
+
+                    string pCode = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
+                    string pName = dt.Rows[0]["ProductName"]?.ToString() ?? "";
+                    decimal majorCost = dt.Rows[0]["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["PurchasePrice"]) : 0m;
+                    decimal majorSale = dt.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["SalePrice"]) : 0m;
+                    decimal u2f = dt.Rows[0].Table.Columns.Contains("Unit2Factor") && dt.Rows[0]["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit2Factor"]) : 1m;
+                    decimal u3f = dt.Rows[0].Table.Columns.Contains("Unit3Factor") && dt.Rows[0]["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit3Factor"]) : 1m;
+                    if (u2f <= 0) u2f = 1m;
+                    if (u3f <= 0) u3f = 1m;
+                    decimal totalFactor = u2f * u3f;
+
+                    decimal pp = majorCost;
+                    decimal sp = majorSale;
+                    string selectedUnit = dt.Rows[0]["Unit"]?.ToString() ?? "";
+
+                    if (matchedUnit == 1)
                     {
-                        matchedUnit = 1;
+                        selectedUnit = dt.Rows[0]["Unit1Name"]?.ToString() ?? "";
+                        if (dt.Rows[0]["Unit1PurchasePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit1PurchasePrice"]) > 0)
+                            pp = Convert.ToDecimal(dt.Rows[0]["Unit1PurchasePrice"]);
+                        else if (totalFactor > 0)
+                            pp = Math.Round(majorCost / totalFactor, 2);
+
+                        if (dt.Rows[0]["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]) > 0)
+                            sp = Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]);
+                        else if (totalFactor > 0)
+                            sp = Math.Round(majorSale / totalFactor, 2);
                     }
-                    else if (defUnit == "الوسطى" && dt.Rows[0].Table.Columns.Contains("Unit2Name") && dt.Rows[0]["Unit2Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit2Name"].ToString()))
+                    else if (matchedUnit == 2)
                     {
-                        matchedUnit = 2;
+                        selectedUnit = dt.Rows[0]["Unit2Name"]?.ToString() ?? "";
+                        if (dt.Rows[0]["Unit2PurchasePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit2PurchasePrice"]) > 0)
+                            pp = Convert.ToDecimal(dt.Rows[0]["Unit2PurchasePrice"]);
+                        else if (u3f > 0)
+                            pp = Math.Round(majorCost / u3f, 2);
+
+                        if (dt.Rows[0]["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]) > 0)
+                            sp = Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]);
+                        else if (u3f > 0)
+                            sp = Math.Round(majorSale / u3f, 2);
                     }
-                }
 
-                string pCode = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
-                string pName = dt.Rows[0]["ProductName"]?.ToString() ?? "";
-                decimal majorCost = dt.Rows[0]["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["PurchasePrice"]) : 0m;
-                decimal majorSale = dt.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["SalePrice"]) : 0m;
-                decimal u2f = dt.Rows[0].Table.Columns.Contains("Unit2Factor") && dt.Rows[0]["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit2Factor"]) : 1m;
-                decimal u3f = dt.Rows[0].Table.Columns.Contains("Unit3Factor") && dt.Rows[0]["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["Unit3Factor"]) : 1m;
-                if (u2f <= 0) u2f = 1m;
-                if (u3f <= 0) u3f = 1m;
-                decimal totalFactor = u2f * u3f;
+                    if (string.IsNullOrEmpty(selectedUnit))
+                        selectedUnit = dt.Rows[0]["Unit"]?.ToString() ?? "";
 
-                decimal pp = majorCost;
-                decimal sp = majorSale;
-                string selectedUnit = dt.Rows[0]["Unit"]?.ToString() ?? "";
-
-                if (matchedUnit == 1)
-                {
-                    selectedUnit = dt.Rows[0]["Unit1Name"]?.ToString() ?? "";
-                    if (dt.Rows[0]["Unit1PurchasePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit1PurchasePrice"]) > 0)
-                        pp = Convert.ToDecimal(dt.Rows[0]["Unit1PurchasePrice"]);
-                    else if (totalFactor > 0)
-                        pp = Math.Round(majorCost / totalFactor, 2);
-
-                    if (dt.Rows[0]["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]) > 0)
-                        sp = Convert.ToDecimal(dt.Rows[0]["Unit1SalePrice"]);
-                    else if (totalFactor > 0)
-                        sp = Math.Round(majorSale / totalFactor, 2);
-                }
-                else if (matchedUnit == 2)
-                {
-                    selectedUnit = dt.Rows[0]["Unit2Name"]?.ToString() ?? "";
-                    if (dt.Rows[0]["Unit2PurchasePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit2PurchasePrice"]) > 0)
-                        pp = Convert.ToDecimal(dt.Rows[0]["Unit2PurchasePrice"]);
-                    else if (u3f > 0)
-                        pp = Math.Round(majorCost / u3f, 2);
-
-                    if (dt.Rows[0]["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]) > 0)
-                        sp = Convert.ToDecimal(dt.Rows[0]["Unit2SalePrice"]);
-                    else if (u3f > 0)
-                        sp = Math.Round(majorSale / u3f, 2);
-                }
-
-                if (string.IsNullOrEmpty(selectedUnit))
-                    selectedUnit = dt.Rows[0]["Unit"]?.ToString() ?? "";
-
-                // إزالة السطر المعلق إن وجد
-                if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
-                {
-                    dgItems.Rows.RemoveAt(_pendingRowIdx);
-                    _pendingRowIdx = -1;
-                }
-
-                decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value 
-                    ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : multiQty;
-
-                _isScanningBarcode = true;
-                try
-                {
-                    _pendingMatchedUnit = matchedUnit;
-                    AddProductToGrid(productID, pCode, pName, itemQty, pp, 0m, sp);
-
-                    if (!string.IsNullOrEmpty(selectedUnit) && _items.Count > 0)
+                    // إزالة السطر المعلق إن وجد
+                    if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
                     {
-                        var lastItem = _items.FindLast(i => i.ProductID == productID);
-                        if (lastItem != null)
+                        dgItems.Rows.RemoveAt(_pendingRowIdx);
+                        _pendingRowIdx = -1;
+                    }
+
+                    decimal itemQty = dt.Rows[0].Table.Columns.Contains("ParsedWeight") && dt.Rows[0]["ParsedWeight"] != DBNull.Value 
+                        ? Convert.ToDecimal(dt.Rows[0]["ParsedWeight"]) : multiQty;
+
+                    _isScanningBarcode = true;
+                    try
+                    {
+                        _pendingMatchedUnit = matchedUnit;
+                        AddProductToGrid(productID, pCode, pName, itemQty, pp, 0m, sp);
+
+                        if (!string.IsNullOrEmpty(selectedUnit) && _items.Count > 0)
                         {
-                            lastItem.UnitName = selectedUnit;
-                            RefreshGrid();
+                            var lastItem = _items.FindLast(i => i.ProductID == productID);
+                            if (lastItem != null)
+                            {
+                                lastItem.UnitName = selectedUnit;
+                                RefreshGrid();
+                            }
                         }
                     }
-                }
-                finally
-                {
-                    _isScanningBarcode = false;
-                }
+                    finally
+                    {
+                        _isScanningBarcode = false;
+                    }
 
-                try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
 
-                if (txtBarcode != null)
-                {
-                    txtBarcode.Clear();
-                    this.ActiveControl = txtBarcode;
-                    txtBarcode.Focus();
-                    txtBarcode.SelectAll();
+                    if (txtBarcode != null)
+                    {
+                        txtBarcode.Clear();
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                        txtBarcode.SelectAll();
+                    }
+                    else
+                    {
+                        AddNewCodeRow();
+                    }
                 }
                 else
                 {
-                    AddNewCodeRow();
+                    MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    if (txtBarcode != null)
+                    {
+                        txtBarcode.SelectAll();
+                        this.ActiveControl = txtBarcode;
+                        txtBarcode.Focus();
+                    }
                 }
             }
-            else
+            finally
             {
-                MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                if (txtBarcode != null)
-                {
-                    txtBarcode.SelectAll();
-                    this.ActiveControl = txtBarcode;
-                    txtBarcode.Focus();
-                }
+                _isProcessingScan = false;
             }
         }
 
@@ -1904,10 +1913,14 @@ namespace ChickenDist.Forms
             if (e.RowIndex == _pendingRowIdx && e.ColumnIndex >= 0
                 && dgItems.Columns[e.ColumnIndex].Name == "ProductCode")
             {
+                if (_isRefreshingGrid || _searchSessionActive || _isProcessingScan) return;
+                if (e.RowIndex < 0 || e.RowIndex >= dgItems.Rows.Count) return;
+
                 string code  = dgItems.Rows[e.RowIndex].Cells["ProductCode"].Value?.ToString()?.Trim() ?? "";
                 int rowIdx   = e.RowIndex;
                 this.BeginInvoke((MethodInvoker)delegate
                 {
+                    if (_isRefreshingGrid || _searchSessionActive || _isProcessingScan) return;
                     if (string.IsNullOrEmpty(code))
                     {
                         if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
@@ -1930,20 +1943,6 @@ namespace ChickenDist.Forms
                         else
                         {
                             _pendingMatchedUnit = 3; // Default to main/base unit
-                        }
-
-                        string defUnit = dt.Rows[0].Table.Columns.Contains("DefaultSaleUnit") && dt.Rows[0]["DefaultSaleUnit"] != DBNull.Value 
-                            ? dt.Rows[0]["DefaultSaleUnit"].ToString() : "";
-                        if (_pendingMatchedUnit == 3 && !string.IsNullOrEmpty(defUnit))
-                        {
-                            if (defUnit == "الصغرى" && dt.Rows[0].Table.Columns.Contains("Unit1Name") && dt.Rows[0]["Unit1Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit1Name"].ToString()))
-                            {
-                                _pendingMatchedUnit = 1;
-                            }
-                            else if (defUnit == "الوسطى" && dt.Rows[0].Table.Columns.Contains("Unit2Name") && dt.Rows[0]["Unit2Name"] != DBNull.Value && !string.IsNullOrEmpty(dt.Rows[0]["Unit2Name"].ToString()))
-                            {
-                                _pendingMatchedUnit = 2;
-                            }
                         }
 
                         decimal majorCost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0m;
@@ -2271,9 +2270,12 @@ namespace ChickenDist.Forms
         // تحديث الجدول
         private void RefreshGrid()
         {
-            _pendingRowIdx = -1;
-            dgItems.CellValueChanged -= DgItems_CellValueChanged;
-            dgItems.Rows.Clear();
+            _isRefreshingGrid = true;
+            try
+            {
+                _pendingRowIdx = -1;
+                dgItems.CellValueChanged -= DgItems_CellValueChanged;
+                dgItems.Rows.Clear();
             foreach (var item in _items)
             {
                 decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
@@ -2343,6 +2345,11 @@ namespace ChickenDist.Forms
             }
             dgItems.CellValueChanged += DgItems_CellValueChanged;
             RecalcTotals();
+            }
+            finally
+            {
+                _isRefreshingGrid = false;
+            }
         }
 
         private void HandleUnitChange(DataGridViewRow row, PurchaseItemDTO dto, string newUnit)
