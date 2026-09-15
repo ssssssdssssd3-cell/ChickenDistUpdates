@@ -1532,6 +1532,14 @@ namespace ChickenDist.Core
                     END
                 END");
 
+                SafeMigrate("Sales.FixCreditCashPaid", @"
+                IF OBJECT_ID('Sales', 'U') IS NOT NULL
+                BEGIN
+                    UPDATE Sales 
+                    SET CashPaid = 0 
+                    WHERE SaleType = 'Credit' AND CashPaid IS NOT NULL AND CashPaid > 0;
+                END");
+
                 SafeMigrate("Sales.VisaPaid", @"
                 IF OBJECT_ID('Sales', 'U') IS NOT NULL
                 BEGIN

@@ -4818,7 +4818,7 @@ namespace ChickenDist.Forms
 			string priceTier = _selectedTier ?? "قطاعي";
 
 			// ─── إشعار الدفع النقدي / المختلط ───
-			decimal paidAmount = net;
+			decimal paidAmount = (_invoiceType == "Credit" || _invoiceType == "DriverLoad" || _invoiceType == "Visa") ? 0m : net;
 			decimal? mixedCashPaid = null;
 			decimal? mixedVisaPaid = null;
 			int? mixedVisaAccountID = null;
@@ -4915,7 +4915,7 @@ namespace ChickenDist.Forms
 						net, txtNotes.Text, _items, discountAmount, discountPct,
 						isDraft: false, warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
 						loadedLastModified: _loadedLastModified, safeAccountID: safeAccountID, 
-						cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : paidAmount),
+						cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : (_invoiceType == "Credit" || _invoiceType == "DriverLoad" || _invoiceType == "Visa" ? 0m : paidAmount)),
 						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
 						visaAccountID: visaAccountID, 
 						visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
@@ -5003,7 +5003,7 @@ namespace ChickenDist.Forms
 					downPayment: downPayment, installmentCount: installmentCount,
 					installmentPeriod: installmentPeriod, startDate: startDate,
 					schedule: schedule, safeAccountID: safeAccountID, 
-					cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : paidAmount),
+					cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : (_invoiceType == "Credit" || _invoiceType == "DriverLoad" || _invoiceType == "Visa" ? 0m : paidAmount)),
 					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
 					visaAccountID: visaAccountID, 
 					visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
@@ -6554,8 +6554,10 @@ namespace ChickenDist.Forms
 					SELECT TOP 1 Credit, TransDate 
 					FROM ClientTransactions 
 					WHERE ClientID=@id AND TransType='Payment' AND Credit > 0
+					  AND (RefID IS NULL OR RefID <> @sid)
 					ORDER BY TransDate DESC, TransID DESC",
-					DbHelper.P("@id", clientID));
+					DbHelper.P("@id", clientID),
+					DbHelper.P("@sid", saleID));
 				if (lastPayDt.Rows.Count > 0)
 				{
 					lastPaymentAmt  = Convert.ToDecimal(lastPayDt.Rows[0]["Credit"]);
@@ -6649,7 +6651,7 @@ namespace ChickenDist.Forms
 			}
 
 			bool isCredit = saleRow["SaleType"].ToString() == "Credit";
-			decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : totalAmount;
+			decimal cashPaid = isCredit ? 0m : (saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : totalAmount);
 			decimal remainingFromInvoice = isCredit ? totalAmount : (totalAmount - cashPaid);
 
 			if (saleRow["ClientID"] != DBNull.Value)
@@ -6662,11 +6664,12 @@ namespace ChickenDist.Forms
 				sb.AppendLine($"▪ الرصيد السابق : {prevBalance:N2} ج.م");
 				if (isCredit)
 				{
-					sb.AppendLine($"▪ الفاتورة الحالية : {totalAmount:N2} ج.م");
+					sb.AppendLine($"▪ الفاتورة الحالية (آجل) : {totalAmount:N2} ج.م");
 					sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
 				}
 				else
 				{
+					sb.AppendLine($"▪ المدفوع نقداً : {cashPaid:N2} ج.م");
 					if (remainingFromInvoice > 0)
 					{
 						sb.AppendLine($"▪ متبقي الفاتورة الحالية : {remainingFromInvoice:N2} ج.م");
@@ -6678,7 +6681,10 @@ namespace ChickenDist.Forms
 						sb.AppendLine($"▪ إجمالي المستحق : {totalDue:N2} ج.م");
 					}
 				}
-				sb.AppendLine($"▪ مسدد اليوم : {todayPayments:N2} ج.م");
+				if (todayPayments > 0)
+				{
+					sb.AppendLine($"▪ مسدد اليوم : {todayPayments:N2} ج.م");
+				}
 				if (todayReturns > 0)
 				{
 					sb.AppendLine($"▪ مرتجع اليوم : {todayReturns:N2} ج.م");
@@ -6745,10 +6751,22 @@ namespace ChickenDist.Forms
 			sb.AppendLine($"🏷️ الفاتورة رقم: #{saleRow["SaleCode"]}");
 
 			decimal totalAmount = Convert.ToDecimal(saleRow["TotalAmount"]);
-			decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : (saleRow["SaleType"].ToString() == "Cash" ? totalAmount : 0m);
+			bool isCredit = saleRow["SaleType"].ToString() == "Credit";
+			decimal cashPaid = isCredit ? 0m : (saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : (saleRow["SaleType"].ToString() == "Cash" ? totalAmount : 0m));
 
 			sb.AppendLine($"💰 قيمة الفاتورة الحالية: {totalAmount:N2} ج.م");
-			sb.AppendLine($"💵 المسدد نقداً: {cashPaid:N2} ج.م");
+			if (isCredit)
+			{
+				sb.AppendLine("💳 نوع الفاتورة: آجل بالكامل (غير مسددة نقداً)");
+			}
+			else
+			{
+				sb.AppendLine($"💵 المسدد نقداً: {cashPaid:N2} ج.م");
+				if (totalAmount > cashPaid)
+				{
+					sb.AppendLine($"⏳ المتبقي من الفاتورة (آجل): {totalAmount - cashPaid:N2} ج.م");
+				}
+			}
 			sb.AppendLine($"📜 الرصيد السابق قبل الفاتورة: {prevBalance:N2} ج.م");
 			sb.AppendLine("--------------------------------");
 			sb.AppendLine($"✨ *صافي رصيد الحساب المالي المستحق: {actualCurrentBalance:N2} ج.م*");
@@ -6780,8 +6798,9 @@ namespace ChickenDist.Forms
 			decimal netVal = Convert.ToDecimal(saleRow["TotalAmount"]);
 			decimal discVal = saleRow.Table.Columns.Contains("DiscountAmount") && saleRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(saleRow["DiscountAmount"]) : 0m;
 			decimal grossVal = netVal + discVal;
-			decimal paidVal = saleRow.Table.Columns.Contains("CashPaid") && saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : (saleRow["SaleType"].ToString() == "Cash" ? netVal : 0m);
-			decimal remainVal = netVal - paidVal;
+			bool isCredit = saleRow["SaleType"].ToString() == "Credit";
+			decimal paidVal = isCredit ? 0m : (saleRow.Table.Columns.Contains("CashPaid") && saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : (saleRow["SaleType"].ToString() == "Cash" ? netVal : 0m));
+			decimal remainVal = isCredit ? netVal : (netVal - paidVal);
 			bool isDraft = saleRow.Table.Columns.Contains("IsDraft") && saleRow["IsDraft"] != DBNull.Value && Convert.ToBoolean(saleRow["IsDraft"]);
 
 			var sb = new System.Text.StringBuilder();
@@ -6817,10 +6836,17 @@ namespace ChickenDist.Forms
 				sb.AppendLine($"✂️ *قيمة الخصم:* {discVal:N2} ج.م");
 			}
 			sb.AppendLine($"💰 *صافي الفاتورة:* {netVal:N2} ج.م");
-			sb.AppendLine($"💸 *المدفوع نقداً:* {paidVal:N2} ج.م");
-			if (remainVal > 0)
+			if (isCredit)
 			{
-				sb.AppendLine($"⏳ *المتبقي من الفاتورة (آجل):* {remainVal:N2} ج.م");
+				sb.AppendLine("💳 *نوع الفاتورة:* آجل بالكامل (غير مسددة)");
+			}
+			else
+			{
+				sb.AppendLine($"💸 *المدفوع نقداً:* {paidVal:N2} ج.م");
+				if (remainVal > 0)
+				{
+					sb.AppendLine($"⏳ *المتبقي من الفاتورة (آجل):* {remainVal:N2} ج.م");
+				}
 			}
 			if (saleRow.Table.Columns.Contains("ClientID") && saleRow["ClientID"] != DBNull.Value)
 			{
@@ -7260,12 +7286,12 @@ namespace ChickenDist.Forms
 			{
 				financialLines = 2 + 1; // "الوضع المالي للحساب" header + "الرصيد السابق" + "الرصيد الحالي المستحق"
 				bool isCredit = saleRow["SaleType"].ToString() == "Credit";
-				decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : netVal;
+				decimal cashPaid = isCredit ? 0m : (saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : netVal);
 				decimal remainingFromInvoice = isCredit ? netVal : (netVal - cashPaid);
 
 				if (isCredit)
 				{
-					financialLines += 2; // "الفاتورة الحالية", "إجمالي المستحق"
+					financialLines += 2; // "الفاتورة الحالية (آجل)", "إجمالي المستحق"
 				}
 				else
 				{
@@ -7275,7 +7301,7 @@ namespace ChickenDist.Forms
 						financialLines += 2; // "متبقي الفاتورة"/"زيادة الفاتورة", "إجمالي المستحق"
 					}
 				}
-				financialLines += 1; // "مسدد اليوم"
+				if (todayPayments > 0) financialLines += 1; // "مسدد اليوم"
 				if (todayReturns > 0) financialLines += 1; // "مرتجع اليوم"
 
 				if (AppConfig.EnableCratesTracking)
@@ -7395,7 +7421,7 @@ namespace ChickenDist.Forms
 					if (showFinancial)
 					{
 						bool isCredit = saleRow["SaleType"].ToString() == "Credit";
-						decimal cashPaid = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : netVal;
+						decimal cashPaid = isCredit ? 0m : (saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : netVal);
 						decimal remainingFromInvoice = isCredit ? netVal : (netVal - cashPaid);
 
 						decimal totalDue = prevBalance + (isCredit ? netVal : remainingFromInvoice);
@@ -7411,7 +7437,7 @@ namespace ChickenDist.Forms
 
 						if (isCredit)
 						{
-							labelsList.Add("الفاتورة الحالية");
+							labelsList.Add("الفاتورة الحالية (آجل)");
 							valsList.Add($"{netVal:N2} ج.م");
 
 							labelsList.Add("إجمالي المستحق");
@@ -7440,8 +7466,11 @@ namespace ChickenDist.Forms
 							}
 						}
 
-						labelsList.Add("مسدد اليوم");
-						valsList.Add($"{todayPayments:N2} ج.م");
+						if (todayPayments > 0)
+						{
+							labelsList.Add("مسدد اليوم");
+							valsList.Add($"{todayPayments:N2} ج.م");
+						}
 
 						if (todayReturns > 0)
 						{

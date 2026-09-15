@@ -66,8 +66,8 @@ namespace ChickenDist.Core
                     {
                         prevBalance = ClientDAL.GetPreviousBalanceBeforeSale(clientID, saleID);
                         decimal netVal = Convert.ToDecimal(row["TotalAmount"]);
-                        bool isCredit = row["SaleType"].ToString() == "Credit";
-                        decimal cashPaid = row["CashPaid"] != DBNull.Value ? Convert.ToDecimal(row["CashPaid"]) : netVal;
+                        bool isCredit = row["SaleType"] != DBNull.Value && row["SaleType"].ToString() == "Credit";
+                        decimal cashPaid = isCredit ? 0m : (row["CashPaid"] != DBNull.Value ? Convert.ToDecimal(row["CashPaid"]) : netVal);
                         decimal rem = isCredit ? netVal : (netVal - cashPaid);
                         currentBalance = prevBalance + rem;
 
@@ -75,7 +75,8 @@ namespace ChickenDist.Core
                             SELECT TOP 1 Credit AS PaymentAmount, TransDate AS PaymentDate 
                             FROM ClientTransactions 
                             WHERE ClientID = @cid AND TransType = 'Payment' AND Credit > 0
-                            ORDER BY TransDate DESC, TransID DESC", DbHelper.P("@cid", clientID));
+                              AND (RefID IS NULL OR RefID <> @sid)
+                            ORDER BY TransDate DESC, TransID DESC", DbHelper.P("@cid", clientID), DbHelper.P("@sid", saleID));
                         if (dtLastPay.Rows.Count > 0)
                         {
                             lastPaymentAmt = Convert.ToDecimal(dtLastPay.Rows[0]["PaymentAmount"]);
@@ -87,10 +88,10 @@ namespace ChickenDist.Core
                 else
                 {
                     decimal netVal = Convert.ToDecimal(row["TotalAmount"]);
-                    bool isCredit = row["SaleType"].ToString() == "Credit";
-                    decimal cashPaid = row["CashPaid"] != DBNull.Value ? Convert.ToDecimal(row["CashPaid"]) : netVal;
+                    bool isCredit = row["SaleType"] != DBNull.Value && row["SaleType"].ToString() == "Credit";
+                    decimal cashPaid = isCredit ? 0m : (row["CashPaid"] != DBNull.Value ? Convert.ToDecimal(row["CashPaid"]) : netVal);
                     currentBalance = isCredit ? netVal : (netVal - cashPaid);
-                    if (cashPaid > 0)
+                    if (!isCredit && cashPaid > 0)
                     {
                         lastPaymentAmt = cashPaid;
                         lastPaymentDate = Convert.ToDateTime(row["SaleDate"]);
@@ -178,8 +179,9 @@ namespace ChickenDist.Core
                 int itemCount = dtItems != null ? dtItems.Rows.Count : 0;
                 bool showFinancial = row.Table.Columns.Contains("ClientID") && row["ClientID"] != DBNull.Value;
                 decimal netVal = Convert.ToDecimal(row["TotalAmount"]);
-                decimal paidVal = row.Table.Columns.Contains("CashPaid") && row["CashPaid"] != DBNull.Value ? Convert.ToDecimal(row["CashPaid"]) : (row["SaleType"].ToString() == "Cash" ? netVal : 0m);
-                decimal remainVal = netVal - paidVal;
+                bool isCredit = row.Table.Columns.Contains("SaleType") && row["SaleType"] != DBNull.Value && row["SaleType"].ToString() == "Credit";
+                decimal paidVal = isCredit ? 0m : (row.Table.Columns.Contains("CashPaid") && row["CashPaid"] != DBNull.Value ? Convert.ToDecimal(row["CashPaid"]) : (row["SaleType"].ToString() == "Cash" ? netVal : 0m));
+                decimal remainVal = isCredit ? netVal : (netVal - paidVal);
 
                 // Color Themes
                 Color cPrimary   = isAlTarek    ? Color.FromArgb(24, 34, 53)
@@ -549,11 +551,15 @@ namespace ChickenDist.Core
                             if (lastPaymentAmt > 0)
                             {
                                 string dStr = lastPaymentDate > DateTime.MinValue ? $" بتاريخ {lastPaymentDate:yyyy/MM/dd}" : "";
-                                lastPayStr = $"آخر توريد / سداد للعميل:  {lastPaymentAmt:N2} ج.م{dStr}";
+                                lastPayStr = $"آخر توريد / سداد سابق للعميل:  {lastPaymentAmt:N2} ج.م{dStr}";
                             }
-                            else if (paidVal > 0)
+                            else if (!isCredit && paidVal > 0)
                             {
                                 lastPayStr = $"آخر سداد:  {paidVal:N2} ج.م (مسدد مع الفاتورة)";
+                            }
+                            else if (isCredit)
+                            {
+                                lastPayStr = "حالة الفاتورة:  فاتورة آجل (غير مسددة نقداً)";
                             }
                             else
                             {
@@ -590,7 +596,7 @@ namespace ChickenDist.Core
                                 decimal discVal = row.Table.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmount"]) : 0m;
                                 decimal beforeDisc = netVal + discVal;
 
-                                string[] sumLabels = { "الإجمالي قبل الخصم", "الخصم", "الإجمالي بعد الخصم", "المدفوع", "المتبقي", "الرصيد السابق", "الرصيد الحالي" };
+                                string[] sumLabels = { "الإجمالي قبل الخصم", "الخصم", "الإجمالي بعد الخصم", "المدفوع نقداً", "المتبقي (آجل)", "الرصيد السابق", "الرصيد الحالي" };
                                 string[] sumValues = {
                                     $"{beforeDisc:N2} ج",
                                     discVal > 0 ? $"-{discVal:N2} ج" : "0.00 ج",
@@ -639,20 +645,34 @@ namespace ChickenDist.Core
                                 var finLabels = new List<string> { "الرصيد السابق للعميل" };
                                 var finVals   = new List<string> { $"{prevBalance:N2} ج.م" };
 
-                                if (paidVal > 0)
+                                if (isCredit)
                                 {
-                                    finLabels.Add("المدفوع من الفاتورة");
-                                    finVals.Add($"{paidVal:N2} ج.م");
+                                    finLabels.Add("قيمة الفاتورة (آجل)");
+                                    finVals.Add($"{netVal:N2} ج.م");
                                 }
-                                if (remainVal > 0)
+                                else
                                 {
-                                    finLabels.Add("المتبقي من الفاتورة (آجل)");
-                                    finVals.Add($"{remainVal:N2} ج.م");
+                                    if (paidVal > 0)
+                                    {
+                                        finLabels.Add("المدفوع من الفاتورة");
+                                        finVals.Add($"{paidVal:N2} ج.م");
+                                    }
+                                    if (remainVal > 0)
+                                    {
+                                        finLabels.Add("المتبقي من الفاتورة (آجل)");
+                                        finVals.Add($"{remainVal:N2} ج.م");
+                                    }
                                 }
                                 if (todayPayments > 0)
                                 {
                                     finLabels.Add("المسدد اليوم");
                                     finVals.Add($"{todayPayments:N2} ج.م");
+                                }
+                                if (lastPaymentAmt > 0)
+                                {
+                                    string dStr = lastPaymentDate > DateTime.MinValue ? $" ({lastPaymentDate:yyyy/MM/dd})" : "";
+                                    finLabels.Add("آخر توريد سابق");
+                                    finVals.Add($"{lastPaymentAmt:N2} ج.م{dStr}");
                                 }
 
                                 finLabels.Add("الرصيد الحالي المستحق");

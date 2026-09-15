@@ -258,6 +258,7 @@ namespace ChickenDist.DAL
                 int targetWarehouse = warehouseID ?? 1;
 
                 decimal vPaidVal = visaPaid.HasValue ? visaPaid.Value : (typeStr == "Visa" ? total : 0m);
+                decimal? finalCashPaid = (typeStr == "Credit" || typeStr == "DriverLoad") ? 0m : cashPaid;
 
                 int saleID = DbHelper.ExecuteInsertTrans(trans,
                     "INSERT INTO Sales(SaleCode,SaleDate,SaleType,ClientID,DriverID,TotalAmount,Notes,CreatedBy,DiscountAmount,DiscountPct,IsPosted,WarehouseID,PriceTier,CashPaid,VisaPaid,VisaAccountID,CratesOut,CratesIn,LastModifiedDate,ShippingCharge,OrderType,TableNumber,ShiftID,CustomClientName) VALUES(@code,@dt,@typ,@cid,@did,@tot,@n,@by,@discAmt,@discPct,@ip,@wid,@pt,@cp,@vp,@vaid,@co,@ci,GETDATE(),@shipping,@ot,@tn,@sid,@custName)",
@@ -267,7 +268,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@tot", Math.Round(total, 2)), DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@discAmt", Math.Round(discountAmount, 2)), DbHelper.P("@discPct", Math.Round(discountPct, 2)),
                     DbHelper.P("@ip", !isDraft), DbHelper.P("@wid", targetWarehouse), DbHelper.P("@pt", priceTier),
-                    DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
+                    DbHelper.P("@cp", finalCashPaid.HasValue ? (object)finalCashPaid.Value : DBNull.Value),
                     DbHelper.P("@vp", vPaidVal),
                     DbHelper.P("@vaid", visaAccountID.HasValue ? (object)visaAccountID.Value : DBNull.Value),
                     DbHelper.P("@co", cratesOut), DbHelper.P("@ci", cratesIn), DbHelper.P("@shipping", shippingCharge),
@@ -985,6 +986,7 @@ namespace ChickenDist.DAL
                 string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 4 ? "Visa" : "Cash";
                 int targetWarehouse = warehouseID ?? 1;
                 decimal vPaidVal = visaPaid.HasValue ? visaPaid.Value : (typeStr == "Visa" ? total : 0m);
+                decimal? finalCashPaid = (typeStr == "Credit" || typeStr == "DriverLoad") ? 0m : cashPaid;
 
                 DbHelper.ExecuteTrans(trans,
                     @"UPDATE Sales 
@@ -1003,7 +1005,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@ip", !isDraft),
                     DbHelper.P("@wid", targetWarehouse),
                     DbHelper.P("@pt", priceTier),
-                    DbHelper.P("@cp", cashPaid.HasValue ? (object)cashPaid.Value : DBNull.Value),
+                    DbHelper.P("@cp", finalCashPaid.HasValue ? (object)finalCashPaid.Value : DBNull.Value),
                     DbHelper.P("@vp", vPaidVal),
                     DbHelper.P("@vaid", visaAccountID.HasValue ? (object)visaAccountID.Value : DBNull.Value),
                     DbHelper.P("@co", cratesOut),

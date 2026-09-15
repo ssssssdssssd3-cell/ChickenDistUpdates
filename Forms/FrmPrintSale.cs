@@ -738,8 +738,8 @@ namespace ChickenDist.Forms
                     g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", boldBig, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), right); y += 22;
 
                     bool isReceiptCredit = _saleRow["SaleType"].ToString() == "Credit";
-                    decimal receiptCashPaid = _saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : (isReceiptCredit ? 0m : netAmount);
-                    decimal receiptRemaining = netAmount - receiptCashPaid;
+                    decimal receiptCashPaid = isReceiptCredit ? 0m : (_saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(_saleRow["CashPaid"]) : netAmount);
+                    decimal receiptRemaining = isReceiptCredit ? netAmount : (netAmount - receiptCashPaid);
 
                     if (_saleRow["SaleType"].ToString() == "Cash")
                     {
@@ -1624,8 +1624,9 @@ namespace ChickenDist.Forms
                         int clientID = (_saleRow != null && _saleRow["ClientID"] != DBNull.Value) ? Convert.ToInt32(_saleRow["ClientID"]) : 0;
                         decimal prevBal = 0m;
                         decimal curBal = 0m;
-                        decimal paidAmt = (_saleRow != null && _saleRow["CashPaid"] != DBNull.Value) ? Convert.ToDecimal(_saleRow["CashPaid"]) : (_saleRow != null && _saleRow["SaleType"].ToString() == "Cash" ? netAmount : 0m);
-                        decimal remainAmt = netAmount - paidAmt;
+                        bool isCreditPrint = _saleRow != null && _saleRow["SaleType"].ToString() == "Credit";
+                        decimal paidAmt = isCreditPrint ? 0m : ((_saleRow != null && _saleRow["CashPaid"] != DBNull.Value) ? Convert.ToDecimal(_saleRow["CashPaid"]) : (_saleRow != null && _saleRow["SaleType"].ToString() == "Cash" ? netAmount : 0m));
+                        decimal remainAmt = isCreditPrint ? netAmount : (netAmount - paidAmt);
 
                         if (clientID > 0)
                         {
@@ -1891,7 +1892,8 @@ namespace ChickenDist.Forms
                                 SELECT TOP 1 Credit AS PaymentAmount, TransDate AS PaymentDate 
                                 FROM ClientTransactions 
                                 WHERE ClientID = @cid AND TransType = 'Payment' AND Credit > 0
-                                ORDER BY TransDate DESC, TransID DESC", DbHelper.P("@cid", clientID));
+                                  AND (RefID IS NULL OR RefID <> @sid)
+                                ORDER BY TransDate DESC, TransID DESC", DbHelper.P("@cid", clientID), DbHelper.P("@sid", saleID));
                             if (dtLastPay.Rows.Count > 0)
                             {
                                 lastPaymentAmt = Convert.ToDecimal(dtLastPay.Rows[0]["PaymentAmount"]);
@@ -1899,8 +1901,8 @@ namespace ChickenDist.Forms
                             }
                         }
 
-                        decimal sheetCashPaid = (_saleRow != null && _saleRow["CashPaid"] != DBNull.Value) ? Convert.ToDecimal(_saleRow["CashPaid"]) : (isCredit ? 0m : netAmount);
-                        decimal remainingFromInvoice = isCredit ? (netAmount - sheetCashPaid) : (netAmount - sheetCashPaid);
+                        decimal sheetCashPaid = isCredit ? 0m : ((_saleRow != null && _saleRow["CashPaid"] != DBNull.Value) ? Convert.ToDecimal(_saleRow["CashPaid"]) : netAmount);
+                        decimal remainingFromInvoice = isCredit ? netAmount : (netAmount - sheetCashPaid);
                         currentBalance = previousBalance + remainingFromInvoice - paymentToday - returnToday;
 
                         if (!isAlTarek) g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 8;
@@ -1943,9 +1945,13 @@ namespace ChickenDist.Forms
                                 string dStr = lastPaymentDate > DateTime.MinValue ? $" بتاريخ {lastPaymentDate:yyyy/MM/dd}" : "";
                                 lastPayInfo = $"آخر توريد / سداد للعميل: {lastPaymentAmt:N2} جنيه{dStr}";
                             }
-                            else if (sheetCashPaid > 0)
+                            else if (!isCredit && sheetCashPaid > 0)
                             {
                                 lastPayInfo = $"آخر سداد: {sheetCashPaid:N2} جنيه (مسدد مع الفاتورة)";
+                            }
+                            else if (isCredit)
+                            {
+                                lastPayInfo = "حالة الفاتورة: فاتورة آجل (غير مسددة نقداً)";
                             }
                             else
                             {
