@@ -315,6 +315,7 @@ namespace ChickenDist.Forms
             Session.CanSellVisa = !row.Table.Columns.Contains("CanSellVisa") || row["CanSellVisa"] == DBNull.Value || Convert.ToBoolean(row["CanSellVisa"]);
             Session.CanSellDriverLoad = !row.Table.Columns.Contains("CanSellDriverLoad") || row["CanSellDriverLoad"] == DBNull.Value || Convert.ToBoolean(row["CanSellDriverLoad"]);
             Session.CanSellInstallment = !row.Table.Columns.Contains("CanSellInstallment") || row["CanSellInstallment"] == DBNull.Value || Convert.ToBoolean(row["CanSellInstallment"]);
+            Session.AllowSellBelowCost = row.Table.Columns.Contains("CanSellBelowCost") && row["CanSellBelowCost"] != DBNull.Value && Convert.ToBoolean(row["CanSellBelowCost"]);
 
             Session.LoadPermissions(Session.EmpID);
             this.DialogResult = DialogResult.OK;

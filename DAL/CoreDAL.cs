@@ -55,7 +55,7 @@ namespace ChickenDist.DAL
 
         public static int Save(int id, string name, string username, string password, string role, string phone, bool isDriver, bool isActive,
             int? defaultSafeID, string allowedSafeIDs, bool canSellCash, bool canSellCredit, bool canSellDriverLoad, bool canSellInstallment,
-            bool canEditShippingCharge = true, bool canSelectDriver = true, bool canSellVisa = true,
+            bool canEditShippingCharge = true, bool canSelectDriver = true, bool canSellVisa = true, bool canSellBelowCost = false,
             decimal salary = 0, decimal dailyWorkHours = 8, decimal hourlyRate = 0, decimal commissionRate = 0, decimal targetAmount = 0,
             string jobTitle = null, DateTime? hireDate = null, string nationalID = null,
             string workStartTime = "09:00", string workEndTime = "17:00", int gracePeriodMinutes = 15,
@@ -86,8 +86,8 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa,Salary,DailyWorkHours,HourlyRate,SalesCommissionRate,TargetAmount,JobTitle,HireDate,NationalID,WorkStartTime,WorkEndTime,GracePeriodMinutes,DefaultWarehouseID,AllowedWarehouseIDs,DefaultPriceTier) " +
-                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv,@sal,@dwh,@hrate,@crate,@target,@jtitle,@hdate,@nid,@wstart,@wend,@gpm,@dwid,@awids,@dpt)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa,CanSellBelowCost,Salary,DailyWorkHours,HourlyRate,SalesCommissionRate,TargetAmount,JobTitle,HireDate,NationalID,WorkStartTime,WorkEndTime,GracePeriodMinutes,DefaultWarehouseID,AllowedWarehouseIDs,DefaultPriceTier) " +
+                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv,@csbc,@sal,@dwh,@hrate,@crate,@target,@jtitle,@hdate,@nid,@wstart,@wend,@gpm,@dwid,@awids,@dpt)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
                     DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
@@ -96,6 +96,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@cdl", canSellDriverLoad), DbHelper.P("@cins", canSellInstallment),
                     DbHelper.P("@cesc", canEditShippingCharge), DbHelper.P("@csd", canSelectDriver),
                     DbHelper.P("@csv", canSellVisa),
+                    DbHelper.P("@csbc", canSellBelowCost),
                     DbHelper.P("@sal", salary),
                     DbHelper.P("@dwh", dailyWorkHours),
                     DbHelper.P("@hrate", hourlyRate),
@@ -129,6 +130,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@cesc", canEditShippingCharge),
                     DbHelper.P("@csd", canSelectDriver),
                     DbHelper.P("@csv", canSellVisa),
+                    DbHelper.P("@csbc", canSellBelowCost),
                     DbHelper.P("@sal", salary),
                     DbHelper.P("@dwh", dailyWorkHours),
                     DbHelper.P("@hrate", hourlyRate),
@@ -147,7 +149,7 @@ namespace ChickenDist.DAL
                 };
 
                 string updateSql = "UPDATE Employees SET EmpName=@n,UserName=@u,Role=@r,Phone=@ph,IsDriver=@dr,IsActive=@a," +
-                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd,CanSellVisa=@csv," +
+                                   "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd,CanSellVisa=@csv,CanSellBelowCost=@csbc," +
                                    "Salary=@sal,DailyWorkHours=@dwh,HourlyRate=@hrate,SalesCommissionRate=@crate,TargetAmount=@target,JobTitle=@jtitle,HireDate=@hdate,NationalID=@nid," +
                                    "WorkStartTime=@wstart,WorkEndTime=@wend,GracePeriodMinutes=@gpm," +
                                    "DefaultWarehouseID=@dwid,AllowedWarehouseIDs=@awids,DefaultPriceTier=@dpt";
@@ -191,7 +193,8 @@ namespace ChickenDist.DAL
                            COALESCE(CanViewBalance, 1) AS CanViewBalance,
                            COALESCE(CanChangeSafe, 1) AS CanChangeSafe,
                            COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals,
-                           COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems
+                           COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems,
+                           COALESCE(CanSellBelowCost, 0) AS CanSellBelowCost
                     FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
             }
             catch
@@ -212,7 +215,8 @@ namespace ChickenDist.DAL
                            COALESCE(CanViewBalance, 1) AS CanViewBalance,
                            COALESCE(CanChangeSafe, 1) AS CanChangeSafe,
                            COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals,
-                           COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems
+                           COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems,
+                           COALESCE(CanSellBelowCost, 0) AS CanSellBelowCost
                     FROM Permissions WHERE EmpID=@id", DbHelper.P("@id", empID));
             }
         }
@@ -222,7 +226,7 @@ namespace ChickenDist.DAL
             bool canEditPrice, bool canEditSalesInvoice, bool canDeleteSalesInvoice, 
             bool canCopySalesInvoice, bool canViewCost, bool canOrderColumns,
             bool canViewDetails, bool canViewBalance, bool canChangeSafe, bool canViewSalesTotals,
-            bool canViewQuickItems = true)
+            bool canViewQuickItems = true, bool canSellBelowCost = false)
         {
             DbHelper.EnsurePermissionsColumns();
             var exists = DbHelper.Scalar("SELECT COUNT(*) FROM Permissions WHERE EmpID=@e AND ScreenName=@s",
@@ -234,23 +238,23 @@ namespace ChickenDist.DAL
                         CanEditPrice=@ep, CanEditSalesInvoice=@cesi, CanDeleteSalesInvoice=@cdsi, 
                         CanCopySalesInvoice=@ccsi, CanViewCost=@cvc, CanOrderColumns=@coc,
                         CanViewDetails=@cvd, CanViewBalance=@cvb, CanChangeSafe=@ccs,
-                        CanViewSalesTotals=@cvst, CanViewQuickItems=@cvqi
+                        CanViewSalesTotals=@cvst, CanViewQuickItems=@cvqi, CanSellBelowCost=@csbc
                     WHERE EmpID=@e AND ScreenName=@s",
                     DbHelper.P("@a", canAccess), DbHelper.P("@add", canAdd), DbHelper.P("@ed", canEdit), DbHelper.P("@del", canDelete),
                     DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), 
                     DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@coc", canOrderColumns),
                     DbHelper.P("@cvd", canViewDetails), DbHelper.P("@cvb", canViewBalance), DbHelper.P("@ccs", canChangeSafe),
-                    DbHelper.P("@cvst", canViewSalesTotals), DbHelper.P("@cvqi", canViewQuickItems),
+                    DbHelper.P("@cvst", canViewSalesTotals), DbHelper.P("@cvqi", canViewQuickItems), DbHelper.P("@csbc", canSellBelowCost),
                     DbHelper.P("@e", empID), DbHelper.P("@s", screen));
             else
                 DbHelper.Execute(@"
-                    INSERT INTO Permissions(EmpID, ScreenName, CanAccess, CanAdd, CanEdit, CanDelete, CanEditPrice, CanEditSalesInvoice, CanDeleteSalesInvoice, CanCopySalesInvoice, CanViewCost, CanOrderColumns, CanViewDetails, CanViewBalance, CanChangeSafe, CanViewSalesTotals, CanViewQuickItems) 
-                    VALUES(@e, @s, @a, @add, @ed, @del, @ep, @cesi, @cdsi, @ccsi, @cvc, @coc, @cvd, @cvb, @ccs, @cvst, @cvqi)",
+                    INSERT INTO Permissions(EmpID, ScreenName, CanAccess, CanAdd, CanEdit, CanDelete, CanEditPrice, CanEditSalesInvoice, CanDeleteSalesInvoice, CanCopySalesInvoice, CanViewCost, CanOrderColumns, CanViewDetails, CanViewBalance, CanChangeSafe, CanViewSalesTotals, CanViewQuickItems, CanSellBelowCost) 
+                    VALUES(@e, @s, @a, @add, @ed, @del, @ep, @cesi, @cdsi, @ccsi, @cvc, @coc, @cvd, @cvb, @ccs, @cvst, @cvqi, @csbc)",
                     DbHelper.P("@e", empID), DbHelper.P("@s", screen), DbHelper.P("@a", canAccess), DbHelper.P("@add", canAdd), DbHelper.P("@ed", canEdit), DbHelper.P("@del", canDelete),
                     DbHelper.P("@ep", canEditPrice), DbHelper.P("@cesi", canEditSalesInvoice), DbHelper.P("@cdsi", canDeleteSalesInvoice), 
                     DbHelper.P("@ccsi", canCopySalesInvoice), DbHelper.P("@cvc", canViewCost), DbHelper.P("@coc", canOrderColumns),
                     DbHelper.P("@cvd", canViewDetails), DbHelper.P("@cvb", canViewBalance), DbHelper.P("@ccs", canChangeSafe),
-                    DbHelper.P("@cvst", canViewSalesTotals), DbHelper.P("@cvqi", canViewQuickItems));
+                    DbHelper.P("@cvst", canViewSalesTotals), DbHelper.P("@cvqi", canViewQuickItems), DbHelper.P("@csbc", canSellBelowCost));
         }
 
         public static DataTable GetTransactions(int empID, DateTime from, DateTime to, string typeFilter)

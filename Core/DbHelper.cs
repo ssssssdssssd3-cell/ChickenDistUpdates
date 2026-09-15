@@ -2950,6 +2950,15 @@ namespace ChickenDist.Core
                     END
                 END");
 
+                SafeMigrate("Employees.CanSellBelowCost", @"
+                IF OBJECT_ID('Employees', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Employees', 'CanSellBelowCost') IS NULL
+                    BEGIN
+                        ALTER TABLE Employees ADD CanSellBelowCost BIT NOT NULL DEFAULT 0;
+                    END
+                END");
+
                 // ===== ميزات السوبر ماركت =====
 
                 // 1. إدارة الورديات (Shifts)
@@ -3958,6 +3967,8 @@ namespace ChickenDist.Core
                         ALTER TABLE Permissions ADD CanViewSalesTotals BIT DEFAULT 1;
                     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanViewQuickItems')
                         ALTER TABLE Permissions ADD CanViewQuickItems BIT DEFAULT 1;
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Permissions') AND name = 'CanSellBelowCost')
+                        ALTER TABLE Permissions ADD CanSellBelowCost BIT DEFAULT 0;
 
                     -- تصحيح تلقائي لصلاحية CanAdd للشاشات التشغيلية التي تم قفلها سابقاً بالخطأ
                     UPDATE Permissions 

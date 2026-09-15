@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         private ComboBox cboDefaultSafe;
         private CheckedListBox clbAllowedSafes;
-        private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge, chkCanSelectDriver;
+        private CheckBox chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellDriverLoad, chkCanSellInstallment, chkCanEditShippingCharge, chkCanSelectDriver, chkCanSellBelowCost;
 
         // حقول إدارة المخازن وشريحة السعر
         private ComboBox cboDefaultWarehouse;
@@ -477,7 +477,9 @@ namespace ChickenDist.Forms
             chkCanSelectDriver = new CheckBox { Text = "اختيار/ظهور المندوب", Location = new Point(80, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
             y += 28;
             chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(250, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
-            tab.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellInstallment, chkCanSellDriverLoad, chkCanSelectDriver, chkCanEditShippingCharge });
+            y += 28;
+            chkCanSellBelowCost = new CheckBox { Text = "⚠️ السماح بالبيع بأقل من سعر التكلفة", Location = new Point(220, y), AutoSize = true, Font = new Font(Theme.FontMain.FontFamily, Theme.FontMain.Size, FontStyle.Bold), ForeColor = Color.FromArgb(220, 53, 69), Checked = false };
+            tab.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellInstallment, chkCanSellDriverLoad, chkCanSelectDriver, chkCanEditShippingCharge, chkCanSellBelowCost });
         }
 
         private void BuildWarehousesTab(TabPage tab)
@@ -807,6 +809,7 @@ namespace ChickenDist.Forms
             chkCanSellInstallment.Checked = dr["CanSellInstallment"] == DBNull.Value || Convert.ToBoolean(dr["CanSellInstallment"]);
             chkCanEditShippingCharge.Checked = dr.Table.Columns.Contains("CanEditShippingCharge") && (dr["CanEditShippingCharge"] == DBNull.Value || Convert.ToBoolean(dr["CanEditShippingCharge"]));
             chkCanSelectDriver.Checked = !dr.Table.Columns.Contains("CanSelectDriver") || dr["CanSelectDriver"] == DBNull.Value || Convert.ToBoolean(dr["CanSelectDriver"]);
+            chkCanSellBelowCost.Checked = dr.Table.Columns.Contains("CanSellBelowCost") && dr["CanSellBelowCost"] != DBNull.Value && Convert.ToBoolean(dr["CanSellBelowCost"]);
 
             if (btnSave != null)
             {
@@ -850,6 +853,7 @@ namespace ChickenDist.Forms
             chkCanSellInstallment.Checked = true;
             chkCanEditShippingCharge.Checked = true;
             chkCanSelectDriver.Checked = true;
+            chkCanSellBelowCost.Checked = false;
 
             if (btnSave != null)
             {
@@ -919,7 +923,7 @@ namespace ChickenDist.Forms
                     txtPassword.Text, cboRole.Text, txtPhone.Text, chkDriver.Checked, chkActive.Checked,
                     defaultSafeID, allowedSafeIDs, chkCanSellCash.Checked, chkCanSellCredit.Checked,
                     chkCanSellDriverLoad.Checked, chkCanSellInstallment.Checked, chkCanEditShippingCharge.Checked,
-                    chkCanSelectDriver.Checked, chkCanSellVisa.Checked,
+                    chkCanSelectDriver.Checked, chkCanSellVisa.Checked, chkCanSellBelowCost.Checked,
                     sal, dwh, hourlyRate, crate, target, jobTitle, null, nationalID,
                     workStartTime, workEndTime, gracePeriod,
                     defaultWarehouseID, allowedWarehouseIDs, defaultPriceTier);
@@ -1025,6 +1029,7 @@ namespace ChickenDist.Forms
             public bool HasViewSalesTotals { get; set; }
             public bool HasViewQuickItems { get; set; }
             public bool HasOrderColumns { get; set; }
+            public bool HasSellBelowCost { get; set; }
 
             // Custom labels & hints if needed
             public string AddLabel { get; set; } = "➕ حفظ وإصدار العمليات الجديدة";
@@ -1060,6 +1065,7 @@ namespace ChickenDist.Forms
             public bool CanViewSalesTotals { get; set; } = true;
             public bool CanViewQuickItems { get; set; } = true;
             public bool CanOrderColumns { get; set; }
+            public bool CanSellBelowCost { get; set; }
         }
 
         private static readonly List<ScreenDef> AllScreens = new List<ScreenDef>
@@ -1070,7 +1076,7 @@ namespace ChickenDist.Forms
                 Description = "شاشة إصدار فواتير البيع للعملاء وإدارة الحسابات النقدية والآجلة.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
-                HasViewQuickItems = true, HasOrderColumns = true,
+                HasViewQuickItems = true, HasOrderColumns = true, HasSellBelowCost = true,
                 AddLabel = "➕ إصدار وحفظ فواتير بيع جديدة",
                 AddHint = "السماح للموظف بحفظ فواتير البيع وإتمام عملية البيع.",
                 EditLabel = "✏️ تعديل فواتير المبيعات السابقة",
@@ -1083,7 +1089,7 @@ namespace ChickenDist.Forms
                 Description = "شاشة البيع السريعة المخصصة لنقاط البيع وطباعة الريسيت الحراري.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
-                HasViewQuickItems = true, HasOrderColumns = true,
+                HasViewQuickItems = true, HasOrderColumns = true, HasSellBelowCost = true,
                 AddLabel = "➕ حفظ وإتمام فواتير الكاشير",
                 AddHint = "السماح للموظف بإنهاء وحفظ فواتير نقاط البيع السريعة."
             },
@@ -1883,6 +1889,7 @@ namespace ChickenDist.Forms
                         st.CanChangeSafe = ToBool(r["CanChangeSafe"]);
                         st.CanViewSalesTotals = ToBool(r["CanViewSalesTotals"]);
                         st.CanViewQuickItems = ToBool(r["CanViewQuickItems"]);
+                        st.CanSellBelowCost = r.Table.Columns.Contains("CanSellBelowCost") && ToBool(r["CanSellBelowCost"]);
                     }
                     else
                     {
@@ -1956,6 +1963,7 @@ namespace ChickenDist.Forms
             if (def.HasViewSalesTotals) cnt++;
             if (def.HasViewQuickItems) cnt++;
             if (def.HasOrderColumns) cnt++;
+            if (def.HasSellBelowCost) cnt++;
             return cnt;
         }
 
@@ -1976,6 +1984,7 @@ namespace ChickenDist.Forms
             if (def.HasViewSalesTotals && st.CanViewSalesTotals) cnt++;
             if (def.HasViewQuickItems && st.CanViewQuickItems) cnt++;
             if (def.HasOrderColumns && st.CanOrderColumns) cnt++;
+            if (def.HasSellBelowCost && st.CanSellBelowCost) cnt++;
             return cnt;
         }
 
@@ -2155,6 +2164,10 @@ namespace ChickenDist.Forms
             if (def.HasOrderColumns)
                 AddCard(MakeSubPermCard("↕️ ترتيب وتخصيص أعمدة الجدول", "السماح للموظف بسحب وتغيير ترتيب وعرض الأعمدة في الجداول.", st.CanOrderColumns, v => { st.CanOrderColumns = v; OnSubPermChanged(def); }));
 
+            // 15. CanSellBelowCost
+            if (def.HasSellBelowCost)
+                AddCard(MakeSubPermCard("⚠️ السماح بالبيع بأقل من سعر التكلفة", "السماح بإصدار الفواتير أو تعديل الأسعار والخصومات حتى لو نزل سعر البيع عن سعر التكلفة.", st.CanSellBelowCost, v => { st.CanSellBelowCost = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
+
             pnlSubPerms.ResumeLayout();
         }
 
@@ -2262,6 +2275,7 @@ namespace ChickenDist.Forms
             st.CanViewSalesTotals = enable;
             st.CanViewQuickItems = enable;
             st.CanOrderColumns = enable;
+            st.CanSellBelowCost = enable;
 
             SelectScreen(_selectedScreen);
             foreach (DataGridViewRow r in dgScreens.Rows)
@@ -2340,6 +2354,7 @@ namespace ChickenDist.Forms
                     st.CanViewBalance = true;
                     st.CanChangeSafe = true;
                     st.CanOrderColumns = true;
+                    st.CanSellBelowCost = true;
                 }
                 else
                 {
@@ -2348,6 +2363,7 @@ namespace ChickenDist.Forms
                     st.CanViewCost = (role == "Accountant" || role == "Manufacturing");
                     st.CanEditPrice = (role == "Accountant" || role == "Purchases");
                     st.CanEditSalesInvoice = (role == "Accountant");
+                    st.CanSellBelowCost = false;
                 }
             }
 
@@ -2411,7 +2427,7 @@ namespace ChickenDist.Forms
                             st.CanEditPrice, st.CanEditSalesInvoice, st.CanDeleteSalesInvoice,
                             st.CanCopySalesInvoice, st.CanViewCost, st.CanOrderColumns,
                             st.CanViewDetails, st.CanViewBalance, st.CanChangeSafe,
-                            st.CanViewSalesTotals, st.CanViewQuickItems);
+                            st.CanViewSalesTotals, st.CanViewQuickItems, st.CanSellBelowCost);
                     }
                 }
 

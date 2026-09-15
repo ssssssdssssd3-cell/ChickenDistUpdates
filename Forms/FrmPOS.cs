@@ -2172,7 +2172,7 @@ namespace ChickenDist.Forms
             {
                 if (decimal.TryParse(dgItems.Rows[e.RowIndex].Cells["Price"].Value?.ToString(), out decimal newPrice) && newPrice >= 0)
                 {
-                    if (item.Cost > 0 && newPrice < item.Cost)
+                    if (!Session.CanSellBelowCost("POS") && item.Cost > 0 && newPrice < item.Cost)
                     {
                         string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
                         MessageBox.Show($"❌ غير مسموح ببيع الصنف '{item.Name}' بسعر ({newPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -2182,7 +2182,7 @@ namespace ChickenDist.Forms
 
                     decimal testNetTotal = (item.Qty * newPrice) - item.DiscountAmt;
                     decimal testNetUnit = item.Qty > 0 ? (testNetTotal / item.Qty) : newPrice;
-                    if (item.Cost > 0 && testNetUnit < item.Cost)
+                    if (!Session.CanSellBelowCost("POS") && item.Cost > 0 && testNetUnit < item.Cost)
                     {
                         string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
                         MessageBox.Show($"❌ السعر المدخل مع الخصم الحالي يجعل صافي سعر الصنف '{item.Name}' ({testNetUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -2205,7 +2205,7 @@ namespace ChickenDist.Forms
                 {
                     decimal netTotal = (item.Qty * item.Price) - newDisc;
                     decimal netUnitPrice = item.Qty > 0 ? (netTotal / item.Qty) : item.Price;
-                    if (item.Cost > 0 && netUnitPrice < item.Cost)
+                    if (!Session.CanSellBelowCost("POS") && item.Cost > 0 && netUnitPrice < item.Cost)
                     {
                         string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
                         MessageBox.Show($"❌ قيمة الخصم تجعل صافي سعر بيع الصنف '{item.Name}' ({netUnitPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -2419,17 +2419,20 @@ namespace ChickenDist.Forms
                 }
 
                 // ── التحقق من عدم بيع أي صنف بأقل من سعر التكلفة ──
-                foreach (var item in _items)
+                if (!Session.CanSellBelowCost("POS"))
                 {
-                    if (item.Cost > 0)
+                    foreach (var item in _items)
                     {
-                        decimal netUnit = item.Qty > 0 ? (item.Total / item.Qty) : item.Price;
-                        if (netUnit < item.Cost - 0.001m)
+                        if (item.Cost > 0)
                         {
-                            string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " يقل عن الحد الأدنى المسموح به.";
-                            MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{item.Name}' بعد الخصم ({netUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-                            _isSaving = false;
-                            return;
+                            decimal netUnit = item.Qty > 0 ? (item.Total / item.Qty) : item.Price;
+                            if (netUnit < item.Cost - 0.001m)
+                            {
+                                string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " يقل عن الحد الأدنى المسموح به.";
+                                MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{item.Name}' بعد الخصم ({netUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                                _isSaving = false;
+                                return;
+                            }
                         }
                     }
                 }

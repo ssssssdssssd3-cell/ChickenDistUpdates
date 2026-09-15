@@ -228,6 +228,7 @@ namespace ChickenDist.Core
         public static bool CanSellInstallment { get; set; }
         public static bool CanEditShippingCharge { get; set; }
         public static bool CanSelectDriver { get; set; }
+        public static bool AllowSellBelowCost { get; set; }
 
         /// <summary>معرف الوردية الحالية المفتوحة (null = لا توجد وردية مفتوحة)</summary>
         public static int? CurrentShiftID { get; set; }
@@ -246,7 +247,7 @@ namespace ChickenDist.Core
                 {
                     // شاشات الأصول والشركاء حساسة ولا تظهر لأي حساب إلا بعد تفعيلها صراحة في شاشة الصلاحيات
                     bool defaultAccess = (s != "FixedAssets" && s != "Shareholders");
-                    _perms[s] = new PermInfo { CanAccess = defaultAccess, CanAdd = true, CanEdit = true, CanDelete = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true, CanViewDetails = true, CanViewBalance = true, CanChangeSafe = true, CanViewSalesTotals = true, CanViewQuickItems = true };
+                    _perms[s] = new PermInfo { CanAccess = defaultAccess, CanAdd = true, CanEdit = true, CanDelete = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true, CanViewDetails = true, CanViewBalance = true, CanChangeSafe = true, CanViewSalesTotals = true, CanViewQuickItems = true, CanSellBelowCost = true };
                 }
 
                 // قراءة الصلاحيات المخصصة لحساب المدير (لتفعيل الأصول والشركاء عند اختيارها له)
@@ -268,7 +269,7 @@ namespace ChickenDist.Core
             }
 
             var dt = DbHelper.Query(
-                "SELECT ScreenName, CanAccess, COALESCE(CanAdd, 1) AS CanAdd, COALESCE(CanEdit, 1) AS CanEdit, COALESCE(CanDelete, 1) AS CanDelete, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost, COALESCE(CanOrderColumns, 0) AS CanOrderColumns, COALESCE(CanViewDetails, 1) AS CanViewDetails, COALESCE(CanViewBalance, 1) AS CanViewBalance, COALESCE(CanChangeSafe, 1) AS CanChangeSafe, COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals, COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems FROM Permissions WHERE EmpID=@id",
+                "SELECT ScreenName, CanAccess, COALESCE(CanAdd, 1) AS CanAdd, COALESCE(CanEdit, 1) AS CanEdit, COALESCE(CanDelete, 1) AS CanDelete, CanEditPrice, COALESCE(CanEditSalesInvoice, 0) AS CanEditSalesInvoice, COALESCE(CanDeleteSalesInvoice, 0) AS CanDeleteSalesInvoice, COALESCE(CanCopySalesInvoice, 0) AS CanCopySalesInvoice, COALESCE(CanViewCost, 0) AS CanViewCost, COALESCE(CanOrderColumns, 0) AS CanOrderColumns, COALESCE(CanViewDetails, 1) AS CanViewDetails, COALESCE(CanViewBalance, 1) AS CanViewBalance, COALESCE(CanChangeSafe, 1) AS CanChangeSafe, COALESCE(CanViewSalesTotals, 1) AS CanViewSalesTotals, COALESCE(CanViewQuickItems, 1) AS CanViewQuickItems, COALESCE(CanSellBelowCost, 0) AS CanSellBelowCost FROM Permissions WHERE EmpID=@id",
                 DbHelper.P("@id", empID));
 
             foreach (System.Data.DataRow row in dt.Rows)
@@ -291,7 +292,8 @@ namespace ChickenDist.Core
                         CanViewBalance = row.Table.Columns.Contains("CanViewBalance") && row["CanViewBalance"] != DBNull.Value ? Convert.ToBoolean(row["CanViewBalance"]) : true,
                         CanChangeSafe = row.Table.Columns.Contains("CanChangeSafe") && row["CanChangeSafe"] != DBNull.Value ? Convert.ToBoolean(row["CanChangeSafe"]) : true,
                         CanViewSalesTotals = row.Table.Columns.Contains("CanViewSalesTotals") && row["CanViewSalesTotals"] != DBNull.Value ? Convert.ToBoolean(row["CanViewSalesTotals"]) : true,
-                        CanViewQuickItems = row.Table.Columns.Contains("CanViewQuickItems") && row["CanViewQuickItems"] != DBNull.Value ? Convert.ToBoolean(row["CanViewQuickItems"]) : true
+                        CanViewQuickItems = row.Table.Columns.Contains("CanViewQuickItems") && row["CanViewQuickItems"] != DBNull.Value ? Convert.ToBoolean(row["CanViewQuickItems"]) : true,
+                        CanSellBelowCost = row.Table.Columns.Contains("CanSellBelowCost") && row["CanSellBelowCost"] != DBNull.Value && Convert.ToBoolean(row["CanSellBelowCost"])
                     };
                 }
                 catch (Exception ex)
@@ -445,6 +447,20 @@ namespace ChickenDist.Core
             if (IsAdmin) return true;
             if (!CanAccess("ProductCard") || !CanAccess("Products")) return false;
             return CanViewCost("Sales") || CanViewCost("Products") || CanViewCost("Inventory") || CanViewCost("Reports");
+        }
+
+        /// <summary>
+        /// هل يُسمح للمستخدم بالبيع بأقل من سعر التكلفة؟
+        /// للأدمن: مسموح دائماً.
+        /// للموظف: يفحص إذن كارت الموظف العام أو صلاحية شاشة المبيعات / الكاشير المحددة.
+        /// </summary>
+        public static bool CanSellBelowCost(string screen = "Sales")
+        {
+            if (IsAdmin) return true;
+            if (AllowSellBelowCost) return true;
+            if (!string.IsNullOrEmpty(screen) && _perms.ContainsKey(screen) && _perms[screen].CanSellBelowCost) return true;
+            if (_perms.ContainsKey("Sales") && _perms["Sales"].CanSellBelowCost) return true;
+            return false;
         }
 
         public static bool CanAdd(string screen)
@@ -809,6 +825,7 @@ namespace ChickenDist.Core
             CanSellCash = true; CanSellCredit = true; CanSellVisa = true; CanSellDriverLoad = true; CanSellInstallment = true;
             CanEditShippingCharge = true;
             CanSelectDriver = true;
+            AllowSellBelowCost = false;
             CurrentShiftID = null;
             _perms.Clear();
         }
@@ -870,5 +887,6 @@ namespace ChickenDist.Core
         public bool CanChangeSafe { get; set; } = false;
         public bool CanViewSalesTotals { get; set; } = true;
         public bool CanViewQuickItems { get; set; } = true;
+        public bool CanSellBelowCost { get; set; } = false;
     }
 }
