@@ -120,9 +120,10 @@ namespace ChickenDist.Forms
             splitContainer.Panel2.Controls.Add(pnlLowerLabel);
 
             dgTransferItems = MakeGrid();
-            dgTransferItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", FillWeight = 150 });
-            dgTransferItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المحولة", FillWeight = 60 });
-            dgTransferItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 40 });
+            dgTransferItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", FillWeight = 140 });
+            dgTransferItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المحولة", FillWeight = 50 });
+            dgTransferItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة المحولة", FillWeight = 50 });
+            dgTransferItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalBaseQty", HeaderText = "الإجمالي بالصغرى", FillWeight = 50 });
             splitContainer.Panel2.Controls.Add(dgTransferItems);
 
             // ── Assemble ───────────────────────────────────────────────────
@@ -170,10 +171,16 @@ namespace ChickenDist.Forms
             var dt = TransferDAL.GetItems(transferID);
             foreach (DataRow r in dt.Rows)
             {
+                decimal qty = Convert.ToDecimal(r["Quantity"]);
+                decimal factor = r.Table.Columns.Contains("Factor") && r["Factor"] != DBNull.Value ? Convert.ToDecimal(r["Factor"]) : 1.0m;
+                decimal baseQty = qty * (factor > 0 ? factor : 1.0m);
+                string unitDisplay = factor > 1m ? $"{r["Unit"]} (×{factor:G29})" : (r["Unit"]?.ToString() ?? "قطعة");
+
                 dgTransferItems.Rows.Add(
                     r["ProductName"],
-                    Convert.ToDecimal(r["Quantity"]).ToString("N3"),
-                    r["Unit"]
+                    qty.ToString("N3"),
+                    unitDisplay,
+                    baseQty.ToString("N0")
                 );
             }
         }

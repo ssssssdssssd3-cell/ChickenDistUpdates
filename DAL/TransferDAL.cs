@@ -13,6 +13,8 @@ namespace ChickenDist.DAL
         public decimal Quantity { get; set; }
         public decimal AvailableStock { get; set; }
         public string Unit { get; set; }
+        public decimal Factor { get; set; } = 1.0m;
+        public decimal TotalBaseQty => Quantity * (Factor > 0 ? Factor : 1.0m);
     }
 
     public static class TransferDAL
@@ -36,7 +38,9 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int transferID)
         {
             return DbHelper.Query(
-                @"SELECT ti.ProductID, p.ProductName, ti.Quantity, p.Unit
+                @"SELECT ti.ProductID, p.ProductCode, p.ProductName, ti.Quantity, 
+                         ISNULL(ti.UnitName, p.Unit) AS Unit,
+                         ISNULL(ti.Factor, 1.0) AS Factor
                   FROM WarehouseTransferItems ti
                   JOIN Products p ON ti.ProductID = p.ProductID
                   WHERE ti.TransferID = @id",
@@ -54,13 +58,16 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                // التحقق من توافر الرصيد لكل صنف في المخزن المرسل
+                // التحقق من توافر الرصيد لكل صنف في المخزن المرسل بناءً على المعامل الفعلي
                 foreach (var item in items)
                 {
-                    decimal availableStock = InventoryDAL.GetProductStock(item.ProductID, fromWarehouseID);
-                    if (availableStock < item.Quantity)
+                    decimal availableStockSmallest = InventoryDAL.GetProductStock(item.ProductID, fromWarehouseID);
+                    decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
+                    decimal requiredSmallest = item.Quantity * factor;
+                    if (availableStockSmallest < requiredSmallest)
                     {
-                        throw new Exception($"رصيد الصنف '{item.ProductName}' لا يكفي للتحويل.\nالرصيد المتاح في المخزن المصدر: {availableStock:N3}\nالكمية المطلوبة: {item.Quantity:N3}");
+                        decimal maxInUnit = factor > 0 ? Math.Floor(availableStockSmallest / factor * 1000m) / 1000m : availableStockSmallest;
+                        throw new Exception($"رصيد الصنف '{item.ProductName}' لا يكفي للتحويل.\nالرصيد المتاح بالمخزن المصدر: {maxInUnit:G29} {item.Unit} (أي {availableStockSmallest:G29} بالوحدة الصغرى)\nالكمية المطلوبة للتحويل: {item.Quantity:G29} {item.Unit} (أي {requiredSmallest:G29} بالوحدة الصغرى)");
                     }
                 }
 
@@ -82,15 +89,18 @@ namespace ChickenDist.DAL
                 if (transferID <= 0) throw new Exception("فشل في استخراج رقم التحويل المخزني الجديد.");
                 returnedID = transferID;
 
-                // إدراج البنود
+                // إدراج البنود مع اسم الوحدة ومعامل التحويل
                 foreach (var item in items)
                 {
+                    decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
                     DbHelper.ExecuteTrans(trans,
-                        @"INSERT INTO WarehouseTransferItems (TransferID, ProductID, Quantity)
-                          VALUES (@tid, @pid, @qty)",
+                        @"INSERT INTO WarehouseTransferItems (TransferID, ProductID, Quantity, UnitName, Factor)
+                          VALUES (@tid, @pid, @qty, @unit, @factor)",
                         DbHelper.P("@tid", transferID),
                         DbHelper.P("@pid", item.ProductID),
-                        DbHelper.P("@qty", item.Quantity));
+                        DbHelper.P("@qty", item.Quantity),
+                        DbHelper.P("@unit", string.IsNullOrWhiteSpace(item.Unit) ? "وحدة" : item.Unit),
+                        DbHelper.P("@factor", factor));
                 }
             });
 

@@ -10,12 +10,28 @@ using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
+    /// <summary>عنصر وحدة التحويل المخزني مع معامل التحويل والمستوى</summary>
+    public class TransferUnitOption
+    {
+        public string UnitName { get; set; } = "";
+        public decimal Factor { get; set; } = 1.0m;
+        public int Level { get; set; } = 1; // 1 = صغرى, 2 = وسطى, 3 = كبرى
+        public string BaseUnitName { get; set; } = "";
+
+        public override string ToString()
+        {
+            if (Factor > 1m && !string.IsNullOrWhiteSpace(BaseUnitName) && BaseUnitName != UnitName)
+                return $"{UnitName} ({Factor:G29} {BaseUnitName})";
+            return UnitName;
+        }
+    }
+
     /// <summary>شاشة التحويل المخزني بين المستودعات - تصميم متطور ومتجاوب</summary>
     public class FrmWarehouseTransfer : Form
     {
-        private ComboBox cboFromWarehouse, cboToWarehouse;
+        private ComboBox cboFromWarehouse, cboToWarehouse, cboUnit;
         private NumericUpDown nudQty;
-        private Label lblAvailableStock, lblUnitTag;
+        private Label lblAvailableStock;
         private TextBox txtNotes, txtBarcodeTransfer, txtSelectedProduct;
         private Button btnSearchProduct, btnAddItem, btnSave, btnSaveAndPrint, btnNew, btnTransfersHistory;
         private DataGridView dgItems;
@@ -25,8 +41,7 @@ namespace ChickenDist.Forms
         private int _selectedProductID = 0;
         private string _selectedProductCode = "";
         private string _selectedProductName = "";
-        private string _selectedProductUnit = "";
-        private decimal _selectedProductStock = 0m;
+        private decimal _selectedProductStock = 0m; // الرصيد الخام في المستودع بالوحدة الصغرى
 
         public FrmWarehouseTransfer()
         {
@@ -248,13 +263,13 @@ namespace ChickenDist.Forms
             tblFastEntry.RowStyles.Clear();
             tblFastEntry.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             tblFastEntry.ColumnStyles.Clear();
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));      // 0: الاسكنر
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160f));      // 1: زر بحث F3
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120f));      // 0: الاسكنر
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));      // 1: زر بحث F3
             tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));       // 2: اسم الصنف المختار (مرن يملأ الشاشة)
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));      // 3: شارة الرصيد المتاح
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100f));      // 4: خانة الكمية
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 75f));       // 5: تسمية الوحدة
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 155f));      // 6: زر الإضافة
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 175f));      // 3: شارة الرصيد المتاح
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));       // 4: خانة الكمية
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));      // 5: كومبو الوحدة
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 145f));      // 6: زر الإضافة
 
             // 0: حاوية الاسكنر مع عنوانه
             var pnlScanner = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
@@ -392,25 +407,25 @@ namespace ChickenDist.Forms
             var pnlUnit = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblUnitTitle = new Label
             {
-                Text = "الوحدة:",
-                Font = new Font("Segoe UI", 8.5f),
-                ForeColor = Color.FromArgb(170, 185, 205),
+                Text = "الوحدة المحولة:",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(255, 215, 100),
                 Dock = DockStyle.Top,
                 Height = 20,
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            lblUnitTag = new Label
+            cboUnit = new ComboBox
             {
-                Text = "قطعة",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(220, 235, 255),
+                DropDownStyle = ComboBoxStyle.DropDownList,
                 Dock = DockStyle.Bottom,
                 Height = 32,
-                TextAlign = ContentAlignment.MiddleCenter,
-                BackColor = Color.FromArgb(32, 44, 62),
-                BorderStyle = BorderStyle.FixedSingle
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextDark,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
             };
-            pnlUnit.Controls.Add(lblUnitTag);
+            cboUnit.SelectedIndexChanged += (s, e) => UpdateAvailableStockDisplay();
+            pnlUnit.Controls.Add(cboUnit);
             pnlUnit.Controls.Add(lblUnitTitle);
 
             // 6: زر الإضافة
@@ -530,17 +545,31 @@ namespace ChickenDist.Forms
             var colUnit = new DataGridViewTextBoxColumn
             {
                 Name = "Unit",
-                HeaderText = "الوحدة",
-                FillWeight = 45,
+                HeaderText = "الوحدة المحولة",
+                FillWeight = 55,
                 ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            };
+
+            var colFactor = new DataGridViewTextBoxColumn
+            {
+                Name = "Factor",
+                HeaderText = "المعامل",
+                FillWeight = 35,
+                ReadOnly = true,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    ForeColor = Color.FromArgb(200, 215, 235),
+                    Font = new Font("Segoe UI", 9f)
+                }
             };
 
             var colAvail = new DataGridViewTextBoxColumn
             {
                 Name = "AvailableStock",
-                HeaderText = "المتاح بالمصدر",
-                FillWeight = 65,
+                HeaderText = "المتاح بالوحدة",
+                FillWeight = 60,
                 ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -554,7 +583,7 @@ namespace ChickenDist.Forms
             {
                 Name = "Quantity",
                 HeaderText = "الكمية المحولة (✏️ تعديل)",
-                FillWeight = 75,
+                FillWeight = 70,
                 ReadOnly = false, // متاح للتعديل المباشر في الخلية!
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -565,13 +594,27 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var colTotalBase = new DataGridViewTextBoxColumn
+            {
+                Name = "TotalBaseQty",
+                HeaderText = "إجمالي بالصغرى",
+                FillWeight = 55,
+                ReadOnly = true,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    ForeColor = Color.FromArgb(140, 200, 255),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                }
+            };
+
             var colDel = new DataGridViewButtonColumn
             {
                 Name = "Delete",
                 HeaderText = "حذف",
                 Text = "🗑️ حذف",
                 UseColumnTextForButtonValue = true,
-                FillWeight = 40,
+                FillWeight = 35,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
@@ -580,7 +623,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            dgItems.Columns.AddRange(new DataGridViewColumn[] { colIndex, colPid, colCode, colName, colUnit, colAvail, colQty, colDel });
+            dgItems.Columns.AddRange(new DataGridViewColumn[] { colIndex, colPid, colCode, colName, colUnit, colFactor, colAvail, colQty, colTotalBase, colDel });
             dgItems.CellClick += DgItems_CellClick;
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
@@ -707,7 +750,16 @@ namespace ChickenDist.Forms
                     RefreshGrid();
                 }
             }
-            UpdateAvailableStock();
+
+            if (_selectedProductID > 0 && cboFromWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
+            {
+                _selectedProductStock = InventoryDAL.GetProductStock(_selectedProductID, wh.ID);
+            }
+            else
+            {
+                _selectedProductStock = 0m;
+            }
+            UpdateAvailableStockDisplay();
         }
 
         private void OpenProductSearch()
@@ -729,71 +781,189 @@ namespace ChickenDist.Forms
             if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
             {
                 decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
-                // ✅ إضافة تلقائية مباشرة للجدول بمجرد الاختيار من شاشة البحث
-                SelectProductByID(frm.SelectedProductID, wh.ID, qty);
-                AddItemToGrid(_selectedProductID, _selectedProductCode, _selectedProductName, _selectedProductUnit, nudQty.Value, wh.ID);
+                string preferredUnit = frm.SelectedUnitName;
+
+                // ✅ تحديد الصنف مع الوحدة المختارة
+                SelectProductByID(frm.SelectedProductID, wh.ID, qty, preferredUnitName: preferredUnit);
+                BtnAddItem_Click(null, null);
             }
         }
 
-
-        private void SelectProductByID(int productID, int warehouseID, decimal initialQty = 1m)
+        private void SelectProductByID(int productID, int warehouseID, decimal initialQty = 1m, string preferredUnitName = null, int? matchedUnitLevel = null)
         {
-            var dt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, Unit FROM Products WHERE ProductID=@id", DbHelper.P("@id", productID));
+            var dt = DbHelper.Query(@"
+                SELECT ProductID, ProductCode, ProductName, Unit, 
+                       Unit1Name, Unit2Name, Unit2Factor, Unit3Factor, DefaultSaleUnit 
+                FROM Products 
+                WHERE ProductID=@id", DbHelper.P("@id", productID));
+
             if (dt != null && dt.Rows.Count > 0)
             {
                 var row = dt.Rows[0];
                 _selectedProductID = Convert.ToInt32(row["ProductID"]);
                 _selectedProductCode = row["ProductCode"]?.ToString() ?? "";
                 _selectedProductName = row["ProductName"]?.ToString() ?? "";
-                _selectedProductUnit = row["Unit"]?.ToString() ?? "قطعة";
 
                 txtSelectedProduct.Text = $"{_selectedProductCode} - {_selectedProductName}";
-                lblUnitTag.Text = _selectedProductUnit;
 
+                string majorUnit = row["Unit"]?.ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(majorUnit)) majorUnit = "قطعة";
+
+                string unit1 = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString().Trim() : "";
+                string unit2 = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString().Trim() : "";
+
+                decimal u2f = 1m;
+                if (row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value && decimal.TryParse(row["Unit2Factor"].ToString(), out decimal parsedU2) && parsedU2 > 0)
+                    u2f = parsedU2;
+
+                decimal u3f = 1m;
+                if (row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value && decimal.TryParse(row["Unit3Factor"].ToString(), out decimal parsedU3) && parsedU3 > 0)
+                    u3f = parsedU3;
+
+                decimal majorFactor = u2f * u3f;
+                string baseUnitName = !string.IsNullOrWhiteSpace(unit1) ? unit1 : majorUnit;
+
+                cboUnit.Items.Clear();
+
+                // 1. الوحدة الكبرى
+                var optMajor = new TransferUnitOption
+                {
+                    UnitName = majorUnit,
+                    Factor = majorFactor,
+                    Level = 3,
+                    BaseUnitName = baseUnitName
+                };
+                cboUnit.Items.Add(optMajor);
+
+                // 2. الوحدة الوسطى إن وجدت
+                TransferUnitOption optMiddle = null;
+                if (!string.IsNullOrWhiteSpace(unit2) && !string.Equals(unit2, majorUnit, StringComparison.OrdinalIgnoreCase))
+                {
+                    optMiddle = new TransferUnitOption
+                    {
+                        UnitName = unit2,
+                        Factor = u2f,
+                        Level = 2,
+                        BaseUnitName = baseUnitName
+                    };
+                    cboUnit.Items.Add(optMiddle);
+                }
+
+                // 3. الوحدة الصغرى إن وجدت ومختلفة
+                TransferUnitOption optMinor = null;
+                if (!string.IsNullOrWhiteSpace(unit1) && !string.Equals(unit1, majorUnit, StringComparison.OrdinalIgnoreCase) && !string.Equals(unit1, unit2, StringComparison.OrdinalIgnoreCase))
+                {
+                    optMinor = new TransferUnitOption
+                    {
+                        UnitName = unit1,
+                        Factor = 1.0m,
+                        Level = 1,
+                        BaseUnitName = baseUnitName
+                    };
+                    cboUnit.Items.Add(optMinor);
+                }
+                else if (majorFactor > 1m && cboUnit.Items.Count == 1)
+                {
+                    optMinor = new TransferUnitOption
+                    {
+                        UnitName = "قطعة",
+                        Factor = 1.0m,
+                        Level = 1,
+                        BaseUnitName = "قطعة"
+                    };
+                    cboUnit.Items.Add(optMinor);
+                }
+
+                // تحديد الوحدة الافتراضية المناسبة
+                int selectedIdx = -1;
+                if (!string.IsNullOrWhiteSpace(preferredUnitName))
+                {
+                    for (int i = 0; i < cboUnit.Items.Count; i++)
+                    {
+                        if (cboUnit.Items[i] is TransferUnitOption opt && string.Equals(opt.UnitName, preferredUnitName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            selectedIdx = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (selectedIdx < 0 && matchedUnitLevel.HasValue)
+                {
+                    for (int i = 0; i < cboUnit.Items.Count; i++)
+                    {
+                        if (cboUnit.Items[i] is TransferUnitOption opt && opt.Level == matchedUnitLevel.Value)
+                        {
+                            selectedIdx = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (selectedIdx < 0)
+                {
+                    string defUnit = row.Table.Columns.Contains("DefaultSaleUnit") && row["DefaultSaleUnit"] != DBNull.Value ? row["DefaultSaleUnit"].ToString().Trim() : "";
+                    if (defUnit == "الصغرى" && optMinor != null)
+                        selectedIdx = cboUnit.Items.IndexOf(optMinor);
+                    else if (defUnit == "الوسطى" && optMiddle != null)
+                        selectedIdx = cboUnit.Items.IndexOf(optMiddle);
+                    else
+                        selectedIdx = 0; // الكبرى
+                }
+
+                if (selectedIdx >= 0 && selectedIdx < cboUnit.Items.Count)
+                    cboUnit.SelectedIndex = selectedIdx;
+                else if (cboUnit.Items.Count > 0)
+                    cboUnit.SelectedIndex = 0;
+
+                // رصيد المستودع الحالي بالوحدة الصغرى
                 _selectedProductStock = InventoryDAL.GetProductStock(_selectedProductID, warehouseID);
-                lblAvailableStock.Text = $"متاح: {_selectedProductStock:G29} {_selectedProductUnit}";
-
-                if (_selectedProductStock > 0)
-                {
-                    lblAvailableStock.BackColor = Color.FromArgb(20, 60, 40);
-                    lblAvailableStock.ForeColor = Color.FromArgb(90, 240, 150);
-                }
-                else
-                {
-                    lblAvailableStock.BackColor = Color.FromArgb(70, 25, 25);
-                    lblAvailableStock.ForeColor = Color.FromArgb(255, 120, 120);
-                }
-
-                decimal suggestQty = _selectedProductStock > 0 ? Math.Min(initialQty, _selectedProductStock) : initialQty;
-                nudQty.Value = suggestQty > 0 ? suggestQty : 1m;
-                nudQty.Focus();
-                nudQty.Select(0, nudQty.Text.Length);
+                UpdateAvailableStockDisplay(initialQty);
             }
         }
 
-        private void UpdateAvailableStock()
+        private void UpdateAvailableStockDisplay(decimal? suggestQtyParam = null)
         {
-            if (_selectedProductID > 0 && cboFromWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
+            if (_selectedProductID <= 0 || !(cboFromWarehouse.SelectedItem is ComboItem wh) || wh.ID <= 0)
             {
-                _selectedProductStock = InventoryDAL.GetProductStock(_selectedProductID, wh.ID);
-                lblAvailableStock.Text = $"متاح: {_selectedProductStock:G29} {_selectedProductUnit}";
-                if (_selectedProductStock > 0)
-                {
-                    lblAvailableStock.BackColor = Color.FromArgb(20, 60, 40);
-                    lblAvailableStock.ForeColor = Color.FromArgb(90, 240, 150);
-                }
-                else
-                {
-                    lblAvailableStock.BackColor = Color.FromArgb(70, 25, 25);
-                    lblAvailableStock.ForeColor = Color.FromArgb(255, 120, 120);
-                }
-            }
-            else
-            {
-                _selectedProductStock = 0m;
                 lblAvailableStock.Text = "متاح: --";
                 lblAvailableStock.BackColor = Color.FromArgb(35, 48, 68);
                 lblAvailableStock.ForeColor = Color.FromArgb(160, 175, 195);
+                return;
+            }
+
+            var opt = cboUnit.SelectedItem as TransferUnitOption;
+            decimal factor = opt != null && opt.Factor > 0 ? opt.Factor : 1.0m;
+            string unitName = opt != null ? opt.UnitName : "قطعة";
+
+            decimal availInUnit = factor > 0 ? (_selectedProductStock / factor) : _selectedProductStock;
+
+            if (factor > 1m && !string.IsNullOrWhiteSpace(opt?.BaseUnitName) && opt.BaseUnitName != unitName)
+            {
+                lblAvailableStock.Text = $"متاح: {availInUnit:G29} {unitName}\n({_selectedProductStock:G29} {opt.BaseUnitName})";
+            }
+            else
+            {
+                lblAvailableStock.Text = $"متاح: {availInUnit:G29} {unitName}";
+            }
+
+            if (_selectedProductStock > 0)
+            {
+                lblAvailableStock.BackColor = Color.FromArgb(20, 60, 40);
+                lblAvailableStock.ForeColor = Color.FromArgb(90, 240, 150);
+            }
+            else
+            {
+                lblAvailableStock.BackColor = Color.FromArgb(70, 25, 25);
+                lblAvailableStock.ForeColor = Color.FromArgb(255, 120, 120);
+            }
+
+            if (suggestQtyParam.HasValue)
+            {
+                decimal suggestQty = availInUnit > 0 ? Math.Min(suggestQtyParam.Value, availInUnit) : suggestQtyParam.Value;
+                nudQty.Value = suggestQty > 0 ? suggestQty : 1m;
+                nudQty.Focus();
+                nudQty.Select(0, nudQty.Text.Length);
             }
         }
 
@@ -814,8 +984,11 @@ namespace ChickenDist.Forms
                 var dt = ProductDAL.FindByCode(barcode);
                 if (dt != null && dt.Rows.Count > 0)
                 {
-                    int pid = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-                    SelectProductByID(pid, wh.ID, 1m);
+                    var row = dt.Rows[0];
+                    int pid = Convert.ToInt32(row["ProductID"]);
+                    int matchedUnit = dt.Columns.Contains("MatchedUnit") && row["MatchedUnit"] != DBNull.Value ? Convert.ToInt32(row["MatchedUnit"]) : 3;
+
+                    SelectProductByID(pid, wh.ID, 1m, matchedUnitLevel: matchedUnit);
                     BtnAddItem_Click(null, null);
                 }
                 else
@@ -852,46 +1025,61 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            AddItemToGrid(_selectedProductID, _selectedProductCode, _selectedProductName, _selectedProductUnit, qty, wh.ID);
+            var opt = cboUnit.SelectedItem as TransferUnitOption;
+            string unit = opt != null ? opt.UnitName : "قطعة";
+            decimal factor = opt != null && opt.Factor > 0 ? opt.Factor : 1.0m;
+
+            AddItemToGrid(_selectedProductID, _selectedProductCode, _selectedProductName, unit, factor, qty, wh.ID);
         }
 
-        private void AddItemToGrid(int productID, string productCode, string productName, string unit, decimal qty, int sourceWarehouseID)
+        private void AddItemToGrid(int productID, string productCode, string productName, string unit, decimal factor, decimal qty, int sourceWarehouseID)
         {
-            decimal available = InventoryDAL.GetProductStock(productID, sourceWarehouseID);
+            decimal availableStockSmallest = InventoryDAL.GetProductStock(productID, sourceWarehouseID);
+            decimal currentBaseQtyInGrid = 0m;
+            TransferItemDTO existingSameUnit = null;
 
-            foreach (var existing in _items)
+            foreach (var it in _items)
             {
-                if (existing.ProductID == productID)
+                if (it.ProductID == productID)
                 {
-                    decimal newQty = existing.Quantity + qty;
-                    if (newQty > available)
+                    currentBaseQtyInGrid += it.TotalBaseQty;
+                    if (string.Equals(it.Unit, unit, StringComparison.OrdinalIgnoreCase) && Math.Abs(it.Factor - factor) < 0.001m)
                     {
-                        MessageBox.Show($"❌ الكمية الإجمالية المطلوبة ({newQty:G29}) تتجاوز الرصيد المتوفر في المستودع المصدر ({available:G29})!", "عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
+                        existingSameUnit = it;
                     }
-                    existing.Quantity = newQty;
-                    existing.AvailableStock = available;
-                    RefreshGrid();
-                    ResetSelectedItem();
-                    return;
                 }
             }
 
-            if (qty > available)
+            decimal requestedBaseQty = qty * (factor > 0 ? factor : 1.0m);
+            if (currentBaseQtyInGrid + requestedBaseQty > availableStockSmallest)
             {
-                MessageBox.Show($"❌ الكمية المطلوبة ({qty:G29}) تتجاوز الرصيد المتوفر في المستودع المصدر ({available:G29})!", "عجز في الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                decimal availInSelectedUnit = factor > 0 ? (availableStockSmallest / factor) : availableStockSmallest;
+                MessageBox.Show($"❌ الكمية المطلوبة تتجاوز الرصيد المتوفر في المستودع المصدر!\n" +
+                                $"• الرصيد المتاح بالمصدر: {availInSelectedUnit:G29} {unit} ({availableStockSmallest:G29} بالصغرى)\n" +
+                                $"• المضاف مسبقاً بالإذن: {currentBaseQtyInGrid:G29} بالصغرى\n" +
+                                $"• المطلوب إضافته: {qty:G29} {unit} ({requestedBaseQty:G29} بالصغرى)",
+                                "عجز في الرصيد المتوفر", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            _items.Add(new TransferItemDTO
+            if (existingSameUnit != null)
             {
-                ProductID = productID,
-                ProductCode = productCode,
-                ProductName = productName,
-                Quantity = qty,
-                AvailableStock = available,
-                Unit = string.IsNullOrWhiteSpace(unit) ? "قطعة" : unit
-            });
+                existingSameUnit.Quantity += qty;
+                existingSameUnit.AvailableStock = factor > 0 ? (availableStockSmallest / factor) : availableStockSmallest;
+            }
+            else
+            {
+                _items.Add(new TransferItemDTO
+                {
+                    ProductID = productID,
+                    ProductCode = productCode,
+                    ProductName = productName,
+                    Quantity = qty,
+                    AvailableStock = factor > 0 ? (availableStockSmallest / factor) : availableStockSmallest,
+                    Unit = string.IsNullOrWhiteSpace(unit) ? "قطعة" : unit,
+                    Factor = factor > 0 ? factor : 1.0m
+                });
+            }
 
             RefreshGrid();
             ResetSelectedItem();
@@ -902,13 +1090,12 @@ namespace ChickenDist.Forms
             _selectedProductID = 0;
             _selectedProductCode = "";
             _selectedProductName = "";
-            _selectedProductUnit = "";
             _selectedProductStock = 0m;
             txtSelectedProduct.Text = "اضغط [F3] أو امسح الباركود لاختيار صنف...";
             lblAvailableStock.Text = "متاح: --";
             lblAvailableStock.BackColor = Color.FromArgb(35, 48, 68);
             lblAvailableStock.ForeColor = Color.FromArgb(160, 175, 195);
-            lblUnitTag.Text = "قطعة";
+            cboUnit.Items.Clear();
             nudQty.Value = 1m;
             txtBarcodeTransfer.Focus();
         }
@@ -917,11 +1104,13 @@ namespace ChickenDist.Forms
         {
             dgItems.Rows.Clear();
             decimal totalQty = 0m;
+            decimal totalBaseQty = 0m;
 
             for (int i = 0; i < _items.Count; i++)
             {
                 var item = _items[i];
                 totalQty += item.Quantity;
+                totalBaseQty += item.TotalBaseQty;
 
                 dgItems.Rows.Add(
                     (i + 1).ToString(),
@@ -929,13 +1118,15 @@ namespace ChickenDist.Forms
                     item.ProductCode,
                     item.ProductName,
                     item.Unit ?? "قطعة",
+                    item.Factor.ToString("G29"),
                     item.AvailableStock.ToString("G29"),
-                    item.Quantity.ToString("G29")
+                    item.Quantity.ToString("G29"),
+                    item.TotalBaseQty.ToString("G29")
                 );
             }
 
             lblCountBadge.Text = $"🏷️  البنود المحولة: {_items.Count} صنف";
-            lblTotalQtyBadge.Text = $"⚖️  إجمالي الكميات: {totalQty:N3}";
+            lblTotalQtyBadge.Text = $"⚖️  إجمالي بالوحدات: {totalQty:N2} | بالصغرى: {totalBaseQty:N0}";
         }
 
         private void DgItems_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -960,9 +1151,26 @@ namespace ChickenDist.Forms
 
             if (decimal.TryParse(cellVal, out decimal newQty) && newQty > 0)
             {
-                if (newQty > item.AvailableStock)
+                // التحقق من الرصيد المتوفر بالمستودع المصدر بالوحدات الصغرى
+                int sourceWarehouseID = (cboFromWarehouse.SelectedItem is ComboItem wh) ? wh.ID : 0;
+                decimal baseStock = sourceWarehouseID > 0 ? InventoryDAL.GetProductStock(item.ProductID, sourceWarehouseID) : (item.AvailableStock * item.Factor);
+
+                decimal otherBaseQty = 0m;
+                for (int i = 0; i < _items.Count; i++)
                 {
-                    MessageBox.Show($"❌ الكمية المدخلة ({newQty:G29}) تتجاوز الرصيد المتاح بالمصدر ({item.AvailableStock:G29})!", "تنبيه رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    if (i != e.RowIndex && _items[i].ProductID == item.ProductID)
+                        otherBaseQty += _items[i].TotalBaseQty;
+                }
+
+                decimal newBaseQty = newQty * (item.Factor > 0 ? item.Factor : 1.0m);
+                if (otherBaseQty + newBaseQty > baseStock)
+                {
+                    decimal maxAllowedInThisUnit = item.Factor > 0 ? ((baseStock - otherBaseQty) / item.Factor) : (baseStock - otherBaseQty);
+                    if (maxAllowedInThisUnit < 0) maxAllowedInThisUnit = 0;
+
+                    MessageBox.Show($"❌ الكمية المدخلة ({newQty:G29} {item.Unit}) تتجاوز الرصيد المتاح بالمصدر!\n" +
+                                    $"• الحد الأقصى المتاح بالوحدة المختارة: {maxAllowedInThisUnit:G29} {item.Unit}\n" +
+                                    $"• الرصيد الإجمالي المتاح: {baseStock:G29} بالصغرى", "تنبيه رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     dgItems.Rows[e.RowIndex].Cells["Quantity"].Value = item.Quantity.ToString("G29");
                     return;
                 }
@@ -1028,13 +1236,19 @@ namespace ChickenDist.Forms
             }
 
             decimal totalQty = 0m;
-            foreach (var it in _items) totalQty += it.Quantity;
+            decimal totalBaseQty = 0m;
+            foreach (var it in _items)
+            {
+                totalQty += it.Quantity;
+                totalBaseQty += it.TotalBaseQty;
+            }
 
             string confirmMsg = $"هل تريد بالتأكيد ترحيل وحفظ إذن التحويل المخزني التالي؟\n\n" +
                                $"• من مستودع: {from.Text}\n" +
                                $"• إلى مستودع: {to.Text}\n" +
                                $"• عدد البنود: {_items.Count} صنف\n" +
-                               $"• إجمالي الكمية المحولة: {totalQty:N3}\n" +
+                               $"• إجمالي الكميات بالوحدات المختارة: {totalQty:N2}\n" +
+                               $"• إجمالي الكميات المحولة بالوحدة الصغرى: {totalBaseQty:N0}\n" +
                                (string.IsNullOrWhiteSpace(txtNotes.Text) ? "" : $"• ملاحظات: {txtNotes.Text.Trim()}\n");
 
             if (MessageBox.Show(confirmMsg, "تأكيد التحويل المخزني", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
@@ -1128,9 +1342,9 @@ namespace ChickenDist.Forms
                     // ترويسة الجدول
                     float colW1 = 35f;  // #
                     float colW2 = 100f; // الكود
-                    float colW3 = width - (colW1 + colW2 + 75f + 90f); // الاسم
-                    float colW4 = 75f;  // الوحدة
-                    float colW5 = 90f;  // الكمية
+                    float colW4 = 85f;  // الوحدة
+                    float colW5 = 85f;  // الكمية
+                    float colW3 = width - (colW1 + colW2 + colW4 + colW5); // الاسم
 
                     var headerRect = new RectangleF(left, y, width, 28);
                     g.FillRectangle(new SolidBrush(Color.FromArgb(235, 240, 250)), headerRect);
@@ -1147,10 +1361,12 @@ namespace ChickenDist.Forms
 
                     // سطور الأصناف
                     decimal totalQty = 0m;
+                    decimal totalBaseQty = 0m;
                     for (int i = 0; i < items.Count; i++)
                     {
                         var it = items[i];
                         totalQty += it.Quantity;
+                        totalBaseQty += it.TotalBaseQty;
                         float rowH = 26f;
 
                         if (i % 2 == 1)
@@ -1159,11 +1375,13 @@ namespace ChickenDist.Forms
                         }
                         g.DrawRectangle(Pens.LightGray, left, y, width, rowH);
 
+                        string unitDisplay = it.Factor > 1m ? $"{it.Unit} (×{it.Factor:G29})" : (it.Unit ?? "قطعة");
+
                         cx = right;
                         g.DrawString((i + 1).ToString(), fRegular, Brushes.Black, new RectangleF(cx - colW1, y, colW1, rowH), sfRtlCenter); cx -= colW1;
                         g.DrawString(it.ProductCode, fRegular, Brushes.Black, new RectangleF(cx - colW2, y, colW2, rowH), sfRtlCenter); cx -= colW2;
                         g.DrawString(it.ProductName, fBold, Brushes.Black, new RectangleF(cx - colW3, y, colW3, rowH), sfRtlRight); cx -= colW3;
-                        g.DrawString(it.Unit ?? "قطعة", fRegular, Brushes.Black, new RectangleF(cx - colW4, y, colW4, rowH), sfRtlCenter); cx -= colW4;
+                        g.DrawString(unitDisplay, fRegular, Brushes.Black, new RectangleF(cx - colW4, y, colW4, rowH), sfRtlCenter); cx -= colW4;
                         g.DrawString(it.Quantity.ToString("N3"), fBold, Brushes.Black, new RectangleF(cx - colW5, y, colW5, rowH), sfRtlCenter);
 
                         y += rowH;
@@ -1175,8 +1393,8 @@ namespace ChickenDist.Forms
                     g.FillRectangle(new SolidBrush(Color.FromArgb(240, 245, 235)), totRect);
                     g.DrawRectangle(Pens.DarkGray, totRect.X, totRect.Y, totRect.Width, totRect.Height);
 
-                    g.DrawString($"إجمالي عدد البنود: {items.Count} صنف", fBold, Brushes.Black, new RectangleF(right - 250, y, 240, 28), sfRtlRight);
-                    g.DrawString($"إجمالي الكميات المحولة: {totalQty:N3}", fBold, Brushes.DarkGreen, new RectangleF(left + 15, y, 250, 28), sfRtlRight);
+                    g.DrawString($"إجمالي عدد البنود: {items.Count} صنف", fBold, Brushes.Black, new RectangleF(right - 220, y, 210, 28), sfRtlRight);
+                    g.DrawString($"إجمالي المحول: {totalQty:N2} | بالصغرى: {totalBaseQty:N0}", fBold, Brushes.DarkGreen, new RectangleF(left + 15, y, 320, 28), sfRtlRight);
                     y += 50;
 
                     // خانات التوقيعات
