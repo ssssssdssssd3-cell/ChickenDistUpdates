@@ -728,7 +728,7 @@ namespace ChickenDist.Forms
             var dlg = new Form
             {
                 Width = 420,
-                Height = 370,
+                Height = 425,
                 Text = "💵 تحصيل نقدية وسند قبض من العميل",
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -803,6 +803,45 @@ namespace ChickenDist.Forms
             dlg.Controls.Add(lblClient);
             y += 30;
 
+            // اختيار الخزينة / الدرج المستلم
+            var lblSafeTitle = new Label
+            {
+                Text = "توريد إلى خزينة:",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                Location = new Point(15, y + 4),
+                AutoSize = true
+            };
+            var cboSafe = new ComboBox
+            {
+                Location = new Point(150, y),
+                Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            try
+            {
+                DataTable safes = AccountDAL.GetAllowedSafeAccounts();
+                cboSafe.DisplayMember = "AccountName";
+                cboSafe.ValueMember = "AccountID";
+                cboSafe.DataSource = safes;
+                int defSafeId = Session.GetDefaultSafeID();
+                cboSafe.SelectedValue = defSafeId;
+                if (cboSafe.SelectedIndex < 0 && cboSafe.Items.Count > 0)
+                    cboSafe.SelectedIndex = 0;
+
+                if (!Session.IsAdmin && (!Session.CanChangeSafe("ReceiptVoucher") || safes.Rows.Count <= 1))
+                {
+                    cboSafe.Enabled = false;
+                }
+            }
+            catch { }
+            dlg.Controls.AddRange(new Control[] { lblSafeTitle, cboSafe });
+            y += 45;
+
             // المبلغ (يدوي بدون أسهم)
             var lblAmtTitle = new Label
             {
@@ -867,6 +906,7 @@ namespace ChickenDist.Forms
             var btnCancel = Theme.MakeButton("❌ إلغاء", 115, y, 90, 38, Theme.Danger);
             btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 
+            int? chosenSafeId = null;
             btnSave.Click += (s2, e2) =>
             {
                 if (!decimal.TryParse(txtAmount.Text.Trim(), out decimal amt) || amt <= 0)
@@ -874,6 +914,10 @@ namespace ChickenDist.Forms
                     MessageBox.Show("يرجى إدخال مبلغ محصل صحيح أكبر من صفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtAmount.Focus();
                     return;
+                }
+                if (cboSafe.SelectedValue != null && int.TryParse(cboSafe.SelectedValue.ToString(), out int sId))
+                {
+                    chosenSafeId = sId;
                 }
                 dlg.DialogResult = DialogResult.OK;
                 dlg.Close();
@@ -885,8 +929,8 @@ namespace ChickenDist.Forms
 
             if (dlg.ShowDialog(this) == DialogResult.OK && decimal.TryParse(txtAmount.Text.Trim(), out decimal paidAmt) && paidAmt > 0)
             {
-                ClientDAL.AddPayment(_selectedID, paidAmt, txtNotes.Text.Trim());
-                new FrmPrintClientPayment(_selectedID, paidAmt, txtNotes.Text.Trim(), null, txtName.Text);
+                ClientDAL.AddPayment(_selectedID, paidAmt, txtNotes.Text.Trim(), chosenSafeId);
+                new FrmPrintClientPayment(_selectedID, paidAmt, txtNotes.Text.Trim(), chosenSafeId, txtName.Text);
                 LoadClients();
             }
         }

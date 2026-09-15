@@ -292,6 +292,31 @@ namespace ChickenDist.Forms
                 "Clothing"  => "القطعة / الصنف",
                 _           => "الصنف"
             });
+            var colStock = new DataGridViewTextBoxColumn
+            {
+                Name = "StockQty",
+                HeaderText = "الرصيد",
+                ReadOnly = true,
+                Width = 65,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(46, 204, 113)
+                }
+            };
+            dgItems.Columns.Add(colStock);
+
+            var colUnit = new DataGridViewComboBoxColumn
+            {
+                Name = "UnitName",
+                HeaderText = "الوحدة",
+                ReadOnly = false,
+                Width = 80,
+                FlatStyle = FlatStyle.Flat
+            };
+            dgItems.Columns.Add(colUnit);
+
             dgItems.Columns.Add("Qty", "الكمية");
             // ── أزرار +/- للكمية ─────────────────────────────────
             var plusCol = new DataGridViewButtonColumn
@@ -385,15 +410,19 @@ namespace ChickenDist.Forms
             
             dgItems.Columns["Code"].ReadOnly = false;
             dgItems.Columns["Name"].ReadOnly = true;
+            dgItems.Columns["StockQty"].ReadOnly = true;
+            dgItems.Columns["UnitName"].ReadOnly = false;
             dgItems.Columns["Qty"].ReadOnly = false;
             dgItems.Columns["Price"].ReadOnly = !Session.CanEditPrice("POS");
             dgItems.Columns["Discount"].ReadOnly = false;
             dgItems.Columns["Total"].ReadOnly = true;
 
             dgItems.Columns["Code"].Width = 60;
-            dgItems.Columns["Name"].Width = 240;
-            dgItems.Columns["Name"].MinimumWidth = 180;
+            dgItems.Columns["Name"].Width = 220;
+            dgItems.Columns["Name"].MinimumWidth = 160;
             dgItems.Columns["Name"].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+            dgItems.Columns["StockQty"].Width = 65;
+            dgItems.Columns["UnitName"].Width = 80;
             dgItems.Columns["Qty"].Width = 50;
             dgItems.Columns["Price"].Width = 70;
             dgItems.Columns["Discount"].Width = 55;
@@ -415,6 +444,14 @@ namespace ChickenDist.Forms
                         {
                             _items.RemoveAt(e.RowIndex);
                             RefreshGrid();
+                        }
+                    }
+                    else if (colName == "UnitName")
+                    {
+                        dgItems.BeginEdit(true);
+                        if (dgItems.EditingControl is ComboBox cbo)
+                        {
+                            cbo.DroppedDown = true;
                         }
                     }
                     else if (colName == "QtyPlus" && e.RowIndex < _items.Count)
@@ -444,12 +481,39 @@ namespace ChickenDist.Forms
                 }
             };
 
+            dgItems.CellEnter += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "UnitName")
+                {
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (dgItems.CurrentCell != null && dgItems.CurrentCell.RowIndex == e.RowIndex && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "UnitName")
+                        {
+                            dgItems.BeginEdit(true);
+                            if (dgItems.EditingControl is ComboBox cbo)
+                            {
+                                cbo.DroppedDown = true;
+                            }
+                        }
+                    });
+                }
+            };
+
+            dgItems.CurrentCellDirtyStateChanged += (s, e) =>
+            {
+                if (dgItems.IsCurrentCellDirty && dgItems.CurrentCell != null && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "UnitName")
+                {
+                    dgItems.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                }
+            };
+            dgItems.DataError += (s, e) => { e.ThrowException = false; };
+
             dgItems.CellDoubleClick += (s, e) =>
             {
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
                 {
                     string colName = dgItems.Columns[e.ColumnIndex].Name;
-                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes" || colName == "Delete" || colName == "QtyPlus" || colName == "QtyMinus")
+                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes" || colName == "Delete" || colName == "QtyPlus" || colName == "QtyMinus" || colName == "UnitName")
                     {
                         return; // السماح بتعديل الخانات التفاعلية مباشرة
                     }
@@ -467,7 +531,14 @@ namespace ChickenDist.Forms
 
             dgItems.EditingControlShowing += (s, e) =>
             {
-                if (e.Control is TextBox tb)
+                if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "UnitName")
+                {
+                    if (e.Control is ComboBox cbo)
+                    {
+                        cbo.DroppedDown = true;
+                    }
+                }
+                else if (e.Control is TextBox tb)
                 {
                     tb.ForeColor = Color.Black;
                     tb.BackColor = Color.FromArgb(255, 255, 200); // High contrast soft yellow
@@ -1433,6 +1504,7 @@ namespace ChickenDist.Forms
                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                        p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor,
                        p.Unit3Factor, p.DefaultSaleUnit,
+                       p.WholesalePrice, p.SemiWholesalePrice, p.MinStockLimit, COALESCE(p.IsService, 0) AS IsService,
                        p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                 FROM Products p
                 WHERE p.IsActive = 1 AND (
@@ -1464,6 +1536,7 @@ namespace ChickenDist.Forms
                                p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                                p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor,
                                p.Unit3Factor, p.DefaultSaleUnit,
+                               p.WholesalePrice, p.SemiWholesalePrice, p.MinStockLimit, COALESCE(p.IsService, 0) AS IsService,
                                p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                         FROM Products p 
                         WHERE p.IsActive = 1 AND (
@@ -1482,6 +1555,7 @@ namespace ChickenDist.Forms
                                    p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                                    p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor,
                                    p.Unit3Factor, p.DefaultSaleUnit,
+                                   p.WholesalePrice, p.SemiWholesalePrice, p.MinStockLimit, COALESCE(p.IsService, 0) AS IsService,
                                    p.InternationalCode, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                             FROM Products p 
                             WHERE p.IsActive = 1 AND (
@@ -1771,16 +1845,29 @@ namespace ChickenDist.Forms
                 ProductID = productID,
                 Code = code,
                 Name = name,
-                Unit = row["Unit"]?.ToString() ?? "",
+                Unit = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString() : "",
                 UnitName = unitName,
+                BaseUnitName = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString() : "",
+                Unit1Name = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString() : "",
+                Unit2Name = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString() : "",
+                Unit1SalePrice = row.Table.Columns.Contains("Unit1SalePrice") && row["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit1SalePrice"]) : 0m,
+                Unit2SalePrice = row.Table.Columns.Contains("Unit2SalePrice") && row["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit2SalePrice"]) : 0m,
+                Unit1Cost = row.Table.Columns.Contains("Unit1PurchasePrice") && row["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit1PurchasePrice"]) : 0m,
+                Unit2Cost = row.Table.Columns.Contains("Unit2PurchasePrice") && row["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit2PurchasePrice"]) : 0m,
+                Unit2Factor = u2fVal,
+                Unit3Factor = u3fVal,
+                MajorPrice = tierMajorPrice,
+                MajorCost = majorCost,
+                MinStockLimit = row.Table.Columns.Contains("MinStockLimit") && row["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row["MinStockLimit"]) : 0m,
+                IsService = isService,
                 Factor = factor,
                 Qty = qty,
                 Price = price,
                 Cost = cost,
                 Total = (qty * price) - discountAmt,
                 DiscountAmt = discountAmt,
-                HasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]),
-                DefaultExpiryDays = row["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row["DefaultExpiryDays"]) : (int?)null,
+                HasExpiry = row.Table.Columns.Contains("HasExpiry") && row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]),
+                DefaultExpiryDays = row.Table.Columns.Contains("DefaultExpiryDays") && row["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row["DefaultExpiryDays"]) : (int?)null,
                 BatchID = batchID,
                 ExpiryDate = expiryDate
             };
@@ -1820,20 +1907,60 @@ namespace ChickenDist.Forms
                 decimal? lastPrice = (clientID > 0) ? SaleDAL.GetLastPriceForClient(item.ProductID, clientID) : null;
                 string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") + " ج" : "-";
 
-                int rIdx = -1;
-                if (AppConfig.IsRestaurant)
+                EnsureItemUnitMetadata(item);
+
+                decimal availBaseStock = GetProductAvailableStock(item.ProductID, item.BatchID);
+                decimal f = item.Factor > 0 ? item.Factor : 1m;
+                decimal stockInUnit = item.IsService ? 9999m : (availBaseStock / f);
+                item.StockQty = stockInUnit;
+
+                int rIdx = dgItems.Rows.Add();
+                var row = dgItems.Rows[rIdx];
+                row.Cells["Code"].Value = item.Code;
+                row.Cells["Name"].Value = item.Name;
+                row.Cells["StockQty"].Value = item.IsService ? "خدمي" : stockInUnit.ToString("G29");
+                row.Cells["Qty"].Value = item.Qty.ToString("G");
+                row.Cells["QtyPlus"].Value = "+";
+                row.Cells["QtyMinus"].Value = "-";
+                row.Cells["Price"].Value = item.Price.ToString("N2");
+                row.Cells["LastClientPrice"].Value = lastPriceStr;
+                row.Cells["IMEI"].Value = item.IMEI ?? "";
+                row.Cells["Discount"].Value = item.DiscountAmt.ToString("N2");
+                row.Cells["Total"].Value = item.Total.ToString("N2");
+                if (AppConfig.IsRestaurant && dgItems.Columns.Contains("KitchenNotes"))
                 {
-                    rIdx = dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.IMEI ?? "", item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"), item.KitchenNotes);
-                    SetupPosSerialCombo(rIdx, item);
+                    row.Cells["KitchenNotes"].Value = item.KitchenNotes ?? "";
                 }
-                else
-                {
-                    rIdx = dgItems.Rows.Add(item.Code, item.Name + (string.IsNullOrEmpty(item.UnitName) ? "" : $" ({item.UnitName})"), item.Qty.ToString("G"), "", "", item.Price.ToString("N2"), lastPriceStr, item.IMEI ?? "", item.DiscountAmt.ToString("N2"), item.Total.ToString("N2"));
-                    SetupPosSerialCombo(rIdx, item);
-                }
+
+                SetupPosUnitCombo(rIdx, item);
+                SetupPosSerialCombo(rIdx, item);
+
                 if (rIdx >= 0)
                 {
-                    dgItems.Rows[rIdx].Cells["Code"].ReadOnly = true;
+                    row.Cells["Code"].ReadOnly = true;
+
+                    var stockCell = row.Cells["StockQty"];
+                    if (stockCell != null && !item.IsService)
+                    {
+                        if (stockInUnit <= 0)
+                        {
+                            stockCell.Style.ForeColor = Color.FromArgb(231, 76, 60); // Red
+                            stockCell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                            stockCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                        }
+                        else if (item.MinStockLimit > 0 && stockInUnit <= item.MinStockLimit)
+                        {
+                            stockCell.Style.ForeColor = Color.FromArgb(230, 126, 34); // Orange
+                            stockCell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                            stockCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                        }
+                        else
+                        {
+                            stockCell.Style.ForeColor = Color.FromArgb(46, 204, 113); // Green
+                            stockCell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                            stockCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                        }
+                    }
                 }
                 total += item.Total;
             }
@@ -1860,6 +1987,246 @@ namespace ChickenDist.Forms
             else if (_selectedSaleType == "Visa" && txtVisaPaid != null) txtVisaPaid.Text = (total - loyaltyDiscount).ToString("N2");
             RecalcChange();
             AutoSavePOSDraft();
+        }
+
+        private void SetupPosUnitCombo(int rIndex, POSItem item)
+        {
+            if (rIndex < 0 || rIndex >= dgItems.Rows.Count) return;
+            if (!dgItems.Columns.Contains("UnitName")) return;
+
+            EnsureItemUnitMetadata(item);
+
+            var unitCell = dgItems.Rows[rIndex].Cells["UnitName"] as DataGridViewComboBoxCell;
+            if (unitCell == null) return;
+
+            var unitList = new System.Collections.ArrayList();
+
+            // 1. الوحدة الكبرى (الأساسية)
+            string baseU = !string.IsNullOrEmpty(item.BaseUnitName) ? item.BaseUnitName : (!string.IsNullOrEmpty(item.Unit) ? item.Unit : "");
+            if (!string.IsNullOrEmpty(baseU) && !unitList.Contains(baseU))
+            {
+                unitList.Add(baseU);
+            }
+
+            // 2. الوحدة الوسطى (إن وُجدت وليست مكررة)
+            if (!string.IsNullOrEmpty(item.Unit2Name) && !unitList.Contains(item.Unit2Name))
+            {
+                unitList.Add(item.Unit2Name);
+            }
+
+            // 3. الوحدة الصغرى (إن وُجدت وليست مكررة)
+            if (!string.IsNullOrEmpty(item.Unit1Name) && !unitList.Contains(item.Unit1Name))
+            {
+                unitList.Add(item.Unit1Name);
+            }
+
+            if (unitList.Count == 0)
+            {
+                string defU = !string.IsNullOrEmpty(item.UnitName) ? item.UnitName : "وحدة";
+                unitList.Add(defU);
+            }
+
+            unitCell.DataSource = null;
+            unitCell.Items.Clear();
+            foreach (var u in unitList)
+            {
+                if (u != null && !unitCell.Items.Contains(u.ToString()))
+                    unitCell.Items.Add(u.ToString());
+            }
+
+            // تعيين القيمة المحفوظة (أو الافتراضية) مع ضمان وجودها في القائمة
+            string savedUnit = item.UnitName;
+            if (!string.IsNullOrEmpty(savedUnit))
+            {
+                if (!unitCell.Items.Contains(savedUnit))
+                    unitCell.Items.Add(savedUnit);
+                unitCell.Value = savedUnit;
+            }
+            else if (unitCell.Items.Count > 0)
+            {
+                unitCell.Value = unitCell.Items[0];
+                item.UnitName = unitCell.Items[0].ToString();
+            }
+        }
+
+        private void EnsureItemUnitMetadata(POSItem item)
+        {
+            if (item == null || item.ProductID <= 0) return;
+            if (!string.IsNullOrEmpty(item.BaseUnitName) || !string.IsNullOrEmpty(item.Unit1Name) || !string.IsNullOrEmpty(item.Unit2Name))
+            {
+                return; // already loaded
+            }
+
+            try
+            {
+                var dt = DbHelper.Query(@"
+                    SELECT Unit, Unit1Name, Unit2Name, 
+                           Unit1SalePrice, Unit2SalePrice, 
+                           Unit1PurchasePrice, Unit2PurchasePrice, 
+                           Unit2Factor, Unit3Factor, 
+                           SalePrice, PurchasePrice, WholesalePrice, SemiWholesalePrice,
+                           MinStockLimit, IsService
+                    FROM Products WITH (NOLOCK)
+                    WHERE ProductID = @id", DbHelper.P("@id", item.ProductID));
+
+                if (dt.Rows.Count > 0)
+                {
+                    var r = dt.Rows[0];
+                    item.BaseUnitName = r["Unit"] != DBNull.Value ? r["Unit"].ToString() : "";
+                    item.Unit1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : "";
+                    item.Unit2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : "";
+
+                    item.Unit1SalePrice = r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
+                    item.Unit2SalePrice = r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
+                    item.Unit1Cost = r["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1PurchasePrice"]) : 0m;
+                    item.Unit2Cost = r["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2PurchasePrice"]) : 0m;
+
+                    item.Unit2Factor = r["Unit2Factor"] != DBNull.Value && Convert.ToDecimal(r["Unit2Factor"]) > 0 ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
+                    item.Unit3Factor = r["Unit3Factor"] != DBNull.Value && Convert.ToDecimal(r["Unit3Factor"]) > 0 ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
+
+                    string curTier = GetSelectedPriceTier();
+                    decimal tierMajorPrice = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+                    if (curTier == "جملة" && r["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(r["WholesalePrice"]) > 0)
+                        tierMajorPrice = Convert.ToDecimal(r["WholesalePrice"]);
+                    else if (curTier == "نصف جملة" && r["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(r["SemiWholesalePrice"]) > 0)
+                        tierMajorPrice = Convert.ToDecimal(r["SemiWholesalePrice"]);
+
+                    item.MajorPrice = tierMajorPrice;
+                    item.MajorCost = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                    item.MinStockLimit = r["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(r["MinStockLimit"]) : 0m;
+                    item.IsService = r["IsService"] != DBNull.Value && Convert.ToBoolean(r["IsService"]);
+                }
+            }
+            catch { }
+        }
+
+        private decimal GetProductAvailableStock(int productID, int? batchID = null)
+        {
+            try
+            {
+                if (batchID.HasValue && batchID.Value > 0)
+                {
+                    int curWhId = GetSelectedWarehouseID();
+                    var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WITH (NOLOCK) WHERE BatchID=@bid AND WarehouseID=@wid", DbHelper.P("@bid", batchID.Value), DbHelper.P("@wid", curWhId));
+                    return qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
+                }
+
+                if (_stockCache != null && _stockCache.TryGetValue(productID, out decimal cachedStock))
+                {
+                    return cachedStock;
+                }
+
+                int wid = GetSelectedWarehouseID();
+                return InventoryDAL.GetProductStock(productID, wid);
+            }
+            catch
+            {
+                return 0m;
+            }
+        }
+
+        private void HandlePosUnitChange(int rowIndex, string newUnit)
+        {
+            if (rowIndex < 0 || rowIndex >= _items.Count) return;
+            var item = _items[rowIndex];
+            if (item == null || string.IsNullOrEmpty(newUnit)) return;
+            if (item.UnitName == newUnit && item.Factor > 0) return;
+
+            EnsureItemUnitMetadata(item);
+            item.UnitName = newUnit;
+
+            decimal u2f = item.Unit2Factor > 0 ? item.Unit2Factor : 1m;
+            decimal u3f = item.Unit3Factor > 0 ? item.Unit3Factor : 1m;
+            decimal totalFactor = u2f * u3f;
+
+            if (!string.IsNullOrEmpty(item.Unit2Name) && string.Equals(newUnit, item.Unit2Name, StringComparison.OrdinalIgnoreCase))
+            {
+                // 1. الوحدة الوسطى
+                item.Factor = u2f;
+                if (item.Unit2SalePrice > 0)
+                {
+                    item.Price = item.Unit2SalePrice;
+                }
+                else if (u3f > 0 && item.MajorPrice > 0)
+                {
+                    item.Price = Math.Round(item.MajorPrice / u3f, 2);
+                }
+                else
+                {
+                    item.Price = item.MajorPrice;
+                }
+
+                if (item.Unit2Cost > 0)
+                {
+                    item.Cost = item.Unit2Cost;
+                }
+                else if (u3f > 0 && item.MajorCost > 0)
+                {
+                    item.Cost = Math.Round(item.MajorCost / u3f, 2);
+                }
+                else
+                {
+                    item.Cost = item.MajorCost;
+                }
+            }
+            else if (!string.IsNullOrEmpty(item.Unit1Name) && string.Equals(newUnit, item.Unit1Name, StringComparison.OrdinalIgnoreCase))
+            {
+                // 2. الوحدة الصغرى (التجزئة)
+                item.Factor = 1m;
+                if (item.Unit1SalePrice > 0)
+                {
+                    item.Price = item.Unit1SalePrice;
+                }
+                else if (totalFactor > 0 && item.MajorPrice > 0)
+                {
+                    item.Price = Math.Round(item.MajorPrice / totalFactor, 2);
+                }
+                else
+                {
+                    item.Price = item.MajorPrice;
+                }
+
+                if (item.Unit1Cost > 0)
+                {
+                    item.Cost = item.Unit1Cost;
+                }
+                else if (totalFactor > 0 && item.MajorCost > 0)
+                {
+                    item.Cost = Math.Round(item.MajorCost / totalFactor, 2);
+                }
+                else
+                {
+                    item.Cost = item.MajorCost;
+                }
+            }
+            else if (!string.IsNullOrEmpty(item.BaseUnitName) && string.Equals(newUnit, item.BaseUnitName, StringComparison.OrdinalIgnoreCase))
+            {
+                // 3. الوحدة الكبرى (الأساسية)
+                item.Factor = totalFactor;
+                item.Price = item.MajorPrice;
+                item.Cost = item.MajorCost;
+            }
+            else
+            {
+                // احتياطي
+                item.Factor = 1m;
+                item.Price = item.MajorPrice > 0 ? item.MajorPrice : item.Price;
+                item.Cost = item.MajorCost > 0 ? item.MajorCost : item.Cost;
+            }
+
+            // Check stock warning for the new unit
+            if (!item.IsService)
+            {
+                decimal availBase = GetProductAvailableStock(item.ProductID, item.BatchID);
+                decimal maxAvailInUnit = availBase / (item.Factor > 0 ? item.Factor : 1m);
+                if (item.Qty > maxAvailInUnit)
+                {
+                    MessageBox.Show($"⚠️ تنبيه: الكمية المطلوبة ({item.Qty:G29}) أكبر من الرصيد المتاح للوحدة المختارة ({maxAvailInUnit:G29}) للصنف '{item.Name}'!", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+
+            item.Total = (item.Qty * item.Price) - item.DiscountAmt;
+            RefreshGrid();
         }
 
         private void SetupPosSerialCombo(int rIndex, POSItem item)
@@ -1967,9 +2334,10 @@ namespace ChickenDist.Forms
                 return true;
             }
 
+            int wid = GetSelectedWarehouseID();
             if (batchID.HasValue)
             {
-                var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WITH (NOLOCK) WHERE BatchID=@bid", DbHelper.P("@bid", batchID.Value));
+                var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WITH (NOLOCK) WHERE BatchID=@bid AND WarehouseID=@wid", DbHelper.P("@bid", batchID.Value), DbHelper.P("@wid", wid));
                 available = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
                 if (qtyInFactor > available)
                 {
@@ -1979,7 +2347,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                available = InventoryDAL.GetProductStock(productID, 1);
+                available = InventoryDAL.GetProductStock(productID, wid);
                 if (qtyInFactor > available)
                 {
                     errorMessage = $"❌ عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في المخزن حالياً ({available:G29})!";
@@ -2130,6 +2498,18 @@ namespace ChickenDist.Forms
 
             if (e.RowIndex >= _items.Count) return;
             var item = _items[e.RowIndex];
+
+            // ── معالجة تغيير الوحدة ──
+            if (colName == "UnitName")
+            {
+                string newUnit = dgItems.Rows[e.RowIndex].Cells["UnitName"].Value?.ToString() ?? "";
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    if (e.RowIndex >= 0 && e.RowIndex < _items.Count)
+                        HandlePosUnitChange(e.RowIndex, newUnit);
+                });
+                return;
+            }
 
             if (colName == "Qty")
             {
@@ -2957,9 +3337,10 @@ namespace ChickenDist.Forms
                         lastSearchText = frm.SearchText;
                         var dt = DbHelper.Query(@"
                             SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, 
-                                   p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, 
-                                   p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor,
+                                   p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
+                                   p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor,
                                    p.Unit3Factor, p.DefaultSaleUnit,
+                                   p.WholesalePrice, p.SemiWholesalePrice, p.MinStockLimit, COALESCE(p.IsService, 0) AS IsService,
                                    COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays
                             FROM Products p 
                             WHERE p.ProductID = @id", DbHelper.P("@id", frm.SelectedProductID));
@@ -3110,7 +3491,7 @@ namespace ChickenDist.Forms
             int wid = GetSelectedWarehouseID();
             decimal stock = InventoryDAL.GetProductStock(pid, wid);
 
-            var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, p.Unit3Factor, p.DefaultSaleUnit, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.WholesalePrice, p.SemiWholesalePrice, COALESCE(p.IsService, 0) AS IsService FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", pid));
+            var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice, p.Unit2Factor, p.Unit3Factor, p.DefaultSaleUnit, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.WholesalePrice, p.SemiWholesalePrice, p.MinStockLimit, COALESCE(p.IsService, 0) AS IsService FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", pid));
             if (dtP.Rows.Count > 0)
             {
                 var row = dtP.Rows[0];
@@ -3414,6 +3795,22 @@ namespace ChickenDist.Forms
             public int? BatchID;
             public string KitchenNotes = "";
             public string IMEI = "";
+
+            // Unit metadata & stock
+            public string BaseUnitName;
+            public string Unit1Name;
+            public string Unit2Name;
+            public decimal Unit1SalePrice;
+            public decimal Unit2SalePrice;
+            public decimal Unit1Cost;
+            public decimal Unit2Cost;
+            public decimal Unit2Factor;
+            public decimal Unit3Factor;
+            public decimal MajorPrice;
+            public decimal MajorCost;
+            public decimal MinStockLimit;
+            public bool IsService;
+            public decimal StockQty;
         }
 
         public class ComboItem
@@ -3788,6 +4185,19 @@ namespace ChickenDist.Forms
                 }
 
                 var ordered = new List<string>(orderVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                if (!ordered.Contains("StockQty"))
+                {
+                    int nameIdx = ordered.IndexOf("Name");
+                    if (nameIdx >= 0) ordered.Insert(nameIdx + 1, "StockQty");
+                    else ordered.Add("StockQty");
+                }
+                if (!ordered.Contains("UnitName"))
+                {
+                    int stockIdx = ordered.IndexOf("StockQty");
+                    if (stockIdx >= 0) ordered.Insert(stockIdx + 1, "UnitName");
+                    else ordered.Add("UnitName");
+                }
 
                 foreach (DataGridViewColumn col in dgItems.Columns)
                 {

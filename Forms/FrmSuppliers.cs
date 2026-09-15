@@ -546,7 +546,7 @@ namespace ChickenDist.Forms
             var dlg = new Form
             {
                 Text = "💸 صرف نقدي وسداد دفعة للمورد - " + supplierName,
-                Size = new Size(420, 380),
+                Size = new Size(420, 435),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -619,6 +619,45 @@ namespace ChickenDist.Forms
             });
             dy += 30;
 
+            // اختيار الخزينة المصروف منها
+            dlg.Controls.Add(new Label
+            {
+                Text = "صرف من خزينة:",
+                Location = new Point(15, dy + 4),
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+            });
+            var cboSafe = new ComboBox
+            {
+                Location = new Point(150, dy),
+                Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            try
+            {
+                DataTable safes = AccountDAL.GetAllowedSafeAccounts();
+                cboSafe.DisplayMember = "AccountName";
+                cboSafe.ValueMember = "AccountID";
+                cboSafe.DataSource = safes;
+                int defSafeId = Session.GetDefaultSafeID();
+                cboSafe.SelectedValue = defSafeId;
+                if (cboSafe.SelectedIndex < 0 && cboSafe.Items.Count > 0)
+                    cboSafe.SelectedIndex = 0;
+
+                if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || safes.Rows.Count <= 1))
+                {
+                    cboSafe.Enabled = false;
+                }
+            }
+            catch { }
+            dlg.Controls.Add(cboSafe);
+            dy += 45;
+
             // المبلغ (يدوي بدون أسهم)
             dlg.Controls.Add(new Label { 
                 Text = "المبلغ المصروف (ج):", 
@@ -688,15 +727,20 @@ namespace ChickenDist.Forms
                     txtAmount.Focus();
                     return;
                 }
+                int? chosenSafeId = null;
+                if (cboSafe.SelectedValue != null && int.TryParse(cboSafe.SelectedValue.ToString(), out int sId))
+                {
+                    chosenSafeId = sId;
+                }
                 try
                 {
-                    string code = SupplierDAL.AddSupplierPayment(_selectedID, amt, txtNote.Text.Trim());
+                    string code = SupplierDAL.AddSupplierPayment(_selectedID, amt, txtNote.Text.Trim(), chosenSafeId);
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                     LoadSuppliers();
 
                     // Open print & WhatsApp options dialog for supplier payment
-                    new FrmPrintSupplierPayment(_selectedID, amt, txtNote.Text.Trim(), supplierName: supplierName).ShowOptionsDialog(this);
+                    new FrmPrintSupplierPayment(_selectedID, amt, txtNote.Text.Trim(), chosenSafeId, supplierName: supplierName).ShowOptionsDialog(this);
                 }
                 catch (Exception ex)
                 {

@@ -718,7 +718,7 @@ namespace ChickenDist.Forms
             using (var dlg = new Form())
             {
                 dlg.Text = "💸 صرف نقدية للمورد - " + _supplierName;
-                dlg.Size = new Size(420, 220);
+                dlg.Size = new Size(420, 275);
                 dlg.StartPosition = FormStartPosition.CenterScreen;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
@@ -738,6 +738,29 @@ namespace ChickenDist.Forms
                 };
                 dlg.Controls.Add(nudAmt); dy += 45;
 
+                dlg.Controls.Add(new Label { Text = "صرف من خزينة:", Location = new Point(270, dy + 3), Width = 110, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+                var cboSafe = new ComboBox
+                {
+                    Location = new Point(20, dy), Width = 240,
+                    DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                };
+                try
+                {
+                    DataTable safes = AccountDAL.GetAllowedSafeAccounts();
+                    cboSafe.DisplayMember = "AccountName";
+                    cboSafe.ValueMember = "AccountID";
+                    cboSafe.DataSource = safes;
+                    int defSafeId = Session.GetDefaultSafeID();
+                    cboSafe.SelectedValue = defSafeId;
+                    if (cboSafe.SelectedIndex < 0 && cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+                    if (!Session.IsAdmin && (!Session.CanChangeSafe("CashBox") || safes.Rows.Count <= 1))
+                        cboSafe.Enabled = false;
+                }
+                catch { }
+                dlg.Controls.Add(cboSafe); dy += 45;
+
                 dlg.Controls.Add(new Label { Text = "ملاحظات:", Location = new Point(270, dy + 3), Width = 110, ForeColor = Theme.TextMain });
                 var txtNote = new TextBox
                 {
@@ -753,16 +776,22 @@ namespace ChickenDist.Forms
                 btnOk.Click += (s2, e2) =>
                 {
                     if (nudAmt.Value <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر."); return; }
+                    int? chosenSafeId = null;
+                    if (cboSafe.SelectedValue != null && int.TryParse(cboSafe.SelectedValue.ToString(), out int sId))
+                        chosenSafeId = sId;
                     try
                     {
-                        SupplierDAL.AddSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim());
+                        SupplierDAL.AddSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim(), chosenSafeId);
                         dlg.DialogResult = DialogResult.OK;
                         dlg.Close();
                         LoadStatement();
 
-                        new FrmPrintSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim(), supplierName: _supplierName).ShowOptionsDialog(this);
+                        new FrmPrintSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim(), chosenSafeId, supplierName: _supplierName).ShowOptionsDialog(this);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تسجيل الصرف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 };
                 btnCancel.Click += (s2, e2) => dlg.Close();
 

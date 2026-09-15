@@ -195,7 +195,7 @@ namespace ChickenDist.Forms
                 }
                 var dlg = new Form
                 {
-                    Width = 380, Height = 230,
+                    Width = 380, Height = 285,
                     Text = "تحصيل نقدية من العميل",
                     StartPosition = FormStartPosition.CenterParent,
                     RightToLeft = RightToLeft.Yes, RightToLeftLayout = true,
@@ -203,17 +203,42 @@ namespace ChickenDist.Forms
                 };
                 var lbl = new Label { Text = $"👤 العميل: {_clientName}\n💰 أدخل المبلغ المحصل (ج.م):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(15, 15) };
                 var nud = new NumericUpDown { Location = new Point(15, 55), Width = 330, Minimum = 0.01m, Maximum = 9999999m, DecimalPlaces = 2, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f) };
-                var txtNotes = new TextBox { Location = new Point(15, 95), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-                var btnSave = Theme.MakeButton("✅ حفظ وإصدار سند", 185, 135, 160, 36, Theme.Success);
-                var btnCancel = Theme.MakeButton("❌ إلغاء", 15, 135, 150, 36, Theme.Danger);
-                btnSave.Click += (s2, e2) => { dlg.DialogResult = DialogResult.OK; dlg.Close(); };
+                var cboSafe = new ComboBox
+                {
+                    Location = new Point(15, 95), Width = 330,
+                    DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                };
+                try
+                {
+                    DataTable safes = AccountDAL.GetAllowedSafeAccounts();
+                    cboSafe.DisplayMember = "AccountName";
+                    cboSafe.ValueMember = "AccountID";
+                    cboSafe.DataSource = safes;
+                    int defSafeId = Session.GetDefaultSafeID();
+                    cboSafe.SelectedValue = defSafeId;
+                    if (cboSafe.SelectedIndex < 0 && cboSafe.Items.Count > 0) cboSafe.SelectedIndex = 0;
+                    if (!Session.IsAdmin && (!Session.CanChangeSafe("ReceiptVoucher") || safes.Rows.Count <= 1))
+                        cboSafe.Enabled = false;
+                }
+                catch { }
+                var txtNotes = new TextBox { Location = new Point(15, 135), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "سداد نقدية من العميل" };
+                var btnSave = Theme.MakeButton("✅ حفظ وإصدار سند", 185, 180, 160, 36, Theme.Success);
+                var btnCancel = Theme.MakeButton("❌ إلغاء", 15, 180, 150, 36, Theme.Danger);
+                int? chosenSafeId = null;
+                btnSave.Click += (s2, e2) => {
+                    if (cboSafe.SelectedValue != null && int.TryParse(cboSafe.SelectedValue.ToString(), out int sId))
+                        chosenSafeId = sId;
+                    dlg.DialogResult = DialogResult.OK; dlg.Close();
+                };
                 btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
-                dlg.Controls.AddRange(new Control[] { lbl, nud, txtNotes, btnSave, btnCancel });
+                dlg.Controls.AddRange(new Control[] { lbl, nud, cboSafe, txtNotes, btnSave, btnCancel });
 
                 if (dlg.ShowDialog(this) == DialogResult.OK && nud.Value > 0)
                 {
-                    ClientDAL.AddPayment(_clientID, nud.Value, txtNotes.Text.Trim());
-                    new FrmPrintClientPayment(_clientID, nud.Value, txtNotes.Text.Trim(), null, _clientName);
+                    ClientDAL.AddPayment(_clientID, nud.Value, txtNotes.Text.Trim(), chosenSafeId);
+                    new FrmPrintClientPayment(_clientID, nud.Value, txtNotes.Text.Trim(), chosenSafeId, _clientName);
                     RefreshAllData();
                 }
             };
