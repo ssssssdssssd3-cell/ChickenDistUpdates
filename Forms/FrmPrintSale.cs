@@ -863,10 +863,17 @@ namespace ChickenDist.Forms
                     g.DrawString(footerText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, footerSize.Height + 4), center);
                     y += (int)footerSize.Height + 4;
 
-                    // عنوان الشركة ورقم الهاتف في أسفل الفاتورة
-                    if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress) || !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
+                    // بيانات الشركة (س.ت، ب.ض، العنوان، الهاتف) في أسفل الفاتورة
+                    bool hasTaxComm = AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText());
+                    if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress) || !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) || hasTaxComm)
                     {
                         g.DrawLine(Pens.LightGray, lMargin + 15, y, pageW - rMargin - 15, y); y += 4;
+                        if (hasTaxComm)
+                        {
+                            string taxCommText = AppConfig.GetTaxAndCommercialShortText();
+                            g.DrawString(taxCommText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center);
+                            y += 18;
+                        }
                         if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress))
                         {
                             string addrText = "📍 " + AppConfig.CompanyAddress.Trim();
@@ -946,12 +953,18 @@ namespace ChickenDist.Forms
                         if (y < 20) y = 20;
 
                         string compName = !string.IsNullOrEmpty(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة التجارية";
+                        string compTax = (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText())) ? AppConfig.GetTaxAndCommercialShortText() : "";
                         string compAddr = !string.IsNullOrEmpty(AppConfig.CompanyAddress) ? $"العنوان: {AppConfig.CompanyAddress}" : "";
                         string compPhone = !string.IsNullOrEmpty(AppConfig.CompanyPhone) ? $"موبايل: {AppConfig.CompanyPhone}" : "";
 
                         int headerTextW = pageW - 2 * margin - logoW;
                         g.DrawString(compName, boldBigSheet, Brushes.Black, new RectangleF(margin + logoW, y, headerTextW, isA4Page ? 26 : 22), right);
                         int subY = y + (isA4Page ? 26 : 22);
+                        if (!string.IsNullOrEmpty(compTax))
+                        {
+                            g.DrawString(compTax, normal, Brushes.Black, new RectangleF(margin + logoW, subY, headerTextW, 18), right);
+                            subY += 18;
+                        }
                         if (!string.IsNullOrEmpty(compAddr))
                         {
                             g.DrawString(compAddr, normal, Brushes.Black, new RectangleF(margin + logoW, subY, headerTextW, 18), right);
@@ -1020,6 +1033,12 @@ namespace ChickenDist.Forms
                         g.DrawString(compName, boldBigSheet, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, isA4Page ? 28 : 24), center);
                         y += isA4Page ? 28 : 24;
 
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            g.DrawString(AppConfig.GetTaxAndCommercialShortText(), boldSheet, Brushes.DarkSlateGray, new RectangleF(margin, y, pageW - 2 * margin, 20), center);
+                            y += isA4Page ? 22 : 20;
+                        }
+
                         if (!string.IsNullOrEmpty(compPhone))
                         {
                             g.DrawString(compPhone, boldSheet, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin - 10, 20), right);
@@ -1059,6 +1078,11 @@ namespace ChickenDist.Forms
                         g.DrawString(AppConfig.CompanyName, boldBigSheet, Brushes.DarkSlateGray, margin, y);
                         g.DrawString("فاتورة مبيعات", boldBigSheet, Brushes.Black, new RectangleF(0, y, pageW - margin, 30), right);
                         y += 32;
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            g.DrawString(AppConfig.GetTaxAndCommercialShortText(), normal, Brushes.DarkSlateGray, margin, y);
+                            y += 18;
+                        }
                         g.DrawLine(new Pen(Color.DarkSlateGray, 1.5f), margin, y, pageW - margin, y);
                         y += 8;
 
@@ -1079,6 +1103,10 @@ namespace ChickenDist.Forms
                         // Industrial Spare Parts Header
                         g.DrawString("فاتورة بيع قطع غيار ومستلزمات", boldBigSheet, Brushes.SteelBlue, new RectangleF(0, y, pageW, 28), center); y += 28;
                         g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 22;
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            g.DrawString(AppConfig.GetTaxAndCommercialShortText(), normal, Brushes.Black, new RectangleF(0, y, pageW, 18), center); y += 18;
+                        }
                         g.DrawLine(new Pen(Color.SteelBlue, 2f), margin, y, pageW - margin, y); y += 10;
 
                         if (_saleRow != null)
@@ -1095,6 +1123,10 @@ namespace ChickenDist.Forms
                         // Supermarket Header
                         g.DrawString("فاتورة مبيعات التجزئة والماركت", boldBigSheet, Brushes.OliveDrab, new RectangleF(0, y, pageW, 28), center); y += 28;
                         g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 22;
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            g.DrawString(AppConfig.GetTaxAndCommercialShortText(), normal, Brushes.Black, new RectangleF(0, y, pageW, 18), center); y += 18;
+                        }
                         g.DrawLine(new Pen(Color.OliveDrab, 1.5f), margin, y, pageW - margin, y); y += 10;
 
                         if (_saleRow != null)
@@ -1112,6 +1144,11 @@ namespace ChickenDist.Forms
                         // Official header
                         g.DrawString(AppConfig.CompanyName, boldBigSheet, Brushes.Black, new RectangleF(0, y, pageW, 25), center);
                         y += 25;
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            g.DrawString(AppConfig.GetTaxAndCommercialShortText(), normal, Brushes.DarkSlateGray, new RectangleF(0, y, pageW, 18), center);
+                            y += 20;
+                        }
                         g.DrawString("فاتورة مبيعات رسمية", boldSheet, Brushes.DarkSlateGray, new RectangleF(0, y, pageW, 20), center);
                         y += 22;
 
@@ -1142,6 +1179,11 @@ namespace ChickenDist.Forms
                         g.DrawString(AppConfig.CompanyName, boldBigSheet, Brushes.Black, margin, y);
                         g.DrawString("فاتورة مبيعات", boldSheet, Brushes.Black, new RectangleF(0, y + 4, pageW - margin, 20), right);
                         y += 25;
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            g.DrawString(AppConfig.GetTaxAndCommercialShortText(), normal, Brushes.DarkSlateGray, margin, y);
+                            y += 18;
+                        }
                         g.DrawLine(Pens.Black, margin, y, pageW - margin, y);
                         y += 8;
 
@@ -1159,6 +1201,10 @@ namespace ChickenDist.Forms
                         // Classic Standard Blue
                         g.DrawString("فاتورة مبيعات", boldBigSheet, Brushes.DarkBlue, new RectangleF(0, y, pageW, 30), center); y += 30;
                         g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 22), center); y += 25;
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            g.DrawString(AppConfig.GetTaxAndCommercialShortText(), normal, Brushes.Black, new RectangleF(0, y, pageW, 18), center); y += 20;
+                        }
                         g.DrawLine(new Pen(Color.DarkBlue, 2), margin, y, pageW - margin, y); y += 10;
 
                         if (_saleRow != null)
@@ -2013,6 +2059,11 @@ namespace ChickenDist.Forms
                         string companyFooterAddr = !string.IsNullOrEmpty(AppConfig.CompanyAddress)
                             ? $"العنوان : {AppConfig.CompanyAddress}"
                             : (!string.IsNullOrEmpty(AppConfig.CompanyPhone) ? $"موبايل : {AppConfig.CompanyPhone}" : "");
+                        if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                        {
+                            if (!string.IsNullOrEmpty(companyFooterAddr)) companyFooterAddr += "  |  ";
+                            companyFooterAddr += AppConfig.GetTaxAndCommercialShortText();
+                        }
 
                         int bcW = isA4Page ? 120 : 85;
                         if (_saleRow != null)

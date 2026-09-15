@@ -6599,6 +6599,10 @@ namespace ChickenDist.Forms
 			string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
 			sb.AppendLine($"📋 *فاتورة مبيعات رقم #{saleRow["SaleCode"]}*");
 			sb.AppendLine($"🏢 *{shopName}*");
+			if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+			{
+				sb.AppendLine($"📄 *{AppConfig.GetTaxAndCommercialShortText()}*");
+			}
 			sb.AppendLine($"👤 العميل: {saleRow["ClientName"]}");
 			sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):dd/MM/yyyy hh:mm tt}");
 			string typeLabel = saleRow["SaleType"].ToString() == "Credit" ? "آجل" : saleRow["SaleType"].ToString() == "Cash" ? "نقدي" : "تحميل مندوب";

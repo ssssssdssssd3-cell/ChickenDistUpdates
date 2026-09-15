@@ -92,6 +92,10 @@ namespace ChickenDist.Forms
                     
                     // Title & Company Name
                     g.DrawString(AppConfig.CompanyName, boldBig, Brushes.Black, new RectangleF(0, y, pageW, 25), center); y += 22;
+                    if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                    {
+                        g.DrawString(AppConfig.GetTaxAndCommercialShortText(), small, Brushes.Black, new RectangleF(0, y, pageW, 16), center); y += 16;
+                    }
                     g.DrawString("فاتورة مشتريات", bold, Brushes.Black, new RectangleF(0, y, pageW, 20), center); y += 20;
                     g.DrawLine(Pens.Black, margin, y, pageW - margin, y); y += 6;
 
@@ -195,6 +199,10 @@ namespace ChickenDist.Forms
                     // ===== Header =====
                     g.DrawString("فاتورة مشتريات", boldBigSheet, Brushes.DarkBlue, new RectangleF(0, y, pageW, 30), center); y += 30;
                     g.DrawString(AppConfig.CompanyName, boldSheet, Brushes.Black, new RectangleF(0, y, pageW, 22), center); y += 25;
+                    if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                    {
+                        g.DrawString(AppConfig.GetTaxAndCommercialShortText(), normal, Brushes.Black, new RectangleF(0, y, pageW, 18), center); y += 20;
+                    }
                     g.DrawLine(new Pen(Color.DarkBlue, 2), margin, y, pageW - margin, y); y += 10;
 
                     // ===== Purchase Info (RTL) =====

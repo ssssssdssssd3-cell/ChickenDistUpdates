@@ -389,6 +389,10 @@ namespace ChickenDist.Forms
             string phone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"⭐ *{comp}* ⭐");
+            if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+            {
+                sb.AppendLine($"📄 *{AppConfig.GetTaxAndCommercialShortText()}*");
+            }
             if (!string.IsNullOrWhiteSpace(phone))
             {
                 sb.AppendLine($"📞 خدمة العملاء: {phone}");
@@ -405,36 +409,43 @@ namespace ChickenDist.Forms
             sb.AppendLine("📦 *تفاصيل الأصناف والبنود:*");
             if (saleItems != null)
             {
-                int i = 1;
+                int idx = 1;
                 foreach (DataRow r in saleItems.Rows)
                 {
-                    sb.AppendLine($"{i}. {r["ProductName"]} ({Convert.ToDecimal(r["Quantity"]):0.##} {r["UnitName"]} × {Convert.ToDecimal(r["UnitPrice"]):N2}) = *{Convert.ToDecimal(r["TotalPrice"]):N2} ج.م*");
-                    i++;
+                    string pCode = r.Table.Columns.Contains("ProductCode") && r["ProductCode"] != DBNull.Value ? r["ProductCode"].ToString() : "";
+                    string codePart = !string.IsNullOrWhiteSpace(pCode) ? $" [{pCode}]" : "";
+                    string pName = r["ProductName"]?.ToString() ?? "";
+                    decimal qty = Convert.ToDecimal(r["Quantity"]);
+                    decimal price = Convert.ToDecimal(r["UnitPrice"]);
+                    decimal tot = Convert.ToDecimal(r["TotalPrice"]);
+                    decimal discPct = r.Table.Columns.Contains("DiscountPct") && r["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(r["DiscountPct"]) : 0m;
+                    string discStr = discPct > 0 ? $" (خصم {discPct:0.##}%)" : "";
+
+                    sb.AppendLine($"*{idx}. {pName}{codePart}*");
+                    sb.AppendLine($"   ▫️ {qty:0.##} × {price:N2} = {tot:N2} ج.م{discStr}");
+                    idx++;
                 }
             }
-            decimal net = Convert.ToDecimal(saleRow["TotalAmount"]);
-            decimal disc = Convert.ToDecimal(saleRow["DiscountAmount"]);
-            decimal paid = Convert.ToDecimal(saleRow["CashPaid"]);
-            decimal remain = net - paid;
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            if (disc > 0)
+            decimal net = Convert.ToDecimal(saleRow["TotalAmount"]);
+            decimal cash = saleRow["CashPaid"] != DBNull.Value ? Convert.ToDecimal(saleRow["CashPaid"]) : 0m;
+            decimal invDisc = saleRow.Table.Columns.Contains("DiscountAmount") && saleRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(saleRow["DiscountAmount"]) : 0m;
+
+            if (invDisc > 0)
             {
-                sb.AppendLine($"💵 *الإجمالي قبل الخصم:* {(net + disc):N2} ج.م");
-                sb.AppendLine($"✂️ *قيمة الخصم:* {disc:N2} ج.م");
+                sb.AppendLine($"🏷️ *خصم الفاتورة:* -{invDisc:N2} ج.م");
             }
             sb.AppendLine($"💰 *صافي الفاتورة:* {net:N2} ج.م");
-            sb.AppendLine($"💸 *المدفوع نقداً:* {paid:N2} ج.م");
-            if (remain > 0)
+            if (cash > 0)
             {
-                sb.AppendLine($"⏳ *المتبقي من الفاتورة (آجل):* {remain:N2} ج.م");
+                sb.AppendLine($"💵 *المدفوع:* {cash:N2} ج.م");
+                sb.AppendLine($"⏳ *المتبقي من الفاتورة:* {(net - cash):N2} ج.م");
             }
-            sb.AppendLine($"⚖️ *الرصيد السابق:* {prevBalance:N2} ج.م");
-            sb.AppendLine($"🔴 *إجمالي الرصيد الحالي المستحق:* {actualCurrentBalance:N2} ج.م");
-            if (lastPaymentAmt > 0)
+            if (prevBalance != 0)
             {
-                string dStr = lastPaymentDate > DateTime.MinValue ? $" بتاريخ {lastPaymentDate:yyyy/MM/dd}" : "";
-                sb.AppendLine($"📥 *آخر توريد / سداد للعميل:* {lastPaymentAmt:N2} ج.م{dStr}");
+                sb.AppendLine($"⚖️ *الرصيد السابق:* {prevBalance:N2} ج.م");
             }
+            sb.AppendLine($"🔴 *إجمالي الحساب المستحق:* {actualCurrentBalance:N2} ج.م");
             try
             {
                 sb.AppendLine($"📝 *فقط {TafqeetHelper.ConvertToArabicWords(net)} لا غير.*");
@@ -449,6 +460,10 @@ namespace ChickenDist.Forms
             string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة";
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"🧾 *فاتورة مبيعات - {comp}*");
+            if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+            {
+                sb.AppendLine($"📄 *{AppConfig.GetTaxAndCommercialShortText()}*");
+            }
             sb.AppendLine($"رقم الفاتورة: #{saleRow["SaleCode"]}");
             sb.AppendLine($"التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):yyyy/MM/dd hh:mm tt}");
             sb.AppendLine($"العميل: {saleRow["ClientName"]}");

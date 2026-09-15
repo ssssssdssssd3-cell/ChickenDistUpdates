@@ -75,6 +75,45 @@ namespace ChickenDist.Core
             set => Set("CompanyAddress", value);
         }
 
+        public static string CommercialRegister
+        {
+            get => Get("CommercialRegister", "");
+            set => Set("CommercialRegister", value);
+        }
+
+        public static string TaxCardNumber
+        {
+            get => Get("TaxCardNumber", "");
+            set => Set("TaxCardNumber", value);
+        }
+
+        public static bool PrintTaxAndCommercial
+        {
+            get
+            {
+                string val = Get("PrintTaxAndCommercial", "true");
+                return !bool.TryParse(val, out bool b) || b;
+            }
+            set => Set("PrintTaxAndCommercial", value.ToString());
+        }
+
+        /// <summary>
+        /// نص مختصر للسجل التجاري والبطاقة الضريبية بصيغة (س.ت و ب.ض) للطباعة بالفواتير
+        /// </summary>
+        public static string GetTaxAndCommercialShortText()
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(CommercialRegister))
+            {
+                parts.Add($"س.ت: {CommercialRegister.Trim()}");
+            }
+            if (!string.IsNullOrWhiteSpace(TaxCardNumber))
+            {
+                parts.Add($"ب.ض: {TaxCardNumber.Trim()}");
+            }
+            return string.Join("   |   ", parts);
+        }
+
         public static string ReceiptPrintMode
         {
             get => Get("ReceiptPrintMode", "Detailed");

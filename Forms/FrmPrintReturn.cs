@@ -175,6 +175,12 @@ namespace ChickenDist.Forms
                     y += 24;
                 }
 
+                if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
+                {
+                    g.DrawString(AppConfig.GetTaxAndCommercialShortText(), small, Brushes.Black, new RectangleF(lMargin, y, printableW, 14), sfCenter);
+                    y += 16;
+                }
+
                 if (!string.IsNullOrEmpty(AppConfig.CompanyPhone))
                 {
                     g.DrawString("هاتف: " + AppConfig.CompanyPhone, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 14), sfCenter);

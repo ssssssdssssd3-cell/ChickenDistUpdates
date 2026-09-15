@@ -15,6 +15,9 @@ namespace ChickenDist.Forms
         private TextBox txtCompanyPhone1;
         private TextBox txtCompanyPhone2;
         private TextBox txtCompanyAddress;
+        private TextBox txtCommercialRegister;
+        private TextBox txtTaxCardNumber;
+        private CheckBox chkPrintTaxAndCommercial;
         private TextBox txtShopLogoPath;
         private PictureBox picLogoPreview;
         private CheckBox chkPrintShopLogo;
@@ -30,7 +33,7 @@ namespace ChickenDist.Forms
         private void InitializeComponentCustom()
         {
             this.Text = "🏢 بيانات المؤسسة والفرع";
-            this.Size = new Size(620, 680);
+            this.Size = new Size(620, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -46,7 +49,7 @@ namespace ChickenDist.Forms
             var pnlBody = new Panel
             {
                 Location = new Point(15, 75),
-                Size = new Size(575, 515),
+                Size = new Size(575, 545),
                 AutoScroll = true,
                 BackColor = Theme.BgMain
             };
@@ -115,6 +118,48 @@ namespace ChickenDist.Forms
             txtCompanyAddress.Text = AppConfig.CompanyAddress;
             pnlBody.Controls.Add(txtCompanyAddress);
             y += 40;
+
+            // ── السجل التجاري والبطاقة الضريبية ───────────────────
+            AddLabel(pnlBody, "رقم السجل التجاري (س.ت):", 15, y);
+            AddLabel(pnlBody, "رقم البطاقة الضريبية (ب.ض):", 290, y);
+            y += 24;
+
+            txtCommercialRegister = new TextBox
+            {
+                Location = new Point(15, y),
+                Width = 255,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10.5f)
+            };
+            txtCommercialRegister.Text = AppConfig.CommercialRegister;
+            pnlBody.Controls.Add(txtCommercialRegister);
+
+            txtTaxCardNumber = new TextBox
+            {
+                Location = new Point(290, y),
+                Width = 255,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10.5f)
+            };
+            txtTaxCardNumber.Text = AppConfig.TaxCardNumber;
+            pnlBody.Controls.Add(txtTaxCardNumber);
+            y += 36;
+
+            chkPrintTaxAndCommercial = new CheckBox
+            {
+                Text = "طباعة السجل التجاري والبطاقة الضريبية في الفاتورة (مختصرة: س.ت و ب.ض)",
+                Location = new Point(15, y),
+                Size = new Size(530, 24),
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 9.5f),
+                Checked = AppConfig.PrintTaxAndCommercial
+            };
+            pnlBody.Controls.Add(chkPrintTaxAndCommercial);
+            y += 36;
 
             // ── شعار المؤسسة ──────────────────────────────────────
             AddLabel(pnlBody, "شعار المؤسسة / المحل (Logo):", 15, y);
@@ -254,7 +299,7 @@ namespace ChickenDist.Forms
             // ── شريط الأزرار السفلي ─────────────────────────────────
             var pnlFooter = new Panel
             {
-                Location = new Point(0, 595),
+                Location = new Point(0, 625),
                 Size = new Size(620, 55),
                 BackColor = Theme.BgCard,
                 BorderStyle = BorderStyle.FixedSingle
@@ -381,6 +426,9 @@ namespace ChickenDist.Forms
             AppConfig.CompanyPhone1 = txtCompanyPhone1.Text.Trim();
             AppConfig.CompanyPhone2 = txtCompanyPhone2.Text.Trim();
             AppConfig.CompanyAddress = txtCompanyAddress.Text.Trim();
+            AppConfig.CommercialRegister = txtCommercialRegister.Text.Trim();
+            AppConfig.TaxCardNumber = txtTaxCardNumber.Text.Trim();
+            AppConfig.PrintTaxAndCommercial = chkPrintTaxAndCommercial.Checked;
             AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
             AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
 
