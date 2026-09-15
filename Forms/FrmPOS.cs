@@ -19,6 +19,7 @@ namespace ChickenDist.Forms
         // ── عناصر الواجهة ─────────────────────────────────────
         private TextBox txtBarcode;
         private ComboBox cboWarehouse, cboPriceTier;
+        private Label lblTitle, lblWh, lblTier;
         private DataGridView dgItems;
         private Label lblTotal, lblPaid, lblChange, lblItemCount, lblClientName, lblClientPoints;
         private Label lblInvoiceItemsBadge;
@@ -125,7 +126,7 @@ namespace ChickenDist.Forms
 
             // ── الشريط العلوي ─────────────────────────────────
             pnlTop = new Panel { Dock = DockStyle.Top, Height = 75, BackColor = Theme.BgHeader };
-            var lblTitle = new Label { Text = "🛒 نقطة البيع السريعة", Font = new Font("Segoe UI", 16f, FontStyle.Bold), ForeColor = Theme.Accent, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
+            lblTitle = new Label { Text = "🛒 نقطة البيع السريعة", Font = new Font("Segoe UI", 15f, FontStyle.Bold), ForeColor = Theme.Accent, AutoSize = true };
             
             txtBarcode = new TextBox
             {
@@ -165,7 +166,7 @@ namespace ChickenDist.Forms
             btnCustomizeCols.BringToFront();
 
             // ── اختيار المخزن وشريحة السعر الافتراضية ──────────
-            var lblWh = new Label
+            lblWh = new Label
             {
                 Text = "المخزن:",
                 Location = new Point(480, 12),
@@ -203,7 +204,7 @@ namespace ChickenDist.Forms
                 FilterQuickItems(_currentQuickCategoryId);
             };
 
-            var lblTier = new Label
+            lblTier = new Label
             {
                 Text = "شريحة السعر:",
                 Location = new Point(650, 12),
@@ -272,7 +273,8 @@ namespace ChickenDist.Forms
                 AllowUserToAddRows = false, RowHeadersVisible = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 Font = new Font("Segoe UI", 10f),
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
+                ScrollBars = ScrollBars.Both,
                 EnableHeadersVisualStyles = false,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10f, FontStyle.Bold) },
                 DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.White, ForeColor = Theme.TextMain, SelectionBackColor = Theme.Accent, SelectionForeColor = Color.White },
@@ -417,16 +419,17 @@ namespace ChickenDist.Forms
             dgItems.Columns["Discount"].ReadOnly = false;
             dgItems.Columns["Total"].ReadOnly = true;
 
-            dgItems.Columns["Code"].Width = 60;
-            dgItems.Columns["Name"].Width = 220;
-            dgItems.Columns["Name"].MinimumWidth = 160;
+            dgItems.Columns["Code"].Width = 70;
+            dgItems.Columns["Name"].Width = 180;
+            dgItems.Columns["Name"].MinimumWidth = 140;
             dgItems.Columns["Name"].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             dgItems.Columns["StockQty"].Width = 65;
-            dgItems.Columns["UnitName"].Width = 80;
-            dgItems.Columns["Qty"].Width = 50;
-            dgItems.Columns["Price"].Width = 70;
-            dgItems.Columns["Discount"].Width = 55;
-            dgItems.Columns["Total"].Width = 80;
+            dgItems.Columns["UnitName"].Width = 85;
+            dgItems.Columns["Qty"].Width = 55;
+            dgItems.Columns["Price"].Width = 75;
+            dgItems.Columns["Discount"].Width = 60;
+            dgItems.Columns["Total"].Width = 85;
+            if (dgItems.Columns.Contains("Delete")) dgItems.Columns["Delete"].Width = 42;
             dgItems.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
 
             dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("POS");
@@ -1019,7 +1022,7 @@ namespace ChickenDist.Forms
 
             if (showQuick)
             {
-                int rightW = Math.Max(340, (int)(w * 0.42));
+                int rightW = Math.Max(320, Math.Min(450, (int)(w * 0.35)));
                 int leftW = w - rightW - 30;
 
                 // ضبط مواقع لوحات العميل والأصناف السريعة لتكون على اليمين (X = 10)
@@ -1069,6 +1072,27 @@ namespace ChickenDist.Forms
             if (txtBarcode != null) txtBarcode.Location = new Point(w - 320, 35);
             if (btnSearchProduct != null) btnSearchProduct.Location = new Point(w - 365, 35);
             if (btnCustomizeCols != null) btnCustomizeCols.Location = new Point(w - 465, 35);
+
+            // تموضع اسم الشاشة وبجانبه المخزن وشريحة السعر لمنع أي تداخل
+            int topX = w - 485;
+            if (lblTitle != null)
+            {
+                int tWidth = lblTitle.PreferredWidth > 0 ? lblTitle.PreferredWidth : 200;
+                topX -= tWidth;
+                lblTitle.Location = new Point(topX, 26);
+                topX -= 25;
+            }
+
+            int whWidth = 145;
+            topX -= whWidth;
+            if (lblWh != null) lblWh.Location = new Point(topX, 12);
+            if (cboWarehouse != null) { cboWarehouse.Location = new Point(topX, 35); cboWarehouse.Size = new Size(whWidth, 32); }
+            topX -= 15;
+
+            int tierWidth = 110;
+            topX -= tierWidth;
+            if (lblTier != null) lblTier.Location = new Point(topX, 12);
+            if (cboPriceTier != null) { cboPriceTier.Location = new Point(topX, 35); cboPriceTier.Size = new Size(tierWidth, 32); }
 
             // ── توزيع ديناميكي لعناصر لوحة الإجماليات ──────────
             int totW = pnlTotals.Width;
@@ -3461,24 +3485,78 @@ namespace ChickenDist.Forms
                 string priceText = price > 0 ? $"{price:N2} ج" : "⚠️ بدون سعر";
                 string stockText = isService ? "خدمة" : (stock > 0 ? $"رصيد: {stock:G29}" : "❌ نفد");
 
-                float fSize = name.Length > 14 ? 7.5f : (name.Length > 9 ? 8.0f : 8.5f);
+                float nameFontSize = name.Length > 24 ? 9.5f : (name.Length > 14 ? 10.5f : 11.5f);
+                string pText = priceText;
+                string sText = stockText;
+                string pName = name;
+                bool isOut = (stock <= 0 && !isService);
+
                 var btn = new Button
                 {
-                    Text = $"{name}\n{priceText}\n({stockText})",
-                    Size = new Size(118, 92),
+                    Text = "", // يتم الرسم يدوياً عبر حدث Paint للحصول على خط كبير وواضح للصنف وإبراز السعر
+                    Size = new Size(122, 95),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = btnColor,
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", fSize, FontStyle.Bold),
                     Cursor = Cursors.Hand,
                     Margin = new Padding(4),
                     Tag = pid
                 };
-                btn.FlatAppearance.BorderSize = (stock <= 0 && !isService) ? 2 : 0;
-                if (stock <= 0 && !isService)
+                btn.FlatAppearance.BorderSize = isOut ? 2 : 0;
+                if (isOut)
                 {
                     btn.FlatAppearance.BorderColor = Color.FromArgb(220, 53, 69);
                 }
+
+                btn.Paint += (s, pe) =>
+                {
+                    var g = pe.Graphics;
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                    var rect = btn.ClientRectangle;
+
+                    // 1. رسم اسم الصنف في النصف العلوي بخط كبير وواضح مع التفاف الكلمات
+                    var nameRect = new Rectangle(3, 4, rect.Width - 6, (int)(rect.Height * 0.49));
+                    using (var fontName = new Font("Segoe UI", nameFontSize, FontStyle.Bold))
+                    using (var sfName = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center,
+                        Trimming = StringTrimming.EllipsisWord,
+                        FormatFlags = StringFormatFlags.NoClip
+                    })
+                    using (var brushName = new SolidBrush(Color.White))
+                    {
+                        g.DrawString(pName, fontName, brushName, nameRect, sfName);
+                    }
+
+                    // فاصل خفيف
+                    using (var pen = new Pen(Color.FromArgb(50, 255, 255, 255), 1f))
+                    {
+                        int lineY = (int)(rect.Height * 0.53);
+                        g.DrawLine(pen, 10, lineY, rect.Width - 10, lineY);
+                    }
+
+                    // 2. رسم السعر في خط بارز بلون ذهبي مشرق
+                    var priceRect = new Rectangle(2, (int)(rect.Height * 0.55), rect.Width - 4, (int)(rect.Height * 0.23));
+                    using (var fontPrice = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+                    using (var sfPrice = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                    using (var brushPrice = new SolidBrush(Color.FromArgb(255, 245, 160)))
+                    {
+                        g.DrawString(pText, fontPrice, brushPrice, priceRect, sfPrice);
+                    }
+
+                    // 3. رسم الرصيد في الأسفل
+                    var stockRect = new Rectangle(2, (int)(rect.Height * 0.77), rect.Width - 4, (int)(rect.Height * 0.21));
+                    using (var fontStock = new Font("Segoe UI", 8.25f, isOut ? FontStyle.Bold : FontStyle.Regular))
+                    using (var sfStock = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                    using (var brushStock = new SolidBrush(isOut ? Color.FromArgb(255, 180, 180) : Color.FromArgb(235, 245, 255)))
+                    {
+                        g.DrawString($"({sText})", fontStock, brushStock, stockRect, sfStock);
+                    }
+                };
+
                 btn.Click += QuickItemBtn_Click;
                 flowQuickItems.Controls.Add(btn);
             }

@@ -503,6 +503,7 @@ namespace ChickenDist.Forms
                 },
                 ColumnHeadersHeight = 40,
                 EnableHeadersVisualStyles = false,
+                EditMode = DataGridViewEditMode.EditOnEnter,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
 
@@ -550,7 +551,7 @@ namespace ChickenDist.Forms
                 HeaderText = "الوحدة (✏️ تعديل)",
                 FillWeight = 65,
                 ReadOnly = false,
-                DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton,
+                DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
                 FlatStyle = FlatStyle.Flat,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
@@ -645,6 +646,23 @@ namespace ChickenDist.Forms
             dgItems.EditingControlShowing += DgItems_EditingControlShowing;
             dgItems.CellValueChanged += DgItems_CellValueChanged;
             dgItems.CellClick += DgItems_CellClick;
+            dgItems.CellEnter += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "Unit")
+                {
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        if (dgItems.CurrentCell != null && dgItems.CurrentCell.RowIndex == e.RowIndex && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "Unit")
+                        {
+                            dgItems.BeginEdit(true);
+                            if (dgItems.EditingControl is ComboBox cb)
+                            {
+                                cb.DroppedDown = true;
+                            }
+                        }
+                    });
+                }
+            };
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
             pnlGridContainer.Controls.Add(dgItems);
@@ -1307,13 +1325,31 @@ namespace ChickenDist.Forms
 
         private void DgItems_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0 || dgItems.Columns[e.ColumnIndex].Name != "Delete") return;
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
 
-            string prodName = _items[e.RowIndex].ProductName;
-            if (MessageBox.Show($"هل تريد حذف صنف «{prodName}» من إذن التحويل؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            string colName = dgItems.Columns[e.ColumnIndex].Name;
+            if (colName == "Delete")
             {
-                _items.RemoveAt(e.RowIndex);
-                RefreshGrid();
+                string prodName = _items[e.RowIndex].ProductName;
+                if (MessageBox.Show($"هل تريد حذف صنف «{prodName}» من إذن التحويل؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    _items.RemoveAt(e.RowIndex);
+                    RefreshGrid();
+                }
+            }
+            else if (colName == "Unit")
+            {
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    if (dgItems.CurrentCell != null && dgItems.CurrentCell.RowIndex == e.RowIndex && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "Unit")
+                    {
+                        dgItems.BeginEdit(true);
+                        if (dgItems.EditingControl is ComboBox cb)
+                        {
+                            cb.DroppedDown = true;
+                        }
+                    }
+                });
             }
         }
 

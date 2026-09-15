@@ -484,7 +484,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 37;
+        private const int CurrentSchemaVersion = 38;
 
         public static void EnsureAppSettingsTable()
         {
@@ -1286,7 +1286,10 @@ namespace ChickenDist.Core
                                 COL_LENGTH('Sales', 'VisaPaid') IS NOT NULL AND
                                 COL_LENGTH('Sales', 'VisaAccountID') IS NOT NULL AND
                                 OBJECT_ID('BOMHeader', 'U') IS NOT NULL AND
-                                OBJECT_ID('ProductionOrders', 'U') IS NOT NULL
+                                OBJECT_ID('ProductionOrders', 'U') IS NOT NULL AND
+                                COL_LENGTH('Employees', 'CanSellBelowCost') IS NOT NULL AND
+                                COL_LENGTH('Permissions', 'CanSellBelowCost') IS NOT NULL AND
+                                COL_LENGTH('Employees', 'DefaultWarehouseID') IS NOT NULL
                             THEN 1 ELSE 0 END");
 
                         if (checkResult != null && checkResult != DBNull.Value && Convert.ToInt32(checkResult) == 1)
@@ -3946,6 +3949,46 @@ namespace ChickenDist.Core
             }
         }
 
+        public static void EnsureEmployeeColumnsExist()
+        {
+            try
+            {
+                EnsurePermissionsColumns();
+                Execute(@"
+                    IF OBJECT_ID('Employees', 'U') IS NOT NULL
+                    BEGIN
+                        IF COL_LENGTH('Employees', 'DefaultSafeID') IS NULL ALTER TABLE Employees ADD DefaultSafeID INT NULL;
+                        IF COL_LENGTH('Employees', 'AllowedSafeIDs') IS NULL ALTER TABLE Employees ADD AllowedSafeIDs VARCHAR(255) NULL;
+                        IF COL_LENGTH('Employees', 'CanSellCash') IS NULL ALTER TABLE Employees ADD CanSellCash BIT NOT NULL DEFAULT 1;
+                        IF COL_LENGTH('Employees', 'CanSellCredit') IS NULL ALTER TABLE Employees ADD CanSellCredit BIT NOT NULL DEFAULT 1;
+                        IF COL_LENGTH('Employees', 'CanSellDriverLoad') IS NULL ALTER TABLE Employees ADD CanSellDriverLoad BIT NOT NULL DEFAULT 1;
+                        IF COL_LENGTH('Employees', 'CanSellInstallment') IS NULL ALTER TABLE Employees ADD CanSellInstallment BIT NOT NULL DEFAULT 1;
+                        IF COL_LENGTH('Employees', 'CanSellVisa') IS NULL ALTER TABLE Employees ADD CanSellVisa BIT NOT NULL DEFAULT 1;
+                        IF COL_LENGTH('Employees', 'CanEditShippingCharge') IS NULL ALTER TABLE Employees ADD CanEditShippingCharge BIT NOT NULL DEFAULT 1;
+                        IF COL_LENGTH('Employees', 'CanSelectDriver') IS NULL ALTER TABLE Employees ADD CanSelectDriver BIT NOT NULL DEFAULT 1;
+                        IF COL_LENGTH('Employees', 'CanSellBelowCost') IS NULL ALTER TABLE Employees ADD CanSellBelowCost BIT NOT NULL DEFAULT 0;
+                        IF COL_LENGTH('Employees', 'Salary') IS NULL ALTER TABLE Employees ADD Salary DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                        IF COL_LENGTH('Employees', 'DailyWorkHours') IS NULL ALTER TABLE Employees ADD DailyWorkHours DECIMAL(5, 2) NOT NULL DEFAULT 8;
+                        IF COL_LENGTH('Employees', 'HourlyRate') IS NULL ALTER TABLE Employees ADD HourlyRate DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                        IF COL_LENGTH('Employees', 'SalesCommissionRate') IS NULL ALTER TABLE Employees ADD SalesCommissionRate DECIMAL(5, 2) NOT NULL DEFAULT 0;
+                        IF COL_LENGTH('Employees', 'TargetAmount') IS NULL ALTER TABLE Employees ADD TargetAmount DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                        IF COL_LENGTH('Employees', 'JobTitle') IS NULL ALTER TABLE Employees ADD JobTitle NVARCHAR(100) NULL;
+                        IF COL_LENGTH('Employees', 'HireDate') IS NULL ALTER TABLE Employees ADD HireDate DATE NULL;
+                        IF COL_LENGTH('Employees', 'NationalID') IS NULL ALTER TABLE Employees ADD NationalID NVARCHAR(50) NULL;
+                        IF COL_LENGTH('Employees', 'WorkStartTime') IS NULL ALTER TABLE Employees ADD WorkStartTime NVARCHAR(10) NULL DEFAULT '09:00';
+                        IF COL_LENGTH('Employees', 'WorkEndTime') IS NULL ALTER TABLE Employees ADD WorkEndTime NVARCHAR(10) NULL DEFAULT '17:00';
+                        IF COL_LENGTH('Employees', 'GracePeriodMinutes') IS NULL ALTER TABLE Employees ADD GracePeriodMinutes INT NOT NULL DEFAULT 15;
+                        IF COL_LENGTH('Employees', 'DefaultWarehouseID') IS NULL ALTER TABLE Employees ADD DefaultWarehouseID INT NULL;
+                        IF COL_LENGTH('Employees', 'AllowedWarehouseIDs') IS NULL ALTER TABLE Employees ADD AllowedWarehouseIDs NVARCHAR(250) NULL;
+                        IF COL_LENGTH('Employees', 'DefaultPriceTier') IS NULL ALTER TABLE Employees ADD DefaultPriceTier NVARCHAR(50) NULL DEFAULT N'قطاعي';
+                    END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("EnsureEmployeeColumnsExist failed", ex);
+            }
+        }
+
         public static void EnsurePermissionsColumns()
         {
             try
@@ -4078,6 +4121,14 @@ namespace ChickenDist.Core
             return dt;
         }
 
+        public static Exception LastException { get; private set; }
+        public static string LastErrorMessage => LastException?.Message;
+
+        public static void ClearLastError()
+        {
+            LastException = null;
+        }
+
         /// <summary>تنفيذ أمر (INSERT/UPDATE/DELETE) وإرجاع عدد الصفوف المتأثرة</summary>
         public static int Execute(string sql, params SqlParameter[] prms)
         {
@@ -4093,6 +4144,7 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
+                LastException = ex;
                 AppLogger.Error("DbHelper.Execute failed", ex, sql.Length > 80 ? sql.Substring(0, 80) : sql);
                 System.Diagnostics.Debug.WriteLine("حدث خطأ أثناء تنفيذ العملية. " + ex.Message);
                 return -1;
@@ -4115,6 +4167,7 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
+                LastException = ex;
                 AppLogger.Error("DbHelper.ExecuteInsert failed", ex, sql.Length > 80 ? sql.Substring(0, 80) : sql);
                 System.Diagnostics.Debug.WriteLine("حدث خطأ أثناء حفظ البيانات. " + ex.Message);
                 return -1;

@@ -61,6 +61,9 @@ namespace ChickenDist.DAL
             string workStartTime = "09:00", string workEndTime = "17:00", int gracePeriodMinutes = 15,
             int? defaultWarehouseID = null, string allowedWarehouseIDs = null, string defaultPriceTier = "قطاعي")
         {
+            DbHelper.ClearLastError();
+            DbHelper.EnsureEmployeeColumnsExist();
+
             // التحقق من عدم تكرار اسم المستخدم
             if (!string.IsNullOrWhiteSpace(username))
             {

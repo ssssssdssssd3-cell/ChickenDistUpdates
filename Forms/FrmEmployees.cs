@@ -928,7 +928,11 @@ namespace ChickenDist.Forms
                     workStartTime, workEndTime, gracePeriod,
                     defaultWarehouseID, allowedWarehouseIDs, defaultPriceTier);
                 if (id > 0) { MessageBox.Show("✅ تم حفظ بيانات الموظف بنجاح"); _selectedID = id; LoadEmployees(); }
-                else MessageBox.Show("❌ فشل الحفظ");
+                else
+                {
+                    string errDetail = !string.IsNullOrEmpty(DbHelper.LastErrorMessage) ? $"\nالسبب: {DbHelper.LastErrorMessage}" : "";
+                    MessageBox.Show("❌ فشل حفظ بيانات الموظف" + errDetail, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
