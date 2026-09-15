@@ -225,7 +225,7 @@ namespace ChickenDist.Core
         /// <summary>إظهار الأصناف ذات الرصيد فقط في لوحة الأصناف السريعة بنقطة البيع</summary>
         public static bool POSQuickInStockOnly
         {
-            get => Get("POSQuickInStockOnly", "false") == "true";
+            get => Get("POSQuickInStockOnly", "true") == "true";
             set => Set("POSQuickInStockOnly", value ? "true" : "false");
         }
 

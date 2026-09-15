@@ -910,7 +910,33 @@ namespace ChickenDist.Forms
             if (row == null || row.Cells["ProductID"].Value == null || Convert.ToInt32(row.Cells["ProductID"].Value) <= 0)
                 return;
 
-            SelectedProductID = Convert.ToInt32(row.Cells["ProductID"].Value);
+            int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
+
+            if (!_isPurchaseMode)
+            {
+                bool isService = false;
+                if (row.DataBoundItem is DataRowView drv && drv.Row.Table.Columns.Contains("IsService") && drv.Row["IsService"] != DBNull.Value)
+                {
+                    isService = Convert.ToBoolean(drv.Row["IsService"]);
+                }
+                else
+                {
+                    var sObj = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@id", DbHelper.P("@id", pid));
+                    isService = sObj != null && sObj != DBNull.Value && Convert.ToBoolean(sObj);
+                }
+
+                if (!isService)
+                {
+                    decimal avail = _stockCache.TryGetValue(pid, out var st) ? st : 0m;
+                    if (avail <= 0)
+                    {
+                        MessageBox.Show("❌ عجز: هذا الصنف ليس لديه رصيد متاح في المخزن المحدد حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "عجز الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+            }
+
+            SelectedProductID = pid;
 
             SelectedBatchID = null;
             SelectedExpiryDate = null;

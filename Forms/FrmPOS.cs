@@ -200,6 +200,7 @@ namespace ChickenDist.Forms
             {
                 LoadStockCache();
                 RefreshGrid();
+                FilterQuickItems(_currentQuickCategoryId);
             };
 
             var lblTier = new Label
@@ -233,6 +234,7 @@ namespace ChickenDist.Forms
                     }
                     RefreshGrid();
                 }
+                FilterQuickItems(_currentQuickCategoryId);
             };
 
             pnlTop.Controls.Add(lblWh);
@@ -1723,20 +1725,22 @@ namespace ChickenDist.Forms
 
             if (!isService)
             {
+                int curWhId = GetSelectedWarehouseID();
                 decimal availableStock = 0m;
                 if (batchID.HasValue)
                 {
-                    var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE BatchID=@bid", DbHelper.P("@bid", batchID.Value));
+                    var qtyObj = DbHelper.Scalar("SELECT Quantity FROM ProductBatches WHERE BatchID=@bid AND WarehouseID=@wid", DbHelper.P("@bid", batchID.Value), DbHelper.P("@wid", curWhId));
                     availableStock = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
                 }
                 else
                 {
-                    availableStock = InventoryDAL.GetProductStock(productID, 1);
+                    availableStock = InventoryDAL.GetProductStock(productID, curWhId);
                 }
 
                 if (availableStock <= 0m)
                 {
-                    MessageBox.Show($"❌ عجز: الصنف '{name}' ليس لديه رصيد متاح في المخزن حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    string curWhName = cboWarehouse != null ? cboWarehouse.Text : "المخزن المحدد";
+                    MessageBox.Show($"❌ عجز: الصنف '{name}' ليس لديه رصيد متاح في {curWhName} حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -2751,6 +2755,7 @@ namespace ChickenDist.Forms
                     }
                 }
             }
+            FilterQuickItems(_currentQuickCategoryId);
             this.BeginInvoke(new Action(() =>
             {
                 if (txtBarcode != null && !this.IsDisposed)
@@ -3013,29 +3018,22 @@ namespace ChickenDist.Forms
             _currentQuickCategoryId = categoryID;
             flowQuickItems.Controls.Clear();
 
-            bool inStockOnly = chkQuickInStockOnly != null && chkQuickInStockOnly.Checked;
+            bool inStockOnly = chkQuickInStockOnly == null || chkQuickInStockOnly.Checked;
             int whId = GetSelectedWarehouseID();
+            var stockMap = InventoryDAL.GetStockSummary(whId);
 
             string query = @"
-                SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice,
-                       COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = @whId), p.Quantity, 0) AS StockQty
+                SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice, p.WholesalePrice, p.SemiWholesalePrice,
+                       COALESCE(p.IsService, 0) AS IsService
                 FROM Products p WITH (NOLOCK)
                 WHERE p.IsActive = 1 AND ISNULL(p.IsQuickItem, 0) = 1";
 
-            var pList = new List<System.Data.SqlClient.SqlParameter>
-            {
-                DbHelper.P("@whId", whId)
-            };
+            var pList = new List<System.Data.SqlClient.SqlParameter>();
 
             if (categoryID.HasValue)
             {
                 query += " AND p.CategoryID = @catId";
                 pList.Add(DbHelper.P("@catId", categoryID.Value));
-            }
-
-            if (inStockOnly)
-            {
-                query += " AND COALESCE((SELECT SUM(ps.Quantity) FROM ProductStock ps WITH (NOLOCK) WHERE ps.ProductID = p.ProductID AND ps.WarehouseID = @whId), p.Quantity, 0) > 0";
             }
 
             query += " ORDER BY p.ProductName";
@@ -3050,34 +3048,52 @@ namespace ChickenDist.Forms
                 Color.FromArgb(220, 53, 69)    // Red
             };
             int colorIndex = 0;
+            string curTier = GetSelectedPriceTier();
 
             foreach (DataRow row in dt.Rows)
             {
                 int pid = Convert.ToInt32(row["ProductID"]);
                 string name = row["ProductName"].ToString();
+                bool isService = Convert.ToBoolean(row["IsService"]);
+                decimal stock = stockMap.TryGetValue(pid, out var s) ? s : 0m;
+
+                if (inStockOnly && stock <= 0 && !isService)
+                {
+                    continue; // إخفاء الأصناف غير المتوفرة في المخزن المحدد
+                }
+
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
+                if (curTier == "جملة" && row.Table.Columns.Contains("WholesalePrice") && row["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["WholesalePrice"]) > 0)
+                    price = Convert.ToDecimal(row["WholesalePrice"]);
+                else if (curTier == "نصف جملة" && row.Table.Columns.Contains("SemiWholesalePrice") && row["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["SemiWholesalePrice"]) > 0)
+                    price = Convert.ToDecimal(row["SemiWholesalePrice"]);
 
                 Color btnColor = colors[colorIndex++ % colors.Length];
+                if (stock <= 0 && !isService)
+                {
+                    btnColor = Color.FromArgb(108, 117, 125); // رمادي للأصناف غير المتوفرة
+                }
 
-                // تحذير الأصناف بسعر 0
                 string priceText = price > 0 ? $"{price:N2} ج" : "⚠️ بدون سعر";
-                if (price == 0) btnColor = Color.FromArgb(108, 117, 125); // رمادي للتحذير
+                string stockText = isService ? "خدمة" : (stock > 0 ? $"رصيد: {stock:G29}" : "❌ نفد");
 
-                float fSize = priceText.Length > 12 ? 7.5f : (priceText.Length > 9 ? 8.0f : 8.5f);
+                float fSize = name.Length > 14 ? 7.5f : (name.Length > 9 ? 8.0f : 8.5f);
                 var btn = new Button
                 {
-                    Text = $"{name}\n{priceText}",
-                    Size = new Size(118, 92), FlatStyle = FlatStyle.Flat,
-                    BackColor = btnColor, ForeColor = Color.White,
+                    Text = $"{name}\n{priceText}\n({stockText})",
+                    Size = new Size(118, 92),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = btnColor,
+                    ForeColor = Color.White,
                     Font = new Font("Segoe UI", fSize, FontStyle.Bold),
-                    Cursor = Cursors.Hand, Margin = new Padding(4),
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(4),
                     Tag = pid
                 };
-                btn.FlatAppearance.BorderSize = 0;
-                if (price == 0)
+                btn.FlatAppearance.BorderSize = (stock <= 0 && !isService) ? 2 : 0;
+                if (stock <= 0 && !isService)
                 {
-                    btn.FlatAppearance.BorderSize = 2;
-                    btn.FlatAppearance.BorderColor = Color.FromArgb(255, 193, 7); // حدود صفراء تحذيرية
+                    btn.FlatAppearance.BorderColor = Color.FromArgb(220, 53, 69);
                 }
                 btn.Click += QuickItemBtn_Click;
                 flowQuickItems.Controls.Add(btn);
@@ -3088,15 +3104,25 @@ namespace ChickenDist.Forms
         {
             var btn = (Button)sender;
             int pid = (int)btn.Tag;
-            var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, p.Unit3Factor, p.DefaultSaleUnit, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", pid));
+            int wid = GetSelectedWarehouseID();
+            decimal stock = InventoryDAL.GetProductStock(pid, wid);
+
+            var dtP = DbHelper.Query("SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice, p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit2Name, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2Factor, p.Unit3Factor, p.DefaultSaleUnit, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.WholesalePrice, p.SemiWholesalePrice, COALESCE(p.IsService, 0) AS IsService FROM Products p WHERE p.ProductID=@id", DbHelper.P("@id", pid));
             if (dtP.Rows.Count > 0)
             {
                 var row = dtP.Rows[0];
+                bool isService = Convert.ToBoolean(row["IsService"]);
+                if (stock <= 0 && !isService)
+                {
+                    string whName = cboWarehouse != null ? cboWarehouse.Text : "المخزن المحدد";
+                    MessageBox.Show($"❌ عجز: الصنف '{row["ProductName"]}' ليس لديه رصيد متاح في {whName} حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "عجز الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 int? bid = null;
                 DateTime? exp = null;
                 if (row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]))
                 {
-                    int wid = GetSelectedWarehouseID();
                     var batches = DbHelper.Query("SELECT BatchID, ExpiryDate FROM ProductBatches WHERE ProductID=@pid AND WarehouseID=@wid AND Quantity > 0 ORDER BY ExpiryDate ASC, BatchID ASC", DbHelper.P("@pid", Convert.ToInt32(row["ProductID"])), DbHelper.P("@wid", wid));
                     if (batches.Rows.Count > 0)
                     {
@@ -3369,8 +3395,7 @@ namespace ChickenDist.Forms
             {
                 _stockCache.Clear();
                 int wid = GetSelectedWarehouseID();
-                var dt = DbHelper.Query("SELECT ProductID, SUM(Quantity) AS TotalQty FROM ProductStock WHERE WarehouseID=@wid GROUP BY ProductID", DbHelper.P("@wid", wid));
-                foreach (DataRow row in dt.Rows) _stockCache[Convert.ToInt32(row["ProductID"])] = Convert.ToDecimal(row["TotalQty"]);
+                _stockCache = InventoryDAL.GetStockSummary(wid);
             }
             catch { }
         }

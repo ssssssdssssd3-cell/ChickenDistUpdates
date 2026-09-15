@@ -2494,6 +2494,7 @@ namespace ChickenDist.Forms
 						item.StockQty = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
 					}
 					RefreshGrid();
+					LoadQuickItems();
 				};
 			}
 			catch { /* لو مافيش مخازن نكمل بدون خطأ */ }
@@ -2646,6 +2647,8 @@ namespace ChickenDist.Forms
 			flowQuickItems.Controls.Clear();
 			try
 			{
+				int? whId = GetSelectedWarehouseID() ?? Session.GetDefaultWarehouseID();
+				var stockMap = InventoryDAL.GetStockSummary(whId);
 				DataTable dt = ProductDAL.GetQuickItems();
 				foreach (DataRow row in dt.Rows)
 				{
@@ -2653,17 +2656,21 @@ namespace ChickenDist.Forms
 					string name = row["ProductName"].ToString();
 					decimal price = Convert.ToDecimal(row["SalePrice"]);
 					bool isService = Convert.ToBoolean(row["IsService"]);
+					decimal stock = stockMap.TryGetValue(id, out var s) ? s : 0m;
+
+					// حصر الأصناف الظاهرة على الأصناف المتوفرة بالمخزن المحدد أو الخدمات
+					if (stock <= 0 && !isService) continue;
 
 					Button btn = new Button
 					{
-						Width = 90,
-						Height = 55,
+						Width = 95,
+						Height = 58,
 						FlatStyle = FlatStyle.Flat,
 						BackColor = isService ? Color.FromArgb(45, 55, 72) : Theme.Primary,
 						ForeColor = Color.White,
-						Font = new Font(Theme.FontMain.FontFamily, 8.5f, FontStyle.Bold),
+						Font = new Font(Theme.FontMain.FontFamily, 8f, FontStyle.Bold),
 						Cursor = Cursors.Hand,
-						Text = $"{name}\n{price:N2} ج",
+						Text = $"{name}\n{price:N2} ج\n(رصيد: {stock:G29})",
 						Margin = new Padding(3),
 						Tag = id
 					};
@@ -2899,8 +2906,7 @@ namespace ChickenDist.Forms
 				return;
 			}
 
-			int? warehouseID = null;
-			if (cboWarehouse.SelectedItem is ComboItem wci) warehouseID = wci.ID;
+			int? warehouseID = GetSelectedWarehouseID();
 
 			try
 			{
@@ -7590,6 +7596,7 @@ namespace ChickenDist.Forms
 
 			// إعادة تحميل الكومبو لإعادة تعيين الفلترة والبحث ومنح تجربة سريعة بين الفواتير
 			LoadCombos();
+			LoadQuickItems();
 
 			this.BeginInvoke((MethodInvoker)delegate
 			{
