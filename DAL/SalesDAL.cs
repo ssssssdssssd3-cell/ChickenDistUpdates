@@ -67,7 +67,7 @@ namespace ChickenDist.DAL
             return GetAll(from, to, null, null, warehouseID);
         }
 
-        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null, string saleType = null, int? empID = null)
+        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null, string saleType = null, int? empID = null, IEnumerable<int> allowedWarehouseIDs = null)
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             string saleTypeFilter = string.IsNullOrWhiteSpace(saleType) || saleType == "الكل" ? null : saleType.Trim();
@@ -76,6 +76,41 @@ namespace ChickenDist.DAL
             if (t.TimeOfDay == TimeSpan.Zero)
             {
                 t = t.Date.AddDays(1).AddTicks(-1);
+            }
+
+            // إذا لم يتم تحديد مخزن محدد أو قائمة صريحة، وكان المستخدم الحالي موظفاً غير مدير، نطبق مخازنه المصرح بها تلقائياً
+            if (!warehouseID.HasValue && allowedWarehouseIDs == null && !Session.IsAdmin)
+            {
+                allowedWarehouseIDs = Session.GetAllowedWarehouseIDSet();
+            }
+
+            string whCondition = "";
+            var paramList = new List<SqlParameter>
+            {
+                DbHelper.P("@f", f),
+                DbHelper.P("@t", t),
+                DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
+                DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
+                DbHelper.P("@saleType", (object)saleTypeFilter ?? DBNull.Value),
+                DbHelper.P("@empID", empID.HasValue ? (object)empID.Value : DBNull.Value)
+            };
+
+            if (warehouseID.HasValue && warehouseID.Value > 0)
+            {
+                whCondition = " AND s.WarehouseID = @warehouseID";
+                paramList.Add(DbHelper.P("@warehouseID", warehouseID.Value));
+            }
+            else if (allowedWarehouseIDs != null)
+            {
+                var allowedList = allowedWarehouseIDs.Where(x => x > 0).Distinct().ToList();
+                if (allowedList.Count > 0)
+                {
+                    whCondition = $" AND (s.WarehouseID IN ({string.Join(",", allowedList)}))";
+                }
+                else
+                {
+                    whCondition = " AND (1 = 0)";
+                }
             }
 
             return DbHelper.Query(
@@ -100,11 +135,14 @@ namespace ChickenDist.DAL
                          ISNULL(costs.ItemsCount, 0) AS ItemsCount,
                          ISNULL(costs.TotalCost, 0) AS TotalCost,
                          (s.TotalAmount - ISNULL(costs.TotalCost, 0)) AS NetProfit,
-                         s.CustomClientName
+                         s.CustomClientName,
+                         s.WarehouseID,
+                         ISNULL(w.WarehouseName, N'---') AS WarehouseName
                   FROM Sales s
                   LEFT JOIN Clients c ON s.ClientID = c.ClientID
                   LEFT JOIN Employees e ON s.DriverID = e.EmpID
                   LEFT JOIN Employees creator ON s.CreatedBy = creator.EmpID
+                  LEFT JOIN Warehouses w WITH (NOLOCK) ON s.WarehouseID = w.WarehouseID
                   LEFT JOIN (
                       SELECT r.SaleID, SUM(ri.Quantity * ri.UnitPrice) AS ReturnAmount
                       FROM SalesReturns r
@@ -126,7 +164,6 @@ namespace ChickenDist.DAL
                   ) costs ON costs.SaleID = s.SaleID
                   WHERE s.SaleDate BETWEEN @f AND @t
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
-                    AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                     AND (@saleType IS NULL OR s.SaleType = @saleType)
                     AND (@empID IS NULL OR s.CreatedBy = @empID OR s.DriverID = @empID)
                     AND (@product IS NULL OR EXISTS (
@@ -135,14 +172,9 @@ namespace ChickenDist.DAL
                         WHERE si2.SaleID = s.SaleID
                         AND (pr.ProductName LIKE N'%' + @product + N'%'
                           OR pr.ProductCode LIKE N'%' + @product + N'%')
-                    ))
+                    ))" + whCondition + @"
                   ORDER BY s.SaleDate DESC",
-                DbHelper.P("@f", f), DbHelper.P("@t", t),
-                DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
-                DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
-                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
-                DbHelper.P("@saleType", (object)saleTypeFilter ?? DBNull.Value),
-                DbHelper.P("@empID", empID.HasValue ? (object)empID.Value : DBNull.Value));
+                paramList.ToArray());
         }
 
         public static DataTable GetItems(int saleID)

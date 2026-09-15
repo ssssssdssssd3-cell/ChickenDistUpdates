@@ -43,6 +43,7 @@ namespace ChickenDist.Forms
 		private CheckBox chkOnlyShipping;
 		private ComboBox cboClientFilter;
 		private ComboBox cboProductFilter;
+		private ComboBox cboWarehouseFilter;
 		private ComboBox cboUserFilter;
 		private DataTable _allSalesDt;
 
@@ -264,6 +265,65 @@ namespace ChickenDist.Forms
 			};
 			flowLayoutPanel.Controls.Add(MakeFilterPanel("اسم الصنف:", cboProductFilter, 140, btnProductSearchDlg));
 
+			// ─── فلترة المخزن ───
+			cboWarehouseFilter = new ComboBox
+			{
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				RightToLeft = RightToLeft.Yes
+			};
+			DataTable dtWh = Session.GetAllowedWarehouses(true);
+			var allowedWhIds = Session.GetAllowedWarehouseIDSet();
+
+			if (Session.IsAdmin || allowedWhIds == null)
+			{
+				cboWarehouseFilter.Items.Add(new ComboItem(0, "الكل (جميع المخازن)"));
+				foreach (DataRow r in dtWh.Rows)
+				{
+					cboWarehouseFilter.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+				}
+				cboWarehouseFilter.SelectedIndex = 0;
+			}
+			else
+			{
+				if (dtWh.Rows.Count > 1)
+				{
+					cboWarehouseFilter.Items.Add(new ComboItem(0, "كل المخازن المصرح بها"));
+					foreach (DataRow r in dtWh.Rows)
+					{
+						cboWarehouseFilter.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+					}
+					int defWh = Session.GetDefaultWarehouseID();
+					int defIdx = 0;
+					for (int i = 0; i < cboWarehouseFilter.Items.Count; i++)
+					{
+						if (cboWarehouseFilter.Items[i] is ComboItem ci && ci.ID == defWh)
+						{
+							defIdx = i;
+							break;
+						}
+					}
+					cboWarehouseFilter.SelectedIndex = defIdx;
+				}
+				else if (dtWh.Rows.Count == 1)
+				{
+					DataRow r = dtWh.Rows[0];
+					cboWarehouseFilter.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+					cboWarehouseFilter.SelectedIndex = 0;
+					cboWarehouseFilter.Enabled = false;
+				}
+				else
+				{
+					cboWarehouseFilter.Items.Add(new ComboItem(0, "لا توجد مخازن مصرح بها"));
+					cboWarehouseFilter.SelectedIndex = 0;
+					cboWarehouseFilter.Enabled = false;
+				}
+			}
+			cboWarehouseFilter.DisplayMember = "Text";
+			cboWarehouseFilter.SelectedIndexChanged += delegate { LoadSales(); };
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("المخزن:", cboWarehouseFilter, 130));
+
 			// ─── فلترة الموظف / القائم بالحركة ───
 			cboUserFilter = new ComboBox
 			{
@@ -389,6 +449,12 @@ namespace ChickenDist.Forms
 				Name = "SaleType",
 				HeaderText = "نوع الفاتورة",
 				FillWeight = 42f
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "WarehouseName",
+				HeaderText = "المخزن",
+				FillWeight = 48f
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -795,7 +861,27 @@ namespace ChickenDist.Forms
 			{
 				empID = uci.ID;
 			}
-			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, null, null, empID);
+			int? warehouseID = null;
+			IEnumerable<int> allowedWarehouses = null;
+			if (cboWarehouseFilter != null && cboWarehouseFilter.SelectedItem is ComboItem wci)
+			{
+				if (wci.ID > 0)
+				{
+					warehouseID = wci.ID;
+				}
+				else
+				{
+					if (!Session.IsAdmin)
+					{
+						allowedWarehouses = Session.GetAllowedWarehouseIDSet();
+					}
+				}
+			}
+			else if (!Session.IsAdmin)
+			{
+				allowedWarehouses = Session.GetAllowedWarehouseIDSet();
+			}
+			_allSalesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, null, empID, allowedWarehouses);
 			FilterData();
 		}
 
@@ -888,12 +974,14 @@ namespace ChickenDist.Forms
 					string shippingStr = shippingAmt > 0 ? shippingAmt.ToString("N2") + " ج" : "-";
 					string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
 					string netStr = netAmt.ToString("N2") + " ج";
+					string whName = (row.Table.Columns.Contains("WarehouseName") && row["WarehouseName"] != DBNull.Value) ? row["WarehouseName"].ToString() : "---";
 
 					int addedIdx = dgSales.Rows.Add(
 						row["SaleID"], 
 						row["SaleCode"],
 						Convert.ToDateTime(row["SaleDate"]).ToString("dd/MM/yyyy HH:mm"),
 						text8, 
+						whName,
 						clientCode,
 						text7,
 						itemsCount,
@@ -1279,8 +1367,9 @@ namespace ChickenDist.Forms
 				("#",                  0.022f),
 				("رقم الفاتورة",       0.070f),
 				("التاريخ",            0.080f),
-				("النوع",              0.058f),
-				("العميل",             0.160f),
+				("النوع",              0.055f),
+				("المخزن",             0.060f),
+				("العميل",             0.145f),
 				("عدد الأصناف",        0.050f),
 				("قبل الخصم",          0.075f),
 				("الخصم ✂",            0.060f),
@@ -1288,7 +1377,7 @@ namespace ChickenDist.Forms
 				("الشحن",              0.050f),
 				("المرتجع ↩",          0.060f),
 				("الصافي ✔",           0.075f),
-				("الموظف",             0.100f),
+				("الموظف",             0.095f),
 				("الملاحظات",          0.065f),
 			};
 
@@ -1325,6 +1414,7 @@ namespace ChickenDist.Forms
 					dgr.Cells["SaleCode"].Value?.ToString() ?? "",
 					dgr.Cells["SaleDate"].Value?.ToString() ?? "",
 					dgr.Cells["SaleType"].Value?.ToString() ?? "",
+					dgr.Cells["WarehouseName"].Value?.ToString() ?? "",
 					dgr.Cells["ClientName"].Value?.ToString() ?? "",
 					dgr.Cells["ItemsCount"].Value?.ToString() ?? "",
 					beforeDisc,

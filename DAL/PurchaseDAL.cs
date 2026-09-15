@@ -91,12 +91,56 @@ namespace ChickenDist.DAL
         // ─── قراءة الفواتير المؤكدة ──────────────────────────────────────────────
         public static DataTable GetAll(DateTime from, DateTime to)
         {
-            return GetAll(from, to, null, null);
+            return GetAll(from, to, null, null, null, null);
+        }
+
+        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID)
+        {
+            return GetAll(from, to, null, null, warehouseID, null);
         }
 
         public static DataTable GetAll(DateTime from, DateTime to, int? supplierID, string productSearch)
         {
+            return GetAll(from, to, supplierID, productSearch, null, null);
+        }
+
+        public static DataTable GetAll(DateTime from, DateTime to, int? supplierID, string productSearch, int? warehouseID, IEnumerable<int> allowedWarehouseIDs = null)
+        {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
+
+            // إذا لم يتم تحديد مخزن محدد أو قائمة صريحة، وكان المستخدم الحالي موظفاً غير مدير، نطبق مخازنه المصرح بها تلقائياً
+            if (!warehouseID.HasValue && allowedWarehouseIDs == null && !Session.IsAdmin)
+            {
+                allowedWarehouseIDs = Session.GetAllowedWarehouseIDSet();
+            }
+
+            string whCondition = "";
+            var paramList = new List<SqlParameter>
+            {
+                DbHelper.P("@f", from.Date),
+                DbHelper.P("@t", to.Date),
+                DbHelper.P("@supplierID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
+                DbHelper.P("@product", (object)productFilter ?? DBNull.Value)
+            };
+
+            if (warehouseID.HasValue && warehouseID.Value > 0)
+            {
+                whCondition = " AND p.WarehouseID = @warehouseID";
+                paramList.Add(DbHelper.P("@warehouseID", warehouseID.Value));
+            }
+            else if (allowedWarehouseIDs != null)
+            {
+                var allowedList = allowedWarehouseIDs.Where(x => x > 0).Distinct().ToList();
+                if (allowedList.Count > 0)
+                {
+                    whCondition = $" AND (p.WarehouseID IN ({string.Join(",", allowedList)}))";
+                }
+                else
+                {
+                    whCondition = " AND (1 = 0)";
+                }
+            }
+
             return DbHelper.Query(
                 @"SELECT p.PurchaseID, p.PurchaseCode, ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo, p.PurchaseDate, p.PurchaseType,
                          ISNULL(s.SupplierName, ISNULL(c.ClientName, N'---')) AS SupplierName,
@@ -108,6 +152,8 @@ namespace ChickenDist.DAL
                          COALESCE(p.TaxAmount,     0) AS TaxAmount,
                          COALESCE(p.ShippingCost,  0) AS ShippingCost,
                          ISNULL(p.ShippingOn, N'Company') AS ShippingOn,
+                         p.WarehouseID,
+                         ISNULL(w.WarehouseName, N'---') AS WarehouseName,
                          ISNULL((
                              SELECT CASE 
                                  WHEN SUM(ISNULL(pr.TotalAmount, 0)) > 0 THEN SUM(ISNULL(pr.TotalAmount, 0))
@@ -131,6 +177,7 @@ namespace ChickenDist.DAL
                   FROM Purchases p
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                   LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                  LEFT JOIN Warehouses w WITH (NOLOCK) ON p.WarehouseID = w.WarehouseID
                   WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND p.IsPosted = 1
                     AND (@supplierID IS NULL OR p.SupplierID = @supplierID OR p.ClientID = @supplierID)
@@ -144,40 +191,9 @@ namespace ChickenDist.DAL
                               AND (pr.ProductName LIKE N'%' + @product + N'%'
                                 OR pr.ProductCode LIKE N'%' + @product + N'%')
                         )
-                    ))
+                    ))" + whCondition + @"
                   ORDER BY p.PurchaseDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
-                DbHelper.P("@supplierID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
-                DbHelper.P("@product", (object)productFilter ?? DBNull.Value));
-        }
-
-        public static DataTable GetAll(DateTime from, DateTime to, int? warehouseID)
-        {
-            return DbHelper.Query(
-                @"SELECT p.PurchaseID, p.PurchaseCode, ISNULL(p.SupplierInvoiceNo, N'') AS SupplierInvoiceNo, p.PurchaseDate, p.PurchaseType,
-                         ISNULL(s.SupplierName, N'---') AS SupplierName,
-                         p.TotalAmount, p.Notes, p.SupplierID,
-                         COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
-                         COALESCE(p.DiscountPct,   0) AS DiscountPct,
-                         COALESCE(p.TaxPct,        0) AS TaxPct,
-                         COALESCE(p.TaxAmount,     0) AS TaxAmount,
-                         COALESCE(p.ShippingCost,  0) AS ShippingCost,
-                         ISNULL(p.ShippingOn, N'Company') AS ShippingOn,
-                         ISNULL((
-                             SELECT SUM(pi.Quantity * pi.UnitPrice)
-                             FROM PurchaseItems pi
-                             WHERE pi.PurchaseID = p.PurchaseID
-                         ), p.TotalAmount + COALESCE(p.DiscountAmount, 0)) AS SubTotal,
-                         w.WarehouseName
-                  FROM Purchases p
-                  LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
-                  LEFT JOIN Warehouses w ON p.WarehouseID = w.WarehouseID
-                  WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
-                    AND p.IsPosted = 1
-                    AND (@warehouseID IS NULL OR p.WarehouseID = @warehouseID)
-                  ORDER BY p.PurchaseDate DESC",
-                DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date),
-                DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+                paramList.ToArray());
         }
 
         // ─── أصناف فاتورة معينة ──────────────────────────────────────────────────

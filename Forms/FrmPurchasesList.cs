@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -16,6 +17,7 @@ namespace ChickenDist.Forms
 		private TextBox txtSearch;
 		private ComboBox cboTypeFilter;
 		private ComboBox cboSupplierFilter;
+		private ComboBox cboWarehouseFilter;
 		private TextBox txtProductSearch;
 		private Button btnLoad;
 		private Button btnNewPurchase;
@@ -111,6 +113,68 @@ namespace ChickenDist.Forms
 			};
 			filterPanel.Controls.AddRange(new Control[] { lblSupplier, cboSupplierFilter, btnSupplierSearchDlg });
 
+			Label lblWarehouse = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
+			cboWarehouseFilter = new ComboBox
+			{
+				Width = 130,
+				Height = 26,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Theme.BgInput,
+				ForeColor = Theme.TextMain,
+				RightToLeft = RightToLeft.Yes
+			};
+
+			DataTable dtWh = Session.GetAllowedWarehouses(true);
+			var allowedWhIds = Session.GetAllowedWarehouseIDSet();
+
+			if (Session.IsAdmin || allowedWhIds == null)
+			{
+				cboWarehouseFilter.Items.Add(new ComboItem(0, "الكل (جميع المخازن)"));
+				foreach (DataRow r in dtWh.Rows)
+				{
+					cboWarehouseFilter.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+				}
+				cboWarehouseFilter.SelectedIndex = 0;
+			}
+			else
+			{
+				if (dtWh.Rows.Count > 1)
+				{
+					cboWarehouseFilter.Items.Add(new ComboItem(0, "كل المخازن المصرح بها"));
+					foreach (DataRow r in dtWh.Rows)
+					{
+						cboWarehouseFilter.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+					}
+					int defWh = Session.GetDefaultWarehouseID();
+					int defIdx = 0;
+					for (int i = 0; i < cboWarehouseFilter.Items.Count; i++)
+					{
+						if (cboWarehouseFilter.Items[i] is ComboItem ci && ci.ID == defWh)
+						{
+							defIdx = i;
+							break;
+						}
+					}
+					cboWarehouseFilter.SelectedIndex = defIdx;
+				}
+				else if (dtWh.Rows.Count == 1)
+				{
+					DataRow r = dtWh.Rows[0];
+					cboWarehouseFilter.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+					cboWarehouseFilter.SelectedIndex = 0;
+					cboWarehouseFilter.Enabled = false;
+				}
+				else
+				{
+					cboWarehouseFilter.Items.Add(new ComboItem(0, "لا توجد مخازن مصرح بها"));
+					cboWarehouseFilter.SelectedIndex = 0;
+					cboWarehouseFilter.Enabled = false;
+				}
+			}
+			cboWarehouseFilter.DisplayMember = "Text";
+			cboWarehouseFilter.SelectedIndexChanged += delegate { LoadPurchases(); };
+			filterPanel.Controls.AddRange(new Control[] { lblWarehouse, cboWarehouseFilter });
+
 			Label lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			txtProductSearch = new TextBox { Width = 120, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			txtProductSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { LoadPurchases(); e.Handled = true; e.SuppressKeyPress = true; } };
@@ -177,6 +241,7 @@ namespace ChickenDist.Forms
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierInvoiceNo", HeaderText = "رقم فاتورة المورد", FillWeight = 75f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseDate",      HeaderText = "التاريخ والوقت", FillWeight = 80f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseType",      HeaderText = "نوع الفاتورة",   FillWeight = 45f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "WarehouseName",     HeaderText = "المخزن",         FillWeight = 50f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName",      HeaderText = "المورد",         FillWeight = 110f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierCode",      HeaderText = "كود المورد",     FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount",       HeaderText = "قيمة الفاتورة", FillWeight = 60f });
@@ -377,8 +442,30 @@ namespace ChickenDist.Forms
 			int? supplierID = null;
 			if (cboSupplierFilter != null && cboSupplierFilter.SelectedItem is ComboItem ci && ci.ID > 0)
 				supplierID = ci.ID;
+
+			int? warehouseID = null;
+			IEnumerable<int> allowedWarehouses = null;
+			if (cboWarehouseFilter != null && cboWarehouseFilter.SelectedItem is ComboItem wci)
+			{
+				if (wci.ID > 0)
+				{
+					warehouseID = wci.ID;
+				}
+				else
+				{
+					if (!Session.IsAdmin)
+					{
+						allowedWarehouses = Session.GetAllowedWarehouseIDSet();
+					}
+				}
+			}
+			else if (!Session.IsAdmin)
+			{
+				allowedWarehouses = Session.GetAllowedWarehouseIDSet();
+			}
+
 			string productSearch = (txtProductSearch != null && !string.IsNullOrWhiteSpace(txtProductSearch.Text)) ? txtProductSearch.Text.Trim() : null;
-			_allPurchasesDt = PurchaseDAL.GetAll(dtpFrom.Value, dtpTo.Value, supplierID, productSearch);
+			_allPurchasesDt = PurchaseDAL.GetAll(dtpFrom.Value, dtpTo.Value, supplierID, productSearch, warehouseID, allowedWarehouses);
 			FilterData();
 		}
 
@@ -430,6 +517,8 @@ namespace ChickenDist.Forms
 				string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
 				string supplierCode = row.Table.Columns.Contains("SupplierCode") ? row["SupplierCode"].ToString() : "";
 				bool hasReturn = (returnAmt > 0) || (row.Table.Columns.Contains("HasReturns") && row["HasReturns"] != DBNull.Value && Convert.ToInt32(row["HasReturns"]) > 0);
+				string whName = row.Table.Columns.Contains("WarehouseName") && row["WarehouseName"] != DBNull.Value
+					? row["WarehouseName"].ToString() : "---";
 
 				int rowIdx = dgPurchases.Rows.Add(
 					row["PurchaseID"],
@@ -437,6 +526,7 @@ namespace ChickenDist.Forms
 					row.Table.Columns.Contains("SupplierInvoiceNo") ? row["SupplierInvoiceNo"].ToString() : "",
 					Convert.ToDateTime(row["PurchaseDate"]).ToString("dd/MM/yyyy HH:mm"),
 					displayType,
+					whName,
 					supplier,
 					supplierCode,
 					amount.ToString("N2") + " ج",

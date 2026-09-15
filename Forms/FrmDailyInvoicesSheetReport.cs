@@ -313,17 +313,59 @@ namespace ChickenDist.Forms
         private void LoadWarehouses()
         {
             cboWarehouse.Items.Clear();
-            cboWarehouse.Items.Add(new ComboItem(0, "كل المخازن"));
             try
             {
-                var dt = WarehouseDAL.GetAll();
-                foreach (DataRow r in dt.Rows)
+                var dt = Session.GetAllowedWarehouses(true);
+                var allowedWhIds = Session.GetAllowedWarehouseIDSet();
+
+                if (Session.IsAdmin || allowedWhIds == null)
                 {
-                    cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+                    cboWarehouse.Items.Add(new ComboItem(0, "كل المخازن"));
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+                    }
+                    cboWarehouse.SelectedIndex = 0;
+                }
+                else
+                {
+                    if (dt.Rows.Count > 1)
+                    {
+                        cboWarehouse.Items.Add(new ComboItem(0, "كل المخازن المصرح بها"));
+                        foreach (DataRow r in dt.Rows)
+                        {
+                            cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+                        }
+                        int defWh = Session.GetDefaultWarehouseID();
+                        int defIdx = 0;
+                        for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                        {
+                            if (cboWarehouse.Items[i] is ComboItem ci && ci.ID == defWh)
+                            {
+                                defIdx = i;
+                                break;
+                            }
+                        }
+                        cboWarehouse.SelectedIndex = defIdx;
+                    }
+                    else if (dt.Rows.Count == 1)
+                    {
+                        DataRow r = dt.Rows[0];
+                        cboWarehouse.Items.Add(new ComboItem(Convert.ToInt32(r["WarehouseID"]), r["WarehouseName"].ToString()));
+                        cboWarehouse.SelectedIndex = 0;
+                        cboWarehouse.Enabled = false;
+                    }
+                    else
+                    {
+                        cboWarehouse.Items.Add(new ComboItem(0, "لا توجد مخازن مصرح بها"));
+                        cboWarehouse.SelectedIndex = 0;
+                        cboWarehouse.Enabled = false;
+                    }
                 }
             }
             catch { }
-            cboWarehouse.SelectedIndex = 0;
+            if (cboWarehouse.SelectedIndex < 0 && cboWarehouse.Items.Count > 0)
+                cboWarehouse.SelectedIndex = 0;
         }
 
         private void LoadClients()
