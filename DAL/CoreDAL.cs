@@ -836,46 +836,46 @@ namespace ChickenDist.DAL
             if (dr == null || string.IsNullOrWhiteSpace(scannedCode)) return 3;
             string code = scannedCode.Trim();
 
-            // 1. فحص باركود الوحدة الصغرى (Unit1) - الأعلى أولوية دائماً
+            // 1. باركود الوحدة الصغرى (Unit1) - أعلى أولوية
             if (dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value)
             {
                 string u1 = dr["Unit1Barcode"].ToString();
                 if (BarcodeMatches(u1, code)) return 1;
             }
 
-            // 2. فحص باركود الوحدة الوسطى (Unit2)
+            // 2. باركود الوحدة الوسطى (Unit2)
             if (dr.Table.Columns.Contains("Unit2Barcode") && dr["Unit2Barcode"] != DBNull.Value)
             {
                 string u2 = dr["Unit2Barcode"].ToString();
                 if (BarcodeMatches(u2, code)) return 2;
             }
 
-            // 3. فحص الكود الدولي / كود الصنف / رقم القطعة
-            // إذا طابق هذه الحقول (كودٌ عام وليس باركوداً خاصاً بوحدة معينة)،
-            // نُطبق الوحدة الافتراضية المحددة في كارت الصنف (DefaultSaleUnit)
-            bool matchedByGenericCode = false;
+            // 3. الكود الدولي = خاص بالوحدة الكبرى دائماً
+            // (مسح الكود الدولي يُنزل الصنف بالوحدة الكبرى بصرف النظر عن DefaultSaleUnit)
             if (dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value)
             {
                 string ic = dr["InternationalCode"].ToString();
-                if (BarcodeMatches(ic, code) || (!string.IsNullOrWhiteSpace(ic) && ic.IndexOf(code, StringComparison.OrdinalIgnoreCase) >= 0))
-                    matchedByGenericCode = true;
+                if (BarcodeMatches(ic, code)) return 3;
             }
-            if (!matchedByGenericCode && dr.Table.Columns.Contains("ProductCode") && dr["ProductCode"] != DBNull.Value)
+
+            // 4. كود الصنف أو رقم القطعة = إدخال يدوي → يُطبق DefaultSaleUnit
+            bool matchedByManualCode = false;
+            if (dr.Table.Columns.Contains("ProductCode") && dr["ProductCode"] != DBNull.Value)
             {
                 string pc = dr["ProductCode"].ToString();
                 if (string.Equals(pc, code, StringComparison.OrdinalIgnoreCase) || pc.TrimStart('0') == code.TrimStart('0'))
-                    matchedByGenericCode = true;
+                    matchedByManualCode = true;
             }
-            if (!matchedByGenericCode && dr.Table.Columns.Contains("PartNumber") && dr["PartNumber"] != DBNull.Value)
+            if (!matchedByManualCode && dr.Table.Columns.Contains("PartNumber") && dr["PartNumber"] != DBNull.Value)
             {
                 string pn = dr["PartNumber"].ToString();
                 if (string.Equals(pn, code, StringComparison.OrdinalIgnoreCase))
-                    matchedByGenericCode = true;
+                    matchedByManualCode = true;
             }
 
-            if (matchedByGenericCode)
+            if (matchedByManualCode)
             {
-                // عند مطابقة كود عام، يُعتمد خيار الوحدة الافتراضية المحددة للصنف
+                // عند الإدخال اليدوي بكود الصنف/رقم القطعة: يُعتمد DefaultSaleUnit
                 if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
                 {
                     string dsu = dr["DefaultSaleUnit"].ToString().Trim();
@@ -886,19 +886,11 @@ namespace ChickenDist.DAL
                 return 3;
             }
 
-            // 4. فحص العمود المحسوب من استعلام SQL إن وُجد
+            // 5. العمود المحسوب من SQL كاحتياط
             if (dr.Table.Columns.Contains("MatchedUnit") && dr["MatchedUnit"] != DBNull.Value)
             {
                 int mu = Convert.ToInt32(dr["MatchedUnit"]);
                 if (mu == 1 || mu == 2 || mu == 3) return mu;
-            }
-
-            // 5. الوحدة الافتراضية كاحتياط أخير
-            if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
-            {
-                string dsu = dr["DefaultSaleUnit"].ToString().Trim();
-                if (dsu == "الصغرى" && dr.Table.Columns.Contains("Unit1Name") && !string.IsNullOrEmpty(dr["Unit1Name"]?.ToString())) return 1;
-                if (dsu == "الوسطى" && dr.Table.Columns.Contains("Unit2Name") && !string.IsNullOrEmpty(dr["Unit2Name"]?.ToString())) return 2;
             }
 
             return 3;
