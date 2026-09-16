@@ -459,7 +459,7 @@ namespace ChickenDist.DAL
             parsedWeight = 1m;
             if (string.IsNullOrWhiteSpace(scannedCode)) return null;
 
-            scannedCode = scannedCode.Trim();
+            scannedCode = scannedCode.Trim().Trim('\r', '\n', '\t');
             int.TryParse(scannedCode, out int scannedInt);
             string scannedPadded = scannedInt > 0 ? scannedInt.ToString("D8") : scannedCode;
             string scannedTrimmed = scannedCode.TrimStart('0');
@@ -470,9 +470,12 @@ namespace ChickenDist.DAL
             var dtDirect = DbHelper.Query(@"
                 SELECT TOP 1 p.*, c.CategoryName,
                     CASE 
-                        WHEN (p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%') THEN 1
-                        WHEN (p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%') THEN 2
-                        WHEN (p.InternationalCode = @code OR p.InternationalCode = @scannedTrimmed OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%' OR ',' + p.InternationalCode + ',' LIKE '%,' + @scannedTrimmed + ',%' OR p.ProductCode = @code OR p.ProductCode = @scannedTrimmed OR p.ProductCode = @scannedPadded OR p.PartNumber = @code OR p.PartNumber = @scannedTrimmed) THEN 3
+                        WHEN (p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded 
+                              OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' 
+                              OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%') THEN 1
+                        WHEN (p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded 
+                              OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' 
+                              OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%') THEN 2
                         WHEN (p.DefaultSaleUnit = N'الصغرى' AND p.Unit1Name IS NOT NULL AND p.Unit1Name <> '') THEN 1
                         WHEN (p.DefaultSaleUnit = N'الوسطى' AND p.Unit2Name IS NOT NULL AND p.Unit2Name <> '') THEN 2
                         ELSE 3
@@ -481,18 +484,36 @@ namespace ChickenDist.DAL
                 LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
                 WHERE p.IsActive = 1 AND (
                     p.ProductCode = @code OR p.ProductCode = @scannedPadded OR p.ProductCode = @scannedTrimmed OR
-                    p.InternationalCode = @code OR p.InternationalCode = @scannedTrimmed OR ',' + p.InternationalCode + ',' LIKE '%,' + @code + ',%' OR ',' + p.InternationalCode + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit1Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @code + ',%' OR ',' + p.Unit2Barcode + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    p.PartNumber = @code OR p.PartNumber = @scannedTrimmed OR
+                    LTRIM(RTRIM(p.ProductCode)) = @code OR LTRIM(RTRIM(p.ProductCode)) = @scannedTrimmed OR
+                    
+                    p.InternationalCode = @code OR p.InternationalCode = @scannedTrimmed OR
+                    LTRIM(RTRIM(p.InternationalCode)) = @code OR LTRIM(RTRIM(p.InternationalCode)) = @scannedTrimmed OR
+                    ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.InternationalCode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
+                    ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.InternationalCode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
+                    p.InternationalCode LIKE '%' + @code + '%' OR
+                    
+                    p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR
+                    LTRIM(RTRIM(p.Unit1Barcode)) = @code OR LTRIM(RTRIM(p.Unit1Barcode)) = @scannedTrimmed OR
+                    ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
+                    ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
+                    p.Unit1Barcode LIKE '%' + @code + '%' OR
+                    
+                    p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR
+                    LTRIM(RTRIM(p.Unit2Barcode)) = @code OR LTRIM(RTRIM(p.Unit2Barcode)) = @scannedTrimmed OR
+                    ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
+                    ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
+                    p.Unit2Barcode LIKE '%' + @code + '%' OR
+                    
+                    p.PartNumber = @code OR p.PartNumber = @scannedTrimmed OR LTRIM(RTRIM(p.PartNumber)) = @code OR
                     p.ScalePLU = @code OR p.ScalePLU = @scannedPadded OR p.ScalePLU = @scannedTrimmed OR
                     (@scannedInt > 0 AND p.ProductID = @scannedInt) OR
                     (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
                 )
                 ORDER BY CASE 
-                    WHEN (p.ProductCode = @code OR p.InternationalCode = @code OR p.Unit1Barcode = @code OR p.Unit2Barcode = @code OR p.PartNumber = @code) THEN 0
-                    WHEN (p.ScalePLU = @code) THEN 1
-                    ELSE 2
+                    WHEN (LTRIM(RTRIM(p.ProductCode)) = @code OR LTRIM(RTRIM(p.InternationalCode)) = @code OR LTRIM(RTRIM(p.Unit1Barcode)) = @code OR LTRIM(RTRIM(p.Unit2Barcode)) = @code OR LTRIM(RTRIM(p.PartNumber)) = @code) THEN 0
+                    WHEN (',' + REPLACE(REPLACE(p.InternationalCode, ' ', ''), ';', ',') + ',' LIKE '%,' + @code + ',%') THEN 1
+                    WHEN (p.ScalePLU = @code) THEN 2
+                    ELSE 3
                 END",
                 DbHelper.P("@code", scannedCode),
                 DbHelper.P("@scannedPadded", scannedPadded),
@@ -504,6 +525,57 @@ namespace ChickenDist.DAL
                 parsedWeight = 1m;
                 return dtDirect.Rows[0];
             }
+
+            // 1.5 ProductCache Memory Fallback (Guarantees 100% parity with FrmProductSearch)
+            try
+            {
+                var activeDt = ProductCache.GetActive();
+                if (activeDt != null && activeDt.Rows.Count > 0)
+                {
+                    DataRow matchedRow = null;
+                    foreach (DataRow row in activeDt.Rows)
+                    {
+                        string ic = row.Table.Columns.Contains("InternationalCode") ? row["InternationalCode"]?.ToString() ?? "" : "";
+                        string pc = row.Table.Columns.Contains("ProductCode") ? row["ProductCode"]?.ToString() ?? "" : "";
+                        string u1b = row.Table.Columns.Contains("Unit1Barcode") ? row["Unit1Barcode"]?.ToString() ?? "" : "";
+                        string u2b = row.Table.Columns.Contains("Unit2Barcode") ? row["Unit2Barcode"]?.ToString() ?? "" : "";
+                        string pn = row.Table.Columns.Contains("PartNumber") ? row["PartNumber"]?.ToString() ?? "" : "";
+
+                        if (BarcodeMatches(ic, scannedCode) ||
+                            BarcodeMatches(u1b, scannedCode) ||
+                            BarcodeMatches(u2b, scannedCode) ||
+                            BarcodeMatches(pc, scannedCode) ||
+                            BarcodeMatches(pn, scannedCode) ||
+                            (!string.IsNullOrWhiteSpace(ic) && ic.IndexOf(scannedCode, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrWhiteSpace(pc) && pc.IndexOf(scannedCode, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrWhiteSpace(pn) && pn.IndexOf(scannedCode, StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            matchedRow = row;
+                            break;
+                        }
+                    }
+
+                    if (matchedRow != null)
+                    {
+                        int pId = Convert.ToInt32(matchedRow["ProductID"]);
+                        var drFresh = GetByID(pId);
+                        if (drFresh != null)
+                        {
+                            int mu = DetermineMatchedUnit(drFresh, scannedCode);
+                            DataTable dtTemp = drFresh.Table.Clone();
+                            if (!dtTemp.Columns.Contains("MatchedUnit"))
+                                dtTemp.Columns.Add("MatchedUnit", typeof(int));
+                            DataRow newRow = dtTemp.NewRow();
+                            newRow.ItemArray = drFresh.ItemArray;
+                            newRow["MatchedUnit"] = mu;
+                            dtTemp.Rows.Add(newRow);
+                            parsedWeight = 1m;
+                            return dtTemp.Rows[0];
+                        }
+                    }
+                }
+            }
+            catch { }
 
             // 2. SECOND Priority: Scale Barcode Parsing (e.g. 9900168000724 -> PLU = 00168, Weight = 0.072)
             var scaleRes = BarcodeParser.Parse(scannedCode);
@@ -780,7 +852,24 @@ namespace ChickenDist.DAL
                 if (BarcodeMatches(u2, code)) return 2;
             }
 
-            // 3. فحص باركود الوحدة الكبرى / الدولي / كود الصنف
+            // 3. فحص الوحدة الافتراضية المحددة في كارت الصنف أولاً
+            // (عند مطابقة الكود الدولي أو كود الصنف أو رقم القطعة، يُعتمد خيار الوحدة المحددة للصنف)
+            if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
+            {
+                string dsu = dr["DefaultSaleUnit"].ToString().Trim();
+                if (dsu == "الصغرى" && dr.Table.Columns.Contains("Unit1Name") && !string.IsNullOrEmpty(dr["Unit1Name"]?.ToString())) return 1;
+                if (dsu == "الوسطى" && dr.Table.Columns.Contains("Unit2Name") && !string.IsNullOrEmpty(dr["Unit2Name"]?.ToString())) return 2;
+                if (dsu == "الكبرى") return 3;
+            }
+
+            // 4. فحص العمود المحسوب من استعلام SQL إن وُجد
+            if (dr.Table.Columns.Contains("MatchedUnit") && dr["MatchedUnit"] != DBNull.Value)
+            {
+                int mu = Convert.ToInt32(dr["MatchedUnit"]);
+                if (mu == 1 || mu == 2 || mu == 3) return mu;
+            }
+
+            // 5. فحص باركود الوحدة الكبرى / الدولي / كود الصنف
             if (dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value)
             {
                 string ic = dr["InternationalCode"].ToString();
@@ -795,22 +884,6 @@ namespace ChickenDist.DAL
             {
                 string pn = dr["PartNumber"].ToString();
                 if (string.Equals(pn, code, StringComparison.OrdinalIgnoreCase)) return 3;
-            }
-
-            // 4. فحص الوحدة الافتراضية المحددة في كارت الصنف (إذا لم يطابق باركوداً خاصاً بوحدة 1 أو 2 أو 3)
-            if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
-            {
-                string dsu = dr["DefaultSaleUnit"].ToString().Trim();
-                if (dsu == "الصغرى" && dr.Table.Columns.Contains("Unit1Name") && !string.IsNullOrEmpty(dr["Unit1Name"]?.ToString())) return 1;
-                if (dsu == "الوسطى" && dr.Table.Columns.Contains("Unit2Name") && !string.IsNullOrEmpty(dr["Unit2Name"]?.ToString())) return 2;
-                if (dsu == "الكبرى") return 3;
-            }
-
-            // 5. فحص العمود المحسوب من استعلام SQL إن وُجد
-            if (dr.Table.Columns.Contains("MatchedUnit") && dr["MatchedUnit"] != DBNull.Value)
-            {
-                int mu = Convert.ToInt32(dr["MatchedUnit"]);
-                if (mu == 1 || mu == 2 || mu == 3) return mu;
             }
 
             return 3;

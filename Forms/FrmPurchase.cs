@@ -1314,7 +1314,8 @@ namespace ChickenDist.Forms
                     if (dgItems.IsCurrentCellInEditMode)
                         dgItems.CancelEdit();
 
-                    ProcessScannedBarcode(scannedCode);
+                    var (pCode, mQty) = ParseBarcodeMultiplier(scannedCode);
+                    ProcessScannedBarcode(pCode, mQty);
                     if (txtBarcode != null)
                     {
                         txtBarcode.Clear();
@@ -1375,6 +1376,35 @@ namespace ChickenDist.Forms
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        private static (string code, decimal multiQty) ParseBarcodeMultiplier(string rawInput)
+        {
+            if (string.IsNullOrWhiteSpace(rawInput)) return ("", 1m);
+            rawInput = rawInput.Trim();
+            decimal multiQty = 1m;
+            string code = rawInput;
+
+            char[] separators = new char[] { '*', 'x', 'X', '×' };
+            int sepIdx = rawInput.IndexOfAny(separators);
+            if (sepIdx > 0 && sepIdx < rawInput.Length - 1)
+            {
+                string left = rawInput.Substring(0, sepIdx).Trim();
+                string right = rawInput.Substring(sepIdx + 1).Trim();
+
+                if (decimal.TryParse(left, out decimal q1) && q1 > 0 && !string.IsNullOrEmpty(right))
+                {
+                    multiQty = q1;
+                    code = right;
+                }
+                else if (decimal.TryParse(right, out decimal q2) && q2 > 0 && !string.IsNullOrEmpty(left))
+                {
+                    multiQty = q2;
+                    code = left;
+                }
+            }
+
+            return (code, multiQty);
+        }
+
         private void TxtBarcode_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
@@ -1383,17 +1413,7 @@ namespace ChickenDist.Forms
                 string rawInput = txtBarcode?.Text?.Trim() ?? "";
                 if (!string.IsNullOrEmpty(rawInput))
                 {
-                    decimal multiQty = 1m;
-                    string code = rawInput;
-                    if (rawInput.Contains("*"))
-                    {
-                        var parts = rawInput.Split(new char[] { '*' }, 2);
-                        if (decimal.TryParse(parts[0].Trim(), out decimal q) && q > 0)
-                        {
-                            multiQty = q;
-                            code = parts[1].Trim();
-                        }
-                    }
+                    var (code, multiQty) = ParseBarcodeMultiplier(rawInput);
 
                     if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
                         string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
@@ -1528,7 +1548,7 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    MessageBox.Show("❌ لم يتم العثور على صنف بالباركود أو الكود: " + code, "خطأ في الباركود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     if (txtBarcode != null)
                     {
                         txtBarcode.SelectAll();
@@ -1916,18 +1936,19 @@ namespace ChickenDist.Forms
                 if (_isRefreshingGrid || _searchSessionActive || _isProcessingScan) return;
                 if (e.RowIndex < 0 || e.RowIndex >= dgItems.Rows.Count) return;
 
-                string code  = dgItems.Rows[e.RowIndex].Cells["ProductCode"].Value?.ToString()?.Trim() ?? "";
+                string rawCode  = dgItems.Rows[e.RowIndex].Cells["ProductCode"].Value?.ToString()?.Trim() ?? "";
                 int rowIdx   = e.RowIndex;
                 this.BeginInvoke((MethodInvoker)delegate
                 {
                     if (_isRefreshingGrid || _searchSessionActive || _isProcessingScan) return;
-                    if (string.IsNullOrEmpty(code))
+                    if (string.IsNullOrEmpty(rawCode))
                     {
                         if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                             dgItems.Rows.RemoveAt(rowIdx);
                         _pendingRowIdx = -1;
                         return;
                     }
+                    var (code, multiQty) = ParseBarcodeMultiplier(rawCode);
                     var dt = ProductDAL.FindByCode(code);
                     if (dt.Rows.Count > 0)
                     {
@@ -1978,13 +1999,13 @@ namespace ChickenDist.Forms
                             dgItems.Rows.RemoveAt(rowIdx);
                         _pendingRowIdx = -1;
 
-                        AddProductToGrid(pid, pCode, pName, 1.00m, pp, 0m, sp);
+                        AddProductToGrid(pid, pCode, pName, multiQty > 0 ? multiQty : 1.00m, pp, 0m, sp);
                         // فتح سطر جديد للإدخال التالي
                         AddNewCodeRow();
                     }
                     else
                     {
-                        MessageBox.Show("❌ لم يتم العثور على صنف بالكود: " + code, "خطأ في الكود", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                         {
                             dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["ProductCode"];
