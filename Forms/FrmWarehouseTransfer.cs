@@ -134,9 +134,9 @@ namespace ChickenDist.Forms
             var pnlRouteCard = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 72,
+                Height = 52,
                 BackColor = Color.FromArgb(28, 38, 55),
-                Padding = new Padding(12, 8, 12, 8),
+                Padding = new Padding(12, 6, 12, 6),
                 Margin = new Padding(0, 4, 0, 4)
             };
             pnlRouteCard.Paint += (s, e) =>
@@ -148,17 +148,16 @@ namespace ChickenDist.Forms
             var tblRoute = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 7,
+                ColumnCount = 6,
                 RowCount = 1,
                 BackColor = Color.Transparent
             };
             tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));             // 0: تسمية من
             tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190f));       // 1: كومبو من
-            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));             // 2: سهم الاتجاه
-            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));             // 3: تسمية إلى
-            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190f));       // 4: كومبو إلى
-            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));             // 5: تسمية ملاحظات
-            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));         // 6: خانة الملاحظات
+            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));             // 2: تسمية إلى
+            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190f));       // 3: كومبو إلى
+            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));             // 4: تسمية ملاحظات
+            tblRoute.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));         // 5: خانة الملاحظات
 
             var lblFrom = new Label
             {
@@ -181,24 +180,15 @@ namespace ChickenDist.Forms
             };
             cboFromWarehouse.SelectedIndexChanged += CboWarehouse_Changed;
 
-            var lblArrow = new Label
-            {
-                Text = "  ⬅️ تحويل إلى ⬅️  ",
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Theme.Accent,
-                AutoSize = true,
-                Anchor = AnchorStyles.None,
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-
             var lblTo = new Label
             {
-                Text = "📥 إلى مستودع (الوجهة):",
+                Text = "⬅️ إلى مستودع (الوجهة):",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(240, 245, 255),
                 AutoSize = true,
                 Anchor = AnchorStyles.Right,
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                Margin = new Padding(12, 0, 0, 0)
             };
 
             cboToWarehouse = new ComboBox
@@ -218,7 +208,8 @@ namespace ChickenDist.Forms
                 ForeColor = Color.FromArgb(200, 215, 235),
                 AutoSize = true,
                 Anchor = AnchorStyles.Right,
-                TextAlign = ContentAlignment.MiddleRight
+                TextAlign = ContentAlignment.MiddleRight,
+                Margin = new Padding(12, 0, 0, 0)
             };
 
             txtNotes = new TextBox
@@ -232,11 +223,10 @@ namespace ChickenDist.Forms
 
             tblRoute.Controls.Add(lblFrom, 0, 0);
             tblRoute.Controls.Add(cboFromWarehouse, 1, 0);
-            tblRoute.Controls.Add(lblArrow, 2, 0);
-            tblRoute.Controls.Add(lblTo, 3, 0);
-            tblRoute.Controls.Add(cboToWarehouse, 4, 0);
-            tblRoute.Controls.Add(lblNotes, 5, 0);
-            tblRoute.Controls.Add(txtNotes, 6, 0);
+            tblRoute.Controls.Add(lblTo, 2, 0);
+            tblRoute.Controls.Add(cboToWarehouse, 3, 0);
+            tblRoute.Controls.Add(lblNotes, 4, 0);
+            tblRoute.Controls.Add(txtNotes, 5, 0);
             pnlRouteCard.Controls.Add(tblRoute);
 
 
@@ -244,10 +234,10 @@ namespace ChickenDist.Forms
             var pnlFastEntryCard = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 94,
+                Height = 70,
                 BackColor = Color.FromArgb(22, 30, 45),
-                Padding = new Padding(8, 6, 8, 6),
-                Margin = new Padding(0, 4, 0, 0)
+                Padding = new Padding(8, 4, 8, 6),
+                Margin = new Padding(0, 2, 0, 0)
             };
             pnlFastEntryCard.Paint += (s, e) =>
             {
@@ -259,139 +249,129 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 7,
-                RowCount = 1,
+                RowCount = 2,
                 BackColor = Color.Transparent
             };
             tblFastEntry.RowStyles.Clear();
-            tblFastEntry.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            tblFastEntry.ColumnStyles.Clear();
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120f));      // 0: الاسكنر
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));      // 1: زر بحث F3
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));       // 2: اسم الصنف المختار (مرن يملأ الشاشة)
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 175f));      // 3: شارة الرصيد المتاح
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));       // 4: خانة الكمية
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));      // 5: كومبو الوحدة
-            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 145f));      // 6: زر الإضافة
+            tblFastEntry.RowStyles.Add(new RowStyle(SizeType.Absolute, 22f));   // الصف 0: التسميات
+            tblFastEntry.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // الصف 1: حقول الإدخال
 
-            // 0: حاوية الاسكنر مع عنوانه
-            var pnlScanner = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            tblFastEntry.ColumnStyles.Clear();
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 125f));      // 0: الاسكنر
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130f));      // 1: زر بحث F3
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));       // 2: اسم الصنف المختار (مرن يملأ الشاشة)
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));      // 3: شارة الرصيد المتاح
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));       // 4: خانة الكمية
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));      // 5: كومبو الوحدة
+            tblFastEntry.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140f));      // 6: زر الإضافة
+
+            // 0: تسمية وإدخال الاسكنر
             var lblScannerTitle = new Label
             {
                 Text = "📷 الباركود:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
-                Dock = DockStyle.Top,
-                Height = 20,
-                TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 2, 2)
             };
             txtBarcodeTransfer = new TextBox
             {
                 Name = "txtBarcodeTransfer",
-                Dock = DockStyle.Bottom,
-                Height = 32,
+                Dock = DockStyle.Fill,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextDark,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle,
-                TextAlign = HorizontalAlignment.Center
+                TextAlign = HorizontalAlignment.Center,
+                Margin = new Padding(2, 0, 2, 0)
             };
             txtBarcodeTransfer.KeyDown += TxtBarcodeTransfer_KeyDown;
-            pnlScanner.Controls.Add(txtBarcodeTransfer);
-            pnlScanner.Controls.Add(lblScannerTitle);
 
             // 1: زر بحث الأصناف [F3]
-            var pnlSearchBtn = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblSearchTitle = new Label
             {
                 Text = "🔍 بحث الأصناف:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
-                Dock = DockStyle.Top,
-                Height = 20,
-                TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 2, 2)
             };
             btnSearchProduct = Theme.MakeButton("🔍 بحث [F3]", Theme.Primary);
-            btnSearchProduct.Dock = DockStyle.Bottom;
-            btnSearchProduct.Height = 35;
-            btnSearchProduct.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnSearchProduct.Dock = DockStyle.Fill;
+            btnSearchProduct.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnSearchProduct.Margin = new Padding(2, 0, 2, 0);
             btnSearchProduct.Click += (s, e) => OpenProductSearch();
-            pnlSearchBtn.Controls.Add(btnSearchProduct);
-            pnlSearchBtn.Controls.Add(lblSearchTitle);
 
-            // 2: حاوية الصنف المختار
-            var pnlSelectedProd = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            // 2: الصنف المختار
             var lblSelectedTitle = new Label
             {
                 Text = "📦 الصنف المحدد (انقر للاختيار):",
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(200, 220, 245),
-                Dock = DockStyle.Top,
-                Height = 20
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(2, 0, 2, 2)
             };
             txtSelectedProduct = new TextBox
             {
-                Dock = DockStyle.Bottom,
-                Height = 32,
+                Dock = DockStyle.Fill,
                 ReadOnly = true,
                 BackColor = Color.FromArgb(32, 44, 62),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Text = "اضغط [F3] أو امسح الباركود لاختيار صنف...",
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 0, 2, 0)
             };
             txtSelectedProduct.Click += (s, e) => OpenProductSearch();
-            pnlSelectedProd.Controls.Add(txtSelectedProduct);
-            pnlSelectedProd.Controls.Add(lblSelectedTitle);
 
             // 3: شارة الرصيد المتاح بالمصدر
-            var pnlStockBadge = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblStockTitle = new Label
             {
                 Text = "المتاح بالمصدر:",
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(170, 185, 205),
-                Dock = DockStyle.Top,
-                Height = 20,
-                TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 2, 2)
             };
             lblAvailableStock = new Label
             {
                 Text = "متاح: --",
-                Dock = DockStyle.Bottom,
-                Height = 32,
+                Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(35, 48, 68),
                 ForeColor = Color.FromArgb(160, 175, 195),
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(2, 0, 2, 0)
             };
-            pnlStockBadge.Controls.Add(lblAvailableStock);
-            pnlStockBadge.Controls.Add(lblStockTitle);
 
-            // 4: حاوية الكمية
-            var pnlQty = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            // 4: الكمية
             var lblQtyTitle = new Label
             {
                 Text = "الكمية:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
-                Dock = DockStyle.Top,
-                Height = 20,
-                TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 2, 2)
             };
             nudQty = new NumericUpDown
             {
-                Dock = DockStyle.Bottom,
-                Height = 32,
+                Dock = DockStyle.Fill,
                 DecimalPlaces = 3,
                 Minimum = 0.001m,
                 Maximum = 999999m,
                 Value = 1m,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextDark,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                TextAlign = HorizontalAlignment.Center
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                TextAlign = HorizontalAlignment.Center,
+                Margin = new Padding(2, 0, 2, 0)
             };
             nudQty.KeyDown += (s, e) =>
             {
@@ -402,60 +382,62 @@ namespace ChickenDist.Forms
                     e.SuppressKeyPress = true;
                 }
             };
-            pnlQty.Controls.Add(nudQty);
-            pnlQty.Controls.Add(lblQtyTitle);
 
-            // 5: حاوية الوحدة
-            var pnlUnit = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
+            // 5: الوحدة
             var lblUnitTitle = new Label
             {
                 Text = "الوحدة المحولة:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
-                Dock = DockStyle.Top,
-                Height = 20,
-                TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 2, 2)
             };
             cboUnit = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Dock = DockStyle.Bottom,
-                Height = 32,
+                Dock = DockStyle.Fill,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextDark,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 0, 2, 0)
             };
             cboUnit.SelectedIndexChanged += (s, e) => UpdateAvailableStockDisplay();
-            pnlUnit.Controls.Add(cboUnit);
-            pnlUnit.Controls.Add(lblUnitTitle);
 
             // 6: زر الإضافة
-            var pnlAddBtn = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
             var lblAddTitle = new Label
             {
                 Text = "إضافة الصنف:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
-                Dock = DockStyle.Top,
-                Height = 20,
-                TextAlign = ContentAlignment.MiddleCenter
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 2, 2)
             };
             btnAddItem = Theme.MakeButton("➕ إضافة [Enter]", Theme.Accent);
-            btnAddItem.Dock = DockStyle.Bottom;
-            btnAddItem.Height = 35;
-            btnAddItem.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnAddItem.Dock = DockStyle.Fill;
+            btnAddItem.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnAddItem.Margin = new Padding(2, 0, 2, 0);
             btnAddItem.Click += BtnAddItem_Click;
-            pnlAddBtn.Controls.Add(btnAddItem);
-            pnlAddBtn.Controls.Add(lblAddTitle);
 
-            tblFastEntry.Controls.Add(pnlScanner, 0, 0);
-            tblFastEntry.Controls.Add(pnlSearchBtn, 1, 0);
-            tblFastEntry.Controls.Add(pnlSelectedProd, 2, 0);
-            tblFastEntry.Controls.Add(pnlStockBadge, 3, 0);
-            tblFastEntry.Controls.Add(pnlQty, 4, 0);
-            tblFastEntry.Controls.Add(pnlUnit, 5, 0);
-            tblFastEntry.Controls.Add(pnlAddBtn, 6, 0);
+            // الصف 0: التسميات
+            tblFastEntry.Controls.Add(lblScannerTitle, 0, 0);
+            tblFastEntry.Controls.Add(lblSearchTitle, 1, 0);
+            tblFastEntry.Controls.Add(lblSelectedTitle, 2, 0);
+            tblFastEntry.Controls.Add(lblStockTitle, 3, 0);
+            tblFastEntry.Controls.Add(lblQtyTitle, 4, 0);
+            tblFastEntry.Controls.Add(lblUnitTitle, 5, 0);
+            tblFastEntry.Controls.Add(lblAddTitle, 6, 0);
+
+            // الصف 1: حقول الإدخال والأزرار
+            tblFastEntry.Controls.Add(txtBarcodeTransfer, 0, 1);
+            tblFastEntry.Controls.Add(btnSearchProduct, 1, 1);
+            tblFastEntry.Controls.Add(txtSelectedProduct, 2, 1);
+            tblFastEntry.Controls.Add(lblAvailableStock, 3, 1);
+            tblFastEntry.Controls.Add(nudQty, 4, 1);
+            tblFastEntry.Controls.Add(cboUnit, 5, 1);
+            tblFastEntry.Controls.Add(btnAddItem, 6, 1);
 
             pnlFastEntryCard.Controls.Add(tblFastEntry);
 
@@ -540,8 +522,9 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
-                    Alignment = DataGridViewContentAlignment.MiddleRight,
-                    Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                    Alignment = DataGridViewContentAlignment.MiddleLeft, // يبدأ من اليمين في بيئة RTL
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    Padding = new Padding(6, 0, 6, 0)
                 }
             };
 
@@ -665,6 +648,25 @@ namespace ChickenDist.Forms
             };
             dgItems.CellEndEdit += DgItems_CellEndEdit;
             dgItems.KeyDown += DgItems_KeyDown;
+            dgItems.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                {
+                    string col = dgItems.Columns[e.ColumnIndex].Name;
+                    if (col == "Quantity" || col == "Unit" || col == "Delete")
+                    {
+                        return; // السماح بالتعديل المباشر في الخلية
+                    }
+                }
+                OpenProductSearch();
+            };
+            dgItems.DoubleClick += (s, e) =>
+            {
+                if (dgItems.SelectedCells.Count == 0 || (dgItems.CurrentCell != null && dgItems.CurrentCell.ReadOnly))
+                {
+                    OpenProductSearch();
+                }
+            };
             pnlGridContainer.Controls.Add(dgItems);
 
             // ── شريط الإحصائيات والإجراءات السفلي (Footer) ────────────────────
@@ -815,15 +817,24 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            using var frm = new FrmProductSearch(warehouseID: wh.ID, isPurchaseMode: false, defaultShowZeroStock: false);
-            if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
+            string lastSearchText = "";
+            while (true)
             {
-                decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
-                string preferredUnit = frm.SelectedUnitName;
+                using var frm = new FrmProductSearch(warehouseID: wh.ID, isPurchaseMode: false, defaultShowZeroStock: false, initialSearchText: lastSearchText);
+                if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
+                {
+                    lastSearchText = frm.SearchText;
+                    decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
+                    string preferredUnit = frm.SelectedUnitName;
 
-                // ✅ تحديد الصنف مع الوحدة المختارة
-                SelectProductByID(frm.SelectedProductID, wh.ID, qty, preferredUnitName: preferredUnit);
-                BtnAddItem_Click(null, null);
+                    // ✅ تحديد الصنف مع الوحدة المختارة
+                    SelectProductByID(frm.SelectedProductID, wh.ID, qty, preferredUnitName: preferredUnit);
+                    BtnAddItem_Click(null, null);
+                }
+                else
+                {
+                    break;
+                }
             }
         }
 

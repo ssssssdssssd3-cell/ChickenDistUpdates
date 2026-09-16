@@ -2009,6 +2009,30 @@ namespace ChickenDist.Forms
             }
             if (_selectedSaleType == "Cash" && txtPaid != null) txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
             else if (_selectedSaleType == "Visa" && txtVisaPaid != null) txtVisaPaid.Text = (total - loyaltyDiscount).ToString("N2");
+
+            // توسيع خانة اسم الصنف تلقائياً إذا كان اسم أي صنف أكبر من الخانة
+            if (dgItems.Columns.Contains("Name"))
+            {
+                float maxNameWidth = 180f;
+                using (var g = dgItems.CreateGraphics())
+                {
+                    var font = dgItems.Columns["Name"].DefaultCellStyle.Font ?? dgItems.Font;
+                    foreach (var itm in _items)
+                    {
+                        if (!string.IsNullOrEmpty(itm.Name))
+                        {
+                            var sz = g.MeasureString(itm.Name, font);
+                            if (sz.Width + 28 > maxNameWidth)
+                            {
+                                maxNameWidth = sz.Width + 28;
+                            }
+                        }
+                    }
+                }
+                int prefWidth = dgItems.Columns["Name"].GetPreferredWidth(DataGridViewAutoSizeColumnMode.AllCells, true);
+                dgItems.Columns["Name"].Width = Math.Max((int)maxNameWidth, prefWidth);
+            }
+
             RecalcChange();
             AutoSavePOSDraft();
         }
