@@ -476,8 +476,6 @@ namespace ChickenDist.DAL
                         WHEN (p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded 
                               OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' 
                               OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%') THEN 2
-                        WHEN (p.DefaultSaleUnit = N'الصغرى' AND p.Unit1Name IS NOT NULL AND p.Unit1Name <> '') THEN 1
-                        WHEN (p.DefaultSaleUnit = N'الوسطى' AND p.Unit2Name IS NOT NULL AND p.Unit2Name <> '') THEN 2
                         ELSE 3
                     END AS MatchedUnit
                 FROM Products p 
@@ -838,7 +836,7 @@ namespace ChickenDist.DAL
             if (dr == null || string.IsNullOrWhiteSpace(scannedCode)) return 3;
             string code = scannedCode.Trim();
 
-            // 1. فحص باركود الوحدة الصغرى (Unit1)
+            // 1. فحص باركود الوحدة الصغرى (Unit1) - الأعلى أولوية دائماً
             if (dr.Table.Columns.Contains("Unit1Barcode") && dr["Unit1Barcode"] != DBNull.Value)
             {
                 string u1 = dr["Unit1Barcode"].ToString();
@@ -852,14 +850,40 @@ namespace ChickenDist.DAL
                 if (BarcodeMatches(u2, code)) return 2;
             }
 
-            // 3. فحص الوحدة الافتراضية المحددة في كارت الصنف أولاً
-            // (عند مطابقة الكود الدولي أو كود الصنف أو رقم القطعة، يُعتمد خيار الوحدة المحددة للصنف)
-            if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
+            // 3. فحص الكود الدولي / كود الصنف / رقم القطعة
+            // إذا طابق هذه الحقول (كودٌ عام وليس باركوداً خاصاً بوحدة معينة)،
+            // نُطبق الوحدة الافتراضية المحددة في كارت الصنف (DefaultSaleUnit)
+            bool matchedByGenericCode = false;
+            if (dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value)
             {
-                string dsu = dr["DefaultSaleUnit"].ToString().Trim();
-                if (dsu == "الصغرى" && dr.Table.Columns.Contains("Unit1Name") && !string.IsNullOrEmpty(dr["Unit1Name"]?.ToString())) return 1;
-                if (dsu == "الوسطى" && dr.Table.Columns.Contains("Unit2Name") && !string.IsNullOrEmpty(dr["Unit2Name"]?.ToString())) return 2;
-                if (dsu == "الكبرى") return 3;
+                string ic = dr["InternationalCode"].ToString();
+                if (BarcodeMatches(ic, code) || (!string.IsNullOrWhiteSpace(ic) && ic.IndexOf(code, StringComparison.OrdinalIgnoreCase) >= 0))
+                    matchedByGenericCode = true;
+            }
+            if (!matchedByGenericCode && dr.Table.Columns.Contains("ProductCode") && dr["ProductCode"] != DBNull.Value)
+            {
+                string pc = dr["ProductCode"].ToString();
+                if (string.Equals(pc, code, StringComparison.OrdinalIgnoreCase) || pc.TrimStart('0') == code.TrimStart('0'))
+                    matchedByGenericCode = true;
+            }
+            if (!matchedByGenericCode && dr.Table.Columns.Contains("PartNumber") && dr["PartNumber"] != DBNull.Value)
+            {
+                string pn = dr["PartNumber"].ToString();
+                if (string.Equals(pn, code, StringComparison.OrdinalIgnoreCase))
+                    matchedByGenericCode = true;
+            }
+
+            if (matchedByGenericCode)
+            {
+                // عند مطابقة كود عام، يُعتمد خيار الوحدة الافتراضية المحددة للصنف
+                if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
+                {
+                    string dsu = dr["DefaultSaleUnit"].ToString().Trim();
+                    if (dsu == "الصغرى" && dr.Table.Columns.Contains("Unit1Name") && !string.IsNullOrEmpty(dr["Unit1Name"]?.ToString())) return 1;
+                    if (dsu == "الوسطى" && dr.Table.Columns.Contains("Unit2Name") && !string.IsNullOrEmpty(dr["Unit2Name"]?.ToString())) return 2;
+                    if (dsu == "الكبرى") return 3;
+                }
+                return 3;
             }
 
             // 4. فحص العمود المحسوب من استعلام SQL إن وُجد
@@ -869,21 +893,12 @@ namespace ChickenDist.DAL
                 if (mu == 1 || mu == 2 || mu == 3) return mu;
             }
 
-            // 5. فحص باركود الوحدة الكبرى / الدولي / كود الصنف
-            if (dr.Table.Columns.Contains("InternationalCode") && dr["InternationalCode"] != DBNull.Value)
+            // 5. الوحدة الافتراضية كاحتياط أخير
+            if (dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value)
             {
-                string ic = dr["InternationalCode"].ToString();
-                if (BarcodeMatches(ic, code)) return 3;
-            }
-            if (dr.Table.Columns.Contains("ProductCode") && dr["ProductCode"] != DBNull.Value)
-            {
-                string pc = dr["ProductCode"].ToString();
-                if (string.Equals(pc, code, StringComparison.OrdinalIgnoreCase) || pc.TrimStart('0') == code.TrimStart('0')) return 3;
-            }
-            if (dr.Table.Columns.Contains("PartNumber") && dr["PartNumber"] != DBNull.Value)
-            {
-                string pn = dr["PartNumber"].ToString();
-                if (string.Equals(pn, code, StringComparison.OrdinalIgnoreCase)) return 3;
+                string dsu = dr["DefaultSaleUnit"].ToString().Trim();
+                if (dsu == "الصغرى" && dr.Table.Columns.Contains("Unit1Name") && !string.IsNullOrEmpty(dr["Unit1Name"]?.ToString())) return 1;
+                if (dsu == "الوسطى" && dr.Table.Columns.Contains("Unit2Name") && !string.IsNullOrEmpty(dr["Unit2Name"]?.ToString())) return 2;
             }
 
             return 3;
