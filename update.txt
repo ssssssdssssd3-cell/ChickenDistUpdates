@@ -1,5 +1,5 @@
-version=3.8.8
+version=3.8.9
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.8.8&t=1789847093
-sha256=6ED3E26D93E3D10854BAC25FB46CADC3B5A5E5E6F13D0A63506A153F7A7FA5A8
-changelog=v3.8.8 - 2026-09-19: Auto-backfill chronological cost, prevent distorted profits, and CTE reports fix
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.8.9&t=1789848073
+sha256=F4A3416A4C4D108C9DBA72D808503D5DE05496C3833B438FDBC22F63EFF2E476
+changelog=v3.8.9 - 2026-09-19: Auto-backfill chronological cost, prevent distorted profits, and CTE reports fix

@@ -134,7 +134,7 @@ namespace ChickenDist.DAL
                          ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
                          ISNULL(costs.ItemsCount, 0) AS ItemsCount,
                          ISNULL(costs.TotalCost, 0) AS TotalCost,
-                         (s.TotalAmount - ISNULL(costs.TotalCost, 0)) AS NetProfit,
+                         ((s.TotalAmount - ISNULL(ret.ReturnAmount, 0)) - (ISNULL(costs.TotalCost, 0) - ISNULL(ret.ReturnCost, 0))) AS NetProfit,
                          s.CustomClientName,
                          s.WarehouseID,
                          ISNULL(w.WarehouseName, N'---') AS WarehouseName
@@ -144,9 +144,12 @@ namespace ChickenDist.DAL
                   LEFT JOIN Employees creator ON s.CreatedBy = creator.EmpID
                   LEFT JOIN Warehouses w WITH (NOLOCK) ON s.WarehouseID = w.WarehouseID
                   LEFT JOIN (
-                      SELECT r.SaleID, SUM(ri.Quantity * ri.UnitPrice) AS ReturnAmount
+                      SELECT r.SaleID, 
+                             SUM(ri.Quantity * ri.UnitPrice) AS ReturnAmount,
+                             SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS ReturnCost
                       FROM SalesReturns r
                       JOIN ReturnItems ri ON r.ReturnID = ri.ReturnID
+                      LEFT JOIN Products p ON ri.ProductID = p.ProductID
                       WHERE r.SaleID IN (SELECT SaleID FROM Sales WHERE SaleDate BETWEEN @f AND @t)
                       GROUP BY r.SaleID
                   ) ret ON ret.SaleID = s.SaleID
@@ -154,7 +157,7 @@ namespace ChickenDist.DAL
                       SELECT si.SaleID,
                              COUNT(si.ItemID) AS ItemsCount,
                              SUM(si.Quantity * ISNULL(si.Factor, 1.0) *
-                                 COALESCE(NULLIF(p.Unit1PurchasePrice, 0),
+                                 COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0),
                                  ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0),
                                  NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
                       FROM SaleItems si

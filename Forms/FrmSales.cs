@@ -40,6 +40,7 @@ namespace ChickenDist.Forms
 		private Label lblCreditSummary;
 		private Label lblDriverSummary;
 		private Label lblShippingSummary;
+		private Label lblProfitSummary;
 		private CheckBox chkOnlyShipping;
 		private ComboBox cboClientFilter;
 		private ComboBox cboProductFilter;
@@ -520,6 +521,14 @@ namespace ChickenDist.Forms
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
+				Name = "NetProfit",
+				HeaderText = "ربح الفاتورة 💰",
+				FillWeight = 48f,
+				Visible = Session.CanViewCost("SalesList"),
+				DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleRight }
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
 				Name = "CreatedByName",
 				HeaderText = "القائم بالحركة",
 				FillWeight = 50f
@@ -688,25 +697,23 @@ namespace ChickenDist.Forms
 			tblContent.Controls.Add(dgSales, 0, 0);
 			tblContent.Controls.Add(tblDetail, 0, 1);
 
+			bool canViewProfit = Session.CanViewCost("SalesList");
 			TableLayoutPanel tableLayoutPanel = new TableLayoutPanel
 			{
 				Dock = DockStyle.Bottom,
 				Height = 70,
-				ColumnCount = 8,
+				ColumnCount = canViewProfit ? 9 : 8,
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(6, 4, 6, 4),
 				Visible = Session.CanViewSalesTotals("SalesList")
 			};
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
-			tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
+			float colWidthPct = canViewProfit ? (100f / 9f) : 12.5f;
+			for (int i = 0; i < (canViewProfit ? 9 : 8); i++)
+			{
+				tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, colWidthPct));
+			}
 			tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			lblTotalBeforeDiscountSummary = AddDashboardCard(tableLayoutPanel, "إجمالي قبل الخصم:", "0.00 ج", Color.FromArgb(160, 175, 200), 0);
 			lblDiscountSummary             = AddDashboardCard(tableLayoutPanel, "إجمالي الخصومات: ✂", "0.00 ج", Color.FromArgb(249, 115, 22), 1);
@@ -716,6 +723,10 @@ namespace ChickenDist.Forms
 			lblCashSummary                = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:", "0.00 ج", Theme.Success, 5);
 			lblCreditSummary              = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:", "0.00 ج", Color.FromArgb(52, 152, 219), 6);
 			lblShippingSummary            = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:", "0.00 ج", Color.FromArgb(243, 156, 18), 7);
+			if (canViewProfit)
+			{
+				lblProfitSummary          = AddDashboardCard(tableLayoutPanel, "إجمالي الأرباح: 💰", "0.00 ج", Color.FromArgb(16, 185, 129), 8);
+			}
 
 			// ترتيب صحيح للرسو والـ Z-Order (DockStyle.Fill يجب أن يكون في مقدمة Z-order حتى يحسب التخطيط بعد الفلتر وشريط الإجمالي)
 			base.Controls.Clear();
@@ -904,6 +915,7 @@ namespace ChickenDist.Forms
 			decimal credit        = 0m;
 			decimal driver        = 0m;
 			decimal shipping      = 0m;
+			decimal totProfit     = 0m;
 
 			// تعطيل AutoSize أثناء التحميل لتسريع عرض البيانات الكثيرة
 			dgSales.SuspendLayout();
@@ -950,11 +962,15 @@ namespace ChickenDist.Forms
 					                    ? Convert.ToDecimal(row["ReturnAmount"]) : 0m;
 					decimal netAmt = num + shippingAmt - returnAmt; // الصافي النهائي
 
+					decimal netProfit = row.Table.Columns.Contains("NetProfit") && row["NetProfit"] != DBNull.Value
+					                  ? Convert.ToDecimal(row["NetProfit"]) : 0m;
+
 					totBeforeDisc += beforeDiscAmt;
 					totDisc += discAmt;
 					totAfterDisc += num;
 					ret += returnAmt;
 					shipping += shippingAmt;
+					totProfit += netProfit;
 
 					switch (text5)
 					{
@@ -974,6 +990,7 @@ namespace ChickenDist.Forms
 					string shippingStr = shippingAmt > 0 ? shippingAmt.ToString("N2") + " ج" : "-";
 					string retStr = returnAmt > 0 ? returnAmt.ToString("N2") + " ج" : "-";
 					string netStr = netAmt.ToString("N2") + " ج";
+					string profitStr = netProfit.ToString("N2") + " ج";
 					string whName = (row.Table.Columns.Contains("WarehouseName") && row["WarehouseName"] != DBNull.Value) ? row["WarehouseName"].ToString() : "---";
 
 					int addedIdx = dgSales.Rows.Add(
@@ -991,6 +1008,7 @@ namespace ChickenDist.Forms
 						shippingStr,
 						retStr,
 						netStr,
+						profitStr,
 						row.Table.Columns.Contains("CreatedByName") ? row["CreatedByName"].ToString() : "---",
 						row["Notes"]);
 
@@ -1004,6 +1022,12 @@ namespace ChickenDist.Forms
 					{
 						addedRow.Cells["ClientCode"].Style.ForeColor = Color.FromArgb(16, 185, 129);
 						addedRow.Cells["ClientCode"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+					}
+
+					var profitCell = addedRow.Cells["NetProfit"];
+					if (profitCell != null)
+					{
+						profitCell.Style.ForeColor = netProfit < 0 ? Color.FromArgb(239, 68, 68) : Color.FromArgb(16, 185, 129);
 					}
 
 					if (returnAmt > 0)
@@ -1020,10 +1044,10 @@ namespace ChickenDist.Forms
 			dgSales.AutoSizeColumnsMode = oldMode;
 			dgSales.ResumeLayout();
 
-			UpdateSummary(totBeforeDisc, totDisc, totAfterDisc, ret, cash, credit, driver, shipping);
+			UpdateSummary(totBeforeDisc, totDisc, totAfterDisc, ret, cash, credit, driver, shipping, totProfit);
 		}
 
-		private void UpdateSummary(decimal totBeforeDisc, decimal totDisc, decimal totAfterDisc, decimal ret, decimal cash, decimal credit, decimal driver, decimal shipping)
+		private void UpdateSummary(decimal totBeforeDisc, decimal totDisc, decimal totAfterDisc, decimal ret, decimal cash, decimal credit, decimal driver, decimal shipping, decimal totProfit = 0m)
 		{
 			if (lblTotalBeforeDiscountSummary != null)
 				lblTotalBeforeDiscountSummary.Text = totBeforeDisc.ToString("N2") + " ج";
@@ -1036,6 +1060,11 @@ namespace ChickenDist.Forms
 			if (lblCreditSummary != null) lblCreditSummary.Text = credit.ToString("N2") + " ج";
 			if (lblDriverSummary != null) lblDriverSummary.Text = driver.ToString("N2") + " ج";
 			if (lblShippingSummary != null) lblShippingSummary.Text = shipping.ToString("N2") + " ج";
+			if (lblProfitSummary != null)
+			{
+				lblProfitSummary.Text = totProfit.ToString("N2") + " ج";
+				lblProfitSummary.ForeColor = totProfit >= 0 ? Color.FromArgb(16, 185, 129) : Color.FromArgb(239, 68, 68);
+			}
 		}
 
 		private void DgSales_SelectionChanged(object sender, EventArgs e)
@@ -1361,15 +1390,17 @@ namespace ChickenDist.Forms
 			const float FOOTER_H = 40f;
 			const float ROW_H    = 22f;
 
+			bool canViewProfit = Session.CanViewCost("SalesList");
+
 			// أعمدة الجدول: (عنوان، نسبة العرض)
-			var cols = new (string Title, float Weight)[]
+			var colsList = new List<(string Title, float Weight)>
 			{
 				("#",                  0.022f),
 				("رقم الفاتورة",       0.070f),
 				("التاريخ",            0.080f),
 				("النوع",              0.055f),
 				("المخزن",             0.060f),
-				("العميل",             0.145f),
+				("العميل",             0.140f),
 				("عدد الأصناف",        0.050f),
 				("قبل الخصم",          0.075f),
 				("الخصم ✂",            0.060f),
@@ -1377,9 +1408,15 @@ namespace ChickenDist.Forms
 				("الشحن",              0.050f),
 				("المرتجع ↩",          0.060f),
 				("الصافي ✔",           0.075f),
-				("الموظف",             0.095f),
-				("الملاحظات",          0.065f),
 			};
+			if (canViewProfit)
+			{
+				colsList.Add(("الربح 💰", 0.070f));
+			}
+			colsList.Add(("الموظف",    0.090f));
+			colsList.Add(("الملاحظات", 0.065f));
+
+			var cols = colsList.ToArray();
 
 			float tableW = PAGE_W - MARGIN_X * 2f;
 
@@ -1390,7 +1427,7 @@ namespace ChickenDist.Forms
 
 			// جمع بيانات الصفوف من الـ Grid
 			var rows = new List<string[]>();
-			decimal sumBeforeDisc = 0, sumDisc = 0, sumAfterDisc = 0, sumShipping = 0, sumReturn = 0, sumNet = 0;
+			decimal sumBeforeDisc = 0, sumDisc = 0, sumAfterDisc = 0, sumShipping = 0, sumReturn = 0, sumNet = 0, sumProfit = 0;
 			for (int r = 0; r < dgSales.Rows.Count; r++)
 			{
 				var dgr = dgSales.Rows[r];
@@ -1400,6 +1437,7 @@ namespace ChickenDist.Forms
 				string shipping   = dgr.Cells["ShippingCharge"].Value?.ToString() ?? "-";
 				string returnAmt  = dgr.Cells["ReturnAmount"].Value?.ToString() ?? "-";
 				string net        = dgr.Cells["NetAmount"].Value?.ToString() ?? "-";
+				string profit     = canViewProfit && dgr.Cells["NetProfit"] != null ? (dgr.Cells["NetProfit"].Value?.ToString() ?? "-") : "-";
 
 				ParseNum(beforeDisc, ref sumBeforeDisc);
 				ParseNum(disc,       ref sumDisc);
@@ -1407,8 +1445,9 @@ namespace ChickenDist.Forms
 				ParseNum(shipping,   ref sumShipping);
 				ParseNum(returnAmt,  ref sumReturn);
 				ParseNum(net,        ref sumNet);
+				if (canViewProfit) ParseNum(profit, ref sumProfit);
 
-				rows.Add(new[]
+				var rowCells = new List<string>
 				{
 					(r + 1).ToString(),
 					dgr.Cells["SaleCode"].Value?.ToString() ?? "",
@@ -1422,10 +1461,13 @@ namespace ChickenDist.Forms
 					afterDisc,
 					shipping,
 					returnAmt,
-					net,
-					dgr.Cells["CreatedByName"].Value?.ToString() ?? "",
-					dgr.Cells["Notes"].Value?.ToString() ?? "",
-				});
+					net
+				};
+				if (canViewProfit) rowCells.Add(profit);
+				rowCells.Add(dgr.Cells["CreatedByName"].Value?.ToString() ?? "");
+				rowCells.Add(dgr.Cells["Notes"].Value?.ToString() ?? "");
+
+				rows.Add(rowCells.ToArray());
 			}
 
 			// ─── رسم الـ PDF صفحة بصفحة كـ Bitmap ثم نكتبها في PDF raw ───
@@ -1438,7 +1480,10 @@ namespace ChickenDist.Forms
 			string dateRange = $"الفترة: {dtpFrom.Value:dd/MM/yyyy} — {dtpTo.Value:dd/MM/yyyy}";
 			string genDate  = $"تاريخ الإنشاء: {DateTime.Now:dd/MM/yyyy HH:mm}";
 			string typeFilter = cboTypeFilter.SelectedItem?.ToString() ?? "الكل";
-			string clientFilter = (cboClientFilter.SelectedItem is ComboItem cci && cci.ID > 0) ? cci.Text : "الكل";
+			string clientFilter = cboClientFilter.Text.Trim();
+			if (string.IsNullOrEmpty(clientFilter)) clientFilter = "الكل";
+
+			var pages = new List<Bitmap>();
 
 			// Fonts
 			var fontTitle   = new Font("Arial", 15f, FontStyle.Bold);
@@ -1459,8 +1504,6 @@ namespace ChickenDist.Forms
 			Color clrDiscOra  = Color.FromArgb(180, 100, 0);
 			Color clrText     = Color.FromArgb(20, 30, 50);
 
-			var pages = new List<Bitmap>();
-
 			for (int p = 0; p < totalPages; p++)
 			{
 				var bmp = new Bitmap((int)PAGE_W, (int)PAGE_H, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -1475,7 +1518,6 @@ namespace ChickenDist.Forms
 					float x = MARGIN_X;
 
 					// ─── رأس الصفحة ───
-					// شريط العنوان
 					using (var hBrush = new System.Drawing.Drawing2D.LinearGradientBrush(
 						new RectangleF(x, y, tableW, 48f),
 						Color.FromArgb(24, 45, 85), Color.FromArgb(37, 99, 235), 0f))
@@ -1483,14 +1525,12 @@ namespace ChickenDist.Forms
 						g.FillRectangle(hBrush, x, y, tableW, 48f);
 					}
 
-					// اسم الشركة
 					var sfRtl = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
 					var sfLtr = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
 					var sfCtr = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
 
 					g.DrawString(company, fontTitle, Brushes.White, new RectangleF(x + 8, y, tableW - 16, 48f), sfCtr);
 
-					// شريط التفاصيل
 					using (var sb = new SolidBrush(Color.FromArgb(240, 245, 255)))
 						g.FillRectangle(sb, x, y + 48f, tableW, 24f);
 					using (var sb = new SolidBrush(Color.FromArgb(80, 100, 140)))
@@ -1498,7 +1538,6 @@ namespace ChickenDist.Forms
 						string infoLine = $"سجل المبيعات  |  {dateRange}  |  نوع الفاتورة: {typeFilter}  |  العميل: {clientFilter}  |  {genDate}  |  صفحة {p + 1} من {totalPages}";
 						g.DrawString(infoLine, fontSub, sb, new RectangleF(x + 4, y + 48f, tableW - 8, 24f), sfCtr);
 					}
-					// حد أسفل الرأس
 					using (var pen = new Pen(Color.FromArgb(37, 99, 235), 1.5f))
 						g.DrawLine(pen, x, y + 72f, x + tableW, y + 72f);
 
@@ -1512,7 +1551,6 @@ namespace ChickenDist.Forms
 					for (int ci = 0; ci < cols.Length; ci++)
 					{
 						var rect = new RectangleF(cx, y, colWidths[ci], ROW_H + 2);
-						// حدود رأسية
 						using (var p2 = new Pen(Color.FromArgb(60, 80, 120))) g.DrawRectangle(p2, rect.X, rect.Y, rect.Width, rect.Height);
 						var sf2 = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
 						g.DrawString(cols[ci].Title, fontHead, Brushes.White, rect, sf2);
@@ -1537,26 +1575,22 @@ namespace ChickenDist.Forms
 						for (int ci = 0; ci < cols.Length; ci++)
 						{
 							var rect = new RectangleF(cx + 2, y + 1, colWidths[ci] - 4, ROW_H - 2);
-							// اختر لون النص حسب العمود
 							Color cellColor = clrText;
-							if (ci == 7)  cellColor = clrDiscOra;
-							else if (ci == 10) cellColor = clrRetRed;
-							else if (ci == 11) cellColor = clrNetGreen;
+							if (cols[ci].Title.Contains("الخصم")) cellColor = clrDiscOra;
+							else if (cols[ci].Title.Contains("المرتجع")) cellColor = clrRetRed;
+							else if (cols[ci].Title.Contains("الصافي") || cols[ci].Title.Contains("الربح")) cellColor = clrNetGreen;
 
 							var sf3 = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
-							// رقم الصف والأعمدة المحايدة تتوسط
-							if (ci == 0 || ci == 4 || ci == 5 || ci == 12 || ci == 13)
+							if (ci == 0 || cols[ci].Title == "المخزن" || cols[ci].Title == "عدد الأصناف" || cols[ci].Title == "الموظف" || cols[ci].Title == "الملاحظات")
 								sf3.Alignment = StringAlignment.Center;
 
 							using (var cb = new SolidBrush(cellColor))
 								g.DrawString(rowData[ci], fontCell, cb, rect, sf3);
 
-							// حدود الخلية الرأسية
 							using (var bp = new Pen(clrBorder, 0.5f))
 								g.DrawRectangle(bp, cx, y, colWidths[ci], ROW_H);
 							cx += colWidths[ci];
 						}
-						// خط فاصل أفقي
 						using (var bp = new Pen(clrBorder, 0.4f))
 							g.DrawLine(bp, x, y + ROW_H, x + tableW, y + ROW_H);
 						y += ROW_H;
@@ -1568,32 +1602,43 @@ namespace ChickenDist.Forms
 						using (var tb = new SolidBrush(clrTotalRow))
 							g.FillRectangle(tb, x, y, tableW, ROW_H + 2);
 
-						string[] totals = {
+						var totalsList = new List<string>
+						{
 							"",
 							"الإجمالي",
 							"",
 							"",
 							$"{rows.Count} فاتورة",
 							"",
+							"",
 							sumBeforeDisc.ToString("N2") + " ج",
 							sumDisc.ToString("N2") + " ج",
 							sumAfterDisc.ToString("N2") + " ج",
 							sumShipping.ToString("N2") + " ج",
 							sumReturn.ToString("N2") + " ج",
-							sumNet.ToString("N2") + " ج",
-							"",
-							""
+							sumNet.ToString("N2") + " ج"
 						};
+						if (canViewProfit)
+						{
+							totalsList.Add(sumProfit.ToString("N2") + " ج");
+						}
+						totalsList.Add("");
+						totalsList.Add("");
+						string[] totals = totalsList.ToArray();
 
 						cx = x;
 						for (int ci = 0; ci < cols.Length; ci++)
 						{
 							var rect = new RectangleF(cx + 2, y + 1, colWidths[ci] - 4, ROW_H);
-							Color tc = (ci == 7) ? clrDiscOra : (ci == 10) ? clrRetRed : (ci == 11) ? clrNetGreen : clrText;
+							Color tc = clrText;
+							if (cols[ci].Title.Contains("الخصم")) tc = clrDiscOra;
+							else if (cols[ci].Title.Contains("المرتجع")) tc = clrRetRed;
+							else if (cols[ci].Title.Contains("الصافي") || cols[ci].Title.Contains("الربح")) tc = clrNetGreen;
+
 							var sf4 = new StringFormat(StringFormatFlags.DirectionRightToLeft) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
 							if (ci == 1 || ci == 4) sf4.Alignment = StringAlignment.Center;
 							using (var cb = new SolidBrush(tc))
-								g.DrawString(totals[ci], fontTotal, cb, rect, sf4);
+								g.DrawString(ci < totals.Length ? totals[ci] : "", fontTotal, cb, rect, sf4);
 							using (var bp = new Pen(clrBorder, 1f))
 								g.DrawRectangle(bp, cx, y, colWidths[ci], ROW_H + 2);
 							cx += colWidths[ci];

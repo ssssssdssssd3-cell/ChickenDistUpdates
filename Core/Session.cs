@@ -418,16 +418,15 @@ namespace ChickenDist.Core
 
         /// <summary>
         /// هل يحق للمستخدم رؤية سعر التكلفة وهوامش الربح؟
-        /// إذا كان الموظف مقفولاً عليه الدخول على كارت الصنف أو شاشة الأصناف، أو ليس لديه صلاحية رؤية التكلفة، تُحجب التكلفة نهائياً في كل مكان
+        /// للأدمن: مسموح دائماً.
+        /// للموظف: يفحص صلاحية الاطلاع على التكلفة والربح للشاشة المحددة.
         /// </summary>
         public static bool CanViewCost(string screen = "Sales")
         {
             if (IsAdmin) return true;
 
-            // إذا كان الموظف مقفولاً عليه الدخول على كارت الصنف أو شاشة الأصناف، تُحجب التكلفة تماماً في كل البرنامج
-            if (!CanAccess("ProductCard") || !CanAccess("Products")) return false;
-
             if (_perms.ContainsKey(screen) && _perms[screen].CanViewCost) return true;
+            if (screen == "SalesList" && (_perms.ContainsKey("SalesList") && _perms["SalesList"].CanViewCost || _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost)) return true;
             if (screen == "PriceQuote" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
             if (screen == "Sales" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
             if (screen == "POS" && _perms.ContainsKey("Sales") && _perms["Sales"].CanViewCost) return true;
@@ -445,8 +444,7 @@ namespace ChickenDist.Core
         public static bool CanViewAnyCost()
         {
             if (IsAdmin) return true;
-            if (!CanAccess("ProductCard") || !CanAccess("Products")) return false;
-            return CanViewCost("Sales") || CanViewCost("Products") || CanViewCost("Inventory") || CanViewCost("Reports");
+            return CanViewCost("Sales") || CanViewCost("SalesList") || CanViewCost("Products") || CanViewCost("Inventory") || CanViewCost("Reports");
         }
 
         /// <summary>
