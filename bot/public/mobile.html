@@ -2575,7 +2575,15 @@
       document.getElementById('cardPeriodCreditSales').textContent = periodCreditSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
       const periodProfit = activeFilterRange === 'today' && rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18);
-      document.getElementById('cardPeriodProfit').innerHTML = `${periodProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+      const profitEl = document.getElementById('cardPeriodProfit');
+      if (profitEl) {
+        if (periodProfit < 0) {
+          profitEl.className = "text-xl sm:text-2xl font-black text-rose-400 tracking-tight";
+        } else {
+          profitEl.className = "text-xl sm:text-2xl font-black text-emerald-400 tracking-tight";
+        }
+        profitEl.innerHTML = `${periodProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+      }
       const salesCount = filteredSales.length > 0 ? filteredSales.length : (rawData.TodaySalesInvoicesCount || 0);
       document.getElementById('cardPeriodSalesCount').textContent = salesCount;
 

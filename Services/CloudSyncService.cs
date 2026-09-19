@@ -428,13 +428,33 @@ self.addEventListener('fetch', (event) => {
             {
                 var dto = GetLiveStats();
 
-                // 1. حساب صافي الربح اليوم
-                object profitObj = DbHelper.Scalar(
-                    @"SELECT ISNULL(SUM(si.TotalPrice - (si.Quantity * ISNULL(p.PurchasePrice, 0))), 0)
-                      FROM SaleItems si WITH (NOLOCK)
-                      JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID
-                      JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
-                      WHERE CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)");
+                // 1. حساب صافي الربح اليوم الفعلي والدقيق (متوافق تماماً مع تقرير أرباح المبيعات وخصم المرتجعات والتكلفة الفعلية)
+                object profitObj = DbHelper.Scalar(@"
+                    ;WITH TodayInvoiceCosts AS (
+                        SELECT s.SaleID,
+                               s.TotalAmount,
+                               ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
+                        FROM Sales s WITH (NOLOCK)
+                        LEFT JOIN SaleItems si WITH (NOLOCK) ON s.SaleID = si.SaleID
+                        LEFT JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
+                        WHERE s.IsPosted = 1
+                          AND CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)
+                        GROUP BY s.SaleID, s.TotalAmount
+                    ),
+                    TodayReturns AS (
+                        SELECT ISNULL(SUM(sr.TotalAmount), 0) AS ReturnsTotal,
+                               ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                        FROM SalesReturns sr WITH (NOLOCK)
+                        LEFT JOIN ReturnItems ri WITH (NOLOCK) ON sr.ReturnID = ri.ReturnID
+                        LEFT JOIN Products p WITH (NOLOCK) ON ri.ProductID = p.ProductID
+                        WHERE CAST(sr.ReturnDate AS DATE) = CAST(GETDATE() AS DATE)
+                    )
+                    SELECT 
+                        (ISNULL((SELECT SUM(TotalAmount) FROM TodayInvoiceCosts), 0) 
+                         - ISNULL((SELECT ReturnsTotal FROM TodayReturns), 0))
+                        -
+                        (ISNULL((SELECT SUM(SaleCost) FROM TodayInvoiceCosts), 0) 
+                         - ISNULL((SELECT ReturnsCost FROM TodayReturns), 0))");
                 decimal todayProfit = profitObj != null && profitObj != DBNull.Value ? Convert.ToDecimal(profitObj) : 0m;
 
                 // 2. مشتريات اليوم
@@ -504,9 +524,9 @@ self.addEventListener('fetch', (event) => {
                     SELECT 
                         CASE 
                             WHEN EXISTS (SELECT 1 FROM ProductStock WITH (NOLOCK)) THEN
-                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.PurchasePrice, 0)) FROM ProductStock ps WITH (NOLOCK) JOIN Products p WITH (NOLOCK) ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
+                                ISNULL((SELECT SUM(ps.Quantity * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM ProductStock ps WITH (NOLOCK) JOIN Products p WITH (NOLOCK) ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
                             ELSE
-                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.PurchasePrice, 0)) FROM Products p WITH (NOLOCK) WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
+                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM Products p WITH (NOLOCK) WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
                         END");
                 decimal stockCostValue = stockCostObj != null && stockCostObj != DBNull.Value ? Convert.ToDecimal(stockCostObj) : 0m;
 
@@ -514,9 +534,9 @@ self.addEventListener('fetch', (event) => {
                     SELECT 
                         CASE 
                             WHEN EXISTS (SELECT 1 FROM ProductStock WITH (NOLOCK)) THEN
-                                ISNULL((SELECT SUM(ps.Quantity * ISNULL(p.SalePrice, 0)) FROM ProductStock ps WITH (NOLOCK) JOIN Products p WITH (NOLOCK) ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
+                                ISNULL((SELECT SUM(ps.Quantity * (ISNULL(p.SalePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM ProductStock ps WITH (NOLOCK) JOIN Products p WITH (NOLOCK) ON ps.ProductID = p.ProductID WHERE p.IsActive = 1 AND ps.Quantity > 0), 0)
                             ELSE
-                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * ISNULL(p.SalePrice, 0)) FROM Products p WITH (NOLOCK) WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
+                                ISNULL((SELECT SUM(ISNULL(p.Quantity, 0) * (ISNULL(p.SalePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM Products p WITH (NOLOCK) WHERE p.IsActive = 1 AND p.Quantity > 0), 0)
                         END");
                 decimal stockSaleValue = stockSaleObj != null && stockSaleObj != DBNull.Value ? Convert.ToDecimal(stockSaleObj) : 0m;
 
