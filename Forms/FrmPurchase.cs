@@ -17,8 +17,9 @@ namespace ChickenDist.Forms
         private string _purchaseType = "Credit";
 
         // ── حقول الرأس ─────────────────────────────────────────────────────────
-        private ComboBox cboPurchaseSource, cboSupplier, cboProduct, cboWarehouse;
-        private Label lblSupp;
+        private ComboBox cboPurchaseSource, cboSupplier, cboProduct, cboWarehouse, cboSafeAccount;
+        private Label lblSupp, lblSafeAccount;
+        private TableLayoutPanel pnlSafe;
         private Button btnSupplierAdd;
         private DateTimePicker dtpDate;
         private TextBox txtNotes, txtSupplierInvoiceNo, txtBarcode;
@@ -393,7 +394,7 @@ namespace ChickenDist.Forms
                 Enabled = Session.CanAccess("EditInvoiceDate")
             };
 
-            // رصيد الخزنة
+            // رصيد الخزنة وخزينة الصرف
             lblCashBalance = new Label
             {
                 Text = "",
@@ -403,6 +404,35 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Margin = new Padding(2)
             };
+
+            lblSafeAccount = MakeLabel("خزينة الصرف:", 0, 0);
+            lblSafeAccount.Dock = DockStyle.Fill;
+            lblSafeAccount.TextAlign = ContentAlignment.MiddleRight;
+            lblSafeAccount.Margin = new Padding(2);
+
+            cboSafeAccount = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(2, 3, 2, 3)
+            };
+            cboSafeAccount.SelectedIndexChanged += (s, e) => UpdateSafeBalanceDisplay();
+
+            pnlSafe = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+            pnlSafe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55f));
+            pnlSafe.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));
+            pnlSafe.Controls.Add(cboSafeAccount, 0, 0);
+            pnlSafe.Controls.Add(lblCashBalance, 1, 0);
 
             // إضافة إلى الجدول — صف 0: جهة الشراء | المورد/العميل | نوع الفاتورة
             tbl.Controls.Add(lblSource,          0, 0);
@@ -472,8 +502,8 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(txtSupplierInvoiceNo, 1, 1);
             tbl.Controls.Add(lblNotes,             2, 1);
             tbl.Controls.Add(txtNotes,             3, 1);
-            tbl.Controls.Add(lblCashBalance,       4, 1);
-            tbl.SetColumnSpan(lblCashBalance, 2);
+            tbl.Controls.Add(lblSafeAccount,       4, 1);
+            tbl.Controls.Add(pnlSafe,              5, 1);
 
             cboProduct.KeyDown += CboProduct_KeyDown;
             cboProduct.KeyPress += CboProduct_KeyPress_BarcodeDetect; // اكتشاف الباركود التلقائي
@@ -1597,15 +1627,38 @@ namespace ChickenDist.Forms
             btnTypeCredit.BackColor = isCredit ? Theme.Primary : Color.FromArgb(60, 60, 60);
             btnTypeCash.BackColor   = !isCredit ? Theme.Accent : Color.FromArgb(60, 60, 60);
 
-            if (!isCredit)
+            if (lblSafeAccount != null) lblSafeAccount.Visible = !isCredit;
+            if (pnlSafe != null) pnlSafe.Visible = !isCredit;
+
+            UpdateSafeBalanceDisplay();
+        }
+
+        private void UpdateSafeBalanceDisplay()
+        {
+            if (lblCashBalance == null) return;
+            if (_purchaseType != "Cash")
             {
-                var cashResult = DbHelper.Scalar(
-                    "SELECT ISNULL(SUM(AmountIn),0) - ISNULL(SUM(AmountOut),0) FROM CashBox");
-                decimal cashBal = cashResult != null ? Convert.ToDecimal(cashResult) : 0;
-                lblCashBalance.Text = $"💰 رصيد الخزنة: {cashBal:N2} ج";
-                lblCashBalance.ForeColor = cashBal > 0 ? Color.FromArgb(100,180,100) : Color.OrangeRed;
+                lblCashBalance.Text = "";
+                return;
+            }
+
+            int safeId = 0;
+            if (cboSafeAccount?.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                safeId = ci.ID;
             }
             else
+            {
+                safeId = Session.GetPrimaryAllowedSafeID();
+            }
+
+            try
+            {
+                decimal cashBal = AccountDAL.GetCashBalance(safeId);
+                lblCashBalance.Text = $"💰 {cashBal:N2} ج";
+                lblCashBalance.ForeColor = cashBal > 0 ? Color.FromArgb(100, 180, 100) : Color.OrangeRed;
+            }
+            catch
             {
                 lblCashBalance.Text = "";
             }
@@ -1748,6 +1801,66 @@ namespace ChickenDist.Forms
                 cboWarehouse.EndUpdate();
             }
             catch { /* تجاهل لو مافيش مخازن */ }
+
+            LoadSafeAccounts();
+        }
+
+        private void LoadSafeAccounts()
+        {
+            if (cboSafeAccount == null) return;
+            try
+            {
+                cboSafeAccount.BeginUpdate();
+                cboSafeAccount.Items.Clear();
+
+                DataTable safes = AccountDAL.GetActiveSafeAccounts();
+                HashSet<int> allowedSafes = null;
+                if (!Session.IsAdmin)
+                {
+                    allowedSafes = Session.GetAllowedSafeIDSet();
+                }
+
+                int defaultSafeID = Session.GetPrimaryAllowedSafeID();
+                int selectedIdx = -1;
+
+                foreach (DataRow row in safes.Rows)
+                {
+                    int accID = Convert.ToInt32(row["AccountID"]);
+                    if (allowedSafes != null && !allowedSafes.Contains(accID))
+                        continue;
+
+                    string safeName = row["AccountName"].ToString()
+                        .Replace(" / الدرج", "")
+                        .Replace("/ الدرج", "")
+                        .Replace("/الدرج", "")
+                        .Replace(" / درج", "")
+                        .Trim();
+
+                    var item = new ComboItem(accID, safeName);
+                    int idx = cboSafeAccount.Items.Add(item);
+
+                    if (accID == defaultSafeID)
+                        selectedIdx = idx;
+                }
+
+                cboSafeAccount.DisplayMember = "Text";
+                if (cboSafeAccount.Items.Count > 0)
+                {
+                    cboSafeAccount.SelectedIndex = selectedIdx >= 0 ? selectedIdx : 0;
+                }
+
+                bool canChange = Session.IsAdmin || Session.CanChangeSafe("Purchases");
+                cboSafeAccount.Enabled = canChange;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadSafeAccounts in FrmPurchase", ex);
+            }
+            finally
+            {
+                cboSafeAccount.EndUpdate();
+            }
+            UpdateSafeBalanceDisplay();
         }
 
         private ComboItem GetProductComboItem(int productID)
@@ -2763,6 +2876,20 @@ namespace ChickenDist.Forms
             _editPurchaseID  = 0;
             _isCopyMode      = false;
             dtpDate.Value    = DateTime.Today;
+            if (cboSafeAccount != null && cboSafeAccount.Items.Count > 0)
+            {
+                int defSafe = Session.GetPrimaryAllowedSafeID();
+                int selIdx = 0;
+                for (int i = 0; i < cboSafeAccount.Items.Count; i++)
+                {
+                    if (cboSafeAccount.Items[i] is ComboItem ci && ci.ID == defSafe)
+                    {
+                        selIdx = i;
+                        break;
+                    }
+                }
+                cboSafeAccount.SelectedIndex = selIdx;
+            }
             ToggleType();
             this.Text = "فاتورة مشتريات";
         }
@@ -2793,13 +2920,18 @@ namespace ChickenDist.Forms
             int? warehouseID = null;
             if (cboWarehouse.SelectedItem is ComboItem wci) warehouseID = wci.ID;
 
+            int? safeAccountID = null;
+            if (_purchaseType == "Cash" && cboSafeAccount?.SelectedItem is ComboItem sci && sci.ID > 0)
+                safeAccountID = sci.ID;
+
             try
             {
                 int draftID = PurchaseDAL.SavePurchase(
                     _purchaseType, supplierID, net, txtNotes.Text, _items,
                     discAmt, discPct, taxPct, taxAmt, isDraft: true, warehouseID: warehouseID,
                     supplierInvoiceNo: txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "",
-                    shippingCost: shippingCost, shippingOn: shippingOn);
+                    shippingCost: shippingCost, shippingOn: shippingOn,
+                    safeAccountID: safeAccountID);
 
                 if (draftID > 0)
                 {
@@ -3153,13 +3285,22 @@ namespace ChickenDist.Forms
                 int? warehouseID = null;
                 if (cboWarehouse.SelectedItem is ComboItem wci2) warehouseID = wci2.ID;
 
+                int? safeAccountID = null;
+                if (_purchaseType == "Cash")
+                {
+                    if (cboSafeAccount?.SelectedItem is ComboItem sci2 && sci2.ID > 0)
+                        safeAccountID = sci2.ID;
+                    else
+                        safeAccountID = Session.GetPrimaryAllowedSafeID();
+                }
+
                 int id = 0;
                 string suppInvNo = txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "";
                 if (_editPurchaseID > 0)
                 {
                     bool ok = PurchaseDAL.UpdatePurchase(_editPurchaseID, _purchaseType, supplierID, net, txtNotes.Text, _items,
                         discAmt, discPct, taxPct, taxAmt, warehouseID, supplierInvoiceNo: suppInvNo,
-                        shippingCost: shippingCost, shippingOn: shippingOn);
+                        shippingCost: shippingCost, shippingOn: shippingOn, safeAccountID: safeAccountID);
                     if (ok) id = _editPurchaseID;
                 }
                 else
@@ -3167,7 +3308,8 @@ namespace ChickenDist.Forms
                     id = PurchaseDAL.SavePurchase(
                         _purchaseType, supplierID, net, txtNotes.Text, _items,
                         discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID, supplierInvoiceNo: suppInvNo,
-                        shippingCost: shippingCost, shippingOn: shippingOn, clientID: clientID, purchaseSource: purchaseSource);
+                        shippingCost: shippingCost, shippingOn: shippingOn, clientID: clientID, purchaseSource: purchaseSource,
+                        safeAccountID: safeAccountID);
                 }
 
                 if (id > 0)
@@ -3928,7 +4070,7 @@ namespace ChickenDist.Forms
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                          COALESCE(p.DiscountPct, 0) AS DiscountPct,
                          COALESCE(p.TaxPct, 0) AS TaxPct,
-                         p.WarehouseID
+                         p.WarehouseID, p.SafeAccountID
                   FROM Purchases p WHERE p.PurchaseID=@id",
                 DbHelper.P("@id", purchaseID));
 
@@ -3945,6 +4087,20 @@ namespace ChickenDist.Forms
             string typeStr = row["PurchaseType"].ToString();
             _purchaseType = typeStr;
             ToggleType();
+
+            // الخزينة
+            if (row.Table.Columns.Contains("SafeAccountID") && row["SafeAccountID"] != DBNull.Value && cboSafeAccount != null)
+            {
+                int safeId = Convert.ToInt32(row["SafeAccountID"]);
+                for (int i = 0; i < cboSafeAccount.Items.Count; i++)
+                {
+                    if (cboSafeAccount.Items[i] is ComboItem ci && ci.ID == safeId)
+                    {
+                        cboSafeAccount.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
 
             // التاريخ
             dtpDate.Value = _isCopyMode ? DateTime.Today : Convert.ToDateTime(row["PurchaseDate"]);

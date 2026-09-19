@@ -154,6 +154,8 @@ namespace ChickenDist.DAL
                          ISNULL(p.ShippingOn, N'Company') AS ShippingOn,
                          p.WarehouseID,
                          ISNULL(w.WarehouseName, N'---') AS WarehouseName,
+                         p.SafeAccountID,
+                         ISNULL(sa.AccountName, N'---') AS SafeName,
                          ISNULL((
                              SELECT CASE 
                                  WHEN SUM(ISNULL(pr.TotalAmount, 0)) > 0 THEN SUM(ISNULL(pr.TotalAmount, 0))
@@ -162,12 +164,12 @@ namespace ChickenDist.DAL
                              FROM PurchaseReturns pr
                              LEFT JOIN PurchaseReturnItems pri ON pr.ReturnID = pri.ReturnID
                              WHERE pr.PurchaseID = p.PurchaseID 
-                                OR (pr.PurchaseID IS NULL AND pr.Notes LIKE N'%' + p.PurchaseCode + N'%')
+                                 OR (pr.PurchaseID IS NULL AND pr.Notes LIKE N'%' + p.PurchaseCode + N'%')
                          ), 0) AS ReturnAmount,
                          CASE WHEN EXISTS (
                              SELECT 1 FROM PurchaseReturns pr 
                              WHERE pr.PurchaseID = p.PurchaseID 
-                                OR (pr.PurchaseID IS NULL AND pr.Notes LIKE N'%' + p.PurchaseCode + N'%')
+                                 OR (pr.PurchaseID IS NULL AND pr.Notes LIKE N'%' + p.PurchaseCode + N'%')
                          ) THEN 1 ELSE 0 END AS HasReturns,
                          ISNULL((
                              SELECT SUM(pi.Quantity * pi.UnitPrice)
@@ -178,6 +180,7 @@ namespace ChickenDist.DAL
                   LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                   LEFT JOIN Clients c ON p.ClientID = c.ClientID
                   LEFT JOIN Warehouses w WITH (NOLOCK) ON p.WarehouseID = w.WarehouseID
+                  LEFT JOIN SafeAccounts sa WITH (NOLOCK) ON p.SafeAccountID = sa.AccountID
                   WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND p.IsPosted = 1
                     AND (@supplierID IS NULL OR p.SupplierID = @supplierID OR p.ClientID = @supplierID)
@@ -257,7 +260,8 @@ namespace ChickenDist.DAL
             bool isDraft = false, int? warehouseID = 1,
             string supplierInvoiceNo = "",
             decimal shippingCost = 0m, string shippingOn = "Company",
-            int? clientID = null, string purchaseSource = "Supplier")
+            int? clientID = null, string purchaseSource = "Supplier",
+            int? safeAccountID = null)
         {
             int returnedID = -1;
             DbHelper.EnsurePurchaseColumnsExist();
@@ -268,10 +272,11 @@ namespace ChickenDist.DAL
                     "SELECT COALESCE(MAX(PurchaseID), 0) + 1 FROM Purchases");
                 string code = nextResult != null ? nextResult.ToString() : "1";
 
+                int accId = safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
+
                 // فحص رصيد الخزنة للمشتريات النقدية المؤكدة فقط ومنع الرصيد السالب
                 if (purchaseType == "Cash" && !isDraft)
                 {
-                    int accId = Session.GetDefaultSafeID();
                     AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "سداد فاتورة مشتريات نقدية");
                 }
 
@@ -279,11 +284,11 @@ namespace ChickenDist.DAL
                     @"INSERT INTO Purchases
                         (PurchaseCode, SupplierInvoiceNo, PurchaseDate, PurchaseType, SupplierID, ClientID, PurchaseSource,
                          TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount,
-                         Notes, CreatedBy, IsPosted, WarehouseID, ShippingCost, ShippingOn)
+                         Notes, CreatedBy, IsPosted, WarehouseID, ShippingCost, ShippingOn, SafeAccountID)
                       VALUES
                         (@code, @sinv, @dt, @typ, @sid, @cid, @psrc,
                          @tot, @discAmt, @discPct, @taxPct, @taxAmt,
-                         @n, @by, @ip, @wid, @shdost, @shon)",
+                         @n, @by, @ip, @wid, @shdost, @shon, @safeId)",
                     DbHelper.P("@code",    code),
                     DbHelper.P("@sinv",    (object)supplierInvoiceNo ?? DBNull.Value),
                     DbHelper.P("@dt",      DateTime.Now),
@@ -301,7 +306,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@ip",      isDraft ? 0 : 1),
                     DbHelper.P("@wid",     warehouseID.HasValue ? (object)warehouseID.Value : 1),
                     DbHelper.P("@shdost",  shippingCost),
-                    DbHelper.P("@shon",    shippingOn ?? "Company"));
+                    DbHelper.P("@shon",    shippingOn ?? "Company"),
+                    DbHelper.P("@safeId",  safeAccountID.HasValue && safeAccountID.Value > 0 ? (object)safeAccountID.Value : DBNull.Value));
 
                 if (purchaseID <= 0)
                     throw new Exception("فشل في استخراج رقم فاتورة المشتريات الجديدة.");
@@ -384,7 +390,6 @@ namespace ChickenDist.DAL
                         }
                         else if (purchaseType == "Cash")
                         {
-                            int accId = Session.GetDefaultSafeID();
                             AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "فاتورة شراء نقدي من عميل");
 
                             DbHelper.ExecuteTrans(trans,
@@ -416,7 +421,6 @@ namespace ChickenDist.DAL
                         // نقدي → اخصم من الخزنة
                         if (purchaseType == "Cash")
                         {
-                            int accId = Session.GetDefaultSafeID();
                             AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "فاتورة مشتريات نقدية");
 
                             DbHelper.ExecuteTrans(trans,
@@ -548,12 +552,14 @@ namespace ChickenDist.DAL
 
         public static bool UpdatePurchase(int purchaseID, string purchaseType, int? supplierID, decimal total, string notes, List<PurchaseItemDTO> items,
             decimal discountAmount, decimal discountPct, decimal taxPct, decimal taxAmt, int? warehouseID, string supplierInvoiceNo = "",
-            decimal shippingCost = 0m, string shippingOn = "Company")
+            decimal shippingCost = 0m, string shippingOn = "Company", int? safeAccountID = null)
         {
             try
             {
                 DbHelper.RunInTransaction((con, trans) =>
                 {
+                    int accId = safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
+
                     var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, ISNULL(BonusQuantity, 0) AS BonusQuantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     int wid = warehouseID ?? 1;
                     foreach (DataRow iRow in dtOldItems.Rows)
@@ -575,14 +581,15 @@ namespace ChickenDist.DAL
 
                     DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM SupplierTransactions WHERE RefID=@id AND TransType='Purchase'", DbHelper.P("@id", purchaseID));
-                    DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND TransType='PurchaseExpense'", DbHelper.P("@id", purchaseID));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND (TransType='PurchaseExpense' OR TransType='ClientPurchaseCash')", DbHelper.P("@id", purchaseID));
 
                     DbHelper.ExecuteTrans(trans,
                         @"UPDATE Purchases 
                           SET PurchaseType=@typ, SupplierID=@sid, TotalAmount=@tot, Notes=@n, 
                               DiscountAmount=@discAmt, DiscountPct=@discPct, TaxPct=@taxPct, TaxAmount=@taxAmt,
                               WarehouseID=@wid, SupplierInvoiceNo=@sinv,
-                              ShippingCost=@shdost, ShippingOn=@shon
+                              ShippingCost=@shdost, ShippingOn=@shon,
+                              SafeAccountID=@safeId
                           WHERE PurchaseID=@id",
                         DbHelper.P("@typ",     purchaseType),
                         DbHelper.P("@sid",     supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
@@ -596,6 +603,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@sinv",    (object)supplierInvoiceNo ?? DBNull.Value),
                         DbHelper.P("@shdost",  shippingCost),
                         DbHelper.P("@shon",    shippingOn ?? "Company"),
+                        DbHelper.P("@safeId",  safeAccountID.HasValue && safeAccountID.Value > 0 ? (object)safeAccountID.Value : DBNull.Value),
                         DbHelper.P("@id",      purchaseID));
 
                     foreach (var item in items)
@@ -668,7 +676,6 @@ namespace ChickenDist.DAL
 
                     if (purchaseType == "Cash")
                     {
-                        int accId = Session.GetDefaultSafeID();
                         AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "تعديل فاتورة مشتريات نقدية");
 
                         DbHelper.ExecuteTrans(trans,

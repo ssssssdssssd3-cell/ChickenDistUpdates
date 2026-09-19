@@ -589,6 +589,13 @@ namespace ChickenDist.Core
                     ALTER TABLE Products ADD Barcode NVARCHAR(100) NULL;
             END");
 
+            SafeMigrate("Purchases.SafeAccountID", @"
+            IF OBJECT_ID('Purchases', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('Purchases', 'SafeAccountID') IS NULL
+                    ALTER TABLE Purchases ADD SafeAccountID INT NULL;
+            END");
+
             // 2. إسقاط الفهارس المتعارضة قبل تعديل أنواع الأعمدة
             SafeMigrate("DecimalExpansion.DropIndexes", @"
             IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Products_Search' AND object_id = OBJECT_ID('Products'))

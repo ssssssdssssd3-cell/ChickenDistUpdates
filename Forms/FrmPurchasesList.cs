@@ -241,6 +241,7 @@ namespace ChickenDist.Forms
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierInvoiceNo", HeaderText = "رقم فاتورة المورد", FillWeight = 75f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseDate",      HeaderText = "التاريخ والوقت", FillWeight = 80f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseType",      HeaderText = "نوع الفاتورة",   FillWeight = 45f });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SafeName",          HeaderText = "الخزينة",         FillWeight = 55f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "WarehouseName",     HeaderText = "المخزن",         FillWeight = 50f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName",      HeaderText = "المورد",         FillWeight = 110f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierCode",      HeaderText = "كود المورد",     FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
@@ -519,6 +520,8 @@ namespace ChickenDist.Forms
 				bool hasReturn = (returnAmt > 0) || (row.Table.Columns.Contains("HasReturns") && row["HasReturns"] != DBNull.Value && Convert.ToInt32(row["HasReturns"]) > 0);
 				string whName = row.Table.Columns.Contains("WarehouseName") && row["WarehouseName"] != DBNull.Value
 					? row["WarehouseName"].ToString() : "---";
+				string safeName = pType == "Cash" && row.Table.Columns.Contains("SafeName") && row["SafeName"] != DBNull.Value
+					? row["SafeName"].ToString() : "---";
 
 				int rowIdx = dgPurchases.Rows.Add(
 					row["PurchaseID"],
@@ -526,6 +529,7 @@ namespace ChickenDist.Forms
 					row.Table.Columns.Contains("SupplierInvoiceNo") ? row["SupplierInvoiceNo"].ToString() : "",
 					Convert.ToDateTime(row["PurchaseDate"]).ToString("dd/MM/yyyy HH:mm"),
 					displayType,
+					safeName,
 					whName,
 					supplier,
 					supplierCode,
