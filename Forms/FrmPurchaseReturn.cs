@@ -543,8 +543,8 @@ namespace ChickenDist.Forms
             dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
             if (dgPurchases.Rows.Count > 0)
             {
+                // تحديد الصف الأول يُطلق SelectionChanged تلقائياً — لا نستدعيه يدوياً لتفادي تكرار LoadPurchaseItems
                 dgPurchases.Rows[0].Selected = true;
-                DgPurchases_SelectionChanged(this, EventArgs.Empty);
             }
         }
 

@@ -708,8 +708,7 @@ namespace ChickenDist.DAL
                         ISNULL(sup.SupplierName, N'---') AS PersonName,
                         w.WarehouseName,
                         0.00 AS QtyIn,
-                        pri.Quantity * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) +
-                        ISNULL(pri.BonusQuantity, 0) * COALESCE(pri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
+                        (pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(NULLIF(pri.Factor, 0), COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
                         pr.Notes
                     FROM PurchaseReturnItems pri
                     JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
