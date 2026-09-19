@@ -1,5 +1,5 @@
-version=3.8.4
+version=3.8.5
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.8.4&t=1789823604
-sha256=B1914EEB8E151BE5C9E5CBCFBC3E6CB992A9049B8D01F0F578E754B116F256AD
-changelog=v3.8.4 - 2026-09-19: Fix warehouse transfer fast entry strip visibility and buttons layout
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.8.5&t=1789830138
+sha256=4A06B9EA767AD41685209EB6F5C63907668185CF03C9495648873303A81BC428
+changelog=v3.8.5 - 2026-09-19: Fix warehouse transfer fast entry strip visibility and buttons layout
