@@ -1234,7 +1234,29 @@ namespace ChickenDist.DAL
                 decimal newAverageCost;
                 if (stockBefore <= 0m || currentCost <= 0m)
                 {
-                    newAverageCost = groupIncomingBaseQty > 0m ? (groupIncomingNetLandedCost / groupIncomingBaseQty) : currentCost;
+                    if (currentCost > 0m && groupIncomingBaseQty > 0m)
+                    {
+                        // إذا كان الرصيد قبل الشراء سالباً بسبب إدخال المبيعات قبل المشتريات،
+                        // نحسب المتوسط التراكمي المرجح من واقع جميع فواتير الشراء المسجلة للصنف لتجنب تصفير التكلفة السابقة
+                        var histObj = DbHelper.ScalarTrans(trans, @"
+                            SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * ISNULL(pi.Factor, 1.0) * pi.UnitPrice) / 
+                                   NULLIF(SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * ISNULL(pi.Factor, 1.0)), 0)
+                            FROM PurchaseItems pi
+                            JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                            WHERE pi.ProductID = @pid AND pu.IsPosted = 1", DbHelper.P("@pid", prodId));
+                        if (histObj != null && histObj != DBNull.Value && Convert.ToDecimal(histObj) > 0m)
+                        {
+                            newAverageCost = Convert.ToDecimal(histObj);
+                        }
+                        else
+                        {
+                            newAverageCost = (groupIncomingNetLandedCost / groupIncomingBaseQty);
+                        }
+                    }
+                    else
+                    {
+                        newAverageCost = groupIncomingBaseQty > 0m ? (groupIncomingNetLandedCost / groupIncomingBaseQty) : currentCost;
+                    }
                 }
                 else
                 {

@@ -292,8 +292,21 @@ namespace ChickenDist.DAL
 
                 foreach (var item in items)
                 {
+                    decimal costToSave = 0m;
+                    if (item.PurchasePrice > 0m)
+                    {
+                        costToSave = item.Factor > 0m ? (item.PurchasePrice / item.Factor) : item.PurchasePrice;
+                    }
+                    else
+                    {
+                        var costObj = DbHelper.ScalarTrans(trans,
+                            "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                            DbHelper.P("@pid", item.ProductID));
+                        costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+                    }
+
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI,KitchenNotes) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei,@kn)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI,KitchenNotes,CostPrice) VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei,@kn,@cp)",
                         DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice), DbHelper.P("@dpct", item.DiscountPct),
@@ -302,7 +315,8 @@ namespace ChickenDist.DAL
                         DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
                         DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
                         DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI),
-                        DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
+                        DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
+                        DbHelper.P("@cp", costToSave));
 
                     // Deduct from ProductBatches table
                     if (!isDraft)
@@ -1019,9 +1033,22 @@ namespace ChickenDist.DAL
                 // 7. إدخال البنود الجديدة
                 foreach (var item in items)
                 {
+                    decimal costToSave = 0m;
+                    if (item.PurchasePrice > 0m)
+                    {
+                        costToSave = item.Factor > 0m ? (item.PurchasePrice / item.Factor) : item.PurchasePrice;
+                    }
+                    else
+                    {
+                        var costObj = DbHelper.ScalarTrans(trans,
+                            "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                            DbHelper.P("@pid", item.ProductID));
+                        costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+                    }
+
                     DbHelper.ExecuteTrans(trans,
-                        @"INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI,KitchenNotes) 
-                          VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei,@kn)",
+                        @"INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,IMEI,KitchenNotes,CostPrice) 
+                          VALUES(@sid,@pid,@qty,@up,@tp,@dpct,@damt,@pt,@un,@fac,@exp,@bid,@imei,@kn,@cp)",
                         DbHelper.P("@sid", saleID), 
                         DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), 
@@ -1035,7 +1062,8 @@ namespace ChickenDist.DAL
                         DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
                         DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
                         DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI),
-                        DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes));
+                        DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
+                        DbHelper.P("@cp", costToSave));
 
                     // check if price is different from product base price to log it in PriceChangesLog
                     if (!isDraft)
@@ -1936,16 +1964,22 @@ namespace ChickenDist.DAL
                 foreach (var it in items)
                 {
                     decimal lineTotal = it.Quantity * it.UnitPrice;
+                    var costObj = DbHelper.ScalarTrans(trans,
+                        "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                        DbHelper.P("@pid", it.ProductID));
+                    decimal costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,UnitName,Factor) " +
-                        "VALUES(@sid,@pid,@qty,@up,@tot,0,0,@un,@fac)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,UnitName,Factor,CostPrice) " +
+                        "VALUES(@sid,@pid,@qty,@up,@tot,0,0,@un,@fac,@cp)",
                         DbHelper.P("@sid", returnedID),
                         DbHelper.P("@pid", it.ProductID),
                         DbHelper.P("@qty", it.Quantity),
                         DbHelper.P("@up", it.UnitPrice),
                         DbHelper.P("@tot", lineTotal),
                         DbHelper.P("@un", it.UnitName),
-                        DbHelper.P("@fac", it.Factor));
+                        DbHelper.P("@fac", it.Factor),
+                        DbHelper.P("@cp", costToSave));
                 }
 
                 // قيد العميل (Credit) إن كانت آجل
@@ -2315,13 +2349,19 @@ namespace ChickenDist.DAL
 
                 foreach (var item in newItems)
                 {
+                    var costObj = DbHelper.ScalarTrans(trans,
+                        "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                        DbHelper.P("@pid", item.ProductID));
+                    decimal costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor) VALUES(@sid,@pid,@qty,@up,@tp,@un,@fac)",
+                        "INSERT INTO SaleItems(SaleID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor,CostPrice) VALUES(@sid,@pid,@qty,@up,@tp,@un,@fac,@cp)",
                         DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice),
                         DbHelper.P("@un", item.UnitName),
-                        DbHelper.P("@fac", item.Factor));
+                        DbHelper.P("@fac", item.Factor),
+                        DbHelper.P("@cp", costToSave));
                 }
 
                 // 3. التسوية المالية للفرق الصافي
@@ -2442,7 +2482,7 @@ namespace ChickenDist.DAL
                            ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS GrossSales,
                            ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
                            ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
@@ -2454,7 +2494,7 @@ namespace ChickenDist.DAL
                 DayReturns AS (
                     SELECT CAST(sr.ReturnDate AS DATE) AS ReturnDay,
                            ISNULL(SUM(sr.TotalAmount), 0) AS ReturnsTotal,
-                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
                     FROM SalesReturns sr
                     LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
@@ -2499,7 +2539,7 @@ namespace ChickenDist.DAL
                            s.VisaPaid,
                            s.DiscountAmount,
                            s.WarehouseID,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
@@ -2773,7 +2813,7 @@ namespace ChickenDist.DAL
                            ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS GrossSales,
                            ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
                            ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS TotalCost
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS TotalCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
@@ -2785,7 +2825,7 @@ namespace ChickenDist.DAL
                 ReturnTotals AS (
                     SELECT CAST(sr.ReturnDate AS DATE) AS ReturnDay,
                            ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns,
-                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
                     FROM SalesReturns sr
                     LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
@@ -2824,7 +2864,7 @@ namespace ChickenDist.DAL
                            s.SaleType,
                            s.TotalAmount,
                            s.WarehouseID,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
@@ -2859,7 +2899,7 @@ namespace ChickenDist.DAL
                            s.SaleType,
                            s.TotalAmount,
                            s.WarehouseID,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
@@ -2869,8 +2909,8 @@ namespace ChickenDist.DAL
                 SELECT 
                     ISNULL(e.EmpName, N'مبيعات مباشرة') AS DriverName,
                     COUNT(s.SaleID) AS Count,
-                    SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
-                    SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(CASE WHEN SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
+                    SUM(CASE WHEN SaleType = 'Credit' OR SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(s.TotalAmount) AS Total,
                     SUM(s.SaleCost) AS TotalCost,
                     SUM(s.TotalAmount) - SUM(s.SaleCost) AS NetProfit
@@ -2892,7 +2932,7 @@ namespace ChickenDist.DAL
                            SUM(s.TotalAmount) AS TotalSales,
                            SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
                            SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SalesCost,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SalesCost,
                            COUNT(DISTINCT s.SaleID) AS SaleCount
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
@@ -2905,7 +2945,7 @@ namespace ChickenDist.DAL
                 ClientReturnCosts AS (
                     SELECT sr.ClientID,
                            SUM(sr.TotalAmount) AS TotalReturns,
-                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
                     FROM SalesReturns sr
                     LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
@@ -2945,7 +2985,7 @@ namespace ChickenDist.DAL
                            AVG(si.UnitPrice) AS AvgPrice,
                            SUM(si.Quantity) AS TotalQty,
                            SUM(si.TotalPrice) AS TotalAmount,
-                           SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
+                           SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
                     JOIN Products p ON si.ProductID = p.ProductID
@@ -2958,7 +2998,7 @@ namespace ChickenDist.DAL
                     SELECT ri.ProductID,
                            SUM(ri.Quantity) AS ReturnedQty,
                            SUM(ri.TotalPrice) AS ReturnedAmount,
-                           SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS ReturnedCost
+                           SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS ReturnedCost
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                     JOIN Products p ON ri.ProductID = p.ProductID

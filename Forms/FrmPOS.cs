@@ -2905,9 +2905,18 @@ namespace ChickenDist.Forms
                     // 2. Save items + update stock
                     foreach (var item in _items)
                     {
+                        decimal costToSave = item.Unit1Cost > 0m ? item.Unit1Cost : (item.Cost > 0m && item.Factor > 0m ? item.Cost / item.Factor : item.Cost);
+                        if (costToSave <= 0m)
+                        {
+                            var costObj = DbHelper.ScalarTrans(trans,
+                                "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                                DbHelper.P("@pid", item.ProductID));
+                            costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+                        }
+
                         DbHelper.ExecuteInsertTrans(trans,
-                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,@tier,@un,@f,@exp,@bid,@kn,@imei)",
+                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI,CostPrice)
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,@tier,@un,@f,@exp,@bid,@kn,@imei,@cp)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
                             DbHelper.P("@discAmt", item.DiscountAmt),
@@ -2917,7 +2926,8 @@ namespace ChickenDist.Forms
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
                             DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
                             DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
-                            DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
+                            DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()),
+                            DbHelper.P("@cp", costToSave));
 
                         // Deduct from ProductBatches table
                         if (item.BatchID.HasValue)
@@ -4381,9 +4391,18 @@ namespace ChickenDist.Forms
 
                     foreach (var item in _items)
                     {
+                        decimal costToSave = item.Unit1Cost > 0m ? item.Unit1Cost : (item.Cost > 0m && item.Factor > 0m ? item.Cost / item.Factor : item.Cost);
+                        if (costToSave <= 0m)
+                        {
+                            var costObj = DbHelper.ScalarTrans(trans,
+                                "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                                DbHelper.P("@pid", item.ProductID));
+                            costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+                        }
+
                         DbHelper.ExecuteInsertTrans(trans,
-                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI)
-                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,@tier,@un,@f,@exp,@bid,@kn,@imei)",
+                            @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI,CostPrice)
+                              VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,@tier,@un,@f,@exp,@bid,@kn,@imei,@cp)",
                             DbHelper.P("@sid", saleID), DbHelper.P("@pid", item.ProductID),
                             DbHelper.P("@qty", item.Qty), DbHelper.P("@up", item.Price), DbHelper.P("@tp", item.Total),
                             DbHelper.P("@discAmt", item.DiscountAmt),
@@ -4393,7 +4412,8 @@ namespace ChickenDist.Forms
                             DbHelper.P("@exp", item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value : DBNull.Value),
                             DbHelper.P("@bid", item.BatchID.HasValue ? (object)item.BatchID.Value : DBNull.Value),
                             DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
-                            DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
+                            DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()),
+                            DbHelper.P("@cp", costToSave));
                     }
                     _lastSaleID = saleID;
                 });
