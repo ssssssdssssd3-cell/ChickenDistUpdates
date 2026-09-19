@@ -223,6 +223,7 @@ namespace ChickenDist.Forms
             cboPriceTier.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
             cboPriceTier.SelectedItem = Session.GetDefaultPriceTier();
             if (cboPriceTier.SelectedIndex < 0) cboPriceTier.SelectedIndex = 0;
+            cboPriceTier.Enabled = Session.IsAdmin;
             cboPriceTier.SelectedIndexChanged += (s, e) =>
             {
                 if (_items.Count > 0 && cboPriceTier.SelectedItem != null)
@@ -3828,7 +3829,8 @@ namespace ChickenDist.Forms
                     if (cr.Rows.Count > 0 && cr.Rows[0]["DefaultPriceTier"] != DBNull.Value && !string.IsNullOrWhiteSpace(cr.Rows[0]["DefaultPriceTier"].ToString()))
                     {
                         string clientTier = cr.Rows[0]["DefaultPriceTier"].ToString().Trim();
-                        if (cboPriceTier != null) cboPriceTier.SelectedItem = clientTier;
+                        if (cboPriceTier != null && (Session.IsAdmin || string.Equals(clientTier, Session.GetDefaultPriceTier(), StringComparison.OrdinalIgnoreCase)))
+                            cboPriceTier.SelectedItem = clientTier;
                     }
                 }
                 catch { }

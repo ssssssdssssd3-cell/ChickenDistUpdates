@@ -409,11 +409,11 @@ namespace ChickenDist.DAL
             catch { }
 
             long nextId = maxId < 1000 ? 1001 : maxId + 1;
-            string code = nextId.ToString("D8");
+            string code = nextId.ToString();
             while (IsDuplicateCode(code, 0))
             {
                 nextId++;
-                code = nextId.ToString("D8");
+                code = nextId.ToString();
             }
             return code;
         }

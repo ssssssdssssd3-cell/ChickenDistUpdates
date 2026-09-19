@@ -2282,8 +2282,11 @@ namespace ChickenDist.Forms
                     if (byID != null && byID["DefaultPriceTier"] != DBNull.Value && !string.IsNullOrEmpty(byID["DefaultPriceTier"].ToString()))
                     {
                         string clientTier = byID["DefaultPriceTier"].ToString();
-                        if (clientTier != _selectedTier)
-                            SetTierButtons(clientTier); // تحديث التصميم فقط بدون سؤال
+                        if (Session.IsAdmin || string.Equals(clientTier, Session.GetDefaultPriceTier(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (clientTier != _selectedTier)
+                                SetTierButtons(clientTier); // تحديث التصميم فقط بدون سؤال
+                        }
                     }
                     else
                     {
@@ -2725,6 +2728,16 @@ namespace ChickenDist.Forms
 		/// </summary>
 		private void ApplyTierChange(string newTier)
 		{
+			if (!Session.IsAdmin)
+			{
+				string defTier = Session.GetDefaultPriceTier();
+				if (!string.Equals(newTier, defTier, StringComparison.OrdinalIgnoreCase))
+				{
+					MessageBox.Show($"❌ غير مصرح لك بتغيير شريحة السعر!\nشريحة السعر المحددة لك هي: \"{defTier}\"", "تنبيه صلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					SetTierButtons(defTier);
+					return;
+				}
+			}
 			SetTierButtons(newTier);
 			if (_items.Count == 0) return;
 
@@ -2786,6 +2799,14 @@ namespace ChickenDist.Forms
 			btnTierSemi.ForeColor      = tier == "نصف جملة" ? Color.White    : Theme.TextMain;
 			btnTierWholesale.BackColor = tier == "جملة"     ? clrWholesaleOn : clrOff;
 			btnTierWholesale.ForeColor = tier == "جملة"     ? Color.White    : Theme.TextMain;
+
+			if (!Session.IsAdmin)
+			{
+				string defTier = Session.GetDefaultPriceTier();
+				btnTierRetail.Enabled = (defTier == "قطاعي");
+				btnTierSemi.Enabled = (defTier == "نصف جملة");
+				btnTierWholesale.Enabled = (defTier == "جملة");
+			}
 		}
 
 		private void SetInvoiceType(string type)

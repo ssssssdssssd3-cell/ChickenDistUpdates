@@ -56,9 +56,9 @@ namespace ChickenDist.Forms
 
             int y = 15;
 
-            // الباركود / الكود
-            pnlForm.Controls.Add(new Label { Text = "الباركود / الكود:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtCode = new TextBox { Location = new Point(165, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
+            // كود الصنف (تلقائي للقراءة فقط)
+            pnlForm.Controls.Add(new Label { Text = "كود الصنف (تلقائي):", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            txtCode = new TextBox { Location = new Point(165, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Color.FromArgb(240, 240, 240), ForeColor = Color.FromArgb(80, 80, 80), BorderStyle = BorderStyle.FixedSingle, ReadOnly = true, TabStop = false };
             pnlForm.Controls.Add(txtCode);
             y += 40;
 
@@ -189,8 +189,8 @@ namespace ChickenDist.Forms
             nudPrice.Value = 0;
             chkIsQuickItem.Checked = false;
             chkIsService.Checked = false;
-            txtCode.Focus();
-            txtCode.SelectAll();
+            txtName.Focus();
+            txtName.SelectAll();
         }
 
         private void ShowStatus(string message, Color color)

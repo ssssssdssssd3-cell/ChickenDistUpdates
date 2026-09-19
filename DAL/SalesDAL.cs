@@ -2437,46 +2437,48 @@ namespace ChickenDist.DAL
             DateTime t = to.Date;
             return DbHelper.Query(
                 @";WITH SaleCosts AS (
-                    SELECT s.SaleID,
-                           s.SaleDate,
-                           s.TotalAmount,
-                           s.DiscountAmount,
-                           s.WarehouseID,
+                    SELECT CAST(s.SaleDate AS DATE) AS SaleDay,
+                           COUNT(s.SaleID) AS InvoiceCount,
+                           ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS GrossSales,
+                           ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
+                           ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
                            ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
                     WHERE s.IsPosted = 1
-                    GROUP BY s.SaleID, s.SaleDate, s.TotalAmount, s.DiscountAmount, s.WarehouseID
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY CAST(s.SaleDate AS DATE)
                 ),
                 DayReturns AS (
-                    SELECT CAST(ReturnDate AS DATE) AS ReturnDay,
-                           ISNULL(SUM(TotalAmount), 0) AS ReturnsTotal
-                    FROM SalesReturns
-                    WHERE (@warehouseID IS NULL OR WarehouseID = @warehouseID)
-                      AND CAST(ReturnDate AS DATE) BETWEEN @f AND @t
-                    GROUP BY CAST(ReturnDate AS DATE)
+                    SELECT CAST(sr.ReturnDate AS DATE) AS ReturnDay,
+                           ISNULL(SUM(sr.TotalAmount), 0) AS ReturnsTotal,
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                    FROM SalesReturns sr
+                    LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
+                    LEFT JOIN Products p ON ri.ProductID = p.ProductID
+                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                    GROUP BY CAST(sr.ReturnDate AS DATE)
                 )
                 SELECT 
-                    CAST(s.SaleDate AS DATE) AS SaleDay,
-                    COUNT(s.SaleID) AS InvoiceCount,
-                    ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS GrossSales,
-                    ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
-                    ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
-                    ISNULL(MAX(r.ReturnsTotal), 0) AS TotalReturns,
-                    (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) AS NetSales,
-                    ISNULL(SUM(s.SaleCost), 0) AS TotalCost,
-                    ((ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) - ISNULL(SUM(s.SaleCost), 0)) AS GrossProfit,
+                    COALESCE(s.SaleDay, r.ReturnDay) AS SaleDay,
+                    ISNULL(s.InvoiceCount, 0) AS InvoiceCount,
+                    ISNULL(s.GrossSales, 0) AS GrossSales,
+                    ISNULL(s.TotalDiscounts, 0) AS TotalDiscounts,
+                    ISNULL(s.TotalSales, 0) AS TotalSales,
+                    ISNULL(r.ReturnsTotal, 0) AS TotalReturns,
+                    (ISNULL(s.TotalSales, 0) - ISNULL(r.ReturnsTotal, 0)) AS NetSales,
+                    (ISNULL(s.SaleCost, 0) - ISNULL(r.ReturnsCost, 0)) AS TotalCost,
+                    ((ISNULL(s.TotalSales, 0) - ISNULL(r.ReturnsTotal, 0)) - (ISNULL(s.SaleCost, 0) - ISNULL(r.ReturnsCost, 0))) AS GrossProfit,
                     CASE 
-                        WHEN (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) > 0 
-                        THEN ROUND((((ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0)) - ISNULL(SUM(s.SaleCost), 0)) / (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(MAX(r.ReturnsTotal), 0))) * 100, 2)
+                        WHEN (ISNULL(s.TotalSales, 0) - ISNULL(r.ReturnsTotal, 0)) > 0 
+                        THEN ROUND((((ISNULL(s.TotalSales, 0) - ISNULL(r.ReturnsTotal, 0)) - (ISNULL(s.SaleCost, 0) - ISNULL(r.ReturnsCost, 0))) / (ISNULL(s.TotalSales, 0) - ISNULL(r.ReturnsTotal, 0))) * 100, 2)
                         ELSE 0 
                     END AS ProfitMarginPct
                 FROM SaleCosts s
-                LEFT JOIN DayReturns r ON CAST(s.SaleDate AS DATE) = r.ReturnDay
-                WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                GROUP BY CAST(s.SaleDate AS DATE)
+                FULL OUTER JOIN DayReturns r ON s.SaleDay = r.ReturnDay
                 ORDER BY SaleDay DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
@@ -2792,23 +2794,23 @@ namespace ChickenDist.DAL
                     GROUP BY CAST(sr.ReturnDate AS DATE)
                 )
                 SELECT 
-                    s.SaleDay,
-                    s.GrossSales,
-                    s.TotalDiscounts,
+                    COALESCE(s.SaleDay, r.ReturnDay) AS SaleDay,
+                    ISNULL(s.GrossSales, 0) AS GrossSales,
+                    ISNULL(s.TotalDiscounts, 0) AS TotalDiscounts,
                     ISNULL(r.TotalReturns, 0) AS TotalReturns,
-                    (s.TotalSales - ISNULL(r.TotalReturns, 0)) AS NetSales,
-                    s.TotalCost,
+                    (ISNULL(s.TotalSales, 0) - ISNULL(r.TotalReturns, 0)) AS NetSales,
+                    ISNULL(s.TotalCost, 0) AS TotalCost,
                     ISNULL(r.ReturnsCost, 0) AS ReturnsCost,
-                    (s.TotalCost - ISNULL(r.ReturnsCost, 0)) AS NetCost,
-                    ((s.TotalSales - ISNULL(r.TotalReturns, 0)) - (s.TotalCost - ISNULL(r.ReturnsCost, 0))) AS NetProfit,
+                    (ISNULL(s.TotalCost, 0) - ISNULL(r.ReturnsCost, 0)) AS NetCost,
+                    ((ISNULL(s.TotalSales, 0) - ISNULL(r.TotalReturns, 0)) - (ISNULL(s.TotalCost, 0) - ISNULL(r.ReturnsCost, 0))) AS NetProfit,
                     CASE 
-                        WHEN (s.TotalSales - ISNULL(r.TotalReturns, 0)) > 0 
-                        THEN ROUND((((s.TotalSales - ISNULL(r.TotalReturns, 0)) - (s.TotalCost - ISNULL(r.ReturnsCost, 0))) / (s.TotalSales - ISNULL(r.TotalReturns, 0))) * 100, 2)
+                        WHEN (ISNULL(s.TotalSales, 0) - ISNULL(r.TotalReturns, 0)) > 0 
+                        THEN ROUND((((ISNULL(s.TotalSales, 0) - ISNULL(r.TotalReturns, 0)) - (ISNULL(s.TotalCost, 0) - ISNULL(r.ReturnsCost, 0))) / (ISNULL(s.TotalSales, 0) - ISNULL(r.TotalReturns, 0))) * 100, 2)
                         ELSE 0 
                     END AS MarginPct
                 FROM SaleTotals s
-                LEFT JOIN ReturnTotals r ON s.SaleDay = r.ReturnDay
-                ORDER BY s.SaleDay DESC",
+                FULL OUTER JOIN ReturnTotals r ON s.SaleDay = r.ReturnDay
+                ORDER BY SaleDay DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }

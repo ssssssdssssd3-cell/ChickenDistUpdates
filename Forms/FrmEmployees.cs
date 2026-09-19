@@ -901,6 +901,11 @@ namespace ChickenDist.Forms
                     }
                 }
             }
+            // إذا تم اختيار مخزن افتراضي ولم يتم تحديد أي مخزن في القائمة، يُعتمد المخزن الافتراضي كمخزن مصرح به وحيد
+            if (defaultWarehouseID.HasValue && defaultWarehouseID.Value > 0 && allowedWhList.Count == 0)
+            {
+                allowedWhList.Add(defaultWarehouseID.Value.ToString());
+            }
             string allowedWarehouseIDs = string.Join(",", allowedWhList);
             string defaultPriceTier = (cboDefaultPriceTier != null && !string.IsNullOrWhiteSpace(cboDefaultPriceTier.Text)) ? cboDefaultPriceTier.Text.Trim() : "قطاعي";
 
