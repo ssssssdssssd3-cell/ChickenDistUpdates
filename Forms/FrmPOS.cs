@@ -2914,6 +2914,15 @@ namespace ChickenDist.Forms
                             costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
                         }
 
+                        if (costToSave <= 0m)
+                        {
+                            var lastPurCost = DbHelper.ScalarTrans(trans,
+                                "SELECT TOP 1 (UnitPrice / NULLIF(Factor, 0)) FROM PurchaseItems WHERE ProductID = @pid AND UnitPrice > 0 ORDER BY PurchaseItemID DESC",
+                                DbHelper.P("@pid", item.ProductID));
+                            if (lastPurCost != null && lastPurCost != DBNull.Value)
+                                costToSave = Convert.ToDecimal(lastPurCost);
+                        }
+
                         DbHelper.ExecuteInsertTrans(trans,
                             @"INSERT INTO SaleItems (SaleID,ProductID,Quantity,UnitPrice,TotalPrice,DiscountPct,DiscountAmt,PriceTier,UnitName,Factor,ExpiryDate,BatchID,KitchenNotes,IMEI,CostPrice)
                               VALUES (@sid,@pid,@qty,@up,@tp,0,@discAmt,@tier,@un,@f,@exp,@bid,@kn,@imei,@cp)",
@@ -4398,6 +4407,15 @@ namespace ChickenDist.Forms
                                 "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
                                 DbHelper.P("@pid", item.ProductID));
                             costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
+                        }
+
+                        if (costToSave <= 0m)
+                        {
+                            var lastPurCost = DbHelper.ScalarTrans(trans,
+                                "SELECT TOP 1 (UnitPrice / NULLIF(Factor, 0)) FROM PurchaseItems WHERE ProductID = @pid AND UnitPrice > 0 ORDER BY PurchaseItemID DESC",
+                                DbHelper.P("@pid", item.ProductID));
+                            if (lastPurCost != null && lastPurCost != DBNull.Value)
+                                costToSave = Convert.ToDecimal(lastPurCost);
                         }
 
                         DbHelper.ExecuteInsertTrans(trans,

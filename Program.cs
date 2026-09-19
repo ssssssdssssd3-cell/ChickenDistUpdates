@@ -42,6 +42,9 @@ namespace ChickenDist
             // Ensure database schema is up-to-date
             ChickenDist.Core.DbHelper.EnsureDatabaseSchema();
 
+            // معالجة وتحديث أي تكاليف مفقودة في فواتير المبيعات السابقة تلقائياً في الخلفية
+            System.Threading.Tasks.Task.Run(() => ChickenDist.DAL.SaleDAL.BackfillMissingCostPrices());
+
             // Ensure MobileApp folder exists for owner
             ChickenDist.Services.CloudSyncService.EnsureMobileAppFolderExists();
 

@@ -442,6 +442,12 @@ namespace ChickenDist.DAL
                 }
                 catch { }
 
+                try
+                {
+                    System.Threading.Tasks.Task.Run(() => SaleDAL.BackfillMissingCostPrices());
+                }
+                catch { }
+
                 try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
             }
 
@@ -680,6 +686,12 @@ namespace ChickenDist.DAL
                 {
                     List<int> purchasedPids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
                     ShortageDAL.ProcessStockReplenishmentAfterPurchase(purchasedPids);
+                }
+                catch { }
+
+                try
+                {
+                    System.Threading.Tasks.Task.Run(() => SaleDAL.BackfillMissingCostPrices());
                 }
                 catch { }
 
