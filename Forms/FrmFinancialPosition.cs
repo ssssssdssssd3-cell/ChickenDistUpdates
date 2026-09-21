@@ -17,14 +17,14 @@ namespace ChickenDist.Forms
         private TabPage tabAdjustments;
 
         // ── كروت التبويب الأول (الملخص والمؤشرات) ──
-        private Label lblTotalCash;
-        private Label lblInventoryPurchase;
-        private Label lblClientReceivables;
-        private Label lblSupplierPayables;
-        private Label lblTotalFixedAssets;
-        private Label lblTotalAssets;
-        private Label lblWorkingCapital;
-        private Label lblNetProfitDashboard;
+        private Label lblTotalCash, lblTotalCashHint;
+        private Label lblInventoryPurchase, lblInventoryPurchaseHint;
+        private Label lblClientReceivables, lblClientReceivablesHint;
+        private Label lblSupplierPayables, lblSupplierPayablesHint;
+        private Label lblTotalFixedAssets, lblTotalFixedAssetsHint;
+        private Label lblTotalAssets, lblTotalAssetsHint;
+        private Label lblWorkingCapital, lblWorkingCapitalHint;
+        private Label lblNetProfitDashboard, lblNetProfitDashboardHint;
 
         // المؤشرات المالية
         private Label lblCurrentRatio;
@@ -206,8 +206,8 @@ namespace ChickenDist.Forms
                 RowCount = 3,
                 Padding = new Padding(10)
             };
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 185f)); // الكروت الإحصائية الرئيسية (8 كروت في صفين)
-            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 85f));  // نسب السيولة والدوران
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 205f)); // الكروت الإحصائية الرئيسية (8 كروت في صفين)
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 105f)); // نسب السيولة والدوران
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // التفاصيل والجداول
             tabDashboard.Controls.Add(mainLayout);
 
@@ -219,16 +219,16 @@ namespace ChickenDist.Forms
             mainLayout.Controls.Add(pnlCards, 0, 0);
 
             // صف كروت 1: سيولة وتشغيل
-            pnlCards.Controls.Add(CreateMiniCard("💵 النقدية بالخزائن والبنوك", "0.00 ج", Theme.Primary, out lblTotalCash), 0, 0);
-            pnlCards.Controls.Add(CreateMiniCard("📦 قيمة المخزون بالشراء", "0.00 ج", Theme.Accent, out lblInventoryPurchase), 1, 0);
-            pnlCards.Controls.Add(CreateMiniCard("👥 مديونيات العملاء طرفنا", "0.00 ج", Theme.Success, out lblClientReceivables), 2, 0);
-            pnlCards.Controls.Add(CreateMiniCard("🏢 مطلوبات الموردين منا", "0.00 ج", Theme.Danger, out lblSupplierPayables), 3, 0);
+            pnlCards.Controls.Add(CreateMiniCard("💵 النقدية بالخزائن والبنوك", "0.00 ج", Theme.Primary, "مجموع أرصدة الخزن + البنوك والفيزا", out lblTotalCash, out lblTotalCashHint), 0, 0);
+            pnlCards.Controls.Add(CreateMiniCard("📦 قيمة المخزون بالشراء", "0.00 ج", Theme.Accent, "بضاعة المخازن بسعر الشراء والتكلفة", out lblInventoryPurchase, out lblInventoryPurchaseHint), 1, 0);
+            pnlCards.Controls.Add(CreateMiniCard("👥 مديونيات العملاء طرفنا", "0.00 ج", Theme.Success, "إجمالي المبالغ المستحقة لنا طرف العملاء", out lblClientReceivables, out lblClientReceivablesHint), 2, 0);
+            pnlCards.Controls.Add(CreateMiniCard("🏢 مطلوبات الموردين منا", "0.00 ج", Theme.Danger, "إجمالي المبالغ المستحقة للموردين علينا", out lblSupplierPayables, out lblSupplierPayablesHint), 3, 0);
 
             // صف كروت 2: أصول ورأس مال وربحية
-            pnlCards.Controls.Add(CreateMiniCard("🏛️ صافي الأصول الثابتة الدفترية", "0.00 ج", Color.FromArgb(30, 64, 175), out lblTotalFixedAssets), 0, 1);
-            pnlCards.Controls.Add(CreateMiniCard("🏆 إجمالي أصول النشاط الكلية", "0.00 ج", Color.FromArgb(15, 23, 42), out lblTotalAssets), 1, 1);
-            pnlCards.Controls.Add(CreateMiniCard("⚖️ رأس المال العامل", "0.00 ج", Color.FromArgb(23, 162, 184), out lblWorkingCapital), 2, 1);
-            pnlCards.Controls.Add(CreateMiniCard("📈 صافي أرباح الفترة", "0.00 ج", Color.FromArgb(111, 66, 193), out lblNetProfitDashboard), 3, 1);
+            pnlCards.Controls.Add(CreateMiniCard("🏛️ صافي الأصول الثابتة الدفترية", "0.00 ج", Color.FromArgb(30, 64, 175), "الأصول بعد خصم مجمع الإهلاك", out lblTotalFixedAssets, out lblTotalFixedAssetsHint), 0, 1);
+            pnlCards.Controls.Add(CreateMiniCard("🏆 إجمالي أصول النشاط الكلية", "0.00 ج", Color.FromArgb(15, 23, 42), "= نقدية + مخزون + عملاء + أصول ثابتة", out lblTotalAssets, out lblTotalAssetsHint), 1, 1);
+            pnlCards.Controls.Add(CreateMiniCard("⚖️ رأس المال العامل", "0.00 ج", Color.FromArgb(23, 162, 184), "= الأصول المتداولة - مطلوبات الموردين", out lblWorkingCapital, out lblWorkingCapitalHint), 2, 1);
+            pnlCards.Controls.Add(CreateMiniCard("📈 صافي أرباح الفترة", "0.00 ج", Color.FromArgb(111, 66, 193), "أرباح اليوم (المبيعات - التكلفة - المصروفات)", out lblNetProfitDashboard, out lblNetProfitDashboardHint), 3, 1);
 
             // ── صف 2: المؤشرات المالية ونسب السيولة ──
             var grpRatios = new GroupBox
@@ -245,16 +245,16 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Fill,
                 ColumnCount = 5,
                 RowCount = 1,
-                Padding = new Padding(3)
+                Padding = new Padding(4)
             };
             for (int i = 0; i < 5; i++) pnlRatios.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
             grpRatios.Controls.Add(pnlRatios);
 
-            pnlRatios.Controls.Add(CreateRatioLabel("نسبة التداول:", out lblCurrentRatio), 0, 0);
-            pnlRatios.Controls.Add(CreateRatioLabel("نسبة السيولة السريعة:", out lblQuickRatio), 1, 0);
-            pnlRatios.Controls.Add(CreateRatioLabel("دوران المخزون (مرة):", out lblInvTurnover), 2, 0);
-            pnlRatios.Controls.Add(CreateRatioLabel("دوران العملاء (مرة):", out lblClientTurnover), 3, 0);
-            pnlRatios.Controls.Add(CreateRatioLabel("دوران الموردين (مرة):", out lblSupplierTurnover), 4, 0);
+            pnlRatios.Controls.Add(CreateRatioCard("نسبة التداول (السيولة)", "متداولة ÷ مطلوبات", out lblCurrentRatio), 0, 0);
+            pnlRatios.Controls.Add(CreateRatioCard("نسبة السيولة السريعة", "(نقدية+عملاء) ÷ مطلوبات", out lblQuickRatio), 1, 0);
+            pnlRatios.Controls.Add(CreateRatioCard("معدل دوران المخزون", "تكلفة المبيعات ÷ المخزون", out lblInvTurnover), 2, 0);
+            pnlRatios.Controls.Add(CreateRatioCard("معدل دوران العملاء", "المبيعات ÷ مديونيات العملاء", out lblClientTurnover), 3, 0);
+            pnlRatios.Controls.Add(CreateRatioCard("معدل دوران الموردين", "المشتريات ÷ مطلوبات الموردين", out lblSupplierTurnover), 4, 0);
 
             // ── صف 3: لوحة التفاصيل والجداول (4 أقسام تفصيلية متوازنة) ──
             TableLayoutPanel pnlDetails = new TableLayoutPanel
@@ -485,9 +485,9 @@ namespace ChickenDist.Forms
 
         #region كتل المساعد لتصميم الواجهات
 
-        private Panel CreateMiniCard(string title, string value, Color color, out Label valLabel)
+        private Panel CreateMiniCard(string title, string value, Color color, string formulaHint, out Label valLabel, out Label hintLabel)
         {
-            var pnl = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Margin = new Padding(4), Padding = new Padding(8) };
+            var pnl = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Margin = new Padding(4), Padding = new Padding(8, 6, 8, 6) };
             pnl.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnl);
 
             var lblTitle = new Label
@@ -496,10 +496,21 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Top,
                 Height = 22,
                 ForeColor = Theme.TextSub,
-                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
-                TextAlign = ContentAlignment.MiddleLeft
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
             };
-            pnl.Controls.Add(lblTitle);
+
+            hintLabel = new Label
+            {
+                Text = formulaHint,
+                Dock = DockStyle.Bottom,
+                Height = 20,
+                ForeColor = Color.FromArgb(100, 116, 139),
+                Font = new Font("Segoe UI", 7.5f, FontStyle.Regular),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
+            };
 
             valLabel = new Label
             {
@@ -509,35 +520,73 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
+
+            var tip = new ToolTip();
+            tip.SetToolTip(pnl, formulaHint);
+            tip.SetToolTip(lblTitle, formulaHint);
+            tip.SetToolTip(valLabel, formulaHint);
+            tip.SetToolTip(hintLabel, formulaHint);
+
+            pnl.Controls.Add(lblTitle);
+            pnl.Controls.Add(hintLabel);
             pnl.Controls.Add(valLabel);
+            valLabel.SendToBack();
 
             return pnl;
         }
 
-        private Panel CreateRatioLabel(string ratioTitle, out Label valLabel)
+        private Panel CreateRatioCard(string ratioTitle, string formulaHint, out Label valLabel)
         {
-            var pnl = new Panel { Dock = DockStyle.Fill, Margin = new Padding(2) };
+            var pnl = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Theme.BgCard,
+                Margin = new Padding(3),
+                Padding = new Padding(4)
+            };
+            pnl.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnl);
 
             var lblTitle = new Label
             {
                 Text = ratioTitle,
-                Dock = DockStyle.Right,
-                Width = 130,
-                ForeColor = Theme.TextMain,
-                Font = Theme.FontNormal,
-                TextAlign = ContentAlignment.MiddleRight
+                Dock = DockStyle.Top,
+                Height = 20,
+                ForeColor = Theme.TextSub,
+                Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter,
+                AutoEllipsis = true
             };
-            pnl.Controls.Add(lblTitle);
+
+            var lblFormula = new Label
+            {
+                Text = formulaHint,
+                Dock = DockStyle.Bottom,
+                Height = 18,
+                ForeColor = Color.FromArgb(100, 116, 139),
+                Font = new Font("Segoe UI", 7.2f, FontStyle.Regular),
+                TextAlign = ContentAlignment.MiddleCenter,
+                AutoEllipsis = true
+            };
 
             valLabel = new Label
             {
                 Text = "0.00",
                 Dock = DockStyle.Fill,
                 ForeColor = Theme.Success,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleLeft
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter
             };
+
+            var tip = new ToolTip();
+            tip.SetToolTip(pnl, formulaHint);
+            tip.SetToolTip(lblTitle, formulaHint);
+            tip.SetToolTip(valLabel, formulaHint);
+            tip.SetToolTip(lblFormula, formulaHint);
+
+            pnl.Controls.Add(lblTitle);
+            pnl.Controls.Add(lblFormula);
             pnl.Controls.Add(valLabel);
+            valLabel.SendToBack();
 
             return pnl;
         }
@@ -690,6 +739,7 @@ namespace ChickenDist.Forms
                 decimal currentLiabilities = liveSuppliers + GetAdj("NotesPayable") + GetAdj("ShortTermLoans") + GetAdj("AccruedTax") + GetAdj("AccruedInsurance") + GetAdj("AccruedExpenses") + GetAdj("DeferredRevenues");
                 decimal workingCapital = currentAssets - currentLiabilities;
                 lblWorkingCapital.Text = $"{workingCapital:N2} ج";
+                lblWorkingCapitalHint.Text = $"= متداولة ({currentAssets:N0}) - مطلوبات ({currentLiabilities:N0})";
 
                 // 6. الأصول الثابتة الدفترية الحية (من دليل الأصول المسجلة + التسويات الافتتاحية)
                 var dtAssetCats = DbHelper.Query(@"
@@ -722,6 +772,7 @@ namespace ChickenDist.Forms
                 // 7. إجمالي أصول النشاط الكلية (الأصول المتداولة + الأصول الثابتة)
                 decimal totalAssets = currentAssets + totalFixedAssets;
                 lblTotalAssets.Text = $"{totalAssets:N2} ج";
+                lblTotalAssetsHint.Text = $"= متداولة ({currentAssets:N0}) + أصول ثابتة ({totalFixedAssets:N0})";
 
                 // 8. صافي الأرباح (اليوم/الفترة الحالية)
                 DataTable dtPL = GetCalculatedPL(DateTime.Today, DateTime.Now);
@@ -736,11 +787,13 @@ namespace ChickenDist.Forms
                 // ── حساب المؤشرات والنسب المالية ──
                 // نسبة التداول
                 decimal currentRatio = currentLiabilities > 0 ? (currentAssets / currentLiabilities) : 0m;
-                lblCurrentRatio.Text = currentRatio.ToString("N2");
+                lblCurrentRatio.Text = $"{currentRatio:N2} : 1";
+                lblCurrentRatio.ForeColor = currentRatio >= 1.0m ? Theme.Success : Theme.Danger;
 
                 // نسبة السيولة السريعة
                 decimal quickRatio = currentLiabilities > 0 ? ((currentAssets - liveInventory) / currentLiabilities) : 0m;
-                lblQuickRatio.Text = quickRatio.ToString("N2");
+                lblQuickRatio.Text = $"{quickRatio:N2} : 1";
+                lblQuickRatio.ForeColor = quickRatio >= 1.0m ? Theme.Success : Theme.Danger;
 
                 // دوران المخزون (COGS السنوي المقدر / المخزون الحالي)
                 DataTable dtYearPL = GetCalculatedPL(new DateTime(DateTime.Now.Year, 1, 1), DateTime.Now);
@@ -757,7 +810,7 @@ namespace ChickenDist.Forms
                     }
                 }
                 decimal invTurnover = liveInventory > 0 ? (yearCOGS / liveInventory) : 0m;
-                lblInvTurnover.Text = invTurnover.ToString("N2");
+                lblInvTurnover.Text = $"{invTurnover:N2} مرة";
 
                 // دوران العملاء (المبيعات السنوية / متوسط الذمم)
                 decimal yearSales = 0m;
@@ -773,11 +826,11 @@ namespace ChickenDist.Forms
                     }
                 }
                 decimal clientTurnover = liveClients > 0 ? (yearSales / liveClients) : 0m;
-                lblClientTurnover.Text = clientTurnover.ToString("N2");
+                lblClientTurnover.Text = $"{clientTurnover:N2} مرة";
 
                 // دوران الموردين
                 decimal supplierTurnover = liveSuppliers > 0 ? (yearCOGS / liveSuppliers) : 0m;
-                lblSupplierTurnover.Text = supplierTurnover.ToString("N2");
+                lblSupplierTurnover.Text = $"{supplierTurnover:N2} مرة";
 
                 // ── شحن الجداول التفصيلية ──
                 var dtSafes = DbHelper.Query(@"
