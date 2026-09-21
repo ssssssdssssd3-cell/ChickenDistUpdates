@@ -813,7 +813,11 @@ namespace ChickenDist.Forms
 					dgDetailedSales.SelectionChanged += (s, e) =>
 					{
 						dgDetailedSaleItems.Rows.Clear();
-						if (dgDetailedSales.SelectedRows.Count == 0) return;
+						if (dgDetailedSales.SelectedRows.Count == 0)
+						{
+							lblItemsHeader.Text = "📦 الأصناف المسحوبة بالفاتورة:";
+							return;
+						}
 						int saleID = 0;
 						if (dgDetailedSales.Columns.Contains("SaleID") && dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value != null)
 						{
@@ -821,6 +825,7 @@ namespace ChickenDist.Forms
 						}
 						if (saleID > 0)
 						{
+							decimal totalQtySum = 0m;
 							DataTable items = SaleDAL.GetItems(saleID);
 							foreach (DataRow r in items.Rows)
 							{
@@ -828,12 +833,20 @@ namespace ChickenDist.Forms
 								string uName = r.Table.Columns.Contains("UnitName") && r["UnitName"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["UnitName"].ToString())
 									? r["UnitName"].ToString()
 									: (r.Table.Columns.Contains("BaseUnitName") && r["BaseUnitName"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["BaseUnitName"].ToString()) ? r["BaseUnitName"].ToString() : "قطعة");
-								string qty = Convert.ToDecimal(r["Quantity"]).ToString("N2");
+								decimal qVal = Convert.ToDecimal(r["Quantity"]);
+								totalQtySum += qVal;
+								string qty = (qVal % 1 == 0) ? qVal.ToString("N0") : qVal.ToString("N2");
 								string price = Convert.ToDecimal(r["UnitPrice"]).ToString("N2") + " ج";
 								string disc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value && Convert.ToDecimal(r["DiscountAmt"]) > 0 ? Convert.ToDecimal(r["DiscountAmt"]).ToString("N2") : "-";
 								string total = Convert.ToDecimal(r["TotalPrice"]).ToString("N2") + " ج";
 								dgDetailedSaleItems.Rows.Add(pName, uName, qty, price, disc, total);
 							}
+							string qtyDisplay = (totalQtySum % 1 == 0) ? totalQtySum.ToString("N0") : totalQtySum.ToString("N2");
+							lblItemsHeader.Text = $"📦 الأصناف: ({items.Rows.Count} أصناف | {qtyDisplay} قطعة)";
+						}
+						else
+						{
+							lblItemsHeader.Text = "📦 الأصناف المسحوبة بالفاتورة:";
 						}
 					};
 
@@ -1498,13 +1511,15 @@ namespace ChickenDist.Forms
 					_currentDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
 					var targetDgSales = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgDetailedSales") ?? dataGridView;
 					if (targetDgSales != null) dataGridView = targetDgSales;
-					SetupGrid(new(string, string)[10]
+					SetupGrid(new(string, string)[]
 					{
 						("SaleCode", "رقم الفاتورة"),
 						("SaleDate", "التاريخ والوقت"),
 						("SaleType", "النوع"),
 						("ClientName", "العميل"),
 						("DriverName", "المندوب"),
+						("ItemsCount", "عدد الأصناف"),
+						("TotalQty", "إجمالي القطع"),
 						("TotalAmount", "قيمة الفاتورة"),
 						("TotalCost", "التكلفة"),
 						("NetProfit", "الربح"),

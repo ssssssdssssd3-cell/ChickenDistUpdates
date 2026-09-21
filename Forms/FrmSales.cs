@@ -41,6 +41,7 @@ namespace ChickenDist.Forms
 		private Label lblDriverSummary;
 		private Label lblShippingSummary;
 		private Label lblProfitSummary;
+		private Label lblDetailTitle;
 		private CheckBox chkOnlyShipping;
 		private ComboBox cboClientFilter;
 		private ComboBox cboProductFilter;
@@ -474,8 +475,15 @@ namespace ChickenDist.Forms
 			{
 				Name = "ItemsCount",
 				HeaderText = "عدد الأصناف",
-				FillWeight = 38f,
+				FillWeight = 34f,
 				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
+			});
+			dgSales.Columns.Add(new DataGridViewTextBoxColumn
+			{
+				Name = "TotalQty",
+				HeaderText = "إجمالي القطع",
+				FillWeight = 38f,
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(14, 165, 233) }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
@@ -582,7 +590,7 @@ namespace ChickenDist.Forms
 				WrapContents = false
 			};
 
-			Label lblDetailTitle = new Label
+			lblDetailTitle = new Label
 			{
 				Text = "📋 تفاصيل الأصناف بالفاتورة المحددة:",
 				AutoSize = true,
@@ -935,6 +943,8 @@ namespace ChickenDist.Forms
 
 				string clientCode = (row.Table.Columns.Contains("ClientCode") && row["ClientCode"] != DBNull.Value) ? row["ClientCode"].ToString() : "0";
 				int itemsCount = (row.Table.Columns.Contains("ItemsCount") && row["ItemsCount"] != DBNull.Value) ? Convert.ToInt32(row["ItemsCount"]) : 0;
+				decimal totalPieces = (row.Table.Columns.Contains("TotalQty") && row["TotalQty"] != DBNull.Value) ? Convert.ToDecimal(row["TotalQty"]) : 0m;
+				string totalPiecesStr = (totalPieces % 1 == 0) ? totalPieces.ToString("N0") : totalPieces.ToString("N2");
 
 				decimal shippingAmt = row.Table.Columns.Contains("ShippingCharge") && row["ShippingCharge"] != DBNull.Value
 				                    ? Convert.ToDecimal(row["ShippingCharge"]) : 0m;
@@ -1002,6 +1012,7 @@ namespace ChickenDist.Forms
 						clientCode,
 						text7,
 						itemsCount,
+						totalPiecesStr,
 						beforeDiscStr,
 						discStr,
 						afterDiscStr,
@@ -1072,6 +1083,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			if (dgSales.SelectedRows.Count == 0)
 			{
+				if (lblDetailTitle != null) lblDetailTitle.Text = "📋 تفاصيل الأصناف بالفاتورة المحددة:";
 				return;
 			}
 			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
@@ -1079,8 +1091,12 @@ namespace ChickenDist.Forms
 			int clientID = (cliObj != null && cliObj != DBNull.Value) ? Convert.ToInt32(cliObj) : 0;
 
 			DataTable items = SaleDAL.GetItems(saleID);
+			decimal selectedSaleTotalQty = 0m;
 			foreach (DataRow row in items.Rows)
 			{
+				decimal q = row.Table.Columns.Contains("Quantity") && row["Quantity"] != DBNull.Value ? Convert.ToDecimal(row["Quantity"]) : 0m;
+				selectedSaleTotalQty += q;
+
 				int pid = row.Table.Columns.Contains("ProductID") && row["ProductID"] != DBNull.Value ? Convert.ToInt32(row["ProductID"]) : 0;
 				decimal? lastPrice = (clientID > 0 && pid > 0) ? SaleDAL.GetLastPriceForClient(pid, clientID) : null;
 				string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") + " ج" : "-";
@@ -1142,6 +1158,10 @@ namespace ChickenDist.Forms
 					addedItemRow.DefaultCellStyle.SelectionForeColor = Color.Black;
 				}
 			}
+
+			string qtyFormat = (selectedSaleTotalQty % 1 == 0) ? selectedSaleTotalQty.ToString("N0") : selectedSaleTotalQty.ToString("N2");
+			if (lblDetailTitle != null)
+				lblDetailTitle.Text = $"📋 تفاصيل الأصناف بالفاتورة المحددة: ({items.Rows.Count} أصناف  |  إجمالي الكمية: {qtyFormat} قطعة)";
 		}
 
 		private void BtnPrint_Click(object sender, EventArgs e)
@@ -1401,7 +1421,8 @@ namespace ChickenDist.Forms
 				("النوع",              0.055f),
 				("المخزن",             0.060f),
 				("العميل",             0.140f),
-				("عدد الأصناف",        0.050f),
+				("عدد الأصناف",        0.045f),
+				("عدد القطع",          0.045f),
 				("قبل الخصم",          0.075f),
 				("الخصم ✂",            0.060f),
 				("بعد الخصم",          0.075f),
@@ -1456,6 +1477,7 @@ namespace ChickenDist.Forms
 					dgr.Cells["WarehouseName"].Value?.ToString() ?? "",
 					dgr.Cells["ClientName"].Value?.ToString() ?? "",
 					dgr.Cells["ItemsCount"].Value?.ToString() ?? "",
+					dgr.Cells["TotalQty"].Value?.ToString() ?? "",
 					beforeDisc,
 					disc,
 					afterDisc,

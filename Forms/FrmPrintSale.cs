@@ -722,6 +722,18 @@ namespace ChickenDist.Forms
                         netAmount = Convert.ToDecimal(_saleRow["TotalAmount"]);
                     }
 
+                    decimal receiptPieces = 0m;
+                    if (_items != null && _items.Columns.Contains("Quantity"))
+                    {
+                        foreach (DataRow r in _items.Rows)
+                        {
+                            if (r["Quantity"] != DBNull.Value) receiptPieces += Convert.ToDecimal(r["Quantity"]);
+                        }
+                    }
+                    string receiptPiecesStr = (receiptPieces % 1 == 0) ? receiptPieces.ToString("N0") : receiptPieces.ToString("N2");
+                    g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)}  |  عدد القطع: {receiptPiecesStr}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right);
+                    y += 18;
+
                     if (invDiscountAmt > 0 || shippingAmt > 0)
                     {
                         g.DrawString($"إجمالي الأصناف: {_runningTotal:N2}", normal, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), right); y += 16;
@@ -1589,9 +1601,17 @@ namespace ChickenDist.Forms
                         g.DrawRectangle(Pens.Black, xQty, y, colWQty, sumRowH);
                         g.DrawRectangle(Pens.Black, xTotal, y, colWTotal, sumRowH);
 
-                        g.DrawString(_runningQtyTotal.ToString("N2"), boldSheet, Brushes.Black, new RectangleF(xQty, y + (isA4Page ? 4 : 3), colWQty, sumRowH - 4), center);
+                        var prodSfSum = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                        g.DrawString($"الإجمالي ({(_items != null ? _items.Rows.Count : 0)} صنف)", boldSheet, Brushes.Black, new RectangleF(xProduct + 2, y + 1, colWProduct - 4, sumRowH - 2), prodSfSum);
+                        g.DrawString((_runningQtyTotal % 1 == 0 ? _runningQtyTotal.ToString("N0") : _runningQtyTotal.ToString("N2")), boldSheet, Brushes.Black, new RectangleF(xQty, y + (isA4Page ? 4 : 3), colWQty, sumRowH - 4), center);
                         g.DrawString(_runningTotal.ToString("N2"), boldSheet, Brushes.Black, new RectangleF(xTotal, y + (isA4Page ? 4 : 3), colWTotal, sumRowH - 4), center);
                         y += sumRowH + 6;
+                    }
+                    else
+                    {
+                        string itemsSummaryStr = $"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)} صنف  |  إجمالي الكمية: {(_runningQtyTotal % 1 == 0 ? _runningQtyTotal.ToString("N0") : _runningQtyTotal.ToString("N2"))} قطعة";
+                        g.DrawString(itemsSummaryStr, boldSheet, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 20), right);
+                        y += 22;
                     }
 
                     e.HasMorePages = false;
@@ -2349,6 +2369,16 @@ namespace ChickenDist.Forms
                 string clientName = _saleRow != null ? _saleRow["ClientName"]?.ToString() : "عميل نقدي";
                 if (string.IsNullOrWhiteSpace(clientName)) clientName = "عميل نقدي";
 
+                decimal overallSlipQty = 0m;
+                if (_items != null && _items.Columns.Contains("Quantity"))
+                {
+                    foreach (DataRow r in _items.Rows)
+                    {
+                        if (r["Quantity"] != DBNull.Value) overallSlipQty += Convert.ToDecimal(r["Quantity"]);
+                    }
+                }
+                string overallSlipQtyStr = (overallSlipQty % 1 == 0) ? overallSlipQty.ToString("N0") : overallSlipQty.ToString("N2");
+
                 // ── 1. رأس الصفحة (Header) ──
                 if (itemIdx == 0)
                 {
@@ -2377,7 +2407,7 @@ namespace ChickenDist.Forms
 
                             string refLine = $"رقم الإذن / الفاتورة: {codeStr}";
                             g.DrawString(refLine, fontBody, Brushes.Gray, right - g.MeasureString(refLine, fontBody).Width, y);
-                            g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)}", fontBody, Brushes.Black, left, y);
+                            g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)}  |  عدد القطع: {overallSlipQtyStr}", fontBody, Brushes.Black, left, y);
                             y += (isA4Page ? 22 : 18);
                         }
                         else
@@ -2406,7 +2436,7 @@ namespace ChickenDist.Forms
                             y += (isA4Page ? 22 : 18);
 
                             g.DrawString($"المرجع: {codeStr}", fontBody, Brushes.Black, right - g.MeasureString($"المرجع: {codeStr}", fontBody).Width, y);
-                            g.DrawString($"إجمالي الأصناف: {(_items != null ? _items.Rows.Count : 0)}", fontBody, Brushes.Black, left, y);
+                            g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)}  |  عدد القطع: {overallSlipQtyStr}", fontBody, Brushes.Black, left, y);
                             y += (isA4Page ? 22 : 18);
                         }
                         else
@@ -2446,7 +2476,7 @@ namespace ChickenDist.Forms
                             string clientLabel = $"العميل: {clientName}";
                             using var fontClientBig = new Font("Arial", isA4Page ? 12f : 10f, FontStyle.Bold);
                             g.DrawString(clientLabel, fontClientBig, Brushes.Black, right - g.MeasureString(clientLabel, fontClientBig).Width, y);
-                            g.DrawString($"عدد الاصناف: {(_items != null ? _items.Rows.Count : 0)}", fontBody, Brushes.Black, left, y);
+                            g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)}  |  عدد القطع: {overallSlipQtyStr}", fontBody, Brushes.Black, left, y);
                             y += isA4Page ? 26 : 22;
                         }
                         else
@@ -2630,15 +2660,25 @@ namespace ChickenDist.Forms
                     if (!isReceipt)
                     {
                         y += 10;
-                        int boxW = isA4Page ? 140 : 110;
+                        int boxW = isA4Page ? 110 : 85;
                         int boxH = isA4Page ? 32 : 28;
-                        int boxX = right - (int)(width * 0.45);
 
-                        g.DrawRectangle(penDark, boxX, y, boxW, boxH);
-                        g.DrawRectangle(penDark, boxX - boxW, y, boxW, boxH);
+                        // 1. صندوق عدد الأصناف
+                        int b1LabelX = right - boxW;
+                        int b1ValX = b1LabelX - boxW;
+                        g.DrawRectangle(penDark, b1LabelX, y, boxW, boxH);
+                        g.DrawRectangle(penDark, b1ValX, y, boxW, boxH);
+                        g.DrawString("عدد الأصناف", fontHeader, Brushes.Black, new RectangleF(b1LabelX, y, boxW, boxH), sfCenter);
+                        g.DrawString($"{(_items != null ? _items.Rows.Count : 0)}", fontBold, Brushes.Black, new RectangleF(b1ValX, y, boxW, boxH), sfCenter);
 
-                        g.DrawString("عدد الأصناف", fontHeader, Brushes.Black, new RectangleF(boxX, y, boxW, boxH), sfCenter);
-                        g.DrawString($"{(_items != null ? _items.Rows.Count : 0)}", fontBold, Brushes.Black, new RectangleF(boxX - boxW, y, boxW, boxH), sfCenter);
+                        // 2. صندوق إجمالي القطع
+                        int b2LabelX = b1ValX - (isA4Page ? 20 : 10) - boxW;
+                        int b2ValX = b2LabelX - boxW;
+                        g.DrawRectangle(penDark, b2LabelX, y, boxW, boxH);
+                        g.DrawRectangle(penDark, b2ValX, y, boxW, boxH);
+                        g.DrawString("إجمالي القطع", fontHeader, Brushes.Black, new RectangleF(b2LabelX, y, boxW, boxH), sfCenter);
+                        g.DrawString(overallSlipQtyStr, fontBold, Brushes.Black, new RectangleF(b2ValX, y, boxW, boxH), sfCenter);
+
                         y += boxH + 20;
 
                         string sigDisb = isA4Page ? "توقيع مسؤول الصرف بالمخزن: .................................." : "مسؤول الصرف: ...................";
@@ -2650,7 +2690,7 @@ namespace ChickenDist.Forms
                     {
                         y += 8;
                         g.DrawLine(penDark, left, y, right, y); y += 6;
-                        g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)} | إجمالي الكمية: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}", fontHeader, Brushes.Black, left, y);
+                        g.DrawString($"عدد الأصناف: {(_items != null ? _items.Rows.Count : 0)} | إجمالي القطع: {overallSlipQtyStr}", fontHeader, Brushes.Black, left, y);
                         y += 18;
                         g.DrawString("توقيع مسؤول الصرف: ......................", fontBody, Brushes.Black, left, y);
                     }
@@ -2662,7 +2702,7 @@ namespace ChickenDist.Forms
                         g.FillRectangle(brushTotBg, left, y, width, headerRowH);
                         g.DrawRectangle(penDark, left, y, width, headerRowH);
 
-                        string totStr = $"إجمالي الأصناف: {(_items != null ? _items.Rows.Count : 0)} صنف  |  إجمالي كميات التحضير: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
+                        string totStr = $"إجمالي الأصناف: {(_items != null ? _items.Rows.Count : 0)} صنف  |  إجمالي القطع: {overallSlipQtyStr}";
                         g.DrawString(totStr, fontHeader, Brushes.Black, new RectangleF(left, y, width, headerRowH), sfCenter);
                         y += headerRowH + (isA4Page ? 15 : 10);
 

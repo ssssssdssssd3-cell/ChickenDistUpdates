@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
@@ -78,6 +79,8 @@ namespace ChickenDist.Forms
 		private Label lblProfitVal;
 		private Label lblItemCountTitle;
 		private Label lblItemCountVal;
+		private Label lblTotalQtyTitle;
+		private Label lblTotalQtyVal;
 
 		private TextBox txtBarcode;
 		private ComboBox cboProduct;
@@ -1198,6 +1201,35 @@ namespace ChickenDist.Forms
 			pnlCountGrp.Controls.Add(lblItemCountVal);
 			pnlCountGrp.Controls.Add(lblItemCountTitle);
 
+			// 2.1 إجمالي القطع / الكمية
+			var pnlQtyGrp = new Panel
+			{
+				Height = 38,
+				Width = 115,
+				BackColor = Color.FromArgb(28, 33, 46),
+				Margin = new Padding(3, 0, 3, 0),
+				Padding = new Padding(4, 1, 4, 1)
+			};
+			lblTotalQtyTitle = new Label
+			{
+				Text = "القطع:",
+				ForeColor = Color.FromArgb(148, 163, 184),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Dock = DockStyle.Right,
+				Width = 50,
+				TextAlign = ContentAlignment.MiddleRight
+			};
+			lblTotalQtyVal = new Label
+			{
+				Text = "0",
+				ForeColor = Color.FromArgb(56, 189, 248),
+				Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleCenter
+			};
+			pnlQtyGrp.Controls.Add(lblTotalQtyVal);
+			pnlQtyGrp.Controls.Add(lblTotalQtyTitle);
+
 			// 3. التكلفة والربح (إن وجدت الصلاحية)
 			Panel pnlCostGrp = null;
 			Panel pnlProfitGrp = null;
@@ -1381,6 +1413,7 @@ namespace ChickenDist.Forms
 			if (pnlCostGrp != null) pnlSummaryFlow.Controls.Add(pnlCostGrp);
 			if (pnlProfitGrp != null) pnlSummaryFlow.Controls.Add(pnlProfitGrp);
 			pnlSummaryFlow.Controls.Add(pnlCountGrp);
+			pnlSummaryFlow.Controls.Add(pnlQtyGrp);
 			pnlSummaryFlow.Controls.Add(pnlNetGrp);
 
 			// Footer buttons (RTL flow)
@@ -4403,6 +4436,12 @@ namespace ChickenDist.Forms
 				lblItemCountVal.Text = _items.Count.ToString();
 			}
 
+			if (lblTotalQtyVal != null)
+			{
+				decimal totalPieces = _items.Sum(x => x.Quantity);
+				lblTotalQtyVal.Text = (totalPieces % 1 == 0) ? totalPieces.ToString("N0") : totalPieces.ToString("N2");
+			}
+
 			// Cost & Profit (only if user has CanViewCost permission)
 			if (lblCostVal != null && Session.CanViewCost("Sales"))
 			{
@@ -6053,7 +6092,9 @@ namespace ChickenDist.Forms
 							y += infoH;
 
 							g.DrawString($"الموظف المسؤول: {empName}", fontBody, Brushes.Black, right - g.MeasureString($"الموظف المسؤول: {empName}", fontBody).Width, y);
-							g.DrawString($"عدد الأصناف: {_items.Count}", fontBody, Brushes.Black, left, y);
+							decimal overallSlipQty = _items.Sum(x => x.Quantity);
+							string overallSlipQtyStr = (overallSlipQty % 1 == 0) ? overallSlipQty.ToString("N0") : overallSlipQty.ToString("N2");
+							g.DrawString($"عدد الأصناف: {_items.Count}  |  عدد القطع: {overallSlipQtyStr}", fontBody, Brushes.Black, left, y);
 							y += infoH + 2;
 
 							if (!string.IsNullOrWhiteSpace(txtNotes.Text))
@@ -6252,15 +6293,27 @@ namespace ChickenDist.Forms
 					if (!isReceipt)
 					{
 						y += 10;
-						int boxW = isA4Page ? 140 : 110;
+						int boxW = isA4Page ? 110 : 85;
 						int boxH = isA4Page ? 32 : 28;
-						int boxX = right - (int)(width * 0.45);
+						decimal overallItemsQty = _items.Sum(x => x.Quantity);
+						string overallItemsQtyStr = (overallItemsQty % 1 == 0) ? overallItemsQty.ToString("N0") : overallItemsQty.ToString("N2");
 
-						g.DrawRectangle(penDark, boxX, y, boxW, boxH);
-						g.DrawRectangle(penDark, boxX - boxW, y, boxW, boxH);
+						// 1. صندوق عدد الأصناف
+						int b1LabelX = right - boxW;
+						int b1ValX = b1LabelX - boxW;
+						g.DrawRectangle(penDark, b1LabelX, y, boxW, boxH);
+						g.DrawRectangle(penDark, b1ValX, y, boxW, boxH);
+						g.DrawString("عدد الأصناف", fontHeader, Brushes.Black, new RectangleF(b1LabelX, y, boxW, boxH), sfCenter);
+						g.DrawString($"{_items.Count}", fontBold, Brushes.Black, new RectangleF(b1ValX, y, boxW, boxH), sfCenter);
 
-						g.DrawString("عدد الأصناف", fontHeader, Brushes.Black, new RectangleF(boxX, y, boxW, boxH), sfCenter);
-						g.DrawString($"{_items.Count}", fontBold, Brushes.Black, new RectangleF(boxX - boxW, y, boxW, boxH), sfCenter);
+						// 2. صندوق إجمالي القطع
+						int b2LabelX = b1ValX - (isA4Page ? 20 : 10) - boxW;
+						int b2ValX = b2LabelX - boxW;
+						g.DrawRectangle(penDark, b2LabelX, y, boxW, boxH);
+						g.DrawRectangle(penDark, b2ValX, y, boxW, boxH);
+						g.DrawString("إجمالي القطع", fontHeader, Brushes.Black, new RectangleF(b2LabelX, y, boxW, boxH), sfCenter);
+						g.DrawString(overallItemsQtyStr, fontBold, Brushes.Black, new RectangleF(b2ValX, y, boxW, boxH), sfCenter);
+
 						y += boxH + 20;
 
 						string sigDisb = "توقيع مسؤول الصرف بالمخزن: ..................................";
@@ -6272,7 +6325,7 @@ namespace ChickenDist.Forms
 					{
 						y += 8;
 						g.DrawLine(penDark, left, y, right, y); y += 6;
-						g.DrawString($"عدد الأصناف: {_items.Count} | إجمالي الكمية: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}", fontHeader, Brushes.Black, left, y);
+						g.DrawString($"عدد الأصناف: {_items.Count} | إجمالي القطع: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}", fontHeader, Brushes.Black, left, y);
 						y += 18;
 						g.DrawString("توقيع مسؤول الصرف: ......................", fontBody, Brushes.Black, left, y);
 					}

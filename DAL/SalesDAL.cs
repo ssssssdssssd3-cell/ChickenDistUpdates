@@ -133,6 +133,7 @@ namespace ChickenDist.DAL
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
                          ISNULL(costs.ItemsCount, 0) AS ItemsCount,
+                         ISNULL(costs.TotalQty, 0.0) AS TotalQty,
                          ISNULL(costs.TotalCost, 0) AS TotalCost,
                          ((s.TotalAmount - ISNULL(ret.ReturnAmount, 0)) - (ISNULL(costs.TotalCost, 0) - ISNULL(ret.ReturnCost, 0))) AS NetProfit,
                          s.CustomClientName,
@@ -156,6 +157,7 @@ namespace ChickenDist.DAL
                   LEFT JOIN (
                       SELECT si.SaleID,
                              COUNT(si.ItemID) AS ItemsCount,
+                             ISNULL(SUM(si.Quantity), 0.0) AS TotalQty,
                              SUM(si.Quantity * ISNULL(si.Factor, 1.0) *
                                  COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0),
                                  ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0),
