@@ -540,7 +540,7 @@ namespace ChickenDist.Forms
             string lastSearchText = "";
             while (true)
             {
-                using (var frm = new FrmProductSearch(whId, isPurchaseMode: false, defaultShowZeroStock: true, initialSearchText: lastSearchText))
+                using (var frm = new FrmProductSearch(whId, isPurchaseMode: false, defaultShowZeroStock: true, clientID: null, initialSearchText: lastSearchText, allowZeroStockSelection: true))
                 {
                     if (frm.ShowDialog(this) == DialogResult.OK && frm.SelectedProductID > 0)
                     {

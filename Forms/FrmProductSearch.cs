@@ -23,6 +23,7 @@ namespace ChickenDist.Forms
         private int? _warehouseID;
         private int? _clientID;
         private bool _isPurchaseMode = false;
+        private readonly bool _allowZeroStockSelection = false;
         private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
         private Dictionary<int, decimal> _globalStockCache = new Dictionary<int, decimal>();
         private Dictionary<int, decimal> _clientLastPrices = new Dictionary<int, decimal>();
@@ -57,7 +58,7 @@ namespace ChickenDist.Forms
 
         public string SearchText => txtSearch?.Text ?? "";
 
-        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool? defaultShowZeroStock = null, int? clientID = null, string initialSearchText = "")
+        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool? defaultShowZeroStock = null, int? clientID = null, string initialSearchText = "", bool? allowZeroStockSelection = null)
         {
             if (!Session.IsAdmin && !Session.CanAccess("ProductSearch"))
             {
@@ -73,6 +74,7 @@ namespace ChickenDist.Forms
             _warehouseID = warehouseID;
             _clientID = clientID;
             _isPurchaseMode = isPurchaseMode;
+            _allowZeroStockSelection = allowZeroStockSelection ?? (defaultShowZeroStock == true);
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
             InitUI();
@@ -93,7 +95,11 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = _isPurchaseMode ? "🔍 بحث متقدم عن صنف - فواتير الشراء والتوريد" : "🔍 بحث متقدم عن صنف - مبيعات ونقطة البيع";
+            this.Text = _isPurchaseMode 
+                ? "🔍 بحث متقدم عن صنف - فواتير الشراء والتوريد" 
+                : (_allowZeroStockSelection 
+                    ? "🔍 بحث متقدم عن صنف - بيان تسعير وعروض الأسعار" 
+                    : "🔍 بحث متقدم عن صنف - مبيعات ونقطة البيع");
             this.Size = new Size(1000, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -912,7 +918,7 @@ namespace ChickenDist.Forms
 
             int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
 
-            if (!_isPurchaseMode)
+            if (!_isPurchaseMode && !_allowZeroStockSelection)
             {
                 bool isService = false;
                 if (row.DataBoundItem is DataRowView drv && drv.Row.Table.Columns.Contains("IsService") && drv.Row["IsService"] != DBNull.Value)
