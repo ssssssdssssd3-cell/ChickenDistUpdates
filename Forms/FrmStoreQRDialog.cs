@@ -280,16 +280,8 @@ namespace ChickenDist.Forms
         {
             try
             {
-                using (var qrGen = new QRCodeGenerator())
-                {
-                    var qrData = qrGen.CreateQrCode(_storeUrl, QRCodeGenerator.ECCLevel.H);
-                    using (var qrCode = new QRCode(qrData))
-                    {
-                        // 15 pixels per module creates a crisp high-res 600x600+ image
-                        _qrBitmap = qrCode.GetGraphic(15, Color.Black, Color.White, true);
-                        picQR.Image = _qrBitmap;
-                    }
-                }
+                _qrBitmap = QrCodeHelper.Generate(_storeUrl, 15);
+                picQR.Image = _qrBitmap;
             }
             catch (Exception ex)
             {

@@ -801,15 +801,7 @@ namespace ChickenDist.Forms
                 string url = txtStoreUrl.Text.Trim();
                 if (string.IsNullOrEmpty(url)) return;
 
-                using (var gen = new QRCodeGenerator())
-                {
-                    var data = gen.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
-                    using (var qr = new QRCode(data))
-                    {
-                        var bmp = qr.GetGraphic(5, Color.Black, Color.White, true);
-                        picQR.Image = bmp;
-                    }
-                }
+                picQR.Image = QrCodeHelper.Generate(url, 5);
             }
             catch { }
         }

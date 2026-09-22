@@ -11,6 +11,50 @@ namespace ChickenDist
         [STAThread]
         static void Main()
         {
+            // ===== 1. تحميل وتضمين مكتبة QRCoder.dll من داخل الـ EXE تلقائياً =====
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
+            {
+                if (args.Name != null && args.Name.StartsWith("QRCoder", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var asm = typeof(Program).Assembly;
+                        string resName = "ChickenDist.QRCoder.dll";
+                        using (var stream = asm.GetManifestResourceStream(resName))
+                        {
+                            if (stream != null)
+                            {
+                                byte[] data = new byte[stream.Length];
+                                stream.Read(data, 0, data.Length);
+                                return System.Reflection.Assembly.Load(data);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                return null;
+            };
+
+            // استخراج QRCoder.dll في مجلد البرنامج تلقائياً إن لم تكن موجودة لضمان أقصى توافقية
+            try
+            {
+                string targetDll = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "QRCoder.dll");
+                if (!System.IO.File.Exists(targetDll))
+                {
+                    var asm = typeof(Program).Assembly;
+                    using (var stream = asm.GetManifestResourceStream("ChickenDist.QRCoder.dll"))
+                    {
+                        if (stream != null)
+                        {
+                            byte[] data = new byte[stream.Length];
+                            stream.Read(data, 0, data.Length);
+                            System.IO.File.WriteAllBytes(targetDll, data);
+                        }
+                    }
+                }
+            }
+            catch { }
+
             // ===== إعداد اللغة العربية RTL على مستوى التطبيق كله =====
             var arCulture = new CultureInfo("ar-EG");
             Thread.CurrentThread.CurrentCulture   = arCulture;

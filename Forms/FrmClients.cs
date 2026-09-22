@@ -1015,11 +1015,45 @@ namespace ChickenDist.Forms
                 }
             });
 
+            var miSendMenu = new ToolStripMenuItem(AppConfig.IsRestaurant ? "🍽️ إرسال رابط المنيو للعميل واتساب" : "🛒 إرسال رابط المتجر للعميل واتساب", null, (s, e) =>
+            {
+                if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
+                {
+                    string phone = dgClients.SelectedRows[0].Cells["Phone"].Value?.ToString() ?? "";
+                    string name = dgClients.SelectedRows[0].Cells["ClientName"].Value?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(phone))
+                    {
+                        string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                        if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+                        string storeUrl = $"https://{projectId}.web.app/store.html";
+                        string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "متجرنا الإلكتروني";
+                        string msg = Uri.EscapeDataString($"مرحباً {name}، يسعدنا تواصلكم معنا! ✨\nيمكنكم الآن تصفح كافة منتجاتنا وقائمة الأسعار والطلب أونلاين مباشرة عبر الرابط التالي:\n{storeUrl}\n\nنتشرف بخدمتكم دائماً في {comp}.");
+                        string cleanPhone = phone.Replace(" ", "").Replace("-", "");
+                        if (cleanPhone.StartsWith("01")) cleanPhone = "2" + cleanPhone;
+                        try { System.Diagnostics.Process.Start($"https://wa.me/{cleanPhone}?text={msg}"); } catch { }
+                    }
+                    else
+                    {
+                        MessageBox.Show("لا يوجد رقم هاتف مسجل لهذا العميل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            });
+
+            var miStoreQr = new ToolStripMenuItem("📱 رمز باركود المتجر / المنيو (QR Code)", null, (s, e) =>
+            {
+                using (var dlg = new FrmStoreQRDialog())
+                {
+                    dlg.ShowDialog(this);
+                }
+            });
+
             ctx.Items.AddRange(new ToolStripItem[] {
                 miStatement,
                 miItemized,
                 miPayment,
                 miWhatsApp,
+                miSendMenu,
+                miStoreQr,
                 new ToolStripSeparator(),
                 miCopyPhone
             });

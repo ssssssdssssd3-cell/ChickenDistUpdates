@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
-$VERSION   = "3.9.3";
+$VERSION   = "3.9.4";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -159,6 +159,13 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
         Start-Sleep -Milliseconds 800
         Copy-Item $exePath -Destination $finalReleaseExe -Force
         Write-OK "Copied final Release EXE to $finalReleaseExe"
+
+        $qrDllSrc = Join-Path $REPO_ROOT "QRCoder.dll"
+        $qrDllDest = Join-Path (Split-Path $finalReleaseExe -Parent) "QRCoder.dll"
+        if (Test-Path $qrDllSrc) {
+            Copy-Item $qrDllSrc -Destination $qrDllDest -Force
+            Write-OK "Copied QRCoder.dll to $(Split-Path $finalReleaseExe -Parent)"
+        }
     } catch {
         Write-Host "  [WARN] Could not overwrite running ChickenDist.exe in FINAL_RELEASE" -ForegroundColor Yellow
     }

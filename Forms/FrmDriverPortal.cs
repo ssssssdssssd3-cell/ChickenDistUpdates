@@ -465,15 +465,7 @@ namespace ChickenDist.Forms
 
             try
             {
-                using (var gen = new QRCodeGenerator())
-                {
-                    var data = gen.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
-                    using (var qr = new QRCode(data))
-                    {
-                        var bmp = qr.GetGraphic(6, Color.Black, Color.White, true);
-                        picQR.Image = bmp;
-                    }
-                }
+                picQR.Image = QrCodeHelper.Generate(url, 6);
             }
             catch
             {
