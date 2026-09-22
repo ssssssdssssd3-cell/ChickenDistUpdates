@@ -43,6 +43,7 @@ namespace ChickenDist.Forms
 		private string _targetModule = null;
 		private int _preFilteredID = 0;
 		private string _defaultTabTag = null;
+		private bool _isInitialized = false;
 
 		private static readonly Dictionary<string, Color> ReportTabColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -337,7 +338,6 @@ namespace ChickenDist.Forms
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
-			dtpFrom.ValueChanged += (s, e) => LoadCurrentTab();
 
 			dtpTo = new DateTimePicker
 			{
@@ -348,7 +348,6 @@ namespace ChickenDist.Forms
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Margin = new Padding(0)
 			};
-			dtpTo.ValueChanged += (s, e) => LoadCurrentTab();
 
 			cboDatePresets = new ComboBox
 			{
@@ -430,11 +429,22 @@ namespace ChickenDist.Forms
 			};
 			txtSearchClient.TextChanged += (s, e) => ApplyAllFilters();
 
-			btnLoad = Theme.MakeButton("🔄 تحديث التقرير", Color.FromArgb(245, 158, 11));
-			btnLoad.Size = new Size(130, 36);
-			btnLoad.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+			btnLoad = Theme.MakeButton("🔍 بحث", Color.FromArgb(16, 185, 129));
+			btnLoad.Size = new Size(115, 36);
+			btnLoad.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
 			btnLoad.Margin = new Padding(3, 2, 3, 2);
-			btnLoad.Click += delegate { LoadCurrentTab(); };
+			btnLoad.Click += delegate
+			{
+				try
+				{
+					this.Cursor = Cursors.WaitCursor;
+					LoadCurrentTab();
+				}
+				finally
+				{
+					this.Cursor = Cursors.Default;
+				}
+			};
 
 			btnPrint = Theme.MakeButton("🖨️ طباعة", Color.FromArgb(37, 99, 235));
 			btnPrint.Size = new Size(100, 36);
@@ -971,9 +981,9 @@ namespace ChickenDist.Forms
 						}
 					}
 
-					cboClient.SelectedIndexChanged += (s, e) => LoadCurrentTab();
-					cboProduct.SelectedIndexChanged += (s, e) => LoadCurrentTab();
-					cboSaleType.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboClient.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
+					cboProduct.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
+					cboSaleType.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
 
 					pnlFilters.Controls.AddRange(new Control[] { lblClient, cboClient, lblProduct, cboProduct, lblType, cboSaleType });
 					layout.Controls.Add(pnlFilters, 0, 0);
@@ -1094,9 +1104,9 @@ namespace ChickenDist.Forms
 						}
 					}
 
-					cboSupplier.SelectedIndexChanged += (s, e) => LoadCurrentTab();
-					cboCompany.SelectedIndexChanged += (s, e) => LoadCurrentTab();
-					txtSearch.TextChanged += (s, e) => LoadCurrentTab();
+					cboSupplier.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
+					cboCompany.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
+					txtSearch.TextChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
 
 					pnlFilters.Controls.AddRange(new Control[] { lblSupplier, cboSupplier, lblCompany, cboCompany, lblSearch, txtSearch });
 					layout.Controls.Add(pnlFilters, 0, 0);
@@ -1242,10 +1252,10 @@ namespace ChickenDist.Forms
 					cboOverdueDays.DisplayMember = "Text";
 					cboOverdueDays.SelectedIndex = 0;
 
-					cboDriver.SelectedIndexChanged += (s, e) => LoadCurrentTab();
-					nudMinBalance.ValueChanged += (s, e) => LoadCurrentTab();
-					cboOverdueDays.SelectedIndexChanged += (s, e) => LoadCurrentTab();
-					txtSearch.TextChanged += (s, e) => LoadCurrentTab();
+					cboDriver.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
+					nudMinBalance.ValueChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
+					cboOverdueDays.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
+					txtSearch.TextChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
 
 					pnlFilters.Controls.AddRange(new Control[] { lblDriver, cboDriver, lblMinBalance, nudMinBalance, lblOverdueDays, cboOverdueDays, lblSearch, txtSearch });
 					layout.Controls.Add(pnlFilters, 0, 0);
@@ -1294,7 +1304,7 @@ namespace ChickenDist.Forms
 					cboMode.Items.Add(new ComboItem(3, "📉 بطيء الحركة (مبيعات ضعيفة <= 3)"));
 					cboMode.DisplayMember = "Text";
 					cboMode.SelectedIndex = 0;
-					cboMode.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboMode.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
 
 					Label lblCategory = new Label { Text = "التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0), Font = Theme.FontBold };
 					ComboBox cboCat = new ComboBox { Name = "cboFilterStagnantCategory", Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
@@ -1308,7 +1318,7 @@ namespace ChickenDist.Forms
 					catch { }
 					cboCat.DisplayMember = "Text";
 					cboCat.SelectedIndex = 0;
-					cboCat.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboCat.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
 
 					Label lblBrand = new Label { Text = "الشركة/الماركة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0), Font = Theme.FontBold };
 					ComboBox cboBrand = new ComboBox { Name = "cboFilterStagnantBrand", Width = 160, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
@@ -1336,7 +1346,7 @@ namespace ChickenDist.Forms
 					}
 					catch { }
 					cboBrand.SelectedIndex = 0;
-					cboBrand.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboBrand.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
 
 					Label lblDays = new Label { Text = "أيام الركود:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0), Font = Theme.FontBold };
 					ComboBox cboDays = new ComboBox { Name = "cboFilterStagnantDays", Width = 135, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
@@ -1348,7 +1358,7 @@ namespace ChickenDist.Forms
 					cboDays.Items.Add(new ComboItem(365, "أكثر من سنة (365 يوم)"));
 					cboDays.DisplayMember = "Text";
 					cboDays.SelectedIndex = 0;
-					cboDays.SelectedIndexChanged += (s, e) => LoadCurrentTab();
+					cboDays.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
 
 					pnlFilters.Controls.AddRange(new Control[] { lblMode, cboMode, lblCategory, cboCat, lblBrand, cboBrand, lblDays, cboDays });
 					layout.Controls.Add(pnlFilters, 0, 0);
@@ -1401,7 +1411,7 @@ namespace ChickenDist.Forms
 				{
 					txtSearchClient.Text = "";
 				}
-				LoadCurrentTab();
+				UpdateReportBanner();
 			};
 			base.Controls.Add(tabReports);
 			tabReports.BringToFront();
@@ -1418,10 +1428,11 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			LoadCurrentTab();
+			UpdateReportBanner();
+			_isInitialized = true;
 		}
 
-		private void LoadCurrentTab()
+		private void UpdateReportBanner()
 		{
 			if (tabReports.SelectedTab == null)
 			{
@@ -1452,6 +1463,16 @@ namespace ChickenDist.Forms
 				// شيت فواتير اليومية خاص فقط بتقارير المبيعات اليومية وفواتير المبيعات، ويُحجب تماماً من تقارير المشتريات وباقي الأقسام
 				btnDailyInvoicesSheet.Visible = (_targetModule == "Sales" || text == "DailySalesSummary" || text == "DetailedSales" || text == "SalesByPeriod") && _targetModule != "Purchases";
 			}
+		}
+
+		private void LoadCurrentTab()
+		{
+			if (tabReports.SelectedTab == null)
+			{
+				return;
+			}
+			UpdateReportBanner();
+			string text = tabReports.SelectedTab.Tag?.ToString();
 			int? warehouseID = null;
 			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
 			{
@@ -2669,6 +2690,24 @@ namespace ChickenDist.Forms
 			dg.ColumnHeadersHeight = 34;
 			dg.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
 			dg.EnableHeadersVisualStyles = false;
+
+			dg.Paint += (s, e) =>
+			{
+				if (dg.Rows.Count == 0 && dg.Columns.Count == 0)
+				{
+					string msg = "💡 يرجى تحديد معايير التقرير ثم الضغط على زر [ 🔍 بحث ] لعرض البيانات";
+					using (var font = new Font("Segoe UI", 11.5f, FontStyle.Bold))
+					using (var brush = new SolidBrush(Color.FromArgb(148, 163, 184)))
+					{
+						var sf = new StringFormat
+						{
+							Alignment = StringAlignment.Center,
+							LineAlignment = StringAlignment.Center
+						};
+						e.Graphics.DrawString(msg, font, brush, dg.ClientRectangle, sf);
+					}
+				}
+			};
 		}
 
 		private void SetupGrid((string field, string header)[] cols, DataGridView dg)
@@ -3674,7 +3713,7 @@ namespace ChickenDist.Forms
 				
 				cboWarehouse.SelectedIndexChanged += delegate
 				{
-					LoadCurrentTab();
+					if (_isInitialized) LoadCurrentTab();
 				};
 			}
 			catch (Exception ex)

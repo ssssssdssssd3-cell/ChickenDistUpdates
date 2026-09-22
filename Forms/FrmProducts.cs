@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private ComboBox cboSearchType, cboCategory, cboBrand, cboDealStatus, cboStockStatus, cboStatus, cboShelf;
         private Label lblItemCount, lblSearch, lblCat, lblBrand, lblDealStatus, lblStockStatus, lblStatus, lblShelf;
-        private Button btnResetFilters;
+        private Button btnResetFilters, btnSearch;
         private Button btnNew, btnEdit, btnMovement, btnDelete;
         private int _selectedID = 0;
         private DataTable _dtProducts;
@@ -29,10 +29,14 @@ namespace ChickenDist.Forms
         public FrmProducts()
         {
             _searchTimer = new Timer { Interval = 220 };
-            _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); FilterProducts(); };
+            _searchTimer.Tick += (s, e) =>
+            {
+                _searchTimer.Stop();
+                if (_dtProducts != null) FilterProducts();
+            };
             InitUI();
             LoadLookupsAndCombos();
-            LoadProducts();
+            // عدم التحميل التلقائي عند فتح الشاشة لتفادي أي لاج وتفتح الشاشة في أجزاء من الثانية
             FrmQuickAdd.ProductSaved += FrmProducts_ProductSaved;
             this.FormClosing += (s, e) => FrmQuickAdd.ProductSaved -= FrmProducts_ProductSaved;
         }
@@ -103,17 +107,36 @@ namespace ChickenDist.Forms
                 "⚙️ رقم القطعة (Part No)"
             });
             cboSearchType.SelectedIndex = 0;
-            cboSearchType.SelectedIndexChanged += (s, e) => FilterProducts();
+            cboSearchType.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
             
             txtSearch = new TextBox 
             { 
-                Width = 200, 
+                Width = 175, 
                 BackColor = Color.White, 
                 ForeColor = Color.FromArgb(15, 23, 42), 
                 BorderStyle = BorderStyle.FixedSingle, 
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
-            txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
+            txtSearch.TextChanged += (s, e) =>
+            {
+                _searchTimer.Stop();
+                if (_dtProducts != null) _searchTimer.Start();
+            };
+            txtSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    _searchTimer.Stop();
+                    DoSearch();
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
+            };
+
+            btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(16, 185, 129));
+            btnSearch.Size = new Size(72, 28);
+            btnSearch.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            btnSearch.Click += (s, e) => DoSearch();
 
             lblCat = new Label 
             { 
@@ -132,7 +155,7 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
-            cboCategory.SelectedIndexChanged += (s, e) => FilterProducts();
+            cboCategory.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
 
             lblBrand = new Label 
             { 
@@ -151,7 +174,7 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
-            cboBrand.SelectedIndexChanged += (s, e) => FilterProducts();
+            cboBrand.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
 
             lblShelf = new Label 
             { 
@@ -170,7 +193,7 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
-            cboShelf.SelectedIndexChanged += (s, e) => FilterProducts();
+            cboShelf.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
 
             btnResetFilters = Theme.MakeButton("🔄 مسح الفلاتر", Color.FromArgb(100, 116, 139));
             btnResetFilters.Width = 110;
@@ -204,7 +227,7 @@ namespace ChickenDist.Forms
                 "📥 أصناف مشتراة (فواتير شراء)"
             });
             cboDealStatus.SelectedIndex = 0;
-            cboDealStatus.SelectedIndexChanged += (s, e) => FilterProducts();
+            cboDealStatus.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
 
             lblStockStatus = new Label 
             { 
@@ -231,7 +254,7 @@ namespace ChickenDist.Forms
                 "🎯 تحت حد الطلب (نواقص)"
             });
             cboStockStatus.SelectedIndex = 0;
-            cboStockStatus.SelectedIndexChanged += (s, e) => FilterProducts();
+            cboStockStatus.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
 
             lblStatus = new Label 
             { 
@@ -252,11 +275,11 @@ namespace ChickenDist.Forms
             };
             cboStatus.Items.AddRange(new object[] { "الكل", "النشطة فقط", "المعطلة فقط" });
             cboStatus.SelectedIndex = 0;
-            cboStatus.SelectedIndexChanged += (s, e) => FilterProducts();
+            cboStatus.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
 
             lblItemCount = new Label
             {
-                Text = "📊 الأصناف: 0",
+                Text = "📊 الأصناف: 0 (اضغط بحث للعرض)",
                 AutoSize = true,
                 ForeColor = Color.FromArgb(180, 83, 9),
                 BackColor = Color.FromArgb(254, 243, 199),
@@ -265,7 +288,7 @@ namespace ChickenDist.Forms
             };
 
             pnlHeader.Controls.AddRange(new Control[] { 
-                lblSearch, cboSearchType, txtSearch, 
+                lblSearch, cboSearchType, txtSearch, btnSearch,
                 lblCat, cboCategory, 
                 lblBrand, cboBrand, 
                 lblShelf, cboShelf, 
@@ -291,7 +314,10 @@ namespace ChickenDist.Forms
                 curX1 -= (cboSearchType.Width + 6);
 
                 txtSearch.Location = new Point(curX1 - txtSearch.Width, 12);
-                curX1 -= (txtSearch.Width + 15);
+                curX1 -= (txtSearch.Width + 6);
+
+                btnSearch.Location = new Point(curX1 - btnSearch.Width, 12);
+                curX1 -= (btnSearch.Width + 15);
 
                 lblCat.Location = new Point(curX1 - lblCat.PreferredWidth, 15);
                 curX1 -= (lblCat.PreferredWidth + 5);
@@ -586,6 +612,24 @@ namespace ChickenDist.Forms
                 }
             };
 
+            dgProducts.Paint += (s, e) =>
+            {
+                if (dgProducts.Rows.Count == 0 && _dtProducts == null)
+                {
+                    string msg = "💡 اكتب كلمة البحث أو حدد التصنيف ثم اضغط على زر [ 🔍 بحث ] لعرض الأصناف";
+                    using (var font = new Font("Segoe UI", 12f, FontStyle.Bold))
+                    using (var brush = new SolidBrush(Color.FromArgb(148, 163, 184)))
+                    {
+                        var sf = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+                        e.Graphics.DrawString(msg, font, brush, dgProducts.ClientRectangle, sf);
+                    }
+                }
+            };
+
             this.Controls.Add(dgProducts);
 
             // Send title bar to back so layout docking works correctly
@@ -597,6 +641,27 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private void DoSearch()
+        {
+            _searchTimer.Stop();
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+                if (_dtProducts == null)
+                {
+                    LoadProducts();
+                }
+                else
+                {
+                    FilterProducts();
+                }
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
+        }
+
         private void ResetAllFilters()
         {
             txtSearch.Text = "";
@@ -606,7 +671,10 @@ namespace ChickenDist.Forms
             if (cboDealStatus.Items.Count > 0) cboDealStatus.SelectedIndex = 0;
             if (cboStockStatus.Items.Count > 0) cboStockStatus.SelectedIndex = 0;
             if (cboStatus.Items.Count > 0) cboStatus.SelectedIndex = 0;
-            FilterProducts();
+            if (_dtProducts != null)
+            {
+                FilterProducts();
+            }
         }
 
         private void LoadLookupsAndCombos()

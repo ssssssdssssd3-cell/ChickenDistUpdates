@@ -3094,10 +3094,11 @@ namespace ChickenDist.Forms
                 }
                 cboWarehouse.DisplayMember = "Text";
                 cboWarehouse.ValueMember = "ID";
-                if (cboWarehouse.Items.Count > 0)
+                if (cboWarehouse.Items.Count > 1)
                 {
-                    cboWarehouse.SelectedIndex = 0;
-                    for (int i = 0; i < cboWarehouse.Items.Count; i++)
+                    // اختيار أول مخزن فعلي افتراضياً لمنع اللخبطة
+                    cboWarehouse.SelectedIndex = 1;
+                    for (int i = 1; i < cboWarehouse.Items.Count; i++)
                     {
                         if (cboWarehouse.Items[i] is ComboItem ci && (ci.Text.Contains("الرئيسي") || ci.Text.Contains("الرئيسى")))
                         {
@@ -3105,6 +3106,10 @@ namespace ChickenDist.Forms
                             break;
                         }
                     }
+                }
+                else if (cboWarehouse.Items.Count > 0)
+                {
+                    cboWarehouse.SelectedIndex = 0;
                 }
             }
             catch (Exception ex)
@@ -3126,10 +3131,11 @@ namespace ChickenDist.Forms
                 }
                 cboLogWarehouse.DisplayMember = "Text";
                 cboLogWarehouse.ValueMember = "ID";
-                if (cboLogWarehouse.Items.Count > 0)
+                if (cboLogWarehouse.Items.Count > 1)
                 {
-                    cboLogWarehouse.SelectedIndex = 0;
-                    for (int i = 0; i < cboLogWarehouse.Items.Count; i++)
+                    // اختيار أول مخزن فعلي افتراضياً في السجل
+                    cboLogWarehouse.SelectedIndex = 1;
+                    for (int i = 1; i < cboLogWarehouse.Items.Count; i++)
                     {
                         if (cboLogWarehouse.Items[i] is ComboItem ci && (ci.Text.Contains("الرئيسي") || ci.Text.Contains("الرئيسى")))
                         {
@@ -3137,6 +3143,10 @@ namespace ChickenDist.Forms
                             break;
                         }
                     }
+                }
+                else if (cboLogWarehouse.Items.Count > 0)
+                {
+                    cboLogWarehouse.SelectedIndex = 0;
                 }
             }
             catch (Exception ex)
