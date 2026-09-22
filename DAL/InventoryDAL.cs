@@ -169,8 +169,7 @@ namespace ChickenDist.DAL
                     - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
                     -- Outgoing since adjustment: Wastage & Loss
-                    - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli WITH (NOLOCK) JOIN WastageLoss wl WITH (NOLOCK) ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(wli.Quantity) FROM WastageLossItems wli WITH (NOLOCK) JOIN WastageLoss wl WITH (NOLOCK) ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wli.Factor IS NULL AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
+                    - ISNULL((SELECT SUM(wli.Quantity * COALESCE(NULLIF(wli.Factor, 0), 1.0)) FROM WastageLossItems wli WITH (NOLOCK) JOIN WastageLoss wl WITH (NOLOCK) ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
                 FROM Products p WITH (NOLOCK)
                 OUTER APPLY (
                     SELECT TOP 1 sa.AdjDate, sa.ActualQty, sa.Factor
@@ -565,6 +564,54 @@ namespace ChickenDist.DAL
             string whFilterAdjustments = warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "";
             string whFilterPurchases = warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "";
             string whFilterPurchaseReturns = warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "";
+            string whFilterWastage = warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "";
+
+            string productionUnion = "";
+            if (DbHelper.TableExists("ProductionOrders") && DbHelper.TableExists("ProductionOrderItems"))
+            {
+                productionUnion = $@"
+                    UNION ALL
+
+                    -- 10. Production Orders - Finished Goods (Incoming)
+                    SELECT 
+                        po.CompletedDate AS MovDate,
+                        N'إنتاج تام (تصنيع)' AS MovType,
+                        po.OrderCode AS RefCode,
+                        ISNULL(e.EmpName, N'---') AS PersonName,
+                        w.WarehouseName,
+                        po.ProducedQty AS QtyIn,
+                        0.00 AS QtyOut,
+                        po.Notes
+                    FROM ProductionOrders po
+                    JOIN Warehouses w ON po.WarehouseID = w.WarehouseID
+                    LEFT JOIN Employees e ON po.CreatedBy = e.EmpID
+                    WHERE po.FinishedProductID = @pid
+                      AND po.Status = 'Completed'
+                      AND po.StockAdded = 1
+                      {(warehouseID.HasValue ? "AND po.WarehouseID = @wid" : "")}
+
+                    UNION ALL
+
+                    -- 11. Production Orders - Raw Materials (Outgoing)
+                    SELECT 
+                        po.CreatedDate AS MovDate,
+                        N'صرف خامات تصنيع' AS MovType,
+                        po.OrderCode AS RefCode,
+                        ISNULL(e.EmpName, N'---') AS PersonName,
+                        w.WarehouseName,
+                        0.00 AS QtyIn,
+                        poi.Quantity * COALESCE(NULLIF(poi.Factor, 0), 1.0) AS QtyOut,
+                        po.Notes
+                    FROM ProductionOrderItems poi
+                    JOIN ProductionOrders po ON poi.ProductionID = po.ProductionID
+                    JOIN Warehouses w ON po.WarehouseID = w.WarehouseID
+                    LEFT JOIN Employees e ON po.CreatedBy = e.EmpID
+                    WHERE poi.RawProductID = @pid
+                      AND po.StockDeducted = 1
+                      AND po.Status <> 'Cancelled'
+                      {(warehouseID.HasValue ? "AND po.WarehouseID = @wid" : "")}
+                ";
+            }
 
             string sql = $@"
                 SELECT 
@@ -757,6 +804,29 @@ namespace ChickenDist.DAL
                     JOIN Warehouses wTo ON t.ToWarehouseID = wTo.WarehouseID
                     WHERE ti.ProductID = @pid AND t.IsPosted = 1
                       {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}
+
+                    UNION ALL
+
+                    -- 9. Wastage & Loss / التالف والهالك (Outgoing)
+                    SELECT 
+                        wl.WastageDate AS MovDate,
+                        N'تالف وهالك' AS MovType,
+                        N'هالك #' + CAST(wl.WastageID AS NVARCHAR(20)) AS RefCode,
+                        COALESCE(e.EmpName, ed.EmpName, N'---') AS PersonName,
+                        w.WarehouseName,
+                        0.00 AS QtyIn,
+                        wli.Quantity * COALESCE(NULLIF(wli.Factor, 0), 1.0) AS QtyOut,
+                        wl.Notes
+                    FROM WastageLossItems wli
+                    JOIN WastageLoss wl ON wli.WastageID = wl.WastageID
+                    JOIN Products p ON wli.ProductID = p.ProductID
+                    LEFT JOIN Warehouses w ON wl.WarehouseID = w.WarehouseID
+                    LEFT JOIN Employees e ON wl.CreatedBy = e.EmpID
+                    LEFT JOIN Employees ed ON wl.ResponsibleDriverID = ed.EmpID
+                    WHERE wli.ProductID = @pid
+                      {whFilterWastage}
+
+                    {productionUnion}
                 ) AS Movements
                 ORDER BY MovDate ASC";
 

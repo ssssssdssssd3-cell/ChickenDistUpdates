@@ -2660,6 +2660,13 @@ namespace ChickenDist.Core
                 ) adj
                 WHERE p.IsActive = 1 AND w.IsActive = 1');");
 
+                // ===== ضمان تعيين معامل الهالك 1.0 للبيانات القديمة لضمان دقة الرصيد 100% =====
+                SafeMigrate("WastageLossItems.FixFactor", @"
+                IF OBJECT_ID('WastageLossItems', 'U') IS NOT NULL
+                BEGIN
+                    UPDATE WastageLossItems SET Factor = 1.0 WHERE Factor IS NULL OR Factor <= 0;
+                END");
+
                 // ===== عمود كلمة المرور الأصلية للموظفين (للمراجعة الإدارية فقط) =====
                 //Execute(@"IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Employees') AND name = 'PlainPassword')
                 //BEGIN

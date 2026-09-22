@@ -375,7 +375,7 @@ namespace ChickenDist.Forms
 
             if (dgItems.IsCurrentCellInEditMode) dgItems.EndEdit();
 
-            var items = new List<(int pid, decimal qty, decimal cost)>();
+            var items = new List<(int pid, decimal qty, decimal cost, string unit)>();
             decimal totalCost = 0;
 
             foreach (DataGridViewRow row in dgItems.Rows)
@@ -404,7 +404,9 @@ namespace ChickenDist.Forms
                 if (row.Cells["CostPrice"].Value != null)
                     decimal.TryParse(row.Cells["CostPrice"].Value.ToString(), out cost);
 
-                items.Add((pid, qty, cost));
+                string unit = row.Cells["Unit"].Value?.ToString() ?? "وحدة";
+
+                items.Add((pid, qty, cost, unit));
                 totalCost += (qty * cost);
             }
 
@@ -445,13 +447,14 @@ namespace ChickenDist.Forms
                         foreach (var it in items)
                         {
                             var cmdItem = new System.Data.SqlClient.SqlCommand(@"
-                                INSERT INTO WastageLossItems (WastageID, ProductID, Quantity, CostPrice, TotalCost)
-                                VALUES (@wid, @pid, @qty, @cost, @tot)", conn, trans);
+                                INSERT INTO WastageLossItems (WastageID, ProductID, Quantity, CostPrice, TotalCost, UnitName, Factor)
+                                VALUES (@wid, @pid, @qty, @cost, @tot, @unit, 1.0)", conn, trans);
                             cmdItem.Parameters.AddWithValue("@wid", wastageID);
                             cmdItem.Parameters.AddWithValue("@pid", it.pid);
                             cmdItem.Parameters.AddWithValue("@qty", it.qty);
                             cmdItem.Parameters.AddWithValue("@cost", it.cost);
                             cmdItem.Parameters.AddWithValue("@tot", it.qty * it.cost);
+                            cmdItem.Parameters.AddWithValue("@unit", (object)it.unit ?? DBNull.Value);
                             cmdItem.ExecuteNonQuery();
                         }
 

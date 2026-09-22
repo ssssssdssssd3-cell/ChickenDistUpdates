@@ -2587,10 +2587,17 @@ namespace ChickenDist.Forms
             var r = dgStock.SelectedRows[0];
             int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
             string name = r.Cells["ProductName"].Value?.ToString();
-            string unit = r.Cells["Unit"].Value?.ToString();
+            string unit = r.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "")?.Trim();
+            decimal curFactor = r.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["CurrentFactor"].Value) : 1.0m;
 
-            var frm = new FrmProductMovement(pid, name, unit);
-            frm.ShowDialog();
+            int? wid = null;
+            if (cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
+                wid = ci.ID;
+
+            using (var frm = new FrmProductMovement(pid, name, unit, curFactor, wid))
+            {
+                frm.ShowDialog(this);
+            }
         }
 
         private void MarkSelectedRowAsInventoried()
