@@ -25,7 +25,7 @@ namespace ChickenDist.Forms
         private Button btnSearchProduct, btnManualAdd;
         private DataGridView dgItems;
 
-        private Label lblTotalVal, lblNetVal, lblCostSummary;
+        private Label lblTotalVal, lblNetVal, lblCostSummary, lblClientBalance;
         private TextBox txtDiscount;
         private TextBox txtNotes;
 
@@ -75,7 +75,7 @@ namespace ChickenDist.Forms
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
+                Height = 140,
                 Padding = new Padding(12, 8, 12, 8)
             };
             Theme.StyleSearchHeaderPanel(pnlHeader);
@@ -83,7 +83,7 @@ namespace ChickenDist.Forms
             var tblHeader = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 3,
+                RowCount = 4,
                 ColumnCount = 4,
                 BackColor = Color.Transparent
             };
@@ -95,6 +95,7 @@ namespace ChickenDist.Forms
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            tblHeader.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
 
             // Row 0: Client & Warehouse
             var lblClient = MakeLabel("العميل :");
@@ -109,6 +110,7 @@ namespace ChickenDist.Forms
                 Margin = new Padding(2)
             };
             SetupSearchableCombo(cboClient);
+            cboClient.SelectedIndexChanged += (s, e) => UpdateClientBalanceLabel();
 
             txtClientManual = new TextBox
             {
@@ -181,6 +183,19 @@ namespace ChickenDist.Forms
             };
             tblHeader.Controls.Add(lblBanner, 0, 2);
             tblHeader.SetColumnSpan(lblBanner, 4);
+
+            // Row 3: Client Balance
+            lblClientBalance = new Label
+            {
+                Text = "",
+                Dock = DockStyle.Fill,
+                ForeColor = Color.FromArgb(255, 165, 0),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight,
+                Visible = false
+            };
+            tblHeader.Controls.Add(lblClientBalance, 0, 3);
+            tblHeader.SetColumnSpan(lblClientBalance, 4);
 
             pnlHeader.Controls.Add(tblHeader);
 
@@ -492,6 +507,7 @@ namespace ChickenDist.Forms
             txtNotes.Text = "";
             txtProductCode.Clear();
             if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
+            if (lblClientBalance != null) lblClientBalance.Visible = false;
             if (cboWarehouse.Items.Count > 0)
             {
                 int defWhId = Session.GetDefaultWarehouseID();
@@ -743,6 +759,29 @@ namespace ChickenDist.Forms
             {
                 decimal profit = net - totalCost;
                 lblCostSummary.Text = $"[ التكلفة: {totalCost:N2} ج | الربح التقديري: {profit:N2} ج ]";
+            }
+        }
+
+        private void UpdateClientBalanceLabel()
+        {
+            if (lblClientBalance == null) return;
+            int? cid = GetSelectedClientID();
+            if (cid.HasValue && cid.Value > 0)
+            {
+                try
+                {
+                    decimal bal = ClientDAL.GetBalance(cid.Value);
+                    lblClientBalance.Text = $"💰 رصيد العميل السابق (المديونية الحالية): {bal:N2} ج.م";
+                    lblClientBalance.ForeColor = bal > 0
+                        ? Color.FromArgb(220, 50, 50)
+                        : Color.FromArgb(30, 160, 80);
+                    lblClientBalance.Visible = true;
+                }
+                catch { lblClientBalance.Visible = false; }
+            }
+            else
+            {
+                lblClientBalance.Visible = false;
             }
         }
 
