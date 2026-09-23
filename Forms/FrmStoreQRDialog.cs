@@ -45,7 +45,9 @@ namespace ChickenDist.Forms
         {
             string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
             if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-            _storeUrl = $"https://{projectId}.web.app/store.html";
+            _storeUrl = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
+                ? "https://checkin-192ab.web.app/store.html"
+                : $"https://{projectId}.web.app/store.html?p={projectId}";
 
             _companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المتجر الإلكتروني";
             _storePhone = !string.IsNullOrWhiteSpace(AppConfig.Store_OrderNotificationWhatsApp)

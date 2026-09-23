@@ -924,14 +924,36 @@
     let selectedCatID = 0;
     let lastCreatedOrder = null;
 
-    // تحديد مشروع Firebase تلقائياً من اسم الدومين أو من Query Param
+    // تحديد مشروع Firebase تلقائياً وبأعلى دقة من معلمات الرابط أو اسم الدومين المخصص
     function getFirebaseProjectId() {
+      // 1. من معلمات الرابط (?project=... أو ?p=... أو ?proj=...)
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('p')) return urlParams.get('p');
-      const host = window.location.hostname;
-      if (host.includes('elra7ma-grop')) return 'elra7ma-grop';
-      if (host.includes('checkin-192ab')) return 'checkin-192ab';
-      return 'elra7ma-grop';
+      const qp = urlParams.get('project') || urlParams.get('p') || urlParams.get('proj');
+      if (qp && qp.trim()) {
+        const clean = qp.trim();
+        try { localStorage.setItem('prosoft_store_project_id', clean); } catch (e) {}
+        return clean;
+      }
+
+      // 2. من النطاق تلقائياً إذا كان التطبيق مرفوعاً على استضافة مخصصة للعميل
+      const host = window.location.hostname.toLowerCase();
+      if (host.includes('.web.app')) {
+        const sub = host.split('.web.app')[0];
+        if (sub && sub !== 'checkin-192ab') return sub;
+      }
+      if (host.includes('.firebaseapp.com')) {
+        const sub = host.split('.firebaseapp.com')[0];
+        if (sub && sub !== 'checkin-192ab') return sub;
+      }
+
+      // 3. من الـ LocalStorage إذا تم حفظه مسبقاً لهذا المتصفح
+      try {
+        const saved = localStorage.getItem('prosoft_store_project_id');
+        if (saved && saved.trim()) return saved.trim();
+      } catch (e) {}
+
+      // 4. المشروع الافتراضي المشترك
+      return 'checkin-192ab';
     }
 
     const projectId = getFirebaseProjectId();

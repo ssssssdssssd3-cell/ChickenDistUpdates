@@ -172,7 +172,9 @@ namespace ChickenDist.Forms
             {
                 string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
                 if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                string url = $"https://{projectId}.web.app/store.html";
+                string url = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
+                    ? "https://checkin-192ab.web.app/store.html"
+                    : $"https://{projectId}.web.app/store.html?p={projectId}";
                 try { System.Diagnostics.Process.Start(url); } catch { }
             };
 
@@ -181,7 +183,9 @@ namespace ChickenDist.Forms
             {
                 string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
                 if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                string url = $"https://{projectId}.web.app/store.html";
+                string url = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
+                    ? "https://checkin-192ab.web.app/store.html"
+                    : $"https://{projectId}.web.app/store.html?p={projectId}";
                 Clipboard.SetText(url);
                 MessageBox.Show("تم نسخ رابط المتجر الإلكتروني بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };

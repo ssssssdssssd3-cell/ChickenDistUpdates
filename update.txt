@@ -1,5 +1,5 @@
-version=3.9.7
+version=3.9.8
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.7&t=1790174343
-sha256=E1C7476BC1B3A2A582868BCB2CAF95642EFDD47AF9AEDC39F6F22711982E0F0D
-changelog=v3.9.7 - 2026-09-23: Auto-backfill chronological cost, prevent distorted profits, and CTE reports fix
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.8&t=1790182727
+sha256=9C5C461DCB03B0FC1D8EB8AF5E3BE5FCDAFED28208C2FCA3B221E43E0A0B91FF
+changelog=v3.9.8 - 2026-09-23: Fix electronic menu client isolation and dynamic project ID resolution

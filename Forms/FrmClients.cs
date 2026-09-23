@@ -1025,7 +1025,9 @@ namespace ChickenDist.Forms
                     {
                         string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
                         if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                        string storeUrl = $"https://{projectId}.web.app/store.html";
+                        string storeUrl = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
+                            ? "https://checkin-192ab.web.app/store.html"
+                            : $"https://{projectId}.web.app/store.html?p={projectId}";
                         string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "متجرنا الإلكتروني";
                         string msg = Uri.EscapeDataString($"مرحباً {name}، يسعدنا تواصلكم معنا! ✨\nيمكنكم الآن تصفح كافة منتجاتنا وقائمة الأسعار والطلب أونلاين مباشرة عبر الرابط التالي:\n{storeUrl}\n\nنتشرف بخدمتكم دائماً في {comp}.");
                         string cleanPhone = phone.Replace(" ", "").Replace("-", "");

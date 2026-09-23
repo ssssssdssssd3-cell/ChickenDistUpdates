@@ -30,6 +30,7 @@ namespace ChickenDist.Forms
         private NumericUpDown nudFreeDeliveryThreshold;
         private TextBox txtAnnouncement;
         private TextBox txtNotificationWhatsApp;
+        private TextBox txtFirebaseProjectId;
         private TextBox txtStoreUrl;
         private PictureBox picQR;
         private Button btnCopyUrl;
@@ -350,7 +351,7 @@ namespace ChickenDist.Forms
             {
                 Text = "📢 تفاصيل المتجر والتواصل",
                 Location = new Point(10, 485),
-                Size = new Size(470, 265),
+                Size = new Size(470, 335),
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -418,11 +419,33 @@ namespace ChickenDist.Forms
                 BorderStyle = BorderStyle.FixedSingle
             };
 
+            var lblProjTitle = new Label
+            {
+                Text = "🔥 معرّف مشروع فيربيز السحابي (Firebase Project ID):",
+                Location = new Point(120, 180),
+                Size = new Size(335, 22),
+                ForeColor = Color.FromArgb(251, 191, 36),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            txtFirebaseProjectId = new TextBox
+            {
+                Location = new Point(15, 204),
+                Size = new Size(440, 26),
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(52, 211, 153),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.No
+            };
+            txtFirebaseProjectId.TextChanged += (s, e) => UpdateStoreUrlAndQr();
+
             var lblUrlTitle = new Label
             {
-                Text = "رابط المتجر المباشر:",
-                Location = new Point(340, 185),
-                Size = new Size(115, 22),
+                Text = "رابط المتجر والمنيو المباشر للزبائن:",
+                Location = new Point(240, 238),
+                Size = new Size(215, 22),
                 ForeColor = Color.FromArgb(241, 245, 249),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -430,19 +453,20 @@ namespace ChickenDist.Forms
             };
             txtStoreUrl = new TextBox
             {
-                Location = new Point(15, 212),
+                Location = new Point(15, 262),
                 Size = new Size(260, 27),
                 ReadOnly = true,
                 BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                RightToLeft = RightToLeft.No
             };
 
             btnCopyUrl = new Button
             {
                 Text = "📋 نسخ",
-                Location = new Point(282, 210),
+                Location = new Point(282, 260),
                 Size = new Size(78, 30),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -463,7 +487,7 @@ namespace ChickenDist.Forms
             btnOpenStore = new Button
             {
                 Text = "🌐 فتح",
-                Location = new Point(366, 210),
+                Location = new Point(366, 260),
                 Size = new Size(88, 30),
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
@@ -480,16 +504,30 @@ namespace ChickenDist.Forms
                 }
             };
 
+            var lblUrlHint = new Label
+            {
+                Text = "💡 هذا الرابط والباركود مخصصان للعميل الحالي تلقائياً؛ اضغط 'حفظ ومزامنة' لتحديث الأصناف بالسحابة.",
+                Location = new Point(15, 298),
+                Size = new Size(440, 24),
+                ForeColor = Color.FromArgb(148, 163, 184),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 8f, FontStyle.Regular),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
             grpExtra.Controls.Add(lblMin);
             grpExtra.Controls.Add(nudMinimumOrder);
             grpExtra.Controls.Add(lblWa);
             grpExtra.Controls.Add(txtNotificationWhatsApp);
             grpExtra.Controls.Add(lblAnnounce);
             grpExtra.Controls.Add(txtAnnouncement);
+            grpExtra.Controls.Add(lblProjTitle);
+            grpExtra.Controls.Add(txtFirebaseProjectId);
             grpExtra.Controls.Add(lblUrlTitle);
             grpExtra.Controls.Add(txtStoreUrl);
             grpExtra.Controls.Add(btnCopyUrl);
             grpExtra.Controls.Add(btnOpenStore);
+            grpExtra.Controls.Add(lblUrlHint);
             pnlRight.Controls.Add(grpExtra);
 
             // ===== العمود الأيسر =====
@@ -739,9 +777,28 @@ namespace ChickenDist.Forms
 
             string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
             if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-            txtStoreUrl.Text = $"https://{projectId}.web.app/store.html";
+            txtFirebaseProjectId.Text = projectId;
+            UpdateStoreUrlAndQr();
 
             LoadCategories();
+        }
+
+        private void UpdateStoreUrlAndQr()
+        {
+            string pId = txtFirebaseProjectId != null ? txtFirebaseProjectId.Text.Trim() : "";
+            if (string.IsNullOrEmpty(pId)) pId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+            if (string.IsNullOrEmpty(pId)) pId = "checkin-192ab";
+
+            if (pId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+            {
+                txtStoreUrl.Text = "https://checkin-192ab.web.app/store.html";
+            }
+            else
+            {
+                txtStoreUrl.Text = $"https://{pId}.web.app/store.html?p={pId}";
+            }
+
+            GenerateQrCode();
         }
 
         private void LoadCategories()
@@ -823,6 +880,10 @@ namespace ChickenDist.Forms
                 // 1. حفظ الإعدادات في AppConfig
                 AppConfig.Store_IsActive = chkStoreActive.Checked;
 
+                string enteredProjectId = txtFirebaseProjectId != null ? txtFirebaseProjectId.Text.Trim() : "";
+                if (string.IsNullOrEmpty(enteredProjectId)) enteredProjectId = "checkin-192ab";
+                AppConfig.FirebaseProjectId = enteredProjectId;
+
                 if (rbWholesale.Checked) AppConfig.Store_PriceTier = "Wholesale";
                 else if (rbSemiWholesale.Checked) AppConfig.Store_PriceTier = "SemiWholesale";
                 else AppConfig.Store_PriceTier = "Retail";
@@ -851,19 +912,20 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                // 3. مزامنة الكتالوج والإعدادات إلى Firebase فوراً
-                bool syncOk = await CloudSyncService.SyncStoreCatalogToFirebaseAsync();
+                // 3. مزامنة الكتالوج والإعدادات إلى Firebase فوراً لمشروع العميل
+                bool syncOk = await CloudSyncService.SyncStoreCatalogToFirebaseAsync(enteredProjectId);
 
                 if (syncOk)
                 {
                     lblSyncStatus.ForeColor = Color.FromArgb(52, 211, 153);
                     lblSyncStatus.Text = "✅ تم حفظ الإعدادات ومزامنة المتجر مع السحابة بنجاح!";
-                    MessageBox.Show("تم حفظ إعدادات المتجر الإلكتروني ومزامنة الكتالوج مع السحابة بنجاح 🔥", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم حفظ إعدادات المتجر الإلكتروني ومزامنة أصناف العميل بنجاح إلى مشروع فيربيز:\n({enteredProjectId}) 🔥", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
                     lblSyncStatus.ForeColor = Color.FromArgb(244, 63, 94);
-                    lblSyncStatus.Text = "⚠️ تم حفظ الإعدادات محلياً، لكن تعذر الاتصال بـ Firebase";
+                    lblSyncStatus.Text = "⚠️ تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى Firebase (" + enteredProjectId + ")";
+                    MessageBox.Show($"تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى سيرفر Firebase للمشروع:\n({enteredProjectId})\n\nيرجى التأكد من اتصال الإنترنت وتفعيل Realtime Database وصحة قواعد الحماية في Firebase.", "تنبيه المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)

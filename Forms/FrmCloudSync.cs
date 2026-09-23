@@ -413,7 +413,7 @@ namespace ChickenDist.Forms
             try
             {
                 string projectId = txtFirebaseProjectId.Text.Trim();
-                if (string.IsNullOrEmpty(projectId)) projectId = "mahmoud-68b74";
+                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
 
                 AppConfig.Set("FirebaseProjectId", projectId);
                 bool ok = await CloudSyncService.PushLiveStatsToFirebaseAsync(projectId);

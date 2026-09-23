@@ -1380,24 +1380,57 @@ self.addEventListener('fetch', (event) => {
 
                     // B. رفع كتالوج الأصناف store_catalog.json
                     var catalogContent = new StringContent(storeCatalogJson, Encoding.UTF8, "application/json");
+                    bool uploadSuccess = false;
+                    string errorDetail = "";
+
                     try
                     {
                         var resp = await client.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/store_catalog.json", catalogContent);
-                        if (resp != null && resp.IsSuccessStatusCode) return true;
+                        if (resp != null && resp.IsSuccessStatusCode)
+                        {
+                            uploadSuccess = true;
+                        }
+                        else if (resp != null)
+                        {
+                            errorDetail = $"Status: {resp.StatusCode}, Body: {await resp.Content.ReadAsStringAsync()}";
+                        }
                     }
-                    catch
+                    catch (Exception exPrimary)
+                    {
+                        errorDetail = exPrimary.Message;
+                    }
+
+                    if (!uploadSuccess)
                     {
                         try
                         {
                             var catalogFallback = new StringContent(storeCatalogJson, Encoding.UTF8, "application/json");
                             var respFallback = await client.PutAsync($"https://{projectId}.firebaseio.com/store_catalog.json", catalogFallback);
-                            if (respFallback != null && respFallback.IsSuccessStatusCode) return true;
+                            if (respFallback != null && respFallback.IsSuccessStatusCode)
+                            {
+                                uploadSuccess = true;
+                            }
+                            else if (respFallback != null)
+                            {
+                                errorDetail += $" | Fallback Status: {respFallback.StatusCode}";
+                            }
                         }
-                        catch { }
+                        catch (Exception exFallback)
+                        {
+                            errorDetail += $" | Fallback Error: {exFallback.Message}";
+                        }
+                    }
+
+                    if (uploadSuccess)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        AppLogger.Warn($"فشل رفع كتالوج المتجر إلى Firebase ({projectId}): {errorDetail}", "SyncStoreCatalogToFirebaseAsync");
+                        return false;
                     }
                 }
-
-                return true;
             }
             catch (Exception ex)
             {

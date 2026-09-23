@@ -21,7 +21,9 @@ namespace ChickenDist.Core
             {
                 string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
                 if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                content = $"https://{projectId}.web.app/store.html";
+                content = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
+                    ? "https://checkin-192ab.web.app/store.html"
+                    : $"https://{projectId}.web.app/store.html?p={projectId}";
             }
 
             Color dark = darkColor ?? Color.Black;
