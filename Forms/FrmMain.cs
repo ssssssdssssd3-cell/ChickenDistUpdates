@@ -10,17 +10,20 @@ namespace ChickenDist.Forms
 {
     public class FrmMain : Form
     {
+        public static FrmMain Instance { get; private set; }
         private Panel pnlTopBar, pnlContent;
         private FlowLayoutPanel pnlNavBar;
         private Panel pnlTabBar;
         private Button _btnOpenPages;
         private Button _btnOnlineOrders;
+        private Button btnCloseCurrent;
         private ToolStripDropDown _pnlDropdown;
         private FlowLayoutPanel pnlHeaderRight;
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;
         private Timer tmrPeriodicBackup;
+        private Timer tmrOrdersBadge;
         private FlowLayoutPanel flowTabs;
         private ToolTip _tabToolTip = new ToolTip();
         private System.Collections.Generic.List<(Form form, Button tab)> _openTabs
@@ -28,6 +31,7 @@ namespace ChickenDist.Forms
 
         public FrmMain()
         {
+            Instance = this;
             InitializeComponent();
             try { ShiftDAL.EnsureActiveShift(Session.EmpID); } catch {}
             NavigateTo(new FrmDashboard());
@@ -36,6 +40,13 @@ namespace ChickenDist.Forms
             try { ChickenDist.Services.CloudSyncService.StartOnlineOrdersWatcher(); } catch {}
             try { ChickenDist.Services.CloudSyncService.OnNewOrdersReceived += count => UpdateOnlineOrdersBadge(); } catch {}
             try { UpdateOnlineOrdersBadge(); } catch {}
+            try
+            {
+                tmrOrdersBadge = new Timer { Interval = 15000 };
+                tmrOrdersBadge.Tick += (s, e) => UpdateOnlineOrdersBadge();
+                tmrOrdersBadge.Start();
+            }
+            catch { }
             try { System.Threading.Tasks.Task.Run(async () => { await System.Threading.Tasks.Task.Delay(15000); InventoryDAL.SyncAllProductStock(); }); } catch {}
         }
 
@@ -205,7 +216,7 @@ namespace ChickenDist.Forms
             };
             pnlTabBar.Controls.Add(pnlTabActions);
 
-            var btnCloseCurrent = new Button
+            btnCloseCurrent = new Button
             {
                 Text = "✕ إغلاق الحالية",
                 FlatStyle = FlatStyle.Flat,
@@ -335,15 +346,40 @@ namespace ChickenDist.Forms
                 string label = AppConfig.IsRestaurant ? "طلبات المنيو" : "طلبات أونلاين";
                 if (newCount > 0)
                 {
-                    _btnOnlineOrders.Text = $"🌐 {label} ({newCount}) 🔴";
+                    _btnOnlineOrders.Text = $"🌐 {label} [ 🔔 {newCount} ]";
                     _btnOnlineOrders.BackColor = Color.FromArgb(220, 38, 38);
-                    _btnOnlineOrders.ForeColor = Color.White;
+                    _btnOnlineOrders.ForeColor = Color.Yellow;
+                    _btnOnlineOrders.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                 }
                 else
                 {
                     _btnOnlineOrders.Text = $"🌐 {label}";
                     _btnOnlineOrders.BackColor = Color.FromArgb(37, 99, 235);
                     _btnOnlineOrders.ForeColor = Color.White;
+                    _btnOnlineOrders.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+                }
+
+                // تحديث الشارة والتنبيه أيضاً على زر مديول المبيعات في الشريط الرئيسي
+                if (pnlNavBar != null)
+                {
+                    foreach (Control ctrl in pnlNavBar.Controls)
+                    {
+                        if (ctrl is Button btn && btn.Name == "المبيعات")
+                        {
+                            if (newCount > 0)
+                            {
+                                btn.Text = $"🛒\nالمبيعات (🔔 {newCount}) ▾";
+                                btn.FlatAppearance.BorderSize = 2;
+                                btn.FlatAppearance.BorderColor = Color.FromArgb(239, 68, 68);
+                            }
+                            else
+                            {
+                                btn.Text = "🛒\nالمبيعات ▾";
+                                btn.FlatAppearance.BorderSize = 0;
+                            }
+                            break;
+                        }
+                    }
                 }
             }
             catch { }
@@ -818,7 +854,7 @@ namespace ChickenDist.Forms
 
         private ContextMenuStrip CreateCategoryMenu(string icon, string label, Color groupColor, (string text, string screen, Action action)[] items)
         {
-            var menu = new ContextMenuStrip();
+            var menu = new ScrollableContextMenuStrip();
             menu.BackColor = Color.FromArgb(24, 28, 38);
             menu.ForeColor = Color.White;
             menu.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
@@ -837,14 +873,24 @@ namespace ChickenDist.Forms
             };
             menu.Items.Add(headerItem);
 
+            int newOrdersCount = 0;
+            try { newOrdersCount = OnlineOrdersDAL.GetNewOrdersCount(); } catch { }
+
             foreach (var item in items)
             {
                 if (!UserCanAccess(item.screen)) continue;
 
-                var menuItem = new ToolStripMenuItem(item.text)
+                string itemText = item.text;
+                bool isOnlineOrders = (item.screen == "OnlineOrders");
+                if (isOnlineOrders && newOrdersCount > 0)
                 {
-                    ForeColor = Color.FromArgb(241, 245, 249),
-                    BackColor = Color.FromArgb(28, 33, 44),
+                    itemText = $"{item.text} 🔔 ({newOrdersCount} جديد)";
+                }
+
+                var menuItem = new ToolStripMenuItem(itemText)
+                {
+                    ForeColor = (isOnlineOrders && newOrdersCount > 0) ? Color.FromArgb(254, 240, 138) : Color.FromArgb(241, 245, 249),
+                    BackColor = (isOnlineOrders && newOrdersCount > 0) ? Color.FromArgb(153, 27, 27) : Color.FromArgb(28, 33, 44),
                     Font = new Font("Segoe UI", 9.8f, FontStyle.Bold),
                     Padding = new Padding(12, 8, 12, 8)
                 };
@@ -933,7 +979,7 @@ namespace ChickenDist.Forms
         // ─── زر الشاشات المفتوحة (القائمة الذكية المنسدلة) ─────────────────
         private void BtnOpenPages_Click(object sender, EventArgs e)
         {
-            var menu = new ContextMenuStrip
+            var menu = new ScrollableContextMenuStrip
             {
                 RightToLeft = RightToLeft.Yes,
                 Font = new Font("Segoe UI", 9.5f),
@@ -1270,13 +1316,15 @@ namespace ChickenDist.Forms
             {
                 pnlNavBar.Visible = true;
                 pnlTopBar.Visible = true;
-                pnlTabBar.Visible = (_openTabs.Count > 0);
+                pnlTabBar.Visible = true; // Always visible so _btnOnlineOrders is always accessible
+                if (btnCloseCurrent != null) btnCloseCurrent.Visible = false;
             }
             else
             {
                 pnlNavBar.Visible = false;
                 pnlTopBar.Visible = false;
                 pnlTabBar.Visible = true;
+                if (btnCloseCurrent != null) btnCloseCurrent.Visible = true;
             }
 
             RenderTabBar();
@@ -1375,6 +1423,8 @@ namespace ChickenDist.Forms
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            Instance = null;
+            try { tmrOrdersBadge?.Stop(); tmrOrdersBadge?.Dispose(); } catch { }
             // إيقاف خادم المندوب بأمان عند إغلاق البرنامج
             try { Core.DriverPortalServer.Stop(); } catch { }
             // إيقاف خدمة المزامنة السحابية

@@ -1,5 +1,5 @@
-version=3.9.11
+version=3.9.12
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.11&t=1790260173
-sha256=404AAD2EEB7E1FF9B5F9C29D8746C99AF1746B729A0AEB565E19F14AF175608E
-changelog=v3.9.11 - 2026-09-24: Major performance optimizations: instant product search/sale opening via StockCache, fast cold boot startup bypassing WMI, and SQL AUTO_CLOSE disabled
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.12&t=1790266162
+sha256=220EB1C22FFD2DEF89A7CB6AC243D1069312B5C52253DEE0BBB825629C559972
+changelog=v3.9.12 - 2026-09-24: Major performance optimizations: instant product search/sale opening via StockCache, fast cold boot startup bypassing WMI, and SQL AUTO_CLOSE disabled

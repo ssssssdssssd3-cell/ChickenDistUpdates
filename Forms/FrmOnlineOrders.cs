@@ -22,6 +22,8 @@ namespace ChickenDist.Forms
         private Label lblKpiInPrep;
         private Label lblKpiCompleted;
         private Label lblKpiTodayTotal;
+        private Label lblHeaderTitle;
+        private Timer _tmrAutoRefresh;
 
         // Toolbar & Filters
         private TextBox txtSearch;
@@ -144,7 +146,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 4, 0, 0)
             };
 
-            var lblTitle = new Label
+            lblHeaderTitle = new Label
             {
                 Text = AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -162,7 +164,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 3, 0, 0)
             };
 
-            pnlTitle.Controls.Add(lblTitle);
+            pnlTitle.Controls.Add(lblHeaderTitle);
             pnlTitle.Controls.Add(lblSubtitle);
 
             var pnlHeaderButtons = new FlowLayoutPanel
@@ -984,7 +986,34 @@ namespace ChickenDist.Forms
         private void InitEventSubscriptions()
         {
             CloudSyncService.OnNewOrdersReceived += OnNewOrdersReceivedHandler;
-            this.FormClosed += (s, e) => CloudSyncService.OnNewOrdersReceived -= OnNewOrdersReceivedHandler;
+
+            // مؤقت فحص دوري خفيف وسلس كل 15 ثانية للتأكد من وصول وتحديث الطلبات لحظياً
+            _tmrAutoRefresh = new Timer { Interval = 15000 };
+            _tmrAutoRefresh.Tick += (s, e) =>
+            {
+                if (this.IsDisposed || !this.IsHandleCreated) return;
+                int oldCount = 0;
+                if (lblKpiNew != null) int.TryParse(lblKpiNew.Text, out oldCount);
+                RefreshStats();
+                int newCount = 0;
+                if (lblKpiNew != null) int.TryParse(lblKpiNew.Text, out newCount);
+                if (newCount > oldCount)
+                {
+                    LoadOrders();
+                    SoundAlertHelper.PlayNewOrderAlert();
+                }
+                else if (newCount != oldCount)
+                {
+                    LoadOrders();
+                }
+            };
+            _tmrAutoRefresh.Start();
+
+            this.FormClosed += (s, e) =>
+            {
+                CloudSyncService.OnNewOrdersReceived -= OnNewOrdersReceivedHandler;
+                try { _tmrAutoRefresh?.Stop(); _tmrAutoRefresh?.Dispose(); } catch { }
+            };
         }
 
         private void OnNewOrdersReceivedHandler(int count)
@@ -995,6 +1024,7 @@ namespace ChickenDist.Forms
             {
                 LoadOrders();
                 RefreshStats();
+                SoundAlertHelper.PlayNewOrderAlert();
             });
         }
 
@@ -1124,10 +1154,25 @@ namespace ChickenDist.Forms
             try
             {
                 OnlineOrdersDAL.GetStats(out int newC, out int inPrepC, out int compC, out decimal tot);
-                lblKpiNew.Text = newC.ToString();
-                lblKpiInPrep.Text = inPrepC.ToString();
-                lblKpiCompleted.Text = compC.ToString();
-                lblKpiTodayTotal.Text = tot.ToString("N2") + " ج.م";
+                if (lblKpiNew != null) lblKpiNew.Text = newC.ToString();
+                if (lblKpiInPrep != null) lblKpiInPrep.Text = inPrepC.ToString();
+                if (lblKpiCompleted != null) lblKpiCompleted.Text = compC.ToString();
+                if (lblKpiTodayTotal != null) lblKpiTodayTotal.Text = tot.ToString("N2") + " ج.م";
+
+                if (btnFilterNew != null)
+                {
+                    btnFilterNew.Text = newC > 0 ? $"جديدة 🔔 ({newC})" : "جديدة";
+                }
+
+                string baseTitle = AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني";
+                if (lblHeaderTitle != null)
+                {
+                    lblHeaderTitle.Text = newC > 0 ? $"{baseTitle}  🔔 [{newC} طلب جديد]" : baseTitle;
+                }
+
+                this.Text = (newC > 0 ? $"🔔 ({newC}) " : "") + (AppConfig.IsRestaurant ? "🌐 استقبال وإدارة طلبات المنيو الإلكتروني" : "🌐 استقبال وإدارة طلبات المتجر الإلكتروني");
+
+                FrmMain.Instance?.UpdateOnlineOrdersBadge();
             }
             catch { }
         }

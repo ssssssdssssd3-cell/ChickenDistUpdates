@@ -1646,7 +1646,7 @@ self.addEventListener('fetch', (event) => {
                 {
                     try
                     {
-                        System.Media.SystemSounds.Asterisk.Play();
+                        SoundAlertHelper.PlayNewOrderAlert();
                     }
                     catch { }
 
@@ -1705,7 +1705,7 @@ self.addEventListener('fetch', (event) => {
                         await PullOnlineOrdersFromFirebaseAsync(projectId);
                     }
                     catch { }
-                }, null, 15000, 60000); // يبدأ بعد 15 ثانية ويتكرر كل 60 ثانية
+                }, null, 10000, 20000); // يبدأ بعد 10 ثوانٍ ويتكرر كل 20 ثانية
             }
             catch (Exception ex)
             {
