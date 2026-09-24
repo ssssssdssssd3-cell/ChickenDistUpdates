@@ -963,7 +963,7 @@ namespace ChickenDist.Forms
             btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnRecall.Click += (s, e) => RecallDraftSale();
 
-            btnIncompletePOS = Theme.MakeButton("📂 فواتير\nلم تكتمل", Color.FromArgb(70, 40, 130), new Point(0, 128), new Size(115, 56));
+            btnIncompletePOS = Theme.MakeButton("📂 فواتير\nغير مكتملة", Color.FromArgb(70, 40, 130), new Point(0, 128), new Size(115, 56));
             btnIncompletePOS.Name = "btnIncompletePOS";
             btnIncompletePOS.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnIncompletePOS.Click += (s, e) => OpenIncompletePOSDialog();
@@ -3356,6 +3356,12 @@ namespace ChickenDist.Forms
 
         private void OpenIncompletePOSDialog()
         {
+            if (!Session.CanAccess("IncompleteInvoices"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية للوصول إلى شاشة الفواتير غير المكتملة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             using (var frm = new FrmIncompleteInvoices("POS"))
             {
                 if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))

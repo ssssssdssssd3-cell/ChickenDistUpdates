@@ -1190,6 +1190,32 @@ namespace ChickenDist.Forms
                 EditLabel = "✏️ تعديل وحفظ إعدادات المنيو / المتجر",
                 EditHint = "السماح للموظف بتعديل أسعار المتجر، تفعيل/تعطيل المتجر، وتحديث بيانات المنيو ورابط الـ QR."
             },
+            new ScreenDef {
+                Key = "DiscountVouchers", 
+                Name = "بونات الخصم وقسائم الشراء", 
+                Category = "🛒 المبيعات والعملاء", 
+                Icon = "🎟️",
+                Description = "شاشة إنشاء وإدارة بونات الخصم وقسائم الشراء وتحديد قيمتها وصلاحيتها للعملاء في البيع والمتجر.",
+                HasAdd = true, HasEdit = true, HasDelete = true,
+                AddLabel = "➕ إنشاء وتوليد بونات خصم جديدة",
+                AddHint = "السماح للموظف بإنشاء وتوليد كروت وأكواد خصم جديدة.",
+                EditLabel = "✏️ تعديل بيانات وحالة بون الخصم",
+                EditHint = "السماح للموظف بتعديل صلاحية أو قيمة أو حالة بون الخصم.",
+                DeleteLabel = "🗑️ حذف وتصفير بونات الخصم",
+                DeleteHint = "السماح للموظف بحذف كود أو بون خصم نهائياً من النظام."
+            },
+            new ScreenDef {
+                Key = "IncompleteInvoices", 
+                Name = "الفواتير غير المكتملة (المعلقة)", 
+                Category = "🛒 المبيعات والعملاء", 
+                Icon = "⏳",
+                Description = "شاشة استعراض واستعادة أو حذف الفواتير المعلقة وغير المكتملة التي تم حفظها لحظياً ولم تكتمل.",
+                HasEdit = true, HasDelete = true,
+                EditLabel = "🔄 استعادة الفاتورة ومتابعة البيع",
+                EditHint = "السماح للموظف بفتح واستعادة الفاتورة غير المكتملة لمتابعة عملية البيع وإصدار الفاتورة.",
+                DeleteLabel = "🗑️ إلغاء وحذف الفاتورة غير المكتملة",
+                DeleteHint = "السماح للموظف بحذف الفواتير المعلقة وغير المكتملة نهائياً من النظام."
+            },
 
             // ── 📥 2. المشتريات والموردين ─────────────────────────────────
             new ScreenDef {
@@ -2325,7 +2351,7 @@ namespace ChickenDist.Forms
 
         private void ApplyPreset(string role)
         {
-            var salesScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "Returns", "PriceChecker", "ProductSearch", "QuickItems", "QuickDetails", "Clients", "ClientStatement", "Installments", "SalesList" };
+            var salesScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Sales", "POS", "PriceQuote", "Returns", "PriceChecker", "ProductSearch", "QuickItems", "QuickDetails", "Clients", "ClientStatement", "Installments", "SalesList", "DiscountVouchers", "IncompleteInvoices" };
             var purchaseScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Purchases", "PurchaseReturn", "PurchasesList", "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment" };
             var inventoryScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Products", "ProductCard", "Categories", "Units", "Warehouses", "Inventory", "ShortageNotebook", "Wastage", "WarehouseTransfer", "BulkPrintBarcodes", "RepStores" };
             var driverScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Drivers", "DriverHandover", "DriverCustody", "DriverPortal", "DriversMonitor", "DriverLeaderboard", "ImportPreview", "RepDrivers", "Sales", "POS", "PriceChecker", "ProductSearch" };

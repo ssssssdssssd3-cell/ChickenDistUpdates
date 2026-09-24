@@ -39,6 +39,20 @@ namespace ChickenDist.Forms
             LoadGrid();
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            if (!Session.CanAccess("DiscountVouchers"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية للوصول إلى شاشة بونات الخصم.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Close();
+                return;
+            }
+            btnNew.Enabled = Session.CanAdd("DiscountVouchers");
+            btnDelete.Enabled = Session.CanDelete("DiscountVouchers");
+            btnSave.Enabled = Session.CanAdd("DiscountVouchers") || Session.CanEdit("DiscountVouchers");
+        }
+
         private void BuildUI()
         {
             this.Text = "🎟️ إدارة بونات الخصم";
@@ -375,6 +389,23 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_editingVoucherID == 0)
+            {
+                if (!Session.CanAdd("DiscountVouchers"))
+                {
+                    MessageBox.Show("عذراً، ليس لديك صلاحية إنشاء وتوليد بونات خصم جديدة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+            else
+            {
+                if (!Session.CanEdit("DiscountVouchers"))
+                {
+                    MessageBox.Show("عذراً، ليس لديك صلاحية تعديل بونات الخصم!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
             string code = txtCode.Text.Trim().ToUpper();
             if (string.IsNullOrEmpty(code))
             {
@@ -426,6 +457,12 @@ namespace ChickenDist.Forms
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
+            if (!Session.CanDelete("DiscountVouchers"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية حذف بونات الخصم!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (dgvVouchers.SelectedRows.Count == 0) return;
             if (!int.TryParse(dgvVouchers.SelectedRows[0].Cells["VoucherID"]?.Value?.ToString(), out int vid)) return;
 

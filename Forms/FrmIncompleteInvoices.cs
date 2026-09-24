@@ -39,9 +39,20 @@ namespace ChickenDist.Forms
             LoadDrafts();
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            if (!Session.CanAccess("IncompleteInvoices"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية للوصول إلى شاشة الفواتير غير المكتملة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Close();
+                return;
+            }
+        }
+
         private void InitUI()
         {
-            this.Text = "📂 فواتير وعمليات غير مكتملة (المحفوظة تلقائياً قبل انقطاع الكهرباء أو إغلاق الجهاز)";
+            this.Text = "📂 الفواتير غير المكتملة (المحفوظة تلقائياً)";
             this.Size = new Size(1200, 720);
             this.MinimumSize = new Size(950, 580);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -51,7 +62,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── 1. Header Bar ──
-            var pnlTitle = Theme.MakeTitleBar("📂 فواتير وعمليات غير مكتملة", "يعرض النظام تلقائياً كافة فواتير البيع والمشتريات وجلسات الجرد التي تم حفظها لحظياً ولم تكتمل بسبب فصل الجهاز أو انقطاع الكهرباء.");
+            var pnlTitle = Theme.MakeTitleBar("📂 الفواتير غير المكتملة", "يعرض النظام تلقائياً كافة فواتير البيع والمشتريات وجلسات الجرد التي تم حفظها لحظياً ولم تكتمل بسبب فصل الجهاز أو انقطاع الكهرباء.");
 
             // ── 2. Top Filter Bar ──
             var pnlFilter = new FlowLayoutPanel
@@ -95,14 +106,16 @@ namespace ChickenDist.Forms
             btnSearch.Click += (s, e) => LoadDrafts();
             pnlFilter.Controls.Add(btnSearch);
 
-            btnRestore = Theme.MakeButton("📂 استرجاع وتحميل الفاتورة", Color.FromArgb(39, 174, 96));
+            btnRestore = Theme.MakeButton("📂 استرجاع ومتابعة الفاتورة", Color.FromArgb(39, 174, 96));
             btnRestore.Size = new Size(200, 32);
             btnRestore.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnRestore.Enabled = Session.CanEdit("IncompleteInvoices");
             btnRestore.Click += BtnRestore_Click;
             pnlFilter.Controls.Add(btnRestore);
 
-            btnDelete = Theme.MakeButton("🗑️ حذف المسودة", Color.FromArgb(192, 57, 43));
-            btnDelete.Size = new Size(130, 32);
+            btnDelete = Theme.MakeButton("🗑️ حذف الفاتورة غير المكتملة", Color.FromArgb(192, 57, 43));
+            btnDelete.Size = new Size(180, 32);
+            btnDelete.Enabled = Session.CanDelete("IncompleteInvoices");
             btnDelete.Click += BtnDelete_Click;
             pnlFilter.Controls.Add(btnDelete);
 
@@ -298,6 +311,12 @@ namespace ChickenDist.Forms
 
         private void BtnRestore_Click(object sender, EventArgs e)
         {
+            if (!Session.CanEdit("IncompleteInvoices"))
+            {
+                MessageBox.Show("عذراً، ليس لديك صلاحية استرجاع ومتابعة الفواتير غير المكتملة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (dgDrafts.SelectedRows.Count == 0 || _dtDrafts == null)
             {
                 MessageBox.Show("من فضلك حدد الفاتورة أو العملية المراد استرجاعها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -322,13 +341,19 @@ namespace ChickenDist.Forms
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
-            if (dgDrafts.SelectedRows.Count == 0 || _dtDrafts == null)
+            if (!Session.CanDelete("IncompleteInvoices"))
             {
-                MessageBox.Show("من فضلك حدد المسودة المراد حذفها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عذراً، ليس لديك صلاحية حذف الفواتير غير المكتملة!", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            if (MessageBox.Show("هل أنت متأكد من رغبتك في حذف هذه المسودة نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (dgDrafts.SelectedRows.Count == 0 || _dtDrafts == null)
+            {
+                MessageBox.Show("من فضلك حدد الفاتورة أو المسودة المراد حذفها أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (MessageBox.Show("هل أنت متأكد من رغبتك في حذف هذه الفاتورة غير المكتملة نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 int draftId = Convert.ToInt32(dgDrafts.SelectedRows[0].Cells["DraftID"].Value);
                 var rows = _dtDrafts.Select($"DraftID = {draftId}");

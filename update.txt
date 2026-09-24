@@ -1,5 +1,5 @@
-version=3.9.14
+version=3.9.15
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.14&t=1790271508
-sha256=C67A3C9FC5745CE568CFFF61781A58473C27DD7161EAE5211B453659E887B68B
-changelog=v3.9.14 - 2026-09-24: Guaranteed Admin settings visibility on top bar, removed standalone online orders icon (accessed via Sales), and optimized bar layout
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.15&t=1790277146
+sha256=37BF19F0C0149238212810B94AA43CC72BA8495C01968C1E361445C900CC0054
+changelog=v3.9.15 - 2026-09-24: Added Discount Vouchers and Incomplete Invoices to user permissions, renamed to Incomplete Invoices

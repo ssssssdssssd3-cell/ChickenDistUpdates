@@ -1534,7 +1534,7 @@ namespace ChickenDist.Forms
 			btnHold.Margin = new Padding(2);
 			btnSave.Margin = new Padding(2);
 
-			var btnIncomplete = Theme.MakeButton("📂 فواتير لم تكتمل", 0, 0, 135, 26, Color.FromArgb(70, 40, 130));
+			var btnIncomplete = Theme.MakeButton("📂 فواتير غير مكتملة", 0, 0, 135, 26, Color.FromArgb(70, 40, 130));
 			btnIncomplete.Margin = new Padding(2);
 			btnIncomplete.Click += (s, e) => OpenIncompleteSalesDialog();
 
@@ -5710,6 +5710,12 @@ namespace ChickenDist.Forms
 
 		private void OpenIncompleteSalesDialog()
 		{
+			if (!Session.CanAccess("IncompleteInvoices"))
+			{
+				MessageBox.Show("عذراً، ليس لديك صلاحية للوصول إلى شاشة الفواتير غير المكتملة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
 			using (var frm = new FrmIncompleteInvoices("Sale"))
 			{
 				if (frm.ShowDialog(this) == DialogResult.OK && frm.IsRestored && !string.IsNullOrEmpty(frm.SelectedDraftJson))

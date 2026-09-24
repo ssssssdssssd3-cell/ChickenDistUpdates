@@ -351,6 +351,16 @@ namespace ChickenDist.Core
                 if (_perms.ContainsKey("OnlineStoreSettings")) return _perms["OnlineStoreSettings"].CanAccess;
                 if (_perms.ContainsKey("Settings")) return _perms["Settings"].CanAccess;
             }
+            if (screen == "DiscountVouchers")
+            {
+                if (_perms.ContainsKey("DiscountVouchers")) return _perms["DiscountVouchers"].CanAccess;
+                if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanAccess;
+            }
+            if (screen == "IncompleteInvoices")
+            {
+                if (_perms.ContainsKey("IncompleteInvoices")) return _perms["IncompleteInvoices"].CanAccess;
+                if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanAccess;
+            }
 
             // Synonym mapping for backwards-compatibility or UI mismatches
             if (screen == "Drivers")
@@ -498,6 +508,11 @@ namespace ChickenDist.Core
                 if (_perms.ContainsKey("DailyAccounts") && (_perms["DailyAccounts"].CanAdd || _perms["DailyAccounts"].CanAccess)) return true;
                 if (_perms.ContainsKey("SafeAccounts") && (_perms["SafeAccounts"].CanAdd || _perms["SafeAccounts"].CanAccess)) return true;
             }
+            if (screen == "DiscountVouchers")
+            {
+                if (_perms.ContainsKey("DiscountVouchers")) return _perms["DiscountVouchers"].CanAdd;
+                if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanAdd;
+            }
 
             return false;
         }
@@ -526,6 +541,16 @@ namespace ChickenDist.Core
                 if (_perms.ContainsKey("CashBox") && (_perms["CashBox"].CanEdit || _perms["CashBox"].CanAccess)) return true;
                 if (_perms.ContainsKey("DailyAccounts") && (_perms["DailyAccounts"].CanEdit || _perms["DailyAccounts"].CanAccess)) return true;
             }
+            if (screen == "DiscountVouchers")
+            {
+                if (_perms.ContainsKey("DiscountVouchers")) return _perms["DiscountVouchers"].CanEdit;
+                if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanEdit;
+            }
+            if (screen == "IncompleteInvoices")
+            {
+                if (_perms.ContainsKey("IncompleteInvoices")) return _perms["IncompleteInvoices"].CanEdit;
+                if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanEdit;
+            }
 
             return false;
         }
@@ -535,7 +560,14 @@ namespace ChickenDist.Core
             if (IsAdmin) return true;
             if (string.IsNullOrEmpty(screen)) return true;
 
-            return _perms.ContainsKey(screen) && _perms[screen].CanDelete;
+            if (_perms.ContainsKey(screen)) return _perms[screen].CanDelete;
+
+            if (screen == "DiscountVouchers" && _perms.ContainsKey("Sales"))
+                return _perms["Sales"].CanDelete;
+            if (screen == "IncompleteInvoices" && _perms.ContainsKey("Sales"))
+                return _perms["Sales"].CanDelete;
+
+            return false;
         }
 
         public static bool CanViewDetails(string screen)
