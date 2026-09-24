@@ -208,11 +208,16 @@ namespace ChickenDist.Forms
             };
 
             // Left panel for action buttons
-            var pnlTabActions = new Panel
+            var pnlTabActions = new FlowLayoutPanel
             {
                 Dock = DockStyle.Left,
-                Width = 365,
-                BackColor = Color.Transparent
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Padding = Padding.Empty,
+                Margin = Padding.Empty
             };
             pnlTabBar.Controls.Add(pnlTabActions);
 
@@ -224,7 +229,7 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Size = new Size(100, 34),
-                Location = new Point(0, 1),
+                Margin = new Padding(0, 1, 4, 1),
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -247,7 +252,7 @@ namespace ChickenDist.Forms
                 ForeColor = Color.FromArgb(226, 232, 240),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Size = new Size(110, 34),
-                Location = new Point(104, 1),
+                Margin = new Padding(0, 1, 4, 1),
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -265,7 +270,7 @@ namespace ChickenDist.Forms
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Size = new Size(140, 34),
-                Location = new Point(218, 1),
+                Margin = new Padding(0, 1, 4, 1),
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -294,10 +299,12 @@ namespace ChickenDist.Forms
                 Margin = Padding.Empty
             };
             pnlTabBar.Controls.Add(flowTabs);
+            pnlTabActions.BringToFront();
 
             this.Controls.Add(pnlContent);
             this.Controls.Add(pnlTabBar);
             this.Controls.Add(pnlNavBar);
+            this.pnlNavBar.Visible = false;
             this.pnlTopBar.Visible = false;
             this.Controls.Add(pnlTopBar);
 
@@ -359,23 +366,25 @@ namespace ChickenDist.Forms
                     _btnOnlineOrders.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
                 }
 
-                // تحديث الشارة والتنبيه أيضاً على زر مديول المبيعات في الشريط الرئيسي
-                if (pnlNavBar != null)
+                // تحديث الشارة والتنبيه أيضاً على زر مديول المبيعات في شريط التبويبات الموحد
+                if (flowTabs != null)
                 {
-                    foreach (Control ctrl in pnlNavBar.Controls)
+                    foreach (Control ctrl in flowTabs.Controls)
                     {
-                        if (ctrl is Button btn && btn.Name == "المبيعات")
+                        if (ctrl is Button btn && (btn.Name == "المبيعات" || btn.Name == "🛒 المبيعات"))
                         {
                             if (newCount > 0)
                             {
-                                btn.Text = $"🛒\nالمبيعات (🔔 {newCount}) ▾";
+                                btn.Text = $"🛒 المبيعات (🔔 {newCount}) ▾";
                                 btn.FlatAppearance.BorderSize = 2;
                                 btn.FlatAppearance.BorderColor = Color.FromArgb(239, 68, 68);
                             }
                             else
                             {
-                                btn.Text = "🛒\nالمبيعات ▾";
-                                btn.FlatAppearance.BorderSize = 0;
+                                btn.Text = "🛒 المبيعات ▾";
+                                bool isActive = (_activeGroupBtn == btn);
+                                btn.FlatAppearance.BorderSize = isActive ? 2 : 0;
+                                btn.FlatAppearance.BorderColor = isActive ? Color.FromArgb(250, 204, 21) : Color.Empty;
                             }
                             break;
                         }
@@ -385,41 +394,49 @@ namespace ChickenDist.Forms
             catch { }
         }
 
-        private void HighlightActiveGroup(string className)
+        public string GetGroupNameForScreen(string className)
         {
-            string targetGroup = "";
+            if (string.IsNullOrEmpty(className)) return "";
+
             switch (className)
             {
                 case "FrmDashboard":
-                    targetGroup = "الرئيسية";
-                    break;
+                    return "الرئيسية";
                 case "FrmOnlineOrders":
                 case "FrmOnlineStoreSettings":
+                case "FrmPOS":
                 case "FrmSale":
                 case "FrmReturn":
                 case "FrmInstallments":
+                case "FrmScheduleClientDebt":
+                case "FrmIncompleteInvoices":
                 case "FrmSalesList":
                 case "FrmSalesAuditList":
                 case "FrmAccountantPortal":
                 case "FrmReservations":
                 case "FrmClearanceOffers":
+                case "FrmDiscountVouchers":
+                case "FrmPriceQuote":
+                case "FrmPriceQuotesList":
                 case "FrmShiftClose":
                 case "FrmShiftReport":
                 case "FrmOpenShift":
                 case "FrmShiftDrawerDetails":
-                    targetGroup = "المبيعات";
-                    break;
+                    return "المبيعات";
                 case "FrmPurchase":
                 case "FrmPurchaseReturn":
                 case "FrmPurchasesList":
-                    targetGroup = "المشتريات";
-                    break;
+                    return "المشتريات";
                 case "FrmProducts":
                 case "FrmCategories":
                 case "FrmUnits":
                 case "FrmImportProducts":
                 case "FrmWarehouses":
                 case "FrmInventory":
+                case "FrmInventorySessions":
+                case "FrmMinStockEdit":
+                case "FrmShortageNotebook":
+                case "FrmInventoryVarianceReport":
                 case "FrmWastage":
                 case "FrmWarehouseTransfer":
                 case "FrmWarehouseTransfersList":
@@ -427,66 +444,73 @@ namespace ChickenDist.Forms
                 case "FrmPricePoster":
                 case "FrmPriceChecker":
                 case "FrmBulkPrintBarcodes":
-                case "FrmMinStockEdit":
-                case "FrmShortageNotebook":
-                    targetGroup = "المخازن";
-                    break;
+                case "FrmModelLookup":
+                case "FrmClothingMatrix":
+                    return "المخازن";
                 case "FrmBOM":
                 case "FrmFixedProduction":
                 case "FrmCustomProduction":
                 case "FrmProductionReports":
-                    targetGroup = "التصنيع";
-                    break;
+                    return "المصانع والإنتاج";
                 case "FrmClients":
                 case "FrmInactiveClients":
                 case "FrmVehicles":
-                    targetGroup = "العملاء";
-                    break;
+                    return "العملاء";
                 case "FrmSuppliers":
                 case "FrmSupplierStatement":
                 case "FrmSupplierPayment":
                 case "FrmSupplierAdjustment":
-                    targetGroup = "الموردين";
-                    break;
+                    return "الموردين";
                 case "FrmDriverHandover":
                 case "FrmDriverPortal":
                 case "FrmImportPreview":
                 case "FrmDriversMonitor":
                 case "FrmDriverCustody":
                 case "FrmDriverLeaderboard":
-                    targetGroup = "المناديب";
-                    break;
+                    return "المناديب";
                 case "FrmCashBox":
                 case "FrmDailyAccounts":
+                case "FrmSafeAccounts":
+                case "FrmActualBalances":
                 case "FrmReceiptVoucher":
                 case "FrmDailyClosing":
-                    targetGroup = "المالية";
-                    break;
+                case "FrmFinancialPosition":
+                    return "المالية";
+                case "FrmFixedAssets":
+                case "FrmShareholders":
+                    return "الأصول والشركاء";
+                case "FrmEmployees":
+                case "FrmEmployeeTransactions":
+                case "FrmEmployeeAttendance":
+                case "FrmEmployeeCommissions":
+                case "FrmEmployeePayroll":
+                    return "الموظفين";
+                case "FrmMaintenance":
+                case "FrmMaintenanceCard":
+                    return "الصيانة";
                 case "FrmReports":
                     if (_currentChild is FrmReports rptForm)
                     {
-                        if (rptForm.TargetModule == "Sales" || rptForm.TargetModule == "ShiftsHistory" || rptForm.TargetModule == "ShiftClose") targetGroup = "المبيعات";
-                        else if (rptForm.TargetModule == "Purchases") targetGroup = "المشتريات";
-                        else if (rptForm.TargetModule == "Stores") targetGroup = "المخازن";
-                        else if (rptForm.TargetModule == "Clients") targetGroup = "العملاء";
-                        else if (rptForm.TargetModule == "Drivers") targetGroup = "المناديب";
-                        else if (rptForm.TargetModule == "Financials") targetGroup = "المالية";
-                        else targetGroup = "الإدارة";
+                        if (rptForm.TargetModule == "Sales" || rptForm.TargetModule == "ShiftsHistory" || rptForm.TargetModule == "ShiftClose") return "المبيعات";
+                        if (rptForm.TargetModule == "Purchases") return "المشتريات";
+                        if (rptForm.TargetModule == "Stores") return "المخازن";
+                        if (rptForm.TargetModule == "Clients") return "العملاء";
+                        if (rptForm.TargetModule == "Suppliers") return "الموردين";
+                        if (rptForm.TargetModule == "Drivers") return "المناديب";
+                        if (rptForm.TargetModule == "Financials") return "المالية";
+                        return "الإدارة";
                     }
-                    else
-                    {
-                        targetGroup = "المالية";
-                    }
-                    break;
-                case "FrmEmployees":
-                case "FrmEmployeeTransactions":
-                    targetGroup = "الإدارة";
-                    break;
-                case "FrmMaintenance":
-                case "FrmMaintenanceCard":
-                    targetGroup = "الصيانة";
-                    break;
+                    return "المالية";
+                default:
+                    if (className.Contains("Setting") || className.Contains("Config") || className.Contains("Lookup") || className.Contains("Activation") || className.Contains("CloudSync"))
+                        return "الإدارة";
+                    return "";
             }
+        }
+
+        private void HighlightActiveGroup(string className)
+        {
+            string targetGroup = GetGroupNameForScreen(className);
 
             if (_activeGroupBtn != null)
             {
@@ -499,19 +523,34 @@ namespace ChickenDist.Forms
                     _activeGroupBtn.BackColor = Color.Transparent;
                 }
                 _activeGroupBtn.ForeColor = Color.White;
-                _activeGroupBtn.FlatAppearance.BorderSize = 0;
+
+                int newOrders = 0;
+                if (_activeGroupBtn.Name == "المبيعات")
+                {
+                    try { newOrders = OnlineOrdersDAL.GetNewOrdersCount(); } catch { }
+                }
+
+                if (_activeGroupBtn.Name == "المبيعات" && newOrders > 0)
+                {
+                    _activeGroupBtn.FlatAppearance.BorderSize = 2;
+                    _activeGroupBtn.FlatAppearance.BorderColor = Color.FromArgb(239, 68, 68);
+                }
+                else
+                {
+                    _activeGroupBtn.FlatAppearance.BorderSize = 0;
+                }
             }
 
-            // Find button in pnlNavBar
-            if (pnlNavBar != null)
+            // البحث عن زر المجموعة في شريط التبويبات العلوي flowTabs
+            if (flowTabs != null)
             {
-                foreach (Control ctrl in pnlNavBar.Controls)
+                foreach (Control ctrl in flowTabs.Controls)
                 {
                     if (ctrl is Button btn && btn.Name == targetGroup)
                     {
                         _activeGroupBtn = btn;
                         btn.FlatAppearance.BorderSize = 2;
-                        btn.FlatAppearance.BorderColor = Theme.Accent; // Gold highlight
+                        btn.FlatAppearance.BorderColor = Color.FromArgb(250, 204, 21); // إطار ذهبي بارز
                         break;
                     }
                 }
@@ -1064,36 +1103,19 @@ namespace ChickenDist.Forms
             flowTabs.Controls.Clear();
 
             string currentScreenType = _currentChild?.GetType().Name ?? "";
+            string activeGroupName = GetGroupNameForScreen(currentScreenType);
 
-            // 1. أزرار الأقسام والشاشات العلوية المدمجة في الشريط الأسود العلوي
+            // 1. أزرار الأقسام والشاشات العلوية المدمجة في شريط التبويبات الموحد
             var groups = GetNavigationGroups();
             foreach (var group in groups)
             {
                 bool hasAnyAccess = false;
-                bool isGroupActive = false;
                 foreach (var item in group.items)
                 {
                     if (UserCanAccess(item.screen))
                     {
                         hasAnyAccess = true;
-                    }
-                    if (!string.IsNullOrEmpty(currentScreenType))
-                    {
-                        if (item.screen == currentScreenType ||
-                            (currentScreenType.StartsWith("Frm") && currentScreenType.Substring(3) == item.screen) ||
-                            (currentScreenType == "FrmSale" && item.screen == "Sales") ||
-                            (currentScreenType == "FrmPurchase" && item.screen == "Purchases") ||
-                            (currentScreenType == "FrmReturn" && item.screen == "Returns") ||
-                            (currentScreenType == "FrmPriceQuote" && item.screen == "PriceQuote") ||
-                            (currentScreenType == "FrmProducts" && item.screen == "Products") ||
-                            (currentScreenType == "FrmClients" && item.screen == "Clients") ||
-                            (currentScreenType == "FrmSuppliers" && item.screen == "Suppliers") ||
-                            (currentScreenType == "FrmCashBox" && item.screen == "CashBox") ||
-                            (currentScreenType == "FrmEmployees" && item.screen == "Employees") ||
-                            (currentScreenType.EndsWith("Settings") && item.screen == "Settings"))
-                        {
-                            isGroupActive = true;
-                        }
+                        break;
                     }
                 }
                 if (!hasAnyAccess) continue;
@@ -1102,26 +1124,56 @@ namespace ChickenDist.Forms
 
                 bool isHome = (group.label == "الرئيسية" || group.label == "🏠 الرئيسية");
                 bool isHomeActive = isHome && (_currentChild == null || _currentChild is FrmDashboard);
-                bool isActive = isHome ? isHomeActive : isGroupActive;
+                bool isActive = isHome ? isHomeActive : (!string.IsNullOrEmpty(activeGroupName) && group.label == activeGroupName);
+
+                int newOrdersCount = 0;
+                if (group.label == "المبيعات")
+                {
+                    try { newOrdersCount = OnlineOrdersDAL.GetNewOrdersCount(); } catch { }
+                }
+
+                string btnText = isHome ? "🏠 الرئيسية" : $"{group.icon} {group.label} ▾";
+                if (group.label == "المبيعات" && newOrdersCount > 0)
+                {
+                    btnText = $"{group.icon} {group.label} (🔔 {newOrdersCount}) ▾";
+                }
 
                 var btnCat = new Button
                 {
-                    Text = isHome ? "🏠 الرئيسية" : $"{group.icon} {group.label} ▾",
-                    Height = 32,
-                    AutoSize = true,
-                    MinimumSize = new Size(80, 32),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = isActive ? group.color : Color.FromArgb(37, 45, 61),
-                    ForeColor = isActive ? Color.White : Color.FromArgb(226, 232, 240),
-                    Font = new Font("Segoe UI", 9f, isActive ? FontStyle.Bold : FontStyle.Regular),
-                    Cursor = Cursors.Hand,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Margin = new Padding(2, 2, 2, 2),
-                    Padding = new Padding(6, 1, 6, 1)
+                    Name        = group.label,
+                    Text        = btnText,
+                    Height      = 32,
+                    AutoSize    = true,
+                    MinimumSize = new Size(82, 32),
+                    FlatStyle   = FlatStyle.Flat,
+                    BackColor   = group.color,
+                    ForeColor   = Color.White,
+                    Font        = new Font("Segoe UI", 9.25f, FontStyle.Bold),
+                    Cursor      = Cursors.Hand,
+                    TextAlign   = ContentAlignment.MiddleCenter,
+                    Margin      = new Padding(2, 1, 2, 1),
+                    Padding     = new Padding(8, 2, 8, 2),
+                    Tag         = group.color
                 };
-                btnCat.FlatAppearance.BorderSize = isActive ? 1 : 0;
-                btnCat.FlatAppearance.BorderColor = isActive ? Color.FromArgb(250, 204, 21) : Color.FromArgb(55, 65, 81);
-                btnCat.FlatAppearance.MouseOverBackColor = ControlPaint.Light(group.color, 0.2f);
+
+                if (isActive)
+                {
+                    btnCat.FlatAppearance.BorderSize = 2;
+                    btnCat.FlatAppearance.BorderColor = Color.FromArgb(250, 204, 21);
+                    _activeGroupBtn = btnCat;
+                }
+                else if (group.label == "المبيعات" && newOrdersCount > 0)
+                {
+                    btnCat.FlatAppearance.BorderSize = 2;
+                    btnCat.FlatAppearance.BorderColor = Color.FromArgb(239, 68, 68);
+                }
+                else
+                {
+                    btnCat.FlatAppearance.BorderSize = 0;
+                }
+
+                btnCat.FlatAppearance.MouseOverBackColor = ControlPaint.Light(group.color, 0.25f);
+                btnCat.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(group.color, 0.15f);
 
                 if (isHome)
                 {
@@ -1314,9 +1366,9 @@ namespace ChickenDist.Forms
 
             if (form is FrmDashboard)
             {
-                pnlNavBar.Visible = true;
+                pnlNavBar.Visible = false;
                 pnlTopBar.Visible = true;
-                pnlTabBar.Visible = true; // Always visible so _btnOnlineOrders is always accessible
+                pnlTabBar.Visible = true;
                 if (btnCloseCurrent != null) btnCloseCurrent.Visible = false;
             }
             else

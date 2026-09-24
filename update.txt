@@ -1,5 +1,5 @@
-version=3.9.12
+version=3.9.13
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.12&t=1790266162
-sha256=220EB1C22FFD2DEF89A7CB6AC243D1069312B5C52253DEE0BBB825629C559972
-changelog=v3.9.12 - 2026-09-24: Major performance optimizations: instant product search/sale opening via StockCache, fast cold boot startup bypassing WMI, and SQL AUTO_CLOSE disabled
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.13&t=1790269327
+sha256=8EDD14233955157C4ECD071B77248CDEAE1A7B9845593C7C3CAEFE30C4632B7E
+changelog=v3.9.13 - 2026-09-24: Unified top navigation bar with module colors, hidden bottom bar, online orders sound & badge alerts, and smooth mouse wheel dropdown scrolling
