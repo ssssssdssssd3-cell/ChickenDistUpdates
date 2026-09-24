@@ -689,6 +689,87 @@ namespace ChickenDist.Core
         }
 
 
+        // ===== اشتراك شاشة الطلبات الأونلاين =====
+
+        /// <summary>
+        /// تاريخ انتهاء اشتراك شاشة الطلبات الأونلاين (مشفّر في INI)
+        /// </summary>
+        private static string OnlineOrdersExpiryKey => "OOSubscriptionExpiry";
+
+        /// <summary>
+        /// هل اشتراك الطلبات الأونلاين نشط (لم ينتهِ بعد)؟
+        /// </summary>
+        public static bool OnlineOrdersSubscriptionActive
+        {
+            get
+            {
+                string raw = Get(OnlineOrdersExpiryKey, "");
+                if (string.IsNullOrEmpty(raw)) return false;
+                try
+                {
+                    // فك تشفير XOR بسيط
+                    string decoded = XorDecrypt(raw, "PSK");
+                    if (DateTime.TryParse(decoded, out DateTime expiry))
+                        return DateTime.Today <= expiry;
+                }
+                catch { }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// تاريخ انتهاء الاشتراك الحالي (أو DateTime.MinValue لو مش مفعّل)
+        /// </summary>
+        public static DateTime OnlineOrdersExpiryDate
+        {
+            get
+            {
+                string raw = Get(OnlineOrdersExpiryKey, "");
+                if (string.IsNullOrEmpty(raw)) return DateTime.MinValue;
+                try
+                {
+                    string decoded = XorDecrypt(raw, "PSK");
+                    if (DateTime.TryParse(decoded, out DateTime expiry))
+                        return expiry;
+                }
+                catch { }
+                return DateTime.MinValue;
+            }
+        }
+
+        /// <summary>
+        /// تفعيل الاشتراك لشهر واحد إضافي من تاريخ اليوم
+        /// يُستدعى بعد التحقق من الكود الصحيح
+        /// </summary>
+        public static void ActivateOnlineOrdersSubscription()
+        {
+            DateTime newExpiry = DateTime.Today.AddDays(30);
+            string encoded = XorEncrypt(newExpiry.ToString("yyyy-MM-dd"), "PSK");
+            Set(OnlineOrdersExpiryKey, encoded);
+        }
+
+        /// <summary>
+        /// تشفير XOR بسيط لإخفاء التاريخ عن المستخدم العادي في ملف INI
+        /// </summary>
+        private static string XorEncrypt(string text, string key)
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < text.Length; i++)
+                sb.Append((char)(text[i] ^ key[i % key.Length]));
+            // تحويل لـ Base64 لتجنب أحرف خاصة
+            return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sb.ToString()));
+        }
+
+        private static string XorDecrypt(string encrypted, string key)
+        {
+            byte[] bytes = Convert.FromBase64String(encrypted);
+            string text = System.Text.Encoding.UTF8.GetString(bytes);
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < text.Length; i++)
+                sb.Append((char)(text[i] ^ key[i % key.Length]));
+            return sb.ToString();
+        }
+
         // ===== دوال القراءة والكتابة =====
 
         public static string Get(string key, string defaultValue)

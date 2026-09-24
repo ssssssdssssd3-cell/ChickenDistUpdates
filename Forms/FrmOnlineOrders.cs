@@ -67,10 +67,43 @@ namespace ChickenDist.Forms
         public FrmOnlineOrders()
         {
             InitializeComponent();
+
+            // ── التحقق من اشتراك شاشة الطلبات الأونلاين ──
+            if (!AppConfig.OnlineOrdersSubscriptionActive)
+            {
+                // عرض شاشة الإغلاق فورًا بعد الـ Load
+                this.Load += (s, e) => ShowSubscriptionLockDialog();
+                return; // لا نُحمّل البيانات لو الاشتراك منتهٍ
+            }
+
             InitEventSubscriptions();
             LoadOrders();
             RefreshStats();
         }
+
+        /// <summary>
+        /// يعرض نافذة تفعيل الاشتراك الشهري — تُغلق الشاشة لو لم يُدخَل الكود الصحيح
+        /// </summary>
+        private void ShowSubscriptionLockDialog()
+        {
+            using (var dlg = new FrmOnlineOrdersActivation())
+            {
+                var result = dlg.ShowDialog(this);
+                if (result == DialogResult.OK && AppConfig.OnlineOrdersSubscriptionActive)
+                {
+                    // تم التفعيل — نُحمّل البيانات الآن
+                    InitEventSubscriptions();
+                    LoadOrders();
+                    RefreshStats();
+                }
+                else
+                {
+                    // لم يُفعَّل — نُغلق الشاشة
+                    this.Close();
+                }
+            }
+        }
+
 
         private void InitializeComponent()
         {

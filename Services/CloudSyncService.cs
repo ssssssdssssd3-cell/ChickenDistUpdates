@@ -1423,6 +1423,7 @@ self.addEventListener('fetch', (event) => {
 
                     if (uploadSuccess)
                     {
+                        try { await SyncVouchersToFirebaseAsync(projectId); } catch { }
                         return true;
                     }
                     else
@@ -1437,6 +1438,80 @@ self.addEventListener('fetch', (event) => {
                 AppLogger.Error("خطأ في رفع كتالوج وإعدادات المتجر الإلكتروني", ex, "SyncStoreCatalogToFirebaseAsync");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// يرفع بونات الخصم النشطة إلى Firebase (store_vouchers.json) لتتمكن صفحة المتجر من التحقق منها وتطبيق الخصم للعملاء
+        /// </summary>
+        public static async Task<bool> SyncVouchersToFirebaseAsync(string projectId = null)
+        {
+            if (string.IsNullOrEmpty(projectId))
+            {
+                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+            }
+            if (string.IsNullOrEmpty(projectId)) return false;
+
+            try
+            {
+                var dt = DiscountVouchersDAL.GetAll();
+                var vouchersDict = new System.Collections.Generic.Dictionary<string, object>();
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    bool isActive = row["IsActive"] != DBNull.Value && Convert.ToBoolean(row["IsActive"]);
+                    if (!isActive) continue;
+
+                    string code = row["Code"].ToString().Trim().ToUpper();
+                    string discType = row["DiscountType"].ToString();
+                    decimal discVal = Convert.ToDecimal(row["DiscountValue"]);
+                    int? maxUses = row["MaxUses"] != DBNull.Value ? (int?)Convert.ToInt32(row["MaxUses"]) : null;
+                    int usedCount = Convert.ToInt32(row["UsedCount"]);
+                    DateTime? expDate = row["ExpiryDate"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(row["ExpiryDate"]) : null;
+
+                    // استبعاد المنتهي
+                    if (expDate.HasValue && DateTime.Today > expDate.Value.Date) continue;
+                    if (maxUses.HasValue && usedCount >= maxUses.Value) continue;
+
+                    vouchersDict[code] = new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "Code", code },
+                        { "DiscountType", discType },
+                        { "DiscountValue", discVal },
+                        { "MaxUses", maxUses },
+                        { "UsedCount", usedCount },
+                        { "ExpiryDate", expDate.HasValue ? expDate.Value.ToString("yyyy-MM-dd") : null }
+                    };
+                }
+
+                var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+                string json = serializer.Serialize(vouchersDict);
+
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(15);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    try
+                    {
+                        var resp = await client.PutAsync($"https://{projectId}-default-rtdb.firebaseio.com/store_vouchers.json", content);
+                        if (resp != null && resp.IsSuccessStatusCode) return true;
+                    }
+                    catch { }
+
+                    try
+                    {
+                        var contentFallback = new StringContent(json, Encoding.UTF8, "application/json");
+                        var respFallback = await client.PutAsync($"https://{projectId}.firebaseio.com/store_vouchers.json", contentFallback);
+                        if (respFallback != null && respFallback.IsSuccessStatusCode) return true;
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("SyncVouchersToFirebaseAsync error", ex, "CloudSyncService");
+            }
+            return false;
         }
 
         public static async Task<int> PullOnlineOrdersFromFirebaseAsync(string projectId = null)
@@ -1499,6 +1574,24 @@ self.addEventListener('fetch', (event) => {
                     string custAddress = GetDictString(orderObj, "CustomerAddress", "");
                     string notes = GetDictString(orderObj, "Notes", "");
                     string priceTier = GetDictString(orderObj, "PriceTier", "قطاعي");
+
+                    string voucherCode = GetDictString(orderObj, "VoucherCode", "");
+                    decimal voucherDiscount = GetDictDecimal(orderObj, "VoucherDiscount", 0m);
+                    if (!string.IsNullOrEmpty(voucherCode) && voucherDiscount > 0)
+                    {
+                        string voucherTag = $"[🎟️ بون خصم: {voucherCode} (-{voucherDiscount:N2} ج.م)]";
+                        notes = string.IsNullOrEmpty(notes) ? voucherTag : $"{notes} | {voucherTag}";
+
+                        try
+                        {
+                            var vDto = DiscountVouchersDAL.GetByCode(voucherCode);
+                            if (vDto != null)
+                            {
+                                DiscountVouchersDAL.IncrementUsage(vDto.VoucherID);
+                            }
+                        }
+                        catch { }
+                    }
 
                     decimal subTotal = GetDictDecimal(orderObj, "SubTotal", 0m);
                     decimal delivery = GetDictDecimal(orderObj, "DeliveryCharge", 0m);

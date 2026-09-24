@@ -593,10 +593,36 @@
             </span>
             <span id="lblCheckoutDelivery" class="font-bold text-emerald-400">0.00 ج.م</span>
           </div>
+          <div id="lblCheckoutVoucherRow" class="hidden flex justify-between items-center text-amber-400 font-bold">
+            <span class="flex items-center gap-1">
+              <i class="fa-solid fa-ticket text-[10px]"></i>
+              <span id="lblCheckoutVoucherTitle">خصم البون:</span>
+            </span>
+            <span id="lblCheckoutVoucherDiscount">-0.00 ج.م</span>
+          </div>
           <div class="flex justify-between items-center pt-1.5 border-t border-slate-800 font-extrabold text-sm">
             <span class="text-white">المبلغ المطلوب سداده:</span>
             <span id="lblCheckoutTotal" class="text-emerald-400">0.00 ج.م</span>
           </div>
+        </div>
+
+        <!-- حقل كود الخصم (Promo/Voucher) -->
+        <div class="bg-slate-900/70 rounded-xl p-2.5 border border-slate-800 space-y-1.5">
+          <label class="block font-bold text-slate-300 text-[11px] flex items-center justify-between">
+            <span class="flex items-center gap-1">
+              <i class="fa-solid fa-ticket text-amber-400"></i>
+              <span>هل لديك كود خصم أو بون؟</span>
+            </span>
+          </label>
+          <div class="flex gap-1.5">
+            <input type="text" id="voucherCodeInput" placeholder="أدخل الكود هنا"
+                   class="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono text-center uppercase tracking-wider placeholder-slate-500 focus:border-amber-400 focus:outline-none text-xs">
+            <button type="button" onclick="applyOnlineVoucher()" id="btnApplyVoucher"
+                    class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition active:scale-95 cursor-pointer">
+              تطبيق
+            </button>
+          </div>
+          <p id="voucherNotice" class="hidden text-[11px] font-bold"></p>
         </div>
 
         <div>
@@ -1539,11 +1565,107 @@
         document.getElementById('checkoutSummaryBox').classList.remove('hidden');
       }
 
+      // إعادة تعيين كود البون عند فتح النافذة
+      currentVoucher = null;
+      const vInput = document.getElementById('voucherCodeInput');
+      if (vInput) vInput.value = '';
+      const vNotice = document.getElementById('voucherNotice');
+      if (vNotice) { vNotice.textContent = ''; vNotice.className = 'hidden'; }
+      const vRow = document.getElementById('lblCheckoutVoucherRow');
+      if (vRow) vRow.classList.add('hidden');
+
       document.getElementById('checkoutModal').classList.remove('hidden');
     }
 
     function closeCheckoutModal() {
       document.getElementById('checkoutModal').classList.add('hidden');
+    }
+
+    // ── كود البون / الخصومات (Voucher Promo) ──
+    let currentVoucher = null;
+
+    async function applyOnlineVoucher() {
+      const codeInput = document.getElementById('voucherCodeInput');
+      const notice = document.getElementById('voucherNotice');
+      const code = (codeInput.value || '').trim().toUpperCase();
+      if (!code) {
+        notice.textContent = "⚠️ يرجى كتابة كود البون أولاً";
+        notice.className = "text-[11px] font-bold text-amber-400 block";
+        return;
+      }
+
+      notice.textContent = "⏳ جاري التحقق من الكود...";
+      notice.className = "text-[11px] font-bold text-slate-400 block";
+
+      try {
+        const resp = await fetch(`${RTDB_BASE}/store_vouchers/${encodeURIComponent(code)}.json`);
+        if (!resp.ok) throw new Error("تعذر الاتصال بالسيرفر");
+        const voucher = await resp.json();
+
+        if (!voucher) {
+          currentVoucher = null;
+          notice.textContent = "❌ كود الخصم غير صحيح أو غير موجود";
+          notice.className = "text-[11px] font-bold text-rose-400 block";
+          recalcCheckoutTotals();
+          return;
+        }
+
+        // فحص الصلاحية
+        if (voucher.ExpiryDate) {
+          const exp = new Date(voucher.ExpiryDate + "T23:59:59");
+          if (new Date() > exp) {
+            currentVoucher = null;
+            notice.textContent = `⚠️ هذا البون انتهت صلاحيته في ${voucher.ExpiryDate}`;
+            notice.className = "text-[11px] font-bold text-rose-400 block";
+            recalcCheckoutTotals();
+            return;
+          }
+        }
+
+        if (voucher.MaxUses && voucher.UsedCount >= voucher.MaxUses) {
+          currentVoucher = null;
+          notice.textContent = "⚠️ وصل هذا البون للحد الأقصى من مرات الاستخدام";
+          notice.className = "text-[11px] font-bold text-rose-400 block";
+          recalcCheckoutTotals();
+          return;
+        }
+
+        currentVoucher = voucher;
+        const discountText = voucher.DiscountType === 'Percent' ? `${voucher.DiscountValue}%` : `${voucher.DiscountValue} ج.م`;
+        notice.textContent = `✅ تم تطبيق كود الخصم (${discountText}) بنجاح!`;
+        notice.className = "text-[11px] font-bold text-emerald-400 block";
+        recalcCheckoutTotals();
+      } catch (err) {
+        notice.textContent = "⚠️ فشل التحقق من الكود، تأكد من الاتصال بالإنترنت";
+        notice.className = "text-[11px] font-bold text-rose-400 block";
+      }
+    }
+
+    function recalcCheckoutTotals() {
+      const subTotal = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
+      const deliveryFee = calculateDeliveryFee(subTotal);
+      let discount = 0;
+      if (currentVoucher) {
+        if (currentVoucher.DiscountType === 'Percent') {
+          discount = Math.round((subTotal * parseFloat(currentVoucher.DiscountValue) / 100) * 100) / 100;
+        } else {
+          discount = Math.min(parseFloat(currentVoucher.DiscountValue) || 0, subTotal);
+        }
+      }
+
+      const finalTotal = Math.max(0, subTotal - discount) + deliveryFee;
+
+      const vRow = document.getElementById('lblCheckoutVoucherRow');
+      if (discount > 0 && currentVoucher) {
+        vRow.classList.remove('hidden');
+        document.getElementById('lblCheckoutVoucherTitle').textContent = `خصم البون (${currentVoucher.Code}):`;
+        document.getElementById('lblCheckoutVoucherDiscount').textContent = `-${discount.toFixed(2)} ج.م`;
+      } else {
+        vRow.classList.add('hidden');
+      }
+
+      document.getElementById('lblCheckoutSubtotal').textContent = `${subTotal.toFixed(2)} ج.م`;
+      document.getElementById('lblCheckoutTotal').textContent = `${finalTotal.toFixed(2)} ج.م`;
     }
 
     async function submitOrder(e) {
@@ -1603,7 +1725,15 @@
 
       const totalSum = cart.reduce((sum, it) => sum + it.TotalPrice, 0);
       const deliveryCharge = calculateDeliveryFee(totalSum);
-      const finalTotalAmount = totalSum + deliveryCharge;
+      let voucherDiscountAmount = 0;
+      if (currentVoucher) {
+        if (currentVoucher.DiscountType === 'Percent') {
+          voucherDiscountAmount = Math.round((totalSum * parseFloat(currentVoucher.DiscountValue) / 100) * 100) / 100;
+        } else {
+          voucherDiscountAmount = Math.min(parseFloat(currentVoucher.DiscountValue) || 0, totalSum);
+        }
+      }
+      const finalTotalAmount = Math.max(0, totalSum - voucherDiscountAmount) + deliveryCharge;
       const orderNum = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
       const nowIso = new Date().toISOString();
 
@@ -1615,6 +1745,8 @@
         Notes: notes,
         SubTotal: totalSum,
         DeliveryCharge: deliveryCharge,
+        VoucherCode: currentVoucher ? currentVoucher.Code : "",
+        VoucherDiscount: voucherDiscountAmount,
         TotalAmount: finalTotalAmount,
         PriceTier: storeConfig.PriceTier || "Retail",
         OrderDate: nowIso,

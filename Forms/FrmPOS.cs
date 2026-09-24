@@ -77,6 +77,14 @@ namespace ChickenDist.Forms
         private bool _searchSessionActive = false;
         private decimal? _pendingScaleWeight = null;
 
+        // ── بونات الخصم ──────────────────────────────────────
+        private TextBox txtVoucherCode;
+        private Label lblVoucherDiscount;
+        private Button btnApplyVoucher;
+        private decimal _voucherDiscount = 0m;
+        private int _appliedVoucherID = 0;
+
+
         public FrmPOS()
         {
             InitUI();
@@ -986,6 +994,46 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(btnSuspend);
             pnlTotals.Controls.Add(btnRecall);
             pnlTotals.Controls.Add(btnIncompletePOS);
+
+            // ── بون الخصم (Voucher Code) ──
+            txtVoucherCode = new TextBox
+            {
+                Location = new Point(20, 10),
+                Size = new Size(130, 28),
+                Font = new Font("Consolas", 10.5f, FontStyle.Bold),
+                BackColor = Color.FromArgb(30, 41, 59),
+                ForeColor = Color.FromArgb(253, 230, 138),
+                BorderStyle = BorderStyle.FixedSingle,
+                TextAlign = HorizontalAlignment.Center
+            };
+            txtVoucherCode.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyVoucherCode(); };
+
+            btnApplyVoucher = new Button
+            {
+                Text = "✔ تطبيق",
+                Location = new Point(158, 10),
+                Size = new Size(65, 28),
+                BackColor = Color.FromArgb(109, 40, 217),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnApplyVoucher.FlatAppearance.BorderSize = 0;
+            btnApplyVoucher.Click += (s, e) => ApplyVoucherCode();
+
+            lblVoucherDiscount = new Label
+            {
+                Location = new Point(20, 42),
+                Size = new Size(203, 22),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(52, 211, 153),
+                Text = ""
+            };
+
+            pnlTotals.Controls.Add(txtVoucherCode);
+            pnlTotals.Controls.Add(btnApplyVoucher);
+            pnlTotals.Controls.Add(lblVoucherDiscount);
 
             if (AppConfig.IsRestaurant)
             {
@@ -1998,7 +2046,7 @@ namespace ChickenDist.Forms
                 loyaltyDiscount = Math.Min(points * AppConfig.LoyaltyRedemptionRate, total);
             }
 
-            lblTotal.Text = $"الإجمالي: {(total - loyaltyDiscount):N2} ج";
+            lblTotal.Text = $"الإجمالي: {(total - loyaltyDiscount - _voucherDiscount):N2} ج";
             decimal totalPieces = 0;
             foreach (var it in _items) totalPieces += it.Qty;
             lblItemCount.Text = $"عدد الأصناف: {_items.Count}   |   عدد القطع: {totalPieces:G29}";
@@ -2008,8 +2056,27 @@ namespace ChickenDist.Forms
                     ? $"📦 أصناف الفاتورة: {_items.Count} ({totalPieces:G29} ق)"
                     : $"📦 أصناف الفاتورة: {_items.Count}";
             }
-            if (_selectedSaleType == "Cash" && txtPaid != null) txtPaid.Text = (total - loyaltyDiscount).ToString("N2");
-            else if (_selectedSaleType == "Visa" && txtVisaPaid != null) txtVisaPaid.Text = (total - loyaltyDiscount).ToString("N2");
+            decimal netTotal = total - loyaltyDiscount - _voucherDiscount;
+            if (_selectedSaleType == "Cash" && txtPaid != null) txtPaid.Text = netTotal.ToString("N2");
+            else if (_selectedSaleType == "Visa" && txtVisaPaid != null) txtVisaPaid.Text = netTotal.ToString("N2");
+
+            // تحديث label الخصم لو البون طبّق نسبة مئوية (القيمة تتغير بتغير الإجمالي)
+            if (_appliedVoucherID > 0 && _voucherDiscount > 0 && lblVoucherDiscount != null)
+            {
+                var vDto = DiscountVouchersDAL.GetByID(_appliedVoucherID);
+                if (vDto != null)
+                {
+                    decimal recalc = vDto.CalculateDiscount(total - loyaltyDiscount);
+                    if (recalc != _voucherDiscount)
+                    {
+                        _voucherDiscount = recalc;
+                        string discLabel = vDto.DiscountType == "Percent"
+                            ? $"🎟️ خصم {vDto.DiscountValue:G29}%: -{recalc:N2} ج"
+                            : $"🎟️ خصم: -{recalc:N2} ج";
+                        lblVoucherDiscount.Text = discLabel;
+                    }
+                }
+            }
 
             // توسيع خانة اسم الصنف تلقائياً إذا كان اسم أي صنف أكبر من الخانة
             if (dgItems.Columns.Contains("Name"))
@@ -2755,6 +2822,12 @@ namespace ChickenDist.Forms
                     total -= loyaltyDiscount;
                 }
 
+                // خصم بون الخصم
+                if (_appliedVoucherID > 0 && _voucherDiscount > 0)
+                {
+                    total = Math.Max(0m, total - _voucherDiscount);
+                }
+
                 // حساب المدفوع كاش وفيزا حسب نوع الدفع المختار
                 decimal cashPaidVal = 0;
                 decimal visaPaidVal = 0;
@@ -3089,6 +3162,12 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
+                // زيادة عداد استخدام بون الخصم لو طبّق
+                if (_appliedVoucherID > 0 && _voucherDiscount > 0)
+                {
+                    try { DiscountVouchersDAL.IncrementUsage(_appliedVoucherID); } catch { }
+                }
+
                 // فتح درج النقدية تلقائياً عند السداد النقدي أو المختلط
                 if (_selectedSaleType == "Cash" || (_selectedSaleType == "Mixed" && cashPaidVal > 0))
                 {
@@ -3155,6 +3234,54 @@ namespace ChickenDist.Forms
             }
         }
 
+        /// <summary>
+        /// يتحقق من كود بون الخصم ويطبّق الخصم على الفاتورة الحالية
+        /// </summary>
+        private void ApplyVoucherCode()
+        {
+            string code = txtVoucherCode?.Text?.Trim().ToUpper();
+            if (string.IsNullOrEmpty(code)) return;
+
+            var dto = DiscountVouchersDAL.GetByCode(code);
+            if (dto == null)
+            {
+                lblVoucherDiscount.Text = "❌ كود الخصم غير موجود";
+                lblVoucherDiscount.ForeColor = Color.FromArgb(239, 68, 68);
+                _voucherDiscount = 0m;
+                _appliedVoucherID = 0;
+                RefreshGrid();
+                return;
+            }
+
+            string reason;
+            if (!dto.IsValid(out reason))
+            {
+                lblVoucherDiscount.Text = "⚠️ " + reason;
+                lblVoucherDiscount.ForeColor = Color.FromArgb(251, 146, 60);
+                _voucherDiscount = 0m;
+                _appliedVoucherID = 0;
+                RefreshGrid();
+                return;
+            }
+
+            // حساب الإجمالي قبل الخصم
+            decimal total = 0m;
+            foreach (var item in _items) total += item.Total;
+
+            decimal disc = dto.CalculateDiscount(total);
+            _voucherDiscount = disc;
+            _appliedVoucherID = dto.VoucherID;
+
+            string discLabel = dto.DiscountType == "Percent"
+                ? $"🎟️ خصم {dto.DiscountValue:G29}%: -{disc:N2} ج"
+                : $"🎟️ خصم: -{disc:N2} ج";
+
+            lblVoucherDiscount.Text = discLabel;
+            lblVoucherDiscount.ForeColor = Color.FromArgb(52, 211, 153);
+
+            RefreshGrid();
+        }
+
         private void NewInvoice()
         {
             _activeDraftKey = null;
@@ -3165,6 +3292,13 @@ namespace ChickenDist.Forms
             _selectedSaleType = "Cash";
             _selectedVisaAccountID = null;
             _selectedVisaAccountName = "";
+            // إعادة ضبط بون الخصم
+            _voucherDiscount = 0m;
+            _appliedVoucherID = 0;
+            if (txtVoucherCode != null) txtVoucherCode.Clear();
+            if (lblVoucherDiscount != null) lblVoucherDiscount.Text = "";
+
+
             UpdatePaymentTypeButtons();
             if (cboClient != null)
             {

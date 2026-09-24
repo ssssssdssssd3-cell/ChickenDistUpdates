@@ -143,6 +143,13 @@ namespace ChickenDist.Forms
 		private Label lblClientAddress;
 		private TextBox txtClientAddress;
 
+		// ── بونات الخصم ──────────────────────────────────────
+		private TextBox txtVoucherCode;
+		private Label lblVoucherDiscount;
+		private Button btnApplyVoucher;
+		private decimal _voucherDiscount = 0m;
+		private int _appliedVoucherID = 0;
+
 		public FrmSale() : this(0, false)
 		{
 		}
@@ -1414,6 +1421,58 @@ namespace ChickenDist.Forms
 			if (pnlProfitGrp != null) pnlSummaryFlow.Controls.Add(pnlProfitGrp);
 			pnlSummaryFlow.Controls.Add(pnlCountGrp);
 			pnlSummaryFlow.Controls.Add(pnlQtyGrp);
+
+			// ── بون الخصم (Voucher) ──
+			var pnlVoucherGrp = new Panel
+			{
+				Height = 38,
+				Width = 250,
+				BackColor = Color.FromArgb(28, 33, 46),
+				Margin = new Padding(3, 0, 3, 0),
+				Padding = new Padding(4, 4, 4, 4)
+			};
+
+			txtVoucherCode = new TextBox
+			{
+				Text = "",
+				BackColor = Color.FromArgb(15, 20, 30),
+				ForeColor = Color.FromArgb(253, 230, 138),
+				BorderStyle = BorderStyle.FixedSingle,
+				Font = new Font("Consolas", 9f, FontStyle.Bold),
+				TextAlign = HorizontalAlignment.Center,
+				Width = 95,
+				Dock = DockStyle.Right
+			};
+			txtVoucherCode.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyVoucherCodeSale(); };
+
+			btnApplyVoucher = new Button
+			{
+				Text = "✔",
+				BackColor = Color.FromArgb(109, 40, 217),
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Width = 28,
+				Dock = DockStyle.Right,
+				Cursor = Cursors.Hand
+			};
+			btnApplyVoucher.FlatAppearance.BorderSize = 0;
+			btnApplyVoucher.Click += (s, e) => ApplyVoucherCodeSale();
+
+			lblVoucherDiscount = new Label
+			{
+				Text = "🎟️ بون:",
+				ForeColor = Color.FromArgb(148, 163, 184),
+				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+				Dock = DockStyle.Fill,
+				TextAlign = ContentAlignment.MiddleCenter
+			};
+
+			pnlVoucherGrp.Controls.Add(txtVoucherCode);
+			pnlVoucherGrp.Controls.Add(btnApplyVoucher);
+			pnlVoucherGrp.Controls.Add(lblVoucherDiscount);
+			pnlSummaryFlow.Controls.Add(pnlVoucherGrp);
+
 			pnlSummaryFlow.Controls.Add(pnlNetGrp);
 
 			// Footer buttons (RTL flow)
@@ -4393,6 +4452,53 @@ namespace ChickenDist.Forms
 			return null;
 		}
 
+		/// <summary>
+		/// يتحقق من كود بون الخصم ويطبّقه في فاتورة البيع التفصيلية
+		/// </summary>
+		private void ApplyVoucherCodeSale()
+		{
+			string code = txtVoucherCode?.Text?.Trim().ToUpper();
+			if (string.IsNullOrEmpty(code)) return;
+
+			var dto = DiscountVouchersDAL.GetByCode(code);
+			if (dto == null)
+			{
+				lblVoucherDiscount.Text = "❌ كود غير موجود";
+				lblVoucherDiscount.ForeColor = Color.FromArgb(239, 68, 68);
+				_voucherDiscount = 0m;
+				_appliedVoucherID = 0;
+				CalculateNet();
+				return;
+			}
+
+			string reason;
+			if (!dto.IsValid(out reason))
+			{
+				lblVoucherDiscount.Text = "⚠️ " + reason;
+				lblVoucherDiscount.ForeColor = Color.FromArgb(251, 146, 60);
+				_voucherDiscount = 0m;
+				_appliedVoucherID = 0;
+				CalculateNet();
+				return;
+			}
+
+			decimal gross = 0m;
+			foreach (SaleItemDTO item in _items) gross += item.TotalPrice;
+
+			decimal disc = dto.CalculateDiscount(gross);
+			_voucherDiscount = disc;
+			_appliedVoucherID = dto.VoucherID;
+
+			string discLabel = dto.DiscountType == "Percent"
+				? $"🎟️ -{dto.DiscountValue:G29}% ({disc:N2} ج)"
+				: $"🎟️ خصم: -{disc:N2} ج";
+
+			lblVoucherDiscount.Text = discLabel;
+			lblVoucherDiscount.ForeColor = Color.FromArgb(52, 211, 153);
+
+			CalculateNet();
+		}
+
 		private void CalculateNet()
 		{
 			decimal gross = 0m;
@@ -4425,7 +4531,7 @@ namespace ChickenDist.Forms
 			}
 
 			decimal shippingVal = nudShippingCharge != null ? nudShippingCharge.Value : 0m;
-			decimal net = Math.Max(0m, gross - discountAmt) + shippingVal;
+			decimal net = Math.Max(0m, gross - discountAmt - _voucherDiscount) + shippingVal;
 			if (lblNetVal != null)
 			{
 				lblNetVal.Text = net.ToString("N2") + " ج";
@@ -4882,6 +4988,11 @@ namespace ChickenDist.Forms
 					if (gross > 0) discountPct = Math.Round((discountAmount / gross) * 100m, 2);
 				}
 			}
+			if (_appliedVoucherID > 0 && _voucherDiscount > 0)
+			{
+				discountAmount += _voucherDiscount;
+				if (gross > 0) discountPct = Math.Round((discountAmount / gross) * 100m, 2);
+			}
 			decimal net = Math.Max(0m, gross - discountAmount);
 
 			// ─── التحقق من عدم بيع أي صنف بأقل من سعر التكلفة ───
@@ -5033,6 +5144,11 @@ namespace ChickenDist.Forms
 						}
 						catch { }
 
+						if (_appliedVoucherID > 0 && _voucherDiscount > 0)
+						{
+							try { DiscountVouchersDAL.IncrementUsage(_appliedVoucherID); } catch { }
+						}
+
 						ResetForm();
 					}
 					else
@@ -5155,6 +5271,11 @@ namespace ChickenDist.Forms
 							ShortageDAL.ProcessStockChangesAfterSale(soldPids);
 						}
 						catch { }
+
+						if (_appliedVoucherID > 0 && _voucherDiscount > 0)
+						{
+							try { DiscountVouchersDAL.IncrementUsage(_appliedVoucherID); } catch { }
+						}
 					}
 					if (!_isCopyMode)
 					{
@@ -7719,6 +7840,10 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			lblTotalVal.Text = "0.00 ج";
 			if (txtInvoiceDiscount != null) txtInvoiceDiscount.Text = "0";
+			_voucherDiscount = 0m;
+			_appliedVoucherID = 0;
+			if (txtVoucherCode != null) txtVoucherCode.Clear();
+			if (lblVoucherDiscount != null) lblVoucherDiscount.Text = "🎟️ بون:";
 			if (nudShippingCharge != null) nudShippingCharge.Value = 0;
 			if (cboInvoiceDiscountType != null) cboInvoiceDiscountType.SelectedIndex = 0;
 			if (lblNetVal != null) lblNetVal.Text = "0.00 ج";
