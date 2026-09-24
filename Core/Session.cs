@@ -13,11 +13,21 @@ namespace ChickenDist.Core
         public static string EmpName { get; set; }
         public static string UserName { get; set; }
         public static string Role { get; set; }
-        public static bool IsAdmin => !string.IsNullOrWhiteSpace(Role) && 
+        public static bool IsAdmin => 
+            EmpID == 1 ||
+            (!string.IsNullOrWhiteSpace(Role) && 
             (string.Equals(Role.Trim(), "Admin", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(Role.Trim(), "مدير", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "المدير", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "مدير عام", StringComparison.OrdinalIgnoreCase) ||
              string.Equals(Role.Trim(), "مدير النظام", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(Role.Trim(), "administrator", StringComparison.OrdinalIgnoreCase));
+             string.Equals(Role.Trim(), "ادمن", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "إدمن", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "الادارة", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "الإدارة", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "مالك", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "صاحب العمل", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(Role.Trim(), "administrator", StringComparison.OrdinalIgnoreCase)));
         public static bool IsDriver { get; set; }
 
         public static int? DefaultSafeID { get; set; }

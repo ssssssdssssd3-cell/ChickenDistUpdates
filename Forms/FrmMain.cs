@@ -15,7 +15,6 @@ namespace ChickenDist.Forms
         private FlowLayoutPanel pnlNavBar;
         private Panel pnlTabBar;
         private Button _btnOpenPages;
-        private Button _btnOnlineOrders;
         private Button btnCloseCurrent;
         private ToolStripDropDown _pnlDropdown;
         private FlowLayoutPanel pnlHeaderRight;
@@ -262,37 +261,13 @@ namespace ChickenDist.Forms
             _btnOpenPages.Click += BtnOpenPages_Click;
             pnlTabActions.Controls.Add(_btnOpenPages);
 
-            _btnOnlineOrders = new Button
-            {
-                Text = AppConfig.IsRestaurant ? "🌐 طلبات المنيو" : "🌐 طلبات أونلاين",
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(37, 99, 235),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Size = new Size(140, 34),
-                Margin = new Padding(0, 1, 4, 1),
-                Cursor = Cursors.Hand,
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            _btnOnlineOrders.FlatAppearance.BorderSize = 0;
-            _btnOnlineOrders.Click += (s, e) => 
-            {
-                if (!Session.CanAccess("OnlineOrders"))
-                {
-                    MessageBox.Show("عذراً، ليس لديك صلاحية الوصول لشاشة طلبات المتجر والمنيو الإلكتروني.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                NavigateTo(new FrmOnlineOrders());
-            };
-            pnlTabActions.Controls.Add(_btnOnlineOrders);
-
             // Center Horizontal Tabs Container
             flowTabs = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
-                AutoScroll = true,
+                AutoScroll = false,
                 RightToLeft = RightToLeft.Yes,
                 BackColor = Color.Transparent,
                 Padding = new Padding(2, 0, 2, 0),
@@ -333,40 +308,17 @@ namespace ChickenDist.Forms
 
         public void UpdateOnlineOrdersBadge()
         {
-            if (_btnOnlineOrders == null || _btnOnlineOrders.IsDisposed) return;
             try
             {
-                if (_btnOnlineOrders.InvokeRequired)
+                if (this.InvokeRequired)
                 {
-                    _btnOnlineOrders.BeginInvoke(new Action(() => UpdateOnlineOrdersBadge()));
+                    this.BeginInvoke(new Action(() => UpdateOnlineOrdersBadge()));
                     return;
                 }
-
-                if (!Session.CanAccess("OnlineOrders"))
-                {
-                    _btnOnlineOrders.Visible = false;
-                    return;
-                }
-                _btnOnlineOrders.Visible = true;
 
                 int newCount = OnlineOrdersDAL.GetNewOrdersCount();
-                string label = AppConfig.IsRestaurant ? "طلبات المنيو" : "طلبات أونلاين";
-                if (newCount > 0)
-                {
-                    _btnOnlineOrders.Text = $"🌐 {label} [ 🔔 {newCount} ]";
-                    _btnOnlineOrders.BackColor = Color.FromArgb(220, 38, 38);
-                    _btnOnlineOrders.ForeColor = Color.Yellow;
-                    _btnOnlineOrders.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                }
-                else
-                {
-                    _btnOnlineOrders.Text = $"🌐 {label}";
-                    _btnOnlineOrders.BackColor = Color.FromArgb(37, 99, 235);
-                    _btnOnlineOrders.ForeColor = Color.White;
-                    _btnOnlineOrders.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-                }
 
-                // تحديث الشارة والتنبيه أيضاً على زر مديول المبيعات في شريط التبويبات الموحد
+                // تحديث الشارة والتنبيه على زر مديول المبيعات في شريط التبويبات الموحد
                 if (flowTabs != null)
                 {
                     foreach (Control ctrl in flowTabs.Controls)
@@ -700,16 +652,14 @@ namespace ChickenDist.Forms
                 }),
 
                 ("⚙️", "الإدارة", Color.FromArgb(55, 65, 81), new[] {
+                    ("🎛️ لوحة الإعدادات الشاملة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
                     ("🏢 بيانات المؤسسة والفرع", "Settings", (Action)(() => new FrmCompanySettings().ShowDialog())),
                     ("🖨️ إعدادات الطابعات والفواتير", "Settings", (Action)(() => new FrmPrinterSettings().ShowDialog())),
                     ("💾 النسخ الاحتياطي والأرشفة", "Settings", (Action)(() => new FrmBackupSettings().ShowDialog())),
                     ("⚖️ إعدادات الموازين والأجهزة", "Settings", (Action)(() => new FrmScaleSettings().ShowDialog())),
                     ("⚙️ خيارات النظام والتشغيل", "Settings", (Action)(() => new FrmGeneralSettings().ShowDialog())),
-                    ("🎛️ لوحة الإعدادات الشاملة", "Settings", (Action)(() => new FrmSettings().ShowDialog())),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
                     ("📱 تطبيق المالك وخدمات السحاب (Firebase)", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
-                    (AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني", "OnlineOrders", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
-                    (AppConfig.IsRestaurant ? "⚙️ إعدادات المنيو الإلكتروني للزبائن" : "⚙️ إعدادات المتجر الإلكتروني للعملاء", "OnlineStoreSettings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
                     ("📚 إدارة الجداول المرجعية", "LookupManager", (Action)(() => NavigateTo(new FrmLookupManager()))),
                     ("🔄 تحديث البرنامج", "Settings", (Action)(() => UpdateManager.CheckForUpdates(true))),
                 }),
@@ -1118,6 +1068,13 @@ namespace ChickenDist.Forms
                         break;
                     }
                 }
+
+                // مجموعة الإدارة تظهر دائماً للمدير أو عند وجود أي صلاحية
+                if (group.label == "الإدارة" && (Session.IsAdmin || Session.EmpID == 1))
+                {
+                    hasAnyAccess = true;
+                }
+
                 if (!hasAnyAccess) continue;
 
                 var menu = CreateCategoryMenu(group.icon, group.label, group.color, group.items);
@@ -1144,15 +1101,15 @@ namespace ChickenDist.Forms
                     Text        = btnText,
                     Height      = 32,
                     AutoSize    = true,
-                    MinimumSize = new Size(82, 32),
+                    MinimumSize = new Size(74, 32),
                     FlatStyle   = FlatStyle.Flat,
                     BackColor   = group.color,
                     ForeColor   = Color.White,
-                    Font        = new Font("Segoe UI", 9.25f, FontStyle.Bold),
+                    Font        = new Font("Segoe UI", 9f, FontStyle.Bold),
                     Cursor      = Cursors.Hand,
                     TextAlign   = ContentAlignment.MiddleCenter,
-                    Margin      = new Padding(2, 1, 2, 1),
-                    Padding     = new Padding(8, 2, 8, 2),
+                    Margin      = new Padding(1, 1, 1, 1),
+                    Padding     = new Padding(6, 1, 6, 1),
                     Tag         = group.color
                 };
 
