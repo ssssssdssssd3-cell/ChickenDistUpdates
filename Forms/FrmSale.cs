@@ -2329,11 +2329,10 @@ namespace ChickenDist.Forms
 			_productCache.Clear();
 			cboDriver.Tag = null;
 
-			// تحميل كل أرصدة المخزون بالكامل للمخزن المختار
-			_stockCache.Clear();
+			// تحميل أرصدة المخزون بالكامل للمخزن المختار عبر StockCache
 			try
 			{
-				_stockCache = InventoryDAL.GetStockSummary(GetSelectedWarehouseID());
+				_stockCache = StockCache.GetStockSummary(GetSelectedWarehouseID());
 			}
 			catch { }
 			
@@ -2775,7 +2774,7 @@ namespace ChickenDist.Forms
 			try
 			{
 				int? whId = GetSelectedWarehouseID() ?? Session.GetDefaultWarehouseID();
-				var stockMap = InventoryDAL.GetStockSummary(whId);
+				var stockMap = StockCache.GetStockSummary(whId);
 				DataTable dt = ProductDAL.GetQuickItems();
 				foreach (DataRow row in dt.Rows)
 				{
@@ -4662,7 +4661,7 @@ namespace ChickenDist.Forms
 			_items.Clear();
 			try
 			{
-				_stockCache = InventoryDAL.GetStockSummary(GetSelectedWarehouseID());
+				_stockCache = StockCache.GetStockSummary(GetSelectedWarehouseID());
 			}
 			catch { }
 			foreach (DataRow iRow in dtItems.Rows)
@@ -5149,6 +5148,7 @@ namespace ChickenDist.Forms
 							try { DiscountVouchersDAL.IncrementUsage(_appliedVoucherID); } catch { }
 						}
 
+						StockCache.Invalidate(GetSelectedWarehouseID());
 						ResetForm();
 					}
 					else
@@ -5276,6 +5276,8 @@ namespace ChickenDist.Forms
 						{
 							try { DiscountVouchersDAL.IncrementUsage(_appliedVoucherID); } catch { }
 						}
+
+						StockCache.Invalidate(GetSelectedWarehouseID());
 					}
 					if (!_isCopyMode)
 					{

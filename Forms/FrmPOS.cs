@@ -3162,6 +3162,8 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
+                StockCache.Invalidate(GetSelectedWarehouseID());
+
                 // زيادة عداد استخدام بون الخصم لو طبّق
                 if (_appliedVoucherID > 0 && _voucherDiscount > 0)
                 {
@@ -3606,7 +3608,7 @@ namespace ChickenDist.Forms
 
             bool inStockOnly = chkQuickInStockOnly == null || chkQuickInStockOnly.Checked;
             int whId = GetSelectedWarehouseID();
-            var stockMap = InventoryDAL.GetStockSummary(whId);
+            var stockMap = StockCache.GetStockSummary(whId);
 
             string query = @"
                 SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice, p.WholesalePrice, p.SemiWholesalePrice,
@@ -4034,9 +4036,8 @@ namespace ChickenDist.Forms
         {
             try
             {
-                _stockCache.Clear();
                 int wid = GetSelectedWarehouseID();
-                _stockCache = InventoryDAL.GetStockSummary(wid);
+                _stockCache = StockCache.GetStockSummary(wid);
             }
             catch { }
         }

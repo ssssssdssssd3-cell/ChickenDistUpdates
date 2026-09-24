@@ -212,12 +212,10 @@ namespace ChickenDist.Core
 
                 bool isIntegrated = intSec.Equals("True", StringComparison.OrdinalIgnoreCase);
 
-                // 1. الترحيل الفوري لاسم قاعدة البيانات للعملاء القدامى (من ChickenDist إلى ProSoftDB)
-                TryMigrateOldDatabase(server, user, pass, isIntegrated);
-
-                // 2. إذا كانت قاعدة البيانات المكتوبة في Settings.ini هي ChickenDist، نعدلها تلقائياً لـ ProSoftDB
+                // 1. إذا كانت قاعدة البيانات المكتوبة في Settings.ini هي ChickenDist، نرحّلها تلقائياً لـ ProSoftDB
                 if (db.Equals("ChickenDist", StringComparison.OrdinalIgnoreCase))
                 {
+                    TryMigrateOldDatabase(server, user, pass, isIntegrated);
                     db = "ProSoftDB";
                     UpdateIniDatabaseKey(iniPath, "ProSoftDB");
                 }
@@ -1274,37 +1272,42 @@ namespace ChickenDist.Core
         {
             try
             {
-                // Bypass heavy schema inspection if already initialized to the latest version
-                string cachedVer = AppConfig.Get(SchemaVersionKey, "0");
-                if (int.TryParse(cachedVer, out int parsedVer) && parsedVer >= CurrentSchemaVersion)
+                // فحص فوري ومباشر للجداول والأعمدة الأساسية (أقل من 5 ميلي ثانية)
+                var checkResult = Scalar(@"
+                    SELECT CASE WHEN 
+                        COL_LENGTH('Products', 'DefaultSaleUnit') IS NOT NULL AND
+                        COL_LENGTH('Purchases', 'SupplierInvoiceNo') IS NOT NULL AND
+                        COL_LENGTH('Purchases', 'ShippingCost') IS NOT NULL AND
+                        COL_LENGTH('Products', 'Quantity') IS NOT NULL AND
+                        COL_LENGTH('Clients', 'Balance') IS NOT NULL AND
+                        COL_LENGTH('Suppliers', 'Balance') IS NOT NULL AND
+                        COL_LENGTH('Sales', 'IsPosted') IS NOT NULL AND
+                        COL_LENGTH('Sales', 'VisaPaid') IS NOT NULL AND
+                        COL_LENGTH('Sales', 'VisaAccountID') IS NOT NULL AND
+                        OBJECT_ID('BOMHeader', 'U') IS NOT NULL AND
+                        OBJECT_ID('ProductionOrders', 'U') IS NOT NULL AND
+                        COL_LENGTH('Employees', 'CanSellBelowCost') IS NOT NULL AND
+                        COL_LENGTH('Permissions', 'CanSellBelowCost') IS NOT NULL AND
+                        COL_LENGTH('Employees', 'DefaultWarehouseID') IS NOT NULL AND
+                        OBJECT_ID('DiscountVouchers', 'U') IS NOT NULL
+                    THEN 1 ELSE 0 END");
+
+                if (checkResult != null && checkResult != DBNull.Value && Convert.ToInt32(checkResult) == 1)
                 {
-                    // Double check critical columns in a single fast query to handle database restore / rename cases
+                    // تعطيل إغلاق قاعدة البيانات التلقائي (AUTO_CLOSE) وتقليص الحجم (AUTO_SHRINK) لمنع تفريغ الذاكرة بعد فترات الخمول
                     try
                     {
-                        var checkResult = Scalar(@"
-                            SELECT CASE WHEN 
-                                COL_LENGTH('Products', 'DefaultSaleUnit') IS NOT NULL AND
-                                COL_LENGTH('Purchases', 'SupplierInvoiceNo') IS NOT NULL AND
-                                COL_LENGTH('Purchases', 'ShippingCost') IS NOT NULL AND
-                                COL_LENGTH('Products', 'Quantity') IS NOT NULL AND
-                                COL_LENGTH('Clients', 'Balance') IS NOT NULL AND
-                                COL_LENGTH('Suppliers', 'Balance') IS NOT NULL AND
-                                COL_LENGTH('Sales', 'IsPosted') IS NOT NULL AND
-                                COL_LENGTH('Sales', 'VisaPaid') IS NOT NULL AND
-                                COL_LENGTH('Sales', 'VisaAccountID') IS NOT NULL AND
-                                OBJECT_ID('BOMHeader', 'U') IS NOT NULL AND
-                                OBJECT_ID('ProductionOrders', 'U') IS NOT NULL AND
-                                COL_LENGTH('Employees', 'CanSellBelowCost') IS NOT NULL AND
-                                COL_LENGTH('Permissions', 'CanSellBelowCost') IS NOT NULL AND
-                                COL_LENGTH('Employees', 'DefaultWarehouseID') IS NOT NULL
-                            THEN 1 ELSE 0 END");
-
-                        if (checkResult != null && checkResult != DBNull.Value && Convert.ToInt32(checkResult) == 1)
-                        {
-                            return; // Schema is up-to-date, fast-exit immediately (< 2ms)
-                        }
+                        Execute(@"
+                            IF EXISTS (SELECT 1 FROM sys.databases WHERE name = DB_NAME() AND (is_auto_close_on = 1 OR is_auto_shrink_on = 1))
+                            BEGIN
+                                ALTER DATABASE CURRENT SET AUTO_CLOSE OFF;
+                                ALTER DATABASE CURRENT SET AUTO_SHRINK OFF;
+                            END");
                     }
                     catch { }
+
+                    AppConfig.Set(SchemaVersionKey, CurrentSchemaVersion.ToString());
+                    return; // الخروج الفوري بأقل من 5 ميلي ثانية
                 }
             }
             catch { }

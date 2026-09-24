@@ -98,10 +98,11 @@ namespace ChickenDist
                 MessageBox.Show(dateWarning, "⚠️ تنبيه تاريخ الويندوز", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
-            // Pre-warm product, client, and supplier caches asynchronously so opening screens is instant over LAN
+            // Pre-warm product, client, supplier, and stock caches asynchronously so opening screens is instant over LAN
             ChickenDist.Core.ProductCache.PreWarm();
             ChickenDist.Core.ClientCache.PreWarm();
             ChickenDist.Core.SupplierCache.PreWarm();
+            ChickenDist.Core.StockCache.PreWarm();
 
             // التحقق من تفعيل ترخيص البرنامج
             if (!ChickenDist.Core.LicenseManager.CheckLicense())

@@ -338,13 +338,21 @@ namespace ChickenDist.Core
             } catch { return encryptedText; }
         }
 
-        // ─── Hardware Fingerprinting ────────────────────────────────────────────
+        // ─── Hardware Fingerprinting (فائق السرعة لتفادي بطء WMI عند تشغيل الجهاز) ───
 
         private static string GetMachineId()
         {
             if (_cachedMachineId != null) return _cachedMachineId;
             try
             {
+                // 1. استخدام المعرف المحفوظ مسبقاً في Settings.ini إن وُجد فوراً (0 ميلي ثانية)
+                string saved = ReadIniRaw("General", "MachineID");
+                if (!string.IsNullOrWhiteSpace(saved))
+                {
+                    _cachedMachineId = saved.Trim();
+                    return _cachedMachineId;
+                }
+
                 string cpu = GetCpuId();
                 string mac = GetMacAddress();
                 string raw = cpu + "|" + mac;
@@ -367,6 +375,15 @@ namespace ChickenDist.Core
             if (_cachedHddSerial != null) return _cachedHddSerial;
             try
             {
+                // 1. استخدام السيريال المحفوظ مسبقاً في Settings.ini إن وُجد فوراً (0 ميلي ثانية)
+                string saved = ReadIniRaw("General", "HddSerial");
+                if (!string.IsNullOrWhiteSpace(saved) && saved.Trim() != "UNKNOWN")
+                {
+                    _cachedHddSerial = saved.Trim().ToUpper();
+                    return _cachedHddSerial;
+                }
+
+                // 2. البحث عبر WMI فقط عند أول تشغيل لإنشاء الهوية
                 using (var searcher = new ManagementObjectSearcher("SELECT SerialNumber FROM Win32_DiskDrive"))
                 {
                     foreach (ManagementObject obj in searcher.Get())
@@ -390,6 +407,24 @@ namespace ChickenDist.Core
             if (_cachedCpuId != null) return _cachedCpuId;
             try
             {
+                // 1. قراءة معرّف المعالج فورياً من ريجستري الويندوز (أقل من 1 ميلي ثانية بدون انتظار خدمة WMI)
+                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0"))
+                {
+                    if (key != null)
+                    {
+                        var id = key.GetValue("Identifier")?.ToString() ?? key.GetValue("ProcessorNameString")?.ToString();
+                        if (!string.IsNullOrWhiteSpace(id))
+                        {
+                            _cachedCpuId = id.Trim();
+                            return _cachedCpuId;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
                 using (var searcher = new ManagementObjectSearcher("SELECT ProcessorId FROM Win32_Processor"))
                 {
                     foreach (ManagementObject obj in searcher.Get())
@@ -411,6 +446,25 @@ namespace ChickenDist.Core
         private static string GetMacAddress()
         {
             if (_cachedMacAddress != null) return _cachedMacAddress;
+            try
+            {
+                // 1. قراءة الماك أدرس فورياً عبر .NET NetworkInterface (سريع جداً 2 ميلي ثانية بدون انتظار WMI)
+                foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (nic.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback &&
+                        nic.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Tunnel)
+                    {
+                        string mac = nic.GetPhysicalAddress()?.ToString();
+                        if (!string.IsNullOrEmpty(mac) && mac.Length >= 8)
+                        {
+                            _cachedMacAddress = mac;
+                            return _cachedMacAddress;
+                        }
+                    }
+                }
+            }
+            catch { }
+
             try
             {
                 using (var searcher = new ManagementObjectSearcher(

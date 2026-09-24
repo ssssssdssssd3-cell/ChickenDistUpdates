@@ -442,12 +442,10 @@ namespace ChickenDist.Forms
 
         private void LoadStockCache()
         {
-            _stockCache.Clear();
-            _globalStockCache.Clear();
             try
             {
-                _stockCache = InventoryDAL.GetStockSummary(_warehouseID);
-                _globalStockCache = InventoryDAL.GetStockSummary(null);
+                _stockCache = StockCache.GetStockSummary(_warehouseID);
+                _globalStockCache = StockCache.GetStockSummary(null);
             }
             catch { }
         }
