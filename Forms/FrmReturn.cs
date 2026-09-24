@@ -730,7 +730,9 @@ namespace ChickenDist.Forms
             dgItems.ReadOnly = false;
             dgItems.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف المرتجع", ReadOnly = true });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف المرتجع", ReadOnly = true, FillWeight = 55 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoldQty", HeaderText = "الكمية الأصلية", ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQty", HeaderText = "المرتجع السابق", ReadOnly = true, FillWeight = 40 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn 
@@ -815,7 +817,9 @@ namespace ChickenDist.Forms
             dgExchangeNewItems.ReadOnly = false;
             dgExchangeNewItems.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف البديل الجديد", ReadOnly = true });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف البديل الجديد", ReadOnly = true, FillWeight = 55 });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewQty", HeaderText = "الكمية", ReadOnly = false, FillWeight = 50 });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر البيع", ReadOnly = false, FillWeight = 50 });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي الصرف", ReadOnly = true, FillWeight = 60 });
@@ -947,6 +951,10 @@ namespace ChickenDist.Forms
 
             dgItems.Rows.Clear();
             dgExchangeNewItems.Rows.Clear();
+            if (dgItems.Columns.Contains("Color")) dgItems.Columns["Color"].Visible = AppConfig.IsClothing;
+            if (dgItems.Columns.Contains("ProductSize")) dgItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
+            if (dgExchangeNewItems.Columns.Contains("Color")) dgExchangeNewItems.Columns["Color"].Visible = AppConfig.IsClothing;
+            if (dgExchangeNewItems.Columns.Contains("ProductSize")) dgExchangeNewItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
             RecalcTotals();
         }
 
@@ -981,7 +989,7 @@ namespace ChickenDist.Forms
             int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
             decimal actStock = GetProductActualStock(ci.ID, selectedWh);
 
-            var dtProdInfo = DbHelper.Query("SELECT Unit, Unit1Name, Unit1SalePrice, Unit2Name, Unit2Factor, Unit2SalePrice, Unit3Factor, SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", ci.ID));
+            var dtProdInfo = DbHelper.Query("SELECT Unit, Unit1Name, Unit1SalePrice, Unit2Name, Unit2Factor, Unit2SalePrice, Unit3Factor, SalePrice, Color, ProductSize FROM Products WHERE ProductID = @id", DbHelper.P("@id", ci.ID));
             string baseUnit = "";
             string u1Name = null, u2Name = null;
             decimal u2Factor = 1m, u3Factor = 1m;
@@ -1000,6 +1008,19 @@ namespace ChickenDist.Forms
                 row.Cells["Unit2Factor"].Value = u2Factor;
                 row.Cells["Unit2SalePrice"].Value = pr["Unit2SalePrice"]?.ToString();
                 row.Cells["Unit3Factor"].Value = u3Factor;
+
+                string pColor = pr.Table.Columns.Contains("Color") && pr["Color"] != DBNull.Value ? pr["Color"].ToString().Trim() : "";
+                string pSize = pr.Table.Columns.Contains("ProductSize") && pr["ProductSize"] != DBNull.Value ? pr["ProductSize"].ToString().Trim() : "";
+                if (dgItems.Columns.Contains("Color"))
+                {
+                    row.Cells["Color"].Value = pColor;
+                    if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
+                }
+                if (dgItems.Columns.Contains("ProductSize"))
+                {
+                    row.Cells["ProductSize"].Value = pSize;
+                    if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
+                }
             }
 
             var comboCell = (DataGridViewComboBoxCell)row.Cells["UnitName"];
@@ -1052,6 +1073,24 @@ namespace ChickenDist.Forms
             var row = dgExchangeNewItems.Rows[idx];
             row.Cells["ProductID"].Value   = ci.ID;
             row.Cells["ProductName"].Value = ci.Text;
+
+            var dtExProd = DbHelper.Query("SELECT Color, ProductSize FROM Products WHERE ProductID = @id", DbHelper.P("@id", ci.ID));
+            if (dtExProd.Rows.Count > 0)
+            {
+                string exColor = dtExProd.Rows[0]["Color"]?.ToString() ?? "";
+                string exSize = dtExProd.Rows[0]["ProductSize"]?.ToString() ?? "";
+                if (dgExchangeNewItems.Columns.Contains("Color"))
+                {
+                    row.Cells["Color"].Value = exColor;
+                    if (!string.IsNullOrEmpty(exColor)) dgExchangeNewItems.Columns["Color"].Visible = true;
+                }
+                if (dgExchangeNewItems.Columns.Contains("ProductSize"))
+                {
+                    row.Cells["ProductSize"].Value = exSize;
+                    if (!string.IsNullOrEmpty(exSize)) dgExchangeNewItems.Columns["ProductSize"].Visible = true;
+                }
+            }
+
             row.Cells["NewQty"].Value      = qty;
             row.Cells["UnitPrice"].Value   = price.ToString("N2");
             row.Cells["TotalPrice"].Value  = (qty * price).ToString("N2");
@@ -1254,6 +1293,20 @@ namespace ChickenDist.Forms
 
                 dgRow.Cells["ProductID"].Value = row["ProductID"];
                 dgRow.Cells["ProductName"].Value = row["ProductName"];
+
+                string pColor = row.Table.Columns.Contains("Color") && row["Color"] != DBNull.Value ? row["Color"].ToString().Trim() : "";
+                string pSize = row.Table.Columns.Contains("ProductSize") && row["ProductSize"] != DBNull.Value ? row["ProductSize"].ToString().Trim() : "";
+
+                if (dgItems.Columns.Contains("Color"))
+                {
+                    dgRow.Cells["Color"].Value = pColor;
+                    if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
+                }
+                if (dgItems.Columns.Contains("ProductSize"))
+                {
+                    dgRow.Cells["ProductSize"].Value = pSize;
+                    if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
+                }
 
                 decimal soldQty = dtItems.Columns.Contains("SoldQty") ? Convert.ToDecimal(row["SoldQty"]) : (dtItems.Columns.Contains("Quantity") ? Convert.ToDecimal(row["Quantity"]) : 0m);
                 decimal prevRetQty = dtItems.Columns.Contains("PrevReturnedQty") ? Convert.ToDecimal(row["PrevReturnedQty"]) : 0m;
@@ -1524,7 +1577,9 @@ namespace ChickenDist.Forms
                             Quantity = newQty, 
                             UnitPrice = price,
                             UnitName = row.Cells["UnitName"].Value?.ToString(),
-                            Factor = 1m
+                            Factor = 1m,
+                            Color = row.Cells["Color"]?.Value?.ToString() ?? "",
+                            ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? ""
                         });
                         totalReturnAmount += (newQty * price);
                     }
@@ -1602,7 +1657,9 @@ namespace ChickenDist.Forms
                             Quantity = newQty, 
                             UnitPrice = price,
                             UnitName = selectedUnit,
-                            Factor = factor
+                            Factor = factor,
+                            Color = row.Cells["Color"]?.Value?.ToString() ?? "",
+                            ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? ""
                         });
                         totalReturnAmount += (newQty * price);
                     }
@@ -1647,7 +1704,15 @@ namespace ChickenDist.Forms
                     string name = r.Cells["ProductName"].Value.ToString();
                     decimal.TryParse(r.Cells["NewReturnedQty"].Value?.ToString(), out decimal q);
                     decimal.TryParse(r.Cells["UnitPrice"].Value?.ToString(), out decimal p);
-                    if (q > 0) retItems.Add(new SaleItemDTO { ProductID = pid, ProductName = name, Quantity = q, UnitPrice = p });
+                    if (q > 0) retItems.Add(new SaleItemDTO 
+                    { 
+                        ProductID = pid, 
+                        ProductName = name, 
+                        Quantity = q, 
+                        UnitPrice = p,
+                        Color = r.Cells["Color"]?.Value?.ToString() ?? "",
+                        ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
+                    });
                 }
 
                 var newItems = new List<SaleItemDTO>();
@@ -1657,7 +1722,15 @@ namespace ChickenDist.Forms
                     string name = r.Cells["ProductName"].Value.ToString();
                     decimal.TryParse(r.Cells["NewQty"].Value?.ToString(), out decimal q);
                     decimal.TryParse(r.Cells["UnitPrice"].Value?.ToString(), out decimal p);
-                    if (q > 0) newItems.Add(new SaleItemDTO { ProductID = pid, ProductName = name, Quantity = q, UnitPrice = p });
+                    if (q > 0) newItems.Add(new SaleItemDTO 
+                    { 
+                        ProductID = pid, 
+                        ProductName = name, 
+                        Quantity = q, 
+                        UnitPrice = p,
+                        Color = r.Cells["Color"]?.Value?.ToString() ?? "",
+                        ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
+                    });
                 }
 
                 if (retItems.Count == 0 || newItems.Count == 0)
@@ -1731,6 +1804,20 @@ namespace ChickenDist.Forms
 
                         row.Cells["ProductID"].Value       = pid;
                         row.Cells["ProductName"].Value     = pname;
+
+                        if (dgItems.Columns.Contains("Color"))
+                        {
+                            string pColor = pRow.Table.Columns.Contains("Color") && pRow["Color"] != DBNull.Value ? pRow["Color"].ToString().Trim() : "";
+                            row.Cells["Color"].Value = pColor;
+                            if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
+                        }
+                        if (dgItems.Columns.Contains("ProductSize"))
+                        {
+                            string pSize = pRow.Table.Columns.Contains("ProductSize") && pRow["ProductSize"] != DBNull.Value ? pRow["ProductSize"].ToString().Trim() : "";
+                            row.Cells["ProductSize"].Value = pSize;
+                            if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
+                        }
+
                         row.Cells["SoldQty"].Value         = "عام";
                         row.Cells["PrevReturnedQty"].Value = "0";
                         row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
@@ -1822,6 +1909,24 @@ namespace ChickenDist.Forms
 
                     row.Cells["ProductID"].Value       = dlg.SelectedProductID;
                     row.Cells["ProductName"].Value     = pname;
+
+                    var dtSrchProd = DbHelper.Query("SELECT Color, ProductSize FROM Products WHERE ProductID = @id", DbHelper.P("@id", dlg.SelectedProductID));
+                    if (dtSrchProd.Rows.Count > 0)
+                    {
+                        string pColor = dtSrchProd.Rows[0]["Color"]?.ToString().Trim() ?? "";
+                        string pSize = dtSrchProd.Rows[0]["ProductSize"]?.ToString().Trim() ?? "";
+                        if (dgItems.Columns.Contains("Color"))
+                        {
+                            row.Cells["Color"].Value = pColor;
+                            if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
+                        }
+                        if (dgItems.Columns.Contains("ProductSize"))
+                        {
+                            row.Cells["ProductSize"].Value = pSize;
+                            if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
+                        }
+                    }
+
                     row.Cells["SoldQty"].Value         = "عام";
                     row.Cells["PrevReturnedQty"].Value = "0";
                     row.Cells["CurrentStock"].Value    = actStock.ToString("G29");

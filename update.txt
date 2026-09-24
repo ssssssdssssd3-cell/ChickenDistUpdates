@@ -1,5 +1,5 @@
-version=3.9.15
+version=3.9.16
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.15&t=1790277146
-sha256=37BF19F0C0149238212810B94AA43CC72BA8495C01968C1E361445C900CC0054
-changelog=v3.9.15 - 2026-09-24: Added Discount Vouchers and Incomplete Invoices to user permissions, renamed to Incomplete Invoices
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.16&t=1790288029
+sha256=3E8891EEBD26E69B6A154D32055FFF5DEB73D89C5D90759A017AEE0144FA5F6D
+changelog=v3.9.16 - 2026-09-25: Show Color and Size columns in Sales Return and Exchange screen for clothing activity

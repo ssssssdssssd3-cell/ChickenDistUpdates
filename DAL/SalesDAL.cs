@@ -190,7 +190,7 @@ namespace ChickenDist.DAL
                           COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt,
                           COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,
                           COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
-                          p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation,
+                          p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation, p.Color, p.ProductSize,
                           p.Unit AS BaseUnitName, p.Unit1Name, p.Unit1SalePrice, p.Unit2Name, p.Unit2Factor, p.Unit2SalePrice, p.Unit3Factor,
                           COALESCE(NULLIF(si.UnitName, N''), NULLIF(p.Unit, N''), N'قطعة') AS UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI,
                           COALESCE(ret.PrevReturnedQty, 0.0) AS PrevReturnedQty,
