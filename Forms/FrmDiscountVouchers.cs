@@ -68,16 +68,8 @@ namespace ChickenDist.Forms
             };
             pnlHeader.Controls.Add(lblTitle);
 
-            // ── Main Split ──
-            var split = new SplitContainer
-            {
-                Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                SplitterDistance = 580,
-                Panel1MinSize = 400,
-                Panel2MinSize = 280,
-                BorderStyle = BorderStyle.None
-            };
+            // ── Left: Grid Container ──
+            var pnlLeft = new Panel { Dock = DockStyle.Fill };
 
             // ── Left: Grid ──
             dgvVouchers = new DataGridView
@@ -127,10 +119,9 @@ namespace ChickenDist.Forms
             pnlGridButtons.Controls.Add(btnDelete);
             pnlGridButtons.Controls.Add(btnNew);
 
-            var pnlLeft = new Panel { Dock = DockStyle.Fill };
             pnlLeft.Controls.Add(dgvVouchers);
             pnlLeft.Controls.Add(pnlGridButtons);
-            split.Panel1.Controls.Add(pnlLeft);
+            dgvVouchers.BringToFront();
 
             // ── Right: Edit Form ──
             var pnlEdit = new Panel
@@ -248,11 +239,20 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 0, 8, 0)
             };
 
-            split.Panel2.Controls.Add(pnlEdit);
-            split.Panel2.Controls.Add(lblPanelTitle);
+            var pnlRightContainer = new Panel
+            {
+                Dock = DockStyle.Right,
+                Width = 380,
+                BackColor = Color.White
+            };
+            pnlRightContainer.Controls.Add(pnlEdit);
+            pnlRightContainer.Controls.Add(lblPanelTitle);
+            pnlEdit.BringToFront();
 
-            this.Controls.Add(split);
+            this.Controls.Add(pnlLeft);
+            this.Controls.Add(pnlRightContainer);
             this.Controls.Add(pnlHeader);
+            pnlLeft.BringToFront();
         }
 
         private Button CreateButton(string text, Color back)
