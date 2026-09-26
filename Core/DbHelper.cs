@@ -3650,6 +3650,26 @@ namespace ChickenDist.Core
                     ALTER TABLE SaleItems ADD KitchenNotes NVARCHAR(200) NULL;
                 END");
 
+                SafeMigrate("ClientBlends.Table", @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ClientBlends')
+                BEGIN
+                    CREATE TABLE ClientBlends (
+                        BlendID        INT IDENTITY(1,1) PRIMARY KEY,
+                        ClientID       INT NOT NULL,
+                        BlendName      NVARCHAR(150) NOT NULL DEFAULT N'توليفة خاصة',
+                        BaseProductID  INT NULL,
+                        TargetWeightGrams INT NULL,
+                        GrindType      NVARCHAR(100) NULL,
+                        RoastLevel     NVARCHAR(100) NULL,
+                        RecipeDetails  NVARCHAR(MAX) NULL,
+                        IsDefault      BIT NOT NULL DEFAULT 0,
+                        Notes          NVARCHAR(500) NULL,
+                        CreatedAt      DATETIME NOT NULL DEFAULT GETDATE(),
+                        UpdatedAt      DATETIME NOT NULL DEFAULT GETDATE()
+                    );
+                    CREATE INDEX IX_ClientBlends_ClientID ON ClientBlends(ClientID);
+                END");
+
                 SafeMigrate("SaleItems.Notes", @"
                 IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'Notes') IS NULL
                 BEGIN

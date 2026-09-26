@@ -16,11 +16,14 @@ namespace ChickenDist.Forms
         private ComboBox cboReceiptPrinter;
         private ComboBox cboA4Printer;
         private ComboBox cboBarcodePrinter;
+        private ComboBox cboKitchenPrinter;   // طابعة المطبخ والتحضير
         private ComboBox cboInvoiceFormat;
         private ComboBox cboReportFormat;
         private ComboBox cboPrintBehavior;
         private ComboBox cboReceiptPrintMode;
         private ComboBox cboPOSReceiptMode;
+        private CheckBox chkKitchenAutoPrint;         // طباعة بون تلقائية عند البيع
+        private CheckBox chkKitchenPrintBlendRecipe;  // طباعة التوليفة داخل البون
 
         // ── Tab 2 Controls: نماذج الفواتير والريسيت ──────────────────
         private ComboBox cboReceiptTemplate;
@@ -150,7 +153,72 @@ namespace ChickenDist.Forms
             page.Controls.Add(cboBarcodePrinter);
             y += 42;
 
-            // 4. مقاس الفاتورة الافتراضي ومقاس التقارير
+            // 4. طابعة المطبخ والتحضير (مطاعم / كافيهات / محامص بن) — تظهر فقط لنشاط المطاعم
+            if (AppConfig.IsRestaurant)
+            {
+                var sepKitchen = new Panel { Location = new Point(20, y), Size = new Size(660, 2), BackColor = Color.FromArgb(110, 65, 25) };
+                page.Controls.Add(sepKitchen);
+                y += 10;
+
+                AddLabel(page, "🍳 طابعة المطبخ والتحضير (Kitchen / Prep Printer) — مستقلة عن طابعة الكاشير:", 20, y);
+                y += 24;
+                cboKitchenPrinter = new ComboBox
+                {
+                    Location = new Point(20, y),
+                    Width = 660,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = Theme.BgInput,
+                    ForeColor = Theme.TextMain,
+                    Font = new Font("Segoe UI", 10.5f)
+                };
+                cboKitchenPrinter.Items.Add("(نفس طابعة الريسيت — Fallback تلقائي)");
+                try { foreach (string p in PrinterSettings.InstalledPrinters) cboKitchenPrinter.Items.Add(p); } catch { }
+                if (!string.IsNullOrEmpty(AppConfig.KitchenPrinterName))
+                    cboKitchenPrinter.SelectedItem = AppConfig.KitchenPrinterName;
+                if (cboKitchenPrinter.SelectedIndex < 0) cboKitchenPrinter.SelectedIndex = 0;
+                page.Controls.Add(cboKitchenPrinter);
+                y += 38;
+
+                chkKitchenAutoPrint = new CheckBox
+                {
+                    Text = "⚡ طباعة بون التحضير تلقائياً عند إتمام كل عملية بيع في POS",
+                    Location = new Point(20, y),
+                    Size = new Size(660, 24),
+                    Checked = AppConfig.KitchenAutoPrint,
+                    ForeColor = Theme.TextMain,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                };
+                page.Controls.Add(chkKitchenAutoPrint);
+                y += 30;
+
+                chkKitchenPrintBlendRecipe = new CheckBox
+                {
+                    Text = "☕ طباعة توليفة العميل (المقادير والمكونات) داخل بون التحضير",
+                    Location = new Point(20, y),
+                    AutoSize = false,
+                    Size = new Size(660, 24),
+                    Checked = AppConfig.KitchenPrintBlendRecipe,
+                    ForeColor = Theme.TextMain,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                };
+                var lblBlendNote = new Label
+                {
+                    Text = "   ↪ إيقاف هذا الخيار يطبع بون التحضير بالأصناف والكميات فقط دون إظهار التوليفة",
+                    Location = new Point(20, y + 24),
+                    Size = new Size(660, 18),
+                    ForeColor = Color.Gray,
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Italic)
+                };
+                page.Controls.Add(chkKitchenPrintBlendRecipe);
+                page.Controls.Add(lblBlendNote);
+                y += 56;
+
+                var sepKitchenEnd = new Panel { Location = new Point(20, y), Size = new Size(660, 2), BackColor = Color.FromArgb(110, 65, 25) };
+                page.Controls.Add(sepKitchenEnd);
+                y += 10;
+            }
+
+            // 5 (old 4). مقاس الفاتورة الافتراضي ومقاس التقارير
             AddLabel(page, "حجم طباعة الفاتورة الافتراضي:", 20, y);
             AddLabel(page, "حجم طباعة التقارير الافتراضي:", 360, y);
             y += 24;
@@ -832,6 +900,18 @@ namespace ChickenDist.Forms
             AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
             AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
             AppConfig.BarcodePrinterName = cboBarcodePrinter.SelectedIndex <= 0 ? "" : cboBarcodePrinter.SelectedItem.ToString();
+
+            // إعدادات طابعة المطبخ والتحضير
+            if (cboKitchenPrinter != null)
+            {
+                var kitchenSelected = cboKitchenPrinter.SelectedItem?.ToString() ?? "";
+                AppConfig.KitchenPrinterName = (cboKitchenPrinter.SelectedIndex <= 0
+                    || kitchenSelected.StartsWith("(نفس طابعة")) ? "" : kitchenSelected;
+            }
+            if (chkKitchenAutoPrint != null)
+                AppConfig.KitchenAutoPrint = chkKitchenAutoPrint.Checked;
+            if (chkKitchenPrintBlendRecipe != null)
+                AppConfig.KitchenPrintBlendRecipe = chkKitchenPrintBlendRecipe.Checked;
             AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : (cboInvoiceFormat.SelectedIndex == 2 ? "A5" : "A4");
             AppConfig.DefaultReportFormat = cboReportFormat.SelectedIndex == 1 ? "A5" : (cboReportFormat.SelectedIndex == 2 ? "Receipt" : "A4");
             AppConfig.PrintBehaviorOnSave = cboPrintBehavior.SelectedIndex == 1 ? "Direct" : (cboPrintBehavior.SelectedIndex == 2 ? "None" : "Prompt");

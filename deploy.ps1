@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 # ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
 # ⚙️ Settings
-$VERSION   = "3.9.16";
+$VERSION   = "3.9.17";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -173,7 +173,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show Color and Size columns in Sales Return and Exchange screen for clothing activity"
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add Client Coffee Blend feature for restaurants/cafes, Dual Kitchen Printer support, and optional blend printing on kitchen ticket"
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"

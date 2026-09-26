@@ -1,5 +1,5 @@
-version=3.9.16
+version=3.9.17
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.16&t=1790288029
-sha256=3E8891EEBD26E69B6A154D32055FFF5DEB73D89C5D90759A017AEE0144FA5F6D
-changelog=v3.9.16 - 2026-09-25: Show Color and Size columns in Sales Return and Exchange screen for clothing activity
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.17&t=1790412743
+sha256=C0C4C97C689A8A58CF9EEC8E618CB47C794B192B4D15408B1F07EF64C281ED0B
+changelog=v3.9.17 - 2026-09-26: Add Client Coffee Blend feature for restaurants/cafes, Dual Kitchen Printer support, and optional blend printing on kitchen ticket

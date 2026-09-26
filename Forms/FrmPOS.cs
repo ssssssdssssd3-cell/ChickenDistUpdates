@@ -718,11 +718,25 @@ namespace ChickenDist.Forms
             lblClientPoints = new Label { Text = "", Location = new Point(280, 5), Size = new Size(130, 25), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             chkRedeemPoints = new CheckBox { Text = "استرداد نقاط", Location = new Point(280, 28), Size = new Size(120, 22), ForeColor = Theme.TextMain, Font = Theme.FontMain, Checked = false };
             chkRedeemPoints.CheckedChanged += (s, e) => RefreshGrid();
+
             pnlClient.Controls.Add(lClient);
             pnlClient.Controls.Add(cboClient);
             pnlClient.Controls.Add(btnClientSearch);
             pnlClient.Controls.Add(lblClientPoints);
             pnlClient.Controls.Add(chkRedeemPoints);
+
+            // ── زر توليفة العميل (مطاعم / كافيهات / محامص بن) ──
+            if (AppConfig.IsRestaurant)
+            {
+                var btnBlend = Theme.MakeButton("☕ توليفة", Color.FromArgb(110, 65, 25));
+                btnBlend.Location = new Point(278, 28);
+                btnBlend.Size = new Size(90, 26);
+                btnBlend.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+                btnBlend.Name = "btnBlend";
+                btnBlend.Click += (s, e) => OpenClientBlendsDialog();
+                pnlClient.Controls.Add(btnBlend);
+            }
+
             this.Controls.Add(pnlClient);
 
             // ── لوحة نوع الطلب (مطاعم فقط) ───────────────────
@@ -3188,7 +3202,7 @@ namespace ChickenDist.Forms
                 }
                 // لو "Never" — لا يتم طباعة رسيت خالص
 
-                if (AppConfig.IsRestaurant)
+                if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
                 {
                     try { new FrmKitchenPrint(_lastSaleID); } catch { }
                 }
@@ -4011,6 +4025,91 @@ namespace ChickenDist.Forms
             return Session.GetDefaultWarehouseID();
         }
 
+        /// <summary>
+        /// فتح شاشة توليفات العميل وإدراج التوليفة المختارة في ملاحظات التحضير للصنف الحالي
+        /// </summary>
+        private void OpenClientBlendsDialog()
+        {
+            if (!(cboClient.SelectedItem is ComboItem ci) || ci.ID <= 0)
+            {
+                MessageBox.Show("الرجاء اختيار عميل مسجل أولاً لعرض توليفاته.",
+                    "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button1,
+                    MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+                return;
+            }
+
+            using var frm = new FrmClientBlends(ci.ID, ci.Text);
+            if (frm.ShowDialog() != DialogResult.OK || !frm.BlendInserted) return;
+
+            // بناء نص التوليفة الذي سيُدرج في ملاحظات التحضير (KitchenNotes)
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"☕ {frm.SelectedBlendName}");
+            if (!string.IsNullOrWhiteSpace(frm.SelectedRecipeDetails))
+                sb.Append($"\r\n{frm.SelectedRecipeDetails}");
+            if (!string.IsNullOrWhiteSpace(frm.SelectedGrindType))
+                sb.Append($"\r\n⚙️ الطحن: {frm.SelectedGrindType}");
+            if (!string.IsNullOrWhiteSpace(frm.SelectedRoastLevel))
+                sb.Append($"\r\n🔥 التحويج: {frm.SelectedRoastLevel}");
+
+            string blendText = sb.ToString();
+
+            // إذا كان الصنف الأساسي محدداً ومختلفاً عن الصنف الحالي، أضف صنفاً جديداً
+            if (frm.SelectedBaseProductID.HasValue && frm.SelectedBaseProductID.Value > 0)
+            {
+                // أضف الصنف الأساسي مباشرة إلى جدول الفاتورة
+                try
+                {
+                    var pdt = DbHelper.Query(
+                        "SELECT ProductID, ProductCode, ProductName, SalePrice, ISNULL(Quantity,0) AS Quantity, " +
+                        "ISNULL(Unit,N'قطعة') AS Unit FROM Products WHERE ProductID=@pid AND IsActive=1",
+                        DbHelper.P("@pid", frm.SelectedBaseProductID.Value));
+                    if (pdt.Rows.Count > 0)
+                    {
+                        var pr = pdt.Rows[0];
+                        var newItem = new POSItem
+                        {
+                            ProductID = Convert.ToInt32(pr["ProductID"]),
+                            Code = pr["ProductCode"]?.ToString() ?? "",
+                            Name = pr["ProductName"].ToString(),
+                            UnitName = pr["Unit"].ToString(),
+                            Price = Convert.ToDecimal(pr["SalePrice"]),
+                            Qty = 1,
+                            KitchenNotes = blendText
+                        };
+                        newItem.Total = newItem.Qty * newItem.Price;
+                        _items.Add(newItem);
+                        RefreshGrid();
+                        // حدد الصف الجديد
+                        if (dgItems.Rows.Count > 0)
+                            dgItems.CurrentCell = dgItems.Rows[dgItems.Rows.Count - 1].Cells["Qty"];
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error("FrmPOS.OpenClientBlendsDialog.AddBaseProduct", ex);
+                }
+            }
+
+            // إذا لم يُحدد صنف أساسي، ضع التوليفة في ملاحظات الصنف المحدد حالياً
+            if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index >= 0
+                && dgItems.SelectedRows[0].Index < _items.Count)
+            {
+                int rowIdx = dgItems.SelectedRows[0].Index;
+                _items[rowIdx].KitchenNotes = blendText;
+                if (dgItems.Columns.Contains("KitchenNotes"))
+                    dgItems.Rows[rowIdx].Cells["KitchenNotes"].Value = blendText;
+            }
+            else if (_items.Count > 0)
+            {
+                // ضع في آخر صنف مضاف
+                _items[_items.Count - 1].KitchenNotes = blendText;
+                if (dgItems.Columns.Contains("KitchenNotes") && dgItems.Rows.Count > 0)
+                    dgItems.Rows[dgItems.Rows.Count - 1].Cells["KitchenNotes"].Value = blendText;
+            }
+        }
+
         public string GetSelectedPriceTier()
         {
             if (cboPriceTier != null && !string.IsNullOrWhiteSpace(cboPriceTier.Text))
@@ -4577,7 +4676,7 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
-                if (AppConfig.IsRestaurant)
+                if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
                 {
                     try { new FrmKitchenPrint(_lastSaleID); } catch { }
                 }

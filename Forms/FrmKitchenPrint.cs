@@ -35,6 +35,8 @@ namespace ChickenDist.Forms
                        COALESCE(s.OrderType, N'Takeaway') AS OrderType,
                        COALESCE(s.TableNumber, N'') AS TableNumber,
                        COALESCE(c.ClientName, N'---') AS ClientName,
+                       COALESCE(c.Phone, N'') AS ClientPhone,
+                       ISNULL(s.ClientID, 0) AS ClientID,
                        COALESCE(e.EmpName, N'---') AS DriverName
                  FROM Sales s
                  LEFT JOIN Clients c ON s.ClientID = c.ClientID
@@ -57,7 +59,11 @@ namespace ChickenDist.Forms
             {
                 var pd = new PrintDocument();
                 
-                AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+                // استخدم طابعة المطبخ المخصصة، أو الريسيت كـ Fallback
+                string kitchenPrinter = !string.IsNullOrEmpty(AppConfig.KitchenPrinterName)
+                    ? AppConfig.KitchenPrinterName
+                    : AppConfig.ReceiptPrinterName;
+                AppConfig.SetPrinter(pd, kitchenPrinter);
 
                 // محاولة قراءة عرض الورق الفعلي من الطابعة
                 // لو الطابعة 58mm ≈ 228 وحدة، لو 80mm ≈ 315 وحدة
@@ -149,6 +155,21 @@ namespace ChickenDist.Forms
             string tableNum = _saleRow["TableNumber"].ToString();
             string orderTypeAr = orderType == "DineIn" ? "صالة" : orderType == "Delivery" ? "توصيل" : "تيك اواي";
 
+            // ── اسم العميل بشكل بارز ──
+            string clientName = _saleRow["ClientName"]?.ToString() ?? "---";
+            string clientPhone = _saleRow["ClientPhone"]?.ToString() ?? "";
+            bool hasRealClient = clientName != "---" && clientName != "عميل نقدي";
+            if (hasRealClient)
+            {
+                g.FillRectangle(new SolidBrush(Color.FromArgb(30, 60, 30)), margin, y, usableWidth, 22);
+                string clientDisplay = string.IsNullOrEmpty(clientPhone)
+                    ? $"👤 {clientName}"
+                    : $"👤 {clientName}  ({clientPhone})";
+                g.DrawString(clientDisplay, fBodyBold, Brushes.LightGreen,
+                    new RectangleF(margin, y + 2, usableWidth, 20), formatRight);
+                y += 26;
+            }
+
             g.DrawString($"نوع الطلبة: {orderTypeAr}", fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 20), formatRight);
             y += 22;
 
@@ -171,6 +192,33 @@ namespace ChickenDist.Forms
 
             // === جدول الأصناف ===
             // عمود الكمية يكون ضيق (يسار) — عمود الصنف يكون عريض (يمين)
+            // جلب توليفة العميل المفضلة (إذا كان الإعداد ممكّناً وكان هناك عميل حقيقي)
+            string blendRecipe = "";
+            string blendGrind = "";
+            string blendRoast = "";
+            string blendName = "";
+            bool showBlend = AppConfig.KitchenPrintBlendRecipe && hasRealClient;
+            if (showBlend)
+            {
+                try
+                {
+                    int clientID = Convert.ToInt32(_saleRow["ClientID"]);
+                    if (clientID > 0)
+                    {
+                        var (found, bn, recipe, grind, roast, _, _, _) =
+                            FrmClientBlends.GetDefaultBlend(clientID);
+                        if (found)
+                        {
+                            blendName = bn;
+                            blendRecipe = recipe;
+                            blendGrind = grind;
+                            blendRoast = roast;
+                        }
+                    }
+                }
+                catch { }
+            }
+
             float colQtyWidth = isNarrow ? 55f : 75f;
             float gap = 4f;
             float colNameWidth = usableWidth - colQtyWidth - gap;
@@ -206,6 +254,51 @@ namespace ChickenDist.Forms
                 {
                     g.DrawString($"** ملاحظة: {note}", fSmallItalic, Brushes.Red, new RectangleF(margin, y, usableWidth, 16), formatRight);
                     y += 16;
+                }
+
+                // ── طباعة التوليفة بعد الصنف الأول (أو الصنف المحدد) ──
+                // تُطبع التوليفة مرة واحدة بعد أول صنف في القائمة
+                if (_printItemIndex == 0 && showBlend && !string.IsNullOrWhiteSpace(blendRecipe))
+                {
+                    y += 4;
+                    g.DrawLine(new Pen(Color.DarkGray) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash }, margin, y, margin + usableWidth, y);
+                    y += 4;
+
+                    // عنوان التوليفة
+                    string blendHeader = string.IsNullOrEmpty(blendName)
+                        ? "☕ التوليفة الخاصة:"
+                        : $"☕ {blendName}:";
+                    g.DrawString(blendHeader, fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 18), formatRight);
+                    y += 20;
+
+                    // أسطر المقادير
+                    string[] recipeLines = blendRecipe.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string line in recipeLines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+                        string bullet = $"  • {line.Trim()}";
+                        SizeF sz = g.MeasureString(bullet, fSmall, (int)usableWidth);
+                        g.DrawString(bullet, fSmall, Brushes.Black, new RectangleF(margin, y, usableWidth, sz.Height), formatRight);
+                        y += sz.Height + 1;
+                    }
+
+                    // درجة الطحن
+                    if (!string.IsNullOrWhiteSpace(blendGrind))
+                    {
+                        y += 2;
+                        g.DrawString($"⚙️ الطحن: {blendGrind}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 16), formatRight);
+                        y += 18;
+                    }
+
+                    // درجة التحميص
+                    if (!string.IsNullOrWhiteSpace(blendRoast))
+                    {
+                        g.DrawString($"🔥 التحويج: {blendRoast}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 16), formatRight);
+                        y += 18;
+                    }
+
+                    g.DrawLine(new Pen(Color.DarkGray) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash }, margin, y, margin + usableWidth, y);
+                    y += 6;
                 }
 
                 y += 4;

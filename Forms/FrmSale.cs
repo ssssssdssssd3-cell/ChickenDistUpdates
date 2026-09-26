@@ -407,6 +407,27 @@ namespace ChickenDist.Forms
 			pnlClient.Controls.Add(btnClientSearch);
 			pnlClient.Controls.Add(btnClientStatement);
 			pnlClient.Controls.Add(btnClientAdd);
+
+			// ── زر توليفة العميل (مطاعم / كافيهات / محامص بن) ──
+			if (AppConfig.IsRestaurant)
+			{
+				Button btnBlend = new Button
+				{
+					Text = "☕ توليفة",
+					Width = 68,
+					Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+					FlatStyle = FlatStyle.Flat,
+					BackColor = Color.FromArgb(110, 65, 25),
+					ForeColor = Color.White,
+					Cursor = Cursors.Hand,
+					Dock = DockStyle.Left,
+					Margin = new Padding(2)
+				};
+				btnBlend.FlatAppearance.BorderSize = 0;
+				btnBlend.Click += (s, e) => OpenClientBlendsDialog_Sale();
+				pnlClient.Controls.Add(btnBlend);
+			}
+
 			cboClient.SendToBack();
 
 			lblDate = MakeLabel("التاريخ :", 0, 0);
@@ -5240,6 +5261,11 @@ namespace ChickenDist.Forms
 					}
 					if (isDraft)
 					{
+						if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+						{
+							try { new FrmKitchenPrint(num3); } catch { }
+						}
+
 						var askWa = MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\n\nهل تريد إرسال تفاصيل الفاتورة المعلقة للعميل عبر واتساب؟",
 							"إرسال واتساب", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 						if (askWa == DialogResult.Yes)
@@ -5263,6 +5289,11 @@ namespace ChickenDist.Forms
 						_activeDraftKey = null;
 
 						FrmPrintChoiceDialog.PromptAndPrintSale(this, num3, $"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!");
+
+						if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+						{
+							try { new FrmKitchenPrint(num3); } catch { }
+						}
 
 						try
 						{
@@ -8106,7 +8137,90 @@ namespace ChickenDist.Forms
             public ColEntry(string n, string h) { ColName = n; HeaderText = h; }
             public override string ToString() => HeaderText;
         }
+
+		/// <summary>
+		/// فتح شاشة توليفات العميل وإدراج التوليفة في ملاحظات سطر الصنف (FrmSale)
+		/// </summary>
+		private void OpenClientBlendsDialog_Sale()
+		{
+			if (!(cboClient.SelectedItem is ComboItem ci) || ci.ID <= 0)
+			{
+				MessageBox.Show("الرجاء اختيار عميل مسجل أولاً لعرض توليفاته.",
+					"تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning,
+					MessageBoxDefaultButton.Button1,
+					MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
+				return;
+			}
+
+			using var frm = new FrmClientBlends(ci.ID, ci.Text);
+			if (frm.ShowDialog() != DialogResult.OK || !frm.BlendInserted) return;
+
+			// بناء نص التوليفة لحقل ملاحظات التحضير (KitchenNotes)
+			var sb = new System.Text.StringBuilder();
+			sb.Append($"☕ {frm.SelectedBlendName}");
+			if (!string.IsNullOrWhiteSpace(frm.SelectedRecipeDetails))
+				sb.Append($"\r\n{frm.SelectedRecipeDetails}");
+			if (!string.IsNullOrWhiteSpace(frm.SelectedGrindType))
+				sb.Append($"\r\n⚙️ الطحن: {frm.SelectedGrindType}");
+			if (!string.IsNullOrWhiteSpace(frm.SelectedRoastLevel))
+				sb.Append($"\r\n🔥 التحويج: {frm.SelectedRoastLevel}");
+			string blendText = sb.ToString();
+
+			// إذا كان هناك صنف أساسي، ابحث عنه وأضفه أو حدّث سطره
+			if (frm.SelectedBaseProductID.HasValue && frm.SelectedBaseProductID.Value > 0)
+			{
+				try
+				{
+					// البحث عن الصنف في القائمة الحالية
+					bool found = false;
+					for (int i = 0; i < _items.Count; i++)
+					{
+						if (_items[i].ProductID == frm.SelectedBaseProductID.Value)
+						{
+							_items[i].KitchenNotes = blendText;
+							if (dgItems.Rows.Count > i && dgItems.Columns.Contains("KitchenNotes"))
+								dgItems.Rows[i].Cells["KitchenNotes"].Value = blendText;
+							found = true;
+							break;
+						}
+					}
+					if (!found)
+					{
+						// أضف الصنف الجديد تلقائياً
+						var pdt = DbHelper.Query(
+							"SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE ProductID=@pid AND IsActive=1",
+							DbHelper.P("@pid", frm.SelectedBaseProductID.Value));
+						if (pdt.Rows.Count > 0)
+						{
+							var pr = pdt.Rows[0];
+							int rowIdx = dgItems.Rows.Add();
+							var row = dgItems.Rows[rowIdx];
+							row.Cells["CodeEntry"].Value = pr["ProductCode"]?.ToString();
+							row.Cells["ProductName"].Value = pr["ProductName"].ToString();
+							row.Cells["Quantity"].Value = "1";
+							row.Cells["UnitPrice"].Value = pr["SalePrice"];
+							if (dgItems.Columns.Contains("KitchenNotes"))
+								row.Cells["KitchenNotes"].Value = blendText;
+							dgItems.CurrentCell = row.Cells["Quantity"];
+						}
+					}
+					return;
+				}
+				catch (Exception ex)
+				{
+					AppLogger.Error("FrmSale.OpenClientBlendsDialog_Sale.AddBaseProduct", ex);
+				}
+			}
+
+			// إذا لم يُحدد صنف أساسي، ضع التوليفة في الصنف المحدد حالياً
+			if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0
+				&& dgItems.Columns.Contains("KitchenNotes"))
+			{
+				dgItems.CurrentRow.Cells["KitchenNotes"].Value = blendText;
+			}
+		}
 	}
+
 	internal class ComboItem
 	{
 		public int ID { get; }

@@ -148,6 +148,35 @@ namespace ChickenDist.Core
             set => Set("BarcodePrinterName", value);
         }
 
+        /// <summary>
+        /// طابعة المطبخ والتحضير (بون التحضير) — مستقلة عن طابعة الريسيت
+        /// إذا تركت فارغة، سيُستخدم ReceiptPrinterName كـ Fallback تلقائي
+        /// </summary>
+        public static string KitchenPrinterName
+        {
+            get => Get("KitchenPrinterName", "");
+            set => Set("KitchenPrinterName", value);
+        }
+
+        /// <summary>
+        /// طباعة بون التحضير تلقائياً عند إتمام البيع في POS لنشاط المطاعم
+        /// </summary>
+        public static bool KitchenAutoPrint
+        {
+            get => Get("KitchenAutoPrint", "true") == "true";
+            set => Set("KitchenAutoPrint", value ? "true" : "false");
+        }
+
+        /// <summary>
+        /// طباعة تفاصيل توليفة العميل (المقادير والمكونات) داخل بون التحضير
+        /// true = تُطبع التوليفة | false = تُطبع بون بدون التوليفة
+        /// </summary>
+        public static bool KitchenPrintBlendRecipe
+        {
+            get => Get("KitchenPrintBlendRecipe", "true") == "true";
+            set => Set("KitchenPrintBlendRecipe", value ? "true" : "false");
+        }
+
         public static string BarcodeStickerSize
         {
             get => Get("BarcodeStickerSize", "50x30");
