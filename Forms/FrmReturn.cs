@@ -19,6 +19,7 @@ namespace ChickenDist.Forms
         private Button btnSearch, btnSave, btnAddGenItem, btnAddNewGenItem;
         private Label lblTotal, lblExchangeSummary;
         private SplitContainer _mainSplit;
+        private TableLayoutPanel _pnlGridsContainer;
         private FlowLayoutPanel pnlFilter, _pnlGenItemBar, _pnlNewItemBar;
         private Control _pnlFrom, _pnlTo, _pnlSearch, _pnlBarcode, _pnlEmp;
         private DataTable _salesDt;
@@ -378,14 +379,18 @@ namespace ChickenDist.Forms
 
             cboMode = new ComboBox
             {
-                Width = 210, Height = 26,
+                Width = 225, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cboMode.Items.AddRange(new object[] { "🔁 مرتجع مبيعات عادي", "🔄 استبدال فوري (مرتجع + شراء أصناف أخرى)" });
+            cboMode.Items.AddRange(new object[] { 
+                "🔁 مرتجع مبيعات من فاتورة", 
+                "↩ مرتجع مبيعات عام (بدون فاتورة)", 
+                "🔄 استبدال فوري (مرتجع + أصناف بديلة)" 
+            });
             cboMode.SelectedIndex = 0;
             StyleSearchInput(cboMode);
             cboMode.SelectedIndexChanged += (s, e) => ToggleReturnMode();
-            var pnlMode = MakeFilterPanel("العملية:", cboMode, 210);
+            var pnlMode = MakeFilterPanel("العملية:", cboMode, 225);
 
             cboClient = new ComboBox 
             { 
@@ -615,7 +620,11 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 250
+                SplitterDistance = 210,
+                Panel1MinSize = 130,
+                Panel2MinSize = 200,
+                SplitterWidth = 6,
+                FixedPanel = FixedPanel.Panel1
             };
             _mainSplit.Panel1.Padding = new Padding(10, 5, 10, 5);
             _mainSplit.Panel2.Padding = new Padding(10, 5, 10, 5);
@@ -729,47 +738,157 @@ namespace ChickenDist.Forms
             dgItems = MakeGrid();
             dgItems.ReadOnly = false;
             dgItems.SelectionMode = DataGridViewSelectionMode.CellSelect;
+            dgItems.RowTemplate.Height = 28;
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف المرتجع", ReadOnly = true, FillWeight = 55 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoldQty", HeaderText = "الكمية الأصلية", ReadOnly = true, FillWeight = 40 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQty", HeaderText = "المرتجع السابق", ReadOnly = true, FillWeight = 40 });
+
+            // 1. اسم الصنف المرتجع - مساحة موسعة ومريحة لظهور الاسم بالكامل
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ProductName", 
+                HeaderText = "الصنف المرتجع", 
+                ReadOnly = true, 
+                FillWeight = 160f, 
+                MinimumWidth = 200,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.White
+                }
+            });
+
+            // 2. اللون
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "Color", 
+                HeaderText = "اللون", 
+                ReadOnly = true, 
+                FillWeight = 35f, 
+                MinimumWidth = 65, 
+                Visible = AppConfig.IsClothing,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            });
+
+            // 3. المقاس
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ProductSize", 
+                HeaderText = "المقاس", 
+                ReadOnly = true, 
+                FillWeight = 35f, 
+                MinimumWidth = 65, 
+                Visible = AppConfig.IsClothing,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            });
+
+            // 4. الكمية الأصلية
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "SoldQty", 
+                HeaderText = "الكمية الأصلية", 
+                ReadOnly = true, 
+                FillWeight = 42f, 
+                MinimumWidth = 80,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                }
+            });
+
+            // 5. المرتجع السابق
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "PrevReturnedQty", 
+                HeaderText = "المرتجع السابق", 
+                ReadOnly = true, 
+                FillWeight = 45f, 
+                MinimumWidth = 85,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                }
+            });
+
+            // 6. الرصيد الفعلي 📦
             dgItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
                 Name = "CurrentStock", 
                 HeaderText = "الرصيد الفعلي 📦", 
                 ReadOnly = true, 
-                FillWeight = 45, 
-                DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.LightGreen, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter } 
+                FillWeight = 45f, 
+                MinimumWidth = 90, 
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    ForeColor = Color.FromArgb(52, 211, 153), 
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                } 
             });
-            dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40 });
+
+            // 7. الوحدة
+            dgItems.Columns.Add(new DataGridViewComboBoxColumn 
+            { 
+                Name = "UnitName", 
+                HeaderText = "الوحدة", 
+                ReadOnly = false, 
+                FillWeight = 40f, 
+                MinimumWidth = 80,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            });
             
+            // 8. المرتجع الجديد
             var colNew = new DataGridViewTextBoxColumn 
             { 
                 Name = "NewReturnedQty", 
                 HeaderText = "المرتجع الجديد", 
                 ReadOnly = false, 
-                FillWeight = 50,
-                ValueType = typeof(decimal)
+                FillWeight = 50f, 
+                MinimumWidth = 90,
+                ValueType = typeof(decimal),
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    BackColor = Color.FromArgb(45, 45, 60), 
+                    ForeColor = Color.Yellow, 
+                    Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                }
             };
-            colNew.DefaultCellStyle.BackColor = Color.FromArgb(45, 45, 60);
-            colNew.DefaultCellStyle.ForeColor = Color.Yellow;
-            colNew.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             dgItems.Columns.Add(colNew);
             
+            // 9. سعر المرتجع
             var colUnitPrice = new DataGridViewTextBoxColumn
             {
                 Name = "UnitPrice",
                 HeaderText = "سعر المرتجع",
                 ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns"),
-                FillWeight = 50
+                FillWeight = 45f,
+                MinimumWidth = 85,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    BackColor = Color.FromArgb(40, 55, 45), 
+                    ForeColor = Color.FromArgb(120, 240, 160), 
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                }
             };
-            colUnitPrice.DefaultCellStyle.BackColor = Color.FromArgb(40, 55, 45);
-            colUnitPrice.DefaultCellStyle.ForeColor = Color.FromArgb(120, 240, 160);
-            colUnitPrice.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             dgItems.Columns.Add(colUnitPrice);
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي المرتجع", ReadOnly = true, FillWeight = 50 });
+
+            // 10. إجمالي المرتجع
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "TotalPrice", 
+                HeaderText = "إجمالي المرتجع", 
+                ReadOnly = true, 
+                FillWeight = 50f, 
+                MinimumWidth = 95,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(254, 240, 138)
+                } 
+            });
 
             // Hidden helper columns
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "OriginalFactor", Visible = false });
@@ -812,34 +931,153 @@ namespace ChickenDist.Forms
             };
             dgItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(140, 40, 40);
 
+            dgItems.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Delete)
+                {
+                    if (cboMode != null && cboMode.SelectedIndex != 0)
+                    {
+                        if (dgItems.CurrentRow != null && !dgItems.CurrentRow.IsNewRow)
+                        {
+                            dgItems.Rows.Remove(dgItems.CurrentRow);
+                            RecalcTotals();
+                        }
+                    }
+                    else
+                    {
+                        if (dgItems.CurrentRow != null)
+                        {
+                            dgItems.CurrentRow.Cells["NewReturnedQty"].Value = 0m;
+                            dgItems.CurrentRow.Cells["TotalPrice"].Value = "0.00";
+                            RecalcTotals();
+                        }
+                    }
+                }
+            };
+
+            var ctxItems = new ContextMenuStrip();
+            var miResetOrDel = new ToolStripMenuItem("❌ إلغاء تحديد / تصفير المرتجع لهذا الصنف");
+            miResetOrDel.Click += (s, e) =>
+            {
+                if (cboMode != null && cboMode.SelectedIndex != 0)
+                {
+                    if (dgItems.CurrentRow != null && !dgItems.CurrentRow.IsNewRow)
+                    {
+                        dgItems.Rows.Remove(dgItems.CurrentRow);
+                        RecalcTotals();
+                    }
+                }
+                else
+                {
+                    if (dgItems.CurrentRow != null)
+                    {
+                        dgItems.CurrentRow.Cells["NewReturnedQty"].Value = 0m;
+                        dgItems.CurrentRow.Cells["TotalPrice"].Value = "0.00";
+                        RecalcTotals();
+                    }
+                }
+            };
+            ctxItems.Items.Add(miResetOrDel);
+            dgItems.ContextMenuStrip = ctxItems;
+
             // جدول أصناف البديل الجديد في الاستبدال
             dgExchangeNewItems = MakeGrid();
             dgExchangeNewItems.ReadOnly = false;
             dgExchangeNewItems.SelectionMode = DataGridViewSelectionMode.CellSelect;
+            dgExchangeNewItems.RowTemplate.Height = 28;
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
-            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف البديل الجديد", ReadOnly = true, FillWeight = 55 });
-            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Color", HeaderText = "اللون", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
-            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductSize", HeaderText = "المقاس", ReadOnly = true, FillWeight = 30, Visible = AppConfig.IsClothing });
-            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewQty", HeaderText = "الكمية", ReadOnly = false, FillWeight = 50 });
-            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر البيع", ReadOnly = false, FillWeight = 50 });
-            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي الصرف", ReadOnly = true, FillWeight = 60 });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ProductName", 
+                HeaderText = "الصنف البديل الجديد", 
+                ReadOnly = true, 
+                FillWeight = 140f,
+                MinimumWidth = 150,
+                DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.White }
+            });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "Color", 
+                HeaderText = "اللون", 
+                ReadOnly = true, 
+                FillWeight = 35f, 
+                MinimumWidth = 60, 
+                Visible = AppConfig.IsClothing, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } 
+            });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ProductSize", 
+                HeaderText = "المقاس", 
+                ReadOnly = true, 
+                FillWeight = 35f, 
+                MinimumWidth = 60, 
+                Visible = AppConfig.IsClothing, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } 
+            });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "NewQty", 
+                HeaderText = "الكمية", 
+                ReadOnly = false, 
+                FillWeight = 45f, 
+                MinimumWidth = 70, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.Yellow, BackColor = Color.FromArgb(45, 45, 60) } 
+            });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "UnitPrice", 
+                HeaderText = "سعر البيع", 
+                ReadOnly = false, 
+                FillWeight = 45f, 
+                MinimumWidth = 70, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(120, 240, 160), BackColor = Color.FromArgb(40, 55, 45) } 
+            });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "TotalPrice", 
+                HeaderText = "إجمالي الصرف", 
+                ReadOnly = true, 
+                FillWeight = 50f, 
+                MinimumWidth = 80, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(254, 240, 138) } 
+            });
             dgExchangeNewItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(40, 110, 60);
             dgExchangeNewItems.CellValueChanged += (s, e) => RecalcTotals();
             dgExchangeNewItems.Visible = false;
 
-            var pnlGridsContainer = new TableLayoutPanel
+            dgExchangeNewItems.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Delete && dgExchangeNewItems.CurrentRow != null && !dgExchangeNewItems.CurrentRow.IsNewRow)
+                {
+                    dgExchangeNewItems.Rows.Remove(dgExchangeNewItems.CurrentRow);
+                    RecalcTotals();
+                }
+            };
+            var ctxExchange = new ContextMenuStrip();
+            var miDelEx = new ToolStripMenuItem("❌ حذف هذا الصنف البديل");
+            miDelEx.Click += (s, e) =>
+            {
+                if (dgExchangeNewItems.CurrentRow != null && !dgExchangeNewItems.CurrentRow.IsNewRow)
+                {
+                    dgExchangeNewItems.Rows.Remove(dgExchangeNewItems.CurrentRow);
+                    RecalcTotals();
+                }
+            };
+            ctxExchange.Items.Add(miDelEx);
+            dgExchangeNewItems.ContextMenuStrip = ctxExchange;
+
+            _pnlGridsContainer = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
+                ColumnCount = 1,
                 RowCount = 1
             };
-            pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
-            pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
-            pnlGridsContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            pnlGridsContainer.Controls.Add(dgItems, 0, 0);
-            pnlGridsContainer.Controls.Add(dgExchangeNewItems, 1, 0);
+            _pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            _pnlGridsContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            _pnlGridsContainer.Controls.Add(dgItems, 0, 0);
 
-            _mainSplit.Panel2.Controls.Add(pnlGridsContainer);
+            _mainSplit.Panel2.Controls.Add(_pnlGridsContainer);
 
             // ===== 3. Footer panel =====
             var pnlFoot = new FlowLayoutPanel 
@@ -938,7 +1176,7 @@ namespace ChickenDist.Forms
             _mainSplit.Panel1Collapsed = !isInvoice;
             _pnlGenItemBar.Visible = !isInvoice;
             _pnlNewItemBar.Visible = isExchange;
-            dgExchangeNewItems.Visible = isExchange;
+            UpdateGridsLayout(isExchange);
 
             if (_pnlFrom != null) _pnlFrom.Visible = isInvoice;
             if (_pnlTo != null) _pnlTo.Visible = isInvoice;
@@ -956,6 +1194,32 @@ namespace ChickenDist.Forms
             if (dgExchangeNewItems.Columns.Contains("Color")) dgExchangeNewItems.Columns["Color"].Visible = AppConfig.IsClothing;
             if (dgExchangeNewItems.Columns.Contains("ProductSize")) dgExchangeNewItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
             RecalcTotals();
+        }
+
+        private void UpdateGridsLayout(bool isExchange)
+        {
+            if (_pnlGridsContainer == null) return;
+            _pnlGridsContainer.SuspendLayout();
+            if (isExchange)
+            {
+                _pnlGridsContainer.ColumnCount = 2;
+                _pnlGridsContainer.ColumnStyles.Clear();
+                _pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+                _pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+                if (!_pnlGridsContainer.Controls.Contains(dgExchangeNewItems))
+                    _pnlGridsContainer.Controls.Add(dgExchangeNewItems, 1, 0);
+                dgExchangeNewItems.Visible = true;
+            }
+            else
+            {
+                dgExchangeNewItems.Visible = false;
+                if (_pnlGridsContainer.Controls.Contains(dgExchangeNewItems))
+                    _pnlGridsContainer.Controls.Remove(dgExchangeNewItems);
+                _pnlGridsContainer.ColumnCount = 1;
+                _pnlGridsContainer.ColumnStyles.Clear();
+                _pnlGridsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            }
+            _pnlGridsContainer.ResumeLayout();
         }
 
         private void BtnAddGenItem_Click(object sender, EventArgs e)
@@ -1150,6 +1414,8 @@ namespace ChickenDist.Forms
                 GridColor = Theme.BorderColor,
                 ColumnHeadersHeight = 36,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                RowTemplate = { Height = 28 },
+                AllowUserToResizeRows = false,
                 EnableHeadersVisualStyles = false
             };
             return dg;
@@ -1246,6 +1512,8 @@ namespace ChickenDist.Forms
         private void DgSales_SelectionChanged(object sender, EventArgs e)
         {
             dgItems.Rows.Clear();
+            if (dgItems.Columns.Contains("Color")) dgItems.Columns["Color"].Visible = AppConfig.IsClothing;
+            if (dgItems.Columns.Contains("ProductSize")) dgItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
             lblTotal.Text = "الإجمالي: 0.00 ج";
             _selectedSaleTotalAmount = 0m;
             _selectedSaleShippingCharge = 0m;

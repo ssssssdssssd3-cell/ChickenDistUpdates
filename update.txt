@@ -1,5 +1,5 @@
-version=3.9.18
+version=3.9.19
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.18&t=1790500801
-sha256=77CDC1611EDE14989B86BAB94BB0B7B2DBB9F1EC3D6F7015FAC84FB0C2CF49B9
-changelog=v3.9.18 - 2026-09-27: Comprehensive Stability & Security: Unified Single Source, Secured Firebase/DB secrets, Unified CTE Inventory Calculation, Zero compiler warnings, Financial Integrity test suite
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.19&t=1790502792
+sha256=9F2E787370B0FEBED1C1A4170BD038ED35033A48B9BA6F4BAABDA7B9F28FA773
+changelog=v3.9.19 - 2026-09-27: Expanded Return Details View: Full-width responsive table, enlarged product name column, optimized vertical SplitContainer, complete 3-mode return/exchange support

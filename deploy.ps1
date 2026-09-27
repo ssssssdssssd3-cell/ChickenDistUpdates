@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 # ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
-$VERSION   = "3.9.18";
+$VERSION   = "3.9.19";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -172,7 +172,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Comprehensive Stability & Security: Unified Single Source, Secured Firebase/DB secrets, Unified CTE Inventory Calculation, Zero compiler warnings, Financial Integrity test suite"
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Expanded Return Details View: Full-width responsive table, enlarged product name column, optimized vertical SplitContainer, complete 3-mode return/exchange support"
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"
