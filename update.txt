@@ -1,5 +1,5 @@
-version=3.9.20
+version=3.9.21
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.20&t=1790520948
-sha256=49F9FB29CECA8CCB6854FE9018838033231AA0C5563853BD99B8AAC23DFBCD7F
-changelog=v3.9.20 - 2026-09-27: Store Product Images (up to 3 images per item), automatic ultra-lightweight JPEG compression (25-35 KB), mobile data safeguard, on-demand swipe gallery modal
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.21&t=1790545185
+sha256=AB95880AE71CCB48D1A1179EBC218CE0667C5261F22207004282266F85BED173
+changelog=v3.9.21 - 2026-09-28: Store Product Images (up to 3 images per item), automatic ultra-lightweight JPEG compression (25-35 KB), mobile data safeguard, on-demand swipe gallery modal

@@ -58,6 +58,20 @@ namespace ChickenDist.Forms
             DbHelper.EnsureShiftSchema();
             InitUI();
             LoadCombos();
+            this.Load += (s, e) =>
+            {
+                try
+                {
+                    if (_mainSplit != null && _mainSplit.Height > 300)
+                    {
+                        _mainSplit.Panel1MinSize = 100;
+                        _mainSplit.Panel2MinSize = 150;
+                        int safeDist = Math.Min(210, Math.Max(100, _mainSplit.Height - 160));
+                        _mainSplit.SplitterDistance = safeDist;
+                    }
+                }
+                catch { }
+            };
             this.Shown += (s, e) => { if (!_isLoadingSales) LoadSales(); };
         }
 
@@ -620,9 +634,6 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 210,
-                Panel1MinSize = 130,
-                Panel2MinSize = 200,
                 SplitterWidth = 6,
                 FixedPanel = FixedPanel.Panel1
             };

@@ -571,6 +571,58 @@ namespace ChickenDist.Core
             catch { }
         }
 
+        public static void EnsureProductImagesColumnsExist()
+        {
+            try
+            {
+                Execute(@"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products','ImageUrl1') IS NULL ALTER TABLE Products ADD ImageUrl1 NVARCHAR(500) NULL;
+                    IF COL_LENGTH('Products','ImageUrl2') IS NULL ALTER TABLE Products ADD ImageUrl2 NVARCHAR(500) NULL;
+                    IF COL_LENGTH('Products','ImageUrl3') IS NULL ALTER TABLE Products ADD ImageUrl3 NVARCHAR(500) NULL;
+                END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureProductImagesColumnsExist", ex);
+            }
+        }
+
+        public static void EnsureRestaurantBlendsSchema()
+        {
+            try
+            {
+                Execute(@"
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL AND COL_LENGTH('SaleItems', 'KitchenNotes') IS NULL
+                BEGIN
+                    ALTER TABLE SaleItems ADD KitchenNotes NVARCHAR(500) NULL;
+                END
+                IF OBJECT_ID('ClientBlends', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE ClientBlends (
+                        BlendID        INT IDENTITY(1,1) PRIMARY KEY,
+                        ClientID       INT NOT NULL,
+                        BlendName      NVARCHAR(150) NOT NULL DEFAULT N'توليفة خاصة',
+                        BaseProductID  INT NULL,
+                        TargetWeightGrams INT NULL,
+                        GrindType      NVARCHAR(100) NULL,
+                        RoastLevel     NVARCHAR(100) NULL,
+                        RecipeDetails  NVARCHAR(MAX) NULL,
+                        IsDefault      BIT NOT NULL DEFAULT 0,
+                        Notes          NVARCHAR(500) NULL,
+                        CreatedAt      DATETIME NOT NULL DEFAULT GETDATE(),
+                        UpdatedAt      DATETIME NOT NULL DEFAULT GETDATE()
+                    );
+                    CREATE INDEX IX_ClientBlends_ClientID ON ClientBlends(ClientID);
+                END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureRestaurantBlendsSchema", ex);
+            }
+        }
+
         public static void EnsurePurchaseColumnsExist()
         {
             EnsurePendingSaleColExists();
@@ -1270,12 +1322,20 @@ namespace ChickenDist.Core
 
         public static void EnsureDatabaseSchema()
         {
+            EnsureProductImagesColumnsExist();
+            EnsureRestaurantBlendsSchema();
+
             try
             {
                 // فحص فوري ومباشر للجداول والأعمدة الأساسية (أقل من 5 ميلي ثانية)
                 var checkResult = Scalar(@"
                     SELECT CASE WHEN 
                         COL_LENGTH('Products', 'DefaultSaleUnit') IS NOT NULL AND
+                        COL_LENGTH('Products', 'ImageUrl1') IS NOT NULL AND
+                        COL_LENGTH('Products', 'ImageUrl2') IS NOT NULL AND
+                        COL_LENGTH('Products', 'ImageUrl3') IS NOT NULL AND
+                        COL_LENGTH('SaleItems', 'KitchenNotes') IS NOT NULL AND
+                        OBJECT_ID('ClientBlends', 'U') IS NOT NULL AND
                         COL_LENGTH('Purchases', 'SupplierInvoiceNo') IS NOT NULL AND
                         COL_LENGTH('Purchases', 'ShippingCost') IS NOT NULL AND
                         COL_LENGTH('Products', 'Quantity') IS NOT NULL AND

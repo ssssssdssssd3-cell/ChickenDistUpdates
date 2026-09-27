@@ -393,10 +393,10 @@ namespace ChickenDist.Forms
                 var colKn = new DataGridViewTextBoxColumn
                 {
                     Name = "KitchenNotes",
-                    HeaderText = "📝 ملاحظات المطبخ",
-                    Visible = false,
+                    HeaderText = "📝 ملاحظات التحضير",
+                    Visible = true,
                     ReadOnly = false,
-                    Width = 130
+                    Width = 140
                 };
                 dgItems.Columns.Add(colKn);
             }
@@ -4031,6 +4031,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
+            DbHelper.EnsureRestaurantBlendsSchema();
             using var frm = new FrmClientBlends(ci.ID, ci.Text);
             if (frm.ShowDialog() != DialogResult.OK || !frm.BlendInserted) return;
 
@@ -4046,10 +4047,9 @@ namespace ChickenDist.Forms
 
             string blendText = sb.ToString();
 
-            // إذا كان الصنف الأساسي محدداً ومختلفاً عن الصنف الحالي، أضف صنفاً جديداً
+            // 1. إذا كان الصنف الأساسي محدداً، أضف صنفاً جديداً مباشرة
             if (frm.SelectedBaseProductID.HasValue && frm.SelectedBaseProductID.Value > 0)
             {
-                // أضف الصنف الأساسي مباشرة إلى جدول الفاتورة
                 try
                 {
                     var pdt = DbHelper.Query(
@@ -4071,10 +4071,12 @@ namespace ChickenDist.Forms
                         };
                         newItem.Total = newItem.Qty * newItem.Price;
                         _items.Add(newItem);
+                        if (dgItems.Columns.Contains("KitchenNotes"))
+                            dgItems.Columns["KitchenNotes"].Visible = true;
                         RefreshGrid();
-                        // حدد الصف الجديد
                         if (dgItems.Rows.Count > 0)
                             dgItems.CurrentCell = dgItems.Rows[dgItems.Rows.Count - 1].Cells["Qty"];
+                        MessageBox.Show($"✅ تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
                 }
@@ -4084,21 +4086,69 @@ namespace ChickenDist.Forms
                 }
             }
 
-            // إذا لم يُحدد صنف أساسي، ضع التوليفة في ملاحظات الصنف المحدد حالياً
+            // 2. إذا لم يُحدد صنف أساسي، ضع التوليفة في ملاحظات الصنف المحدد حالياً
             if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index >= 0
                 && dgItems.SelectedRows[0].Index < _items.Count)
             {
                 int rowIdx = dgItems.SelectedRows[0].Index;
                 _items[rowIdx].KitchenNotes = blendText;
                 if (dgItems.Columns.Contains("KitchenNotes"))
+                {
+                    dgItems.Columns["KitchenNotes"].Visible = true;
                     dgItems.Rows[rowIdx].Cells["KitchenNotes"].Value = blendText;
+                }
+                RefreshGrid();
+                MessageBox.Show($"✅ تم ربط التوليفة [{frm.SelectedBlendName}] بالصنف المختار بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else if (_items.Count > 0)
             {
                 // ضع في آخر صنف مضاف
-                _items[_items.Count - 1].KitchenNotes = blendText;
+                int rowIdx = _items.Count - 1;
+                _items[rowIdx].KitchenNotes = blendText;
                 if (dgItems.Columns.Contains("KitchenNotes") && dgItems.Rows.Count > 0)
+                {
+                    dgItems.Columns["KitchenNotes"].Visible = true;
                     dgItems.Rows[dgItems.Rows.Count - 1].Cells["KitchenNotes"].Value = blendText;
+                }
+                RefreshGrid();
+                MessageBox.Show($"✅ تم ربط التوليفة [{frm.SelectedBlendName}] بآخر صنف بالفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                // الفاتورة فارغة والتوليفة غير مرتبطة بصنف أساسي → سؤال الكاشير لاختيار الصنف
+                var ans = MessageBox.Show(
+                    $"التوليفة [{frm.SelectedBlendName}] غير مربوطة بصنف مبيعات أساسي.\nهل ترغب في اختيار صنف من قائمة الأصناف الآن لبيعه مع هذه التوليفة؟",
+                    "اختيار صنف التوليفة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (ans == DialogResult.Yes)
+                {
+                    using var search = new FrmProductSearch(warehouseID: GetSelectedWarehouseID(), isPurchaseMode: false, defaultShowZeroStock: false);
+                    if (search.ShowDialog() == DialogResult.OK && search.SelectedProductID > 0)
+                    {
+                        var pdt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice, ISNULL(Quantity,0) AS Quantity, ISNULL(Unit,N'قطعة') AS Unit FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", search.SelectedProductID));
+                        if (pdt.Rows.Count > 0)
+                        {
+                            var pr = pdt.Rows[0];
+                            var newItem = new POSItem
+                            {
+                                ProductID = Convert.ToInt32(pr["ProductID"]),
+                                Code = pr["ProductCode"]?.ToString() ?? "",
+                                Name = pr["ProductName"].ToString(),
+                                UnitName = pr["Unit"].ToString(),
+                                Price = Convert.ToDecimal(pr["SalePrice"]),
+                                Qty = 1,
+                                KitchenNotes = blendText
+                            };
+                            newItem.Total = newItem.Qty * newItem.Price;
+                            _items.Add(newItem);
+                            if (dgItems.Columns.Contains("KitchenNotes"))
+                                dgItems.Columns["KitchenNotes"].Visible = true;
+                            RefreshGrid();
+                            DbHelper.Execute("UPDATE ClientBlends SET BaseProductID=@pid WHERE ClientID=@cid AND BlendName=@bn AND (BaseProductID IS NULL OR BaseProductID=0)",
+                                DbHelper.P("@pid", search.SelectedProductID), DbHelper.P("@cid", ci.ID), DbHelper.P("@bn", frm.SelectedBlendName));
+                            MessageBox.Show($"✅ تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                    }
+                }
             }
         }
 

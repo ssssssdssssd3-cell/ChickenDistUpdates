@@ -420,6 +420,7 @@ namespace ChickenDist.DAL
 
         public static DataTable GetAll(bool activeOnly = false)
         {
+            DbHelper.EnsureProductImagesColumnsExist();
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.EnglishName, p.Unit, p.SalePrice, p.PurchasePrice, 
                            p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.InternationalCode, p.ProductSize, p.Color,
@@ -443,7 +444,24 @@ namespace ChickenDist.DAL
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     ORDER BY p.ProductName";
-            return DbHelper.Query(sql);
+            try
+            {
+                return DbHelper.Query(sql);
+            }
+            catch
+            {
+                DbHelper.EnsureProductImagesColumnsExist();
+                try
+                {
+                    return DbHelper.Query(sql);
+                }
+                catch
+                {
+                    // Fallback query if columns are still pending schema creation
+                    string fallbackSql = sql.Replace("p.ImageUrl1, p.ImageUrl2, p.ImageUrl3", "CAST(NULL AS NVARCHAR(500)) AS ImageUrl1, CAST(NULL AS NVARCHAR(500)) AS ImageUrl2, CAST(NULL AS NVARCHAR(500)) AS ImageUrl3");
+                    return DbHelper.Query(fallbackSql);
+                }
+            }
         }
 
         public static DataRow GetByID(int id)
@@ -652,6 +670,7 @@ namespace ChickenDist.DAL
             decimal? unit3Factor = null, bool isQuickItem = false, string producerCompany = null, bool hasExpiry = false, int? defaultExpiryDays = null, string defaultSaleUnit = null, string productSize = null, string color = null, string englishName = null, string scalePLU = null,
             string imageUrl1 = null, string imageUrl2 = null, string imageUrl3 = null)
         {
+            DbHelper.EnsureProductImagesColumnsExist();
             DbHelper.EnsureScalePLUColumnExists();
 
             if (!string.IsNullOrWhiteSpace(scalePLU))

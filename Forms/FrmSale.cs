@@ -1055,6 +1055,17 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 55f, Visible = true });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
+			if (AppConfig.IsRestaurant)
+			{
+				dgItems.Columns.Add(new DataGridViewTextBoxColumn
+				{
+					Name = "KitchenNotes",
+					HeaderText = "📝 ملاحظات التحضير",
+					ReadOnly = false,
+					FillWeight = 55f,
+					MinimumWidth = 130
+				});
+			}
 			
 			DataGridViewButtonColumn delCol = new DataGridViewButtonColumn
 			{
@@ -1072,7 +1083,7 @@ namespace ChickenDist.Forms
 				if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
 				{
 					string colName = dgItems.Columns[e.ColumnIndex].Name;
-					if (colName == "Quantity" || colName == "UnitPrice" || colName == "DiscountPct" || colName == "DiscountAmt" || colName == "UnitName" || colName == "IMEI")
+					if (colName == "Quantity" || colName == "UnitPrice" || colName == "DiscountPct" || colName == "DiscountAmt" || colName == "UnitName" || colName == "IMEI" || colName == "KitchenNotes")
 					{
 						return; // السماح بتعديل الخانات التفاعلية مباشرة
 					}
@@ -3681,6 +3692,10 @@ namespace ChickenDist.Forms
 			{
 				saleItemDTO.IMEI = dataGridViewRow.Cells["IMEI"].Value?.ToString() ?? "";
 			}
+			else if (dgItems.Columns[e.ColumnIndex].Name == "KitchenNotes")
+			{
+				saleItemDTO.KitchenNotes = dataGridViewRow.Cells["KitchenNotes"].Value?.ToString() ?? "";
+			}
 
 			if (dataGridViewRow.DataGridView == null) return;
 
@@ -3823,6 +3838,11 @@ namespace ChickenDist.Forms
 				);
 				// عمود الكود للسطور المضافة للقراءة فقط (ليس للتعديل)
 				dgItems.Rows[rIndex].Cells["CodeEntry"].ReadOnly = true;
+
+				if (dgItems.Columns.Contains("KitchenNotes"))
+				{
+					dgItems.Rows[rIndex].Cells["KitchenNotes"].Value = item.KitchenNotes ?? "";
+				}
 
 				// ─── تهيئة ComboBox السيريال المتاح ─────────────────────────────────────
 				if (dgItems.Columns.Contains("IMEI"))
@@ -8141,6 +8161,7 @@ namespace ChickenDist.Forms
 				return;
 			}
 
+			DbHelper.EnsureRestaurantBlendsSchema();
 			using var frm = new FrmClientBlends(ci.ID, ci.Text);
 			if (frm.ShowDialog() != DialogResult.OK || !frm.BlendInserted) return;
 
@@ -8155,43 +8176,18 @@ namespace ChickenDist.Forms
 				sb.Append($"\r\n🔥 التحويج: {frm.SelectedRoastLevel}");
 			string blendText = sb.ToString();
 
-			// إذا كان هناك صنف أساسي، ابحث عنه وأضفه أو حدّث سطره
+			// 1. إذا كان هناك صنف أساسي، أضفه مباشرة للفاتورة وخصص ملاحظات التحضير له
 			if (frm.SelectedBaseProductID.HasValue && frm.SelectedBaseProductID.Value > 0)
 			{
 				try
 				{
-					// البحث عن الصنف في القائمة الحالية
-					bool found = false;
-					for (int i = 0; i < _items.Count; i++)
+					AddOrUpdateProduct(frm.SelectedBaseProductID.Value, 1m);
+					if (_items.Count > 0)
 					{
-						if (_items[i].ProductID == frm.SelectedBaseProductID.Value)
-						{
-							_items[i].KitchenNotes = blendText;
-							if (dgItems.Rows.Count > i && dgItems.Columns.Contains("KitchenNotes"))
-								dgItems.Rows[i].Cells["KitchenNotes"].Value = blendText;
-							found = true;
-							break;
-						}
-					}
-					if (!found)
-					{
-						// أضف الصنف الجديد تلقائياً
-						var pdt = DbHelper.Query(
-							"SELECT ProductID, ProductCode, ProductName, SalePrice FROM Products WHERE ProductID=@pid AND IsActive=1",
-							DbHelper.P("@pid", frm.SelectedBaseProductID.Value));
-						if (pdt.Rows.Count > 0)
-						{
-							var pr = pdt.Rows[0];
-							int rowIdx = dgItems.Rows.Add();
-							var row = dgItems.Rows[rowIdx];
-							row.Cells["CodeEntry"].Value = pr["ProductCode"]?.ToString();
-							row.Cells["ProductName"].Value = pr["ProductName"].ToString();
-							row.Cells["Quantity"].Value = "1";
-							row.Cells["UnitPrice"].Value = pr["SalePrice"];
-							if (dgItems.Columns.Contains("KitchenNotes"))
-								row.Cells["KitchenNotes"].Value = blendText;
-							dgItems.CurrentCell = row.Cells["Quantity"];
-						}
+						var itm = _items.FindLast(x => x.ProductID == frm.SelectedBaseProductID.Value) ?? _items[_items.Count - 1];
+						itm.KitchenNotes = blendText;
+						RefreshGrid();
+						MessageBox.Show($"✅ تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
 					}
 					return;
 				}
@@ -8201,11 +8197,41 @@ namespace ChickenDist.Forms
 				}
 			}
 
-			// إذا لم يُحدد صنف أساسي، ضع التوليفة في الصنف المحدد حالياً
-			if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0
-				&& dgItems.Columns.Contains("KitchenNotes"))
+			// 2. إذا لم يُحدد صنف أساسي، ضع التوليفة في الصنف المحدد حالياً
+			if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
 			{
-				dgItems.CurrentRow.Cells["KitchenNotes"].Value = blendText;
+				_items[dgItems.CurrentRow.Index].KitchenNotes = blendText;
+				RefreshGrid();
+				MessageBox.Show($"✅ تم ربط التوليفة [{frm.SelectedBlendName}] بالصنف المختار بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
+			else if (_items.Count > 0)
+			{
+				_items[_items.Count - 1].KitchenNotes = blendText;
+				RefreshGrid();
+				MessageBox.Show($"✅ تم ربط التوليفة [{frm.SelectedBlendName}] بآخر صنف بالفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
+			else
+			{
+				var ans = MessageBox.Show(
+					$"التوليفة [{frm.SelectedBlendName}] غير مربوطة بصنف مبيعات أساسي.\nهل ترغب في اختيار صنف من قائمة الأصناف الآن لبيعه مع هذه التوليفة؟",
+					"اختيار صنف التوليفة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+				if (ans == DialogResult.Yes)
+				{
+					using var search = new FrmProductSearch(warehouseID: GetSelectedWarehouseID(), isPurchaseMode: false, defaultShowZeroStock: false);
+					if (search.ShowDialog() == DialogResult.OK && search.SelectedProductID > 0)
+					{
+						AddOrUpdateProduct(search.SelectedProductID, 1m);
+						if (_items.Count > 0)
+						{
+							var added = _items.FindLast(x => x.ProductID == search.SelectedProductID) ?? _items[_items.Count - 1];
+							added.KitchenNotes = blendText;
+							RefreshGrid();
+						}
+						DbHelper.Execute("UPDATE ClientBlends SET BaseProductID=@pid WHERE ClientID=@cid AND BlendName=@bn AND (BaseProductID IS NULL OR BaseProductID=0)",
+							DbHelper.P("@pid", search.SelectedProductID), DbHelper.P("@cid", ci.ID), DbHelper.P("@bn", frm.SelectedBlendName));
+						MessageBox.Show($"✅ تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					}
+				}
 			}
 		}
 	}

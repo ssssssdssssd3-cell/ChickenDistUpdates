@@ -43,6 +43,7 @@ namespace ChickenDist.Forms
         {
             ClientID = clientID;
             ClientName = clientName;
+            DbHelper.EnsureRestaurantBlendsSchema();
             InitUI();
             LoadBlends();
         }
@@ -157,7 +158,7 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(lx, fy + 22),
                 Size = new Size(fw - 120, fh),
-                ForeColor = Color.White,
+                ForeColor = Theme.TextInput,
                 BackColor = Theme.BgInput,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = Theme.FontMain,
@@ -183,7 +184,7 @@ namespace ChickenDist.Forms
                 Increment = 50,
                 DecimalPlaces = 0,
                 BackColor = Theme.BgInput,
-                ForeColor = Color.White,
+                ForeColor = Theme.TextInput,
                 Font = Theme.FontMain
             };
             this.Controls.Add(numWeight);
@@ -206,7 +207,7 @@ namespace ChickenDist.Forms
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
                 BackColor = Theme.BgInput,
-                ForeColor = Color.White,
+                ForeColor = Theme.TextInput,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9.5f)
             };
@@ -276,7 +277,7 @@ namespace ChickenDist.Forms
                 Location = new Point(x, y),
                 Size = new Size(w, h),
                 BackColor = Theme.BgInput,
-                ForeColor = Color.White,
+                ForeColor = Theme.TextInput,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = Theme.FontMain
             };
@@ -512,6 +513,26 @@ namespace ChickenDist.Forms
                 SelectedBaseProductID = r["BaseProductID"] != DBNull.Value ? (int?)Convert.ToInt32(r["BaseProductID"]) : null;
                 SelectedBaseProductName = r["ProductName"].ToString();
                 SelectedTargetWeightGrams = r["TargetWeightGrams"] != DBNull.Value ? (int?)Convert.ToInt32(r["TargetWeightGrams"]) : null;
+
+                if (!SelectedBaseProductID.HasValue || SelectedBaseProductID.Value <= 0)
+                {
+                    var ask = MessageBox.Show(
+                        $"هذه التوليفة [{SelectedBlendName}] غير مربوطة بصنف أساسي (مثل: فنجان قهوة / بن تركي).\nهل ترغب في تحديد الصنف الأساسي الآن لإدراجه تلقائياً مع الفاتورة وحفظه لهذه التوليفة؟",
+                        "تحديد الصنف الأساسي", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (ask == DialogResult.Yes)
+                    {
+                        using var search = new FrmProductSearch(warehouseID: null, isPurchaseMode: false, defaultShowZeroStock: false);
+                        if (search.ShowDialog() == DialogResult.OK && search.SelectedProductID > 0)
+                        {
+                            SelectedBaseProductID = search.SelectedProductID;
+                            var row = DbHelper.Query("SELECT ProductName FROM Products WHERE ProductID=@id", DbHelper.P("@id", search.SelectedProductID));
+                            SelectedBaseProductName = row.Rows.Count > 0 ? row.Rows[0]["ProductName"].ToString() : "";
+                            DbHelper.Execute("UPDATE ClientBlends SET BaseProductID=@pid WHERE BlendID=@bid",
+                                DbHelper.P("@pid", search.SelectedProductID), DbHelper.P("@bid", blendID));
+                        }
+                    }
+                }
+
                 BlendInserted = true;
 
                 this.DialogResult = DialogResult.OK;
@@ -612,7 +633,7 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
 
             var lbl = new Label { Text = prompt, Location = new Point(10, 12), Size = new Size(310, 20), ForeColor = Theme.TextMain };
-            txtVal = new TextBox { Location = new Point(10, 36), Size = new Size(310, 26), BackColor = Theme.BgInput, ForeColor = Color.White };
+            txtVal = new TextBox { Location = new Point(10, 36), Size = new Size(310, 26), BackColor = Theme.BgInput, ForeColor = Theme.TextInput };
             var btnOk = new Button { Text = "موافق", Location = new Point(10, 72), Size = new Size(80, 30), DialogResult = DialogResult.OK, BackColor = Theme.Success, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
             var btnCancel = new Button { Text = "إلغاء", Location = new Point(100, 72), Size = new Size(80, 30), DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(100, 110, 120), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
             this.Controls.AddRange(new Control[] { lbl, txtVal, btnOk, btnCancel });
