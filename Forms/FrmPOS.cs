@@ -21,7 +21,7 @@ namespace ChickenDist.Forms
         private ComboBox cboWarehouse, cboPriceTier;
         private Label lblTitle, lblWh, lblTier;
         private DataGridView dgItems;
-        private Label lblTotal, lblPaid, lblChange, lblItemCount, lblClientName, lblClientPoints;
+        private Label lblTotal, lblChange, lblItemCount, lblClientPoints;
         private Label lblInvoiceItemsBadge;
         private CheckBox chkQuickInStockOnly;
         private int? _currentQuickCategoryId = null;
@@ -60,9 +60,6 @@ namespace ChickenDist.Forms
         private string _activeDraftKey = null;
         private int _activeDraftID = 0;
 
-        // Barcode auto-detection
-        private System.Windows.Forms.Timer _barcodeTimer;
-        private string _barcodeBuffer = "";
         private DateTime _lastKeyTime = DateTime.MinValue;
         private const int BARCODE_INTERVAL_MS = 50;
         private const int BARCODE_MIN_LENGTH = 4;
@@ -72,9 +69,6 @@ namespace ChickenDist.Forms
 
         // سطر إدخال الكود الجديد المعلق
         private int _pendingRowIdx = -1;
-
-        // جلسة البحث السريع - لمنع تدخل FocusQtyCell أثناء تكرار شاشة البحث
-        private bool _searchSessionActive = false;
         private decimal? _pendingScaleWeight = null;
 
         // ── بونات الخصم ──────────────────────────────────────
@@ -3548,7 +3542,6 @@ namespace ChickenDist.Forms
             {
                 // تظل الشاشة تُعاد فتحها بعد كل اختيار
                 // حتى يضغط المستخدم إلغاء أو يُغلق الشاشة
-                _searchSessionActive = true;
                 string lastSearchText = "";
                 while (true)
                 {
@@ -3609,7 +3602,6 @@ namespace ChickenDist.Forms
             catch { }
             finally
             {
-                _searchSessionActive = false;
                 // إرجاع الفوكس لخانة الباركود
                 this.BeginInvoke((Action)(() => txtBarcode.Focus()));
             }

@@ -135,57 +135,16 @@ namespace ChickenDist.DAL
         }
 
 
-        /// <summary>جلب رصيد صنف محدد في مخزن معين (أو إجمالي المخازن)</summary>
+        /// <summary>جلب رصيد صنف محدد في مخزن معين (أو إجمالي المخازن) بدقة وسرعة فائقة عبر استعلام موحد</summary>
         public static decimal GetProductStock(int productID, int? warehouseID = null, SqlTransaction trans = null)
         {
-            List<SqlParameter> prms = new List<SqlParameter> { DbHelper.P("@pid", productID) };
-            if (warehouseID.HasValue)
-            {
-                prms.Add(DbHelper.P("@wid", warehouseID.Value));
-            }
-
-            string sql = $@"
-                SELECT 
-                    ISNULL(adj.ActualQty * COALESCE(adj.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)), 0) + 
-                    -- Incoming since adjustment: Sales Returns
-                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 0)) FROM ReturnItems ri WITH (NOLOCK) JOIN SalesReturns sr WITH (NOLOCK) ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
-                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ri.Quantity) FROM ReturnItems ri WITH (NOLOCK) JOIN SalesReturns sr WITH (NOLOCK) ON ri.ReturnID = sr.ReturnID WHERE ri.ProductID = p.ProductID AND ri.Factor IS NULL AND (adj.AdjDate IS NULL OR sr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
-                    -- Incoming since adjustment: Driver Handover Returns
-                    ISNULL((SELECT SUM(hi.ReturnedQty * ISNULL(hi.Factor, 0)) FROM HandoverItems hi WITH (NOLOCK) JOIN DriverHandovers dh WITH (NOLOCK) ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl WITH (NOLOCK) ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
-                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(hi.ReturnedQty) FROM HandoverItems hi WITH (NOLOCK) JOIN DriverHandovers dh WITH (NOLOCK) ON hi.HandoverID = dh.HandoverID JOIN DriverLoads dl WITH (NOLOCK) ON dh.LoadID = dl.LoadID WHERE hi.ProductID = p.ProductID AND hi.Factor IS NULL AND (adj.AdjDate IS NULL OR dh.HandoverDate > adj.AdjDate) {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
-                    -- Incoming since adjustment: Purchases
-                    ISNULL((SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * ISNULL(pi.Factor, 0)) FROM PurchaseItems pi WITH (NOLOCK) JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
-                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pi.Quantity + ISNULL(pi.BonusQuantity, 0)) FROM PurchaseItems pi WITH (NOLOCK) JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID WHERE pi.ProductID = p.ProductID AND pi.Factor IS NULL AND pu.IsPosted = 1 AND (adj.AdjDate IS NULL OR pu.PurchaseDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
-                    -- Incoming since adjustment: Warehouse Transfers
-                    ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0) +
-                    COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Purchase Returns
-                    - ISNULL((SELECT SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri WITH (NOLOCK) JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity + ISNULL(pri.BonusQuantity, 0)) FROM PurchaseReturnItems pri WITH (NOLOCK) JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate) {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Warehouse Sales & Driver Loads (prevent double counting driver road sales)
-                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si WITH (NOLOCK) JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si WITH (NOLOCK) JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate) {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Warehouse Transfers
-                    - ISNULL((SELECT SUM(ti.Quantity * ISNULL(ti.Factor, 0)) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti WITH (NOLOCK) JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate) {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
-                    -- Outgoing since adjustment: Wastage & Loss
-                    - ISNULL((SELECT SUM(wli.Quantity * COALESCE(NULLIF(wli.Factor, 0), 1.0)) FROM WastageLossItems wli WITH (NOLOCK) JOIN WastageLoss wl WITH (NOLOCK) ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate) {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS BookQty
-                FROM Products p WITH (NOLOCK)
-                OUTER APPLY (
-                    SELECT TOP 1 sa.AdjDate, sa.ActualQty, sa.Factor
-                    FROM StockAdjustments sa WITH (NOLOCK)
-                    WHERE sa.ProductID = p.ProductID 
-                      {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}
-                    ORDER BY sa.AdjDate DESC
-                ) adj
-                WHERE p.ProductID = @pid";
-
-            var val = trans != null ? DbHelper.ScalarTrans(trans, sql, prms.ToArray()) : DbHelper.Scalar(sql, prms.ToArray());
-            return val == null || val == DBNull.Value ? 0 : Convert.ToDecimal(val);
+            if (productID <= 0) return 0m;
+            var dict = GetStockSummaryForProducts(new[] { productID }, warehouseID, trans);
+            return dict.TryGetValue(productID, out decimal val) ? val : 0m;
         }
 
-        /// <summary>جلب ملخص أرصدة مجموعة أصناف مخصصة بسرعة فائقة</summary>
-        public static Dictionary<int, decimal> GetStockSummaryForProducts(IEnumerable<int> productIDs, int? warehouseID = null)
+        /// <summary>جلب ملخص أرصدة مجموعة أصناف مخصصة بسرعة فائقة وبمعادلة محاسبية موحدة</summary>
+        public static Dictionary<int, decimal> GetStockSummaryForProducts(IEnumerable<int> productIDs, int? warehouseID = null, SqlTransaction trans = null)
         {
             var dict = new Dictionary<int, decimal>();
             var pidList = productIDs != null ? new List<int>(productIDs) : new List<int>();
@@ -281,7 +240,7 @@ namespace ChickenDist.DAL
                     JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID
                     LEFT JOIN LatestAdj l ON ti.ProductID = l.ProductID {(warehouseID.HasValue ? "AND l.WarehouseID = t.FromWarehouseID" : "")}
                     WHERE ti.ProductID IN ({pidInClause}) AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}
-                      AND (l.MaxDate IS NULL OR t.TransferDate > l.MaxDate)
+                    AND (l.MaxDate IS NULL OR t.TransferDate > l.MaxDate)
                     GROUP BY ti.ProductID
 
                     UNION ALL
@@ -296,7 +255,7 @@ namespace ChickenDist.DAL
                 ) StockUnion
                 GROUP BY ProductID";
 
-            DataTable dt = DbHelper.Query(sql, prms.ToArray());
+            DataTable dt = trans != null ? DbHelper.QueryTrans(trans, sql, prms.ToArray()) : DbHelper.Query(sql, prms.ToArray());
             foreach (DataRow r in dt.Rows)
             {
                 dict[Convert.ToInt32(r["ProductID"])] = Convert.ToDecimal(r["TotalQty"]);

@@ -25,8 +25,6 @@ namespace ChickenDist.Forms
         private Panel pnlBottom;
         private Button btnImportAll, btnClose;
         private Label lblInvCount, lblTotalCash, lblTotalCredit, lblTotalAll;
-        private ComboBox cboDriverFilter;
-        private Label lblDriverLbl;
 
         // ===== Data =====
         private readonly DateTime _importDate;

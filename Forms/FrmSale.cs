@@ -17,8 +17,6 @@ namespace ChickenDist.Forms
 
 		private Panel pnlFooter;
 
-		private Label lblTitle;
-
 		private Button btnTypeCredit;
 
 		private Button btnTypeCash;
@@ -109,7 +107,6 @@ namespace ChickenDist.Forms
         private int _loadedQuoteID = 0; // معرف عرض الأسعار المحول
         private int _loadedOnlineOrderID = 0; // معرف طلب المتجر الإلكتروني المحول
         private bool _isCopyMode = false;
-        private bool _isScanningBarcode = false;
         private DateTime _loadedLastModified;
         private string _activeDraftKey = null;
         private int _activeDraftID = 0;
@@ -2071,31 +2068,23 @@ namespace ChickenDist.Forms
 					if (foundItem.Unit2SalePrice > 0) unitPrice = foundItem.Unit2SalePrice;
 				}
 
-				_isScanningBarcode = true;
-				try
+				AddOrUpdateProduct(foundItem.ID, qtyToAdd, unitPrice, false, selectedUnit, scannedBarcode: text);
+				cboProduct.Text = "";
+				cboProduct.BeginUpdate();
+				cboProduct.Items.Clear();
+				cboProduct.Items.AddRange(allItems.ToArray());
+				cboProduct.SelectedIndex = 0;
+				cboProduct.EndUpdate();
+				if (txtBarcode != null)
 				{
-					AddOrUpdateProduct(foundItem.ID, qtyToAdd, unitPrice, false, selectedUnit, scannedBarcode: text);
-					cboProduct.Text = "";
-					cboProduct.BeginUpdate();
-					cboProduct.Items.Clear();
-					cboProduct.Items.AddRange(allItems.ToArray());
-					cboProduct.SelectedIndex = 0;
-					cboProduct.EndUpdate();
-					if (txtBarcode != null)
-					{
-						txtBarcode.Clear();
-						this.ActiveControl = txtBarcode;
-						txtBarcode.Focus();
-						txtBarcode.SelectAll();
-					}
-					else
-					{
-						FocusQtyCellInGrid(foundItem.ID);
-					}
+					txtBarcode.Clear();
+					this.ActiveControl = txtBarcode;
+					txtBarcode.Focus();
+					txtBarcode.SelectAll();
 				}
-				finally
+				else
 				{
-					_isScanningBarcode = false;
+					FocusQtyCellInGrid(foundItem.ID);
 				}
 			}
 		}
@@ -2246,34 +2235,26 @@ namespace ChickenDist.Forms
 						if (foundItem.Unit2SalePrice > 0) unitPrice = foundItem.Unit2SalePrice;
 					}
 
-					_isScanningBarcode = true;
-					try
+					_lastScannedBarcode = scanText;
+					_lastScanTime = DateTime.Now;
+					AddOrUpdateProduct(foundItem.ID, qtyToAdd, unitPrice, false, selectedUnit, scannedBarcode: scanText);
+					
+					cboProduct.Text = "";
+					cboProduct.BeginUpdate();
+					cboProduct.Items.Clear();
+					cboProduct.Items.AddRange(allItems.ToArray());
+					cboProduct.SelectedIndex = 0;
+					cboProduct.EndUpdate();
+					if (txtBarcode != null)
 					{
-						_lastScannedBarcode = scanText;
-						_lastScanTime = DateTime.Now;
-						AddOrUpdateProduct(foundItem.ID, qtyToAdd, unitPrice, false, selectedUnit, scannedBarcode: scanText);
-						
-						cboProduct.Text = "";
-						cboProduct.BeginUpdate();
-						cboProduct.Items.Clear();
-						cboProduct.Items.AddRange(allItems.ToArray());
-						cboProduct.SelectedIndex = 0;
-						cboProduct.EndUpdate();
-						if (txtBarcode != null)
-						{
-							txtBarcode.Clear();
-							this.ActiveControl = txtBarcode;
-							txtBarcode.Focus();
-							txtBarcode.SelectAll();
-						}
-						else
-						{
-							AddNewCodeRow();
-						}
+						txtBarcode.Clear();
+						this.ActiveControl = txtBarcode;
+						txtBarcode.Focus();
+						txtBarcode.SelectAll();
 					}
-					finally
+					else
 					{
-						_isScanningBarcode = false;
+						AddNewCodeRow();
 					}
 					return;
 				}
@@ -5234,100 +5215,108 @@ namespace ChickenDist.Forms
 					safeAccountID = vId;
 				}
 
-				int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
-					txtNotes.Text, _items, discountAmount, discountPct, isDraft,
-					warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
-					downPayment: downPayment, installmentCount: installmentCount,
-					installmentPeriod: installmentPeriod, startDate: startDate,
-					schedule: schedule, safeAccountID: safeAccountID, 
-					cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : (_invoiceType == "Credit" || _invoiceType == "DriverLoad" || _invoiceType == "Visa" ? 0m : paidAmount)),
-					cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
-					visaAccountID: visaAccountID, 
-					visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
-					customClientName: customClientName);
-				if (num3 > 0)
+				try
 				{
-					_lastSaleID = num3;
-					_isDirty = false;
-					if (_loadedQuoteID > 0)
+					int num3 = SaleDAL.SaveSale(saleType, clientID, driverID, net,
+						txtNotes.Text, _items, discountAmount, discountPct, isDraft,
+						warehouseID: GetSelectedWarehouseID(), priceTier: priceTier,
+						downPayment: downPayment, installmentCount: installmentCount,
+						installmentPeriod: installmentPeriod, startDate: startDate,
+						schedule: schedule, safeAccountID: safeAccountID, 
+						cashPaid: (_invoiceType == "Mixed" ? mixedCashPaid : (_invoiceType == "Credit" || _invoiceType == "DriverLoad" || _invoiceType == "Visa" ? 0m : paidAmount)),
+						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
+						visaAccountID: visaAccountID, 
+						visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
+						customClientName: customClientName);
+					if (num3 > 0)
 					{
-						try { PriceQuoteDAL.MarkAsConverted(_loadedQuoteID, num3); } catch { }
-						_loadedQuoteID = 0;
-					}
-					if (_loadedOnlineOrderID > 0)
-					{
-						try { OnlineOrdersDAL.LinkToSale(_loadedOnlineOrderID, num3); } catch { }
-						_loadedOnlineOrderID = 0;
-					}
-					if (isDraft)
-					{
-						if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+						_lastSaleID = num3;
+						_isDirty = false;
+						if (_loadedQuoteID > 0)
 						{
-							try { new FrmKitchenPrint(num3); } catch { }
+							try { PriceQuoteDAL.MarkAsConverted(_loadedQuoteID, num3); } catch (Exception exQ) { AppLogger.Error("FrmSale.MarkQuoteConverted", exQ); }
+							_loadedQuoteID = 0;
 						}
+						if (_loadedOnlineOrderID > 0)
+						{
+							try { OnlineOrdersDAL.LinkToSale(_loadedOnlineOrderID, num3); } catch (Exception exO) { AppLogger.Error("FrmSale.LinkOnlineOrder", exO); }
+							_loadedOnlineOrderID = 0;
+						}
+						if (isDraft)
+						{
+							if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+							{
+								try { new FrmKitchenPrint(num3); } catch (Exception exK) { AppLogger.Error("FrmSale.KitchenPrintDraft", exK); }
+							}
 
-						var askWa = MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\n\nهل تريد إرسال تفاصيل الفاتورة المعلقة للعميل عبر واتساب؟",
-							"إرسال واتساب", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-						if (askWa == DialogResult.Yes)
-						{
-							SendSaleInvoiceWhatsApp(num3, this);
+							var askWa = MessageBox.Show($"✅ تم تعليق الفاتورة بنجاح.\n\nهل تريد إرسال تفاصيل الفاتورة المعلقة للعميل عبر واتساب؟",
+								"إرسال واتساب", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+							if (askWa == DialogResult.Yes)
+							{
+								SendSaleInvoiceWhatsApp(num3, this);
+							}
 						}
+						else
+						{
+							if (_activeDraftID > 0)
+							{
+								DraftManager.MarkRecovered(_activeDraftID);
+								DraftManager.DeleteDraftByID(_activeDraftID);
+							}
+							if (!string.IsNullOrEmpty(_activeDraftKey))
+							{
+								DraftManager.DeleteDraft(_activeDraftKey);
+							}
+							DraftManager.DeleteDraft($"Sale_User_{Session.EmpID}");
+							_activeDraftID = 0;
+							_activeDraftKey = null;
+
+							FrmPrintChoiceDialog.PromptAndPrintSale(this, num3, $"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!");
+
+							if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+							{
+								try { new FrmKitchenPrint(num3); } catch (Exception exK) { AppLogger.Error("FrmSale.KitchenPrintSale", exK); }
+							}
+
+							try
+							{
+								List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
+								// تسجيل النواقص آلياً في الخلفية عند حد الطلب أو نفاد المخزون دون إظهار نوافذ منبثقة مربكة
+								ShortageDAL.ProcessStockChangesAfterSale(soldPids);
+							}
+							catch (Exception exSt) { AppLogger.Error("FrmSale.ShortageProcessing", exSt); }
+
+							if (_appliedVoucherID > 0 && _voucherDiscount > 0)
+							{
+								try { DiscountVouchersDAL.IncrementUsage(_appliedVoucherID); } catch (Exception exV) { AppLogger.Error("FrmSale.IncrementVoucherUsage", exV); }
+							}
+
+							StockCache.Invalidate(GetSelectedWarehouseID());
+						}
+						if (!_isCopyMode)
+						{
+							ResetForm();
+							this.BeginInvoke((MethodInvoker)delegate
+							{
+								if (txtBarcode != null && !this.IsDisposed)
+								{
+									this.ActiveControl = txtBarcode;
+									txtBarcode.Focus();
+									txtBarcode.SelectAll();
+								}
+							});
+						}
+						else this.Close();
 					}
 					else
 					{
-						if (_activeDraftID > 0)
-						{
-							DraftManager.MarkRecovered(_activeDraftID);
-							DraftManager.DeleteDraftByID(_activeDraftID);
-						}
-						if (!string.IsNullOrEmpty(_activeDraftKey))
-						{
-							DraftManager.DeleteDraft(_activeDraftKey);
-						}
-						DraftManager.DeleteDraft($"Sale_User_{Session.EmpID}");
-						_activeDraftID = 0;
-						_activeDraftKey = null;
-
-						FrmPrintChoiceDialog.PromptAndPrintSale(this, num3, $"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!");
-
-						if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
-						{
-							try { new FrmKitchenPrint(num3); } catch { }
-						}
-
-						try
-						{
-							List<int> soldPids = _items != null ? _items.ConvertAll(x => x.ProductID) : new List<int>();
-							// تسجيل النواقص آلياً في الخلفية عند حد الطلب أو نفاد المخزون دون إظهار نوافذ منبثقة مربكة
-							ShortageDAL.ProcessStockChangesAfterSale(soldPids);
-						}
-						catch { }
-
-						if (_appliedVoucherID > 0 && _voucherDiscount > 0)
-						{
-							try { DiscountVouchersDAL.IncrementUsage(_appliedVoucherID); } catch { }
-						}
-
-						StockCache.Invalidate(GetSelectedWarehouseID());
+						MessageBox.Show("❌ فشل الحفظ، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					}
-					if (!_isCopyMode)
-					{
-						ResetForm();
-						this.BeginInvoke((MethodInvoker)delegate
-						{
-							if (txtBarcode != null && !this.IsDisposed)
-							{
-								this.ActiveControl = txtBarcode;
-								txtBarcode.Focus();
-								txtBarcode.SelectAll();
-							}
-						});
-					}
-					else this.Close();
 				}
-				else
+				catch (Exception exSave)
 				{
-					MessageBox.Show("❌ فشل الحفظ، راجع الاتصال بقاعدة البيانات", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+					AppLogger.Error("FrmSale.SaveSale", exSave);
+					MessageBox.Show("❌ حدث خطأ أثناء حفظ الفاتورة:\n" + exSave.Message, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
 			}
 		}

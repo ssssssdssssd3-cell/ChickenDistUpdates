@@ -85,7 +85,10 @@ namespace ChickenDist.DAL
             {
                 DbHelper.EnsurePurchaseColumnsExist();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Error("PurchaseDAL.EnsurePurchaseColumnsExist", ex);
+            }
         }
 
         // ─── قراءة الفواتير المؤكدة ──────────────────────────────────────────────
@@ -444,15 +447,15 @@ namespace ChickenDist.DAL
                     List<int> purchasedPids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
                     ShortageDAL.ProcessStockReplenishmentAfterPurchase(purchasedPids);
                 }
-                catch { }
+                catch (Exception ex) { AppLogger.Error("PurchaseDAL.ProcessStockReplenishmentAfterPurchase", ex); }
 
                 try
                 {
                     System.Threading.Tasks.Task.Run(() => SaleDAL.BackfillMissingCostPrices());
                 }
-                catch { }
+                catch (Exception ex) { AppLogger.Error("PurchaseDAL.BackfillMissingCostPrices", ex); }
 
-                try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
+                try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch (Exception ex) { AppLogger.Error("PurchaseDAL.PushLiveStats", ex); }
             }
 
             return returnedID;
@@ -694,13 +697,13 @@ namespace ChickenDist.DAL
                     List<int> purchasedPids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
                     ShortageDAL.ProcessStockReplenishmentAfterPurchase(purchasedPids);
                 }
-                catch { }
+                catch (Exception ex) { AppLogger.Error("PurchaseDAL.UpdatePurchase.ProcessStockReplenishment", ex); }
 
                 try
                 {
                     System.Threading.Tasks.Task.Run(() => SaleDAL.BackfillMissingCostPrices());
                 }
-                catch { }
+                catch (Exception ex) { AppLogger.Error("PurchaseDAL.UpdatePurchase.BackfillMissingCostPrices", ex); }
 
                 return true;
             }
@@ -1644,7 +1647,10 @@ namespace ChickenDist.DAL
                         if (dtVisa.Rows.Count > 0 && targetAccountID == null)
                             visaAcc = Convert.ToInt32(dtVisa.Rows[0]["AccountID"]);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Error("PurchaseDAL.SavePurchaseReturn.GetVisaAccount", ex);
+                    }
 
                     DbHelper.ExecuteTrans(trans,
                         "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,Notes,CreatedBy,AccountID,ShiftID)" +

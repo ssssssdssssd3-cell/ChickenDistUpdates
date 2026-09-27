@@ -12,8 +12,22 @@ publish/
 AppLogs/
 Updates/
 
-## Sensitive config (لا ترفع بيانات الاتصال الحقيقية)
+## Sensitive config (لا ترفع بيانات الاتصال الحقيقية أو المفاتيح)
 App.config
+Settings.ini
+*.ini
+firebase_config.json
+bot/firebase_config.json
+.env
+*.env
+
+## Node & WhatsApp
+node_modules/
+bot/node_modules/
+bot/.wwebjs_auth/
+bot/.wwebjs_cache/
+.wwebjs_auth/
+.wwebjs_cache/
 
 ## OS
 .DS_Store
@@ -23,3 +37,4 @@ Desktop.ini
 *.userprefs
 *.docstates
 *.bak
+

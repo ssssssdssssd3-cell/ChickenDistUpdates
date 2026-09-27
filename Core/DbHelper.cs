@@ -4093,6 +4093,7 @@ namespace ChickenDist.Core
             }
             catch (SqlException ex)
             {
+                AppLogger.Error("DbHelper.GetOpenConnection", ex);
                 try { SqlConnection.ClearPool(con); con.Dispose(); } catch { }
 
                 string iniPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.ini");

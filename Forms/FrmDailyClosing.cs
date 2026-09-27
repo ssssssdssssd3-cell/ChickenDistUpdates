@@ -20,7 +20,6 @@ namespace ChickenDist.Forms
         private Panel          _pnlSummary;
 
         // ── State ────────────────────────────────────────────────────────────────
-        private DataTable _products;          // active products
         private int       _productCount;      // number of product columns
         private decimal   _grandInvoice, _grandPayment, _grandBalance;
 

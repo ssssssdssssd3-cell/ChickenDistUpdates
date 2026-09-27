@@ -53,7 +53,10 @@ namespace ChickenDist.DAL
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Error("SalesDAL.GetLastClientPrices", ex);
+            }
             return dict;
         }
 
@@ -1894,7 +1897,7 @@ namespace ChickenDist.DAL
             try {
                 var dtStore = DbHelper.Query("SELECT TOP 1 SettingValue FROM AppSettings WHERE SettingKey = 'StoreName'");
                 if (dtStore.Rows.Count > 0) storeName = dtStore.Rows[0][0]?.ToString() ?? "";
-            } catch {}
+            } catch (Exception ex) { AppLogger.Error("SalesDAL.BuildDriverExportJson.StoreName", ex); }
 
             decimal todaySalesTotal = 0, todayCashSales = 0, todayCreditSales = 0, todayNetProfit = 0;
             decimal cashboxBalance = 0, clientDebts = 0, supplierDebts = 0, todayPurchases = 0;
@@ -1927,7 +1930,7 @@ namespace ChickenDist.DAL
 
                 o = DbHelper.Scalar("SELECT COUNT(*) FROM Products WHERE IsActive = 1 AND Quantity <= ISNULL(MinQuantity, 5)");
                 if (o != null && o != DBNull.Value) lowStockCount = Convert.ToInt32(o);
-            } catch {}
+            } catch (Exception ex) { AppLogger.Error("SalesDAL.BuildDriverExportJson.KPIs", ex); }
 
             // ── بيانات المندوبين ──
             System.Data.DataTable clients;
@@ -2425,7 +2428,10 @@ namespace ChickenDist.DAL
                         if (dtVisa.Rows.Count > 0 && targetVisaAccID == null)
                             visaAcc = Convert.ToInt32(dtVisa.Rows[0]["AccountID"]);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Error("SalesDAL.GetVisaAccountForReturn", ex);
+                    }
 
                     DbHelper.ExecuteTrans(trans,
                         "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@dt,'VisaReturn',@amt,@ref,@n,@by,@accId,@shid)",
@@ -2631,7 +2637,10 @@ namespace ChickenDist.DAL
                             if (dtVisa.Rows.Count > 0)
                                 visaAcc = Convert.ToInt32(dtVisa.Rows[0]["AccountID"]);
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            AppLogger.Error("SalesDAL.GetVisaAccountForExchange", ex);
+                        }
 
                         if (netDiff > 0)
                         {

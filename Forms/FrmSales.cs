@@ -27,7 +27,6 @@ namespace ChickenDist.Forms
 
 		private Button btnPrint;
 		private Button btnEdit;
-		private Button btnDelete;
 		private Button btnCopy;
 		private Button btnNewSale;
 
@@ -38,7 +37,6 @@ namespace ChickenDist.Forms
 		private Label lblNetSummary;
 		private Label lblCashSummary;
 		private Label lblCreditSummary;
-		private Label lblDriverSummary;
 		private Label lblShippingSummary;
 		private Label lblProfitSummary;
 		private Label lblDetailTitle;
@@ -1069,7 +1067,6 @@ namespace ChickenDist.Forms
 			lblNetSummary.Text    = (totAfterDisc + shipping - ret).ToString("N2") + " ج";
 			if (lblCashSummary != null) lblCashSummary.Text = cash.ToString("N2") + " ج";
 			if (lblCreditSummary != null) lblCreditSummary.Text = credit.ToString("N2") + " ج";
-			if (lblDriverSummary != null) lblDriverSummary.Text = driver.ToString("N2") + " ج";
 			if (lblShippingSummary != null) lblShippingSummary.Text = shipping.ToString("N2") + " ج";
 			if (lblProfitSummary != null)
 			{

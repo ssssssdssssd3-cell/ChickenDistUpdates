@@ -13,8 +13,6 @@ namespace ChickenDist.Forms
     /// <summary>شاشة تقفيل حمولة المندوب</summary>
     public class FrmDriverHandover : Form
     {
-        private Panel pnlHeader;
-        private Label lblTitle;
         private ComboBox cboDriver, cboLoad;
         private Label lblDriver, lblLoad;
         private DateTimePicker dtpFrom, dtpTo;

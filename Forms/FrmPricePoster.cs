@@ -915,7 +915,6 @@ namespace ChickenDist.Forms
             float colPriceX   = xStart; // far left
 
             float headerH = 28;
-            float rowH = 24;
 
             // Draw Table Header
             using (var brushHeader = new SolidBrush(Color.FromArgb(30, 41, 59)))

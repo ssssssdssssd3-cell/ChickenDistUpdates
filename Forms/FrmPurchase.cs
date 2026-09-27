@@ -57,7 +57,6 @@ namespace ChickenDist.Forms
         private bool _isRefreshingGrid = false;
         private bool _searchSessionActive = false;
         private bool _isProcessingScan = false;
-        private int _supplierId = 0;
         private decimal? _pendingBarcodeWeight = null;
         private decimal? _pendingScaleWeight = null; 
         private int _draftPurchaseID = 0; // 0 = فاتورة جديدة، >0 = مسودة محملة

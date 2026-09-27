@@ -1,4 +1,0 @@
-version=1.0.67
-url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-sha256=77ECDF88130832E63D9B7EA53BB3DB36015BAFD3F432362658D1BE929F187F10
-changelog=v1.0.67: (1) إعادة ترتيب هيدر شاشة المبيعات باستخدام TableLayoutPanel (2) إعادة ترتيب فلاتر شاشة الجرد باستخدام FlowLayoutPanel (3) إضافة فلتر المخازن في شاشة التقارير وتطبيقه على جميع تقارير المبيعات والمرتجع وتقفيل المناديب اليومي

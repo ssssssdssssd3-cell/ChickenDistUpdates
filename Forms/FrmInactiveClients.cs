@@ -9,7 +9,6 @@ namespace ChickenDist.Forms
 {
     public class FrmInactiveClients : Form
     {
-        private Panel pnlHeader;
         private NumericUpDown nudDays;
         private Button btnLoad;
         private DataGridView dgClients;

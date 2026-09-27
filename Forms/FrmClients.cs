@@ -10,7 +10,6 @@ namespace ChickenDist.Forms
     /// <summary>شاشة إدارة العملاء</summary>
     public class FrmClients : Form
     {
-        private Panel pnlHeader;
         private DataGridView dgClients;
         private TextBox txtSearch, txtCode, txtName, txtPhone, txtPhone2, txtAddress, txtNotes;
         private NumericUpDown nudOpening, nudCreditLimit, nudOpeningCrates;

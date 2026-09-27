@@ -15,7 +15,7 @@ namespace ChickenDist.Forms
         private DateTimePicker dtpFrom, dtpTo;
         private ComboBox cboType;
         private TextBox txtSearch;
-        private Button btnSearch, btnRestore, btnDelete, btnPrint;
+        private Button btnSearch, btnRestore, btnDelete;
 
         private DataGridView dgDrafts;
         private DataGridView dgItems;

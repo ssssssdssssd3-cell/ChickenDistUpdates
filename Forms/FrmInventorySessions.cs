@@ -24,7 +24,6 @@ namespace ChickenDist.Forms
         private Label lblSessionsCount, lblDetailsTitle, lblSessionSummary;
 
         private string _selectedBatchCode = "";
-        private DateTime? _selectedSessionDate = null;
         private string _selectedWarehouseName = "";
         private string _selectedUserName = "";
 

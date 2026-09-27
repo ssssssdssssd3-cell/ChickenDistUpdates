@@ -18,15 +18,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Firebase Web Config (Loads dynamically from firebase_config.json if available)
+// Firebase Web Config (Loads dynamically from firebase_config.json or environment variables)
 let firebaseConfig = {
-    apiKey: "AIzaSyCjdqMOaMTn-6_DrAd62fXLcMlEqLqVzWk",
-    authDomain: "checkin-192ab.firebaseapp.com",
-    projectId: "checkin-192ab",
-    storageBucket: "checkin-192ab.firebasestorage.app",
-    messagingSenderId: "818712709979",
-    appId: "1:818712709979:web:ce0c913f02a43cec6a687e",
-    measurementId: "G-6YV1QPB7M6"
+    apiKey: process.env.FIREBASE_API_KEY || "",
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN || "",
+    projectId: process.env.FIREBASE_PROJECT_ID || "",
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "",
+    appId: process.env.FIREBASE_APP_ID || "",
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID || ""
 };
 
 const configPath = path.join(__dirname, 'firebase_config.json');
@@ -37,22 +37,22 @@ if (fs.existsSync(configPath)) {
         if (loadedConfig.projectId && !loadedConfig.apiKey) {
             const pid = loadedConfig.projectId;
             firebaseConfig = {
-                apiKey: firebaseConfig.apiKey, // keep original apiKey (still needed for auth)
+                apiKey: firebaseConfig.apiKey || "",
                 authDomain: `${pid}.firebaseapp.com`,
                 projectId: pid,
                 storageBucket: `${pid}.firebasestorage.app`,
-                messagingSenderId: firebaseConfig.messagingSenderId,
-                appId: firebaseConfig.appId,
-                measurementId: firebaseConfig.measurementId
+                messagingSenderId: firebaseConfig.messagingSenderId || "",
+                appId: firebaseConfig.appId || "",
+                measurementId: firebaseConfig.measurementId || ""
             };
-            console.log(`[Firebase]: Loaded projectId="${pid}" from firebase_config.json — built full config.`);
+            console.log(`[Firebase]: Loaded projectId="${pid}" from firebase_config.json — built config.`);
         } else if (loadedConfig.apiKey) {
             // Full config provided — use it as-is
             firebaseConfig = loadedConfig;
-            console.log('[Firebase]: Loaded full config from firebase_config.json.');
+            console.log('[Firebase]: Loaded configuration from firebase_config.json.');
         }
     } catch (err) {
-        console.error('[Firebase]: Failed to parse firebase_config.json, using default keys.', err);
+        console.error('[Firebase]: Failed to parse firebase_config.json:', err.message);
     }
 }
 

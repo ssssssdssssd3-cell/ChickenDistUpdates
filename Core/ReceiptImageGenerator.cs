@@ -383,7 +383,6 @@ namespace ChickenDist.Core
                         if (isCommercial || isAlTarek)
                         {
                             // 8 Columns: م(28) | كود(55) | صنف(215) | وحدة(45) | كمية(48) | سعر(65) | خصم(45) | إجمالي(75)
-                            int x0 = 20;
                             int wTot = 78, wDisc = 45, wPrice = 65, wQty = 48, wUnit = 45, wCode = 55, wIdx = 28;
                             int wName = (width - 40) - (wTot + wDisc + wPrice + wQty + wUnit + wCode + wIdx);
 

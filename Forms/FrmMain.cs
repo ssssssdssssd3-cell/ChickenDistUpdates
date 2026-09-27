@@ -16,8 +16,6 @@ namespace ChickenDist.Forms
         private Panel pnlTabBar;
         private Button _btnOpenPages;
         private Button btnCloseCurrent;
-        private ToolStripDropDown _pnlDropdown;
-        private FlowLayoutPanel pnlHeaderRight;
         private Label lblUserInfo, lblCompany, lblTitle;
         private Form _currentChild;
         private Button _activeGroupBtn;

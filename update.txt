@@ -1,5 +1,5 @@
-version=3.9.17
+version=3.9.18
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.17&t=1790412743
-sha256=C0C4C97C689A8A58CF9EEC8E618CB47C794B192B4D15408B1F07EF64C281ED0B
-changelog=v3.9.17 - 2026-09-26: Add Client Coffee Blend feature for restaurants/cafes, Dual Kitchen Printer support, and optional blend printing on kitchen ticket
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.18&t=1790500801
+sha256=77CDC1611EDE14989B86BAB94BB0B7B2DBB9F1EC3D6F7015FAC84FB0C2CF49B9
+changelog=v3.9.18 - 2026-09-27: Comprehensive Stability & Security: Unified Single Source, Secured Firebase/DB secrets, Unified CTE Inventory Calculation, Zero compiler warnings, Financial Integrity test suite

@@ -11,13 +11,7 @@
     <StartupObject>ChickenDist.Program</StartupObject>
     <CodePage>65001</CodePage>
   </PropertyGroup>
-  <!-- استثناء مجلد ChickenDist الفرعي القديم من الـ Compile لتفادي التعارض -->
-  <ItemGroup>
-    <Compile Remove="ChickenDist\**\*" />
-    <EmbeddedResource Remove="ChickenDist\**\*" />
-    <None Remove="ChickenDist\**\*" />
-    <Content Remove="ChickenDist\**\*" />
-  </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Configuration" />
     <Reference Include="System.Management" />

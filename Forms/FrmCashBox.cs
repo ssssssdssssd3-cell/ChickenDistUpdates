@@ -34,8 +34,6 @@ namespace ChickenDist.Forms
         private TextBox txtExpAmount;
         private DateTimePicker dtpExpDate;
         private int _selectedExpID = 0;
-        private int _selectedSupplierForExpense = 0;
-        private string _selectedSupplierNameForExpense;
         private DataTable _vehiclesForExpenseFilter;
 
         public FrmCashBox()
@@ -780,7 +778,10 @@ namespace ChickenDist.Forms
                     cboSource.Enabled = false;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmCashBox.PopulateTransferSafes", ex);
+            }
 
             currentY += 55;
             var lblAmt = new Label { Text = "المبلغ المراد تحويله (ج):", Location = new Point(25, currentY), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
@@ -957,7 +958,10 @@ namespace ChickenDist.Forms
                     cboSafe.Enabled = false;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmCashBox.PopulateSafes", ex);
+            }
 
             var txtAmount = new TextBox 
             { 

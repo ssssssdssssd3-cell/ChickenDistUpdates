@@ -78,7 +78,6 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlContent);
 
             int y = 15;
-            int lblW = 160;
             int inputX = 180;
             int inputW = 285;
 

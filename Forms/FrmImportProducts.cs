@@ -18,7 +18,6 @@ namespace ChickenDist.Forms
     public class FrmImportProducts : Form
     {
         private Panel pnlHeader;
-        private Label lblTitle, lblDesc;
         private DataGridView dgPreview;
         private ComboBox cboStockPolicy;
         private Button btnBrowse, btnCopyTemplate, btnImport, btnCancel, btnPreview;
