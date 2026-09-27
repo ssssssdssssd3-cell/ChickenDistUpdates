@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 # ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
-$VERSION   = "3.9.19";
+$VERSION   = "3.9.20";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -148,6 +148,15 @@ foreach ($asset in $pwaAssets) {
     }
 }
 
+# Sync Product Images
+$mobileImagesSrc = Join-Path $REPO_ROOT "MobileApp\images"
+$botImagesDst = Join-Path $REPO_ROOT "bot\public\images"
+if (Test-Path $mobileImagesSrc) {
+    if (-not (Test-Path $botImagesDst)) { New-Item -ItemType Directory -Path $botImagesDst -Force | Out-Null }
+    Copy-Item -Path "$mobileImagesSrc\*" -Destination $botImagesDst -Force -Recurse
+    Write-OK "Synced MobileApp/images to bot/public/images"
+}
+
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory
 $baseRoot = Split-Path (Split-Path $REPO_ROOT -Parent) -Parent
 $finalReleaseExe = Join-Path $baseRoot "FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"
@@ -172,7 +181,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Expanded Return Details View: Full-width responsive table, enlarged product name column, optimized vertical SplitContainer, complete 3-mode return/exchange support"
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Store Product Images (up to 3 images per item), automatic ultra-lightweight JPEG compression (25-35 KB), mobile data safeguard, on-demand swipe gallery modal"
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"

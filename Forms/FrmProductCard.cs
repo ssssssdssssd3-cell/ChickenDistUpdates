@@ -18,6 +18,10 @@ namespace ChickenDist.Forms
         private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem, chkHasExpiry;
         private NumericUpDown nudDefaultExpiryDays;
         private Button btnSave, btnCancel;
+        private Button btnProductImages;
+        private string _imageUrl1 = null;
+        private string _imageUrl2 = null;
+        private string _imageUrl3 = null;
         private int _selectedID = 0;
         private bool _originalHasExpiry = false;
 
@@ -170,6 +174,11 @@ namespace ChickenDist.Forms
             var lblDesc = new Label { Text = "الوصف:", Location = new Point(195, ry + 3), Width = 95, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
             txtDescription = new TextBox { Location = new Point(5, ry), Width = 188, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
             grpBasic.Controls.AddRange(new Control[] { lblDesc, txtDescription });
+            ry += 50;
+
+            btnProductImages = Theme.MakeButton("📷 صور الصنف للمتجر (0/3)", 5, ry, 285, 36, Color.FromArgb(40, 90, 160));
+            btnProductImages.Click += BtnProductImages_Click;
+            grpBasic.Controls.Add(btnProductImages);
 
 
             bool canSeeCost = Session.CanViewCost("Products");
@@ -813,6 +822,11 @@ namespace ChickenDist.Forms
                 
                 RecalculateSubUnitPrices();
                 UpdateUnitHeaders();
+
+                _imageUrl1 = dr.Table.Columns.Contains("ImageUrl1") && dr["ImageUrl1"] != DBNull.Value ? dr["ImageUrl1"].ToString() : null;
+                _imageUrl2 = dr.Table.Columns.Contains("ImageUrl2") && dr["ImageUrl2"] != DBNull.Value ? dr["ImageUrl2"].ToString() : null;
+                _imageUrl3 = dr.Table.Columns.Contains("ImageUrl3") && dr["ImageUrl3"] != DBNull.Value ? dr["ImageUrl3"].ToString() : null;
+                UpdateProductImagesButton();
             }
             catch (Exception ex)
             {
@@ -847,6 +861,10 @@ namespace ChickenDist.Forms
             chkIsQuickItem.Checked = false;
             if (chkHasExpiry != null) chkHasExpiry.Checked = false;
             if (nudDefaultExpiryDays != null) { nudDefaultExpiryDays.Value = 0; nudDefaultExpiryDays.Enabled = false; }
+            _imageUrl1 = null;
+            _imageUrl2 = null;
+            _imageUrl3 = null;
+            UpdateProductImagesButton();
 
             // Multi-Unit default
             cboUnit1Name.Text = "القطعة";
@@ -1050,7 +1068,8 @@ namespace ChickenDist.Forms
                     cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
                     cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                     nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
-                    chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal);
+                    chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal,
+                    _imageUrl1, _imageUrl2, _imageUrl3);
 
                 if (id > 0)
                 {
@@ -1068,6 +1087,39 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "تنبيه الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void UpdateProductImagesButton()
+        {
+            if (btnProductImages == null) return;
+            int count = 0;
+            if (!string.IsNullOrWhiteSpace(_imageUrl1)) count++;
+            if (!string.IsNullOrWhiteSpace(_imageUrl2)) count++;
+            if (!string.IsNullOrWhiteSpace(_imageUrl3)) count++;
+
+            btnProductImages.Text = $"📷 صور الصنف للمتجر ({count}/3)";
+            if (count > 0)
+            {
+                btnProductImages.BackColor = Color.FromArgb(16, 130, 80);
+            }
+            else
+            {
+                btnProductImages.BackColor = Color.FromArgb(40, 90, 160);
+            }
+        }
+
+        private void BtnProductImages_Click(object sender, EventArgs e)
+        {
+            using (var frm = new FrmProductImages(_selectedID, txtCode.Text, txtName.Text, _imageUrl1, _imageUrl2, _imageUrl3))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK)
+                {
+                    _imageUrl1 = frm.ImageUrl1;
+                    _imageUrl2 = frm.ImageUrl2;
+                    _imageUrl3 = frm.ImageUrl3;
+                    UpdateProductImagesButton();
+                }
             }
         }
 

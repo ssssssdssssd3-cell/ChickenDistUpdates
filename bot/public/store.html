@@ -913,6 +913,68 @@
   </div>
 
   <!-- ========================================== -->
+  <!-- 10. نافذة تفاصيل ومعرض صور المنتج (PRODUCT GALLERY MODAL) -->
+  <!-- ========================================== -->
+  <div id="productGalleryModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4" onclick="if(event.target===this) closeProductGalleryModal()">
+    <div class="glass-card rounded-3xl p-4 sm:p-5 w-full max-w-md shadow-2xl border border-slate-700 text-right relative overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- الهيدر: التصنيف وزر الإغلاق -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <span id="galleryCategoryBadge" class="text-xs font-bold text-blue-400 bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-500/30">عام</span>
+          <span id="galleryStockBadge" class="text-xs font-bold px-2 py-0.5 rounded-full"></span>
+        </div>
+        <button onclick="closeProductGalleryModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- محتوى المعرض المنزلق وتفاصيل المنتج -->
+      <div class="overflow-y-auto custom-scrollbar py-3 space-y-3 flex-1">
+        
+        <!-- مساحة عرض الصورة الكبيرة مع إمكانية السحب Touch Swipe -->
+        <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center group" id="gallerySwipeContainer">
+          <img id="galleryMainImage" src="" alt="صورة الصنف" class="w-full h-full object-contain transition-opacity duration-200">
+          
+          <!-- أزرار التنقل (Next / Prev) -->
+          <button id="galleryBtnPrev" onclick="navigateGallery(-1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center transition shadow-lg hidden">
+            <i class="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+          <button id="galleryBtnNext" onclick="navigateGallery(1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center transition shadow-lg hidden">
+            <i class="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+
+          <!-- ترقيم الصور (1 / 3) -->
+          <span id="galleryCounterBadge" class="absolute bottom-2 left-2 bg-black/70 backdrop-blur-md text-xs text-white px-2.5 py-0.5 rounded-full font-bold border border-white/10 hidden">
+            1 / 3
+          </span>
+        </div>
+
+        <!-- أزرار المصغرات (Thumbnails) -->
+        <div id="galleryThumbnailsContainer" class="flex items-center justify-center gap-2 pt-1 hidden">
+          <!-- ديناميكي: أزرار معاينة الصور -->
+        </div>
+
+        <!-- تفاصيل المنتج: الاسم والأسعار -->
+        <div class="space-y-1 pt-2">
+          <h3 id="galleryProductName" class="text-base sm:text-lg font-black text-white leading-tight"></h3>
+          <div class="flex items-baseline justify-between pt-1">
+            <div id="galleryProductPrice" class="text-lg font-black text-emerald-400"></div>
+            <span id="galleryProductUnit" class="text-xs text-slate-400"></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- الفوتر: زر الإضافة للسلة أو التحكم بالكمية -->
+      <div id="galleryFooterAction" class="pt-3 border-t border-slate-800 flex-shrink-0">
+        <!-- ديناميكي -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
   <!-- JavaScript Logic -->
   <!-- ========================================== -->
   <script>
@@ -1251,17 +1313,41 @@
             stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-500/30 font-bold">متوفر للطلب ✅</span>`;
           }
 
+          // استخراج الصورة الرئيسية وعدد الصور
+          const mainImg = p.ImageUrl || (p.Images && p.Images.length > 0 ? p.Images[0] : '');
+          const imagesCount = (p.Images && Array.isArray(p.Images) && p.Images.length > 0)
+            ? p.Images.length
+            : (mainImg ? 1 : 0);
+
+          let imgHtml = '';
+          if (mainImg) {
+            imgHtml = `
+              <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-900/90 border border-slate-800/80 mb-2 cursor-pointer group-hover:border-blue-500/40 transition" onclick="openProductGalleryModal(${p.ProductID})">
+                <img src="${mainImg}" alt="${p.ProductName}" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.parentElement.style.display='none'">
+                ${imagesCount > 1 ? `
+                  <span class="absolute bottom-1.5 left-1.5 bg-black/75 backdrop-blur-md text-[10px] text-white px-1.5 py-0.5 rounded-md flex items-center gap-1 font-bold border border-white/10 shadow">
+                    <i class="fa-solid fa-images text-[9px] text-blue-400"></i>
+                    <span>${imagesCount}</span>
+                  </span>
+                ` : ''}
+              </div>
+            `;
+          }
+
           return `
             <div class="glass-card rounded-2xl p-3 sm:p-4 border border-slate-800 hover:border-blue-500/40 transition flex flex-col justify-between shadow-md relative overflow-hidden group">
               
+              <!-- صورة الصنف (إن وُجدت) -->
+              ${imgHtml}
+
               <!-- معلومات الصنف -->
-              <div class="space-y-2">
+              <div class="space-y-1.5">
                 <div class="flex items-center justify-between gap-1">
                   <span class="text-[10px] text-slate-400 font-semibold truncate">${p.CategoryName || 'عام'}</span>
                   ${stockHtml}
                 </div>
 
-                <h4 class="font-bold text-white text-xs sm:text-sm line-clamp-2 leading-tight min-h-[2.5rem] group-hover:text-blue-300 transition">
+                <h4 onclick="openProductGalleryModal(${p.ProductID})" class="font-bold text-white text-xs sm:text-sm line-clamp-2 leading-tight min-h-[2.5rem] group-hover:text-blue-300 transition cursor-pointer">
                   ${p.ProductName}
                 </h4>
 
@@ -1303,6 +1389,195 @@
           return '';
         }
       }).join('');
+    }
+
+    // ──────────────────────────────────────────
+    // معرض صور وتفاصيل الصنف (Product Gallery & Data Saver)
+    // ──────────────────────────────────────────
+    let activeGalleryProduct = null;
+    let activeGalleryImages = [];
+    let curGalleryIndex = 0;
+    let galleryTouchStartX = 0;
+
+    function openProductGalleryModal(productId) {
+      const prod = products.find(p => p.ProductID == productId);
+      if (!prod) return;
+
+      activeGalleryProduct = prod;
+
+      // تجميع الصور المتاحة (الرئيسية والإضافية)
+      let imgs = [];
+      if (prod.Images && Array.isArray(prod.Images) && prod.Images.length > 0) {
+        imgs = prod.Images.filter(im => im && typeof im === 'string' && im.trim().length > 0);
+      }
+      if (imgs.length === 0 && prod.ImageUrl && prod.ImageUrl.trim().length > 0) {
+        imgs = [prod.ImageUrl.trim()];
+      }
+
+      activeGalleryImages = imgs;
+      curGalleryIndex = 0;
+
+      // تعبئة البيانات
+      const catBadge = document.getElementById('galleryCategoryBadge');
+      if (catBadge) catBadge.textContent = prod.CategoryName || 'عام';
+      
+      const nameElem = document.getElementById('galleryProductName');
+      if (nameElem) nameElem.textContent = prod.ProductName || '';
+      
+      const priceText = storeConfig.ShowPrices
+        ? `${parseFloat(prod.Price || 0).toFixed(2)} ج.م`
+        : 'السعر عند الطلب 📞';
+      const priceElem = document.getElementById('galleryProductPrice');
+      if (priceElem) priceElem.textContent = priceText;
+
+      const unitElem = document.getElementById('galleryProductUnit');
+      if (unitElem) unitElem.textContent = prod.Unit ? `لكل ${prod.Unit}` : '';
+
+      // رصيد المخزون
+      const stockBadge = document.getElementById('galleryStockBadge');
+      if (stockBadge) {
+        if (storeConfig.ShowStockQty) {
+          const qty = parseFloat(prod.StockQty || 0);
+          if (qty > 0) {
+            stockBadge.textContent = `المتاح: ${qty} ${prod.Unit || ''}`;
+            stockBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30';
+            stockBadge.classList.remove('hidden');
+          } else {
+            stockBadge.textContent = 'غير متوفر حالياً';
+            stockBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-500/30';
+            stockBadge.classList.remove('hidden');
+          }
+        } else {
+          stockBadge.classList.add('hidden');
+        }
+      }
+
+      renderGalleryImage();
+      renderGalleryFooterAction();
+
+      const modal = document.getElementById('productGalleryModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeProductGalleryModal() {
+      const modal = document.getElementById('productGalleryModal');
+      if (modal) modal.classList.add('hidden');
+      activeGalleryProduct = null;
+    }
+
+    function renderGalleryImage() {
+      const mainImg = document.getElementById('galleryMainImage');
+      const prevBtn = document.getElementById('galleryBtnPrev');
+      const nextBtn = document.getElementById('galleryBtnNext');
+      const counter = document.getElementById('galleryCounterBadge');
+      const thumbsContainer = document.getElementById('galleryThumbnailsContainer');
+      const swipeBox = document.getElementById('gallerySwipeContainer');
+
+      if (!mainImg) return;
+
+      if (activeGalleryImages.length === 0) {
+        mainImg.src = '';
+        mainImg.alt = 'لا توجد صورة لهذا الصنف';
+        mainImg.classList.add('hidden');
+        if (prevBtn) prevBtn.classList.add('hidden');
+        if (nextBtn) nextBtn.classList.add('hidden');
+        if (counter) counter.classList.add('hidden');
+        if (thumbsContainer) thumbsContainer.classList.add('hidden');
+        
+        let placeholder = document.getElementById('galleryPlaceholderIcon');
+        if (!placeholder && swipeBox) {
+          placeholder = document.createElement('div');
+          placeholder.id = 'galleryPlaceholderIcon';
+          placeholder.className = 'text-slate-600 text-5xl flex flex-col items-center gap-2';
+          placeholder.innerHTML = '<i class="fa-solid fa-box-open"></i><span class="text-xs text-slate-500 font-semibold">لا توجد صور متوفرة</span>';
+          swipeBox.appendChild(placeholder);
+        }
+        if (placeholder) placeholder.classList.remove('hidden');
+        return;
+      }
+
+      const placeholder = document.getElementById('galleryPlaceholderIcon');
+      if (placeholder) placeholder.classList.add('hidden');
+      mainImg.classList.remove('hidden');
+
+      // تعيين مصدر الصورة الحالية
+      mainImg.src = activeGalleryImages[curGalleryIndex];
+      mainImg.alt = activeGalleryProduct?.ProductName || 'صورة الصنف';
+
+      if (activeGalleryImages.length > 1) {
+        if (prevBtn) prevBtn.classList.remove('hidden');
+        if (nextBtn) nextBtn.classList.remove('hidden');
+        if (counter) {
+          counter.classList.remove('hidden');
+          counter.textContent = `${curGalleryIndex + 1} / ${activeGalleryImages.length}`;
+        }
+
+        // رسم المصغرات Thumbnails
+        if (thumbsContainer) {
+          thumbsContainer.classList.remove('hidden');
+          thumbsContainer.innerHTML = activeGalleryImages.map((img, idx) => `
+            <button onclick="setGalleryIndex(${idx})" class="w-12 h-12 rounded-xl overflow-hidden border-2 transition ${idx === curGalleryIndex ? 'border-blue-500 scale-105 shadow-md shadow-blue-500/20' : 'border-slate-700 opacity-60 hover:opacity-100'}">
+              <img src="${img}" alt="صورة ${idx + 1}" class="w-full h-full object-cover">
+            </button>
+          `).join('');
+        }
+      } else {
+        if (prevBtn) prevBtn.classList.add('hidden');
+        if (nextBtn) nextBtn.classList.add('hidden');
+        if (counter) counter.classList.add('hidden');
+        if (thumbsContainer) thumbsContainer.classList.add('hidden');
+      }
+    }
+
+    function navigateGallery(delta) {
+      if (activeGalleryImages.length <= 1) return;
+      curGalleryIndex = (curGalleryIndex + delta + activeGalleryImages.length) % activeGalleryImages.length;
+      renderGalleryImage();
+    }
+
+    function setGalleryIndex(idx) {
+      if (idx >= 0 && idx < activeGalleryImages.length) {
+        curGalleryIndex = idx;
+        renderGalleryImage();
+      }
+    }
+
+    function renderGalleryFooterAction() {
+      const container = document.getElementById('galleryFooterAction');
+      if (!container || !activeGalleryProduct) return;
+
+      const p = activeGalleryProduct;
+      const inCartItem = cart.find(c => c.ProductID == p.ProductID);
+      const inCartQty = inCartItem ? inCartItem.Quantity : 0;
+      const isOutOfStock = storeConfig.ShowStockQty && parseFloat(p.StockQty || 0) <= 0;
+
+      if (inCartQty > 0) {
+        container.innerHTML = `
+          <div class="flex items-center justify-between bg-slate-900 rounded-xl p-1.5 border border-blue-500/40">
+            <button onclick="updateItemQuantity(${p.ProductID}, -1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition">
+              <i class="fa-solid fa-minus text-xs"></i>
+            </button>
+            <span class="font-black text-white text-sm px-3">${inCartQty} في السلة</span>
+            <button onclick="updateItemQuantity(${p.ProductID}, 1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center transition">
+              <i class="fa-solid fa-plus text-xs"></i>
+            </button>
+          </div>
+        `;
+      } else if (isOutOfStock) {
+        container.innerHTML = `
+          <button disabled class="w-full py-3 bg-slate-800/80 text-rose-400 font-bold rounded-xl text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-rose-900/30">
+            <i class="fa-solid fa-ban text-rose-500"></i>
+            <span>غير متوفر حالياً بالمخزن</span>
+          </button>
+        `;
+      } else {
+        container.innerHTML = `
+          <button onclick="addToCart(${p.ProductID}); renderGalleryFooterAction();" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition">
+            <i class="fa-solid fa-cart-plus"></i>
+            <span>إضافة إلى السلة</span>
+          </button>
+        `;
+      }
     }
 
     // ──────────────────────────────────────────
@@ -2355,6 +2630,27 @@ ${itemsText}
       loadStoreData();
       checkIosBanner();
       checkAutoInstallPrompt();
+
+      // إيماءات اللمس السريعة لمعرض الصور (Swipe Gestures)
+      const swipeBox = document.getElementById('gallerySwipeContainer');
+      if (swipeBox) {
+        swipeBox.addEventListener('touchstart', e => {
+          if (e.changedTouches && e.changedTouches.length > 0) {
+            galleryTouchStartX = e.changedTouches[0].clientX;
+          }
+        }, { passive: true });
+
+        swipeBox.addEventListener('touchend', e => {
+          if (e.changedTouches && e.changedTouches.length > 0) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchEndX - galleryTouchStartX;
+            if (Math.abs(diff) > 35) {
+              if (diff > 0) navigateGallery(-1); // سحب لليمين -> الصورة السابقة
+              else navigateGallery(1);           // سحب لليسار -> الصورة التالية
+            }
+          }
+        }, { passive: true });
+      }
     });
   </script>
 </body>

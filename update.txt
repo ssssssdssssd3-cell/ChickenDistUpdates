@@ -1,5 +1,5 @@
-version=3.9.19
+version=3.9.20
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.19&t=1790502792
-sha256=9F2E787370B0FEBED1C1A4170BD038ED35033A48B9BA6F4BAABDA7B9F28FA773
-changelog=v3.9.19 - 2026-09-27: Expanded Return Details View: Full-width responsive table, enlarged product name column, optimized vertical SplitContainer, complete 3-mode return/exchange support
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.20&t=1790520948
+sha256=49F9FB29CECA8CCB6854FE9018838033231AA0C5563853BD99B8AAC23DFBCD7F
+changelog=v3.9.20 - 2026-09-27: Store Product Images (up to 3 images per item), automatic ultra-lightweight JPEG compression (25-35 KB), mobile data safeguard, on-demand swipe gallery modal

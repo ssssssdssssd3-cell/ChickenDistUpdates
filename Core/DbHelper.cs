@@ -3916,6 +3916,11 @@ namespace ChickenDist.Core
                 IF OBJECT_ID('Products', 'U') IS NOT NULL AND COL_LENGTH('Products','PendingSaleCol') IS NULL
                     ALTER TABLE Products ADD PendingSaleCol NVARCHAR(50) NULL;");
 
+                SafeMigrate("Products.ImagesColumns", @"
+                IF COL_LENGTH('Products','ImageUrl1') IS NULL ALTER TABLE Products ADD ImageUrl1 NVARCHAR(500) NULL;
+                IF COL_LENGTH('Products','ImageUrl2') IS NULL ALTER TABLE Products ADD ImageUrl2 NVARCHAR(500) NULL;
+                IF COL_LENGTH('Products','ImageUrl3') IS NULL ALTER TABLE Products ADD ImageUrl3 NVARCHAR(500) NULL;");
+
                 // ── ReceiptVouchers: إنشاء الجدول إن لم يكن موجوداً ──
                 SafeMigrate("ReceiptVouchers.Table", @"
                 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ReceiptVouchers')

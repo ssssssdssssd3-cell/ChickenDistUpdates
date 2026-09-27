@@ -1303,7 +1303,10 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(p.CategoryID, 0) AS CategoryID, ISNULL(c.CategoryName, N'عام') AS CategoryName,
                            ISNULL(p.Unit, N'قطعة') AS Unit,
                            {priceCol} AS Price,
-                           ISNULL(stk.TotalStock, 0) AS StockQty
+                           ISNULL(stk.TotalStock, 0) AS StockQty,
+                           ISNULL(p.ImageUrl1, '') AS ImageUrl1,
+                           ISNULL(p.ImageUrl2, '') AS ImageUrl2,
+                           ISNULL(p.ImageUrl3, '') AS ImageUrl3
                     FROM Products p WITH (NOLOCK)
                     LEFT JOIN Categories c WITH (NOLOCK) ON p.CategoryID = c.CategoryID
                     OUTER APPLY (
@@ -1339,6 +1342,17 @@ self.addEventListener('fetch', (event) => {
                         string unit = EscapeJsonString(r["Unit"]?.ToString() ?? "قطعة");
                         decimal price = r["Price"] != DBNull.Value ? Convert.ToDecimal(r["Price"]) : 0m;
 
+                        string img1 = EscapeJsonString(r["ImageUrl1"]?.ToString() ?? "");
+                        string img2 = EscapeJsonString(r["ImageUrl2"]?.ToString() ?? "");
+                        string img3 = EscapeJsonString(r["ImageUrl3"]?.ToString() ?? "");
+
+                        var sbImgs = new StringBuilder("[");
+                        bool firstImg = true;
+                        if (!string.IsNullOrEmpty(img1)) { sbImgs.Append("\"").Append(img1).Append("\""); firstImg = false; }
+                        if (!string.IsNullOrEmpty(img2)) { if (!firstImg) sbImgs.Append(","); sbImgs.Append("\"").Append(img2).Append("\""); firstImg = false; }
+                        if (!string.IsNullOrEmpty(img3)) { if (!firstImg) sbImgs.Append(","); sbImgs.Append("\"").Append(img3).Append("\""); firstImg = false; }
+                        sbImgs.Append("]");
+
                         sbProducts.Append("{" +
                             "\"ProductID\":" + pId + "," +
                             "\"ProductName\":\"" + pName + "\"," +
@@ -1347,7 +1361,9 @@ self.addEventListener('fetch', (event) => {
                             "\"CategoryName\":\"" + cName + "\"," +
                             "\"Unit\":\"" + unit + "\"," +
                             "\"Price\":" + price.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
-                            "\"StockQty\":" + stock.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                            "\"StockQty\":" + stock.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                            "\"ImageUrl\":\"" + img1 + "\"," +
+                            "\"Images\":" + sbImgs.ToString() +
                             "}");
                     }
                 }
