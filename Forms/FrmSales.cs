@@ -1041,10 +1041,10 @@ namespace ChickenDist.Forms
 
 					if (returnAmt > 0)
 					{
-						addedRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // اصفر واضح ومميز للفواتير المرتجعة
-						addedRow.DefaultCellStyle.ForeColor = Color.Black;
-						addedRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);
-						addedRow.DefaultCellStyle.SelectionForeColor = Color.Black;
+						addedRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242); // خلفية هادئة مائلة للوردي الفاتح بدلاً من الأصفر
+						addedRow.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27); // خط عنابي داكن واضح
+						addedRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
+						addedRow.DefaultCellStyle.SelectionForeColor = Color.White;
 					}
 				}
 			}
@@ -1149,10 +1149,10 @@ namespace ChickenDist.Forms
 					var addedItemRow = dgItems.Rows[addedItemIdx];
 					addedItemRow.Cells["ReturnedQty"].Style.ForeColor = Color.FromArgb(220, 38, 38);
 					addedItemRow.Cells["ReturnedQty"].Style.BackColor = Color.FromArgb(254, 242, 242);
-					addedItemRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // أصفر مميز للصف الذي به مرتجع
-					addedItemRow.DefaultCellStyle.ForeColor = Color.Black;
-					addedItemRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);
-					addedItemRow.DefaultCellStyle.SelectionForeColor = Color.Black;
+					addedItemRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242); // خلفية هادئة للصف الذي به مرتجع
+					addedItemRow.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
+					addedItemRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
+					addedItemRow.DefaultCellStyle.SelectionForeColor = Color.White;
 				}
 			}
 

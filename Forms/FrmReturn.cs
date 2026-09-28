@@ -348,14 +348,11 @@ namespace ChickenDist.Forms
                 WrapContents = true
             };
 
-            // دالة مساعدة لتطبيق لون مميز وواضح على جميع خانات البحث
-            Color searchBg = Color.FromArgb(30, 48, 70); // لون كحلي داكن مميز لخانات البحث
-            Color searchFg = Color.FromArgb(254, 240, 138); // خط أصفر ذهبي مضيء وواضح جداً
-
+            // دالة مساعدة لتطبيق لون مميز ومقروء على جميع خانات البحث والإدخال (خط داكن عالي التباين)
             void StyleSearchInput(Control c)
             {
-                c.BackColor = searchBg;
-                c.ForeColor = searchFg;
+                c.BackColor = Theme.BgInput;
+                c.ForeColor = Theme.TextInput;
                 c.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             }
 
@@ -475,7 +472,7 @@ namespace ChickenDist.Forms
             {
                 Width = 140, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular)
             };
             StyleSearchInput(cboEmployeeFilter);
@@ -485,7 +482,7 @@ namespace ChickenDist.Forms
             {
                 Width = 145, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             cboReturnType.Items.Add("💵 نقدي (كاش)");
@@ -498,7 +495,8 @@ namespace ChickenDist.Forms
             {
                 Width = 120, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 120);
 
@@ -576,12 +574,13 @@ namespace ChickenDist.Forms
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
+                Font = Theme.FontBold
             };
             var lblGenQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            txtGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            txtGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold };
             var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
+            txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
             
             btnAddGenItem = Theme.MakeButton("🔍 بحث (F2)", Color.FromArgb(40, 110, 160));
             btnAddGenItem.Size = new Size(110, 28);
@@ -616,12 +615,13 @@ namespace ChickenDist.Forms
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
-                BackColor = Theme.BgInput, ForeColor = Theme.TextMain
+                BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
+                Font = Theme.FontBold
             };
             var lblNewQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            txtNewGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+            txtNewGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold };
             var lblNewPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
-            txtNewGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
+            txtNewGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
             btnAddNewGenItem = Theme.MakeButton("➕ إضافة بديل", Color.FromArgb(50, 140, 70));
             btnAddNewGenItem.Size = new Size(110, 26);
             btnAddNewGenItem.Margin = new Padding(10, 0, 0, 0);
@@ -678,10 +678,10 @@ namespace ChickenDist.Forms
                     var row = dgSales.Rows[e.RowIndex];
                     if (row.Cells["ReturnAmount"].Value != null && decimal.TryParse(row.Cells["ReturnAmount"].Value.ToString(), out decimal retAmt) && retAmt > 0)
                     {
-                        row.DefaultCellStyle.BackColor = Color.FromArgb(254, 240, 138); // أصفر واضح للفواتير المرتجعة
-                        row.DefaultCellStyle.ForeColor = Color.Black;
-                        row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 179, 8);
-                        row.DefaultCellStyle.SelectionForeColor = Color.Black;
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242); // خلفية هادئة مائلة للوردي الفاتح بدلاً من الأصفر
+                        row.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27); // خط عنابي داكن واضح
+                        row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
+                        row.DefaultCellStyle.SelectionForeColor = Color.White;
                     }
 
                     if (dgSales.Columns[e.ColumnIndex].Name == "ClientCode" && e.Value != null)
@@ -694,7 +694,7 @@ namespace ChickenDist.Forms
                         }
                         else
                         {
-                            e.CellStyle.ForeColor = Color.FromArgb(52, 211, 153);
+                            e.CellStyle.ForeColor = Color.FromArgb(5, 120, 75); // أخضر داكن واضح بدلاً من الفاتح المضيء
                             e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                         }
                     }
@@ -763,7 +763,7 @@ namespace ChickenDist.Forms
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
                     Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                    ForeColor = Color.White
+                    ForeColor = Color.FromArgb(20, 25, 35)
                 }
             });
 
@@ -776,7 +776,7 @@ namespace ChickenDist.Forms
                 FillWeight = 35f, 
                 MinimumWidth = 65, 
                 Visible = AppConfig.IsClothing,
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(20, 25, 35) }
             });
 
             // 3. المقاس
@@ -788,7 +788,7 @@ namespace ChickenDist.Forms
                 FillWeight = 35f, 
                 MinimumWidth = 65, 
                 Visible = AppConfig.IsClothing,
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(20, 25, 35) }
             });
 
             // 4. الكمية الأصلية
@@ -802,7 +802,8 @@ namespace ChickenDist.Forms
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(20, 25, 35)
                 }
             });
 
@@ -817,7 +818,8 @@ namespace ChickenDist.Forms
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(185, 28, 28)
                 }
             });
 
@@ -831,7 +833,7 @@ namespace ChickenDist.Forms
                 MinimumWidth = 90, 
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
-                    ForeColor = Color.FromArgb(52, 211, 153), 
+                    ForeColor = Color.FromArgb(5, 120, 75), 
                     Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), 
                     Alignment = DataGridViewContentAlignment.MiddleCenter 
                 } 
@@ -845,7 +847,7 @@ namespace ChickenDist.Forms
                 ReadOnly = false, 
                 FillWeight = 40f, 
                 MinimumWidth = 80,
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(20, 25, 35) }
             });
             
             // 8. المرتجع الجديد
@@ -855,12 +857,12 @@ namespace ChickenDist.Forms
                 HeaderText = "المرتجع الجديد", 
                 ReadOnly = false, 
                 FillWeight = 50f, 
-                MinimumWidth = 90,
+                MinimumWidth = 90, 
                 ValueType = typeof(decimal),
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
-                    BackColor = Color.FromArgb(45, 45, 60), 
-                    ForeColor = Color.Yellow, 
+                    BackColor = Color.FromArgb(240, 249, 255), 
+                    ForeColor = Color.FromArgb(15, 23, 42), 
                     Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter 
                 }
@@ -877,8 +879,8 @@ namespace ChickenDist.Forms
                 MinimumWidth = 85,
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
-                    BackColor = Color.FromArgb(40, 55, 45), 
-                    ForeColor = Color.FromArgb(120, 240, 160), 
+                    BackColor = Color.FromArgb(240, 253, 244), 
+                    ForeColor = Color.FromArgb(22, 101, 52), 
                     Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter 
                 }
@@ -897,7 +899,7 @@ namespace ChickenDist.Forms
                 { 
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
                     Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(254, 240, 138)
+                    ForeColor = Color.FromArgb(185, 28, 28)
                 } 
             });
 
@@ -935,7 +937,7 @@ namespace ChickenDist.Forms
             {
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "CurrentStock")
                 {
-                    e.CellStyle.ForeColor = Color.FromArgb(52, 211, 153); // أخضر مضيء ممتاز
+                    e.CellStyle.ForeColor = Color.FromArgb(5, 120, 75); // أخضر داكن واضح
                     e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                     e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                 }
@@ -1004,7 +1006,7 @@ namespace ChickenDist.Forms
                 ReadOnly = true, 
                 FillWeight = 140f,
                 MinimumWidth = 150,
-                DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.White }
+                DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(20, 25, 35) }
             });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
@@ -1014,7 +1016,7 @@ namespace ChickenDist.Forms
                 FillWeight = 35f, 
                 MinimumWidth = 60, 
                 Visible = AppConfig.IsClothing, 
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(20, 25, 35) } 
             });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
@@ -1024,7 +1026,7 @@ namespace ChickenDist.Forms
                 FillWeight = 35f, 
                 MinimumWidth = 60, 
                 Visible = AppConfig.IsClothing, 
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(20, 25, 35) } 
             });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
@@ -1033,7 +1035,7 @@ namespace ChickenDist.Forms
                 ReadOnly = false, 
                 FillWeight = 45f, 
                 MinimumWidth = 70, 
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.Yellow, BackColor = Color.FromArgb(45, 45, 60) } 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(15, 23, 42), BackColor = Color.FromArgb(240, 249, 255) } 
             });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
@@ -1042,7 +1044,7 @@ namespace ChickenDist.Forms
                 ReadOnly = false, 
                 FillWeight = 45f, 
                 MinimumWidth = 70, 
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(120, 240, 160), BackColor = Color.FromArgb(40, 55, 45) } 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(22, 101, 52), BackColor = Color.FromArgb(240, 253, 244) } 
             });
             dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
@@ -1051,7 +1053,7 @@ namespace ChickenDist.Forms
                 ReadOnly = true, 
                 FillWeight = 50f, 
                 MinimumWidth = 80, 
-                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(254, 240, 138) } 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(30, 58, 138) } 
             });
             dgExchangeNewItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(40, 110, 60);
             dgExchangeNewItems.CellValueChanged += (s, e) => RecalcTotals();
@@ -1102,12 +1104,12 @@ namespace ChickenDist.Forms
             };
 
             var lblNotesL = new Label { Text = "ملاحظات العملية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
-            txtNotes = new TextBox { Width = 220, Height = 28, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 5, 20, 0) };
+            txtNotes = new TextBox { Width = 220, Height = 28, BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(5, 5, 20, 0) };
             
             lblTotal = new Label 
             { 
                 Text = "إجمالي المرتجع: 0.00 ج", 
-                ForeColor = Theme.Accent, 
+                ForeColor = Color.FromArgb(185, 28, 28), 
                 AutoSize = true,
                 Font = new Font("Segoe UI", 14f, FontStyle.Bold),
                 Margin = new Padding(20, 4, 30, 0)
@@ -1116,7 +1118,7 @@ namespace ChickenDist.Forms
             lblExchangeSummary = new Label
             {
                 Text = "",
-                ForeColor = Color.Gold,
+                ForeColor = Color.FromArgb(30, 58, 138),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 Margin = new Padding(10, 8, 10, 0),
@@ -1397,13 +1399,20 @@ namespace ChickenDist.Forms
                 decimal diff = totalNew - totalRet;
                 lblExchangeSummary.Text = $"مرتجع: {totalRet:N2} | بديل: {totalNew:N2}";
                 if (diff >= 0)
+                {
                     lblTotal.Text = $"الصافي للدفع: {diff:N2} ج";
+                    lblTotal.ForeColor = Color.FromArgb(22, 101, 52); // أخضر داكن واضح
+                }
                 else
+                {
                     lblTotal.Text = $"الصافي للمسترجع: {Math.Abs(diff):N2} ج";
+                    lblTotal.ForeColor = Color.FromArgb(185, 28, 28); // عنابي داكن واضح
+                }
             }
             else
             {
                 lblTotal.Text = $"إجمالي المرتجع: {totalRet:N2} ج";
+                lblTotal.ForeColor = Color.FromArgb(185, 28, 28); // عنابي داكن عالي التباين
             }
         }
 
@@ -1660,10 +1669,10 @@ namespace ChickenDist.Forms
 
                 if (prevRetQty > 0)
                 {
-                    dgRow.DefaultCellStyle.BackColor = Color.FromArgb(70, 80, 95); // رصاصي غامق مميز للأصناف المسترجعة
-                    dgRow.DefaultCellStyle.ForeColor = Color.White;
-                    dgRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(45, 55, 70);
-                    dgRow.DefaultCellStyle.SelectionForeColor = Color.Yellow;
+                    dgRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242); // خلفية هادئة للصفوف ذات المرتجع السابق
+                    dgRow.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
+                    dgRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
+                    dgRow.DefaultCellStyle.SelectionForeColor = Color.White;
                 }
             }
             }
