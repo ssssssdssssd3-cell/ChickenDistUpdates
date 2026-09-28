@@ -174,12 +174,18 @@ namespace ChickenDist.DAL
                     AND (@clientID IS NULL OR s.ClientID = @clientID)
                     AND (@saleType IS NULL OR s.SaleType = @saleType)
                     AND (@empID IS NULL OR s.CreatedBy = @empID OR s.DriverID = @empID)
-                    AND (@product IS NULL OR EXISTS (
-                        SELECT 1 FROM SaleItems si2
-                        JOIN Products pr ON si2.ProductID = pr.ProductID
-                        WHERE si2.SaleID = s.SaleID
-                        AND (pr.ProductName LIKE N'%' + @product + N'%'
-                          OR pr.ProductCode LIKE N'%' + @product + N'%')
+                    AND (@product IS NULL OR (
+                        s.SaleCode LIKE N'%' + @product + N'%'
+                        OR CAST(s.SaleID AS NVARCHAR(50)) = @product
+                        OR s.Notes LIKE N'%' + @product + N'%'
+                        OR EXISTS (
+                            SELECT 1 FROM SaleItems si2
+                            JOIN Products pr ON si2.ProductID = pr.ProductID
+                            WHERE si2.SaleID = s.SaleID
+                            AND (pr.ProductName LIKE N'%' + @product + N'%'
+                              OR pr.ProductCode LIKE N'%' + @product + N'%'
+                              OR (pr.Barcode IS NOT NULL AND pr.Barcode LIKE N'%' + @product + N'%'))
+                        )
                     ))" + whCondition + @"
                   ORDER BY s.SaleDate DESC",
                 paramList.ToArray());

@@ -220,7 +220,7 @@ namespace ChickenDist.Core
                 int itemsH = (itemCount * rowH);
                 int netH = (isCommercial || isAlTarek) ? 0 : 45;
                 int financialH = isAlTarek ? 260 : (showFinancial ? (isCommercial ? 190 : 190) : 0);
-                int footerH = isAlTarek ? 30 : 70;
+                int footerH = (isAlTarek ? 30 : 70) + 70;
 
                 int totalH = headerH + metaH + tableHeaderH + itemsH + netH + 20 + financialH + footerH + 40;
                 var bmp = new Bitmap(width, totalH);
@@ -702,6 +702,23 @@ namespace ChickenDist.Core
                                 y += 8;
                                 g.DrawString("🙏 شكراً لتعاملكم معنا ونتمنى لكم دوام التوفيق والنجاح", fSub, brPrimary, new RectangleF(0, y, width, 24), SfCenter);
                                 y += 24;
+                            }
+
+                            // باركود الفاتورة للرجوع والاسترجاع بالاسكانر
+                            string invoiceCode = (row.Table.Columns.Contains("SaleCode") && row["SaleCode"] != DBNull.Value) ? row["SaleCode"].ToString() : "";
+                            if (string.IsNullOrWhiteSpace(invoiceCode) && row.Table.Columns.Contains("SaleID") && row["SaleID"] != DBNull.Value)
+                                invoiceCode = row["SaleID"].ToString();
+                            if (!string.IsNullOrWhiteSpace(invoiceCode))
+                            {
+                                y += 6;
+                                int bcW = 240;
+                                int bcH = 40;
+                                int bcX = (width - bcW) / 2;
+                                g.FillRectangle(Brushes.White, bcX - 6, y, bcW + 12, bcH + 18);
+                                BarcodeEngine.DrawCode128(g, invoiceCode, bcX, y, bcW, bcH, isWide: false);
+                                y += bcH + 2;
+                                g.DrawString($"*{invoiceCode}*", fSmall, Brushes.Black, new RectangleF(0, y, width, 16), SfCenter);
+                                y += 18;
                             }
 
                             // System signature

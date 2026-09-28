@@ -900,6 +900,32 @@ namespace ChickenDist.Forms
                             y += 18;
                         }
                     }
+
+                    // ── باركود الفاتورة القياسي لجلب الفاتورة فوراً بالاسكانر عند المرتجع ──
+                    if (_saleRow != null)
+                    {
+                        string invoiceCode = _saleRow["SaleCode"]?.ToString();
+                        if (string.IsNullOrWhiteSpace(invoiceCode))
+                            invoiceCode = _saleID.ToString();
+
+                        if (!string.IsNullOrWhiteSpace(invoiceCode))
+                        {
+                            y += 8;
+                            g.DrawLine(Pens.LightGray, lMargin + 10, y, pageW - rMargin - 10, y);
+                            y += 6;
+
+                            int bcWidth = Math.Min(printableW - 20, 220);
+                            int bcHeight = pageW <= 230 ? 36 : 42;
+                            int bcX = lMargin + (printableW - bcWidth) / 2;
+
+                            g.FillRectangle(Brushes.White, bcX - 6, y, bcWidth + 12, bcHeight + 18);
+                            BarcodeEngine.DrawCode128(g, invoiceCode, bcX, y, bcWidth, bcHeight, isWide: false);
+                            y += bcHeight + 2;
+
+                            g.DrawString($"*{invoiceCode}*", small, Brushes.Black, new RectangleF(lMargin, y, printableW, 14), center);
+                            y += 18;
+                        }
+                    }
                 }
                 else
                 {
@@ -2250,27 +2276,7 @@ namespace ChickenDist.Forms
             try
             {
                 g.FillRectangle(Brushes.White, x, y, w, h);
-                float barX = x + 4;
-                float barWidth = (w - 8) / (text.Length * 6f);
-                if (barWidth < 1f) barWidth = 1.2f;
-
-                using (var blackBrush = new SolidBrush(Color.Black))
-                {
-                    for (int i = 0; i < text.Length; i++)
-                    {
-                        int charVal = (int)text[i];
-                        for (int b = 0; b < 4; b++)
-                        {
-                            bool isBlack = ((charVal >> b) & 1) == 1 || b == 0;
-                            float currentBarW = ((charVal + b) % 3 == 0) ? barWidth * 2f : barWidth;
-                            if (isBlack && barX + currentBarW < x + w - 4)
-                            {
-                                g.FillRectangle(blackBrush, barX, y + 2, currentBarW, h - 4);
-                            }
-                            barX += currentBarW + 1.2f;
-                        }
-                    }
-                }
+                BarcodeEngine.DrawCode128(g, text.Trim(), x + 2, y + 2, w - 4, h - 4, isWide: false);
             }
             catch { }
         }

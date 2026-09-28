@@ -31,6 +31,8 @@ namespace ChickenDist.Forms
         private decimal _selectedSaleShippingCharge = 0m;
         private decimal _selectedSalePrevReturnedAmount = 0m;
         private int _lastSavedReturnID = 0;
+        private readonly System.Text.StringBuilder _scannerBuffer = new System.Text.StringBuilder();
+        private DateTime _lastScannerTime = DateTime.MinValue;
 
         private int GetSelectedReturnID()
         {
@@ -274,6 +276,44 @@ namespace ChickenDist.Forms
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            if (msg.Msg == 0x0100) // WM_KEYDOWN
+            {
+                double elapsed = (DateTime.Now - _lastScannerTime).TotalMilliseconds;
+                _lastScannerTime = DateTime.Now;
+                if (elapsed > 100) _scannerBuffer.Clear();
+
+                if (keyData == Keys.Enter)
+                {
+                    if (txtSearch != null && txtSearch.Focused)
+                    {
+                        _searchDebounceTimer?.Stop();
+                        DoBarcodeSearch(txtSearch.Text.Trim());
+                        return true;
+                    }
+                    if (txtInvoiceBarcode != null && txtInvoiceBarcode.Focused)
+                    {
+                        DoBarcodeSearch(txtInvoiceBarcode.Text.Trim());
+                        return true;
+                    }
+                    if (_scannerBuffer.Length >= 2 && elapsed < 85)
+                    {
+                        string scanned = _scannerBuffer.ToString().Trim();
+                        _scannerBuffer.Clear();
+                        DoBarcodeSearch(scanned);
+                        return true;
+                    }
+                    _scannerBuffer.Clear();
+                }
+                else
+                {
+                    char c = (char)(keyData & Keys.KeyCode);
+                    if (char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == '*' || c == '/')
+                    {
+                        _scannerBuffer.Append(c);
+                    }
+                }
+            }
+
             if (keyData == Keys.F2)
             {
                 if (cboMode != null && cboMode.SelectedIndex != 0)
@@ -508,7 +548,7 @@ namespace ChickenDist.Forms
             dtpTo.ValueChanged += (s, e) => { if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
             _pnlTo = MakeFilterPanel("إلى:", dtpTo, 180);
 
-            txtSearch = new TextBox { Width = 110, RightToLeft = RightToLeft.Yes };
+            txtSearch = new TextBox { Width = 230, RightToLeft = RightToLeft.Yes };
             StyleSearchInput(txtSearch);
             _searchDebounceTimer = new System.Windows.Forms.Timer { Interval = 350 };
             _searchDebounceTimer.Tick += (s, e) =>
@@ -521,9 +561,19 @@ namespace ChickenDist.Forms
                 _searchDebounceTimer.Stop();
                 _searchDebounceTimer.Start();
             };
-            _pnlSearch = MakeFilterPanel("بحث كود/ملاحظات:", txtSearch, 110);
+            txtSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    _searchDebounceTimer.Stop();
+                    DoBarcodeSearch(txtSearch.Text.Trim());
+                }
+            };
+            _pnlSearch = MakeFilterPanel("بحث (صنف/كود/رقم/باركود فاتورة):", txtSearch, 230);
 
-            txtInvoiceBarcode = new TextBox { Width = 110, RightToLeft = RightToLeft.No };
+            txtInvoiceBarcode = new TextBox { Width = 140, RightToLeft = RightToLeft.No };
             StyleSearchInput(txtInvoiceBarcode);
             txtInvoiceBarcode.KeyDown += (s, e) =>
             {
@@ -534,7 +584,7 @@ namespace ChickenDist.Forms
                     DoBarcodeSearch(txtInvoiceBarcode.Text.Trim());
                 }
             };
-            _pnlBarcode = MakeFilterPanel("باركود الفاتورة/الصنف:", txtInvoiceBarcode, 110);
+            _pnlBarcode = MakeFilterPanel("📷 مسح بالاسكانر:", txtInvoiceBarcode, 140);
 
             btnSearch = Theme.MakeButton("🔍 تحديث", Theme.Accent);
             btnSearch.Size = new Size(85, 28);
@@ -1485,13 +1535,12 @@ namespace ChickenDist.Forms
                 int? warehouseID = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : null;
 
                 string productSearch = null;
-                if (cboProductFilter != null && cboProductFilter.SelectedItem is ComboItem pci && pci.ID > 0)
+                if (txtSearch != null && !string.IsNullOrWhiteSpace(txtSearch.Text))
+                    productSearch = txtSearch.Text.Trim();
+                else if (cboProductFilter != null && cboProductFilter.SelectedItem is ComboItem pci && pci.ID > 0)
                     productSearch = pci.Text;
                 else if (cboProductFilter != null && !string.IsNullOrWhiteSpace(cboProductFilter.Text) && cboProductFilter.Text.Trim() != "الكل" && cboProductFilter.Text.Trim() != "الكل (جميع الأصناف)")
                     productSearch = cboProductFilter.Text.Trim();
-
-                if (string.IsNullOrWhiteSpace(productSearch) && txtSearch != null && !string.IsNullOrWhiteSpace(txtSearch.Text))
-                    productSearch = txtSearch.Text.Trim();
 
                 string saleType = null;
                 if (cboSaleTypeFilter != null && cboSaleTypeFilter.SelectedIndex > 0)
@@ -2049,88 +2098,60 @@ namespace ChickenDist.Forms
 
         private void DoBarcodeSearch(string code)
         {
-            if (string.IsNullOrEmpty(code)) return;
+            if (string.IsNullOrWhiteSpace(code)) return;
+            code = code.Trim();
+            // إزالة علامات النجوم المحيطة بالباركود إن وجدت (مثل *INV-1001*)
+            if (code.StartsWith("*") && code.EndsWith("*") && code.Length > 2)
+                code = code.Substring(1, code.Length - 2).Trim();
+
             try
             {
-                if (cboMode.SelectedIndex != 0) // المرتجع العام أو الاستبدال: دعم مسح باركود الأصناف والميزان مباشرةً
-                {
-                    DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(code, out decimal scanQty);
-                    if (pRow != null)
-                    {
-                        int pid = Convert.ToInt32(pRow["ProductID"]);
-                        string pname = pRow["ProductName"].ToString();
-                        decimal price = pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m;
-                        int mu = ProductDAL.DetermineMatchedUnit(pRow, code);
-                        if (mu == 1 && pRow.Table.Columns.Contains("Unit1SalePrice") && pRow["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(pRow["Unit1SalePrice"]) > 0)
-                            price = Convert.ToDecimal(pRow["Unit1SalePrice"]);
-                        else if (mu == 2 && pRow.Table.Columns.Contains("Unit2SalePrice") && pRow["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(pRow["Unit2SalePrice"]) > 0)
-                            price = Convert.ToDecimal(pRow["Unit2SalePrice"]);
-                        decimal qty = scanQty > 0 ? scanQty : 1m;
+                // 1. أولاً: التحقق مما إذا كان الكود هو رقم أو باركود فاتورة مبيعات
+                var dt = DbHelper.Query(@"
+                    SELECT s.SaleID, s.SaleCode, s.SaleDate 
+                    FROM Sales s 
+                    WHERE s.SaleCode = @code OR CAST(s.SaleID AS NVARCHAR(50)) = @code", 
+                    DbHelper.P("@code", code));
 
-                        foreach (DataGridViewRow r in dgItems.Rows)
-                        {
-                            if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == pid)
-                            {
-                                decimal currentQty = 0m;
-                                if (r.Cells["NewReturnedQty"].Value != null)
-                                    decimal.TryParse(r.Cells["NewReturnedQty"].Value.ToString(), out currentQty);
-
-                                decimal newQty = currentQty + qty;
-                                r.Cells["NewReturnedQty"].Value = newQty;
-                                r.Cells["UnitPrice"].Value = price.ToString("N2");
-                                r.Cells["TotalPrice"].Value = (newQty * price).ToString("N2");
-                                RecalcTotals();
-                                txtInvoiceBarcode.Text = "";
-                                return;
-                            }
-                        }
-
-                        int idx = dgItems.Rows.Add();
-                        var row = dgItems.Rows[idx];
-                        int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
-                        decimal actStock = GetProductActualStock(pid, selectedWh);
-
-                        row.Cells["ProductID"].Value       = pid;
-                        row.Cells["ProductName"].Value     = pname;
-
-                        if (dgItems.Columns.Contains("Color"))
-                        {
-                            string pColor = pRow.Table.Columns.Contains("Color") && pRow["Color"] != DBNull.Value ? pRow["Color"].ToString().Trim() : "";
-                            row.Cells["Color"].Value = pColor;
-                            if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
-                        }
-                        if (dgItems.Columns.Contains("ProductSize"))
-                        {
-                            string pSize = pRow.Table.Columns.Contains("ProductSize") && pRow["ProductSize"] != DBNull.Value ? pRow["ProductSize"].ToString().Trim() : "";
-                            row.Cells["ProductSize"].Value = pSize;
-                            if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
-                        }
-
-                        row.Cells["SoldQty"].Value         = "عام";
-                        row.Cells["PrevReturnedQty"].Value = "0";
-                        row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
-                        row.Cells["NewReturnedQty"].Value  = qty;
-                        row.Cells["UnitPrice"].Value       = price.ToString("N2");
-                        row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
-
-                        RecalcTotals();
-                        txtInvoiceBarcode.Text = "";
-                        return;
-                    }
-                }
-
-                var dt = DbHelper.Query("SELECT SaleID FROM Sales WHERE SaleCode = @code OR CAST(SaleID AS VARCHAR) = @code", DbHelper.P("@code", code));
                 if (dt.Rows.Count > 0)
                 {
                     int targetSaleID = Convert.ToInt32(dt.Rows[0]["SaleID"]);
-                    bool found = false;
+                    DateTime saleDate = Convert.ToDateTime(dt.Rows[0]["SaleDate"]);
 
+                    // التحويل التلقائي لنمط مرتجع من فاتورة
+                    if (cboMode != null && cboMode.SelectedIndex != 0)
+                    {
+                        cboMode.SelectedIndex = 0;
+                    }
+
+                    // إذا كان تاريخ الفاتورة قبل تاريخ البداية، توسيع نطاق التاريخ تلقائياً ليشمل الفاتورة
+                    if (saleDate < dtpFrom.Value)
+                    {
+                        dtpFrom.Value = saleDate.Date.AddDays(-1);
+                    }
+                    if (saleDate > dtpTo.Value)
+                    {
+                        dtpTo.Value = saleDate.Date.AddDays(1);
+                    }
+
+                    // إفراغ خانة البحث النصي مؤقتاً لضمان عدم حجب الفاتورة
+                    if (txtSearch != null && txtSearch.Text.Trim() == code)
+                    {
+                        txtSearch.Text = "";
+                    }
+
+                    // تحميل الفواتير
+                    LoadSales();
+
+                    // البحث عن الفاتورة وتحديدها في الجدول
+                    bool found = false;
                     dgSales.SelectionChanged -= DgSales_SelectionChanged;
                     foreach (DataGridViewRow row in dgSales.Rows)
                     {
                         if (row.Cells["SaleID"].Value != null && Convert.ToInt32(row.Cells["SaleID"].Value) == targetSaleID)
                         {
-                            dgSales.CurrentCell = row.Cells[1];
+                            dgSales.CurrentCell = row.Cells["SaleCode"];
+                            row.Selected = true;
                             found = true;
                             break;
                         }
@@ -2140,20 +2161,150 @@ namespace ChickenDist.Forms
                     if (found)
                     {
                         DgSales_SelectionChanged(dgSales, EventArgs.Empty);
-                        dgItems.Focus();
+                        if (dgItems.Rows.Count > 0)
+                        {
+                            dgItems.Focus();
+                            dgItems.CurrentCell = dgItems.Rows[0].Cells["NewReturnedQty"];
+                        }
+                        SoundAlertHelper.PlayBeep();
                     }
-                    else
-                    {
-                        MessageBox.Show("الفاتورة غير موجودة في نطاق التواريخ المحدد في الأعلى.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
+                    if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                    return;
                 }
-                else
+
+                // 2. إذا لم تكن فاتورة، فحص هل الكود يمثل صنفاً (باركود دولي / كود صنف / باركود ميزان)
+                DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(code, out decimal scanQty);
+                if (pRow == null)
                 {
-                    MessageBox.Show("عذراً، رقم الفاتورة أو الباركود غير صحيح أو غير مسجل بالنظام.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var dtProd = DbHelper.Query(@"
+                        SELECT TOP 1 * FROM Products 
+                        WHERE ProductCode = @code OR Barcode = @code OR CAST(ProductID AS NVARCHAR(50)) = @code", 
+                        DbHelper.P("@code", code));
+                    if (dtProd.Rows.Count > 0)
+                    {
+                        pRow = dtProd.Rows[0];
+                        scanQty = 1m;
+                    }
                 }
+
+                if (pRow != null)
+                {
+                    int pid = Convert.ToInt32(pRow["ProductID"]);
+                    string pname = pRow["ProductName"].ToString();
+
+                    // أ) إذا كنا في وضع "مرتجع من فاتورة" وتم تحديد فاتورة مسبقاً:
+                    if (cboMode != null && cboMode.SelectedIndex == 0 && dgSales.CurrentRow != null)
+                    {
+                        bool itemFoundInInvoice = false;
+                        foreach (DataGridViewRow r in dgItems.Rows)
+                        {
+                            if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == pid)
+                            {
+                                dgItems.Focus();
+                                dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                                r.Selected = true;
+                                itemFoundInInvoice = true;
+                                SoundAlertHelper.PlayBeep();
+                                break;
+                            }
+                        }
+
+                        if (!itemFoundInInvoice)
+                        {
+                            MessageBox.Show($"الصنف [{pname}] غير موجود ضمن بنود الفاتورة المحددة حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                        return;
+                    }
+
+                    // ب) إذا كنا في وضع "مرتجع من فاتورة" ولكن لم يتم اختيار فاتورة:
+                    if (cboMode != null && cboMode.SelectedIndex == 0)
+                    {
+                        if (txtSearch != null)
+                        {
+                            txtSearch.Text = pname;
+                        }
+                        LoadSales();
+                        if (dgSales.Rows.Count > 0)
+                        {
+                            dgSales.Focus();
+                        }
+                        else
+                        {
+                            MessageBox.Show($"لا توجد فواتير تحتوي على الصنف [{pname}] في الفترة المحددة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                        return;
+                    }
+
+                    // ج) إذا كنا في وضع "مرتجع عام" أو "استبدال": إضافة الصنف مباشرةً للجدول
+                    decimal price = pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m;
+                    int mu = ProductDAL.DetermineMatchedUnit(pRow, code);
+                    if (mu == 1 && pRow.Table.Columns.Contains("Unit1SalePrice") && pRow["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(pRow["Unit1SalePrice"]) > 0)
+                        price = Convert.ToDecimal(pRow["Unit1SalePrice"]);
+                    else if (mu == 2 && pRow.Table.Columns.Contains("Unit2SalePrice") && pRow["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(pRow["Unit2SalePrice"]) > 0)
+                        price = Convert.ToDecimal(pRow["Unit2SalePrice"]);
+                    decimal qty = scanQty > 0 ? scanQty : 1m;
+
+                    foreach (DataGridViewRow r in dgItems.Rows)
+                    {
+                        if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == pid)
+                        {
+                            decimal currentQty = 0m;
+                            if (r.Cells["NewReturnedQty"].Value != null)
+                                decimal.TryParse(r.Cells["NewReturnedQty"].Value.ToString(), out currentQty);
+
+                            decimal newQty = currentQty + qty;
+                            r.Cells["NewReturnedQty"].Value = newQty;
+                            r.Cells["UnitPrice"].Value = price.ToString("N2");
+                            r.Cells["TotalPrice"].Value = (newQty * price).ToString("N2");
+                            RecalcTotals();
+                            SoundAlertHelper.PlayBeep();
+                            if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                            return;
+                        }
+                    }
+
+                    int idx = dgItems.Rows.Add();
+                    var row = dgItems.Rows[idx];
+                    int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
+                    decimal actStock = GetProductActualStock(pid, selectedWh);
+
+                    row.Cells["ProductID"].Value       = pid;
+                    row.Cells["ProductName"].Value     = pname;
+
+                    if (dgItems.Columns.Contains("Color"))
+                    {
+                        string pColor = pRow.Table.Columns.Contains("Color") && pRow["Color"] != DBNull.Value ? pRow["Color"].ToString().Trim() : "";
+                        row.Cells["Color"].Value = pColor;
+                        if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
+                    }
+                    if (dgItems.Columns.Contains("ProductSize"))
+                    {
+                        string pSize = pRow.Table.Columns.Contains("ProductSize") && pRow["ProductSize"] != DBNull.Value ? pRow["ProductSize"].ToString().Trim() : "";
+                        row.Cells["ProductSize"].Value = pSize;
+                        if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
+                    }
+
+                    row.Cells["SoldQty"].Value         = "عام";
+                    row.Cells["PrevReturnedQty"].Value = "0";
+                    row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
+                    row.Cells["NewReturnedQty"].Value  = qty;
+                    row.Cells["UnitPrice"].Value       = price.ToString("N2");
+                    row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
+
+                    RecalcTotals();
+                    SoundAlertHelper.PlayBeep();
+                    if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                    return;
+                }
+
+                // 3. إذا لم يتم العثور على فاتورة أو صنف
+                MessageBox.Show($"عذراً، لم يتم العثور على أي فاتورة أو صنف يطابق الكود [{code}].", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
+                AppLogger.Error("خطأ أثناء معالجة باركود الفاتورة أو الصنف في المرتجع", ex, "FrmReturn.DoBarcodeSearch");
                 MessageBox.Show($"حدث خطأ أثناء البحث:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

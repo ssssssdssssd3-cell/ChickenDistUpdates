@@ -58,6 +58,24 @@ namespace ChickenDist.Core
             });
         }
 
+        /// <summary>
+        /// تشغيل صوت بيب قصير عند مسح الباركود بنجاح
+        /// </summary>
+        public static void PlayBeep()
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    SystemSounds.Beep.Play();
+                }
+                catch
+                {
+                    try { Console.Beep(1200, 80); } catch { }
+                }
+            });
+        }
+
         private static byte[] GetOrCreateChimeWav()
         {
             if (_cachedChimeWav != null) return _cachedChimeWav;
