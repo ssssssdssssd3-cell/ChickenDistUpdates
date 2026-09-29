@@ -4171,6 +4171,323 @@ namespace ChickenDist.DAL
                 DbHelper.P("@brand", string.IsNullOrWhiteSpace(brand) ? (object)DBNull.Value : brand.Trim()),
                 DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
         }
+
+        /// <summary>
+        /// تقرير تفصيلي لسيريلات وأجهزة المخزن (IMEI) وتتبع حالتها (متاح بالمخزن / مباع) مع تفاصيل الشراء والبيع والربحية وعمر الجهاز بالمخزن
+        /// </summary>
+        public static DataTable GetProductSerialsStockReport(DateTime? from = null, DateTime? to = null, int? warehouseID = null, int? productID = null, string statusFilter = "All", string search = null)
+        {
+            DateTime? f = from.HasValue ? from.Value.Date : (DateTime?)null;
+            DateTime? t = to.HasValue ? to.Value.Date.AddDays(1).AddSeconds(-1) : (DateTime?)null;
+
+            string statusClause = "";
+            if (statusFilter == "InStock" || statusFilter == "Available")
+            {
+                statusClause = " AND allSerials.IsAvailable = 1 ";
+            }
+            else if (statusFilter == "Sold")
+            {
+                statusClause = " AND allSerials.IsAvailable = 0 ";
+            }
+
+            string searchClause = "";
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                searchClause = @" AND (
+                    allSerials.IMEI LIKE @kw OR 
+                    allSerials.ProductName LIKE @kw OR 
+                    allSerials.ProductCode LIKE @kw OR 
+                    allSerials.Brand LIKE @kw OR 
+                    allSerials.Model LIKE @kw OR 
+                    allSerials.SupplierName LIKE @kw OR 
+                    allSerials.ClientName LIKE @kw OR 
+                    allSerials.PurchaseCode LIKE @kw OR 
+                    allSerials.SaleCode LIKE @kw
+                ) ";
+            }
+
+            string dateClause = "";
+            if (f.HasValue && t.HasValue)
+            {
+                if (statusFilter == "Sold")
+                {
+                    dateClause = " AND (allSerials.SaleDate BETWEEN @f AND @t) ";
+                }
+                else if (statusFilter == "InStock" || statusFilter == "Available")
+                {
+                    dateClause = " AND (allSerials.PurchaseDate BETWEEN @f AND @t) ";
+                }
+                else
+                {
+                    dateClause = " AND ((allSerials.PurchaseDate BETWEEN @f AND @t) OR (allSerials.SaleDate BETWEEN @f AND @t)) ";
+                }
+            }
+
+            string sql = $@"
+                WITH RawSerials AS (
+                    -- 1. الأجهزة المشتراة بفواتير شراء
+                    SELECT 
+                        pItem.ItemID AS PurchaseItemID,
+                        pItem.ProductID,
+                        prod.ProductCode,
+                        prod.ProductName,
+                        ISNULL(prod.Brand, N'') AS Brand,
+                        COALESCE(NULLIF(prod.CarModel, N''), NULLIF(prod.PartNumber, N''), N'') AS Model,
+                        ISNULL(prod.Color, N'') AS Color,
+                        LTRIM(RTRIM(pItem.IMEI)) AS IMEI,
+                        p.WarehouseID,
+                        ISNULL(w.WarehouseName, N'المخزن الرئيسي') AS WarehouseName,
+                        p.PurchaseID,
+                        p.PurchaseCode,
+                        p.PurchaseDate,
+                        p.SupplierID,
+                        ISNULL(sup.SupplierName, N'مورد عام / نقدي') AS SupplierName,
+                        pItem.UnitPrice AS PurchasePrice,
+                        COALESCE(NULLIF(pItem.SuggestedSalePrice, 0), NULLIF(prod.RetailPrice, 0), pItem.UnitPrice) AS SuggestedSalePrice,
+                        sInfo.SaleID,
+                        sInfo.SaleCode,
+                        sInfo.SaleDate,
+                        sInfo.ClientID,
+                        sInfo.ClientName,
+                        sInfo.SalePrice
+                    FROM PurchaseItems pItem
+                    JOIN Purchases p ON pItem.PurchaseID = p.PurchaseID
+                    JOIN Products prod ON pItem.ProductID = prod.ProductID
+                    LEFT JOIN Suppliers sup ON p.SupplierID = sup.SupplierID
+                    LEFT JOIN Warehouses w ON p.WarehouseID = w.WarehouseID
+                    OUTER APPLY (
+                        SELECT TOP 1 
+                            s.SaleID,
+                            s.SaleCode,
+                            s.SaleDate,
+                            s.ClientID,
+                            ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
+                            si.UnitPrice AS SalePrice
+                        FROM SaleItems si
+                        JOIN Sales s ON si.SaleID = s.SaleID
+                        LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                        WHERE si.ProductID = pItem.ProductID
+                          AND LTRIM(RTRIM(si.IMEI)) = LTRIM(RTRIM(pItem.IMEI))
+                          AND s.IsPosted = 1
+                        ORDER BY s.SaleID DESC
+                    ) sInfo
+                    WHERE p.IsPosted = 1
+                      AND pItem.IMEI IS NOT NULL
+                      AND LTRIM(RTRIM(pItem.IMEI)) <> N''
+                      AND (@wh IS NULL OR p.WarehouseID = @wh)
+                      AND (@pid IS NULL OR pItem.ProductID = @pid)
+
+                    UNION ALL
+
+                    -- 2. أجهزة بيعت مسجلة بسيريال دون فاتورة شراء سابقة (رصيد افتتاحي/قديم)
+                    SELECT 
+                        0 AS PurchaseItemID,
+                        si.ProductID,
+                        prod.ProductCode,
+                        prod.ProductName,
+                        ISNULL(prod.Brand, N'') AS Brand,
+                        COALESCE(NULLIF(prod.CarModel, N''), NULLIF(prod.PartNumber, N''), N'') AS Model,
+                        ISNULL(prod.Color, N'') AS Color,
+                        LTRIM(RTRIM(si.IMEI)) AS IMEI,
+                        s.WarehouseID,
+                        ISNULL(w.WarehouseName, N'المخزن الرئيسي') AS WarehouseName,
+                        0 AS PurchaseID,
+                        N'-' AS PurchaseCode,
+                        s.SaleDate AS PurchaseDate,
+                        0 AS SupplierID,
+                        N'رصيد سابق / بدون فاتورة شراء' AS SupplierName,
+                        COALESCE(NULLIF(si.CostPrice, 0), NULLIF(prod.CostPrice, 0), NULLIF(prod.PurchasePrice, 0), 0) AS PurchasePrice,
+                        COALESCE(NULLIF(prod.RetailPrice, 0), si.UnitPrice) AS SuggestedSalePrice,
+                        s.SaleID,
+                        s.SaleCode,
+                        s.SaleDate,
+                        s.ClientID,
+                        ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
+                        si.UnitPrice AS SalePrice
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    JOIN Products prod ON si.ProductID = prod.ProductID
+                    LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    LEFT JOIN Warehouses w ON s.WarehouseID = w.WarehouseID
+                    WHERE s.IsPosted = 1
+                      AND si.IMEI IS NOT NULL
+                      AND LTRIM(RTRIM(si.IMEI)) <> N''
+                      AND (@wh IS NULL OR s.WarehouseID = @wh)
+                      AND (@pid IS NULL OR si.ProductID = @pid)
+                      AND NOT EXISTS (
+                          SELECT 1 FROM PurchaseItems pItem 
+                          JOIN Purchases p ON pItem.PurchaseID = p.PurchaseID
+                          WHERE p.IsPosted = 1 
+                            AND pItem.ProductID = si.ProductID 
+                            AND LTRIM(RTRIM(pItem.IMEI)) = LTRIM(RTRIM(si.IMEI))
+                      )
+                ),
+                ProcessedSerials AS (
+                    SELECT 
+                        PurchaseItemID,
+                        ProductID,
+                        ProductCode,
+                        ProductName,
+                        Brand,
+                        Model,
+                        Color,
+                        IMEI,
+                        WarehouseID,
+                        WarehouseName,
+                        PurchaseID,
+                        PurchaseCode,
+                        PurchaseDate,
+                        SupplierID,
+                        SupplierName,
+                        PurchasePrice,
+                        SuggestedSalePrice,
+                        CASE 
+                            WHEN SaleID IS NOT NULL THEN N'تم البيع'
+                            ELSE N'متاح بالمخزن'
+                        END AS Status,
+                        CASE 
+                            WHEN SaleID IS NOT NULL THEN 0
+                            ELSE 1
+                        END AS IsAvailable,
+                        SaleID,
+                        SaleCode,
+                        SaleDate,
+                        ClientID,
+                        ClientName,
+                        SalePrice,
+                        CASE 
+                            WHEN SaleID IS NOT NULL THEN (ISNULL(SalePrice, 0) - PurchasePrice)
+                            ELSE (SuggestedSalePrice - PurchasePrice)
+                        END AS ProfitMargin,
+                        CASE 
+                            WHEN SaleID IS NOT NULL THEN DATEDIFF(day, PurchaseDate, SaleDate)
+                            ELSE DATEDIFF(day, PurchaseDate, GETDATE())
+                        END AS DaysInStock
+                    FROM RawSerials
+                )
+                SELECT 
+                    allSerials.PurchaseItemID,
+                    allSerials.ProductID,
+                    allSerials.ProductCode,
+                    allSerials.ProductName,
+                    allSerials.Brand,
+                    allSerials.Model,
+                    allSerials.Color,
+                    allSerials.IMEI,
+                    allSerials.WarehouseID,
+                    allSerials.WarehouseName,
+                    allSerials.PurchaseID,
+                    allSerials.PurchaseCode,
+                    allSerials.PurchaseDate,
+                    allSerials.SupplierID,
+                    allSerials.SupplierName,
+                    allSerials.PurchasePrice,
+                    allSerials.SuggestedSalePrice,
+                    allSerials.Status,
+                    allSerials.IsAvailable,
+                    allSerials.SaleID,
+                    allSerials.SaleCode,
+                    allSerials.SaleDate,
+                    allSerials.ClientID,
+                    allSerials.ClientName,
+                    allSerials.SalePrice,
+                    allSerials.ProfitMargin,
+                    allSerials.DaysInStock
+                FROM ProcessedSerials allSerials
+                WHERE 1 = 1
+                {statusClause}
+                {dateClause}
+                {searchClause}
+                ORDER BY allSerials.IsAvailable DESC, allSerials.PurchaseDate DESC, allSerials.ProductName ASC";
+
+            return DbHelper.Query(sql,
+                DbHelper.P("@wh", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@pid", productID.HasValue ? (object)productID.Value : DBNull.Value),
+                DbHelper.P("@f", f.HasValue ? (object)f.Value : DBNull.Value),
+                DbHelper.P("@t", t.HasValue ? (object)t.Value : DBNull.Value),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(search) ? (object)DBNull.Value : "%" + search.Trim() + "%"));
+        }
+
+        /// <summary>
+        /// تقرير كميات الأصناف المجمعة بالسيريال (الرصيد الفعلي، عدد الأجهزة المتاحة بالسيريال، التكلفة، البيع، الأرباح المتوقعة)
+        /// </summary>
+        public static DataTable GetProductSerialsStockSummary(int? warehouseID = null, int? categoryID = null, string search = null)
+        {
+            DataTable details = GetProductSerialsStockReport(null, null, warehouseID, null, "All", search);
+
+            DataTable summaryDt = new DataTable();
+            summaryDt.Columns.Add("ProductID", typeof(int));
+            summaryDt.Columns.Add("ProductCode", typeof(string));
+            summaryDt.Columns.Add("ProductName", typeof(string));
+            summaryDt.Columns.Add("Brand", typeof(string));
+            summaryDt.Columns.Add("Model", typeof(string));
+            summaryDt.Columns.Add("Color", typeof(string));
+            summaryDt.Columns.Add("WarehouseName", typeof(string));
+            summaryDt.Columns.Add("AvailableCount", typeof(int));
+            summaryDt.Columns.Add("SoldCount", typeof(int));
+            summaryDt.Columns.Add("TotalPurchasedCount", typeof(int));
+            summaryDt.Columns.Add("AvgPurchasePrice", typeof(decimal));
+            summaryDt.Columns.Add("RetailPrice", typeof(decimal));
+            summaryDt.Columns.Add("TotalAvailableCost", typeof(decimal));
+            summaryDt.Columns.Add("TotalAvailableRetail", typeof(decimal));
+            summaryDt.Columns.Add("ExpectedProfit", typeof(decimal));
+            summaryDt.Columns.Add("AvailableSerials", typeof(string));
+
+            if (details == null || details.Rows.Count == 0) return summaryDt;
+
+            var groups = details.Rows.Cast<DataRow>()
+                .GroupBy(r => Convert.ToInt32(r["ProductID"]))
+                .OrderBy(g => g.First()["ProductName"]?.ToString());
+
+            foreach (var g in groups)
+            {
+                var first = g.First();
+                int pid = g.Key;
+                string pCode = first["ProductCode"]?.ToString() ?? "";
+                string pName = first["ProductName"]?.ToString() ?? "";
+                string brand = first["Brand"]?.ToString() ?? "";
+                string model = first["Model"]?.ToString() ?? "";
+                string color = first["Color"]?.ToString() ?? "";
+                string whName = first["WarehouseName"]?.ToString() ?? "";
+
+                var availableItems = g.Where(r => Convert.ToInt32(r["IsAvailable"]) == 1).ToList();
+                var soldItems = g.Where(r => Convert.ToInt32(r["IsAvailable"]) == 0).ToList();
+
+                int availCount = availableItems.Count;
+                int soldCount = soldItems.Count;
+                int totalCount = g.Count();
+
+                decimal totalCost = availableItems.Sum(r => Convert.ToDecimal(r["PurchasePrice"]));
+                decimal avgCost = availCount > 0 ? Math.Round(totalCost / availCount, 2) : (totalCount > 0 ? Math.Round(g.Average(r => Convert.ToDecimal(r["PurchasePrice"])), 2) : 0m);
+                decimal retailPrice = availableItems.Count > 0 ? Convert.ToDecimal(availableItems.First()["SuggestedSalePrice"]) : (totalCount > 0 ? Convert.ToDecimal(first["SuggestedSalePrice"]) : 0m);
+                decimal totalRetail = availCount * retailPrice;
+                decimal expectedProfit = totalRetail - totalCost;
+
+                var serialList = availableItems.Select(r => r["IMEI"]?.ToString()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+                string serialsStr = string.Join(" | ", serialList);
+
+                summaryDt.Rows.Add(
+                    pid,
+                    pCode,
+                    pName,
+                    brand,
+                    model,
+                    color,
+                    whName,
+                    availCount,
+                    soldCount,
+                    totalCount,
+                    avgCost,
+                    retailPrice,
+                    totalCost,
+                    totalRetail,
+                    expectedProfit,
+                    serialsStr
+                );
+            }
+
+            return summaryDt;
+        }
     }
 }
 

@@ -91,6 +91,7 @@ namespace ChickenDist.Forms
 			{ "Handovers", Color.FromArgb(109, 40, 217) },             // Deep Violet
 
 			// Stores & Inventory
+			{ "ProductSerialsStock", Color.FromArgb(13, 148, 136) },  // Teal
 			{ "ProductQtyDetail", Color.FromArgb(14, 165, 233) },      // Sky Blue
 			{ "WastageLoss", Color.FromArgb(220, 38, 38) },            // Red
 			{ "DetailedInventoryValuation", Color.FromArgb(22, 163, 74) }, // Green
@@ -163,6 +164,7 @@ namespace ChickenDist.Forms
 			{ "Handovers", ("📋 تسليم وتصفية المناديب", "متابعة حركات تسليم العهد والبضائع المحملة للمناديب وتصفيتها.") },
 
 			// Stores & Inventory
+			{ "ProductSerialsStock", ("📱 تقرير كميات وسيريلات الأجهزة", "جرد وتفاصيل الأجهزة والسيريلات والـ IMEI المتاحة والمباعة وتتبع حركتها وأسعارها.") },
 			{ "ProductQtyDetail", ("📦 تفاصيل أرصدة المخازن", "استعراض أرصدة وكميات الأصناف داخل كل مخزن مع مواقع الأرفف وحد الطلب.") },
 			{ "WastageLoss", ("🗑️ الهوالك والتالف", "سجل الأصناف التالفة والهالكة وأسباب التلف وتكلفتها الإجمالية.") },
 			{ "DetailedInventoryValuation", ("💰 تقييم بضاعة المخزن", "حساب القيمة المالية الإجمالية للمخزون بسعر التكلفة وسعر البيع المتوقع.") },
@@ -657,6 +659,7 @@ namespace ChickenDist.Forms
 				// ══════════════════════════════════════════════════════════════
 				// تقارير المخازن والجرد
 				// ══════════════════════════════════════════════════════════════
+				("📱 تقرير كميات وسيريلات الأجهزة", "ProductSerialsStock"),
 				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
 				("🚨 تقرير الهالك والتالف", "WastageLoss"),
 				("📦 تقييم المخزن التفصيلي", "DetailedInventoryValuation"),
@@ -683,7 +686,7 @@ namespace ChickenDist.Forms
 				}
 				else if (_targetModule == "Stores")
 				{
-					keep = (report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport" || report.tag == "InventoryVariance" || report.tag == "PurchasesByProduct" || report.tag == "StagnantProducts");
+					keep = (report.tag == "ProductSerialsStock" || report.tag == "ProductQtyDetail" || report.tag == "WastageLoss" || report.tag == "DetailedInventoryValuation" || report.tag == "SupplierItemActivity" || report.tag == "ExpiryReport" || report.tag == "InventoryVariance" || report.tag == "PurchasesByProduct" || report.tag == "StagnantProducts");
 				}
 				else if (_targetModule == "Clients")
 				{
@@ -2027,6 +2030,31 @@ namespace ChickenDist.Forms
 						("StockValue", "قيمة المخزن بالتكلفة"),
 						("StockSaleValue", "قيمة المخزن بسعر البيع"),
 						("ExpectedProfit", "الأرباح المتوقعة")
+					}, dataGridView);
+					break;
+				case "ProductSerialsStock":
+					_currentDt = ReportDAL.GetProductSerialsStockReport(dtpFrom.Value, dtpTo.Value, warehouseID);
+					SetupGrid(new(string, string)[]
+					{
+						("IMEI",               "رقم السيريال / IMEI"),
+						("ProductCode",        "كود الصنف"),
+						("ProductName",        "اسم الجهاز"),
+						("Brand",              "الماركة"),
+						("Model",              "الموديل"),
+						("Color",              "اللون"),
+						("WarehouseName",      "المخزن"),
+						("Status",             "الحالة"),
+						("DaysInStock",        "عمر الجهاز (يوم)"),
+						("PurchaseDate",       "تاريخ الشراء"),
+						("PurchaseCode",       "فاتورة الشراء"),
+						("SupplierName",       "المورد"),
+						("PurchasePrice",      "سعر الشراء (التكلفة)"),
+						("SuggestedSalePrice", "سعر البيع المقترح"),
+						("ProfitMargin",       "الربح"),
+						("SaleDate",           "تاريخ البيع"),
+						("SaleCode",           "فاتورة البيع"),
+						("ClientName",         "العميل المشتري"),
+						("SalePrice",          "سعر البيع الفعلي")
 					}, dataGridView);
 					break;
 				case "ProductQtyDetail":
@@ -4513,6 +4541,7 @@ namespace ChickenDist.Forms
 				case "SupplierPayments": return "RepSupplierPayments";
 				case "PurchasePricesTracking": return "RepPurchasePrices";
 				case "CreditPurchases": return "RepCreditPurchases";
+				case "ProductSerialsStock": return "RepProductSerialsStock";
 				case "ProductQtyDetail": return "RepProductQtyDetail";
 				case "WastageLoss": return "RepWastageLoss";
 				case "DetailedInventoryValuation": return "RepInventoryValuation";

@@ -592,6 +592,7 @@ namespace ChickenDist.Forms
                     ("📊 سجل تغير الأسعار", "PriceChanges",      (Action)(() => NavigateTo(new FrmPriceChanges()))),
                     ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
                     ("🔍 دليل الموديلات والأجهزة", "ModelLookup", (Action)(() => new FrmModelLookup().ShowDialog())),
+                    ("📱 تقرير كميات وسيريلات الأجهزة (IMEI)", "SerialStockReport", (Action)(() => NavigateTo(new FrmSerialStockReport()))),
                     ("👗 مصفوفة المقاسات والألوان", "ClothingMatrix", (Action)(() => NavigateTo(new FrmClothingMatrix()))),
                     ("📊 تقارير المخازن",   "RepStores",           (Action)(() => NavigateTo(new FrmReports("Stores")))),
                 }),
@@ -668,6 +669,7 @@ namespace ChickenDist.Forms
                 groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
                     ("🔧 تذاكر وشاشة الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
                     ("📋 كرت صيانة جديد",       "MaintenanceCard", (Action)(() => NavigateTo(new FrmMaintenanceCard(0)))),
+                    ("📱 جرد وسيريلات الأجهزة بالمخزن", "SerialStockReport", (Action)(() => NavigateTo(new FrmSerialStockReport()))),
                 }));
             }
 

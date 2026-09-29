@@ -440,11 +440,16 @@ namespace ChickenDist.Forms
             btnZeroOutWarehouse.Margin = new Padding(2, 1, 3, 0);
             btnZeroOutWarehouse.Click += BtnZeroOutWarehouse_Click;
 
+            var btnSerialsStockReport = Theme.MakeButton("📱 جرد السيريلات", Color.FromArgb(13, 148, 136));
+            btnSerialsStockReport.Size = new Size(115, 28);
+            btnSerialsStockReport.Margin = new Padding(2, 1, 3, 0);
+            btnSerialsStockReport.Click += (s, e) => new FrmSerialStockReport().ShowDialog(this);
+
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory,
                 btnSaveAdj, btnClearAdj,
                 btnPrintStock, btnPrintIncreaseBarcodes, btnVarianceReport, btnMovement, btnAddExpiryRow,
-                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnZeroOutWarehouse
+                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnSerialsStockReport, btnZeroOutWarehouse
             });
 
             pnlHeaderContainer.Controls.Add(pnlRow3);

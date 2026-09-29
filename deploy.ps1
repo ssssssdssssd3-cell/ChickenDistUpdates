@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 # ────────────────────────────────────────────────────────────
 # ────────────────────────────────────────────────────────────
-$VERSION   = "3.9.24";
+$VERSION   = "3.9.25";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -181,7 +181,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 
 # Step 6: Update update.txt
 Write-Step "Updating update.txt"
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Mobile activity support with multi-IMEI batch scanning in purchases & intelligent zero-collision scanner device resolution in sales and POS"
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Comprehensive serial stock & IMEI quantities report (FrmSerialStockReport) with dual detailed/summary views, KPI metrics, A4 print, and Excel export"
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"
