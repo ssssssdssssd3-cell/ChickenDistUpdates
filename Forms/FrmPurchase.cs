@@ -4266,7 +4266,8 @@ namespace ChickenDist.Forms
                     SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null,
                     UnitName = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
                     Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m,
-                    ExpiryDate = iRow.Table.Columns.Contains("ExpiryDate") && iRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(iRow["ExpiryDate"]) : (DateTime?)null
+                    ExpiryDate = iRow.Table.Columns.Contains("ExpiryDate") && iRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(iRow["ExpiryDate"]) : (DateTime?)null,
+                    IMEI = iRow.Table.Columns.Contains("IMEI") && iRow["IMEI"] != DBNull.Value ? iRow["IMEI"].ToString() : ""
                 });
             }
             RefreshGrid();

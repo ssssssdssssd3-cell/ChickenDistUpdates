@@ -212,7 +212,7 @@ namespace ChickenDist.DAL
                           COALESCE(pi.DiscountPct, 0) AS DiscountPct,
                           COALESCE(pi.DiscountAmt, 0) AS DiscountAmt,
                           pi.SuggestedSalePrice,
-                          COALESCE(NULLIF(pi.UnitName, N''), NULLIF(pr.Unit, N''), N'قطعة') AS UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate,
+                          COALESCE(NULLIF(pi.UnitName, N''), NULLIF(pr.Unit, N''), N'قطعة') AS UnitName, COALESCE(pi.Factor, 1.0) AS Factor, pi.ExpiryDate, pi.IMEI,
                           ISNULL((
                               SELECT SUM(pri.Quantity + ISNULL(pri.BonusQuantity, 0))
                               FROM PurchaseReturnItems pri
@@ -613,8 +613,8 @@ namespace ChickenDist.DAL
                     {
                         DbHelper.ExecuteTrans(trans,
                             @"INSERT INTO PurchaseItems
-                                (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate)
-                              VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp)",
+                                (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI)
+                              VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei)",
                             DbHelper.P("@pid",    purchaseID),
                             DbHelper.P("@prodid", item.ProductID),
                             DbHelper.P("@qty",    item.Quantity),
@@ -626,7 +626,8 @@ namespace ChickenDist.DAL
                             DbHelper.P("@ssp",    item.SuggestedSalePrice.HasValue ? (object)item.SuggestedSalePrice.Value : DBNull.Value),
                             DbHelper.P("@un",     item.UnitName),
                             DbHelper.P("@fac",    item.Factor),
-                            DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value));
+                            DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value),
+                            DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
 
                         if (item.ExpiryDate.HasValue)
                         {
