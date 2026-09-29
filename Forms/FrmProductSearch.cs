@@ -28,6 +28,7 @@ namespace ChickenDist.Forms
         private Dictionary<int, decimal> _globalStockCache = new Dictionary<int, decimal>();
         private Dictionary<int, decimal> _clientLastPrices = new Dictionary<int, decimal>();
         private Timer _searchTimer;
+        private DateTime _openedTime = DateTime.MinValue;
 
         public int SelectedProductID { get; private set; } = 0;
         public decimal SelectedPrice { get; private set; } = 0m;
@@ -113,6 +114,7 @@ namespace ChickenDist.Forms
 
             this.Shown += (s, e) =>
             {
+                _openedTime = DateTime.Now;
                 txtSearch.Focus();
                 txtSearch.SelectAll();
             };
@@ -269,7 +271,7 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
             { 
                 Name = "StockQty", 
-                HeaderText = "الرصيد الفعلي", 
+                HeaderText = _warehouseID.HasValue ? "رصيد المخزن" : "إجمالي الرصيد", 
                 FillWeight = 26,
                 MinimumWidth = 90,
                 DefaultCellStyle = new DataGridViewCellStyle 
@@ -341,6 +343,10 @@ namespace ChickenDist.Forms
 
             var lblDiscount = new Label { Text = "🎁 الخصم %:", Location = new Point(discLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             txtSelectedDiscount = new TextBox { Location = new Point(discTxtX, 9), Width = 80, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            txtSelectedQty.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
+            txtSelectedPurchasePrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
+            txtSelectedSalePrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
+            txtSelectedDiscount.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
 
             int permNoticeX = showPurchasePrice ? 175 : 355;
             lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
@@ -636,10 +642,25 @@ namespace ChickenDist.Forms
             }
             else if (e.KeyCode == Keys.Enter)
             {
+                if ((DateTime.Now - _openedTime).TotalMilliseconds < 250)
+                {
+                    e.Handled = true;
+                    return;
+                }
+
                 if (dgProducts.Rows.Count > 0)
                 {
-                    SelectAndClose();
-                    e.Handled = true;
+                    if (string.IsNullOrWhiteSpace(txtSearch.Text))
+                    {
+                        dgProducts.Focus();
+                        dgProducts.CurrentCell = dgProducts.Rows[0].Cells[1];
+                        e.Handled = true;
+                    }
+                    else
+                    {
+                        SelectAndClose();
+                        e.Handled = true;
+                    }
                 }
             }
         }

@@ -2591,8 +2591,8 @@ namespace ChickenDist.Forms
                         string colName = dgItems.CurrentCell.OwningColumn.Name;
                         if (colName == "Qty" || colName == "Price" || colName == "Discount")
                         {
-                            // فحص هل ما تم مسحه هو باركود صنف لتفادي كتابة الباركود في خانة الكمية وزيادة عدد الصنف بدلاً من ذلك
-                            if (IsProductCodeOrBarcode(text))
+                            // فحص هل ما تم مسحه هو باركود صنف حقيقي (6 أرقام فأكثر وبدون علامة عشرية) لتفادي اعتبار إدخال الكميات البسيطة (مثل 1 و 2 و 5) باركود صنف بالخطأ
+                            if (text.Length >= 6 && !text.Contains(".") && IsProductCodeOrBarcode(text))
                             {
                                 e.Handled = true;
                                 e.SuppressKeyPress = true;
@@ -3630,6 +3630,8 @@ namespace ChickenDist.Forms
                             AddItemFromRow(row, posQty, frm.SelectedUnitName, factor, posPrice, frm.SelectedBatchID, frm.SelectedExpiryDate, discAmt);
                         }
                         // فتح الشاشة مرة أخرى لاختيار صنف تاني
+                        Application.DoEvents();
+                        System.Threading.Thread.Sleep(30);
                         continue;
                     }
                     else

@@ -555,7 +555,8 @@ namespace ChickenDist.Forms
                     string lastSearchText = "";
                     while (true)
                     {
-                        using (var dlgSearch = new FrmProductSearch(isPurchaseMode: true, defaultShowZeroStock: AppConfig.PurchaseSearchShowZeroStock, initialSearchText: lastSearchText))
+                        int? purchaseWarehouseID = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wci && wci.ID > 0) ? wci.ID : (int?)null;
+                        using (var dlgSearch = new FrmProductSearch(warehouseID: purchaseWarehouseID, isPurchaseMode: true, defaultShowZeroStock: AppConfig.PurchaseSearchShowZeroStock, initialSearchText: lastSearchText))
                         {
                             if (dlgSearch.ShowDialog(this) == DialogResult.OK && dlgSearch.SelectedProductID > 0)
                             {
@@ -594,6 +595,8 @@ namespace ChickenDist.Forms
                                     }
                                 }
 
+                                Application.DoEvents();
+                                System.Threading.Thread.Sleep(30);
                                 // إعادة فتح الشاشة تلقائياً لاختيار أصناف أخرى
                                 continue;
                             }

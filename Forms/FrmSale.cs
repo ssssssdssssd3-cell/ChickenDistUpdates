@@ -3179,6 +3179,8 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
+						Application.DoEvents();
+						System.Threading.Thread.Sleep(30);
 					}
 					else
 					{
