@@ -1480,15 +1480,21 @@ namespace ChickenDist.DAL
         }
         private decimal _discountAmtOverride = 0m;
         private bool _discountPctOverride = true;
+        private decimal? _totalPriceOverride = null;
         public decimal TotalPrice
         {
             get
             {
+                if (_totalPriceOverride.HasValue) return _totalPriceOverride.Value;
                 decimal gross = Quantity * UnitPrice;
                 if (_discountPctOverride)
                     return Math.Round(gross - (gross * DiscountPct / 100m), 2);
                 else
                     return Math.Round(gross - _discountAmtOverride, 2);
+            }
+            set
+            {
+                _totalPriceOverride = value;
             }
         }
         public string PriceTier { get; set; } = "قطاعي";

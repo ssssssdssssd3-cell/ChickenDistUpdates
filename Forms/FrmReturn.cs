@@ -919,7 +919,24 @@ namespace ChickenDist.Forms
             };
             dgItems.Columns.Add(colNew);
             
-            // 9. سعر المرتجع
+            // 8.5. سعر الفاتورة الأصلي قبل الخصم
+            var colOrigPrice = new DataGridViewTextBoxColumn
+            {
+                Name = "OriginalUnitPrice",
+                HeaderText = "سعر الفاتورة",
+                ReadOnly = true,
+                FillWeight = 42f,
+                MinimumWidth = 80,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter, 
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Regular)
+                }
+            };
+            dgItems.Columns.Add(colOrigPrice);
+
+            // 9. سعر المرتجع (الصافي بعد احتساب الخصم)
             var colUnitPrice = new DataGridViewTextBoxColumn
             {
                 Name = "UnitPrice",
@@ -955,7 +972,8 @@ namespace ChickenDist.Forms
 
             // Hidden helper columns
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "OriginalFactor", Visible = false });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "OriginalUnitPrice", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetLineTotal", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetUnitPrice", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoldQtyInSmallest", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQtyInSmallest", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseUnitName", Visible = false });
@@ -1252,6 +1270,7 @@ namespace ChickenDist.Forms
 
             dgItems.Rows.Clear();
             dgExchangeNewItems.Rows.Clear();
+            if (dgItems.Columns.Contains("OriginalUnitPrice")) dgItems.Columns["OriginalUnitPrice"].Visible = isInvoice;
             if (dgItems.Columns.Contains("Color")) dgItems.Columns["Color"].Visible = AppConfig.IsClothing;
             if (dgItems.Columns.Contains("ProductSize")) dgItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
             if (dgExchangeNewItems.Columns.Contains("Color")) dgExchangeNewItems.Columns["Color"].Visible = AppConfig.IsClothing;
@@ -1608,11 +1627,15 @@ namespace ChickenDist.Forms
                     cboReturnType.SelectedIndex = 0; // كاش نقدي
             }
 
-            var dtSaleInfo = DbHelper.Query("SELECT ISNULL(TotalAmount,0) AS TotalAmount, ISNULL(ShippingCharge,0) AS ShippingCharge FROM Sales WHERE SaleID = @id", DbHelper.P("@id", saleID));
+            var dtSaleInfo = DbHelper.Query("SELECT ISNULL(TotalAmount,0) AS TotalAmount, ISNULL(ShippingCharge,0) AS ShippingCharge, ISNULL(DiscountAmount,0) AS DiscountAmount, ISNULL(DiscountPct,0) AS DiscountPct FROM Sales WHERE SaleID = @id", DbHelper.P("@id", saleID));
+            decimal saleDiscountAmount = 0m;
+            decimal saleDiscountPct = 0m;
             if (dtSaleInfo.Rows.Count > 0)
             {
                 _selectedSaleTotalAmount = Convert.ToDecimal(dtSaleInfo.Rows[0]["TotalAmount"]);
                 _selectedSaleShippingCharge = Convert.ToDecimal(dtSaleInfo.Rows[0]["ShippingCharge"]);
+                saleDiscountAmount = Convert.ToDecimal(dtSaleInfo.Rows[0]["DiscountAmount"]);
+                saleDiscountPct = Convert.ToDecimal(dtSaleInfo.Rows[0]["DiscountPct"]);
             }
 
             var dtPrevRetInfo = DbHelper.Query("SELECT ISNULL(SUM(TotalAmount),0) AS PrevReturned FROM SalesReturns WHERE SaleID = @id", DbHelper.P("@id", saleID));
@@ -1622,6 +1645,44 @@ namespace ChickenDist.Forms
             }
 
             DataTable dtItems = SaleDAL.GetItems(saleID);
+
+            // 1. حساب إجمالي بنود الفاتورة قبل الخصم العام للفاتورة
+            decimal sumLinesTotal = 0m;
+            foreach (DataRow r in dtItems.Rows)
+            {
+                decimal q = dtItems.Columns.Contains("Quantity") && r["Quantity"] != DBNull.Value ? Convert.ToDecimal(r["Quantity"]) : 0m;
+                decimal up = dtItems.Columns.Contains("UnitPrice") && r["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(r["UnitPrice"]) : 0m;
+                decimal tp = dtItems.Columns.Contains("TotalPrice") && r["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(r["TotalPrice"]) : (q * up);
+                if (tp <= 0m && q > 0m && up > 0m) tp = q * up;
+                sumLinesTotal += tp;
+            }
+
+            // 2. صافي قيمة الأصناف بالفاتورة (بعد خصم الفاتورة واستبعاد الشحن)
+            decimal invoiceNetProducts = Math.Max(0m, _selectedSaleTotalAmount - _selectedSaleShippingCharge);
+
+            // 3. نسبة الخصم العام للفاتورة لتوزيعه على الأصناف بالتناسب
+            decimal invoiceDiscountRatio = 1.0m;
+            if (sumLinesTotal > 0m && invoiceNetProducts < (sumLinesTotal - 0.001m))
+            {
+                invoiceDiscountRatio = invoiceNetProducts / sumLinesTotal;
+            }
+
+            // إشعار أو تنبيه مرئي بوجود خصم على الفاتورة وتوزيعه
+            if (cboMode != null && cboMode.SelectedIndex == 0)
+            {
+                decimal diffDiscount = sumLinesTotal - invoiceNetProducts;
+                if (diffDiscount > 0.005m || saleDiscountAmount > 0m || saleDiscountPct > 0m)
+                {
+                    decimal dispDisc = diffDiscount > 0.005m ? diffDiscount : saleDiscountAmount;
+                    lblExchangeSummary.Text = $"🏷️ خصم الفاتورة: {dispDisc:N2} ج (تم توزيع الخصم واحتساب صافي سعر المرتجع لكل صنف تلقائياً)";
+                    lblExchangeSummary.ForeColor = Color.FromArgb(180, 83, 9);
+                    lblExchangeSummary.Visible = true;
+                }
+                else
+                {
+                    lblExchangeSummary.Visible = false;
+                }
+            }
 
             foreach (DataRow row in dtItems.Rows)
             {
@@ -1648,6 +1709,15 @@ namespace ChickenDist.Forms
                 decimal soldQty = dtItems.Columns.Contains("SoldQty") ? Convert.ToDecimal(row["SoldQty"]) : (dtItems.Columns.Contains("Quantity") ? Convert.ToDecimal(row["Quantity"]) : 0m);
                 decimal prevRetQty = dtItems.Columns.Contains("PrevReturnedQty") ? Convert.ToDecimal(row["PrevReturnedQty"]) : 0m;
                 decimal origUnitPrice = dtItems.Columns.Contains("UnitPrice") ? Convert.ToDecimal(row["UnitPrice"]) : 0m;
+                decimal lineTotalPrice = dtItems.Columns.Contains("TotalPrice") && row["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(row["TotalPrice"]) : (soldQty * origUnitPrice);
+                if (lineTotalPrice <= 0m && soldQty > 0m && origUnitPrice > 0m) lineTotalPrice = soldQty * origUnitPrice;
+
+                // صافي قيمة السطر بعد توزيع الخصم التناسبي للفاتورة
+                decimal lineNetPaid = Math.Round(lineTotalPrice * invoiceDiscountRatio, 2);
+
+                // صافي سعر الوحدة المرتجعة
+                decimal netUnitPrice = soldQty > 0m ? Math.Round(lineNetPaid / soldQty, 2) : origUnitPrice;
+                if (netUnitPrice < 0m) netUnitPrice = 0m;
 
                 string baseUnit = dtItems.Columns.Contains("BaseUnitName") ? row["BaseUnitName"]?.ToString() ?? "" : (dtItems.Columns.Contains("Unit") ? row["Unit"]?.ToString() ?? "" : "");
                 string u1Name = dtItems.Columns.Contains("Unit1Name") ? row["Unit1Name"]?.ToString() : null;
@@ -1685,7 +1755,9 @@ namespace ChickenDist.Forms
                 decimal prevQtyInSmallest = prevRetQty * invoiceFactor;
 
                 dgRow.Cells["OriginalFactor"].Value = invoiceFactor;
-                dgRow.Cells["OriginalUnitPrice"].Value = origUnitPrice;
+                dgRow.Cells["OriginalUnitPrice"].Value = origUnitPrice.ToString("N2");
+                dgRow.Cells["NetLineTotal"].Value = lineNetPaid;
+                dgRow.Cells["NetUnitPrice"].Value = netUnitPrice;
                 dgRow.Cells["SoldQtyInSmallest"].Value = soldQtyInSmallest;
                 dgRow.Cells["PrevReturnedQtyInSmallest"].Value = prevQtyInSmallest;
                 dgRow.Cells["BaseUnitName"].Value = baseUnit;
@@ -1713,7 +1785,7 @@ namespace ChickenDist.Forms
                 dgRow.Cells["PrevReturnedQty"].Value = prevRetQty.ToString("G29");
                 dgRow.Cells["CurrentStock"].Value = actStock.ToString("G29");
                 dgRow.Cells["NewReturnedQty"].Value = 0m;
-                dgRow.Cells["UnitPrice"].Value = origUnitPrice.ToString("F2");
+                dgRow.Cells["UnitPrice"].Value = netUnitPrice.ToString("F2");
                 dgRow.Cells["TotalPrice"].Value = "0.00";
 
                 if (prevRetQty > 0)
@@ -1815,7 +1887,36 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                row.Cells["TotalPrice"].Value = (newQty * price).ToString("F2");
+                decimal rowTotal = Math.Round(newQty * price, 2);
+
+                // معالجة فرق كسور القروش في حالة إرجاع كامل الكمية المتبقية للصنف من الفاتورة
+                if (cboMode != null && cboMode.SelectedIndex == 0 && newQty > 0)
+                {
+                    decimal soldQty = 0m;
+                    decimal prevRetQty = 0m;
+                    decimal netLineTotal = 0m;
+                    decimal netUnitPrice = 0m;
+
+                    if (row.Cells["SoldQty"].Value != null) decimal.TryParse(row.Cells["SoldQty"].Value.ToString(), out soldQty);
+                    if (row.Cells["PrevReturnedQty"].Value != null) decimal.TryParse(row.Cells["PrevReturnedQty"].Value.ToString(), out prevRetQty);
+                    if (row.Cells["NetLineTotal"].Value != null) decimal.TryParse(row.Cells["NetLineTotal"].Value.ToString(), out netLineTotal);
+                    if (row.Cells["NetUnitPrice"].Value != null) decimal.TryParse(row.Cells["NetUnitPrice"].Value.ToString(), out netUnitPrice);
+
+                    decimal maxAvailQty = Math.Max(0m, soldQty - prevRetQty);
+
+                    // إذا كان السعر هو سعر الصافي المحسوب وتم طلب كامل الكمية المتبقية
+                    if (Math.Abs(price - netUnitPrice) <= 0.01m && newQty == maxAvailQty && maxAvailQty > 0)
+                    {
+                        decimal prevNetUsed = prevRetQty > 0 ? Math.Round(prevRetQty * netUnitPrice, 2) : 0m;
+                        decimal remainingLineNet = Math.Max(0m, netLineTotal - prevNetUsed);
+                        if (remainingLineNet > 0m)
+                        {
+                            rowTotal = remainingLineNet;
+                        }
+                    }
+                }
+
+                row.Cells["TotalPrice"].Value = rowTotal.ToString("F2");
                 RecalcTotals();
             }
             else if (colName == "UnitName")
@@ -1907,18 +2008,26 @@ namespace ChickenDist.Forms
                     if (newQty > 0)
                     {
                         decimal price = Convert.ToDecimal(row.Cells["UnitPrice"].Value);
+                        decimal rowTotal = Math.Round(newQty * price, 2);
+                        if (row.Cells["TotalPrice"].Value != null && decimal.TryParse(row.Cells["TotalPrice"].Value.ToString(), out decimal parsedTotal) && parsedTotal > 0)
+                        {
+                            rowTotal = parsedTotal;
+                        }
+                        decimal effectiveUnitPrice = newQty > 0 ? Math.Round(rowTotal / newQty, 2) : price;
+
                         returnItems.Add(new SaleItemDTO 
                         { 
                             ProductID = prodID, 
                             ProductName = prodName, 
                             Quantity = newQty, 
-                            UnitPrice = price,
+                            UnitPrice = effectiveUnitPrice,
+                            TotalPrice = rowTotal,
                             UnitName = row.Cells["UnitName"].Value?.ToString(),
                             Factor = 1m,
                             Color = row.Cells["Color"]?.Value?.ToString() ?? "",
                             ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? ""
                         });
-                        totalReturnAmount += (newQty * price);
+                        totalReturnAmount += rowTotal;
                     }
                 }
 
@@ -1926,6 +2035,20 @@ namespace ChickenDist.Forms
                 {
                     MessageBox.Show("يرجى إدخال كمية مرتجعة جديدة صالحة لصنف واحد على الأقل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
+                }
+
+                if (_selectedSaleTotalAmount > 0)
+                {
+                    decimal maxInvoiceRefundable = Math.Max(0m, _selectedSaleTotalAmount - _selectedSalePrevReturnedAmount);
+                    if (totalReturnAmount > maxInvoiceRefundable + 0.05m)
+                    {
+                        MessageBox.Show($"⛔ إجمالي قيمة المرتجع ({totalReturnAmount:N2} ج) يتجاوز القيمة المتبقية من الفاتورة الأصلية بعد الخصومات ({maxInvoiceRefundable:N2} ج).", "تجاوز قيمة الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    else if (totalReturnAmount > maxInvoiceRefundable)
+                    {
+                        totalReturnAmount = maxInvoiceRefundable;
+                    }
                 }
 
                 try
@@ -2041,15 +2164,26 @@ namespace ChickenDist.Forms
                     string name = r.Cells["ProductName"].Value.ToString();
                     decimal.TryParse(r.Cells["NewReturnedQty"].Value?.ToString(), out decimal q);
                     decimal.TryParse(r.Cells["UnitPrice"].Value?.ToString(), out decimal p);
-                    if (q > 0) retItems.Add(new SaleItemDTO 
-                    { 
-                        ProductID = pid, 
-                        ProductName = name, 
-                        Quantity = q, 
-                        UnitPrice = p,
-                        Color = r.Cells["Color"]?.Value?.ToString() ?? "",
-                        ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
-                    });
+                    if (q > 0)
+                    {
+                        decimal rowTotal = Math.Round(q * p, 2);
+                        if (r.Cells["TotalPrice"].Value != null && decimal.TryParse(r.Cells["TotalPrice"].Value.ToString(), out decimal parsedTotal) && parsedTotal > 0)
+                        {
+                            rowTotal = parsedTotal;
+                        }
+                        decimal effectiveUnitPrice = q > 0 ? Math.Round(rowTotal / q, 2) : p;
+
+                        retItems.Add(new SaleItemDTO 
+                        { 
+                            ProductID = pid, 
+                            ProductName = name, 
+                            Quantity = q, 
+                            UnitPrice = effectiveUnitPrice,
+                            TotalPrice = rowTotal,
+                            Color = r.Cells["Color"]?.Value?.ToString() ?? "",
+                            ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
+                        });
+                    }
                 }
 
                 var newItems = new List<SaleItemDTO>();
