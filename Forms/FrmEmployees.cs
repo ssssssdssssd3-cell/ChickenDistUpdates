@@ -1086,6 +1086,7 @@ namespace ChickenDist.Forms
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
                 HasViewQuickItems = true, HasOrderColumns = true, HasSellBelowCost = true,
+                HasViewBalance = true, HasViewDetails = true,
                 AddLabel = "➕ إصدار وحفظ فواتير بيع جديدة",
                 AddHint = "السماح للموظف بحفظ فواتير البيع وإتمام عملية البيع.",
                 EditLabel = "✏️ تعديل فواتير المبيعات السابقة",
@@ -1099,6 +1100,7 @@ namespace ChickenDist.Forms
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
                 HasViewQuickItems = true, HasOrderColumns = true, HasSellBelowCost = true,
+                HasViewBalance = true, HasViewDetails = true,
                 AddLabel = "➕ حفظ وإتمام فواتير الكاشير",
                 AddHint = "السماح للموظف بإنهاء وحفظ فواتير نقاط البيع السريعة."
             },

@@ -579,12 +579,69 @@ namespace ChickenDist.Core
         public static bool CanViewShiftDetails()
         {
             if (IsAdmin) return true;
-            if (_perms.ContainsKey("ShiftClose")) return _perms["ShiftClose"].CanViewDetails;
-            if (_perms.ContainsKey("ShiftsHistory")) return _perms["ShiftsHistory"].CanViewDetails;
-            if (_perms.ContainsKey("POS")) return _perms["POS"].CanViewDetails;
-            if (_perms.ContainsKey("Sales")) return _perms["Sales"].CanViewDetails;
-            if (_perms.ContainsKey("DailyClosing")) return _perms["DailyClosing"].CanViewDetails;
+
+            // 1. المرجع الأساسي: صلاحيات شاشة إغلاق الوردية
+            if (_perms.ContainsKey("ShiftClose"))
+            {
+                var p = _perms["ShiftClose"];
+                // إذا أُلغيت معاينة تفاصيل التقفيل أو أُلغي الاطلاع على رصيد الدرج
+                if (!p.CanViewDetails || !p.CanViewBalance) return false;
+                return true;
+            }
+
+            // 2. إذا لم يكن لديه شاشة تقفيل الوردية فحص السجلات الأخرى بدقة
+            if (_perms.ContainsKey("ShiftsHistory"))
+            {
+                var p = _perms["ShiftsHistory"];
+                if (!p.CanViewDetails || !p.CanViewBalance) return false;
+                return true;
+            }
+            if (_perms.ContainsKey("DailyClosing"))
+            {
+                var p = _perms["DailyClosing"];
+                if (!p.CanViewDetails || !p.CanViewBalance) return false;
+                return true;
+            }
+
             return false;
+        }
+
+        /// <summary>
+        /// هل يُسمح للموظف بالاطلاع على تفاصيل ورصيد مبالغ الدرج والوردية في شاشات البيع؟
+        /// </summary>
+        public static bool CanViewDrawerBalance()
+        {
+            if (IsAdmin) return true;
+
+            // إذا أغلقت معاينة تفاصيل الوردية بوجه عام
+            if (!CanViewShiftDetails()) return false;
+
+            // فحص شاشة تقفيل الوردية
+            if (_perms.ContainsKey("ShiftClose"))
+            {
+                var p = _perms["ShiftClose"];
+                if (!p.CanAccess || !p.CanViewDetails || !p.CanViewBalance) return false;
+            }
+            else
+            {
+                return false;
+            }
+
+            // فحص شاشة الخزنة
+            if (_perms.ContainsKey("CashBox"))
+            {
+                var p = _perms["CashBox"];
+                if (!p.CanViewBalance || !p.CanViewDetails) return false;
+            }
+
+            // فحص شاشة المبيعات
+            if (_perms.ContainsKey("Sales"))
+            {
+                var p = _perms["Sales"];
+                if (!p.CanViewBalance || !p.CanViewDetails) return false;
+            }
+
+            return true;
         }
 
         public static bool CanViewBalance(string screen = "CashBox")

@@ -136,6 +136,7 @@ namespace ChickenDist.Forms
 		private NumericUpDown nudShippingCharge;
 		private Panel pnlQuickItems;
 		private FlowLayoutPanel flowQuickItems;
+		private Label lblShiftTitleHeader;
 		private Label lblShiftSummaryBar;
 		private Label lblClientAddress;
 		private TextBox txtClientAddress;
@@ -741,7 +742,7 @@ namespace ChickenDist.Forms
 				Padding = new Padding(6, 2, 6, 2),
 				Margin = new Padding(0)
 			};
-			var lblShiftTitleHeader = new Label
+			lblShiftTitleHeader = new Label
 			{
 				Text = "الوردية والدرج المفتوح :",
 				Font = Theme.FontSmall,
@@ -763,6 +764,11 @@ namespace ChickenDist.Forms
 			};
 			lblShiftSummaryBar.Click += (s, e) =>
 			{
+				if (!Session.CanAccess("ShiftClose") && !Session.CanAdd("ShiftClose") && !Session.CanViewShiftDetails())
+				{
+					MessageBox.Show("🔒 ليس لديك صلاحية لإغلاق أو تعديل الوردية.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					return;
+				}
 				new FrmShiftClose().ShowDialog(this);
 				UpdateShiftSummaryLabel();
 			};
@@ -2801,12 +2807,30 @@ namespace ChickenDist.Forms
 						}
 					}
 
-					lblShiftSummaryBar.Text = $"🟢 وردية #{shiftId} | 👤 {emp} | 💵 فتح: {openingCash:N0}ج | 🏦 {safe}";
+					bool canViewDrawer = Session.CanViewDrawerBalance();
+
+					if (lblShiftTitleHeader != null)
+					{
+						lblShiftTitleHeader.Text = canViewDrawer ? "الوردية والدرج المفتوح :" : "رقم الوردية المفتوحة :";
+					}
+
+					if (canViewDrawer)
+					{
+						lblShiftSummaryBar.Text = $"🟢 وردية #{shiftId} | 👤 {emp} | 💵 فتح: {openingCash:N0}ج | 🏦 {safe}";
+					}
+					else
+					{
+						lblShiftSummaryBar.Text = $"🟢 وردية مفتوحة #{shiftId}";
+					}
 					lblShiftSummaryBar.ForeColor = Color.FromArgb(74, 222, 128);
 				}
 				else
 				{
 					Session.CurrentShiftID = null;
+					if (lblShiftTitleHeader != null)
+					{
+						lblShiftTitleHeader.Text = "حالة الوردية :";
+					}
 					lblShiftSummaryBar.Text = "🔴 لا توجد وردية مفتوحة (اضغط هنا لفتح وردية)";
 					lblShiftSummaryBar.ForeColor = Color.FromArgb(248, 113, 113);
 				}
