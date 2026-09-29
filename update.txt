@@ -1,5 +1,5 @@
-version=3.9.23
+version=3.9.24
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.23&t=1790600193
-sha256=1C6CDBFA1371603B3C28D9D2A6FD9A3F6FD044D52C3EDDA29F9857C6F61ACE46
-changelog=v3.9.23 - 2026-09-28: Store Product Images (up to 3 images per item), automatic ultra-lightweight JPEG compression (25-35 KB), mobile data safeguard, on-demand swipe gallery modal
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.24&t=1790674810
+sha256=FDB17CA7EEB1D09B0592012758593994B0239759B16A37A4A9951DF89F5E8873
+changelog=v3.9.24 - 2026-09-29: Mobile activity support with multi-IMEI batch scanning in purchases & intelligent zero-collision scanner device resolution in sales and POS

@@ -766,6 +766,11 @@ namespace ChickenDist.Forms
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
                 {
                     string colName = dgItems.Columns[e.ColumnIndex].Name;
+                    if (colName == "IMEI")
+                    {
+                        OpenBatchIMEIDialog(e.RowIndex);
+                        return;
+                    }
                     if (colName == "Quantity" || colName == "UnitPrice" || colName == "DiscountPct" || colName == "SuggestedSalePrice" || colName == "UnitName" || colName == "ExpiryDate" || colName == "Delete")
                     {
                         return; // السماح بتعديل الخانات التفاعلية أو حذف السطر مباشرة
@@ -1941,29 +1946,33 @@ namespace ChickenDist.Forms
 
             // سعر الشراء هو السعر الفعلي المدخل أو المسجل ولا يشتق من سعر البيع ولا يعامل هامش الربح كخصم
 
-            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم
-            foreach (var item in _items)
+            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم (لا يدمج إذا كان نشاط محمول أو يوجد سيريال محدد للصنف)
+            bool allowMerge = (AppConfig.BusinessType != "Mobiles");
+            if (allowMerge)
             {
-                if (item.ProductID == prodId && item.UnitPrice == defaultPrice && item.DiscountPct == disc && (string.IsNullOrEmpty(defaultUnit) || item.UnitName == defaultUnit))
+                foreach (var item in _items)
                 {
-                    item.Quantity += qty;
-                    if (price > 0) item.UnitPrice = defaultPrice;
-                    if (salePrice > 0) item.SuggestedSalePrice = defaultSalePrice;
-                    RefreshGrid();
-                    if (_isScanningBarcode || (txtBarcode != null && txtBarcode.Focused))
+                    if (item.ProductID == prodId && item.UnitPrice == defaultPrice && item.DiscountPct == disc && (string.IsNullOrEmpty(defaultUnit) || item.UnitName == defaultUnit) && string.IsNullOrEmpty(item.IMEI))
                     {
-                        if (txtBarcode != null)
+                        item.Quantity += qty;
+                        if (price > 0) item.UnitPrice = defaultPrice;
+                        if (salePrice > 0) item.SuggestedSalePrice = defaultSalePrice;
+                        RefreshGrid();
+                        if (_isScanningBarcode || (txtBarcode != null && txtBarcode.Focused))
                         {
-                            txtBarcode.Clear();
-                            this.ActiveControl = txtBarcode;
-                            txtBarcode.Focus();
+                            if (txtBarcode != null)
+                            {
+                                txtBarcode.Clear();
+                                this.ActiveControl = txtBarcode;
+                                txtBarcode.Focus();
+                            }
                         }
+                        else
+                        {
+                            SelectQuantityCell(prodId);
+                        }
+                        return;
                     }
-                    else
-                    {
-                        SelectQuantityCell(prodId);
-                    }
-                    return;
                 }
             }
 
@@ -2630,10 +2639,16 @@ namespace ChickenDist.Forms
                 }
             });
 
+            var miIMEI = new ToolStripMenuItem("📱 مسح / إدخال سيريالات الأجهزة (IMEI)...", null, (s, e) =>
+            {
+                OpenBatchIMEIDialog();
+            });
+
             ctx.Items.AddRange(new ToolStripItem[] {
                 miCard,
                 miStock,
                 miBarcode,
+                miIMEI,
                 new ToolStripSeparator(),
                 miDel
             });
@@ -2784,6 +2799,79 @@ namespace ChickenDist.Forms
                         }
                     }
                 });
+            }
+            else if (e.RowIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "IMEI")
+            {
+                if (e.RowIndex < _items.Count && (_items[e.RowIndex].Quantity > 1 || !string.IsNullOrEmpty(_items[e.RowIndex].IMEI) || AppConfig.BusinessType == "Mobiles"))
+                {
+                    OpenBatchIMEIDialog(e.RowIndex);
+                }
+            }
+        }
+
+        private void OpenBatchIMEIDialog(int? targetRowIndex = null)
+        {
+            int rowIdx = targetRowIndex ?? (dgItems.CurrentRow != null ? dgItems.CurrentRow.Index : -1);
+            if (rowIdx < 0 || rowIdx >= _items.Count) return;
+
+            var currentItem = _items[rowIdx];
+            int targetQty = (int)Math.Max(1, Math.Round(currentItem.Quantity));
+            var existingSerials = new List<string>();
+            if (!string.IsNullOrWhiteSpace(currentItem.IMEI))
+                existingSerials.Add(currentItem.IMEI.Trim());
+
+            int editId = _editPurchaseID > 0 ? _editPurchaseID : 0;
+
+            using (var frm = new FrmBatchIMEIInput(currentItem.ProductName, targetQty, existingSerials, currentItem.ProductID, editId > 0 ? (int?)editId : null))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK && frm.ResultSerials.Count > 0)
+                {
+                    var baseItem = _items[rowIdx];
+                    var serials = frm.ResultSerials;
+
+                    _items.RemoveAt(rowIdx);
+
+                    for (int i = 0; i < serials.Count; i++)
+                    {
+                        _items.Insert(rowIdx + i, new PurchaseItemDTO
+                        {
+                            ProductID = baseItem.ProductID,
+                            ProductCode = baseItem.ProductCode,
+                            ProductName = baseItem.ProductName,
+                            Quantity = 1.00m,
+                            BonusQuantity = 0m,
+                            UnitPrice = baseItem.UnitPrice,
+                            DiscountPct = baseItem.DiscountPct,
+                            SuggestedSalePrice = baseItem.SuggestedSalePrice,
+                            UnitName = baseItem.UnitName,
+                            Factor = baseItem.Factor,
+                            ExpiryDate = baseItem.ExpiryDate,
+                            IMEI = serials[i]
+                        });
+                    }
+
+                    if (targetQty > serials.Count)
+                    {
+                        _items.Insert(rowIdx + serials.Count, new PurchaseItemDTO
+                        {
+                            ProductID = baseItem.ProductID,
+                            ProductCode = baseItem.ProductCode,
+                            ProductName = baseItem.ProductName,
+                            Quantity = (decimal)(targetQty - serials.Count),
+                            BonusQuantity = baseItem.BonusQuantity,
+                            UnitPrice = baseItem.UnitPrice,
+                            DiscountPct = baseItem.DiscountPct,
+                            SuggestedSalePrice = baseItem.SuggestedSalePrice,
+                            UnitName = baseItem.UnitName,
+                            Factor = baseItem.Factor,
+                            ExpiryDate = baseItem.ExpiryDate,
+                            IMEI = ""
+                        });
+                    }
+
+                    RefreshGrid();
+                    _isDirty = true;
+                }
             }
         }
 

@@ -1826,12 +1826,45 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-					if (txtBarcode != null)
+					// Smart Fallback (الأولوية الثانية): هل الكود الممسوح هو سيريال (IMEI) لجهاز متاح بالمخزن؟
+					var imeiMatch = PurchaseDAL.FindProductByAvailableIMEI(code);
+					if (imeiMatch.HasValue)
 					{
-						txtBarcode.SelectAll();
-						this.ActiveControl = txtBarcode;
-						txtBarcode.Focus();
+						int productID = imeiMatch.Value.ProductID;
+						string scannedImei = imeiMatch.Value.IMEI;
+
+						// إزالة السطر المعلق إن وجد
+						if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+						{
+							dgItems.Rows.RemoveAt(_pendingRowIdx);
+							_pendingRowIdx = -1;
+						}
+
+						AddProductWithSpecificIMEI(productID, scannedImei);
+
+						try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+
+						if (txtBarcode != null)
+						{
+							txtBarcode.Clear();
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
+							txtBarcode.SelectAll();
+						}
+						else
+						{
+							AddNewCodeRow();
+						}
+					}
+					else
+					{
+						MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						if (txtBarcode != null)
+						{
+							txtBarcode.SelectAll();
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
+						}
 					}
 				}
 			}
@@ -3533,12 +3566,36 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-						// إعادة التركيز على خلية الكود
-						if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+						var imeiMatch = PurchaseDAL.FindProductByAvailableIMEI(code);
+						if (imeiMatch.HasValue)
 						{
-							dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
-							dgItems.BeginEdit(true);
+							if (capturedPending >= 0 && capturedPending == _pendingRowIdx && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+							{
+								dgItems.Rows.RemoveAt(_pendingRowIdx);
+								_pendingRowIdx = -1;
+							}
+							AddProductWithSpecificIMEI(imeiMatch.Value.ProductID, imeiMatch.Value.IMEI);
+							try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+							if (txtBarcode != null)
+							{
+								txtBarcode.Clear();
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+							}
+							else
+							{
+								AddNewCodeRow();
+							}
+						}
+						else
+						{
+							MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							// إعادة التركيز على خلية الكود
+							if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+							{
+								dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
+								dgItems.BeginEdit(true);
+							}
 						}
 					}
 				});
@@ -3850,6 +3907,16 @@ namespace ChickenDist.Forms
 					var availableSerials = PurchaseDAL.GetAvailableSerialsForProduct(item.ProductID);
 					if (availableSerials != null && availableSerials.Count > 0)
 					{
+						// استبعاد أي سيريال تم اختياره بالفعل في سطر آخر من نفس الفاتورة
+						var usedInOtherRows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+						for (int i = 0; i < _items.Count; i++)
+						{
+							if (i != rIndex && _items[i].ProductID == item.ProductID && !string.IsNullOrEmpty(_items[i].IMEI))
+							{
+								usedInOtherRows.Add(_items[i].IMEI.Trim());
+							}
+						}
+
 						var comboCell = new DataGridViewComboBoxCell();
 						comboCell.Items.Add("");
 						foreach (var s in availableSerials)
@@ -3861,10 +3928,28 @@ namespace ChickenDist.Forms
 						{
 							comboCell.Value = item.IMEI;
 						}
-						else if (comboCell.Items.Count > 1)
+						else
 						{
-							comboCell.Value = comboCell.Items[1];
-							item.IMEI = comboCell.Value.ToString();
+							// اختيار أول سيريال متاح لم يتم اختياره في سطر آخر
+							string pick = null;
+							foreach (var s in availableSerials)
+							{
+								if (!usedInOtherRows.Contains(s))
+								{
+									pick = s;
+									break;
+								}
+							}
+							if (!string.IsNullOrEmpty(pick))
+							{
+								comboCell.Value = pick;
+								item.IMEI = pick;
+							}
+							else if (comboCell.Items.Count > 1)
+							{
+								comboCell.Value = comboCell.Items[1];
+								item.IMEI = comboCell.Value.ToString();
+							}
 						}
 					}
 				}
@@ -4213,14 +4298,18 @@ namespace ChickenDist.Forms
 			{
 				decimal targetPrice = manualPrice ?? defaultUnitPrice;
 				SaleItemDTO existingRow = null;
-				foreach (var item in _items)
+				bool isTrackedBySerial = (AppConfig.BusinessType == "Mobiles") && (PurchaseDAL.GetAvailableSerialsForProduct(productID).Count > 0);
+				if (!isTrackedBySerial)
 				{
-					if (item.ProductID == productID && 
-						item.UnitPrice == targetPrice &&
-						(unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
+					foreach (var item in _items)
 					{
-						existingRow = item;
-						break;
+						if (item.ProductID == productID && 
+							item.UnitPrice == targetPrice &&
+							(unitName == null || string.Equals(item.UnitName, unitName, StringComparison.OrdinalIgnoreCase)))
+						{
+							existingRow = item;
+							break;
+						}
 					}
 				}
 				decimal newQty = (existingRow != null ? existingRow.Quantity : 0m) + qtyToAdd;
@@ -4304,6 +4393,79 @@ namespace ChickenDist.Forms
 
 			if (deferRefresh) this.BeginInvoke((MethodInvoker)delegate { RefreshGrid(); });
 			else RefreshGrid();
+		}
+
+		private void AddProductWithSpecificIMEI(int productID, string imei)
+		{
+			if (string.IsNullOrWhiteSpace(imei)) return;
+			imei = imei.Trim();
+
+			// 1. فحص هل السيريال مضاف بالفعل في بنود هذه الفاتورة
+			foreach (var item in _items)
+			{
+				if (!string.IsNullOrEmpty(item.IMEI) && string.Equals(item.IMEI.Trim(), imei, StringComparison.OrdinalIgnoreCase))
+				{
+					MessageBox.Show($"⚠️ السيريال [{imei}] مضاف بالفعل في هذه الفاتورة الحالية!", "تكرار سيريال", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					return;
+				}
+			}
+
+			ComboItem product = null;
+			foreach (var ci in _productCache)
+			{
+				if (ci.ID == productID) { product = ci; break; }
+			}
+			if (product == null)
+			{
+				foreach (var item in cboProduct.Items)
+				{
+					if (item is ComboItem ci && ci.ID == productID) { product = ci; break; }
+				}
+			}
+			if (product == null)
+			{
+				try
+				{
+					var pRow = ProductDAL.GetByID(productID);
+					if (pRow != null)
+					{
+						string name = pRow["ProductName"].ToString();
+						decimal price = pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m;
+						decimal purchasePrice = pRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["PurchasePrice"]) : 0m;
+						decimal minStock = pRow["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(pRow["MinStockLimit"]) : 0m;
+
+						product = new ComboItem(productID, name, $"{name} ({price:N2})", price, minStock, purchasePrice);
+						product.ProductCode = pRow["ProductCode"]?.ToString() ?? "";
+						product.InternationalCode = pRow["InternationalCode"]?.ToString() ?? "";
+						product.ScalePLU = pRow.Table.Columns.Contains("ScalePLU") && pRow["ScalePLU"] != DBNull.Value ? pRow["ScalePLU"].ToString().Trim() : "";
+						product.IsService = pRow.Table.Columns.Contains("IsService") && pRow["IsService"] != DBNull.Value && Convert.ToBoolean(pRow["IsService"]);
+						product.BaseUnitName = pRow.Table.Columns.Contains("Unit") && pRow["Unit"] != DBNull.Value ? pRow["Unit"].ToString() : "";
+						product.PartNumber = pRow["PartNumber"]?.ToString() ?? "";
+						product.ShelfLocation = pRow["ShelfLocation"]?.ToString() ?? "";
+						product.Brand = pRow.Table.Columns.Contains("Brand") && pRow["Brand"] != DBNull.Value ? pRow["Brand"].ToString().Trim() : "";
+					}
+				}
+				catch { }
+			}
+
+			if (product == null)
+			{
+				MessageBox.Show("لم يتم العثور على بيانات الصنف التابع له هذا السيريال.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			decimal stock = InventoryDAL.GetProductStock(productID, GetSelectedWarehouseID());
+			if (stock <= 0 && !product.IsService)
+			{
+				MessageBox.Show($"❌ عجز: الصنف '{product.Name}' ليس لديه رصيد كافٍ في المخزن حالياً (الرصيد الحالي: 0)!", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
+
+			var dto = CreateSaleItemDTO(product, 1m, product.Price, stock);
+			dto.IMEI = imei;
+			_items.Add(dto);
+			RefreshGrid();
+			_isDirty = true;
 		}
 
 		private bool CheckSaleItemStock(SaleItemDTO item, decimal newQty, out string err)

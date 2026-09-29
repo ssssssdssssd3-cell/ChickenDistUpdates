@@ -1704,6 +1704,17 @@ namespace ChickenDist.Forms
                     }
                 }
 
+                var imeiMatch = PurchaseDAL.FindProductByAvailableIMEI(code);
+                if (imeiMatch.HasValue)
+                {
+                    var pRow = ProductDAL.GetByID(imeiMatch.Value.ProductID);
+                    if (pRow != null)
+                    {
+                        AddItemFromRow(pRow, 1m, null, 1m, 0, null, null, 0m, false, imeiMatch.Value.IMEI);
+                        return;
+                    }
+                }
+
                 MessageBox.Show("لم يتم العثور على صنف بهذا الكود.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -1782,7 +1793,7 @@ namespace ChickenDist.Forms
             AddItemFromRow(row, qtyToAdd, unitName, factor, price, batchID, expiryDate, 0m, focusQty);
         }
 
-        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null, decimal discountAmt = 0m, bool focusQty = false)
+        private void AddItemFromRow(DataRow row, decimal qty, string unitName, decimal factor, decimal overridePrice = 0, int? batchID = null, DateTime? expiryDate = null, decimal discountAmt = 0m, bool focusQty = false, string specificIMEI = null)
         {
             if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
             {
@@ -1860,7 +1871,8 @@ namespace ChickenDist.Forms
             bool hasExpiry = row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]);
 
             // Check if item already in list (same product + unit + price + same batch if hasExpiry)
-            var existing = _items.Find(i => i.ProductID == productID && 
+            bool isTrackedBySerial = !string.IsNullOrEmpty(specificIMEI) || ((AppConfig.BusinessType == "Mobiles") && (PurchaseDAL.GetAvailableSerialsForProduct(productID).Count > 0));
+            var existing = isTrackedBySerial ? null : _items.Find(i => i.ProductID == productID && 
                                             i.Price == price &&
                                             i.UnitName == unitName && 
                                             (!hasExpiry || (i.BatchID == batchID && i.ExpiryDate == expiryDate)));
@@ -1950,7 +1962,8 @@ namespace ChickenDist.Forms
                 HasExpiry = row.Table.Columns.Contains("HasExpiry") && row["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row["HasExpiry"]),
                 DefaultExpiryDays = row.Table.Columns.Contains("DefaultExpiryDays") && row["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row["DefaultExpiryDays"]) : (int?)null,
                 BatchID = batchID,
-                ExpiryDate = expiryDate
+                ExpiryDate = expiryDate,
+                IMEI = !string.IsNullOrEmpty(specificIMEI) ? specificIMEI.Trim() : ""
             };
             _items.Add(newItem);
             RefreshGrid();
@@ -2360,6 +2373,16 @@ namespace ChickenDist.Forms
                 var availableSerials = PurchaseDAL.GetAvailableSerialsForProduct(item.ProductID);
                 if (availableSerials != null && availableSerials.Count > 0)
                 {
+                    // استبعاد السيريالات المختارة في الأسطر الأخرى لنفس الصنف لمنع التكرار
+                    var usedInOtherRows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    for (int i = 0; i < _items.Count; i++)
+                    {
+                        if (i != rIndex && _items[i].ProductID == item.ProductID && !string.IsNullOrEmpty(_items[i].IMEI))
+                        {
+                            usedInOtherRows.Add(_items[i].IMEI.Trim());
+                        }
+                    }
+
                     var comboCell = new DataGridViewComboBoxCell();
                     comboCell.Items.Add("");
                     foreach (var s in availableSerials)
@@ -2371,10 +2394,27 @@ namespace ChickenDist.Forms
                     {
                         comboCell.Value = item.IMEI;
                     }
-                    else if (comboCell.Items.Count > 1)
+                    else
                     {
-                        comboCell.Value = comboCell.Items[1];
-                        item.IMEI = comboCell.Value.ToString();
+                        string pick = null;
+                        foreach (var s in availableSerials)
+                        {
+                            if (!usedInOtherRows.Contains(s))
+                            {
+                                pick = s;
+                                break;
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(pick))
+                        {
+                            comboCell.Value = pick;
+                            item.IMEI = pick;
+                        }
+                        else if (comboCell.Items.Count > 1)
+                        {
+                            comboCell.Value = comboCell.Items[1];
+                            item.IMEI = comboCell.Value.ToString();
+                        }
                     }
                 }
             }

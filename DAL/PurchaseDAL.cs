@@ -750,6 +750,59 @@ namespace ChickenDist.DAL
             return list;
         }
 
+        /// <summary>
+        /// البحث عن الصنف المرتبط برقم سيريال (IMEI) معين من بين الأجهزة المشتراة وغير المباعة.
+        /// يُستخدم كمسار بديل ذكي (Smart Fallback) في شاشات البيع والـ POS إذا مسح الكاشير باركود السيريال مباشرة.
+        /// </summary>
+        public static (int ProductID, string IMEI)? FindProductByAvailableIMEI(string imei)
+        {
+            if (string.IsNullOrWhiteSpace(imei)) return null;
+            imei = imei.Trim();
+
+            string sql = @"
+                SELECT TOP 1 pItem.ProductID, LTRIM(RTRIM(pItem.IMEI)) AS IMEI
+                FROM PurchaseItems pItem
+                JOIN Purchases p ON pItem.PurchaseID = p.PurchaseID
+                WHERE LTRIM(RTRIM(pItem.IMEI)) = @imei
+                  AND pItem.IMEI IS NOT NULL
+                  AND LTRIM(RTRIM(pItem.IMEI)) <> ''
+                  AND p.IsPosted = 1
+                  AND LTRIM(RTRIM(pItem.IMEI)) NOT IN (
+                      SELECT LTRIM(RTRIM(sItem.IMEI))
+                      FROM SaleItems sItem
+                      JOIN Sales s ON sItem.SaleID = s.SaleID
+                      WHERE sItem.IMEI IS NOT NULL
+                        AND LTRIM(RTRIM(sItem.IMEI)) = @imei
+                        AND s.IsPosted = 1
+                  )
+                ORDER BY pItem.ItemID DESC";
+
+            DataTable dt = DbHelper.Query(sql, DbHelper.P("@imei", imei));
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                int pid = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+                string foundImei = dt.Rows[0]["IMEI"]?.ToString()?.Trim() ?? imei;
+                return (pid, foundImei);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// فحص هل السيريال مسجل مسبقاً في فواتير الشراء لمنع تكراره بالخطأ أثناء إدخال المشتريات
+        /// </summary>
+        public static bool IsIMEIAlreadyExists(string imei, int? excludePurchaseID = null)
+        {
+            if (string.IsNullOrWhiteSpace(imei)) return false;
+            imei = imei.Trim();
+            string sql = @"
+                SELECT TOP 1 pItem.ItemID
+                FROM PurchaseItems pItem
+                WHERE LTRIM(RTRIM(pItem.IMEI)) = @imei" +
+                (excludePurchaseID.HasValue ? " AND pItem.PurchaseID <> " + excludePurchaseID.Value : "");
+            var val = DbHelper.Scalar(sql, DbHelper.P("@imei", imei));
+            return val != null && val != DBNull.Value;
+        }
+
         // ══════════════════════════════════════════════════════════════════════════════
         // مجموعة تقارير المشتريات الشاملة (11 تقرير تفصيلي متكامل)
         // ══════════════════════════════════════════════════════════════════════════════

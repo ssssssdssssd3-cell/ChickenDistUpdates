@@ -27,8 +27,13 @@ namespace ChickenDist.Core
 
         public static string BusinessType
         {
-            get => Get("BusinessType", "Supermarket");
+            get => Get("BusinessType", "Mobiles");
             set => Set("BusinessType", value);
+        }
+
+        public static bool IsMobile
+        {
+            get => BusinessType == "Mobiles";
         }
 
         public static bool IsRestaurant
