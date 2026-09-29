@@ -25,6 +25,8 @@ namespace ChickenDist.Forms
         private DataGridView dgExpenses;
         private DateTimePicker dtpExpFrom, dtpExpTo;
         private Button btnLoadExp, btnNewExp, btnSaveExp, btnDelExp;
+        private TextBox txtExpSearch;
+        private Label lblExpTotal, lblExpCount;
         private ComboBox cboExpType;
         private ComboBox cboExpVehicleType;
         private ComboBox cboExpVehicle;
@@ -283,29 +285,49 @@ namespace ChickenDist.Forms
                 Margin = new Padding(10, 4, 0, 0)
             };
             pnlF.Controls.Add(cboExpVehicleFilter);
+
+            pnlF.Controls.Add(new Label { Text = "🔍 بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold });
+            txtExpSearch = new TextBox
+            {
+                Width = 140,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                Margin = new Padding(6, 4, 0, 0)
+            };
+            txtExpSearch.TextChanged += (s, e) => LoadExpenses();
+            pnlF.Controls.Add(txtExpSearch);
             
             btnLoadExp = Theme.MakeButton("عرض", Theme.Accent);
             btnLoadExp.Size = new Size(70, 32);
-            btnLoadExp.Margin = new Padding(20, 0, 0, 0);
+            btnLoadExp.Margin = new Padding(15, 0, 0, 0);
             btnLoadExp.Click += (s, e) => LoadExpenses();
             pnlF.Controls.Add(btnLoadExp);
 
             dgExpenses = MakeGrid();
+            dgExpenses.AllowUserToResizeColumns = true;
+            dgExpenses.AllowUserToResizeRows = false;
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpenseID", Visible = false });
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "VehicleID", Visible = false });
             dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "SafeAccountID", Visible = false });
-            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpenseDate", HeaderText = "التاريخ", FillWeight = 35 });
-            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpenseType", HeaderText = "النوع", FillWeight = 25 });
-            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Vehicle", HeaderText = "العربة / المركبة", FillWeight = 25 });
-            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Amount", HeaderText = "المبلغ", FillWeight = 20 });
-            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان" });
+            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpenseDate", HeaderText = "التاريخ", FillWeight = 35, Resizable = DataGridViewTriState.True });
+            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpenseType", HeaderText = "النوع", FillWeight = 25, Resizable = DataGridViewTriState.True });
+            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Vehicle", HeaderText = "العربة / المركبة", FillWeight = 25, Resizable = DataGridViewTriState.True });
+            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Amount", HeaderText = "المبلغ", FillWeight = 20, Resizable = DataGridViewTriState.True });
+            dgExpenses.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان", Resizable = DataGridViewTriState.True });
             dgExpenses.SelectionChanged += DgExpenses_SelectionChanged;
 
             var pnlGridContainer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
             pnlGridContainer.Controls.Add(dgExpenses);
 
-            pnlList.Controls.Add(pnlGridContainer);
-            pnlList.Controls.Add(pnlF);
+            var pnlExpFoot = new Panel { Dock = DockStyle.Bottom, Height = 45, BackColor = Color.FromArgb(20, 30, 48), Padding = new Padding(12, 8, 12, 8) };
+            lblExpTotal = new Label { Text = "💵 إجمالي المصروفات: 0.00 ج.م", ForeColor = Color.FromArgb(251, 191, 36), AutoSize = true, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), Location = new Point(12, 11) };
+            lblExpCount = new Label { Text = "📊 عدد العمليات: 0", ForeColor = Color.FromArgb(203, 213, 225), AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Location = new Point(320, 12) };
+            pnlExpFoot.Controls.AddRange(new Control[] { lblExpTotal, lblExpCount });
+
+            pnlList.Controls.Add(pnlGridContainer); // Fill
+            pnlList.Controls.Add(pnlF);             // Top
+            pnlList.Controls.Add(pnlExpFoot);       // Bottom
 
             // Right: Details Panel (Column 0)
             var pnlDetails = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(15) };
@@ -1240,6 +1262,10 @@ namespace ChickenDist.Forms
                 selectedVehicleType = cboExpVehicleType.SelectedItem?.ToString();
 
             var dt = AccountDAL.GetExpenses(dtpExpFrom.Value, dtpExpTo.Value, selectedVehicleID, selectedVehicleType);
+            string q = txtExpSearch != null ? txtExpSearch.Text.Trim() : "";
+            decimal totAmount = 0m;
+            int count = 0;
+
             foreach (DataRow r in dt.Rows)
             {
                 if (!Session.IsAdmin)
@@ -1252,20 +1278,61 @@ namespace ChickenDist.Forms
                     ? $"{r["VehicleType"]} - {r["VehicleName"]}"
                     : r["VehicleName"] != DBNull.Value ? r["VehicleName"].ToString() : "";
 
+                string expType = r["ExpenseType"] != DBNull.Value ? r["ExpenseType"].ToString() : "";
+                string notes = r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
+                string emp = r.Table.Columns.Contains("EmpName") && r["EmpName"] != DBNull.Value ? r["EmpName"].ToString() : "";
+
+                if (!string.IsNullOrEmpty(q))
+                {
+                    bool match = (expType.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                              || (notes.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                              || (vehicleLabel.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)
+                              || (emp.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (!match) continue;
+                }
+
+                decimal amt = r["Amount"] != DBNull.Value ? Convert.ToDecimal(r["Amount"]) : 0m;
+                totAmount += amt;
+                count++;
+
                 dgExpenses.Rows.Add(
                     r["ExpenseID"],
                     r["VehicleID"],
                     r["SafeAccountID"],
-                    Convert.ToDateTime(r["ExpenseDate"]).ToString("dd/MM/yyyy"),
-                    r["ExpenseType"], vehicleLabel,
-                    Convert.ToDecimal(r["Amount"]).ToString("N2"), r["Notes"]);
+                    Convert.ToDateTime(r["ExpenseDate"]).ToString("dd/MM/yyyy HH:mm"),
+                    expType, vehicleLabel,
+                    amt.ToString("N2"), notes);
             }
+
+            if (count > 0)
+            {
+                int tRow = dgExpenses.Rows.Add(
+                    null, null, null,
+                    "الإجمالي الكلي",
+                    $"({count} عملية)",
+                    "",
+                    totAmount.ToString("N2"),
+                    "إجمالي المصروفات للفترة والبحث المحدد"
+                );
+                dgExpenses.Rows[tRow].DefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
+                dgExpenses.Rows[tRow].DefaultCellStyle.ForeColor = Color.FromArgb(245, 158, 11);
+                dgExpenses.Rows[tRow].DefaultCellStyle.SelectionBackColor = Color.FromArgb(30, 41, 59);
+                dgExpenses.Rows[tRow].DefaultCellStyle.SelectionForeColor = Color.FromArgb(245, 158, 11);
+                dgExpenses.Rows[tRow].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            }
+
+            if (lblExpTotal != null)
+                lblExpTotal.Text = $"💵 إجمالي المصروفات: {totAmount:N2} ج.م";
+            if (lblExpCount != null)
+                lblExpCount.Text = $"📊 عدد العمليات: {count}";
         }
 
         private void DgExpenses_SelectionChanged(object sender, EventArgs e)
         {
             if (dgExpenses.SelectedRows.Count == 0) return;
             var row = dgExpenses.SelectedRows[0];
+            if (row.Cells["ExpenseID"].Value == null || row.Cells["ExpenseID"].Value == DBNull.Value || string.IsNullOrEmpty(row.Cells["ExpenseID"].Value.ToString()))
+                return;
             _selectedExpID = Convert.ToInt32(row.Cells["ExpenseID"].Value);
             if (DateTime.TryParse(row.Cells["ExpenseDate"].Value?.ToString(), out DateTime d)) dtpExpDate.Value = d;
             cboExpType.Text = row.Cells["ExpenseType"].Value?.ToString();

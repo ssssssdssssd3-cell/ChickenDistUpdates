@@ -1,5 +1,5 @@
-version=3.9.25
+version=3.9.26
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.25&t=1790676662
-sha256=922B1E1C2114EFC7AF108D646A7F3D4AF5B4C279FDFE7FF0F427DA1E07C2A783
-changelog=v3.9.25 - 2026-09-29: Comprehensive serial stock & IMEI quantities report (FrmSerialStockReport) with dual detailed/summary views, KPI metrics, A4 print, and Excel export
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.26&t=1790683287
+sha256=B5C7E8864BB6B1EA13AF1299F713C23364F6060B16BDB7914179557A3E9B4125
+changelog=v3.9.26 - 2026-09-29: Comprehensive serial stock & IMEI quantities report (FrmSerialStockReport) with dual detailed/summary views, KPI metrics, A4 print, and Excel export

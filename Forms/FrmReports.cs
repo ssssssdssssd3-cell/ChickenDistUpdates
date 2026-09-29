@@ -81,6 +81,7 @@ namespace ChickenDist.Forms
 			{ "ShiftsHistory", Color.FromArgb(5, 150, 105) },          // Green
 			{ "ShiftVsCalendarComparison", Color.FromArgb(79, 70, 229)},// Purple
 			{ "IncomeStatementAndProfitability", Color.FromArgb(16, 185, 129) }, // Emerald
+			{ "OperatingExpenses", Color.FromArgb(239, 68, 68) },      // Rose / Red
 			{ "FinancialSummary", Color.FromArgb(14, 165, 233) },
 
 			// Clients & Drivers
@@ -154,6 +155,7 @@ namespace ChickenDist.Forms
 			{ "ShiftsHistory", ("📊 سجل وتقارير الورديات", "استعراض تفاصيل الورديات المغلقة ومبيعات كل كاشير والعجز أو الزيادة في الدرج.") },
 			{ "ShiftVsCalendarComparison", ("⚖️ مقارنة الورديات بالأيام التقويمية", "مطابقة مبيعات الورديات مع التاريخ الفعلي لليوم لمنع أي تداخل بين الأيام.") },
 			{ "IncomeStatementAndProfitability", ("📊 قائمة الدخل والربحية", "قائمة الدخل الشاملة: المبيعات - تكلفة المبيعات - المصروفات = صافي الربح.") },
+			{ "OperatingExpenses", ("💸 تقرير مصروفات التشغيل", "حصر وتفصيل كافة المصروفات التشغيلية والنثرية والسيارات خلال الفترة مع إجمالي المبالغ وتصفية البحث.") },
 			{ "FinancialSummary", ("📊 الملخص المالي العام", "نظرة عامة وشاملة على الموقف المالي وحركة الخزائن والديون والأرباح.") },
 
 			// Clients & Drivers
@@ -646,6 +648,7 @@ namespace ChickenDist.Forms
 				("📊 سجل وتقارير الورديات", "ShiftsHistory"),
 				("⚖️ مقارنة الورديات بالأيام التقويمية", "ShiftVsCalendarComparison"),
 				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
+				("💸 تقرير مصروفات التشغيل", "OperatingExpenses"),
 
 				// ══════════════════════════════════════════════════════════════
 				// تقارير العملاء والمناديب
@@ -702,7 +705,7 @@ namespace ChickenDist.Forms
 				}
 				else if (_targetModule == "Financials")
 				{
-					keep = (report.tag == "DailyClosing" || report.tag == "FinancialSummary" || report.tag == "IncomeStatementAndProfitability" || report.tag == "DailySalesSummary" || report.tag == "SalesProfitability");
+					keep = (report.tag == "DailyClosing" || report.tag == "FinancialSummary" || report.tag == "IncomeStatementAndProfitability" || report.tag == "DailySalesSummary" || report.tag == "SalesProfitability" || report.tag == "OperatingExpenses");
 				}
 				else if (_targetModule == "Shifts" || _targetModule == "ShiftsHistory")
 				{
@@ -2357,6 +2360,54 @@ namespace ChickenDist.Forms
 						SetupGrid(colList.ToArray(), dataGridView);
 					}
 					break;
+				case "OperatingExpenses":
+				{
+					string q = txtSearchClient != null ? txtSearchClient.Text.Trim() : null;
+					string sql = @"
+						SELECT 
+							e.ExpenseDate,
+							e.ExpenseType,
+							COALESCE(sa.AccountName, N'الخزينة الرئيسية') AS SafeName,
+							CASE 
+								WHEN v.VehicleName IS NOT NULL THEN (v.VehicleType + ' - ' + v.VehicleName)
+								WHEN e.VehicleID IS NOT NULL THEN N'مركبة ' + CAST(e.VehicleID AS NVARCHAR(10))
+								ELSE N'عام'
+							END AS Vehicle,
+							e.Amount,
+							ISNULL(e.Notes, N'') AS Notes,
+							ISNULL(emp.EmpName, N'النظام') AS CreatedByName
+						FROM Expenses e
+						LEFT JOIN SafeAccounts sa ON e.SafeAccountID = sa.AccountID
+						LEFT JOIN Vehicles v ON e.VehicleID = v.VehicleID
+						LEFT JOIN Employees emp ON e.CreatedBy = emp.EmpID
+						WHERE CAST(e.ExpenseDate AS DATE) BETWEEN @f AND @t";
+
+					var pList = new List<System.Data.SqlClient.SqlParameter>
+					{
+						DbHelper.P("@f", dtpFrom.Value.Date),
+						DbHelper.P("@t", dtpTo.Value.Date)
+					};
+
+					if (!string.IsNullOrWhiteSpace(q))
+					{
+						sql += " AND (e.Notes LIKE @q OR e.ExpenseType LIKE @q OR sa.AccountName LIKE @q OR v.VehicleName LIKE @q OR emp.EmpName LIKE @q)";
+						pList.Add(DbHelper.P("@q", "%" + q + "%"));
+					}
+					sql += " ORDER BY e.ExpenseDate DESC, e.ExpenseID DESC";
+
+					_currentDt = DbHelper.Query(sql, pList.ToArray());
+					SetupGrid(new(string, string)[]
+					{
+						("ExpenseDate", "التاريخ والوقت"),
+						("ExpenseType", "بند المصروف"),
+						("SafeName", "الخزينة / الحساب"),
+						("Vehicle", "العربة / المركبة"),
+						("Amount", "المبلغ"),
+						("Notes", "البيان والملاحظات"),
+						("CreatedByName", "المستخدم")
+					}, dataGridView);
+					break;
+				}
 				}
 				FillGrid(dataGridView);
 				ApplyAllFilters();
@@ -2669,6 +2720,8 @@ namespace ChickenDist.Forms
 		private void ApplyGridZebraStyle(DataGridView dg)
 		{
 			if (dg == null) return;
+			dg.AllowUserToResizeColumns = true;
+			dg.AllowUserToResizeRows = false;
 			dg.EnableDoubleBuffering();
 			dg.RowTemplate.Height = 28;
 			dg.RowHeadersVisible = false;
@@ -2743,22 +2796,20 @@ namespace ChickenDist.Forms
 			if (dg == null) return;
 			ApplyGridZebraStyle(dg);
 			dg.Columns.Clear();
-			if (cols.Length > 6)
-			{
-				dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
-			}
-			else
-			{
-				dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-			}
+			dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+			dg.AllowUserToResizeColumns = true;
+			dg.AllowUserToResizeRows = false;
 
 			bool canSeeCost = Session.CanViewCost("Reports");
 			for (int i = 0; i < cols.Length; i++)
 			{
 				var (name, headerText) = cols[i];
-				bool isNameCol = (name == "الصنف" || name == "ProductName" || name == "اسم الصنف" || name == "البيان" || headerText == "الصنف" || headerText == "اسم الصنف");
+				bool isNameCol = (name == "الصنف" || name == "ProductName" || name == "اسم الصنف" || name == "البيان" || 
+				                  headerText == "الصنف" || headerText == "اسم الصنف" || headerText.Contains("الاسم") || 
+				                  headerText.Contains("العميل") || headerText.Contains("المورد"));
 				bool isCostCol = (name == "PurchasePrice" || name == "AvgPurchasePrice" || name == "LastPurchasePrice" || name == "MinPurchasePrice" || name == "MaxPurchasePrice" ||
-				                  name == "TotalCost" || name == "NetProfit" || name == "ProfitMargin" || name == "MarginPct" ||
+				                  name == "TotalCost" || name == "NetProfit" || name == "ProfitMargin" || name == "MarginPct" || name == "ProfitMarginPct" ||
+				                  name == "ReturnsCost" || name == "NetCost" || name == "GrossProfit" ||
 				                  name == "StagnantStockValue" || name == "StockValue" || name == "ExpectedProfit" ||
 				                  name == "ShortageCostLoss" || name == "SurplusCostGain" ||
 				                  headerText.Contains("سعر الشراء") || headerText.Contains("سعر التكلفة") || headerText.Contains("التكلفة") ||
@@ -2768,16 +2819,28 @@ namespace ChickenDist.Forms
 				{
 					Name = name,
 					HeaderText = headerText,
-					FillWeight = isNameCol ? 350f : 100f,
-					Visible = !isCostCol || canSeeCost
+					Visible = !isCostCol || canSeeCost,
+					Resizable = DataGridViewTriState.True
 				};
 				if (isNameCol)
 				{
-					col.MinimumWidth = 280;
+					col.MinimumWidth = 200;
+					col.Width = 240;
 				}
-				else if (name == "Notes" || name == "Address")
+				else if (name == "Notes" || name == "Address" || headerText.Contains("ملاحظات") || headerText.Contains("البيان"))
 				{
-					col.MinimumWidth = 150;
+					col.MinimumWidth = 180;
+					col.Width = 220;
+				}
+				else if (name == "SaleDay" || name == "PeriodName" || headerText.Contains("التاريخ") || headerText.Contains("اليوم"))
+				{
+					col.MinimumWidth = 110;
+					col.Width = 130;
+				}
+				else
+				{
+					col.MinimumWidth = 100;
+					col.Width = 120;
 				}
 				dg.Columns.Add(col);
 			}
@@ -2921,14 +2984,15 @@ namespace ChickenDist.Forms
 			for (int j = 1; j < dg.Columns.Count; j++)
 			{
 				string name2 = dg.Columns[j].Name;
-				if (name2 == "ProfitMargin")
+				if (name2 == "ProfitMargin" || name2 == "ProfitMarginPct" || name2 == "MarginPct")
 				{
 					int netAmtIdx = -1;
 					int netProfitIdx = -1;
 					for (int k = 0; k < dg.Columns.Count; k++)
 					{
-						if (dg.Columns[k].Name == "NetAmount" || dg.Columns[k].Name == "Total" || dg.Columns[k].Name == "TotalAmount") netAmtIdx = k;
-						if (dg.Columns[k].Name == "NetProfit") netProfitIdx = k;
+						string kn = dg.Columns[k].Name;
+						if (kn == "NetAmount" || kn == "Total" || kn == "TotalAmount" || kn == "NetSales" || kn == "TotalSales" || kn == "TotalSalesAmount") netAmtIdx = k;
+						if (kn == "NetProfit" || kn == "GrossProfit") netProfitIdx = k;
 					}
 					if (netAmtIdx >= 0 && netProfitIdx >= 0)
 					{
@@ -2995,11 +3059,50 @@ namespace ChickenDist.Forms
 				case "TotalPurchasedQty":
 				case "TotalSoldQty":
 				case "StagnantStockValue":
+				case "GrossSales":
+				case "TotalDiscounts":
+				case "TotalSales":
+				case "TotalReturns":
+				case "NetSales":
+				case "ReturnsCost":
+				case "NetCost":
+				case "GrossProfit":
+				case "TotalSalesAmount":
+				case "DistinctProductsCount":
+				case "TotalQtySold":
+				case "InvoiceCount":
+				case "CashSales":
+				case "VisaSales":
+				case "CreditSales":
+				case "Quantity":
+				case "TotalPrice":
+				case "ItemCost":
+				case "ItemProfit":
+				case "Amount":
+				case "Debit":
+				case "Credit":
+				case "TotalCredit":
+				case "TotalDebit":
+				case "PaidAmount":
+				case "RemainingAmount":
 					break;
 				}
-				string text2 = ((name2 == "Count" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية" || name2 == "TotalPurchasedQty" || name2 == "TotalSoldQty") ? "N0" : "N2");
+				string text2 = ((name2 == "Count" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية" || name2 == "TotalPurchasedQty" || name2 == "TotalSoldQty" || name2 == "InvoiceCount" || name2 == "DistinctProductsCount" || name2 == "TotalQtySold") ? "N0" : "N2");
 				dg.Rows[index].Cells[j].Value = array[j].ToString(text2);
 			}
+
+			// Auto-size columns to fit all cells including total row, with generous padding
+			dg.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.AllCells);
+			foreach (DataGridViewColumn c in dg.Columns)
+			{
+				if (!c.Visible) continue;
+				int w = c.Width + 28;
+				int minW = c.MinimumWidth > 0 ? c.MinimumWidth : 100;
+				c.Width = Math.Max(w, minW);
+			}
+			// Switch to None so user has 100% full control to resize any column by dragging with mouse!
+			dg.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+			dg.AllowUserToResizeColumns = true;
 		}
 
 		private void AddIndicatorRow(DataGridView dg, string name, decimal val, bool isNegative, Color? customBg = null)
@@ -4422,6 +4525,149 @@ namespace ChickenDist.Forms
 
 					row.Visible = (matchQuery && matchPay && matchEmp);
 				}
+
+				// Recalculate total row for visible rows matching current search and filter
+				DataGridViewRow totalRow = null;
+				for (int i = 0; i < dg.Rows.Count; i++)
+				{
+					if (dg.Rows[i].Cells.Count > 0 && (dg.Rows[i].Cells[0].Value?.ToString() == "الإجمالي الكلي" || dg.Rows[i].Cells[0].Value?.ToString() == "الإجمالي"))
+					{
+						totalRow = dg.Rows[i];
+						break;
+					}
+				}
+
+				if (totalRow != null)
+				{
+					decimal[] visibleSums = new decimal[dg.Columns.Count];
+					int visibleCount = 0;
+
+					for (int i = 0; i < dg.Rows.Count; i++)
+					{
+						DataGridViewRow row = dg.Rows[i];
+						if (row == totalRow || !row.Visible || row.IsNewRow) continue;
+						visibleCount++;
+
+						for (int j = 1; j < dg.Columns.Count; j++)
+						{
+							object valObj = row.Cells[j].Value;
+							if (valObj != null)
+							{
+								string sVal = valObj.ToString().Replace(" ج.م", "").Replace(" ج", "").Replace(" %", "").Replace(",", "").Trim();
+								if (decimal.TryParse(sVal, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal num) ||
+								    decimal.TryParse(sVal, out num))
+								{
+									visibleSums[j] += num;
+								}
+							}
+						}
+					}
+
+					for (int j = 1; j < dg.Columns.Count; j++)
+					{
+						string colName = dg.Columns[j].Name;
+						if (colName == "ProfitMargin" || colName == "ProfitMarginPct" || colName == "MarginPct")
+						{
+							int netAmtIdx = -1;
+							int netProfitIdx = -1;
+							for (int k = 0; k < dg.Columns.Count; k++)
+							{
+								string kName = dg.Columns[k].Name;
+								if (kName == "NetAmount" || kName == "Total" || kName == "TotalAmount" || kName == "NetSales" || kName == "TotalSales" || kName == "TotalSalesAmount") netAmtIdx = k;
+								if (kName == "NetProfit" || kName == "GrossProfit") netProfitIdx = k;
+							}
+							if (netAmtIdx >= 0 && netProfitIdx >= 0)
+							{
+								decimal totAmt = visibleSums[netAmtIdx];
+								decimal totProfit = visibleSums[netProfitIdx];
+								decimal totMargin = totAmt != 0 ? (totProfit / totAmt) * 100 : 0;
+								totalRow.Cells[j].Value = totMargin.ToString("N1") + " %";
+							}
+							continue;
+						}
+
+						switch (colName)
+						{
+							case "Total":
+							case "TotalAmount":
+							case "Count":
+							case "CashTotal":
+							case "CreditTotal":
+							case "LoadTotal":
+							case "ReturnsTotal":
+							case "PaidTotal":
+							case "TransferredAmount":
+							case "RemainingInDrawer":
+							case "CurrentBalance":
+							case "TotalQty":
+							case "ReturnedQty":
+							case "ReturnedAmount":
+							case "NetQty":
+							case "NetAmount":
+							case "SoldQty":
+							case "CashQty":
+							case "CreditQty":
+							case "DriverLoadQty":
+							case "DriverReturnQty":
+							case "NetSoldQty":
+							case "LastAdjQty":
+							case "TotalSalesAmt":
+							case "CurrentStock":
+							case "SalePrice":
+							case "TotalLoaded":
+							case "TotalReturned":
+							case "TotalDead":
+							case "TotalExtra":
+							case "TotalDeficit":
+							case "Balance":
+							case "OpeningBalance":
+							case "TotalCost":
+							case "NetProfit":
+							case "StockValue":
+							case "StockSaleValue":
+							case "ExpectedProfit":
+							case "الكمية":
+							case "الصافي":
+							case "المخزون الحالي":
+							case "الكمية المباعة":
+							case "قيمة المبيعات":
+							case "الكمية المشتراة":
+							case "قيمة المشتريات":
+							case "TotalPurchasedQty":
+							case "TotalSoldQty":
+							case "StagnantStockValue":
+							case "GrossSales":
+							case "TotalDiscounts":
+							case "TotalSales":
+							case "TotalReturns":
+							case "NetSales":
+							case "ReturnsCost":
+							case "NetCost":
+							case "GrossProfit":
+							case "TotalSalesAmount":
+							case "DistinctProductsCount":
+							case "TotalQtySold":
+							case "InvoiceCount":
+							case "CashSales":
+							case "VisaSales":
+							case "CreditSales":
+							case "Quantity":
+							case "TotalPrice":
+							case "ItemCost":
+							case "ItemProfit":
+							case "Amount":
+							case "Debit":
+							case "Credit":
+							case "TotalCredit":
+							case "TotalDebit":
+							case "PaidAmount":
+							case "RemainingAmount":
+								string fmt = (colName == "Count" || colName == "InvoiceCount" || colName == "DistinctProductsCount" || colName == "TotalPurchasedQty" || colName == "TotalSoldQty" || colName == "الكمية" || colName == "الكمية المباعة" || colName == "الكمية المشتراة" || colName == "المخزون الحالي") ? "N0" : "N2";
+								totalRow.Cells[j].Value = visibleSums[j].ToString(fmt);
+								break;
+						}
+					}
+				}
 			}
 			catch { }
 			finally
@@ -4558,6 +4804,7 @@ namespace ChickenDist.Forms
 				case "FinancialSummary": return "RepFinancialSummary";
 				case "ShiftsHistory": return "ShiftsHistory";
 				case "ShiftVsCalendarComparison": return "RepShiftComparison";
+				case "OperatingExpenses": return "RepFinancials";
 				default: return "Reports";
 			}
 		}

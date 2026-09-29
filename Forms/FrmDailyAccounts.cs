@@ -1001,7 +1001,43 @@ namespace ChickenDist.Forms
                 sql += " ORDER BY e.ExpenseID DESC";
 
                 var dt = DbHelper.Query(sql, pars.ToArray());
+
+                // Calculate Totals & Percentages
+                decimal grandTotal = 0m;
+                int totalVouchers = dt.Rows.Count;
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (r["المبلغ"] != DBNull.Value)
+                        grandTotal += Convert.ToDecimal(r["المبلغ"]);
+                }
+
+                if (dt.Rows.Count > 0)
+                {
+                    DataRow totRow = dt.NewRow();
+                    totRow["رقم السند"] = 0;
+                    totRow["التاريخ والوقت"] = DBNull.Value;
+                    totRow["بند المصروف"] = "الإجمالي الكلي";
+                    totRow["المستفيد / الجهة"] = $"({totalVouchers} عملية)";
+                    totRow["المبلغ"] = grandTotal;
+                    totRow["الخزنة / الحساب"] = "";
+                    totRow["البيان والملاحظات"] = "إجمالي المصروفات للفترة والبحث المحدد";
+                    totRow["المستخدم"] = "";
+                    dt.Rows.Add(totRow);
+                }
+
                 dgExpensesReport.DataSource = dt;
+                if (dgExpensesReport.Rows.Count > 0 && dt.Rows.Count > 0)
+                {
+                    var lastRow = dgExpensesReport.Rows[dgExpensesReport.Rows.Count - 1];
+                    if (lastRow.Cells["بند المصروف"]?.Value?.ToString() == "الإجمالي الكلي")
+                    {
+                        lastRow.DefaultCellStyle.BackColor = Color.FromArgb(30, 41, 59);
+                        lastRow.DefaultCellStyle.ForeColor = Color.FromArgb(245, 158, 11);
+                        lastRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(30, 41, 59);
+                        lastRow.DefaultCellStyle.SelectionForeColor = Color.FromArgb(245, 158, 11);
+                        lastRow.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                    }
+                }
 
                 // 2. Summary Breakdown by Category
                 string sqlSum = @"
@@ -1035,15 +1071,6 @@ namespace ChickenDist.Forms
                 sqlSum += " GROUP BY e.ExpenseType ORDER BY SUM(e.Amount) DESC";
 
                 var dtSum = DbHelper.Query(sqlSum, parsSum.ToArray());
-
-                // Calculate Totals & Percentages
-                decimal grandTotal = 0m;
-                int totalVouchers = dt.Rows.Count;
-                foreach (DataRow r in dt.Rows)
-                {
-                    if (r["المبلغ"] != DBNull.Value)
-                        grandTotal += Convert.ToDecimal(r["المبلغ"]);
-                }
 
                 // Add Percentage column to dtSum
                 dtSum.Columns.Add("النسبة %", typeof(string));
@@ -1342,8 +1369,9 @@ namespace ChickenDist.Forms
             try
             {
                 object val = grid.CurrentRow.Cells[0].Value; // Column 0: رقم السند
-                if (val != null && int.TryParse(val.ToString(), out int transID) && transID > 0)
+                if (val != null && int.TryParse(val.ToString(), out int transID))
                 {
+                    if (transID <= 0) return; // Total summary row
                     new FrmPrintPayment(transID, null, true);
                 }
                 else
@@ -1638,6 +1666,8 @@ namespace ChickenDist.Forms
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToResizeColumns = true,
+                AllowUserToResizeRows = false,
                 RightToLeft = RightToLeft.Yes,
                 ColumnHeadersHeight = 26,
                 RowTemplate = { Height = 24 },
