@@ -783,6 +783,14 @@ namespace ChickenDist.Forms
 						AutoScroll = true
 					};
 
+					var btnEditSale = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
+					btnEditSale.Size = new Size(195, 34);
+					btnEditSale.Margin = new Padding(0, 0, 0, 8);
+
+					var btnCopySale = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
+					btnCopySale.Size = new Size(195, 34);
+					btnCopySale.Margin = new Padding(0, 0, 0, 8);
+
 					var btnPrintReceipt = Theme.MakeButton("🧾 طباعة ريسيت حراري", Theme.Primary);
 					btnPrintReceipt.Size = new Size(195, 34);
 					btnPrintReceipt.Margin = new Padding(0, 0, 0, 8);
@@ -805,7 +813,7 @@ namespace ChickenDist.Forms
 						TextAlign = ContentAlignment.TopRight
 					};
 
-					pnlActionButtons.Controls.AddRange(new Control[] { btnPrintReceipt, btnPrintA4, btnSendWhatsApp, lblItemsHeader });
+					pnlActionButtons.Controls.AddRange(new Control[] { btnEditSale, btnCopySale, btnPrintReceipt, btnPrintA4, btnSendWhatsApp, lblItemsHeader });
 
 					DataGridView dgDetailedSaleItems = new DataGridView
 					{
@@ -815,12 +823,14 @@ namespace ChickenDist.Forms
 					};
 					ApplyGridZebraStyle(dgDetailedSaleItems);
 
-					dgDetailedSaleItems.Columns.Add("ProductName", "اسم الصنف");
-					dgDetailedSaleItems.Columns.Add("UnitName", "الوحدة");
-					dgDetailedSaleItems.Columns.Add("Quantity", "الكمية");
-					dgDetailedSaleItems.Columns.Add("UnitPrice", "سعر الوحدة");
-					dgDetailedSaleItems.Columns.Add("Discount", "الخصم");
-					dgDetailedSaleItems.Columns.Add("TotalPrice", "الإجمالي");
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", FillWeight = 90f });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 35f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(15, 118, 110) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المباعة", FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnedQty", HeaderText = "كمية المرتجع ↩", FillWeight = 42f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(239, 68, 68), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر الوحدة", FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال / IMEI 📱", FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(14, 165, 233), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount", HeaderText = "الخصم", FillWeight = 35f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(249, 115, 22) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", FillWeight = 48f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 
 					tblBottom.Controls.Add(pnlActionButtons, 0, 0);
 					tblBottom.Controls.Add(dgDetailedSaleItems, 1, 0);
@@ -852,10 +862,24 @@ namespace ChickenDist.Forms
 								decimal qVal = Convert.ToDecimal(r["Quantity"]);
 								totalQtySum += qVal;
 								string qty = (qVal % 1 == 0) ? qVal.ToString("N0") : qVal.ToString("N2");
+								decimal retQty = (r.Table.Columns.Contains("PrevReturnedQty") && r["PrevReturnedQty"] != DBNull.Value) ? Convert.ToDecimal(r["PrevReturnedQty"]) : 0m;
+								string retQtyStr = retQty > 0 ? (retQty % 1 == 0 ? retQty.ToString("N0") : retQty.ToString("N2")) : "-";
 								string price = Convert.ToDecimal(r["UnitPrice"]).ToString("N2") + " ج";
-								string disc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value && Convert.ToDecimal(r["DiscountAmt"]) > 0 ? Convert.ToDecimal(r["DiscountAmt"]).ToString("N2") : "-";
+								string imeiVal = (r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["IMEI"].ToString())) ? r["IMEI"].ToString() : "-";
+								string disc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value && Convert.ToDecimal(r["DiscountAmt"]) > 0 ? Convert.ToDecimal(r["DiscountAmt"]).ToString("N2") + " ج" : "-";
 								string total = Convert.ToDecimal(r["TotalPrice"]).ToString("N2") + " ج";
-								dgDetailedSaleItems.Rows.Add(pName, uName, qty, price, disc, total);
+								
+								int itemIdx = dgDetailedSaleItems.Rows.Add(pName, uName, qty, retQtyStr, price, imeiVal, disc, total);
+								if (retQty > 0)
+								{
+									var itemRow = dgDetailedSaleItems.Rows[itemIdx];
+									itemRow.Cells["ReturnedQty"].Style.ForeColor = Color.FromArgb(220, 38, 38);
+									itemRow.Cells["ReturnedQty"].Style.BackColor = Color.FromArgb(254, 242, 242);
+									itemRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242);
+									itemRow.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
+									itemRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
+									itemRow.DefaultCellStyle.SelectionForeColor = Color.White;
+								}
 							}
 							string qtyDisplay = (totalQtySum % 1 == 0) ? totalQtySum.ToString("N0") : totalQtySum.ToString("N2");
 							lblItemsHeader.Text = $"📦 الأصناف: ({items.Rows.Count} أصناف | {qtyDisplay} قطعة)";
@@ -863,6 +887,59 @@ namespace ChickenDist.Forms
 						else
 						{
 							lblItemsHeader.Text = "📦 الأصناف المسحوبة بالفاتورة:";
+						}
+					};
+
+					btnEditSale.Click += (s, e) =>
+					{
+						if (dgDetailedSales.SelectedRows.Count == 0 || !dgDetailedSales.Columns.Contains("SaleID")) return;
+						if (int.TryParse(dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value?.ToString(), out int sid) && sid > 0)
+						{
+							if (!Session.CanEditSalesInvoice())
+							{
+								MessageBox.Show("عذراً، ليس لديك صلاحية تعديل فواتير المبيعات.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+								return;
+							}
+							if (!SaleDAL.CanEditSale(sid, out string reason))
+							{
+								MessageBox.Show(reason, "لا يمكن التعديل", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+								return;
+							}
+							FrmSale frmSale = new FrmSale(sid, isCopyMode: false);
+							frmSale.ShowDialog();
+							LoadCurrentTab();
+						}
+						else
+						{
+							MessageBox.Show("من فضلك اختر الفاتورة المراد تعديلها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						}
+					};
+
+					btnCopySale.Click += (s, e) =>
+					{
+						if (!Session.CanCopySalesInvoice())
+						{
+							MessageBox.Show("عذراً، ليس لديك صلاحية نسخ فواتير المبيعات.", "غير مصرح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+							return;
+						}
+						if (dgDetailedSales.SelectedRows.Count == 0 || !dgDetailedSales.Columns.Contains("SaleID")) return;
+						if (int.TryParse(dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value?.ToString(), out int sid) && sid > 0)
+						{
+							FrmSale frmSale = new FrmSale(sid, isCopyMode: true);
+							frmSale.ShowDialog();
+							LoadCurrentTab();
+						}
+						else
+						{
+							MessageBox.Show("من فضلك اختر الفاتورة المراد نسخها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+						}
+					};
+
+					dgDetailedSales.CellDoubleClick += (s, e) =>
+					{
+						if (e.RowIndex >= 0 && e.RowIndex < dgDetailedSales.Rows.Count)
+						{
+							btnEditSale.PerformClick();
 						}
 					};
 
@@ -1542,14 +1619,20 @@ namespace ChickenDist.Forms
 					{
 						("SaleCode", "رقم الفاتورة"),
 						("SaleDate", "التاريخ والوقت"),
-						("SaleType", "النوع"),
-						("ClientName", "العميل"),
-						("DriverName", "المندوب"),
+						("SaleType", "نوع الفاتورة"),
+						("WarehouseName", "المخزن"),
+						("ClientCode", "كود العميل"),
+						("ClientName", "العميل / المندوب"),
 						("ItemsCount", "عدد الأصناف"),
 						("TotalQty", "إجمالي القطع"),
-						("TotalAmount", "قيمة الفاتورة"),
-						("TotalCost", "التكلفة"),
-						("NetProfit", "الربح"),
+						("TotalBeforeDiscount", "قبل الخصم"),
+						("DiscountAmount", "الخصم ✂"),
+						("TotalAmount", "بعد الخصم (قبل المرتجع)"),
+						("ShippingCharge", "خدمة شحن"),
+						("ReturnAmount", "المرتجع ↩"),
+						("NetAmount", "الصافي النهائي ✔"),
+						("NetProfit", "ربح الفاتورة 💰"),
+						("CreatedByName", "القائم بالحركة"),
 						("Notes", "الملاحظات"),
 						("SaleID", "معرف الفاتورة")
 					}, dataGridView);
@@ -2822,7 +2905,53 @@ namespace ChickenDist.Forms
 					Visible = !isCostCol || canSeeCost,
 					Resizable = DataGridViewTriState.True
 				};
-				if (isNameCol)
+
+				if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "ReturnAmount")
+				{
+					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+					col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+					if (name == "TotalQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
+					else if (name == "ReturnAmount") col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
+				}
+				else if (name == "TotalBeforeDiscount" || name == "DiscountAmount" || name == "TotalAmount" || 
+				         name == "ShippingCharge" || name == "NetAmount" || name == "NetProfit" ||
+				         headerText.Contains("خصم") || headerText.Contains("صافي") || headerText.Contains("ربح") ||
+				         headerText.Contains("قيمة") || headerText.Contains("سعر") || headerText.Contains("المبلغ"))
+				{
+					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+					if (name == "DiscountAmount") col.DefaultCellStyle.ForeColor = Color.FromArgb(249, 115, 22);
+					else if (name == "NetAmount")
+					{
+						col.DefaultCellStyle.ForeColor = Color.FromArgb(46, 204, 113);
+						col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+					}
+					else if (name == "NetProfit")
+					{
+						col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+					}
+				}
+
+				if (name == "SaleCode")
+				{
+					col.MinimumWidth = 90;
+					col.Width = 110;
+				}
+				else if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty")
+				{
+					col.MinimumWidth = 80;
+					col.Width = 95;
+				}
+				else if (name == "SaleType" || name == "WarehouseName" || name == "DiscountAmount" || name == "ReturnAmount" || name == "ShippingCharge")
+				{
+					col.MinimumWidth = 95;
+					col.Width = 115;
+				}
+				else if (name == "TotalBeforeDiscount" || name == "TotalAmount" || name == "NetAmount" || name == "NetProfit")
+				{
+					col.MinimumWidth = 110;
+					col.Width = 130;
+				}
+				else if (isNameCol)
 				{
 					col.MinimumWidth = 200;
 					col.Width = 240;
@@ -2834,8 +2963,8 @@ namespace ChickenDist.Forms
 				}
 				else if (name == "SaleDay" || name == "PeriodName" || headerText.Contains("التاريخ") || headerText.Contains("اليوم"))
 				{
-					col.MinimumWidth = 110;
-					col.Width = 130;
+					col.MinimumWidth = 120;
+					col.Width = 145;
 				}
 				else
 				{
@@ -2929,8 +3058,17 @@ namespace ChickenDist.Forms
 						{
 							if (name == "SaleType")
 							{
-								string typ = obj.ToString();
-								array2[i] = typ == "Cash" ? "نقدي" : typ == "Credit" ? "آجل" : typ == "DriverLoad" ? "تحميل مندوب" : typ;
+								string typ = obj?.ToString() ?? "";
+								array2[i] = typ == "Cash" ? "نقدي" :
+								            typ == "Credit" ? "آجل" :
+								            typ == "Visa" ? "فيزا / شبكة" :
+								            typ == "Mixed" ? "مختلط (كاش + فيزا)" :
+								            typ == "Installment" ? "تقسيط شرعي" :
+								            typ == "DriverLoad" ? "تحميل مندوب" : typ;
+							}
+							else if (name == "ClientName" && _currentDt.Columns.Contains("SaleType") && row["SaleType"]?.ToString() == "DriverLoad" && _currentDt.Columns.Contains("DriverName") && row["DriverName"] != DBNull.Value && row["DriverName"]?.ToString() != "---")
+							{
+								array2[i] = row["DriverName"].ToString();
 							}
 							else
 							{
@@ -2946,7 +3084,44 @@ namespace ChickenDist.Forms
 						array2[i] = margin.ToString("N1") + " %";
 					}
 				}
-				dg.Rows.Add(array2);
+				int addedIdx = dg.Rows.Add(array2);
+				if (text == "DetailedSales")
+				{
+					var addedRow = dg.Rows[addedIdx];
+					if (dg.Columns.Contains("ClientCode") && addedRow.Cells["ClientCode"].Value != null)
+					{
+						string cCode = addedRow.Cells["ClientCode"].Value.ToString();
+						if (cCode == "0" || string.IsNullOrEmpty(cCode))
+						{
+							addedRow.Cells["ClientCode"].Style.ForeColor = Color.FromArgb(160, 160, 160);
+							addedRow.Cells["ClientCode"].Style.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+						}
+						else
+						{
+							addedRow.Cells["ClientCode"].Style.ForeColor = Color.FromArgb(16, 185, 129);
+							addedRow.Cells["ClientCode"].Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+						}
+					}
+
+					if (dg.Columns.Contains("NetProfit") && addedRow.Cells["NetProfit"].Value != null)
+					{
+						if (decimal.TryParse(addedRow.Cells["NetProfit"].Value.ToString().Replace(",", "").Trim(), out decimal pVal))
+						{
+							addedRow.Cells["NetProfit"].Style.ForeColor = pVal < 0 ? Color.FromArgb(239, 68, 68) : Color.FromArgb(16, 185, 129);
+						}
+					}
+
+					if (dg.Columns.Contains("ReturnAmount") && addedRow.Cells["ReturnAmount"].Value != null)
+					{
+						if (decimal.TryParse(addedRow.Cells["ReturnAmount"].Value.ToString().Replace(",", "").Trim(), out decimal retAmt) && retAmt > 0)
+						{
+							addedRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242);
+							addedRow.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
+							addedRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
+							addedRow.DefaultCellStyle.SelectionForeColor = Color.White;
+						}
+					}
+				}
 			}
 			if (text == "SupplierItemActivity")
 			{
@@ -3085,9 +3260,14 @@ namespace ChickenDist.Forms
 				case "TotalDebit":
 				case "PaidAmount":
 				case "RemainingAmount":
+				case "TotalBeforeDiscount":
+				case "DiscountAmount":
+				case "ShippingCharge":
+				case "ReturnAmount":
+				case "ItemsCount":
 					break;
 				}
-				string text2 = ((name2 == "Count" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية" || name2 == "TotalPurchasedQty" || name2 == "TotalSoldQty" || name2 == "InvoiceCount" || name2 == "DistinctProductsCount" || name2 == "TotalQtySold") ? "N0" : "N2");
+				string text2 = ((name2 == "Count" || name2 == "ItemsCount" || name2 == "المخزون الحالي" || name2 == "الكمية المباعة" || name2 == "الكمية المشتراة" || name2 == "الكمية" || name2 == "TotalPurchasedQty" || name2 == "TotalSoldQty" || name2 == "InvoiceCount" || name2 == "DistinctProductsCount" || name2 == "TotalQtySold") ? "N0" : "N2");
 				dg.Rows[index].Cells[j].Value = array[j].ToString(text2);
 			}
 
@@ -4662,7 +4842,12 @@ namespace ChickenDist.Forms
 							case "TotalDebit":
 							case "PaidAmount":
 							case "RemainingAmount":
-								string fmt = (colName == "Count" || colName == "InvoiceCount" || colName == "DistinctProductsCount" || colName == "TotalPurchasedQty" || colName == "TotalSoldQty" || colName == "الكمية" || colName == "الكمية المباعة" || colName == "الكمية المشتراة" || colName == "المخزون الحالي") ? "N0" : "N2";
+							case "TotalBeforeDiscount":
+							case "DiscountAmount":
+							case "ShippingCharge":
+							case "ReturnAmount":
+							case "ItemsCount":
+								string fmt = (colName == "Count" || colName == "ItemsCount" || colName == "InvoiceCount" || colName == "DistinctProductsCount" || colName == "TotalPurchasedQty" || colName == "TotalSoldQty" || colName == "الكمية" || colName == "الكمية المباعة" || colName == "الكمية المشتراة" || colName == "المخزون الحالي") ? "N0" : "N2";
 								totalRow.Cells[j].Value = visibleSums[j].ToString(fmt);
 								break;
 						}

@@ -135,6 +135,7 @@ namespace ChickenDist.DAL
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
+                         (s.TotalAmount + ISNULL(s.ShippingCharge, 0.0) - ISNULL(ret.ReturnAmount, 0)) AS NetAmount,
                          ISNULL(costs.ItemsCount, 0) AS ItemsCount,
                          ISNULL(costs.TotalQty, 0.0) AS TotalQty,
                          ISNULL(costs.TotalCost, 0) AS TotalCost,
