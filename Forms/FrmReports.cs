@@ -1673,9 +1673,9 @@ namespace ChickenDist.Forms
 					{
 						("SaleDay", "اليوم / التاريخ"),
 						("InvoiceCount", "عدد الفواتير"),
-						("GrossSales", "إجمالي المبيعات"),
-						("TotalDiscounts", "الخصومات"),
-						("TotalSales", "الصافي بعد الخصم"),
+						("GrossSales", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات النهائي"),
 						("TotalCost", "تكلفة المبيعات"),
@@ -1692,8 +1692,11 @@ namespace ChickenDist.Forms
 						("CashSales", "مبيعات نقدي"),
 						("VisaSales", "مبيعات فيزا"),
 						("CreditSales", "مبيعات آجل"),
-						("TotalDiscounts", "الخصومات"),
-						("TotalSales", "إجمالي المبيعات"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
+						("TotalReturns", "المرتجعات"),
+						("NetSales", "صافي المبيعات"),
 						("TotalCost", "التكلفة"),
 						("NetProfit", "صافي الربح"),
 						("ProfitMarginPct", "هامش الربح %")
@@ -1712,8 +1715,9 @@ namespace ChickenDist.Forms
 						("Quantity", "الكمية"),
 						("UnitName", "الوحدة"),
 						("UnitPrice", "سعر البيع"),
-						("DiscountAmt", "الخصم"),
-						("TotalPrice", "الإجمالي"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("DiscountAmt", "الخصم ✂"),
+						("TotalPrice", "الإجمالي بعد الخصم"),
 						("ItemCost", "التكلفة"),
 						("ItemProfit", "الربح"),
 						("SaleTypeArabic", "طريقة الدفع"),
@@ -1728,9 +1732,12 @@ namespace ChickenDist.Forms
 					{
 						("CategoryName", "المجموعة / القسم"),
 						("DistinctProductsCount", "عدد الأصناف المباعة"),
-						("TotalQtySold", "إجمالي الكميات المباعة"),
-						("TotalDiscounts", "إجمالي الخصومات"),
-						("TotalSalesAmount", "إجمالي المبيعات"),
+						("TotalQtySold", "صافي الكميات المباعة"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
+						("TotalReturns", "المرتجعات"),
+						("NetSales", "صافي المبيعات"),
 						("TotalCost", "التكلفة"),
 						("NetProfit", "الربح"),
 						("ProfitMarginPct", "هامش الربح %")
@@ -1745,8 +1752,9 @@ namespace ChickenDist.Forms
 						("CashSales", "مبيعات نقدي"),
 						("VisaSales", "مبيعات فيزا"),
 						("CreditSales", "مبيعات آجل"),
-						("TotalDiscounts", "الخصومات"),
-						("TotalSales", "إجمالي المبيعات"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات")
 					}, dataGridView);
@@ -1783,8 +1791,9 @@ namespace ChickenDist.Forms
 					SetupGrid(new(string, string)[]
 					{
 						("SaleDay", "اليوم / التاريخ"),
-						("GrossSales", "إجمالي المبيعات"),
-						("TotalDiscounts", "الخصومات"),
+						("GrossSales", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات"),
 						("TotalCost", "تكلفة المبيعات"),
@@ -2042,43 +2051,50 @@ namespace ChickenDist.Forms
 					break;
 				case "SalesByDay":
 					_currentDt = ReportDAL.SalesByDay(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[8]
+					SetupGrid(new(string, string)[]
 					{
 						("SaleDay", "اليوم"),
 						("Count", "عدد الفواتير"),
 						("CashTotal", "مبيعات نقدي"),
 						("CreditTotal", "مبيعات آجل"),
 						("LoadTotal", "حمولات مناديب"),
-						("Total", "إجمالي اليوم"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalCost", "إجمالي التكلفة"),
 						("NetProfit", "صافي الربح")
 					}, dataGridView);
 					break;
 				case "SalesByDriver":
 					_currentDt = ReportDAL.SalesByDriver(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[7]
+					SetupGrid(new(string, string)[]
 					{
 						("DriverName", "المندوب"),
 						("Count", "عدد فواتيره"),
 						("CashTotal", "مبيعات نقدي"),
 						("CreditTotal", "مبيعات آجل"),
-						("Total", "إجمالي المبيعات"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalCost", "التكلفة"),
 						("NetProfit", "الربح")
 					}, dataGridView);
 					break;
 				case "SalesByClient":
 					_currentDt = ReportDAL.SalesByClient(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[11]
+					SetupGrid(new(string, string)[]
 					{
 						("ClientName", "العميل"),
 						("Phone", "الهاتف"),
 						("Count", "فواتير الشراء"),
 						("CashTotal", "شراء نقدي"),
 						("CreditTotal", "شراء آجل"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("ReturnsTotal", "إجمالي مرتجعاته"),
+						("NetSales", "صافي المشتريات"),
 						("PaidTotal", "إجمالي مسدداته"),
-						("Total", "إجمالي الشراء"),
 						("CurrentBalance", "المديونية الحالية"),
 						("TotalCost", "التكلفة"),
 						("NetProfit", "صافي الربح")
@@ -2086,14 +2102,16 @@ namespace ChickenDist.Forms
 					break;
 				case "SalesByProduct":
 					_currentDt = ReportDAL.SalesByProduct(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[13]
+					SetupGrid(new(string, string)[]
 					{
 						("ProductName", "الصنف"),
 						("Unit", "الوحدة"),
 						("CurrentStock", "الرصيد الفعلي"),
 						("AvgPrice", "متوسط سعر البيع"),
 						("TotalQty", "الكمية المباعة"),
-						("TotalAmount", "إجمالي المبيعات"),
+						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
+						("TotalDiscounts", "الخصومات ✂"),
+						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("ReturnedQty", "الكمية المرتجعة"),
 						("ReturnedAmount", "إجمالي المرتجعات"),
 						("NetQty", "صافي الكمية"),
@@ -2365,7 +2383,9 @@ namespace ChickenDist.Forms
 							("الصنف", "الصنف"),
 							("الكمية", "الكمية"),
 							("سعر الوحدة", "سعر الوحدة"),
-							("الصافي", "الصافي"),
+							("قبل الخصم", "قبل الخصم"),
+							("الخصم", "الخصم ✂"),
+							("الصافي", "الإجمالي بعد الخصم"),
 							("نوع البيع", "نوع البيع"),
 							("ملاحظات", "ملاحظات")
 						}, dataGridView);
@@ -2906,26 +2926,36 @@ namespace ChickenDist.Forms
 					Resizable = DataGridViewTriState.True
 				};
 
-				if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "ReturnAmount")
+				if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "ReturnedQty" || name == "ReturnAmount")
 				{
 					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 					col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-					if (name == "TotalQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
-					else if (name == "ReturnAmount") col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
+					if (name == "TotalQty" || name == "TotalQtySold" || name == "NetQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
+					else if (name == "ReturnAmount" || name == "ReturnedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
 				}
-				else if (name == "TotalBeforeDiscount" || name == "DiscountAmount" || name == "TotalAmount" || 
-				         name == "ShippingCharge" || name == "NetAmount" || name == "NetProfit" ||
+				else if (name == "TotalBeforeDiscount" || name == "DiscountAmount" || name == "TotalDiscounts" || name == "DiscountAmt" || 
+				         name == "TotalAfterDiscount" || name == "TotalAmount" || name == "TotalSales" || name == "TotalSalesAmount" ||
+				         name == "ShippingCharge" || name == "NetAmount" || name == "NetSales" || name == "NetProfit" ||
+				         name == "TotalReturns" || name == "ReturnedAmount" || name == "ReturnsTotal" ||
 				         headerText.Contains("خصم") || headerText.Contains("صافي") || headerText.Contains("ربح") ||
-				         headerText.Contains("قيمة") || headerText.Contains("سعر") || headerText.Contains("المبلغ"))
+				         headerText.Contains("قيمة") || headerText.Contains("سعر") || headerText.Contains("المبلغ") || headerText.Contains("مرتجع"))
 				{
 					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-					if (name == "DiscountAmount") col.DefaultCellStyle.ForeColor = Color.FromArgb(249, 115, 22);
-					else if (name == "NetAmount")
+					if (name == "DiscountAmount" || name == "TotalDiscounts" || name == "DiscountAmt" || headerText.Contains("خصم")) 
+					{
+						col.DefaultCellStyle.ForeColor = Color.FromArgb(249, 115, 22);
+						col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+					}
+					else if (name == "TotalReturns" || name == "ReturnedAmount" || name == "ReturnsTotal" || headerText.Contains("مرتجع"))
+					{
+						col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
+					}
+					else if (name == "NetAmount" || name == "NetSales" || headerText.Contains("صافي المبيعات") || headerText.Contains("الصافي النهائي"))
 					{
 						col.DefaultCellStyle.ForeColor = Color.FromArgb(46, 204, 113);
 						col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 					}
-					else if (name == "NetProfit")
+					else if (name == "NetProfit" || name == "GrossProfit")
 					{
 						col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 					}
@@ -2936,7 +2966,7 @@ namespace ChickenDist.Forms
 					col.MinimumWidth = 90;
 					col.Width = 110;
 				}
-				else if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty")
+				else if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "ReturnedQty")
 				{
 					col.MinimumWidth = 80;
 					col.Width = 95;
@@ -2946,7 +2976,10 @@ namespace ChickenDist.Forms
 					col.MinimumWidth = 95;
 					col.Width = 115;
 				}
-				else if (name == "TotalBeforeDiscount" || name == "TotalAmount" || name == "NetAmount" || name == "NetProfit")
+				else if (name == "TotalBeforeDiscount" || name == "TotalDiscounts" || name == "TotalAfterDiscount" || 
+				         name == "TotalAmount" || name == "TotalSales" || name == "TotalSalesAmount" ||
+				         name == "NetAmount" || name == "NetProfit" || name == "NetSales" ||
+				         name == "TotalReturns" || name == "ReturnedAmount" || name == "ReturnsTotal" || name == "TotalCost")
 				{
 					col.MinimumWidth = 110;
 					col.Width = 130;
@@ -3166,8 +3199,16 @@ namespace ChickenDist.Forms
 					for (int k = 0; k < dg.Columns.Count; k++)
 					{
 						string kn = dg.Columns[k].Name;
-						if (kn == "NetAmount" || kn == "Total" || kn == "TotalAmount" || kn == "NetSales" || kn == "TotalSales" || kn == "TotalSalesAmount") netAmtIdx = k;
-						if (kn == "NetProfit" || kn == "GrossProfit") netProfitIdx = k;
+						if (kn == "NetProfit" || kn == "GrossProfit") { netProfitIdx = k; break; }
+					}
+					string[] netAmtCandidates = new string[] { "NetAmount", "NetSales", "TotalAfterDiscount", "TotalSales", "TotalSalesAmount", "TotalAmount", "Total" };
+					foreach (var cand in netAmtCandidates)
+					{
+						for (int k = 0; k < dg.Columns.Count; k++)
+						{
+							if (dg.Columns[k].Name == cand) { netAmtIdx = k; break; }
+						}
+						if (netAmtIdx >= 0) break;
 					}
 					if (netAmtIdx >= 0 && netProfitIdx >= 0)
 					{
@@ -3262,6 +3303,10 @@ namespace ChickenDist.Forms
 				case "RemainingAmount":
 				case "TotalBeforeDiscount":
 				case "DiscountAmount":
+				case "DiscountAmt":
+				case "TotalAfterDiscount":
+				case "قبل الخصم":
+				case "الخصم":
 				case "ShippingCharge":
 				case "ReturnAmount":
 				case "ItemsCount":
@@ -4753,8 +4798,16 @@ namespace ChickenDist.Forms
 							for (int k = 0; k < dg.Columns.Count; k++)
 							{
 								string kName = dg.Columns[k].Name;
-								if (kName == "NetAmount" || kName == "Total" || kName == "TotalAmount" || kName == "NetSales" || kName == "TotalSales" || kName == "TotalSalesAmount") netAmtIdx = k;
-								if (kName == "NetProfit" || kName == "GrossProfit") netProfitIdx = k;
+								if (kName == "NetProfit" || kName == "GrossProfit") { netProfitIdx = k; break; }
+							}
+							string[] netAmtCandidates = new string[] { "NetAmount", "NetSales", "TotalAfterDiscount", "TotalSales", "TotalSalesAmount", "TotalAmount", "Total" };
+							foreach (var cand in netAmtCandidates)
+							{
+								for (int k = 0; k < dg.Columns.Count; k++)
+								{
+									if (dg.Columns[k].Name == cand) { netAmtIdx = k; break; }
+								}
+								if (netAmtIdx >= 0) break;
 							}
 							if (netAmtIdx >= 0 && netProfitIdx >= 0)
 							{
@@ -4844,6 +4897,10 @@ namespace ChickenDist.Forms
 							case "RemainingAmount":
 							case "TotalBeforeDiscount":
 							case "DiscountAmount":
+							case "DiscountAmt":
+							case "TotalAfterDiscount":
+							case "قبل الخصم":
+							case "الخصم":
 							case "ShippingCharge":
 							case "ReturnAmount":
 							case "ItemsCount":

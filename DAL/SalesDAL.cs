@@ -2760,6 +2760,7 @@ namespace ChickenDist.DAL
                     ISNULL(s.InvoiceCount, 0) AS InvoiceCount,
                     ISNULL(s.GrossSales, 0) AS GrossSales,
                     ISNULL(s.TotalDiscounts, 0) AS TotalDiscounts,
+                    ISNULL(s.TotalSales, 0) AS TotalAfterDiscount,
                     ISNULL(s.TotalSales, 0) AS TotalSales,
                     ISNULL(r.ReturnsTotal, 0) AS TotalReturns,
                     (ISNULL(s.TotalSales, 0) - ISNULL(r.ReturnsTotal, 0)) AS NetSales,
@@ -2783,7 +2784,7 @@ namespace ChickenDist.DAL
             DateTime f = from.Date;
             DateTime t = to.Date;
             return DbHelper.Query(
-                @";WITH SaleCosts AS (
+                @";WITH InvoiceCosts AS (
                     SELECT s.SaleID,
                            s.SaleDate,
                            s.SaleType,
@@ -2797,35 +2798,77 @@ namespace ChickenDist.DAL
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
                     WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                     GROUP BY s.SaleID, s.SaleDate, s.SaleType, s.TotalAmount, s.CashPaid, s.VisaPaid, s.DiscountAmount, s.WarehouseID
+                ),
+                PeriodSales AS (
+                    SELECT 
+                        CASE 
+                            WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), s.SaleDate, 120), 1, 7)
+                            WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, s.SaleDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, s.SaleDate), s.SaleDate), 120) + N')'
+                            ELSE CONVERT(VARCHAR(10), s.SaleDate, 120)
+                        END AS PeriodName,
+                        MIN(s.SaleDate) AS MinSaleDate,
+                        COUNT(DISTINCT s.SaleID) AS InvoiceCount,
+                        ISNULL(SUM(CASE WHEN s.SaleType = 'Cash' THEN ISNULL(s.CashPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.CashPaid, 0) ELSE 0 END), 0) AS CashSales,
+                        ISNULL(SUM(CASE WHEN s.SaleType = 'Visa' THEN ISNULL(s.VisaPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
+                        ISNULL(SUM(CASE WHEN s.SaleType IN ('Credit', 'Installment') THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) WHEN s.SaleType = 'Mixed' THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
+                        ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS TotalBeforeDiscount,
+                        ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
+                        ISNULL(SUM(s.TotalAmount), 0) AS TotalAfterDiscount,
+                        ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
+                        ISNULL(SUM(s.SaleCost), 0) AS SaleCost
+                    FROM InvoiceCosts s
+                    GROUP BY 
+                        CASE 
+                            WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), s.SaleDate, 120), 1, 7)
+                            WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, s.SaleDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, s.SaleDate), s.SaleDate), 120) + N')'
+                            ELSE CONVERT(VARCHAR(10), s.SaleDate, 120)
+                        END
+                ),
+                PeriodReturns AS (
+                    SELECT 
+                        CASE 
+                            WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), sr.ReturnDate, 120), 1, 7)
+                            WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, sr.ReturnDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, sr.ReturnDate), sr.ReturnDate), 120) + N')'
+                            ELSE CONVERT(VARCHAR(10), sr.ReturnDate, 120)
+                        END AS PeriodName,
+                        MIN(sr.ReturnDate) AS MinReturnDate,
+                        ISNULL(SUM(sr.TotalAmount), 0) AS TotalReturns,
+                        ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                    FROM SalesReturns sr
+                    LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
+                    LEFT JOIN Products p ON ri.ProductID = p.ProductID
+                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                    GROUP BY 
+                        CASE 
+                            WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), sr.ReturnDate, 120), 1, 7)
+                            WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, sr.ReturnDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, sr.ReturnDate), sr.ReturnDate), 120) + N')'
+                            ELSE CONVERT(VARCHAR(10), sr.ReturnDate, 120)
+                        END
                 )
                 SELECT 
-                    CASE 
-                        WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), s.SaleDate, 120), 1, 7)
-                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, s.SaleDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, s.SaleDate), s.SaleDate), 120) + N')'
-                        ELSE CONVERT(VARCHAR(10), s.SaleDate, 120)
-                    END AS PeriodName,
-                    COUNT(DISTINCT s.SaleID) AS InvoiceCount,
-                    ISNULL(SUM(CASE WHEN s.SaleType = 'Cash' THEN ISNULL(s.CashPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.CashPaid, 0) ELSE 0 END), 0) AS CashSales,
-                    ISNULL(SUM(CASE WHEN s.SaleType = 'Visa' THEN ISNULL(s.VisaPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
-                    ISNULL(SUM(CASE WHEN s.SaleType IN ('Credit', 'Installment') THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) WHEN s.SaleType = 'Mixed' THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
-                    ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
-                    ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
-                    ISNULL(SUM(s.SaleCost), 0) AS TotalCost,
-                    (ISNULL(SUM(s.TotalAmount), 0) - ISNULL(SUM(s.SaleCost), 0)) AS NetProfit,
-                    CASE WHEN ISNULL(SUM(s.TotalAmount), 0) > 0 
-                         THEN ROUND(((ISNULL(SUM(s.TotalAmount), 0) - ISNULL(SUM(s.SaleCost), 0)) / ISNULL(SUM(s.TotalAmount), 0)) * 100, 2) 
+                    COALESCE(s.PeriodName, r.PeriodName) AS PeriodName,
+                    ISNULL(s.InvoiceCount, 0) AS InvoiceCount,
+                    ISNULL(s.CashSales, 0) AS CashSales,
+                    ISNULL(s.VisaSales, 0) AS VisaSales,
+                    ISNULL(s.CreditSales, 0) AS CreditSales,
+                    ISNULL(s.TotalBeforeDiscount, 0) AS TotalBeforeDiscount,
+                    ISNULL(s.TotalDiscounts, 0) AS TotalDiscounts,
+                    ISNULL(s.TotalAfterDiscount, 0) AS TotalAfterDiscount,
+                    ISNULL(s.TotalSales, 0) AS TotalSales,
+                    ISNULL(r.TotalReturns, 0) AS TotalReturns,
+                    (ISNULL(s.TotalAfterDiscount, 0) - ISNULL(r.TotalReturns, 0)) AS NetSales,
+                    (ISNULL(s.SaleCost, 0) - ISNULL(r.ReturnsCost, 0)) AS TotalCost,
+                    ((ISNULL(s.TotalAfterDiscount, 0) - ISNULL(r.TotalReturns, 0)) - (ISNULL(s.SaleCost, 0) - ISNULL(r.ReturnsCost, 0))) AS NetProfit,
+                    CASE WHEN (ISNULL(s.TotalAfterDiscount, 0) - ISNULL(r.TotalReturns, 0)) > 0 
+                         THEN ROUND((((ISNULL(s.TotalAfterDiscount, 0) - ISNULL(r.TotalReturns, 0)) - (ISNULL(s.SaleCost, 0) - ISNULL(r.ReturnsCost, 0))) / (ISNULL(s.TotalAfterDiscount, 0) - ISNULL(r.TotalReturns, 0))) * 100, 2) 
                          ELSE 0 END AS ProfitMarginPct
-                FROM SaleCosts s
-                WHERE CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                GROUP BY 
-                    CASE 
-                        WHEN @pType = 'Monthly' THEN SUBSTRING(CONVERT(VARCHAR(10), s.SaleDate, 120), 1, 7)
-                        WHEN @pType = 'Weekly' THEN N'أسبوع ' + CAST(DATEPART(week, s.SaleDate) AS NVARCHAR) + N' (' + CONVERT(VARCHAR(10), DATEADD(day, 1-DATEPART(weekday, s.SaleDate), s.SaleDate), 120) + N')'
-                        ELSE CONVERT(VARCHAR(10), s.SaleDate, 120)
-                    END
-                ORDER BY MIN(s.SaleDate) DESC",
+                FROM PeriodSales s
+                FULL OUTER JOIN PeriodReturns r ON s.PeriodName = r.PeriodName
+                ORDER BY COALESCE(s.MinSaleDate, r.MinReturnDate) DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@pType", periodType),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
@@ -2849,6 +2892,7 @@ namespace ChickenDist.DAL
                     si.Quantity AS Quantity,
                     COALESCE(si.UnitName, p.Unit, N'قطعة') AS UnitName,
                     si.UnitPrice AS UnitPrice,
+                    (si.Quantity * si.UnitPrice) AS TotalBeforeDiscount,
                     ISNULL(si.DiscountAmt, 0) AS DiscountAmt,
                     si.TotalPrice AS TotalPrice,
                     ISNULL(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)), 0) AS ItemCost,
@@ -2887,28 +2931,81 @@ namespace ChickenDist.DAL
             DateTime f = from.Date;
             DateTime t = to.Date;
             return DbHelper.Query(
-                @"SELECT 
-                    ISNULL(cat.CategoryName, N'بدون قسم / عام') AS CategoryName,
-                    COUNT(DISTINCT si.ProductID) AS DistinctProductsCount,
-                    SUM(si.Quantity) AS TotalQtySold,
-                    ISNULL(SUM(si.DiscountAmt), 0) AS TotalDiscounts,
-                    SUM(si.TotalPrice) AS TotalSalesAmount,
-                    ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS TotalCost,
-                    (SUM(si.TotalPrice) - ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0)) AS NetProfit,
+                @";WITH InvoiceTotals AS (
+                    SELECT s.SaleID,
+                           s.DiscountAmount,
+                           SUM(si.TotalPrice) AS InvoiceItemsTotal
+                    FROM Sales s
+                    JOIN SaleItems si ON s.SaleID = si.SaleID
+                    WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY s.SaleID, s.DiscountAmount
+                ),
+                CatSales AS (
+                    SELECT 
+                        ISNULL(cat.CategoryID, 0) AS CategoryID,
+                        ISNULL(cat.CategoryName, N'بدون قسم / عام') AS CategoryName,
+                        COUNT(DISTINCT si.ProductID) AS DistinctProductsCount,
+                        SUM(si.Quantity) AS TotalQtySold,
+                        SUM(si.Quantity * si.UnitPrice) AS TotalBeforeDiscount,
+                        SUM(ISNULL(si.DiscountAmt, 0) + 
+                            CASE 
+                                WHEN ISNULL(inv.DiscountAmount, 0) > 0 AND ISNULL(inv.InvoiceItemsTotal, 0) > 0 
+                                THEN (si.TotalPrice / inv.InvoiceItemsTotal) * inv.DiscountAmount 
+                                ELSE 0 
+                            END) AS TotalDiscounts,
+                        SUM(si.TotalPrice - 
+                            CASE 
+                                WHEN ISNULL(inv.DiscountAmount, 0) > 0 AND ISNULL(inv.InvoiceItemsTotal, 0) > 0 
+                                THEN (si.TotalPrice / inv.InvoiceItemsTotal) * inv.DiscountAmount 
+                                ELSE 0 
+                            END) AS TotalAfterDiscount,
+                        ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS TotalCost
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    JOIN InvoiceTotals inv ON s.SaleID = inv.SaleID
+                    JOIN Products p ON si.ProductID = p.ProductID
+                    LEFT JOIN Categories cat ON p.CategoryID = cat.CategoryID
+                    WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY ISNULL(cat.CategoryID, 0), ISNULL(cat.CategoryName, N'بدون قسم / عام')
+                ),
+                CatReturns AS (
+                    SELECT 
+                        ISNULL(cat.CategoryID, 0) AS CategoryID,
+                        SUM(ri.Quantity) AS ReturnedQty,
+                        SUM(ri.TotalPrice) AS ReturnedAmount,
+                        ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnedCost
+                    FROM ReturnItems ri
+                    JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                    JOIN Products p ON ri.ProductID = p.ProductID
+                    LEFT JOIN Categories cat ON p.CategoryID = cat.CategoryID
+                    WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
+                    GROUP BY ISNULL(cat.CategoryID, 0)
+                )
+                SELECT 
+                    cs.CategoryName,
+                    cs.DistinctProductsCount,
+                    (cs.TotalQtySold - ISNULL(cr.ReturnedQty, 0)) AS TotalQtySold,
+                    cs.TotalBeforeDiscount,
+                    cs.TotalDiscounts,
+                    cs.TotalAfterDiscount,
+                    cs.TotalAfterDiscount AS TotalSalesAmount,
+                    ISNULL(cr.ReturnedAmount, 0) AS TotalReturns,
+                    (cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) AS NetSales,
+                    (cs.TotalCost - ISNULL(cr.ReturnedCost, 0)) AS TotalCost,
+                    ((cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) - (cs.TotalCost - ISNULL(cr.ReturnedCost, 0))) AS NetProfit,
                     CASE 
-                        WHEN SUM(si.TotalPrice) > 0 
-                        THEN ROUND(((SUM(si.TotalPrice) - ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0)) / SUM(si.TotalPrice)) * 100, 2)
+                        WHEN (cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) > 0 
+                        THEN ROUND((((cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) - (cs.TotalCost - ISNULL(cr.ReturnedCost, 0))) / (cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0))) * 100, 2)
                         ELSE 0 
                     END AS ProfitMarginPct
-                FROM SaleItems si
-                JOIN Sales s ON si.SaleID = s.SaleID
-                JOIN Products p ON si.ProductID = p.ProductID
-                LEFT JOIN Categories cat ON p.CategoryID = cat.CategoryID
-                WHERE s.IsPosted = 1
-                  AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
-                  AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                GROUP BY ISNULL(cat.CategoryName, N'بدون قسم / عام')
-                ORDER BY TotalSalesAmount DESC",
+                FROM CatSales cs
+                LEFT JOIN CatReturns cr ON cs.CategoryID = cr.CategoryID
+                ORDER BY NetSales DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
@@ -2925,7 +3022,9 @@ namespace ChickenDist.DAL
                     ISNULL(SUM(CASE WHEN s.SaleType = 'Cash' THEN ISNULL(s.CashPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.CashPaid, 0) ELSE 0 END), 0) AS CashSales,
                     ISNULL(SUM(CASE WHEN s.SaleType = 'Visa' THEN ISNULL(s.VisaPaid, s.TotalAmount) WHEN s.SaleType = 'Mixed' THEN ISNULL(s.VisaPaid, 0) ELSE 0 END), 0) AS VisaSales,
                     ISNULL(SUM(CASE WHEN s.SaleType IN ('Credit', 'Installment') THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) WHEN s.SaleType = 'Mixed' THEN (s.TotalAmount - ISNULL(s.CashPaid, 0) - ISNULL(s.VisaPaid, 0)) ELSE 0 END), 0) AS CreditSales,
+                    ISNULL(SUM(s.TotalAmount + ISNULL(s.DiscountAmount, 0)), 0) AS TotalBeforeDiscount,
                     ISNULL(SUM(s.DiscountAmount), 0) AS TotalDiscounts,
+                    ISNULL(SUM(s.TotalAmount), 0) AS TotalAfterDiscount,
                     ISNULL(SUM(s.TotalAmount), 0) AS TotalSales,
                     ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.CreatedBy = e.EmpID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS TotalReturns,
                     (ISNULL(SUM(s.TotalAmount), 0) - ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr WHERE sr.CreatedBy = e.EmpID AND CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0)) AS NetSales
@@ -2935,7 +3034,7 @@ namespace ChickenDist.DAL
                   AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                   AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
                 GROUP BY e.EmpID, e.EmpName
-                ORDER BY TotalSales DESC",
+                ORDER BY NetSales DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
         }
@@ -3107,6 +3206,7 @@ namespace ChickenDist.DAL
                     COALESCE(s.SaleDay, r.ReturnDay) AS SaleDay,
                     ISNULL(s.GrossSales, 0) AS GrossSales,
                     ISNULL(s.TotalDiscounts, 0) AS TotalDiscounts,
+                    ISNULL(s.TotalSales, 0) AS TotalAfterDiscount,
                     ISNULL(r.TotalReturns, 0) AS TotalReturns,
                     (ISNULL(s.TotalSales, 0) - ISNULL(r.TotalReturns, 0)) AS NetSales,
                     ISNULL(s.TotalCost, 0) AS TotalCost,
@@ -3133,13 +3233,14 @@ namespace ChickenDist.DAL
                            s.SaleDate,
                            s.SaleType,
                            s.TotalAmount,
+                           ISNULL(s.DiscountAmount, 0) AS DiscountAmount,
                            s.WarehouseID,
                            ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
                     WHERE s.IsPosted = 1
-                    GROUP BY s.SaleID, s.SaleDate, s.SaleType, s.TotalAmount, s.WarehouseID
+                    GROUP BY s.SaleID, s.SaleDate, s.SaleType, s.TotalAmount, s.DiscountAmount, s.WarehouseID
                 )
                 SELECT 
                     CAST(SaleDate AS DATE) AS SaleDay,
@@ -3147,6 +3248,9 @@ namespace ChickenDist.DAL
                     SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) AS CashTotal,
                     SUM(CASE WHEN SaleType = 'Credit' OR SaleType = 'Installment' THEN TotalAmount ELSE 0 END) AS CreditTotal,
                     SUM(CASE WHEN SaleType = 'DriverLoad' THEN TotalAmount ELSE 0 END) AS LoadTotal,
+                    SUM(TotalAmount + DiscountAmount) AS TotalBeforeDiscount,
+                    SUM(DiscountAmount) AS TotalDiscounts,
+                    SUM(TotalAmount) AS TotalAfterDiscount,
                     SUM(TotalAmount) AS Total,
                     SUM(SaleCost) AS TotalCost,
                     SUM(TotalAmount) - SUM(SaleCost) AS NetProfit
@@ -3168,19 +3272,23 @@ namespace ChickenDist.DAL
                            s.SaleDate,
                            s.SaleType,
                            s.TotalAmount,
+                           ISNULL(s.DiscountAmount, 0) AS DiscountAmount,
                            s.WarehouseID,
                            ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
                     WHERE s.IsPosted = 1
-                    GROUP BY s.SaleID, s.DriverID, s.SaleDate, s.SaleType, s.TotalAmount, s.WarehouseID
+                    GROUP BY s.SaleID, s.DriverID, s.SaleDate, s.SaleType, s.TotalAmount, s.DiscountAmount, s.WarehouseID
                 )
                 SELECT 
                     ISNULL(e.EmpName, N'مبيعات مباشرة') AS DriverName,
                     COUNT(s.SaleID) AS Count,
                     SUM(CASE WHEN SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
                     SUM(CASE WHEN SaleType = 'Credit' OR SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
+                    SUM(s.TotalAmount + s.DiscountAmount) AS TotalBeforeDiscount,
+                    SUM(s.DiscountAmount) AS TotalDiscounts,
+                    SUM(s.TotalAmount) AS TotalAfterDiscount,
                     SUM(s.TotalAmount) AS Total,
                     SUM(s.SaleCost) AS TotalCost,
                     SUM(s.TotalAmount) - SUM(s.SaleCost) AS NetProfit
@@ -3197,20 +3305,33 @@ namespace ChickenDist.DAL
         public static DataTable SalesByClient(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @";WITH ClientSaleCosts AS (
-                    SELECT s.ClientID,
-                           SUM(s.TotalAmount) AS TotalSales,
-                           SUM(CASE WHEN s.SaleType = 'Cash' THEN s.TotalAmount ELSE 0 END) AS CashTotal,
-                           SUM(CASE WHEN s.SaleType = 'Credit' OR s.SaleType = 'Installment' THEN s.TotalAmount ELSE 0 END) AS CreditTotal,
-                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SalesCost,
-                           COUNT(DISTINCT s.SaleID) AS SaleCount
+                @";WITH ClientInvoiceCosts AS (
+                    SELECT s.SaleID,
+                           s.ClientID,
+                           s.TotalAmount,
+                           ISNULL(s.DiscountAmount, 0) AS DiscountAmount,
+                           s.SaleType,
+                           ISNULL(SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS SaleCost
                     FROM Sales s
                     LEFT JOIN SaleItems si ON s.SaleID = si.SaleID
                     LEFT JOIN Products p ON si.ProductID = p.ProductID
                     WHERE s.IsPosted = 1
                       AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
                       AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                    GROUP BY s.ClientID
+                    GROUP BY s.SaleID, s.ClientID, s.TotalAmount, s.DiscountAmount, s.SaleType
+                ),
+                ClientSaleCosts AS (
+                    SELECT ClientID,
+                           SUM(TotalAmount + DiscountAmount) AS TotalBeforeDiscount,
+                           SUM(DiscountAmount) AS TotalDiscounts,
+                           SUM(TotalAmount) AS TotalAfterDiscount,
+                           SUM(TotalAmount) AS TotalSales,
+                           SUM(CASE WHEN SaleType = 'Cash' THEN TotalAmount ELSE 0 END) AS CashTotal,
+                           SUM(CASE WHEN SaleType = 'Credit' OR SaleType = 'Installment' THEN TotalAmount ELSE 0 END) AS CreditTotal,
+                           SUM(SaleCost) AS SalesCost,
+                           COUNT(DISTINCT SaleID) AS SaleCount
+                    FROM ClientInvoiceCosts
+                    GROUP BY ClientID
                 ),
                 ClientReturnCosts AS (
                     SELECT sr.ClientID,
@@ -3229,15 +3350,19 @@ namespace ChickenDist.DAL
                     ISNULL(sc.SaleCount, 0) AS Count,
                     ISNULL(sc.CashTotal, 0) AS CashTotal,
                     ISNULL(sc.CreditTotal, 0) AS CreditTotal,
-                    ISNULL(rc.TotalReturns, 0) AS ReturnsTotal,
-                    ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = 'Payment' AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t), 0) AS PaidTotal,
+                    ISNULL(sc.TotalBeforeDiscount, 0) AS TotalBeforeDiscount,
+                    ISNULL(sc.TotalDiscounts, 0) AS TotalDiscounts,
+                    ISNULL(sc.TotalAfterDiscount, 0) AS TotalAfterDiscount,
                     ISNULL(sc.TotalSales, 0) AS Total,
+                    ISNULL(rc.TotalReturns, 0) AS ReturnsTotal,
+                    (ISNULL(sc.TotalAfterDiscount, 0) - ISNULL(rc.TotalReturns, 0)) AS NetSales,
+                    ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = 'Payment' AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t), 0) AS PaidTotal,
                     (c.OpeningBalance + 
                      ISNULL((SELECT SUM(ct.Debit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0) - 
                      ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0)
                     ) AS CurrentBalance,
                     (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) AS TotalCost,
-                    (ISNULL(sc.TotalSales, 0) - ISNULL(rc.TotalReturns, 0)) - (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) AS NetProfit
+                    (ISNULL(sc.TotalAfterDiscount, 0) - ISNULL(rc.TotalReturns, 0)) - (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) AS NetProfit
                 FROM Clients c
                 LEFT JOIN ClientSaleCosts sc ON c.ClientID = sc.ClientID
                 LEFT JOIN ClientReturnCosts rc ON c.ClientID = rc.ClientID
@@ -3250,14 +3375,38 @@ namespace ChickenDist.DAL
         public static DataTable SalesByProduct(DateTime from, DateTime to, int? warehouseID = null)
         {
             return DbHelper.Query(
-                @";WITH SaleTotals AS (
+                @";WITH InvoiceTotals AS (
+                    SELECT s.SaleID,
+                           s.DiscountAmount,
+                           SUM(si.TotalPrice) AS InvoiceItemsTotal
+                    FROM Sales s
+                    JOIN SaleItems si ON s.SaleID = si.SaleID
+                    WHERE s.IsPosted = 1
+                      AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
+                      AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
+                    GROUP BY s.SaleID, s.DiscountAmount
+                ),
+                SaleTotals AS (
                     SELECT si.ProductID,
                            AVG(si.UnitPrice) AS AvgPrice,
                            SUM(si.Quantity) AS TotalQty,
-                           SUM(si.TotalPrice) AS TotalAmount,
+                           SUM(si.Quantity * si.UnitPrice) AS TotalBeforeDiscount,
+                           SUM(ISNULL(si.DiscountAmt, 0) + 
+                               CASE 
+                                   WHEN ISNULL(inv.DiscountAmount, 0) > 0 AND ISNULL(inv.InvoiceItemsTotal, 0) > 0 
+                                   THEN (si.TotalPrice / inv.InvoiceItemsTotal) * inv.DiscountAmount 
+                                   ELSE 0 
+                               END) AS TotalDiscounts,
+                           SUM(si.TotalPrice - 
+                               CASE 
+                                   WHEN ISNULL(inv.DiscountAmount, 0) > 0 AND ISNULL(inv.InvoiceItemsTotal, 0) > 0 
+                                   THEN (si.TotalPrice / inv.InvoiceItemsTotal) * inv.DiscountAmount 
+                                   ELSE 0 
+                               END) AS TotalAfterDiscount,
                            SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS TotalCost
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
+                    JOIN InvoiceTotals inv ON s.SaleID = inv.SaleID
                     JOIN Products p ON si.ProductID = p.ProductID
                     WHERE s.IsPosted = 1
                       AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t
@@ -3289,16 +3438,19 @@ namespace ChickenDist.DAL
                     ISNULL(stk.CurrentStock, 0.0) AS CurrentStock,
                     ISNULL(st.AvgPrice, 0.0) AS AvgPrice,
                     ISNULL(st.TotalQty, 0.0) AS TotalQty,
-                    ISNULL(st.TotalAmount, 0.0) AS TotalAmount,
+                    ISNULL(st.TotalBeforeDiscount, 0.0) AS TotalBeforeDiscount,
+                    ISNULL(st.TotalDiscounts, 0.0) AS TotalDiscounts,
+                    ISNULL(st.TotalAfterDiscount, 0.0) AS TotalAfterDiscount,
+                    ISNULL(st.TotalAfterDiscount, 0.0) AS TotalAmount,
                     ISNULL(rt.ReturnedQty, 0.0) AS ReturnedQty,
                     ISNULL(rt.ReturnedAmount, 0.0) AS ReturnedAmount,
                     (ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) AS NetQty,
-                    (ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) AS NetAmount,
+                    (ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) AS NetAmount,
                     (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0)) AS TotalCost,
-                    ((ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) AS NetProfit,
+                    ((ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) AS NetProfit,
                     CASE 
-                        WHEN (ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) > 0 
-                        THEN ROUND((((ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) / (ISNULL(st.TotalAmount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0))) * 100, 2)
+                        WHEN (ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) > 0 
+                        THEN ROUND((((ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) / (ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0))) * 100, 2)
                         ELSE 0 
                     END AS ProfitMargin
                 FROM Products p
@@ -3699,6 +3851,8 @@ namespace ChickenDist.DAL
                     ISNULL(si.IMEI, N'-') AS [السيريال],
                     si.Quantity AS [الكمية],
                     si.UnitPrice AS [سعر الوحدة],
+                    (si.Quantity * si.UnitPrice) AS [قبل الخصم],
+                    ISNULL(si.DiscountAmt, 0) AS [الخصم],
                     si.TotalPrice AS [الصافي],
                     CASE s.SaleType
                         WHEN 'Cash' THEN N'نقدي'
