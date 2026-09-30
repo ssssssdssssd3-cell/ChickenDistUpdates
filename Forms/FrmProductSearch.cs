@@ -61,7 +61,7 @@ namespace ChickenDist.Forms
 
         public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool? defaultShowZeroStock = null, int? clientID = null, string initialSearchText = "", bool? allowZeroStockSelection = null)
         {
-            if (!Session.IsAdmin && !Session.CanAccess("ProductSearch"))
+            if (!Session.IsAdmin && !Session.CanAccess("ProductSearch") && !Session.CanAccess("Sales") && !Session.CanAccess("POS") && !Session.CanAccess("Purchases") && !Session.CanAccess("WarehouseTransfer"))
             {
                 this.Load += (s, e) =>
                 {
@@ -298,6 +298,8 @@ namespace ChickenDist.Forms
                 if (e.RowIndex >= 0)
                 {
                     dgProducts.Rows[e.RowIndex].Selected = true;
+                    if (btnSelect != null) btnSelect.Enabled = true;
+                    UpdateUnitsCombo();
                 }
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgProducts.Columns[e.ColumnIndex].Name == "Unit")
                 {
@@ -558,7 +560,7 @@ namespace ChickenDist.Forms
             dgProducts.AutoSizeColumnsMode = oldMode;
             dgProducts.ResumeLayout();
 
-            // إلغاء أي تحديد تلقائي لأول صنف لضمان عدم إنزال أي صنف إلا باختيار صريح من العميل
+            // إلغاء أي تحديد تلقائي لأول صنف لضمان عدم إنزال أي صنف إلا باختيار من العميل
             dgProducts.ClearSelection();
             dgProducts.CurrentCell = null;
             if (btnSelect != null) btnSelect.Enabled = false;
@@ -567,16 +569,6 @@ namespace ChickenDist.Forms
             if (txtSelectedPurchasePrice != null) txtSelectedPurchasePrice.Text = "0.00";
             if (txtSelectedDiscount != null) txtSelectedDiscount.Text = "0.00";
             if (cboUnits != null) cboUnits.Items.Clear();
-
-            this.BeginInvoke((MethodInvoker)delegate
-            {
-                if (dgProducts != null && dgProducts.SelectedRows.Count > 0 && !dgProducts.Focused)
-                {
-                    dgProducts.ClearSelection();
-                    dgProducts.CurrentCell = null;
-                    if (btnSelect != null) btnSelect.Enabled = false;
-                }
-            });
         }
 
         private void ColorStockCell(int rowIdx, decimal stock)
@@ -663,12 +655,14 @@ namespace ChickenDist.Forms
                     dgProducts.Focus();
                     dgProducts.Rows[0].Selected = true;
                     dgProducts.CurrentCell = dgProducts.Rows[0].Cells[1];
+                    if (btnSelect != null) btnSelect.Enabled = true;
+                    UpdateUnitsCombo();
                     e.Handled = true;
                 }
             }
             else if (e.KeyCode == Keys.Enter)
             {
-                if ((DateTime.Now - _openedTime).TotalMilliseconds < 300)
+                if ((DateTime.Now - _openedTime).TotalMilliseconds < 150)
                 {
                     e.Handled = true;
                     return;
@@ -690,8 +684,12 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        // نقل التركيز للجدول ليتيح للمستخدم التحديد بنفسه بالأسهم أو الماوس دون فرض صنف
+                        // نقل التركيز للجدول مع تحديد أول صف لتمكين المستخدم من الاختيار بـ Enter أو التنقل بالأسهم
                         dgProducts.Focus();
+                        dgProducts.Rows[0].Selected = true;
+                        dgProducts.CurrentCell = dgProducts.Rows[0].Cells[1];
+                        if (btnSelect != null) btnSelect.Enabled = true;
+                        UpdateUnitsCombo();
                         e.Handled = true;
                     }
                 }
@@ -702,17 +700,27 @@ namespace ChickenDist.Forms
         {
             if (e.KeyCode == Keys.Enter)
             {
-                if (dgProducts.SelectedRows.Count > 0 || (dgProducts.CurrentRow != null && dgProducts.CurrentRow.Selected))
-                {
-                    SelectAndClose();
-                    e.Handled = true;
-                }
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                SelectAndClose();
+            }
+            else if (e.KeyCode == Keys.Up && dgProducts.CurrentRow != null && dgProducts.CurrentRow.Index == 0)
+            {
+                txtSearch.Focus();
+                txtSearch.SelectAll();
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                this.DialogResult = DialogResult.Cancel;
+                this.Close();
+                e.Handled = true;
             }
         }
 
         private void DgProducts_SelectionChanged(object sender, EventArgs e)
         {
-            bool hasSelection = dgProducts.SelectedRows.Count > 0 || (dgProducts.CurrentRow != null && dgProducts.CurrentRow.Selected);
+            bool hasSelection = dgProducts.SelectedRows.Count > 0 || dgProducts.CurrentRow != null;
             if (btnSelect != null)
             {
                 btnSelect.Enabled = hasSelection;
@@ -728,7 +736,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            if (txtSelectedQty != null)
+            if (txtSelectedQty != null && string.IsNullOrWhiteSpace(txtSelectedQty.Text))
             {
                 txtSelectedQty.Text = "1.00";
             }
@@ -739,10 +747,16 @@ namespace ChickenDist.Forms
         {
             if (cboUnits == null) return;
             cboUnits.Items.Clear();
-            if (dgProducts.SelectedRows.Count == 0) return;
 
-            var selectedRow = dgProducts.SelectedRows[0];
+            DataGridViewRow selectedRow = null;
+            if (dgProducts.SelectedRows.Count > 0)
+                selectedRow = dgProducts.SelectedRows[0];
+            else if (dgProducts.CurrentRow != null)
+                selectedRow = dgProducts.CurrentRow;
+
+            if (selectedRow == null || selectedRow.Cells["ProductID"].Value == null) return;
             int productID = Convert.ToInt32(selectedRow.Cells["ProductID"].Value);
+            if (productID <= 0) return;
 
             DataRow prodRow = (selectedRow.DataBoundItem is DataRowView drv) ? drv.Row : null;
             if (prodRow == null)
@@ -947,16 +961,22 @@ namespace ChickenDist.Forms
                 sp = uItem.SalePrice;
                 pp = uItem.PurchasePrice;
             }
-            else if (dgProducts != null && dgProducts.SelectedRows.Count > 0)
+            else
             {
-                var row = dgProducts.SelectedRows[0];
-                if (row.Cells["SalePrice"].Value != null)
+                DataGridViewRow row = null;
+                if (dgProducts != null && dgProducts.SelectedRows.Count > 0)
+                    row = dgProducts.SelectedRows[0];
+                else if (dgProducts != null && dgProducts.CurrentRow != null)
+                    row = dgProducts.CurrentRow;
+
+                if (row != null && row.Cells["SalePrice"].Value != null)
+                {
                     decimal.TryParse(row.Cells["SalePrice"].Value.ToString(), out sp);
 
-                int pid = Convert.ToInt32(row.Cells["ProductID"].Value);
-                if (row.DataBoundItem is DataRowView drv && drv.Row.Table.Columns.Contains("PurchasePrice") && drv.Row["PurchasePrice"] != DBNull.Value)
-                {
-                    pp = Convert.ToDecimal(drv.Row["PurchasePrice"]);
+                    if (row.DataBoundItem is DataRowView drv && drv.Row.Table.Columns.Contains("PurchasePrice") && drv.Row["PurchasePrice"] != DBNull.Value)
+                    {
+                        pp = Convert.ToDecimal(drv.Row["PurchasePrice"]);
+                    }
                 }
             }
 
@@ -966,17 +986,25 @@ namespace ChickenDist.Forms
 
         private void BtnSelect_Click(object sender, EventArgs e)
         {
-            if (dgProducts.SelectedRows.Count == 0 && (dgProducts.CurrentRow == null || !dgProducts.CurrentRow.Selected))
+            if (dgProducts.SelectedRows.Count == 0 && dgProducts.CurrentRow == null)
             {
-                MessageBox.Show("يرجى تحديد الصنف أولاً من جدول البحث بالنقر عليه!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                if (dgProducts.Rows.Count > 0)
+                {
+                    dgProducts.Rows[0].Selected = true;
+                    dgProducts.CurrentCell = dgProducts.Rows[0].Cells[1];
+                }
+                else
+                {
+                    MessageBox.Show("لا توجد أصناف مطابقة للبحث للاختيار!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
             }
             SelectAndClose();
         }
 
         private void SelectAndClose()
         {
-            if ((DateTime.Now - _openedTime).TotalMilliseconds < 300)
+            if ((DateTime.Now - _openedTime).TotalMilliseconds < 150)
             {
                 return;
             }
@@ -984,8 +1012,10 @@ namespace ChickenDist.Forms
             DataGridViewRow row = null;
             if (dgProducts.SelectedRows.Count > 0)
                 row = dgProducts.SelectedRows[0];
-            else if (dgProducts.CurrentRow != null && dgProducts.CurrentRow.Selected)
+            else if (dgProducts.CurrentRow != null)
                 row = dgProducts.CurrentRow;
+            else if (dgProducts.Rows.Count > 0)
+                row = dgProducts.Rows[0];
 
             if (row == null || row.Cells["ProductID"].Value == null || Convert.ToInt32(row.Cells["ProductID"].Value) <= 0)
                 return;

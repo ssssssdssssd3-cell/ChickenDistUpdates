@@ -387,6 +387,11 @@ namespace ChickenDist.Core
                 if (_perms.ContainsKey("POS") && !_perms["POS"].CanViewQuickItems) return false;
                 if (_perms.ContainsKey("Sales") && !_perms["Sales"].CanViewQuickItems) return false;
             }
+            if (screen == "ProductSearch")
+            {
+                if (_perms.ContainsKey("ProductSearch")) return _perms["ProductSearch"].CanAccess;
+                return CanAccess("Sales") || CanAccess("POS") || CanAccess("Purchases") || CanAccess("PriceQuote") || CanAccess("Products") || CanAccess("WarehouseTransfer") || CanAccess("Returns");
+            }
             if (screen == "FinancialPosition" && _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess) return true;
             if (screen == "RepFinancials" && _perms.ContainsKey("Financials") && _perms["Financials"].CanAccess) return true;
             if (screen == "Financials" && _perms.ContainsKey("Reports") && _perms["Reports"].CanAccess) return true;
