@@ -4628,6 +4628,12 @@ namespace ChickenDist.Core
                             ALTER TABLE Shifts ADD ApprovedByName NVARCHAR(100) NULL;
                         IF COL_LENGTH('Shifts','ApprovalTime') IS NULL
                             ALTER TABLE Shifts ADD ApprovalTime DATETIME NULL;
+                        IF COL_LENGTH('Shifts','Difference') IS NULL
+                            ALTER TABLE Shifts ADD Difference DECIMAL(18,2) NULL;
+                        IF COL_LENGTH('Shifts','ExpectedCash') IS NULL
+                            ALTER TABLE Shifts ADD ExpectedCash DECIMAL(18,2) NULL;
+                        IF COL_LENGTH('Shifts','ActualCash') IS NULL
+                            ALTER TABLE Shifts ADD ActualCash DECIMAL(18,2) NULL;
                         IF COL_LENGTH('Shifts','ApprovalNotes') IS NULL
                             ALTER TABLE Shifts ADD ApprovalNotes NVARCHAR(500) NULL;
                     END

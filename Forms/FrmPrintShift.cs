@@ -186,9 +186,13 @@ namespace ChickenDist.Forms
                     if (_shiftRow.Table.Columns.Contains("CashReturns") && _shiftRow["CashReturns"] != DBNull.Value) _cashReturns = Convert.ToDecimal(_shiftRow["CashReturns"]);
                     if (_shiftRow["ExpectedCash"] != DBNull.Value) _expectedCash = Convert.ToDecimal(_shiftRow["ExpectedCash"]);
                     if (_shiftRow["ActualCash"] != DBNull.Value) _actualCash = Convert.ToDecimal(_shiftRow["ActualCash"]);
-                    if (_shiftRow["Difference"] != DBNull.Value) _difference = Convert.ToDecimal(_shiftRow["Difference"]);
+                    if (_shiftRow.Table.Columns.Contains("Difference") && _shiftRow["Difference"] != DBNull.Value) _difference = Convert.ToDecimal(_shiftRow["Difference"]);
                     if (_shiftRow["TransferredAmount"] != DBNull.Value) _transferredAmount = Convert.ToDecimal(_shiftRow["TransferredAmount"]);
                     if (_shiftRow["RemainingInDrawer"] != DBNull.Value) _remainingInDrawer = Convert.ToDecimal(_shiftRow["RemainingInDrawer"]);
+                    if (_shiftRow.Table.Columns.Contains("CashExpenses") && _shiftRow["CashExpenses"] != DBNull.Value && Convert.ToDecimal(_shiftRow["CashExpenses"]) > 0)
+                        _totalExpenses = Convert.ToDecimal(_shiftRow["CashExpenses"]);
+                    if (_shiftRow.Table.Columns.Contains("CashIn") && _shiftRow["CashIn"] != DBNull.Value && Convert.ToDecimal(_shiftRow["CashIn"]) > 0)
+                        _totalCollections = Convert.ToDecimal(_shiftRow["CashIn"]);
                 }
 
                 int drawerSafeID = _shiftRow != null && _shiftRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_shiftRow["SafeAccountID"]) : 1;
@@ -298,9 +302,27 @@ namespace ChickenDist.Forms
                         _cashReturns = Convert.ToDecimal(dtR.Rows[0]["CashReturns"]);
                     }
 
-                    _expectedCash = _openingCash + _cashSales + _totalCollections - _cashReturns - _totalExpenses;
-                    if (_actualCash == 0) _actualCash = _expectedCash;
-                    _difference = _actualCash - _expectedCash;
+                    if (_status == "Open" || _expectedCash == 0)
+                    {
+                        _expectedCash = _openingCash + _cashSales + _totalCollections - _cashReturns - _totalExpenses;
+                    }
+
+                    if (_status == "Open")
+                    {
+                        if (_actualCash == 0) _actualCash = _expectedCash;
+                        _difference = _actualCash - _expectedCash;
+                    }
+                    else
+                    {
+                        if (_shiftRow != null && _shiftRow.Table.Columns.Contains("ActualCash") && _shiftRow["ActualCash"] != DBNull.Value)
+                            _actualCash = Convert.ToDecimal(_shiftRow["ActualCash"]);
+                        if (_shiftRow != null && _shiftRow.Table.Columns.Contains("ExpectedCash") && _shiftRow["ExpectedCash"] != DBNull.Value && Convert.ToDecimal(_shiftRow["ExpectedCash"]) != 0)
+                            _expectedCash = Convert.ToDecimal(_shiftRow["ExpectedCash"]);
+                        if (_shiftRow != null && _shiftRow.Table.Columns.Contains("Difference") && _shiftRow["Difference"] != DBNull.Value)
+                            _difference = Convert.ToDecimal(_shiftRow["Difference"]);
+                        else
+                            _difference = _actualCash - _expectedCash;
+                    }
                 }
 
                 // الحركات
@@ -548,9 +570,11 @@ namespace ChickenDist.Forms
                 financialRows.Add(("2", "مبيعات فيزا وشبكة وبطاقات إلكترونية 💳", _visaSales, "إيرادات بحسابات وماكينات الفيزا والشبكة للمطابقة", Color.FromArgb(109, 40, 217), true, Color.White));
                 financialRows.Add(("3", "مبيعات آجل وذمم عملاء 📋", (_creditSales + _otherSales), "مبيعات ذمم وعملاء آجل للمطابقة مع الفواتير", Color.FromArgb(217, 119, 6), true, colRowAlt));
                 financialRows.Add(("4", "إجمالي مبيعات الوردية الكلي 💰", _totalSales, $"إجمالي المبيعات الشاملة لكافة طرق الدفع", Color.FromArgb(30, 58, 138), true, Color.FromArgb(241, 245, 249)));
-                financialRows.Add(("5", "النقدية الفعلية المسلمة بالدرج 💵", _actualCash, "المبلغ الفعلي المعدود والمسلم بواسطة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)));
-                financialRows.Add(("6", "المبلغ المحول والمودع بالخزنة 🏦", _transferredAmount, $"تم تحويله إلى: {(string.IsNullOrEmpty(_targetSafeName) ? "---" : _targetSafeName)}", Color.FromArgb(15, 118, 110), true, colRowAlt));
-                financialRows.Add(("7", "المبلغ المتبقي بالدرج كعهدة بداية 📌", _remainingInDrawer, "عهدة افتتاحية بالدرج للوردية القادمة", Color.Black, true, Color.White));
+                financialRows.Add(("5", "النقدية المتوقعة بالدرج (السيولة الواجبة)", _expectedCash, "الرصيد الواجب توفره بالدرج", colPrimary, true, Color.FromArgb(238, 242, 255)));
+                financialRows.Add(("6", "النقدية الفعلية المسلمة بالدرج 💵", _actualCash, "المبلغ الفعلي المعدود والمسلم بواسطة الكاشير", Color.FromArgb(30, 64, 175), true, Color.FromArgb(240, 249, 255)));
+                financialRows.Add(("7", "الفرق المحاسبي (عجز / زيادة)", _difference, _difference == 0 ? "مطابق تماماً بدون أي فروقات ✔" : (_difference < 0 ? $"عجز نقدي قدره {_difference:N2} ج 🔴" : $"زيادة نقدية قدرها {_difference:N2} ج 🟢"), _difference == 0 ? Color.FromArgb(21, 128, 61) : (_difference < 0 ? Color.FromArgb(220, 38, 38) : Color.FromArgb(217, 119, 6)), true, _difference == 0 ? Color.FromArgb(240, 253, 244) : Color.FromArgb(254, 242, 242)));
+                financialRows.Add(("8", "المبلغ المحول والمودع بالخزنة 🏦", _transferredAmount, $"تم تحويله إلى: {(string.IsNullOrEmpty(_targetSafeName) ? "---" : _targetSafeName)}", Color.FromArgb(15, 118, 110), true, colRowAlt));
+                financialRows.Add(("9", "المبلغ المتبقي بالدرج كعهدة بداية 📌", _remainingInDrawer, "عهدة افتتاحية بالدرج للوردية القادمة", Color.Black, true, Color.White));
             }
 
             foreach (var r in financialRows)
@@ -719,13 +743,9 @@ namespace ChickenDist.Forms
             {
                 g.DrawString("💵 تسليم عهدة ونقدية الدرج:", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), sfRight);
                 y += 18;
+                DrawRecGridRow("المتوقع بالدرج (السيولة الواجبة):", _expectedCash, true);
                 DrawRecGridRow("المبلغ الفعلي المسلم بالدرج:", _actualCash, true, true);
-                if (_transferredAmount > 0)
-                {
-                    DrawRecGridRow($"المحول إلى ({_targetSafeName}):", _transferredAmount, true);
-                }
-                DrawRecGridRow("المتبقي كعهدة للوردية التالية:", _remainingInDrawer, true);
-                y += 4;
+                y += 3;
             }
             else
             {
@@ -739,20 +759,21 @@ namespace ChickenDist.Forms
 
                 DrawRecGridRow("المتوقع بالدرج (السيولة الواجبة):", _expectedCash, true, true);
                 DrawRecGridRow("الفعلي بالدرج (المعدود):", _actualCash, true, true);
-            
-                string diffTxt = _difference == 0 ? "0.00 ج (مطابق ✔)" : (_difference < 0 ? $"{_difference:N2} ج (عجز 🔴)" : $"+{_difference:N2} ج (زيادة 🟢)");
-                int diffRh = 22;
-                g.FillRectangle(new SolidBrush(Color.FromArgb(225, 225, 225)), lMargin, y, printableW, diffRh);
-                g.DrawRectangle(new Pen(Color.Black, 1.2f), lMargin, y, printableW, diffRh);
-                g.DrawString("الفرق المحاسبي:", fontBold, Brushes.Black, new RectangleF(lMargin + 110, y, printableW - 112, diffRh), sfRight);
-                g.DrawString(diffTxt, fontBold, Brushes.Black, new RectangleF(lMargin + 2, y, 108, diffRh), sfLeft);
-                y += diffRh + 4;
+            }
 
-                if (!string.IsNullOrWhiteSpace(_deficitReason))
-                {
-                    g.DrawString($"⚠️ سبب العجز: {_deficitReason}", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), sfRight);
-                    y += 20;
-                }
+            // صندوق العجز والزيادة والفرق المحاسبي - يطبع دائماً في تقفيل الدرج
+            string diffTxt = _difference == 0 ? "0.00 ج (مطابق ✔)" : (_difference < 0 ? $"{_difference:N2} ج (عجز 🔴)" : $"+{_difference:N2} ج (زيادة 🟢)");
+            int diffRh = 24;
+            g.FillRectangle(new SolidBrush(Color.FromArgb(235, 235, 235)), lMargin, y, printableW, diffRh);
+            g.DrawRectangle(new Pen(Color.Black, 1.2f), lMargin, y, printableW, diffRh);
+            g.DrawString("الفرق المحاسبي (العجز/الزيادة):", fontBold, Brushes.Black, new RectangleF(lMargin + 110, y, printableW - 112, diffRh), sfRight);
+            g.DrawString(diffTxt, fontBold, Brushes.Black, new RectangleF(lMargin + 2, y, 108, diffRh), sfLeft);
+            y += diffRh + 4;
+
+            if (!string.IsNullOrWhiteSpace(_deficitReason))
+            {
+                g.DrawString($"⚠️ سبب العجز: {_deficitReason}", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), sfRight);
+                y += 20;
             }
 
             // 4. التوريد

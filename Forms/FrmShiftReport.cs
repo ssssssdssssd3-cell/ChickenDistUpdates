@@ -400,8 +400,12 @@ namespace ChickenDist.Forms
                 decimal oc  = sRow["OpeningCash"] != DBNull.Value ? Convert.ToDecimal(sRow["OpeningCash"]) : 0;
 
                 decimal expected = oc + cs + cin - tr - ex;
+                if (status != "Open" && sRow.Table.Columns.Contains("ExpectedCash") && sRow["ExpectedCash"] != DBNull.Value && Convert.ToDecimal(sRow["ExpectedCash"]) != 0)
+                {
+                    expected = Convert.ToDecimal(sRow["ExpectedCash"]);
+                }
                 decimal actual   = sRow["ActualCash"] != DBNull.Value ? Convert.ToDecimal(sRow["ActualCash"]) : expected;
-                decimal diff     = actual - expected;
+                decimal diff     = (status != "Open" && sRow.Table.Columns.Contains("Difference") && sRow["Difference"] != DBNull.Value) ? Convert.ToDecimal(sRow["Difference"]) : (actual - expected);
 
                 lblOpeningCashVal.Text = oc.ToString("N2") + " ج";
                 lblCashSalesVal.Text   = cs.ToString("N2") + " ج";
@@ -424,7 +428,8 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    lblDiffVal.Text = $"{diff:N2} ج (عجز)";
+                    string defReason = sRow.Table.Columns.Contains("DeficitReason") && sRow["DeficitReason"] != DBNull.Value ? sRow["DeficitReason"].ToString() : "";
+                    lblDiffVal.Text = string.IsNullOrWhiteSpace(defReason) ? $"{diff:N2} ج (عجز)" : $"{diff:N2} ج (عجز - {defReason})";
                     lblDiffVal.ForeColor = Theme.Danger;
                 }
 
