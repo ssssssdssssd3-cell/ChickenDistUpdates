@@ -695,31 +695,86 @@ namespace ChickenDist.Forms
             dgSales.AutoGenerateColumns = false;
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleID", DataPropertyName = "SaleID", Visible = false });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy", DataPropertyName = "CreatedBy", Visible = false });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", DataPropertyName = "SaleCode", HeaderText = "رقم الفاتورة", FillWeight = 50f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleDate", DataPropertyName = "SaleDate", HeaderText = "التاريخ والوقت", FillWeight = 75f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd HH:mm" } });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", DataPropertyName = "SaleType", HeaderText = "نوع الفاتورة", FillWeight = 50f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleCode", DataPropertyName = "SaleCode", HeaderText = "رقم الفاتورة", FillWeight = 40f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleDate", DataPropertyName = "SaleDate", HeaderText = "التاريخ والوقت", FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd HH:mm" } });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "SaleType", DataPropertyName = "SaleType", HeaderText = "نوع الفاتورة", FillWeight = 42f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "WarehouseName", DataPropertyName = "WarehouseName", HeaderText = "المخزن", FillWeight = 48f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn 
             { 
                 Name = "ClientCode", 
                 DataPropertyName = "ClientCode", 
                 HeaderText = "كود العميل", 
-                FillWeight = 45f,
+                FillWeight = 38f,
                 DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
             });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", DataPropertyName = "ClientName", HeaderText = "اسم العميل", FillWeight = 105f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "DriverName", DataPropertyName = "DriverName", HeaderText = "اسم المندوب", FillWeight = 75f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ClientName", DataPropertyName = "ClientName", HeaderText = "اسم العميل", FillWeight = 85f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "DriverName", DataPropertyName = "DriverName", HeaderText = "المندوب", FillWeight = 60f });
             dgSales.Columns.Add(new DataGridViewTextBoxColumn 
             { 
                 Name = "ItemsCount", 
                 DataPropertyName = "ItemsCount", 
                 HeaderText = "عدد الأصناف", 
-                FillWeight = 45f,
+                FillWeight = 34f,
                 DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
             });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount", DataPropertyName = "TotalAmount", HeaderText = "إجمالي الفاتورة", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount", DataPropertyName = "ReturnAmount", HeaderText = "المسترجع سابقاً", FillWeight = 60f, DefaultCellStyle = new DataGridViewCellStyle { Format = "N2" } });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", DataPropertyName = "CreatedByName", HeaderText = "المستخدم", FillWeight = 80f });
-            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", DataPropertyName = "Notes", HeaderText = "الملاحظات", FillWeight = 110f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "TotalQty", 
+                DataPropertyName = "TotalQty", 
+                HeaderText = "إجمالي القطع", 
+                FillWeight = 38f, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(14, 165, 233), Format = "N2" } 
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "TotalBeforeDiscount", 
+                DataPropertyName = "TotalBeforeDiscount", 
+                HeaderText = "قبل الخصم", 
+                FillWeight = 45f, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Format = "N2" } 
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "DiscountAmount", 
+                DataPropertyName = "DiscountAmount", 
+                HeaderText = "الخصم ✂", 
+                FillWeight = 40f, 
+                DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(249, 115, 22), Font = new Font("Segoe UI", 9f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleRight, Format = "N2" } 
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "TotalAmount", 
+                DataPropertyName = "TotalAmount", 
+                HeaderText = "بعد الخصم (قبل المرتجع)", 
+                FillWeight = 50f, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Format = "N2" } 
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ShippingCharge", 
+                DataPropertyName = "ShippingCharge", 
+                HeaderText = "خدمة شحن", 
+                FillWeight = 36f, 
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Format = "N2" } 
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "ReturnAmount", 
+                DataPropertyName = "ReturnAmount", 
+                HeaderText = "المرتجع ↩", 
+                FillWeight = 40f, 
+                DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2" } 
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "NetAmount", 
+                DataPropertyName = "NetAmount", 
+                HeaderText = "الصافي النهائي ✔", 
+                FillWeight = 48f, 
+                DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleRight, Format = "N2" } 
+            });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", DataPropertyName = "CreatedByName", HeaderText = "القائم بالحركة", FillWeight = 50f });
+            dgSales.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", DataPropertyName = "Notes", HeaderText = "الملاحظات", FillWeight = 70f });
 
             dgSales.CellFormatting += (s, e) =>
             {
@@ -935,6 +990,23 @@ namespace ChickenDist.Forms
                 }
             };
             dgItems.Columns.Add(colOrigPrice);
+
+            // الخصم
+            var colDiscount = new DataGridViewTextBoxColumn
+            {
+                Name = "Discount",
+                HeaderText = "الخصم ✂",
+                ReadOnly = true,
+                FillWeight = 40f,
+                MinimumWidth = 80,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter, 
+                    ForeColor = Color.FromArgb(249, 115, 22),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+                }
+            };
+            dgItems.Columns.Add(colDiscount);
 
             // 9. سعر المرتجع (الصافي بعد احتساب الخصم)
             var colUnitPrice = new DataGridViewTextBoxColumn
@@ -1271,6 +1343,7 @@ namespace ChickenDist.Forms
             dgItems.Rows.Clear();
             dgExchangeNewItems.Rows.Clear();
             if (dgItems.Columns.Contains("OriginalUnitPrice")) dgItems.Columns["OriginalUnitPrice"].Visible = isInvoice;
+            if (dgItems.Columns.Contains("Discount")) dgItems.Columns["Discount"].Visible = isInvoice;
             if (dgItems.Columns.Contains("Color")) dgItems.Columns["Color"].Visible = AppConfig.IsClothing;
             if (dgItems.Columns.Contains("ProductSize")) dgItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
             if (dgExchangeNewItems.Columns.Contains("Color")) dgExchangeNewItems.Columns["Color"].Visible = AppConfig.IsClothing;
@@ -1384,6 +1457,8 @@ namespace ChickenDist.Forms
             row.Cells["PrevReturnedQty"].Value = "0";
             row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
             row.Cells["NewReturnedQty"].Value  = qty;
+            if (row.Cells["OriginalUnitPrice"] != null) row.Cells["OriginalUnitPrice"].Value = price.ToString("N2");
+            if (row.Cells["Discount"] != null) row.Cells["Discount"].Value = "-";
             row.Cells["UnitPrice"].Value       = price.ToString("N2");
             row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
 
@@ -1756,6 +1831,37 @@ namespace ChickenDist.Forms
 
                 dgRow.Cells["OriginalFactor"].Value = invoiceFactor;
                 dgRow.Cells["OriginalUnitPrice"].Value = origUnitPrice.ToString("N2");
+
+                decimal itemDiscPct = dtItems.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(row["DiscountPct"]) : 0m;
+                decimal itemDiscAmt = dtItems.Columns.Contains("DiscountAmt") && row["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(row["DiscountAmt"]) : 0m;
+
+                decimal unitDiscount = Math.Max(0m, origUnitPrice - netUnitPrice);
+                string discText = "-";
+                if (unitDiscount > 0.005m)
+                {
+                    if (itemDiscPct > 0m && Math.Abs(unitDiscount - (origUnitPrice * itemDiscPct / 100m)) < 0.01m)
+                    {
+                        discText = $"{itemDiscPct:0.##}% ({unitDiscount:N2} ج)";
+                    }
+                    else
+                    {
+                        decimal effPct = origUnitPrice > 0m ? Math.Round((unitDiscount / origUnitPrice) * 100m, 1) : 0m;
+                        if (effPct > 0m && effPct < 100m)
+                            discText = $"{unitDiscount:N2} ج ({effPct:0.#}%)";
+                        else
+                            discText = $"{unitDiscount:N2} ج";
+                    }
+                }
+                else if (itemDiscPct > 0m)
+                {
+                    discText = $"{itemDiscPct:0.##}%";
+                }
+                else if (itemDiscAmt > 0m)
+                {
+                    discText = $"{itemDiscAmt:N2} ج";
+                }
+
+                dgRow.Cells["Discount"].Value = discText;
                 dgRow.Cells["NetLineTotal"].Value = lineNetPaid;
                 dgRow.Cells["NetUnitPrice"].Value = netUnitPrice;
                 dgRow.Cells["SoldQtyInSmallest"].Value = soldQtyInSmallest;
@@ -2424,6 +2530,8 @@ namespace ChickenDist.Forms
                     row.Cells["PrevReturnedQty"].Value = "0";
                     row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
                     row.Cells["NewReturnedQty"].Value  = qty;
+                    if (row.Cells["OriginalUnitPrice"] != null) row.Cells["OriginalUnitPrice"].Value = price.ToString("N2");
+                    if (row.Cells["Discount"] != null) row.Cells["Discount"].Value = "-";
                     row.Cells["UnitPrice"].Value       = price.ToString("N2");
                     row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
 
@@ -2504,6 +2612,8 @@ namespace ChickenDist.Forms
                     row.Cells["PrevReturnedQty"].Value = "0";
                     row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
                     row.Cells["NewReturnedQty"].Value  = qty;
+                    if (row.Cells["OriginalUnitPrice"] != null) row.Cells["OriginalUnitPrice"].Value = price.ToString("N2");
+                    if (row.Cells["Discount"] != null) row.Cells["Discount"].Value = "-";
                     row.Cells["UnitPrice"].Value       = price.ToString("N2");
                     row.Cells["TotalPrice"].Value      = (qty * price).ToString("N2");
 
