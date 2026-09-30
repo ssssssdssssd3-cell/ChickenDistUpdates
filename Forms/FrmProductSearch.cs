@@ -115,6 +115,9 @@ namespace ChickenDist.Forms
             this.Shown += (s, e) =>
             {
                 _openedTime = DateTime.Now;
+                dgProducts.ClearSelection();
+                dgProducts.CurrentCell = null;
+                if (btnSelect != null) btnSelect.Enabled = false;
                 txtSearch.Focus();
                 txtSearch.SelectAll();
             };
@@ -280,12 +283,22 @@ namespace ChickenDist.Forms
                 } 
             });
             
-            dgProducts.DoubleClick += DgProducts_DoubleClick;
-            dgProducts.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) SelectAndClose(); };
+            dgProducts.CellDoubleClick += (s, e) => 
+            { 
+                if (e.RowIndex >= 0) 
+                {
+                    dgProducts.Rows[e.RowIndex].Selected = true;
+                    SelectAndClose(); 
+                }
+            };
             dgProducts.KeyDown += DgProducts_KeyDown;
             dgProducts.SelectionChanged += DgProducts_SelectionChanged;
             dgProducts.CellClick += (s, e) =>
             {
+                if (e.RowIndex >= 0)
+                {
+                    dgProducts.Rows[e.RowIndex].Selected = true;
+                }
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgProducts.Columns[e.ColumnIndex].Name == "Unit")
                 {
                     this.BeginInvoke((MethodInvoker)delegate
@@ -382,6 +395,7 @@ namespace ChickenDist.Forms
             var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = Color.Transparent };
             btnSelect = Theme.MakeButton("✅ اختيار وانزال الصنف للفاتورة", 450, 6, 240, 34, Theme.Accent);
             btnSelect.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnSelect.Enabled = false;
 
             var btnAddNewProduct = Theme.MakeButton("➕ إضافة صنف جديد", 270, 6, 165, 34, Theme.Success);
             btnAddNewProduct.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
@@ -543,15 +557,26 @@ namespace ChickenDist.Forms
 
             dgProducts.AutoSizeColumnsMode = oldMode;
             dgProducts.ResumeLayout();
-            if (dgProducts.Rows.Count > 0)
+
+            // إلغاء أي تحديد تلقائي لأول صنف لضمان عدم إنزال أي صنف إلا باختيار صريح من العميل
+            dgProducts.ClearSelection();
+            dgProducts.CurrentCell = null;
+            if (btnSelect != null) btnSelect.Enabled = false;
+            if (txtSelectedQty != null) txtSelectedQty.Text = "1.00";
+            if (txtSelectedSalePrice != null) txtSelectedSalePrice.Text = "0.00";
+            if (txtSelectedPurchasePrice != null) txtSelectedPurchasePrice.Text = "0.00";
+            if (txtSelectedDiscount != null) txtSelectedDiscount.Text = "0.00";
+            if (cboUnits != null) cboUnits.Items.Clear();
+
+            this.BeginInvoke((MethodInvoker)delegate
             {
-                dgProducts.Rows[0].Selected = true;
-                if (txtSelectedQty != null)
+                if (dgProducts != null && dgProducts.SelectedRows.Count > 0 && !dgProducts.Focused)
                 {
-                    txtSelectedQty.Text = "1.00";
+                    dgProducts.ClearSelection();
+                    dgProducts.CurrentCell = null;
+                    if (btnSelect != null) btnSelect.Enabled = false;
                 }
-                UpdateUnitsCombo();
-            }
+            });
         }
 
         private void ColorStockCell(int rowIdx, decimal stock)
@@ -636,51 +661,73 @@ namespace ChickenDist.Forms
                 if (dgProducts.Rows.Count > 0)
                 {
                     dgProducts.Focus();
+                    dgProducts.Rows[0].Selected = true;
                     dgProducts.CurrentCell = dgProducts.Rows[0].Cells[1];
                     e.Handled = true;
                 }
             }
             else if (e.KeyCode == Keys.Enter)
             {
-                if ((DateTime.Now - _openedTime).TotalMilliseconds < 250)
+                if ((DateTime.Now - _openedTime).TotalMilliseconds < 300)
                 {
                     e.Handled = true;
                     return;
                 }
 
-                if (dgProducts.Rows.Count > 0)
+                if (dgProducts.Rows.Count == 1)
                 {
-                    if (string.IsNullOrWhiteSpace(txtSearch.Text))
-                    {
-                        dgProducts.Focus();
-                        dgProducts.CurrentCell = dgProducts.Rows[0].Cells[1];
-                        e.Handled = true;
-                    }
-                    else
+                    // صنف وحيد مطابق تماماً لنتيجة البحث أو الباركود
+                    dgProducts.Rows[0].Selected = true;
+                    SelectAndClose();
+                    e.Handled = true;
+                }
+                else if (dgProducts.Rows.Count > 1)
+                {
+                    if (dgProducts.SelectedRows.Count > 0)
                     {
                         SelectAndClose();
                         e.Handled = true;
                     }
+                    else
+                    {
+                        // نقل التركيز للجدول ليتيح للمستخدم التحديد بنفسه بالأسهم أو الماوس دون فرض صنف
+                        dgProducts.Focus();
+                        e.Handled = true;
+                    }
                 }
             }
-        }
-
-        private void DgProducts_DoubleClick(object sender, EventArgs e)
-        {
-            SelectAndClose();
         }
 
         private void DgProducts_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
-                SelectAndClose();
-                e.Handled = true;
+                if (dgProducts.SelectedRows.Count > 0 || (dgProducts.CurrentRow != null && dgProducts.CurrentRow.Selected))
+                {
+                    SelectAndClose();
+                    e.Handled = true;
+                }
             }
         }
 
         private void DgProducts_SelectionChanged(object sender, EventArgs e)
         {
+            bool hasSelection = dgProducts.SelectedRows.Count > 0 || (dgProducts.CurrentRow != null && dgProducts.CurrentRow.Selected);
+            if (btnSelect != null)
+            {
+                btnSelect.Enabled = hasSelection;
+            }
+
+            if (!hasSelection)
+            {
+                if (txtSelectedQty != null) txtSelectedQty.Text = "1.00";
+                if (txtSelectedSalePrice != null) txtSelectedSalePrice.Text = "0.00";
+                if (txtSelectedPurchasePrice != null) txtSelectedPurchasePrice.Text = "0.00";
+                if (txtSelectedDiscount != null) txtSelectedDiscount.Text = "0.00";
+                if (cboUnits != null) cboUnits.Items.Clear();
+                return;
+            }
+
             if (txtSelectedQty != null)
             {
                 txtSelectedQty.Text = "1.00";
@@ -919,18 +966,26 @@ namespace ChickenDist.Forms
 
         private void BtnSelect_Click(object sender, EventArgs e)
         {
+            if (dgProducts.SelectedRows.Count == 0 && (dgProducts.CurrentRow == null || !dgProducts.CurrentRow.Selected))
+            {
+                MessageBox.Show("يرجى تحديد الصنف أولاً من جدول البحث بالنقر عليه!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             SelectAndClose();
         }
 
         private void SelectAndClose()
         {
+            if ((DateTime.Now - _openedTime).TotalMilliseconds < 300)
+            {
+                return;
+            }
+
             DataGridViewRow row = null;
             if (dgProducts.SelectedRows.Count > 0)
                 row = dgProducts.SelectedRows[0];
-            else if (dgProducts.CurrentRow != null)
+            else if (dgProducts.CurrentRow != null && dgProducts.CurrentRow.Selected)
                 row = dgProducts.CurrentRow;
-            else if (dgProducts.Rows.Count > 0)
-                row = dgProducts.Rows[0];
 
             if (row == null || row.Cells["ProductID"].Value == null || Convert.ToInt32(row.Cells["ProductID"].Value) <= 0)
                 return;
