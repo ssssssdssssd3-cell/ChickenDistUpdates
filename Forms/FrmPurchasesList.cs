@@ -585,6 +585,13 @@ namespace ChickenDist.Forms
 				if (row.Table.Columns.Contains("DiscountAmt") && row["DiscountAmt"] != DBNull.Value)
 					itemDiscAmt = Convert.ToDecimal(row["DiscountAmt"]);
 
+				decimal itemUnitPrice = row.Table.Columns.Contains("UnitPrice") && row["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(row["UnitPrice"]) : 0m;
+				decimal itemSalePrice = row.Table.Columns.Contains("SuggestedSalePrice") && row["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(row["SuggestedSalePrice"]) : 0m;
+				if (itemDiscPct == 0m && itemSalePrice > 0m && itemUnitPrice > 0m && itemSalePrice >= itemUnitPrice)
+				{
+					itemDiscPct = Math.Round((itemSalePrice - itemUnitPrice) / itemSalePrice * 100m, 2);
+				}
+
 				string discText = "-";
 				if (itemDiscPct > 0) discText = $"{itemDiscPct:0.##}%";
 				else if (itemDiscAmt > 0) discText = itemDiscAmt.ToString("N2");

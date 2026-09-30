@@ -1947,7 +1947,18 @@ namespace ChickenDist.Forms
                 }
             }
 
-            // سعر الشراء هو السعر الفعلي المدخل أو المسجل ولا يشتق من سعر البيع ولا يعامل هامش الربح كخصم
+            if (disc > 0 && defaultSalePrice > 0 && defaultPrice <= 0)
+            {
+                defaultPrice = Math.Round(defaultSalePrice * (1m - disc / 100m), 2);
+            }
+            else if (disc > 0 && defaultSalePrice > 0 && Math.Abs((defaultSalePrice - defaultPrice) / defaultSalePrice * 100m - disc) > 0.01m)
+            {
+                defaultPrice = Math.Round(defaultSalePrice * (1m - disc / 100m), 2);
+            }
+            else if (defaultSalePrice > 0 && defaultPrice > 0 && defaultPrice < defaultSalePrice && disc == 0)
+            {
+                disc = Math.Round((defaultSalePrice - defaultPrice) / defaultSalePrice * 100m, 2);
+            }
 
             // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم (لا يدمج إذا كان نشاط محمول أو يوجد سيريال محدد للصنف)
             bool allowMerge = (AppConfig.BusinessType != "Mobiles");
@@ -2542,6 +2553,20 @@ namespace ChickenDist.Forms
                 dto.UnitPrice = majorCost;
             }
 
+            decimal sellVal = dto.SuggestedSalePrice ?? 0m;
+            if (sellVal > 0m && dto.UnitPrice > 0m && sellVal >= dto.UnitPrice)
+            {
+                dto.DiscountPct = Math.Round((sellVal - dto.UnitPrice) / sellVal * 100m, 2);
+            }
+            else if (sellVal > 0m && dto.DiscountPct > 0m && dto.UnitPrice <= 0m)
+            {
+                dto.UnitPrice = Math.Round(sellVal * (1m - dto.DiscountPct / 100m), 2);
+            }
+            else
+            {
+                dto.DiscountPct = 0m;
+            }
+
             // تحديث الجدول
             row.Cells["DiscountPct"].Value = dto.DiscountPct.ToString("F2");
             row.Cells["UnitPrice"].Value = dto.UnitPrice.ToString("F2");
@@ -2711,6 +2736,16 @@ namespace ChickenDist.Forms
                 {
                     item.UnitPrice = p;
                     decimal sell = item.SuggestedSalePrice ?? 0m;
+                    if (sell > 0 && sell >= p)
+                    {
+                        item.DiscountPct = Math.Round((sell - p) / sell * 100m, 2);
+                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
+                    }
+                    else if (sell > 0 && p > sell)
+                    {
+                        item.DiscountPct = 0m;
+                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = "0.00";
+                    }
                     decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                     dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
@@ -2725,6 +2760,11 @@ namespace ChickenDist.Forms
                     item.DiscountPct = d;
                     item.DiscountAmt = 0m; // مسح القيمة المباشرة عند وجود نسبة
                     decimal sell = item.SuggestedSalePrice ?? 0m;
+                    if (sell > 0)
+                    {
+                        item.UnitPrice = Math.Round(sell * (1m - d / 100m), 2);
+                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
+                    }
                     decimal buy = item.UnitPrice;
                     decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
@@ -2738,6 +2778,16 @@ namespace ChickenDist.Forms
                 if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
                 {
                     item.SuggestedSalePrice = s;
+                    if (item.DiscountPct > 0)
+                    {
+                        item.UnitPrice = Math.Round(s * (1m - item.DiscountPct / 100m), 2);
+                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
+                    }
+                    else if (item.UnitPrice > 0 && s >= item.UnitPrice)
+                    {
+                        item.DiscountPct = Math.Round((s - item.UnitPrice) / s * 100m, 2);
+                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
+                    }
                     decimal buy = item.UnitPrice;
                     decimal margin = buy > 0 ? (s - buy) / buy * 100m : 0m;
                     dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
@@ -4253,6 +4303,15 @@ namespace ChickenDist.Forms
             _items.Clear();
             foreach (DataRow iRow in itemsDt.Rows)
             {
+                decimal itemDiscPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m;
+                decimal itemUnitPrice = Convert.ToDecimal(iRow["UnitPrice"]);
+                decimal? itemSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null;
+
+                if (itemDiscPct == 0m && itemSalePrice.HasValue && itemSalePrice.Value > 0m && itemUnitPrice > 0m && itemSalePrice.Value >= itemUnitPrice)
+                {
+                    itemDiscPct = Math.Round((itemSalePrice.Value - itemUnitPrice) / itemSalePrice.Value * 100m, 2);
+                }
+
                 _items.Add(new PurchaseItemDTO
                 {
                     ProductID   = Convert.ToInt32(iRow["ProductID"]),
@@ -4260,10 +4319,10 @@ namespace ChickenDist.Forms
                     ProductName = iRow["ProductName"].ToString(),
                     Quantity    = Convert.ToDecimal(iRow["Quantity"]),
                     BonusQuantity = iRow.Table.Columns.Contains("BonusQuantity") && iRow["BonusQuantity"] != DBNull.Value ? Convert.ToDecimal(iRow["BonusQuantity"]) : 0m,
-                    UnitPrice   = Convert.ToDecimal(iRow["UnitPrice"]),
-                    DiscountPct = iRow.Table.Columns.Contains("DiscountPct") && iRow["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountPct"]) : 0m,
+                    UnitPrice   = itemUnitPrice,
+                    DiscountPct = itemDiscPct,
                     DiscountAmt = iRow.Table.Columns.Contains("DiscountAmt") && iRow["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(iRow["DiscountAmt"]) : 0m,
-                    SuggestedSalePrice = iRow["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(iRow["SuggestedSalePrice"]) : (decimal?)null,
+                    SuggestedSalePrice = itemSalePrice,
                     UnitName = iRow.Table.Columns.Contains("UnitName") && iRow["UnitName"] != DBNull.Value ? iRow["UnitName"].ToString() : null,
                     Factor = iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value ? Convert.ToDecimal(iRow["Factor"]) : 1.0m,
                     ExpiryDate = iRow.Table.Columns.Contains("ExpiryDate") && iRow["ExpiryDate"] != DBNull.Value ? Convert.ToDateTime(iRow["ExpiryDate"]) : (DateTime?)null,

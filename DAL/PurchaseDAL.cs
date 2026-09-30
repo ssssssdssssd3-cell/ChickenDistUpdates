@@ -47,8 +47,6 @@ namespace ChickenDist.DAL
                 decimal gross = Quantity * UnitPrice;
                 if (DiscountAmt > 0m)
                     return Math.Round(Math.Max(0m, gross - DiscountAmt), 2);
-                if (DiscountPct > 0m)
-                    return Math.Round(Math.Max(0m, gross * (1m - DiscountPct / 100m)), 2);
                 return Math.Round(gross, 2);
             }
         }
@@ -1410,9 +1408,7 @@ namespace ChickenDist.DAL
                     Quantity = Convert.ToDecimal(row["Quantity"]),
                     BonusQuantity = Convert.ToDecimal(row["BonusQuantity"]),
                     UnitPrice = Convert.ToDecimal(row["UnitPrice"]),
-                    LineDiscount = Convert.ToDecimal(row["DiscountAmt"]) > 0m
-                        ? Convert.ToDecimal(row["DiscountAmt"])
-                        : (Convert.ToDecimal(row["DiscountPct"]) > 0m ? Math.Round(Convert.ToDecimal(row["Quantity"]) * Convert.ToDecimal(row["UnitPrice"]) * Convert.ToDecimal(row["DiscountPct"]) / 100m, 2) : 0m),
+                    LineDiscount = 0m,
                     UnitName = row["UnitName"]?.ToString() ?? "",
                     Factor = Convert.ToDecimal(row["Factor"]) > 0m ? Convert.ToDecimal(row["Factor"]) : 1.0m,
                 };
@@ -1420,7 +1416,9 @@ namespace ChickenDist.DAL
                 item.BaseQuantity = (item.Quantity + item.BonusQuantity) * item.Factor;
 
                 decimal gross = item.Quantity * item.UnitPrice;
-                decimal afterLineDisc = Math.Max(0m, gross - item.LineDiscount);
+                decimal storedLineTotal = row.Table.Columns.Contains("TotalPrice") && row["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(row["TotalPrice"]) : gross;
+                decimal afterLineDisc = storedLineTotal > 0m ? storedLineTotal : gross;
+                item.LineDiscount = Math.Max(0m, gross - afterLineDisc);
                 decimal invTotal = Convert.ToDecimal(row["InvoiceTotal"]);
                 decimal lineRatio = invTotal > 0m ? (afterLineDisc / invTotal) : 1.0m;
 
