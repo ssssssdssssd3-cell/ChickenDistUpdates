@@ -1355,62 +1355,11 @@ namespace ChickenDist.Forms
         {
             if (keyData == Keys.Enter || keyData == Keys.Return)
             {
-                // أولوية مطلقة: إذا كان المستخدم يحرر خلية في جدول الأصناف (سعر الشراء، الكمية، الخصم، إلخ)
+                // أولوية مطلقة: إذا كان المستخدم يحرر خلية في جدول الأصناف (سعر الشراء، الكمية، الخصم، إلخ) أو الجدول في بؤرة التركيز
                 // يتم تثبيت القيمة والتنقل للخلية التالية دون أي اعتراض من بافر الاسكنر ودون إلغاء التعديل
-                if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null))
+                if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null || dgItems.Focused))
                 {
                     _barcodeBuffer = "";
-                    dgItems.EndEdit();
-                    var cur = dgItems.CurrentCell;
-                    if (cur != null && cur.RowIndex >= 0 && cur.RowIndex < dgItems.Rows.Count)
-                    {
-                        for (int col = cur.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
-                        {
-                            if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
-                            {
-                                dgItems.CurrentCell = dgItems.Rows[cur.RowIndex].Cells[col];
-                                dgItems.BeginEdit(true);
-                                return true;
-                            }
-                        }
-                        if (txtBarcode != null)
-                        {
-                            this.ActiveControl = txtBarcode;
-                            txtBarcode.Focus();
-                        }
-                        else
-                        {
-                            cboProduct.Focus();
-                        }
-                        return true;
-                    }
-                }
-
-                // فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer) فقط عند عدم تحرير خلايا الجدول
-                if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 3)
-                {
-                    double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
-                    if (totalMs < _barcodeBuffer.Length * 55 + 120)
-                    {
-                        string scannedCode = _barcodeBuffer.Trim();
-                        _barcodeBuffer = "";
-
-                        var (pCode, mQty) = ParseBarcodeMultiplier(scannedCode);
-                        ProcessScannedBarcode(pCode, mQty);
-                        if (txtBarcode != null)
-                        {
-                            txtBarcode.Clear();
-                            this.ActiveControl = txtBarcode;
-                            txtBarcode.Focus();
-                        }
-                        return true;
-                    }
-                    _barcodeBuffer = "";
-                }
-
-                // إذا كان التركيز في الجدول ولكن ليس في وضع تعديل خلية
-                if (dgItems != null && dgItems.Focused)
-                {
                     dgItems.EndEdit();
                     var cur = dgItems.CurrentCell;
                     if (cur != null && cur.RowIndex >= 0 && cur.RowIndex < dgItems.Rows.Count)
@@ -1448,6 +1397,28 @@ namespace ChickenDist.Forms
                         }
                         return true;
                     }
+                }
+
+                // فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer) فقط عند عدم التركيز على خلايا الجدول
+                if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 3)
+                {
+                    double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
+                    if (totalMs < _barcodeBuffer.Length * 55 + 120)
+                    {
+                        string scannedCode = _barcodeBuffer.Trim();
+                        _barcodeBuffer = "";
+
+                        var (pCode, mQty) = ParseBarcodeMultiplier(scannedCode);
+                        ProcessScannedBarcode(pCode, mQty);
+                        if (txtBarcode != null)
+                        {
+                            txtBarcode.Clear();
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                        }
+                        return true;
+                    }
+                    _barcodeBuffer = "";
                 }
             }
 
