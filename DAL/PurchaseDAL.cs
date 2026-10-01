@@ -1107,6 +1107,8 @@ namespace ChickenDist.DAL
                     SELECT 
                         pi.ProductID,
                         p.SupplierID,
+                        p.ClientID,
+                        p.PurchaseSource,
                         pi.UnitPrice,
                         p.PurchaseDate,
                         ROW_NUMBER() OVER(PARTITION BY pi.ProductID ORDER BY p.PurchaseDate DESC, p.PurchaseID DESC) AS rn
@@ -1118,7 +1120,11 @@ namespace ChickenDist.DAL
                 SELECT 
                     pr.ProductCode,
                     pr.ProductName,
-                    ISNULL(s.SupplierName, N'---') AS SupplierName,
+                    CASE 
+                        WHEN cur.PurchaseSource = 'Client' OR (cur.SupplierID IS NULL AND cur.ClientID IS NOT NULL) THEN (N'👤 ' + ISNULL(c.ClientName, N'عميل'))
+                        WHEN s.SupplierName IS NOT NULL THEN s.SupplierName
+                        ELSE N'مورد نقدي/عام'
+                    END AS SupplierName,
                     cur.UnitPrice AS LastPrice,
                     prev.UnitPrice AS PreviousPrice,
                     CASE 
@@ -1129,9 +1135,10 @@ namespace ChickenDist.DAL
                 FROM RankedPurchases cur
                 JOIN Products pr ON cur.ProductID = pr.ProductID
                 LEFT JOIN Suppliers s ON cur.SupplierID = s.SupplierID
+                LEFT JOIN Clients c ON cur.ClientID = c.ClientID
                 LEFT JOIN RankedPurchases prev ON cur.ProductID = prev.ProductID AND prev.rn = 2
                 WHERE cur.rn = 1
-                  AND (@kw IS NULL OR pr.ProductName LIKE N'%' + @kw + N'%' OR pr.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%')
+                  AND (@kw IS NULL OR pr.ProductName LIKE N'%' + @kw + N'%' OR pr.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR c.ClientName LIKE N'%' + @kw + N'%')
                 ORDER BY cur.PurchaseDate DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
@@ -1154,7 +1161,8 @@ namespace ChickenDist.DAL
                     (p.TotalAmount - ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.RefID = p.PurchaseID AND st.TransType = 'Payment'), 0)) AS RemainingAmount,
                     (s.OpeningBalance + 
                      ISNULL((SELECT SUM(st.Credit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0) - 
-                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                     ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0)) AS CurrentSupplierBalance
+                FROM Purchases p
                 WHERE p.IsPosted = 1
                   AND p.PurchaseType = 'Credit'
                   AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
