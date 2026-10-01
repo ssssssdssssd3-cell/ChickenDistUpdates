@@ -56,12 +56,8 @@ namespace ChickenDist.Forms
 		private void InitUI()
 		{
 			Text = "سجل المبيعات";
-			base.Size = new Size(1366, 768);
-			base.MinimumSize = new Size(1024, 600);
+			base.Size = new Size(1300, 750);
 			base.StartPosition = FormStartPosition.CenterScreen;
-			this.WindowState = FormWindowState.Maximized;
-			this.AutoScaleMode = AutoScaleMode.Dpi;
-			this.AutoScaleDimensions = new SizeF(96F, 96F);
 			RightToLeft = RightToLeft.Yes;
 			RightToLeftLayout = true;
 			BackColor = Theme.BgMain;
@@ -704,16 +700,19 @@ namespace ChickenDist.Forms
 			tblContent.Controls.Add(tblDetail, 0, 1);
 
 			bool canViewProfit = Session.CanViewCost("SalesList");
+			bool canViewTotals = Session.IsAdmin || (Session.Role != null && (Session.Role.Contains("مدير") || Session.Role.Contains("Admin"))) || Session.CanViewSalesTotals("SalesList");
+
 			TableLayoutPanel tableLayoutPanel = new TableLayoutPanel
 			{
-				Dock = DockStyle.Bottom,
-				Height = 70,
+				Dock = DockStyle.Fill,
+				Height = 72,
 				ColumnCount = canViewProfit ? 9 : 8,
 				RowCount = 1,
 				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(6, 4, 6, 4),
-				Visible = Session.CanViewSalesTotals("SalesList")
+				Margin = new Padding(0),
+				Visible = canViewTotals
 			};
 			float colWidthPct = canViewProfit ? (100f / 9f) : 12.5f;
 			for (int i = 0; i < (canViewProfit ? 9 : 8); i++)
@@ -734,15 +733,31 @@ namespace ChickenDist.Forms
 				lblProfitSummary          = AddDashboardCard(tableLayoutPanel, "إجمالي الأرباح: 💰", "0.00 ج", Color.FromArgb(16, 185, 129), 8);
 			}
 
-			// ترتيب صحيح للرسو والـ Z-Order (DockStyle.Fill يجب أن يكون في مقدمة Z-order حتى يحسب التخطيط بعد الفلتر وشريط الإجمالي)
-			base.Controls.Clear();
-			base.Controls.Add(tblContent);
-			base.Controls.Add(tableLayoutPanel);
-			base.Controls.Add(flowLayoutPanel);
+			// تخطيط رئيسي متكامل (TableLayoutPanel) يضمن ظهور شريط الإجماليات دائماً ورفعه بمساحة مخصصة وثابتة أسفل الشاشة دون أي قص
+			TableLayoutPanel pnlMainLayout = new TableLayoutPanel
+			{
+				Dock = DockStyle.Fill,
+				ColumnCount = 1,
+				RowCount = 3,
+				RightToLeft = RightToLeft.Yes,
+				BackColor = Theme.BgMain,
+				Margin = new Padding(0),
+				Padding = new Padding(0)
+			};
+			pnlMainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+			pnlMainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));             // الصف 0: شريط أدوات الفلاتر والبحث
+			pnlMainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));        // الصف 1: شبكة الفواتير وتفاصيل الأصناف
+			pnlMainLayout.RowStyles.Add(new RowStyle(canViewTotals ? SizeType.Absolute : SizeType.Absolute, canViewTotals ? 74f : 0f)); // الصف 2: شريط كروت الإجماليات المرفوع والمرئي دائماً
 
-			flowLayoutPanel.SendToBack();
-			tableLayoutPanel.SendToBack();
-			tblContent.BringToFront();
+			flowLayoutPanel.Dock = DockStyle.Fill;
+			tblContent.Dock = DockStyle.Fill;
+
+			pnlMainLayout.Controls.Add(flowLayoutPanel, 0, 0);
+			pnlMainLayout.Controls.Add(tblContent, 0, 1);
+			pnlMainLayout.Controls.Add(tableLayoutPanel, 0, 2);
+
+			base.Controls.Clear();
+			base.Controls.Add(pnlMainLayout);
 
 			Theme.ApplyFormRTL(this);
 		}
@@ -753,14 +768,15 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Fill,
 				BackColor = Theme.BgCard,
-				Padding = new Padding(5)
+				Padding = new Padding(4, 3, 4, 3),
+				Margin = new Padding(2)
 			};
 			Label value = new Label
 			{
 				Text = title,
 				Dock = DockStyle.Top,
 				Height = 18,
-				Font = new Font("Segoe UI", 9f),
+				Font = new Font("Segoe UI", 8.5f),
 				ForeColor = Theme.TextSub,
 				TextAlign = ContentAlignment.TopRight
 			};
@@ -768,7 +784,7 @@ namespace ChickenDist.Forms
 			{
 				Text = val,
 				Dock = DockStyle.Fill,
-				Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+				Font = new Font("Segoe UI", 12f, FontStyle.Bold),
 				ForeColor = valColor,
 				TextAlign = ContentAlignment.BottomRight
 			};
