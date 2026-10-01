@@ -1349,7 +1349,13 @@ namespace ChickenDist.Forms
 
         private void InitUI(string transType, int refID)
         {
-            string titleText = transType == "Sale" ? $"تفاصيل أصناف فاتورة البيع رقم: #{refID}" : $"تفاصيل أصناف المرتجع رقم: #{refID}";
+            string titleText = $"تفاصيل أصناف العملية رقم: #{refID}";
+            if (transType == "Sale") titleText = $"تفاصيل أصناف فاتورة البيع رقم: #{refID}";
+            else if (transType == "Return") titleText = $"تفاصيل أصناف مرتجع المبيعات رقم: #{refID}";
+            else if (transType == "Purchase" || transType == "PurchaseCash") titleText = $"تفاصيل أصناف فاتورة المشتريات رقم: #{refID}";
+            else if (transType == "PurchaseReturn") titleText = $"تفاصيل أصناف مرتجع المشتريات رقم: #{refID}";
+            else if (transType == "ClientPurchase") titleText = $"تفاصيل أصناف الشراء من العميل رقم: #{refID}";
+
             this.Text = titleText;
             this.Size = new Size(580, 420);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -1438,6 +1444,22 @@ namespace ChickenDist.Forms
                     FROM ReturnItems ri
                     JOIN Products p ON ri.ProductID = p.ProductID
                     WHERE ri.ReturnID = @id", DbHelper.P("@id", refID));
+            }
+            else if (transType == "Purchase" || transType == "PurchaseCash" || transType == "ClientPurchase")
+            {
+                dt = DbHelper.Query(@"
+                    SELECT p.ProductName, pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit, pi.UnitPrice, (pi.Quantity * pi.UnitPrice) AS Total
+                    FROM PurchaseItems pi
+                    JOIN Products p ON pi.ProductID = p.ProductID
+                    WHERE pi.PurchaseID = @id", DbHelper.P("@id", refID));
+            }
+            else if (transType == "PurchaseReturn")
+            {
+                dt = DbHelper.Query(@"
+                    SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit, pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS Total
+                    FROM PurchaseReturnItems pri
+                    JOIN Products p ON pri.ProductID = p.ProductID
+                    WHERE pri.ReturnID = @id", DbHelper.P("@id", refID));
             }
 
             if (dt == null) return;

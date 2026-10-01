@@ -338,6 +338,175 @@ namespace ChickenDist.Core
         }
 
         /// <summary>
+        /// توليد ملف PDF متكامل لكشف حساب أصناف وتوريدات المورد (Supplier Itemized Statement)
+        /// </summary>
+        public static string GenerateSupplierItemizedStatementPdf(string supplierName, string supplierPhone, DateTime fromDate, DateTime toDate, DataGridView dgItemized, string outputFilePath = null)
+        {
+            if (string.IsNullOrWhiteSpace(outputFilePath))
+            {
+                string tempDir = Path.Combine(Path.GetTempPath(), "ProSoft_Reports");
+                if (!Directory.Exists(tempDir)) Directory.CreateDirectory(tempDir);
+                string cleanName = MakeValidFileName(supplierName);
+                outputFilePath = Path.Combine(tempDir, $"كشف_حساب_أصناف_مورد_{cleanName}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+            }
+
+            int width = 1240;
+            int height = 1754;
+            var pages = new List<Bitmap>();
+
+            int rowCount = dgItemized != null ? dgItemized.Rows.Count : 0;
+            int rowsPerPage = 28;
+            int totalPages = Math.Max(1, (int)Math.Ceiling((double)rowCount / rowsPerPage));
+
+            var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            var sfRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+            var sfLeft = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+
+            for (int pageIdx = 0; pageIdx < totalPages; pageIdx++)
+            {
+                var bmp = new Bitmap(width, height);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    g.Clear(Color.White);
+
+                    using (var pBorder = new Pen(Color.FromArgb(15, 45, 90), 3f))
+                    using (var pThin = new Pen(Color.FromArgb(203, 213, 225), 1.2f))
+                    using (var brNavy = new SolidBrush(Color.FromArgb(15, 45, 90)))
+                    using (var brSecondary = new SolidBrush(Color.FromArgb(30, 64, 175)))
+                    using (var brAlt = new SolidBrush(Color.FromArgb(248, 250, 252)))
+                    using (var fTitle = new Font("Arial", 22f, FontStyle.Bold))
+                    using (var fSub = new Font("Arial", 13f, FontStyle.Bold))
+                    using (var fBold = new Font("Arial", 11.5f, FontStyle.Bold))
+                    using (var fNorm = new Font("Arial", 10.5f, FontStyle.Regular))
+                    using (var fSmall = new Font("Arial", 9.5f, FontStyle.Regular))
+                    {
+                        g.DrawRectangle(pBorder, 20, 20, width - 40, height - 40);
+
+                        int y = 40;
+
+                        using (var brHeaderGrad = new LinearGradientBrush(new Rectangle(25, 25, width - 50, 100), Color.FromArgb(15, 45, 90), Color.FromArgb(30, 64, 175), LinearGradientMode.Vertical))
+                        {
+                            g.FillRectangle(brHeaderGrad, 25, 25, width - 50, 100);
+                        }
+
+                        string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة للتجارة والتوزيع";
+                        g.DrawString(comp, fTitle, Brushes.White, new RectangleF(30, y, width - 60, 40), sfCenter);
+                        g.DrawString("كشف حساب مشتريات وتوريدات الأصناف التفصيلي (Supplier Itemized Statement)", fSub, Brushes.LightCyan, new RectangleF(30, y + 44, width - 60, 28), sfCenter);
+                        y += 105;
+
+                        // Info Meta Card
+                        g.FillRectangle(brAlt, 40, y, width - 80, 80);
+                        g.DrawRectangle(pThin, 40, y, width - 80, 80);
+                        g.DrawLine(pThin, width / 2, y, width / 2, y + 80);
+
+                        g.DrawString($"المورد: {supplierName}", fBold, brNavy, new RectangleF(width / 2 + 20, y + 10, width / 2 - 60, 28), sfRight);
+                        if (!string.IsNullOrWhiteSpace(supplierPhone))
+                        {
+                            g.DrawString($"هاتف المورد: {supplierPhone}", fNorm, Brushes.Black, new RectangleF(width / 2 + 20, y + 42, width / 2 - 60, 28), sfRight);
+                        }
+
+                        g.DrawString($"الفترة من: {fromDate:yyyy/MM/dd} إلى: {toDate:yyyy/MM/dd}", fBold, Brushes.DarkSlateGray, new RectangleF(50, y + 10, width / 2 - 80, 28), sfRight);
+                        g.DrawString($"تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd hh:mm tt}", fSmall, Brushes.Gray, new RectangleF(50, y + 42, width / 2 - 80, 28), sfRight);
+
+                        y += 95;
+
+                        int tLeft = 40;
+                        int tWidth = width - 80;
+                        int thH = 42;
+
+                        g.FillRectangle(brNavy, tLeft, y, tWidth, thH);
+                        g.DrawRectangle(pBorder, tLeft, y, tWidth, thH);
+
+                        int[] colW = { 100, 370, 80, 110, 100, 120, 120, 160 };
+                        string[] colHeaders = { "كود الصنف", "اسم الصنف", "الوحدة", "المشتريات", "المرتجع", "صافي الكمية", "متوسط السعر", "صافي المبلغ (ج)" };
+
+                        int curX = tLeft + tWidth;
+                        for (int c = 0; c < colHeaders.Length; c++)
+                        {
+                            curX -= colW[c];
+                            g.DrawString(colHeaders[c], fBold, Brushes.White, new RectangleF(curX, y + 8, colW[c], thH - 8), sfCenter);
+                            if (c > 0) g.DrawLine(Pens.White, curX, y, curX, y + thH);
+                        }
+                        y += thH;
+
+                        int startRow = pageIdx * rowsPerPage;
+                        int endRow = Math.Min(rowCount, startRow + rowsPerPage);
+                        int rowH = 36;
+                        bool alt = false;
+
+                        for (int r = startRow; r < endRow; r++)
+                        {
+                            var dgr = dgItemized.Rows[r];
+                            if (alt) g.FillRectangle(brAlt, tLeft, y, tWidth, rowH);
+                            g.DrawRectangle(pThin, tLeft, y, tWidth, rowH);
+
+                            string code = dgr.Cells[0].Value?.ToString() ?? "";
+                            string name = dgr.Cells[1].Value?.ToString() ?? "";
+                            string unit = dgr.Cells[2].Value?.ToString() ?? "";
+                            string pur  = dgr.Cells[3].Value?.ToString() ?? "0";
+                            string ret  = dgr.Cells[4].Value?.ToString() ?? "0";
+                            string netQ = dgr.Cells[5].Value?.ToString() ?? "0";
+                            string avgP = dgr.Cells[6].Value?.ToString() ?? "0";
+                            string netV = dgr.Cells[7].Value?.ToString() ?? "0";
+
+                            string[] rowVals = { code, name, unit, pur, ret, netQ, avgP, netV };
+
+                            curX = tLeft + tWidth;
+                            for (int c = 0; c < rowVals.Length; c++)
+                            {
+                                curX -= colW[c];
+                                var sf = (c == 1) ? sfRight : sfCenter;
+                                var brush = (c == 7) ? brSecondary : Brushes.Black;
+                                var font = (c == 7 || c == 1) ? fBold : fNorm;
+                                g.DrawString(rowVals[c], font, brush, new RectangleF(curX + 4, y + 6, colW[c] - 8, rowH - 6), sf);
+                                if (c > 0) g.DrawLine(pThin, curX, y, curX, y + rowH);
+                            }
+
+                            y += rowH;
+                            alt = !alt;
+                        }
+
+                        if (pageIdx == totalPages - 1)
+                        {
+                            y += 15;
+                            decimal grandQty = 0m, grandVal = 0m;
+                            if (dgItemized != null)
+                            {
+                                foreach (DataGridViewRow dgr in dgItemized.Rows)
+                                {
+                                    if (decimal.TryParse(dgr.Cells[5].Value?.ToString(), out decimal q)) grandQty += q;
+                                    string vStr = (dgr.Cells[7].Value?.ToString() ?? "").Replace("ج", "").Trim();
+                                    if (decimal.TryParse(vStr, out decimal v)) grandVal += v;
+                                }
+                            }
+
+                            g.FillRectangle(brAlt, tLeft, y, tWidth, 60);
+                            g.DrawRectangle(pBorder, tLeft, y, tWidth, 60);
+
+                            g.DrawString($"عدد الأصناف: {rowCount} صنف", fBold, Brushes.Black, new RectangleF(tLeft + tWidth - 280, y + 16, 260, 28), sfRight);
+                            g.DrawString($"إجمالي كميات التوريد: {grandQty:N2}", fBold, Color.FromArgb(5, 150, 105) != Color.Empty ? new SolidBrush(Color.FromArgb(5, 150, 105)) : Brushes.Green, new RectangleF(tLeft + 450, y + 16, 320, 28), sfCenter);
+                            g.DrawString($"إجمالي قيمة المشتريات: {grandVal:N2} ج.م", fTitle, brNavy, new RectangleF(tLeft + 20, y + 12, 380, 36), sfLeft);
+                        }
+
+                        int footY = height - 70;
+                        g.DrawLine(pThin, 40, footY, width - 40, footY);
+                        g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfCenter);
+                        g.DrawString("✨ تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
+                    }
+                }
+                pages.Add(bmp);
+            }
+
+            SaveBitmapsAsPdf(pages, outputFilePath);
+            sfCenter.Dispose();
+            sfRight.Dispose();
+            sfLeft.Dispose();
+            return outputFilePath;
+        }
+
+        /// <summary>
         /// توليد ملف PDF متكامل لكشف الحساب المالي للعميل (Financial Statement)
         /// </summary>
         public static string GenerateFinancialStatementPdf(string clientName, string clientPhone, DateTime fromDate, DateTime toDate, DataGridView dgStatement, decimal totalSales, decimal totalReturns, decimal totalPayments, decimal runBalance, string outputFilePath = null)

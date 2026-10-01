@@ -1,51 +1,82 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
+using System.IO;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    /// <summary>كشف حساب المورد التفصيلي</summary>
+    /// <summary>
+    /// كشف حساب المورد التفصيلي (الماليات والعمليات + كشف توريدات ومشتريات الأصناف)
+    /// </summary>
     public class FrmSupplierStatement : Form
     {
         private int _supplierID;
         private string _supplierName;
+        private int _initialTab;
+
+        private TabControl tabMain;
+        private TabPage tabFinancial;
+        private TabPage tabItemized;
+
+        // Shared Filter Controls
         private ComboBox cmbSupplierSelector;
         private bool _isLoadingCombo = false;
-        private DataGridView dgStatement;
         private DateTimePicker dtpFrom, dtpTo;
-        private Button btnLoad, btnPrint;
+        private Button btnLoad;
+
+        // Financial Tab Controls
+        private Button btnPrintFinancial, btnWhatsAppFinancial, btnExportFinancialPdf, btnExportFinancialExcel;
+        private DataGridView dgStatement;
         private Label lblPurchases, lblPayments, lblBalance;
         private DataTable _dt;
         private decimal _totalPurchases = 0;
-        private decimal _totalPayments  = 0;
-        private decimal _runBalance     = 0;
+        private decimal _totalReturns = 0;
+        private decimal _totalPayments = 0;
+        private decimal _runBalance = 0;
 
-        public FrmSupplierStatement() : this(0, "") { }
+        // Itemized Tab Controls
+        private DataGridView dgItemized;
+        private DataTable _dtItemized;
+        private TextBox txtItemSearch;
+        private Label lblItemizedCount, lblItemizedTotalQty, lblItemizedTotalAmount;
+        private Button btnPrintItemized, btnWhatsAppItemized, btnExportItemizedPdf, btnExportItemizedExcel;
 
-        public FrmSupplierStatement(int supplierID, string supplierName)
+        public FrmSupplierStatement() : this(0, "", 0) { }
+
+        public FrmSupplierStatement(int supplierID, string supplierName, int initialTab = 0)
         {
-            _supplierID   = supplierID;
+            _supplierID = supplierID;
             _supplierName = supplierName;
+            _initialTab = initialTab;
             InitUI();
             LoadSuppliersCombo();
             LoadStatement();
+            LoadItemizedStatement();
+
+            if (_initialTab == 1 && tabMain != null && tabMain.TabPages.Count > 1)
+            {
+                tabMain.SelectedIndex = 1;
+            }
         }
 
         private void InitUI()
         {
-            this.Text = "كشف حساب المورد - " + (!string.IsNullOrEmpty(_supplierName) ? _supplierName : "اختر المورد");
-            this.Size = new Size(1050, 650);
+            this.Text = "كشف حساب المورد التفصيلي - " + (!string.IsNullOrEmpty(_supplierName) ? _supplierName : "اختر المورد");
+            this.Size = new Size(1100, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            // ===== Filter bar =====
+            // ===== Shared Date & Supplier Filter Bar (Top) =====
             var pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -58,7 +89,7 @@ namespace ChickenDist.Forms
             pnlFilter.Controls.Add(new Label { Text = "🤝 المورد:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 6, 0, 0) });
             cmbSupplierSelector = new ComboBox
             {
-                Width = 240,
+                Width = 230,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 AutoCompleteSource = AutoCompleteSource.ListItems,
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
@@ -130,7 +161,7 @@ namespace ChickenDist.Forms
                 Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
                 Margin = new Padding(2, 2, 0, 0)
             };
-            dtpFrom.ValueChanged += (s, e) => LoadStatement();
+            dtpFrom.ValueChanged += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(dtpFrom);
 
             pnlFilter.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(10, 6, 0, 0) });
@@ -142,191 +173,58 @@ namespace ChickenDist.Forms
                 Value = DateTime.Now,
                 Margin = new Padding(2, 2, 0, 0)
             };
-            dtpTo.ValueChanged += (s, e) => LoadStatement();
+            dtpTo.ValueChanged += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(dtpTo);
 
-            btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
-            btnLoad.Size = new Size(90, 30);
-            btnLoad.Margin = new Padding(10, 0, 0, 0);
-            btnLoad.Click += (s, e) => LoadStatement();
+            btnLoad = Theme.MakeButton("🔄 تحديث العرض", Theme.Accent);
+            btnLoad.Size = new Size(115, 30);
+            btnLoad.Margin = new Padding(12, 0, 0, 0);
+            btnLoad.Click += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(btnLoad);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة", Theme.Primary);
-            btnPrint.Size = new Size(100, 30);
-            btnPrint.Margin = new Padding(8, 0, 0, 0);
-            btnPrint.Click += BtnPrint_Click;
-            pnlFilter.Controls.Add(btnPrint);
-
-            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب", Color.FromArgb(37, 211, 102));
-            btnWhatsApp.Size = new Size(130, 30);
-            btnWhatsApp.Font = Theme.FontBold;
-            btnWhatsApp.ForeColor = Color.White;
-            btnWhatsApp.Margin = new Padding(8, 0, 0, 0);
-            btnWhatsApp.Click += (s, e) =>
-            {
-                if (dgStatement == null || dgStatement.Rows.Count == 0)
-                {
-                    MessageBox.Show("لا توجد حركات مالية لعرضها وإرسالها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                    return;
-                }
-
-                string phone = "";
-                try
-                {
-                    object ph = DbHelper.Scalar("SELECT Phone FROM Suppliers WHERE SupplierID = @id", DbHelper.P("@id", _supplierID));
-                    if (ph != null && ph != DBNull.Value) phone = ph.ToString();
-                }
-                catch { }
-
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"📋 *كشف حساب مورد تفصيلي*");
-                sb.AppendLine($"🏢 {AppConfig.CompanyName}");
-                sb.AppendLine($"👤 المورد: {_supplierName}");
-                sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
-                sb.AppendLine("──────────────────────");
-                sb.AppendLine("📝 *تفاصيل الحركات والمعاملات:*");
-
-                int lineCount = 0;
-                foreach (DataGridViewRow dgr in dgStatement.Rows)
-                {
-                    if (dgr.IsNewRow) continue;
-                    string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
-                    string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 1 ? dgr.Cells[1].Value?.ToString() ?? "" : "");
-                    string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Paid") ? dgr.Cells["Paid"]?.Value?.ToString() ?? "" : "");
-                    string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Purchases") ? dgr.Cells["Purchases"]?.Value?.ToString() ?? "" : "");
-                    string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
-                    string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
-
-                    string amountStr = "";
-                    if (decimal.TryParse(debit, out decimal d) && d > 0) amountStr = $"🟢 مسدد: {d:N2} ج";
-                    else if (decimal.TryParse(credit, out decimal c) && c > 0) amountStr = $"🔴 مشتريات: {c:N2} ج";
-
-                    sb.AppendLine($"• {dtStr} | {typeStr}" + (!string.IsNullOrWhiteSpace(details) ? $" ({details})" : ""));
-                    if (!string.IsNullOrWhiteSpace(amountStr)) sb.AppendLine($"   {amountStr} | 💰 الرصيد: {bal} ج");
-                    else sb.AppendLine($"   💰 الرصيد: {bal} ج");
-
-                    lineCount++;
-                    if (lineCount >= 40 && dgStatement.Rows.Count > 45)
-                    {
-                        sb.AppendLine($"... ومتبقي {dgStatement.Rows.Count - 40} حركة أخرى (راجع كارت الصورة أو ملف الـ PDF المرفق)");
-                        break;
-                    }
-                }
-
-                sb.AppendLine("──────────────────────");
-                sb.AppendLine($"📥 إجمالي المشتريات: {_totalPurchases:N2} ج");
-                sb.AppendLine($"📤 إجمالي المسدد: {_totalPayments:N2} ج");
-                sb.AppendLine("──────────────────────");
-                string balStatus = _runBalance > 0 ? "رصيد مستحق للمورد" : (_runBalance < 0 ? "رصيد دائن لصالحنا" : "الحساب خالص ومطابق تماماً");
-                sb.AppendLine($"💰 *صافي الرصيد: {Math.Abs(_runBalance):N2} ج ({balStatus})*");
-                sb.AppendLine("──────────────────────");
-                sb.AppendLine("مع تحيات إدارة الحسابات 🙏");
-
-                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
-                    this,
-                    phone,
-                    sb.ToString(),
-                    () => ReceiptImageGenerator.GenerateTextCardImage("كشف حساب مورد", sb.ToString()),
-                    "📱 إرسال كشف حساب المورد عبر الواتساب",
-                    () => PdfReportHelper.GenerateSupplierStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance),
-                    () => ReceiptImageGenerator.GenerateDetailedSupplierStatementImages(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance));
-            };
-            pnlFilter.Controls.Add(btnWhatsApp);
-
-            var btnPay = Theme.MakeButton("💸 سداد/صرف نقدية", Color.FromArgb(140, 80, 0));
-            btnPay.Size = new Size(140, 30);
+            var btnPay = Theme.MakeButton("💸 سداد نقدية", Color.FromArgb(140, 80, 0));
+            btnPay.Size = new Size(125, 30);
             btnPay.Margin = new Padding(8, 0, 0, 0);
             btnPay.Click += (s, e) => OpenSupplierPaymentDialog();
             pnlFilter.Controls.Add(btnPay);
 
-            this.Controls.Add(pnlFilter);
+            var btnAdjustment = Theme.MakeButton("⚖️ تسوية حساب", Color.FromArgb(79, 70, 229));
+            btnAdjustment.Size = new Size(130, 30);
+            btnAdjustment.Margin = new Padding(8, 0, 0, 0);
+            btnAdjustment.Click += (s, e) => OpenSupplierAdjustmentDialog();
+            pnlFilter.Controls.Add(btnAdjustment);
 
-            // ===== DataGridView =====
-            dgStatement = new DataGridView
+            // TabControl Setup
+            tabMain = new TabControl
             {
                 Dock = DockStyle.Fill,
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None,
-                RowHeadersVisible = false,
-                AllowUserToAddRows = false,
-                ReadOnly = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                RightToLeft = RightToLeft.Yes,
-                GridColor = Theme.BorderColor,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                DefaultCellStyle = new DataGridViewCellStyle
-                {
-                    BackColor = Theme.BgCard,
-                    ForeColor = Theme.TextMain,
-                    Font = Theme.FontMain,
-                    SelectionBackColor = Theme.Primary,
-                    SelectionForeColor = Color.White
-                },
-                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-                {
-                    BackColor = Theme.Primary,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
-                },
-                EnableHeadersVisualStyles = false
+                Font = Theme.FontMain
             };
 
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate",  HeaderText = "التاريخ والوقت",    FillWeight = 55 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType",  HeaderText = "النوع",             FillWeight = 45 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit",     HeaderText = "مدين (علينا)",      FillWeight = 45 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit",      HeaderText = "دائن (سددنا)",      FillWeight = 45 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance",    HeaderText = "الرصيد الجاري",    FillWeight = 55 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",      HeaderText = "البيان",            FillWeight = 150 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransTypeRaw", Visible = false });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "RefID",        Visible = false });
-            dgStatement.CellDoubleClick += DgStatement_CellDoubleClick;
+            tabFinancial = new TabPage("📑 كشف الحساب المالي (الماليات والعمليات)") { BackColor = Theme.BgMain };
+            tabItemized = new TabPage("📦 كشف حساب أصناف المورد (التوريدات والمشتريات التفصيلية)") { BackColor = Theme.BgMain };
 
-            this.Controls.Add(dgStatement);
+            BuildFinancialTab(tabFinancial);
+            BuildItemizedTab(tabItemized);
 
-            // ===== Footer totals =====
-            var pnlFoot = new Panel
+            tabMain.TabPages.Add(tabFinancial);
+            tabMain.TabPages.Add(tabItemized);
+            Theme.StyleTabControl(tabMain);
+
+            var tblMain = new TableLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                Height = 50,
-                BackColor = Theme.BgCard,
-                Padding = new Padding(8)
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
             };
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 46f));
+            tblMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblMain.Controls.Add(pnlFilter, 0, 0);
+            tblMain.Controls.Add(tabMain, 0, 1);
 
-            lblPurchases = new Label
-            {
-                Text = "إجمالي المشتريات: 0.00 ج",
-                ForeColor = Color.OrangeRed,
-                Location = new Point(680, 13),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold)
-            };
-            lblPayments = new Label
-            {
-                Text = "إجمالي المدفوعات: 0.00 ج",
-                ForeColor = Color.LightGreen,
-                Location = new Point(390, 13),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold)
-            };
-            lblBalance = new Label
-            {
-                Text = "صافي المديونية: 0.00 ج",
-                ForeColor = Theme.Accent,
-                Location = new Point(10, 13),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold)
-            };
-
-            pnlFoot.Controls.AddRange(new Control[] { lblPurchases, lblPayments, lblBalance });
-            
-            this.Controls.Clear();
-            this.Controls.Add(dgStatement);
-            this.Controls.Add(pnlFoot);
-            this.Controls.Add(pnlFilter);
-
-            pnlFilter.SendToBack();
-            pnlFoot.SendToBack();
-            dgStatement.BringToFront();
+            this.Controls.Add(tblMain);
             Theme.ApplyFormRTL(this);
         }
 
@@ -348,11 +246,23 @@ namespace ChickenDist.Forms
                             r["SupplierDisplayInfo"] = string.IsNullOrEmpty(phone) ? $"{r["SupplierName"]} (كود: {code})" : $"{r["SupplierName"]}  |  📱 {phone}  |  (كود: {code})";
                         }
                     }
-                    cmbSupplierSelector.DataSource = dt;
-                    cmbSupplierSelector.DisplayMember = "SupplierDisplayInfo";
-                    cmbSupplierSelector.ValueMember = "SupplierID";
-                    cmbSupplierSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
-                    cmbSupplierSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+
+                    if (cmbSupplierSelector != null)
+                    {
+                        cmbSupplierSelector.DropDownStyle = ComboBoxStyle.DropDown;
+                        try { cmbSupplierSelector.AutoCompleteMode = AutoCompleteMode.None; } catch { }
+
+                        cmbSupplierSelector.DataSource = dt;
+                        cmbSupplierSelector.DisplayMember = "SupplierDisplayInfo";
+                        cmbSupplierSelector.ValueMember = "SupplierID";
+
+                        try
+                        {
+                            cmbSupplierSelector.AutoCompleteSource = AutoCompleteSource.ListItems;
+                            cmbSupplierSelector.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                        }
+                        catch { }
+                    }
                 }
 
                 if (_supplierID > 0)
@@ -363,7 +273,7 @@ namespace ChickenDist.Forms
                 {
                     _supplierID = Convert.ToInt32(dt.Rows[0]["SupplierID"]);
                     _supplierName = dt.Rows[0]["SupplierName"].ToString();
-                    this.Text = "كشف حساب المورد - " + _supplierName;
+                    this.Text = "كشف حساب المورد التفصيلي - " + _supplierName;
                     cmbSupplierSelector.SelectedValue = _supplierID;
                 }
             }
@@ -388,23 +298,180 @@ namespace ChickenDist.Forms
                     {
                         _supplierID = sid;
                         _supplierName = cmbSupplierSelector.Text;
-                        this.Text = "كشف حساب المورد - " + _supplierName;
-                        LoadStatement();
+                        this.Text = "كشف حساب المورد التفصيلي - " + _supplierName;
+                        RefreshAllData();
                     }
                 }
             }
         }
 
+        private void RefreshAllData()
+        {
+            LoadStatement();
+            LoadItemizedStatement();
+        }
+
+        private string GetSupplierPhone()
+        {
+            string phone = "";
+            try
+            {
+                if (_supplierID > 0)
+                {
+                    object phObj = DbHelper.Scalar("SELECT Phone FROM Suppliers WHERE SupplierID = @id", DbHelper.P("@id", _supplierID));
+                    if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString();
+                }
+            }
+            catch { }
+            return phone;
+        }
+
+        // =========================================================================
+        // TAB 1: FINANCIAL STATEMENT (كشف الحساب المالي)
+        // =========================================================================
+        private void BuildFinancialTab(TabPage page)
+        {
+            var pnlTopBar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 40,
+                BackColor = Theme.BgSearchPanel,
+                Padding = new Padding(8, 5, 8, 5)
+            };
+
+            btnPrintFinancial = Theme.MakeButton("🖨️ طباعة كشف الحساب", Color.FromArgb(30, 90, 160));
+            btnPrintFinancial.Size = new Size(160, 28);
+            btnPrintFinancial.Margin = new Padding(5, 0, 0, 0);
+            btnPrintFinancial.Click += BtnPrintFinancial_Click;
+            pnlTopBar.Controls.Add(btnPrintFinancial);
+
+            btnWhatsAppFinancial = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
+            btnWhatsAppFinancial.Size = new Size(165, 28);
+            btnWhatsAppFinancial.Margin = new Padding(10, 0, 0, 0);
+            btnWhatsAppFinancial.Click += BtnWhatsAppFinancial_Click;
+            pnlTopBar.Controls.Add(btnWhatsAppFinancial);
+
+            btnExportFinancialPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+            btnExportFinancialPdf.Size = new Size(125, 28);
+            btnExportFinancialPdf.Margin = new Padding(10, 0, 0, 0);
+            btnExportFinancialPdf.Click += BtnExportFinancialPdf_Click;
+            pnlTopBar.Controls.Add(btnExportFinancialPdf);
+
+            btnExportFinancialExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
+            btnExportFinancialExcel.Size = new Size(125, 28);
+            btnExportFinancialExcel.Margin = new Padding(10, 0, 0, 0);
+            btnExportFinancialExcel.Click += (s, e) => ExportGridToCsv(dgStatement, $"كشف_حساب_مالي_{_supplierName}");
+            pnlTopBar.Controls.Add(btnExportFinancialExcel);
+
+            dgStatement = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                ReadOnly = true,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                RightToLeft = RightToLeft.Yes,
+                GridColor = Theme.BorderColor,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                EnableHeadersVisualStyles = false
+            };
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ والوقت", FillWeight = 55 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "النوع", FillWeight = 40 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit", HeaderText = "مدين (علينا)", FillWeight = 40 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit", HeaderText = "دائن (سددنا)", FillWeight = 40 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد الجاري", FillWeight = 55 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "القائم بالعمل", FillWeight = 50 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "تفاصيل الأصناف والبيان المالي للحساب", FillWeight = 170 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransTypeRaw", Visible = false });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "RefID", Visible = false });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseNotes", Visible = false });
+
+            var btnCol = new DataGridViewButtonColumn
+            {
+                Name = "BtnView",
+                HeaderText = "عرض",
+                Text = "👁️",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 25
+            };
+            dgStatement.Columns.Add(btnCol);
+
+            dgStatement.CellContentClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && dgStatement.Columns[e.ColumnIndex].Name == "BtnView")
+                {
+                    var row = dgStatement.Rows[e.RowIndex];
+                    if (row.Cells["BtnView"] is DataGridViewButtonCell)
+                    {
+                        string typeRaw = row.Cells["TransTypeRaw"].Value?.ToString();
+                        int refID = row.Cells["RefID"].Value != null ? Convert.ToInt32(row.Cells["RefID"].Value) : 0;
+
+                        if ((typeRaw == "Purchase" || typeRaw == "PurchaseCash" || typeRaw == "PurchaseReturn") && refID > 0)
+                        {
+                            var frm = new FrmStatementItemsInfo(typeRaw, refID);
+                            frm.ShowDialog();
+                        }
+                    }
+                }
+            };
+
+            dgStatement.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex < 0) return;
+                var row = dgStatement.Rows[e.RowIndex];
+                string typeRaw = row.Cells["TransTypeRaw"]?.Value?.ToString() ?? "";
+                int refID = row.Cells["RefID"]?.Value != null ? Convert.ToInt32(row.Cells["RefID"].Value) : 0;
+
+                if ((typeRaw == "Purchase" || typeRaw == "PurchaseCash") && refID > 0)
+                {
+                    new FrmPurchase(refID).ShowDialog();
+                    RefreshAllData();
+                }
+                else if (typeRaw == "PurchaseReturn" && refID > 0)
+                {
+                    var frm = new FrmStatementItemsInfo(typeRaw, refID);
+                    frm.ShowDialog();
+                }
+            };
+
+            var pnlFoot = new Panel { Dock = DockStyle.Fill, Height = 46, BackColor = Theme.BgCard, Padding = new Padding(8) };
+            lblBalance = new Label { Text = "صافي المديونية: 0.00 ج", ForeColor = Color.FromArgb(180, 20, 20), Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+            lblPayments = new Label { Text = "إجمالي المسدد: 0.00 ج", ForeColor = Color.FromArgb(15, 120, 50), Location = new Point(270, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            lblPurchases = new Label { Text = "إجمالي المشتريات: 0.00 ج", ForeColor = Color.FromArgb(180, 20, 20), Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            pnlFoot.Controls.AddRange(new Control[] { lblPurchases, lblPayments, lblBalance });
+
+            var tblFin = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            tblFin.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f));
+            tblFin.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblFin.RowStyles.Add(new RowStyle(SizeType.Absolute, 46f));
+            tblFin.Controls.Add(pnlTopBar, 0, 0);
+            tblFin.Controls.Add(dgStatement, 0, 1);
+            tblFin.Controls.Add(pnlFoot, 0, 2);
+
+            page.Controls.Add(tblFin);
+        }
+
         private void LoadStatement()
         {
+            if (dgStatement == null || _supplierID <= 0) return;
             _dt = SupplierDAL.GetStatement(_supplierID, dtpFrom.Value, dtpTo.Value);
             dgStatement.Rows.Clear();
-            _totalPurchases = 0;
-            _totalPayments  = 0;
-
-            // الرصيد السابق قبل بداية الفترة
             decimal prevBalance = SupplierDAL.GetPreviousBalance(_supplierID, dtpFrom.Value);
             _runBalance = prevBalance;
+            _totalPurchases = 0;
+            _totalReturns = 0;
+            _totalPayments = 0;
 
             if (prevBalance != 0)
             {
@@ -414,35 +481,85 @@ namespace ChickenDist.Forms
                     prevBalance > 0 ? prevBalance.ToString("N2") : "",
                     prevBalance < 0 ? Math.Abs(prevBalance).ToString("N2") : "",
                     prevBalance.ToString("N2") + " ج",
+                    "---",
                     "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy"),
-                    "Opening", 0);
+                    "Opening", 0, "");
                 dgStatement.Rows[dgStatement.Rows.Count - 1].DefaultCellStyle.ForeColor = Color.FromArgb(180, 180, 100);
             }
 
             foreach (DataRow r in _dt.Rows)
             {
                 // Credit = مشتريات = علينا (يزيد المديونية)
-                // Debit  = مدفوعات = سددنا (يقلل المديونية)
+                // Debit  = مدفوعات ومرتجعات = سددنا (يقلل المديونية)
                 decimal cred = Convert.ToDecimal(r["Credit"]);
-                decimal deb  = Convert.ToDecimal(r["Debit"]);
-                _runBalance  = _runBalance + cred - deb;
+                decimal deb = Convert.ToDecimal(r["Debit"]);
+                _runBalance = _runBalance + cred - deb;
 
                 string typeStr = r["TransType"].ToString();
                 int refID = r["RefID"] != DBNull.Value ? Convert.ToInt32(r["RefID"]) : 0;
-                string notes = r["Notes"].ToString();
+                string baseNotes = r["Notes"].ToString();
+                string detailedNotes = baseNotes;
 
-                if (typeStr == "Purchase" || typeStr == "PurchaseCash") _totalPurchases += cred;
-                else if (typeStr == "Payment" || typeStr == "PaymentCash") _totalPayments += deb;
+                if ((typeStr == "Purchase" || typeStr == "PurchaseCash") && refID > 0)
+                {
+                    _totalPurchases += cred;
+                    var dtItems = DbHelper.Query(@"
+                        SELECT p.ProductName, pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit
+                        FROM PurchaseItems pi
+                        JOIN Products p ON pi.ProductID = p.ProductID
+                        WHERE pi.PurchaseID = @id", DbHelper.P("@id", refID));
 
-                int rowIdx = dgStatement.Rows.Add(
+                    if (dtItems != null && dtItems.Rows.Count > 0)
+                    {
+                        var itemsList = new List<string>();
+                        foreach (DataRow itemRow in dtItems.Rows)
+                        {
+                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
+                        }
+                        detailedNotes += " [" + string.Join("، ", itemsList) + "]";
+                    }
+                }
+                else if (typeStr == "PurchaseReturn" && refID > 0)
+                {
+                    _totalReturns += deb;
+                    var dtItems = DbHelper.Query(@"
+                        SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit
+                        FROM PurchaseReturnItems pri
+                        JOIN Products p ON pri.ProductID = p.ProductID
+                        WHERE pri.ReturnID = @id", DbHelper.P("@id", refID));
+
+                    if (dtItems != null && dtItems.Rows.Count > 0)
+                    {
+                        var itemsList = new List<string>();
+                        foreach (DataRow itemRow in dtItems.Rows)
+                        {
+                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
+                        }
+                        detailedNotes += " [" + string.Join("، ", itemsList) + "]";
+                    }
+                }
+                else if (typeStr == "Payment" || typeStr == "PaymentCash")
+                {
+                    _totalPayments += deb;
+                }
+
+                string createdBy = r.Table.Columns.Contains("CreatedByName") && r["CreatedByName"] != DBNull.Value ? r["CreatedByName"].ToString() : "---";
+                var rowIdx = dgStatement.Rows.Add(
                     Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
                     TransTypeName(typeStr),
                     cred > 0 ? cred.ToString("N2") : "",
-                    deb  > 0 ? deb.ToString("N2")  : "",
+                    deb > 0 ? deb.ToString("N2") : "",
                     _runBalance.ToString("N2") + " ج",
-                    notes,
+                    createdBy,
+                    detailedNotes,
                     typeStr,
-                    refID);
+                    refID,
+                    baseNotes);
+
+                if ((typeStr != "Purchase" && typeStr != "PurchaseCash" && typeStr != "PurchaseReturn") || refID <= 0)
+                {
+                    dgStatement.Rows[rowIdx].Cells["BtnView"] = new DataGridViewTextBoxCell { Value = "" };
+                }
 
                 var rowStyle = dgStatement.Rows[rowIdx].DefaultCellStyle;
                 if (typeStr == "Purchase" || typeStr == "PurchaseCash")
@@ -455,6 +572,11 @@ namespace ChickenDist.Forms
                     rowStyle.BackColor = Color.FromArgb(235, 250, 240);
                     rowStyle.ForeColor = Color.FromArgb(15, 120, 50);
                 }
+                else if (typeStr == "PurchaseReturn")
+                {
+                    rowStyle.BackColor = Color.FromArgb(255, 248, 235);
+                    rowStyle.ForeColor = Color.FromArgb(180, 80, 20);
+                }
                 else
                 {
                     rowStyle.BackColor = Color.FromArgb(250, 250, 250);
@@ -463,27 +585,11 @@ namespace ChickenDist.Forms
             }
 
             lblPurchases.Text = $"إجمالي المشتريات: {_totalPurchases:N2} ج";
-            lblPayments.Text  = $"إجمالي المدفوعات: {_totalPayments:N2} ج";
-            lblPurchases.ForeColor = Color.FromArgb(180, 30, 30);
-            lblPayments.ForeColor  = Color.FromArgb(15, 120, 50);
-            lblBalance.Text   = _runBalance >= 0
+            lblPayments.Text = $"إجمالي المسدد: {_totalPayments:N2} ج" + (_totalReturns > 0 ? $"  |  إجمالي المرتجع: {_totalReturns:N2} ج" : "");
+            lblBalance.Text = _runBalance >= 0
                 ? $"صافي المديونية للمورد: {_runBalance:N2} ج"
                 : $"رصيد دائن (المورد مدين لنا): {Math.Abs(_runBalance):N2} ج";
-            lblBalance.ForeColor = _runBalance >= 0 ? Color.FromArgb(180, 30, 30) : Color.FromArgb(15, 120, 50);
-        }
-
-        private void DgStatement_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex < 0) return;
-            var row = dgStatement.Rows[e.RowIndex];
-            string typeRaw = row.Cells["TransTypeRaw"]?.Value?.ToString() ?? "";
-            int refID = row.Cells["RefID"]?.Value != null ? Convert.ToInt32(row.Cells["RefID"].Value) : 0;
-
-            if ((typeRaw == "Purchase" || typeRaw == "PurchaseCash") && refID > 0)
-            {
-                new FrmPurchase(refID).ShowDialog();
-                LoadStatement();
-            }
+            lblBalance.ForeColor = _runBalance >= 0 ? Color.FromArgb(180, 20, 20) : Color.FromArgb(15, 120, 50);
         }
 
         private string TransTypeName(string t)
@@ -492,16 +598,382 @@ namespace ChickenDist.Forms
             {
                 case "Purchase": return "فاتورة مشتريات (آجل)";
                 case "PurchaseCash": return "فاتورة مشتريات (نقدي)";
-                case "Payment":  return "دفعة للمورد";
+                case "PurchaseReturn": return "مرتجع مشتريات";
+                case "Payment": return "دفعة للمورد";
                 case "PaymentCash": return "سداد نقدي فوري";
-                case "Opening":  return "رصيد افتتاحي";
+                case "Opening": return "رصيد افتتاحي";
                 case "Discount": return "تسوية خصم";
                 case "Addition": return "تسوية إضافة";
                 default: return t;
             }
         }
 
-        private void BtnPrint_Click(object sender, EventArgs e)
+        // =========================================================================
+        // TAB 2: ITEMIZED SUPPLIER PRODUCT PURCHASES (كشف توريدات أصناف المورد)
+        // =========================================================================
+        private void BuildItemizedTab(TabPage page)
+        {
+            var pnlTopBar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 40,
+                BackColor = Theme.BgSearchPanel,
+                Padding = new Padding(8, 5, 8, 5)
+            };
+
+            pnlTopBar.Controls.Add(new Label { Text = "🔍 تصفية الأصناف:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
+            txtItemSearch = new TextBox { Width = 200, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtItemSearch.TextChanged += (s, e) => FilterAndDisplayItemized();
+            pnlTopBar.Controls.Add(txtItemSearch);
+
+            btnPrintItemized = Theme.MakeButton("🖨️ طباعة كشف أصناف المورد", Color.FromArgb(30, 90, 160));
+            btnPrintItemized.Size = new Size(185, 28);
+            btnPrintItemized.Margin = new Padding(15, 0, 0, 0);
+            btnPrintItemized.Click += BtnPrintItemized_Click;
+            pnlTopBar.Controls.Add(btnPrintItemized);
+
+            btnWhatsAppItemized = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
+            btnWhatsAppItemized.Size = new Size(165, 28);
+            btnWhatsAppItemized.Margin = new Padding(10, 0, 0, 0);
+            btnWhatsAppItemized.Click += BtnWhatsAppItemized_Click;
+            pnlTopBar.Controls.Add(btnWhatsAppItemized);
+
+            btnExportItemizedPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+            btnExportItemizedPdf.Size = new Size(125, 28);
+            btnExportItemizedPdf.Margin = new Padding(10, 0, 0, 0);
+            btnExportItemizedPdf.Click += BtnExportItemizedPdf_Click;
+            pnlTopBar.Controls.Add(btnExportItemizedPdf);
+
+            btnExportItemizedExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
+            btnExportItemizedExcel.Size = new Size(125, 28);
+            btnExportItemizedExcel.Margin = new Padding(10, 0, 0, 0);
+            btnExportItemizedExcel.Click += (s, e) => ExportGridToCsv(dgItemized, $"كشف_توريدات_أصناف_{_supplierName}");
+            pnlTopBar.Controls.Add(btnExportItemizedExcel);
+
+            dgItemized = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                BackgroundColor = Theme.BgCard,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                ReadOnly = true,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                RightToLeft = RightToLeft.Yes,
+                GridColor = Theme.BorderColor,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                DefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.BgCard, ForeColor = Theme.TextMain, Font = Theme.FontMain, SelectionBackColor = Theme.Primary, SelectionForeColor = Color.White },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
+                EnableHeadersVisualStyles = false
+            };
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", FillWeight = 40 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 110 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedQty", HeaderText = "إجمالي المشتريات", FillWeight = 45 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnQty", HeaderText = "إجمالي المرتجع", FillWeight = 45 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetQty", HeaderText = "صافي الكمية الموردة", FillWeight = 55 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "AvgPrice", HeaderText = "متوسط السعر", FillWeight = 45 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetTotal", HeaderText = "صافي المبلغ (ج)", FillWeight = 55 });
+            dgItemized.Columns.Add(new DataGridViewTextBoxColumn { Name = "SharePct", HeaderText = "نسبة المساهمة", FillWeight = 40 });
+
+            var pnlFoot = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                Height = 44,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(12, 8, 12, 8)
+            };
+            lblItemizedCount = new Label { Text = "عدد الأصناف: 0 صنف", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(10, 4, 0, 0) };
+            lblItemizedTotalQty = new Label { Text = "إجمالي توريدات الكميات: 0.00", AutoSize = true, ForeColor = Color.FromArgb(15, 120, 50), Font = Theme.FontBold, Margin = new Padding(30, 4, 0, 0) };
+            lblItemizedTotalAmount = new Label { Text = "إجمالي قيمة مشتريات الأصناف: 0.00 ج", AutoSize = true, ForeColor = Color.FromArgb(20, 70, 150), Font = Theme.FontBold, Margin = new Padding(30, 4, 0, 0) };
+            pnlFoot.Controls.AddRange(new Control[] { lblItemizedCount, lblItemizedTotalQty, lblItemizedTotalAmount });
+
+            var tblItm = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            tblItm.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            tblItm.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblItm.RowStyles.Add(new RowStyle(SizeType.Absolute, 44f));
+            tblItm.Controls.Add(pnlTopBar, 0, 0);
+            tblItm.Controls.Add(dgItemized, 0, 1);
+            tblItm.Controls.Add(pnlFoot, 0, 2);
+
+            page.Controls.Add(tblItm);
+        }
+
+        private void LoadItemizedStatement()
+        {
+            if (_supplierID <= 0) return;
+            _dtItemized = SupplierDAL.GetSupplierItemizedStatement(dtpFrom.Value, dtpTo.Value, _supplierID);
+            FilterAndDisplayItemized();
+        }
+
+        private void FilterAndDisplayItemized()
+        {
+            if (dgItemized == null) return;
+            dgItemized.Rows.Clear();
+            if (_dtItemized == null) return;
+
+            string filter = txtItemSearch != null ? txtItemSearch.Text.Trim() : "";
+
+            decimal grandTotalVal = 0m;
+            decimal grandTotalQty = 0m;
+            foreach (DataRow r in _dtItemized.Rows)
+            {
+                grandTotalVal += Convert.ToDecimal(r["صافي المبلغ"]);
+                grandTotalQty += Convert.ToDecimal(r["صافي الكمية"]);
+            }
+
+            int count = 0;
+            foreach (DataRow r in _dtItemized.Rows)
+            {
+                string code = r["كود الصنف"]?.ToString() ?? "";
+                string name = r["اسم الصنف"]?.ToString() ?? "";
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    if (!code.ToLower().Contains(filter.ToLower()) && !name.ToLower().Contains(filter.ToLower()))
+                        continue;
+                }
+
+                string unit = r["الوحدة"]?.ToString() ?? "قطعة";
+                decimal purchased = Convert.ToDecimal(r["إجمالي المشتريات"]);
+                decimal ret = Convert.ToDecimal(r["إجمالي المرتجع"]);
+                decimal netQty = Convert.ToDecimal(r["صافي الكمية"]);
+                decimal avgPrice = Convert.ToDecimal(r["متوسط السعر"]);
+                decimal netVal = Convert.ToDecimal(r["صافي المبلغ"]);
+
+                double sharePct = grandTotalVal > 0 ? (double)(netVal / grandTotalVal * 100m) : 0.0;
+
+                dgItemized.Rows.Add(
+                    code,
+                    name,
+                    unit,
+                    purchased.ToString("N2"),
+                    ret.ToString("N2"),
+                    netQty.ToString("N2"),
+                    avgPrice.ToString("N2") + " ج",
+                    netVal.ToString("N2") + " ج",
+                    sharePct.ToString("F1") + "%"
+                );
+
+                count++;
+            }
+
+            if (lblItemizedCount != null) lblItemizedCount.Text = $"عدد الأصناف: {count} صنف";
+            if (lblItemizedTotalQty != null) lblItemizedTotalQty.Text = $"إجمالي توريدات الكميات: {grandTotalQty:N2}";
+            if (lblItemizedTotalAmount != null) lblItemizedTotalAmount.Text = $"إجمالي مشتريات الأصناف: {grandTotalVal:N2} ج";
+        }
+
+        private void ExportGridToCsv(DataGridView dg, string fileName)
+        {
+            if (dg == null || dg.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد بيانات للتصدير.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+            using (var sfd = new SaveFileDialog { Filter = "CSV File (*.csv)|*.csv", FileName = fileName + ".csv" })
+            {
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    var sb = new System.Text.StringBuilder();
+                    var headers = new List<string>();
+                    foreach (DataGridViewColumn col in dg.Columns)
+                        if (col.Visible && col.GetType() != typeof(DataGridViewButtonColumn))
+                            headers.Add(col.HeaderText);
+                    sb.AppendLine(string.Join(",", headers));
+
+                    foreach (DataGridViewRow row in dg.Rows)
+                    {
+                        if (row.IsNewRow) continue;
+                        var cells = new List<string>();
+                        foreach (DataGridViewColumn col in dg.Columns)
+                        {
+                            if (col.Visible && col.GetType() != typeof(DataGridViewButtonColumn))
+                            {
+                                string val = row.Cells[col.Index].Value?.ToString() ?? "";
+                                cells.Add($"\"{val.Replace("\"", "\"\"")}\"");
+                            }
+                        }
+                        sb.AppendLine(string.Join(",", cells));
+                    }
+                    System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), System.Text.Encoding.UTF8);
+                    MessageBox.Show("✅ تم تصدير الملف بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void BtnExportFinancialPdf_Click(object sender, EventArgs e)
+        {
+            if (dgStatement == null || dgStatement.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد حركات مالية لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+            using (var sfd = new SaveFileDialog { Filter = "PDF Document (*.pdf)|*.pdf", FileName = $"كشف_حساب_مالي_{_supplierName}_{DateTime.Now:yyyyMMdd}.pdf" })
+            {
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string phone = GetSupplierPhone();
+                        PdfReportHelper.GenerateSupplierStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance, sfd.FileName);
+                        var res = MessageBox.Show("✅ تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        if (res == DialogResult.Yes)
+                        {
+                            try { Process.Start(new ProcessStartInfo(sfd.FileName) { UseShellExecute = true }); } catch { }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تصدير ملف PDF: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void BtnExportItemizedPdf_Click(object sender, EventArgs e)
+        {
+            if (dgItemized == null || dgItemized.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف لتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+            using (var sfd = new SaveFileDialog { Filter = "PDF Document (*.pdf)|*.pdf", FileName = $"كشف_حساب_أصناف_مورد_{_supplierName}_{DateTime.Now:yyyyMMdd}.pdf" })
+            {
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string phone = GetSupplierPhone();
+                        PdfReportHelper.GenerateSupplierItemizedStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgItemized, sfd.FileName);
+                        var res = MessageBox.Show("✅ تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        if (res == DialogResult.Yes)
+                        {
+                            try { Process.Start(new ProcessStartInfo(sfd.FileName) { UseShellExecute = true }); } catch { }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("فشل تصدير ملف PDF: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void BtnWhatsAppFinancial_Click(object sender, EventArgs e)
+        {
+            if (dgStatement == null || dgStatement.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد حركات مالية لعرضها وإرسالها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            string phone = GetSupplierPhone();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"📋 *كشف حساب مورد تفصيلي*");
+            sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+            sb.AppendLine($"🤝 المورد: {_supplierName}");
+            sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine("📝 *تفاصيل الحركات والمعاملات:*");
+
+            int lineCount = 0;
+            foreach (DataGridViewRow dgr in dgStatement.Rows)
+            {
+                if (dgr.IsNewRow) continue;
+                string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
+                string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : "";
+                string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : "";
+                string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : "";
+                string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
+                string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : "";
+
+                string amountStr = "";
+                if (decimal.TryParse(credit, out decimal c) && c > 0) amountStr = $"🔴 مشتريات (علينا): {c:N2} ج";
+                else if (decimal.TryParse(debit, out decimal d) && d > 0) amountStr = $"🟢 مسدد/مرتجع: {d:N2} ج";
+
+                sb.AppendLine($"• {dtStr} | {typeStr}" + (!string.IsNullOrWhiteSpace(details) ? $" ({details})" : ""));
+                if (!string.IsNullOrWhiteSpace(amountStr)) sb.AppendLine($"   {amountStr} | 💰 الرصيد: {bal} ج");
+                else sb.AppendLine($"   💰 الرصيد: {bal} ج");
+
+                lineCount++;
+                if (lineCount >= 40 && dgStatement.Rows.Count > 45)
+                {
+                    sb.AppendLine($"... ومتبقي {dgStatement.Rows.Count - 40} حركة أخرى (راجع كارت الصورة أو ملف الـ PDF المرفق)");
+                    break;
+                }
+            }
+
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine($"📥 إجمالي المشتريات: {_totalPurchases:N2} ج");
+            sb.AppendLine($"📤 إجمالي المسدد: {_totalPayments:N2} ج");
+            if (_totalReturns > 0) sb.AppendLine($"🔄 إجمالي المرتجع: {_totalReturns:N2} ج");
+            sb.AppendLine("──────────────────────");
+            string balStatus = _runBalance > 0 ? "رصيد مستحق للمورد" : (_runBalance < 0 ? "رصيد دائن لصالحنا" : "الحساب خالص ومطابق تماماً");
+            sb.AppendLine($"💰 *صافي الرصيد: {Math.Abs(_runBalance):N2} ج ({balStatus})*");
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine("مع تحيات إدارة الحسابات 🙏");
+
+            WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                this,
+                phone,
+                sb.ToString(),
+                () => ReceiptImageGenerator.GenerateTextCardImage("كشف حساب مورد", sb.ToString()),
+                "📱 إرسال كشف حساب المورد عبر الواتساب",
+                () => PdfReportHelper.GenerateSupplierStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance),
+                () => ReceiptImageGenerator.GenerateDetailedSupplierStatementImages(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance));
+        }
+
+        private void BtnWhatsAppItemized_Click(object sender, EventArgs e)
+        {
+            if (dgItemized == null || dgItemized.Rows.Count == 0)
+            {
+                MessageBox.Show("لا توجد أصناف لعرضها وتصديرها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            string phone = GetSupplierPhone();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"📋 *كشف حساب أصناف وتوريدات المورد*");
+            sb.AppendLine($"🏢 {AppConfig.CompanyName}");
+            sb.AppendLine($"🤝 المورد: {_supplierName}");
+            sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
+            sb.AppendLine("──────────────────────");
+
+            foreach (DataGridViewRow row in dgItemized.Rows)
+            {
+                string name = row.Cells[1].Value?.ToString() ?? "";
+                string unit = row.Cells[2].Value?.ToString() ?? "";
+                string netQty = row.Cells[5].Value?.ToString() ?? "0";
+                string netVal = row.Cells[7].Value?.ToString() ?? "0";
+
+                sb.AppendLine($"• {name}");
+                sb.AppendLine($"  الكمية الموردة: {netQty} {unit} | القيمة: {netVal}");
+            }
+
+            sb.AppendLine("──────────────────────");
+            sb.AppendLine($"📊 {lblItemizedCount.Text}");
+            sb.AppendLine($"📦 {lblItemizedTotalQty.Text}");
+            sb.AppendLine($"💰 {lblItemizedTotalAmount.Text}");
+            sb.AppendLine("──────────────────────");
+
+            WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                this,
+                phone,
+                sb.ToString(),
+                () => ReceiptImageGenerator.GenerateTextCardImage("أصناف المورد", sb.ToString()),
+                "📱 إرسال كشف أصناف المورد عبر الواتساب",
+                () => PdfReportHelper.GenerateSupplierItemizedStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgItemized));
+        }
+
+        private void BtnPrintFinancial_Click(object sender, EventArgs e)
         {
             var pd = new PrintDocument();
             pd.PrintController = new StandardPrintController();
@@ -521,18 +993,18 @@ namespace ChickenDist.Forms
                 var g = ev.Graphics;
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-                var titleFont    = new Font("Arial", 14, FontStyle.Bold);
-                var subTitleFont = new Font("Arial", 9, FontStyle.Bold);
-                var headerFont   = new Font("Arial", 9, FontStyle.Bold);
-                var dataFont     = new Font("Arial", 8.5f, FontStyle.Regular);
-                var boldDataFont = new Font("Arial", 8.5f, FontStyle.Bold);
-                var itemFont     = new Font("Arial", 8f, FontStyle.Regular);
+                var titleFont      = new Font("Arial", 13, FontStyle.Bold);
+                var subTitleFont   = new Font("Arial", 8.5f, FontStyle.Bold);
+                var headerFont     = new Font("Arial", 9, FontStyle.Bold);
+                var dataFont       = new Font("Arial", 8.5f, FontStyle.Regular);
+                var boldDataFont   = new Font("Arial", 8.5f, FontStyle.Bold);
+                var itemFont       = new Font("Arial", 8f, FontStyle.Regular);
                 var itemHeaderFont = new Font("Arial", 8f, FontStyle.Bold);
 
                 var headerBgBrush = new SolidBrush(Color.FromArgb(15, 45, 90));
-                var gridPen   = new Pen(Color.FromArgb(180, 190, 205), 1f);
-                var borderPen = new Pen(Color.FromArgb(15, 45, 90), 1.5f);
-                var subGridPen = new Pen(Color.FromArgb(200, 210, 225), 1f);
+                var gridPen       = new Pen(Color.FromArgb(180, 190, 205), 1f);
+                var borderPen     = new Pen(Color.FromArgb(15, 45, 90), 1.5f);
+                var subGridPen    = new Pen(Color.FromArgb(200, 210, 225), 1f);
 
                 int y = 25;
                 int leftMargin = 20;
@@ -547,13 +1019,12 @@ namespace ChickenDist.Forms
                 var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
 
                 g.DrawString($"كشف حساب المورد التفصيلي: {_supplierName}", titleFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 4, tableWidth, 22), sfCenter);
-                g.DrawString($"الفترة من: {dtpFrom.Value:dd/MM/yyyy}  إلى: {dtpTo.Value:dd/MM/yyyy}   |   تاريخ الطباعة: {DateTime.Now:dd/MM/yyyy HH:mm}", subTitleFont, Brushes.DimGray, new RectangleF(leftMargin, y + 25, tableWidth, 16), sfCenter);
+                g.DrawString($"الفترة من: {dtpFrom.Value:yyyy/MM/dd HH:mm}  إلى: {dtpTo.Value:yyyy/MM/dd HH:mm}   |   تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}   (صفحة {pageNumber})", subTitleFont, Brushes.DimGray, new RectangleF(leftMargin, y + 25, tableWidth, 16), sfCenter);
                 y += 55;
 
                 // ── إعداد مواضع الأعمدة والترويسة ──
-                // X offsets for vertical lines: 20, 135, 220, 295, 370, 465, 805
-                int[] xCols = { 20, 135, 220, 295, 370, 465, 805 };
-                string[] headers = { "التاريخ والوقت", "النوع", "مدين (سددنا)", "دائن (علينا)", "الرصيد الجاري", "البيان التفصيلي والأصناف" };
+                int[] xCols = { 20, 130, 210, 280, 350, 435, 515, 805 };
+                string[] headers = { "التاريخ والوقت", "النوع", "مدين (علينا)", "دائن (سددنا)", "الرصيد الجاري", "القائم بالعمل", "البيان التفصيلي والأصناف" };
 
                 int headerY = y;
                 g.FillRectangle(headerBgBrush, leftMargin, y, tableWidth, 26);
@@ -580,10 +1051,18 @@ namespace ChickenDist.Forms
                     if ((typeRaw == "Purchase" || typeRaw == "PurchaseCash") && refID > 0)
                     {
                         dtItems = DbHelper.Query(@"
-                            SELECT p.ProductName, pi2.Quantity, ISNULL(pi2.UnitName, p.Unit) AS Unit, pi2.UnitPrice, (pi2.Quantity * pi2.UnitPrice) AS Total
+                            SELECT p.ProductName, pi2.Quantity, ISNULL(NULLIF(pi2.UnitName, ''), p.Unit) AS Unit, pi2.UnitPrice, (pi2.Quantity * pi2.UnitPrice) AS Total
                             FROM PurchaseItems pi2
                             JOIN Products p ON pi2.ProductID = p.ProductID
                             WHERE pi2.PurchaseID = @id", DbHelper.P("@id", refID));
+                    }
+                    else if (typeRaw == "PurchaseReturn" && refID > 0)
+                    {
+                        dtItems = DbHelper.Query(@"
+                            SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit, pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS Total
+                            FROM PurchaseReturnItems pri
+                            JOIN Products p ON pri.ProductID = p.ProductID
+                            WHERE pri.ReturnID = @id", DbHelper.P("@id", refID));
                     }
 
                     int itemsCount = dtItems != null ? dtItems.Rows.Count : 0;
@@ -597,40 +1076,38 @@ namespace ChickenDist.Forms
 
                     int rowStartY = y;
 
-                    // تظليل خفيف جداً للصفوف التبادلية
                     if (currentRowIndex % 2 == 1 && itemsCount == 0)
                     {
                         g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 254)), leftMargin, y, tableWidth, 22);
                     }
 
-                    // كتابة القيم في الأعمدة الرئيسية
-                    string dateStr = row.Cells["TransDate"].Value?.ToString() ?? "";
-                    string typeStr = row.Cells["TransType"].Value?.ToString() ?? "";
-                    string debStr  = row.Cells["Debit"].Value?.ToString() ?? "";
-                    string credStr = row.Cells["Credit"].Value?.ToString() ?? "";
-                    string balStr  = row.Cells["Balance"].Value?.ToString() ?? "";
-                    string notes   = row.Cells["Notes"].Value?.ToString() ?? "";
+                    string dateStr  = row.Cells["TransDate"].Value?.ToString() ?? "";
+                    string typeStr  = row.Cells["TransType"].Value?.ToString() ?? "";
+                    string credStr  = row.Cells["Credit"].Value?.ToString() ?? "";
+                    string debStr   = row.Cells["Debit"].Value?.ToString() ?? "";
+                    string balStr   = row.Cells["Balance"].Value?.ToString() ?? "";
+                    string userStr  = row.Cells["CreatedByName"].Value?.ToString() ?? "---";
+                    string notes    = row.Cells["Notes"].Value?.ToString() ?? "";
 
                     g.DrawString(dateStr, dataFont, Brushes.Black, new RectangleF(xCols[0], y, xCols[1] - xCols[0], 22), sfCenter);
                     g.DrawString(typeStr, boldDataFont, Brushes.DarkSlateGray, new RectangleF(xCols[1], y, xCols[2] - xCols[1], 22), sfCenter);
-                    g.DrawString(debStr,  boldDataFont, Brushes.DarkGreen, new RectangleF(xCols[2], y, xCols[3] - xCols[2], 22), sfCenter);
-                    g.DrawString(credStr, boldDataFont, Brushes.DarkRed, new RectangleF(xCols[3], y, xCols[4] - xCols[3], 22), sfCenter);
+                    g.DrawString(credStr, boldDataFont, Brushes.DarkRed, new RectangleF(xCols[2], y, xCols[3] - xCols[2], 22), sfCenter);
+                    g.DrawString(debStr,  boldDataFont, Brushes.DarkGreen, new RectangleF(xCols[3], y, xCols[4] - xCols[3], 22), sfCenter);
                     g.DrawString(balStr,  boldDataFont, Brushes.DarkBlue, new RectangleF(xCols[4], y, xCols[5] - xCols[4], 22), sfCenter);
-                    g.DrawString(notes,   dataFont, Brushes.Black, new RectangleF(xCols[5] + 5, y + 2, xCols[6] - xCols[5] - 10, 20), sfRight);
+                    g.DrawString(userStr, dataFont, Brushes.DimGray, new RectangleF(xCols[5], y, xCols[6] - xCols[5], 22), sfCenter);
+                    g.DrawString(notes,   dataFont, Brushes.Black, new RectangleF(xCols[6] + 5, y + 2, xCols[7] - xCols[6] - 10, 20), sfRight);
 
                     y += 22;
 
-                    // ── جدول فرعي تفصيلي للأصناف عند وجود فاتورة مشتريات ──
+                    // ── جدول فرعي تفصيلي للأصناف عند وجود فاتورة مشتريات أو مرتجع ──
                     if (itemsCount > 0 && dtItems != null)
                     {
                         int subLeft = xCols[1] + 5;
-                        int subWidth = xCols[6] - xCols[1] - 10;
+                        int subWidth = xCols[7] - xCols[1] - 10;
 
-                        // خلفية الجدول الفرعي للأصناف
                         g.FillRectangle(new SolidBrush(Color.FromArgb(242, 246, 252)), subLeft, y, subWidth, 18 + itemsCount * 17);
                         g.DrawRectangle(subGridPen, subLeft, y, subWidth, 18 + itemsCount * 17);
 
-                        // أعمدة الجدول الفرعي: [اسم الصنف (45%)] [الكمية والوحدة (20%)] [سعر الوحدة (17%)] [الإجمالي (18%)]
                         float subW0 = subWidth * 0.45f;
                         float subW1 = subWidth * 0.20f;
                         float subW2 = subWidth * 0.17f;
@@ -641,7 +1118,6 @@ namespace ChickenDist.Forms
                         float sx2 = sx1 + subW1;
                         float sx3 = sx2 + subW2;
 
-                        // ترويسة الجدول الفرعي للأصناف
                         g.FillRectangle(new SolidBrush(Color.FromArgb(215, 225, 240)), subLeft, y, subWidth, 18);
                         g.DrawLine(subGridPen, subLeft, y + 18, subLeft + subWidth, y + 18);
 
@@ -669,7 +1145,6 @@ namespace ChickenDist.Forms
                         }
                     }
 
-                    // ── رسم شبكة الفواصل الرأسية والأفقية للصف الرئيسي ──
                     g.DrawLine(gridPen, leftMargin, y, rightMargin, y);
                     for (int i = 0; i < xCols.Length; i++)
                     {
@@ -679,7 +1154,6 @@ namespace ChickenDist.Forms
                     currentRowIndex++;
                 }
 
-                // رسم الإطار الخارجي الكامل للجدول
                 g.DrawRectangle(borderPen, leftMargin, headerY, tableWidth, y - headerY);
 
                 // ── صندوق الإجماليات والملخص في ذيل الصفحة ──
@@ -698,9 +1172,9 @@ namespace ChickenDist.Forms
                     g.DrawString($"{_totalPurchases:N2} ج", valueFont, Brushes.DarkRed, new RectangleF(leftMargin, y + 22, boxW, 22), sfCenter);
                     g.DrawLine(gridPen, leftMargin + boxW, y, leftMargin + boxW, y + 48);
 
-                    // 2. المدفوعات
-                    g.DrawString("إجمالي المدفوعات", labelFont, Brushes.DarkGreen, new RectangleF(leftMargin + boxW, y + 4, boxW, 16), sfCenter);
-                    g.DrawString($"{_totalPayments:N2} ج", valueFont, Brushes.DarkGreen, new RectangleF(leftMargin + boxW, y + 22, boxW, 22), sfCenter);
+                    // 2. المدفوعات والمرتجعات
+                    g.DrawString("إجمالي المدفوعات والمرتجعات", labelFont, Brushes.DarkGreen, new RectangleF(leftMargin + boxW, y + 4, boxW, 16), sfCenter);
+                    g.DrawString($"{(_totalPayments + _totalReturns):N2} ج", valueFont, Brushes.DarkGreen, new RectangleF(leftMargin + boxW, y + 22, boxW, 22), sfCenter);
                     g.DrawLine(gridPen, leftMargin + boxW * 2, y, leftMargin + boxW * 2, y + 48);
 
                     // 3. صافي المديونية
@@ -709,12 +1183,125 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var dlg = new PrintPreviewDialog { Document = pd, Width = 950, Height = 720 };
-            dlg.ShowDialog();
+            var dlg = new PrintPreviewDialog { Document = pd, Width = 1000, Height = 750 };
+            dlg.ShowDialog(this);
+        }
+
+        private void BtnPrintItemized_Click(object sender, EventArgs e)
+        {
+            var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
+            AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
+            int currentRowIndex = 0;
+            int pageNumber = 0;
+
+            pd.BeginPrint += (s, ev) =>
+            {
+                currentRowIndex = 0;
+                pageNumber = 0;
+            };
+
+            pd.PrintPage += (s, ev) =>
+            {
+                pageNumber++;
+                var g = ev.Graphics;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                var titleFont    = new Font("Arial", 14, FontStyle.Bold);
+                var subTitleFont = new Font("Arial", 9, FontStyle.Bold);
+                var headerFont   = new Font("Arial", 9, FontStyle.Bold);
+                var dataFont     = new Font("Arial", 8.5f, FontStyle.Regular);
+                var boldDataFont = new Font("Arial", 8.5f, FontStyle.Bold);
+
+                var headerBgBrush = new SolidBrush(Color.FromArgb(15, 45, 90));
+                var borderPen     = new Pen(Color.FromArgb(15, 45, 90), 1.5f);
+
+                int y = 25;
+                int leftMargin = 20;
+                int rightMargin = 805;
+                int tableWidth = rightMargin - leftMargin;
+
+                // Title Header Block
+                g.FillRectangle(new SolidBrush(Color.FromArgb(240, 244, 250)), leftMargin, y, tableWidth, 45);
+                g.DrawRectangle(borderPen, leftMargin, y, tableWidth, 45);
+
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRight  = new StringFormat { Alignment = StringAlignment.Far,    LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+
+                g.DrawString($"كشف حساب أصناف وتوريدات المورد: {_supplierName}", titleFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 4, tableWidth, 22), sfCenter);
+                g.DrawString($"الفترة من: {dtpFrom.Value:yyyy/MM/dd HH:mm}  إلى: {dtpTo.Value:yyyy/MM/dd HH:mm}   |   تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}   (صفحة {pageNumber})", subTitleFont, Brushes.DimGray, new RectangleF(leftMargin, y + 25, tableWidth, 16), sfCenter);
+                y += 55;
+
+                int[] xCols = { 20, 90, 310, 370, 440, 510, 590, 680, 805 };
+                string[] headers = { "كود الصنف", "اسم الصنف", "الوحدة", "المشتريات", "المرتجع", "صافي الكمية", "متوسط السعر", "صافي المبلغ" };
+
+                g.FillRectangle(headerBgBrush, leftMargin, y, tableWidth, 26);
+                g.DrawRectangle(borderPen, leftMargin, y, tableWidth, 26);
+
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    float cx = xCols[i];
+                    float cw = xCols[i + 1] - xCols[i];
+                    g.DrawString(headers[i], headerFont, Brushes.White, new RectangleF(cx, y, cw, 26), sfCenter);
+                    if (i > 0) g.DrawLine(Pens.White, xCols[i], y, xCols[i], y + 26);
+                }
+                y += 26;
+
+                ev.HasMorePages = false;
+                while (currentRowIndex < dgItemized.Rows.Count)
+                {
+                    var row = dgItemized.Rows[currentRowIndex];
+                    if (y + 24 > ev.PageBounds.Height - 80)
+                    {
+                        ev.HasMorePages = true;
+                        return;
+                    }
+
+                    if (currentRowIndex % 2 == 1)
+                    {
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 254)), leftMargin, y, tableWidth, 24);
+                    }
+
+                    string code   = row.Cells[0].Value?.ToString() ?? "";
+                    string name   = row.Cells[1].Value?.ToString() ?? "";
+                    string unit   = row.Cells[2].Value?.ToString() ?? "";
+                    string purQty = row.Cells[3].Value?.ToString() ?? "";
+                    string retQty = row.Cells[4].Value?.ToString() ?? "";
+                    string netQty = row.Cells[5].Value?.ToString() ?? "";
+                    string avgP   = row.Cells[6].Value?.ToString() ?? "";
+                    string netVal = row.Cells[7].Value?.ToString() ?? "";
+
+                    g.DrawString(code,   dataFont,     Brushes.Black,        new RectangleF(xCols[0], y, xCols[1] - xCols[0], 24), sfCenter);
+                    g.DrawString(name,   boldDataFont, Brushes.DarkSlateGray, new RectangleF(xCols[1] + 5, y + 2, xCols[2] - xCols[1] - 10, 20), sfRight);
+                    g.DrawString(unit,   dataFont,     Brushes.Black,        new RectangleF(xCols[2], y, xCols[3] - xCols[2], 24), sfCenter);
+                    g.DrawString(purQty, dataFont,     Brushes.DarkRed,      new RectangleF(xCols[3], y, xCols[4] - xCols[3], 24), sfCenter);
+                    g.DrawString(retQty, dataFont,     Brushes.DarkGreen,    new RectangleF(xCols[4], y, xCols[5] - xCols[4], 24), sfCenter);
+                    g.DrawString(netQty, boldDataFont, Brushes.DarkBlue,     new RectangleF(xCols[5], y, xCols[6] - xCols[5], 24), sfCenter);
+                    g.DrawString(avgP,   dataFont,     Brushes.Black,        new RectangleF(xCols[6], y, xCols[7] - xCols[6], 24), sfCenter);
+                    g.DrawString(netVal, boldDataFont, Brushes.DarkBlue,     new RectangleF(xCols[7], y, xCols[8] - xCols[7], 24), sfCenter);
+
+                    g.DrawLine(Pens.LightGray, leftMargin, y + 24, rightMargin, y + 24);
+                    y += 24;
+                    currentRowIndex++;
+                }
+
+                g.DrawLine(borderPen, leftMargin, y + 5, rightMargin, y + 5);
+                g.DrawString(lblItemizedCount.Text + "   |   " + lblItemizedTotalQty.Text + "   |   " + lblItemizedTotalAmount.Text,
+                    subTitleFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 10, tableWidth, 22), sfCenter);
+            };
+
+            var preview = new PrintPreviewDialog { Document = pd, Width = 1000, Height = 750 };
+            preview.ShowDialog(this);
         }
 
         private void OpenSupplierPaymentDialog()
         {
+            if (_supplierID <= 0)
+            {
+                MessageBox.Show("اختر مورداً أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             using (var dlg = new Form())
             {
                 dlg.Text = "💸 صرف نقدية للمورد - " + _supplierName;
@@ -784,7 +1371,7 @@ namespace ChickenDist.Forms
                         SupplierDAL.AddSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim(), chosenSafeId);
                         dlg.DialogResult = DialogResult.OK;
                         dlg.Close();
-                        LoadStatement();
+                        RefreshAllData();
 
                         new FrmPrintSupplierPayment(_supplierID, nudAmt.Value, txtNote.Text.Trim(), chosenSafeId, supplierName: _supplierName).ShowOptionsDialog(this);
                     }
@@ -799,6 +1386,21 @@ namespace ChickenDist.Forms
                 dlg.ShowDialog(this);
             }
         }
+
+        private void OpenSupplierAdjustmentDialog()
+        {
+            if (_supplierID <= 0)
+            {
+                MessageBox.Show("اختر مورداً أولاً من القائمة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            using (var frm = new FrmAdjustment(_supplierID, _supplierName, false))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK)
+                {
+                    RefreshAllData();
+                }
+            }
+        }
     }
 }
-

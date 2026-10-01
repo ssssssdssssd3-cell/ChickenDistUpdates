@@ -775,7 +775,7 @@ namespace ChickenDist.Forms
                 MessageBox.Show("اختر مورداً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            new FrmReports("Suppliers", _selectedID).ShowDialog();
+            new FrmSupplierStatement(_selectedID, txtName.Text, 1).ShowDialog(this);
         }
 
         private void SetupSuppliersContextMenu()

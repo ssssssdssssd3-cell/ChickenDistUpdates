@@ -1381,8 +1381,10 @@ namespace ChickenDist.DAL
         {
             return DbHelper.Query(
                 @"SELECT st.TransDate, st.TransType, ISNULL(st.Debit,0) AS Debit, ISNULL(st.Credit,0) AS Credit,
-                         ISNULL(st.RefID,0) AS RefID, st.Notes
+                         ISNULL(st.RefID,0) AS RefID, st.Notes,
+                         ISNULL(e.EmpName, N'---') AS CreatedByName
                   FROM SupplierTransactions st
+                  LEFT JOIN Employees e ON st.CreatedBy = e.EmpID
                   WHERE st.SupplierID=@id AND CAST(st.TransDate AS DATE) BETWEEN @f AND @t
 
                   UNION ALL
@@ -1396,8 +1398,10 @@ namespace ChickenDist.DAL
                          p.PurchaseID AS RefID,
                          N'فاتورة مشتريات نقدي رقم ' + ISNULL(p.PurchaseCode, '') + 
                          CASE WHEN p.SupplierInvoiceNo IS NOT NULL AND LTRIM(RTRIM(p.SupplierInvoiceNo)) <> '' THEN N' (فاتورة المورد: ' + p.SupplierInvoiceNo + N')' ELSE N'' END +
-                         CASE WHEN p.Notes IS NOT NULL AND LTRIM(RTRIM(p.Notes)) <> '' THEN N' - ' + p.Notes ELSE N'' END AS Notes
+                         CASE WHEN p.Notes IS NOT NULL AND LTRIM(RTRIM(p.Notes)) <> '' THEN N' - ' + p.Notes ELSE N'' END AS Notes,
+                         ISNULL(e.EmpName, N'---') AS CreatedByName
                   FROM Purchases p
+                  LEFT JOIN Employees e ON p.CreatedBy = e.EmpID
                   WHERE p.SupplierID = @id AND p.PurchaseType = 'Cash' AND p.IsPosted = 1
                     AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND NOT EXISTS (
@@ -1413,8 +1417,10 @@ namespace ChickenDist.DAL
                          p.TotalAmount AS Debit,
                          0.00 AS Credit,
                          p.PurchaseID AS RefID,
-                         N'سداد نقدي فوري لفاتورة مشتريات رقم ' + ISNULL(p.PurchaseCode, '') AS Notes
+                         N'سداد نقدي فوري لفاتورة مشتريات رقم ' + ISNULL(p.PurchaseCode, '') AS Notes,
+                         ISNULL(e.EmpName, N'---') AS CreatedByName
                   FROM Purchases p
+                  LEFT JOIN Employees e ON p.CreatedBy = e.EmpID
                   WHERE p.SupplierID = @id AND p.PurchaseType = 'Cash' AND p.IsPosted = 1
                     AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND NOT EXISTS (
@@ -1426,6 +1432,65 @@ namespace ChickenDist.DAL
                 DbHelper.P("@id", supplierID),
                 DbHelper.P("@f", from.Date),
                 DbHelper.P("@t", to.Date));
+        }
+
+        /// <summary>كشف حساب أصناف المورد التفصيلي (التوريدات والمشتريات والمرتجعات لكل صنف)</summary>
+        public static DataTable GetSupplierItemizedStatement(DateTime from, DateTime to, int supplierID, int? warehouseID = null)
+        {
+            string query = @"
+                WITH AllItems AS (
+                    SELECT pi.ProductID, 
+                           COALESCE(NULLIF(pi.UnitName, N''), NULLIF(p.Unit, N''), N'قطعة') AS UnitName,
+                           (pi.Quantity + ISNULL(pi.BonusQuantity, 0)) AS PurchasedQty,
+                           0.0 AS ReturnQty,
+                           pi.TotalPrice AS PurchasedTotal,
+                           0.0 AS ReturnTotal
+                    FROM PurchaseItems pi
+                    JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
+                    JOIN Products p ON pi.ProductID = p.ProductID
+                    WHERE pu.IsPosted = 1
+                      AND pu.PurchaseDate BETWEEN @f AND @t
+                      AND pu.SupplierID = @sid
+                      AND (@warehouseID IS NULL OR pu.WarehouseID = @warehouseID)
+
+                    UNION ALL
+
+                    SELECT pri.ProductID,
+                           COALESCE(NULLIF(pri.UnitName, N''), NULLIF(p.Unit, N''), N'قطعة') AS UnitName,
+                           0.0 AS PurchasedQty,
+                           (pri.Quantity + ISNULL(pri.BonusQuantity, 0)) AS ReturnQty,
+                           0.0 AS PurchasedTotal,
+                           pri.TotalPrice AS ReturnTotal
+                    FROM PurchaseReturnItems pri
+                    JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
+                    JOIN Products p ON pri.ProductID = p.ProductID
+                    WHERE pr.ReturnDate BETWEEN @f AND @t
+                      AND pr.SupplierID = @sid
+                      AND (@warehouseID IS NULL OR pr.WarehouseID = @warehouseID)
+                )
+                SELECT 
+                    p.ProductCode AS [كود الصنف],
+                    p.ProductName AS [اسم الصنف],
+                    ai.UnitName AS [الوحدة],
+                    ISNULL(SUM(ai.PurchasedQty), 0) AS [إجمالي المشتريات],
+                    ISNULL(SUM(ai.ReturnQty), 0) AS [إجمالي المرتجع],
+                    (ISNULL(SUM(ai.PurchasedQty), 0) - ISNULL(SUM(ai.ReturnQty), 0)) AS [صافي الكمية],
+                    CASE WHEN ISNULL(SUM(ai.PurchasedQty), 0) > 0 
+                         THEN ROUND(SUM(ai.PurchasedTotal) / SUM(ai.PurchasedQty), 2)
+                         ELSE p.PurchasePrice 
+                    END AS [متوسط السعر],
+                    (ISNULL(SUM(ai.PurchasedTotal), 0) - ISNULL(SUM(ai.ReturnTotal), 0)) AS [صافي المبلغ]
+                FROM AllItems ai
+                JOIN Products p ON ai.ProductID = p.ProductID
+                GROUP BY p.ProductCode, p.ProductName, ai.UnitName, p.PurchasePrice
+                HAVING (ISNULL(SUM(ai.PurchasedQty), 0) - ISNULL(SUM(ai.ReturnQty), 0)) <> 0 OR (ISNULL(SUM(ai.PurchasedTotal), 0) - ISNULL(SUM(ai.ReturnTotal), 0)) <> 0
+                ORDER BY [صافي المبلغ] DESC";
+
+            return DbHelper.Query(query,
+                DbHelper.P("@f", from),
+                DbHelper.P("@t", to),
+                DbHelper.P("@sid", supplierID),
+                DbHelper.P("@warehouseID", warehouseID.HasValue && warehouseID.Value > 0 ? (object)warehouseID.Value : DBNull.Value));
         }
 
         /// <summary>رصيد المورد قبل تاريخ معين (للرصيد الافتتاحي في الكشف)</summary>
