@@ -1693,28 +1693,40 @@ namespace ChickenDist.Forms
 
 		protected override void OnKeyPress(KeyPressEventArgs e)
 		{
-			// إذا كان التركيز داخل جدول الأصناف في وضع التعديل، أو داخل حقل إدخال عادي (بخلاف حقل الاسكنر)
-			// لا نسجل المفاتيح في بافر الاسكنر لمنع تداخل الكتابة اليدوية مع قراءة الباركود
-			bool isEditingGridCell = dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null);
-			bool isTypingInNormalInput = (this.ActiveControl is TextBoxBase tb && tb != txtBarcode)
-									  || (this.ActiveControl is NumericUpDown)
-									  || (this.ActiveControl is ComboBox cbo && cbo.DropDownStyle != ComboBoxStyle.DropDownList);
-
-			if (isEditingGridCell || isTypingInNormalInput)
-			{
-				_barcodeBuffer = "";
-				base.OnKeyPress(e);
-				return;
-			}
-
+			// المنطق الصحيح: التمييز بين الاسكنر والكتابة اليدوية يعتمد على سرعة الإرسال (gap)
+			// الاسكنر يرسل الأحرف بفاصل < 30-50ms بين كل حرف - الكتابة اليدوية > 100-200ms
 			if (!char.IsControl(e.KeyChar))
 			{
 				double gap = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
-				if (gap > 75)
+				bool isLikelyScanner = gap < 100; // أقل من 100ms → اسكنر حقيقي
+
+				if (!isLikelyScanner)
 				{
+					// كتابة يدوية → صفّر البافر
 					_barcodeBuffer = "";
 					_barcodeStartTime = DateTime.Now;
+
+					// إذا كان في خلية رقمية أو حقل إدخال عادي → لا تسجّل في البافر
+					bool isEditingNumericCell = dgItems != null
+						&& (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null)
+						&& dgItems.CurrentCell != null
+						&& (dgItems.CurrentCell.OwningColumn.Name == "Quantity"
+							|| dgItems.CurrentCell.OwningColumn.Name == "UnitPrice"
+							|| dgItems.CurrentCell.OwningColumn.Name == "DiscountPct"
+							|| dgItems.CurrentCell.OwningColumn.Name == "SuggestedSalePrice"
+							|| dgItems.CurrentCell.OwningColumn.Name == "BonusQuantity");
+					bool isTypingInNormalInput = (this.ActiveControl is TextBoxBase tb && tb != txtBarcode)
+											  || (this.ActiveControl is NumericUpDown)
+											  || (this.ActiveControl is ComboBox cbo && cbo.DropDownStyle != ComboBoxStyle.DropDownList);
+
+					if (isEditingNumericCell || isTypingInNormalInput)
+					{
+						base.OnKeyPress(e);
+						return;
+					}
 				}
+
+				// سجّل في البافر (اسكنر سريع أو بداية إدخال جديد في حقل الباركود)
 				_barcodeBuffer += e.KeyChar;
 				_lastKeyTime = DateTime.Now;
 			}
@@ -1975,10 +1987,10 @@ namespace ChickenDist.Forms
 				}
 
 				// فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer) فقط عند عدم التركيز على خلايا الجدول
-				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 3)
+				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
 				{
 					double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
-					if (totalMs < _barcodeBuffer.Length * 55 + 120)
+					if (totalMs < _barcodeBuffer.Length * 100 + 300)
 					{
 						string scannedCode = _barcodeBuffer.Trim();
 						_barcodeBuffer = "";

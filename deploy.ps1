@@ -1,18 +1,18 @@
-# ============================================================
-#  ðŸš€ Auto-Build and Deploy Script - ChickenDist
+﻿# ============================================================
+#  Ã°Å¸Å¡â‚¬ Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-# ────────────────────────────────────────────────────────────
-# ────────────────────────────────────────────────────────────
-$VERSION   = "3.9.45";
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+$VERSION = "3.9.46";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
-# ────────────────────────────────────────────────────────────
-# 📁 Paths
-# ────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ðŸ“ Paths
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $REPO_ROOT    = $PSScriptRoot
 $PROJECT_DIR  = $REPO_ROOT
 $CSPROJ       = Join-Path $PROJECT_DIR "ChickenDist.csproj"
@@ -118,7 +118,7 @@ Write-OK "SHA256: $sha256"
 # Step 5.5: Copy MobileApp files to release destinations & Firebase bot public folder
 Write-Step "Updating MobileApp release folders & bot public folder"
 $releaseDestinations = @(
-    "D:\قطع غيار وتوزيع\قطع غيار وتوزيع\FINAL_RELEASE\ChickenDist_Program\MobileApp",
+    "D:\Ù‚Ø·Ø¹ ØºÙŠØ§Ø± ÙˆØªÙˆØ²ÙŠØ¹\Ù‚Ø·Ø¹ ØºÙŠØ§Ø± ÙˆØªÙˆØ²ÙŠØ¹\FINAL_RELEASE\ChickenDist_Program\MobileApp",
     "D:\prosoft\MobileApp"
 )
 foreach ($dest in $releaseDestinations) {
@@ -226,6 +226,7 @@ Write-Host "==========================================" -ForegroundColor Green
 Write-Host ""
 
 Remove-Item $OUT_DIR -Recurse -Force -ErrorAction SilentlyContinue
+
 
 
 
