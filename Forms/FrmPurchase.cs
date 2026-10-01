@@ -1322,10 +1322,24 @@ namespace ChickenDist.Forms
 
         protected override void OnKeyPress(KeyPressEventArgs e)
         {
+            // إذا كان التركيز داخل جدول الأصناف في وضع التعديل، أو داخل حقل إدخال عادي (بخلاف حقل الاسكنر)
+            // لا نسجل المفاتيح في بافر الاسكنر لمنع تداخل الكتابة اليدوية مع قراءة الباركود
+            bool isEditingGridCell = dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null);
+            bool isTypingInNormalInput = (this.ActiveControl is TextBoxBase tb && tb != txtBarcode)
+                                      || (this.ActiveControl is NumericUpDown)
+                                      || (this.ActiveControl is ComboBox cbo && cbo.DropDownStyle != ComboBoxStyle.DropDownList);
+
+            if (isEditingGridCell || isTypingInNormalInput)
+            {
+                _barcodeBuffer = "";
+                base.OnKeyPress(e);
+                return;
+            }
+
             if (!char.IsControl(e.KeyChar))
             {
                 double gap = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
-                if (gap > 200)
+                if (gap > 75)
                 {
                     _barcodeBuffer = "";
                     _barcodeStartTime = DateTime.Now;
@@ -1339,29 +1353,102 @@ namespace ChickenDist.Forms
         // تنقل بمفتاح Enter داخل الجدول والتقاط الاسكنر السريع
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            // فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer)
-            if ((keyData == Keys.Enter || keyData == Keys.Return) && !string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
+            if (keyData == Keys.Enter || keyData == Keys.Return)
             {
-                double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
-                if (totalMs < _barcodeBuffer.Length * 150 + 300)
+                // أولوية مطلقة: إذا كان المستخدم يحرر خلية في جدول الأصناف (سعر الشراء، الكمية، الخصم، إلخ)
+                // يتم تثبيت القيمة والتنقل للخلية التالية دون أي اعتراض من بافر الاسكنر ودون إلغاء التعديل
+                if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null))
                 {
-                    string scannedCode = _barcodeBuffer.Trim();
                     _barcodeBuffer = "";
-
-                    if (dgItems.IsCurrentCellInEditMode)
-                        dgItems.CancelEdit();
-
-                    var (pCode, mQty) = ParseBarcodeMultiplier(scannedCode);
-                    ProcessScannedBarcode(pCode, mQty);
-                    if (txtBarcode != null)
+                    dgItems.EndEdit();
+                    var cur = dgItems.CurrentCell;
+                    if (cur != null && cur.RowIndex >= 0 && cur.RowIndex < dgItems.Rows.Count)
                     {
-                        txtBarcode.Clear();
-                        this.ActiveControl = txtBarcode;
-                        txtBarcode.Focus();
+                        for (int col = cur.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
+                        {
+                            if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
+                            {
+                                dgItems.CurrentCell = dgItems.Rows[cur.RowIndex].Cells[col];
+                                dgItems.BeginEdit(true);
+                                return true;
+                            }
+                        }
+                        if (txtBarcode != null)
+                        {
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                        }
+                        else
+                        {
+                            cboProduct.Focus();
+                        }
+                        return true;
                     }
-                    return true;
                 }
-                _barcodeBuffer = "";
+
+                // فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer) فقط عند عدم تحرير خلايا الجدول
+                if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 3)
+                {
+                    double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
+                    if (totalMs < _barcodeBuffer.Length * 55 + 120)
+                    {
+                        string scannedCode = _barcodeBuffer.Trim();
+                        _barcodeBuffer = "";
+
+                        var (pCode, mQty) = ParseBarcodeMultiplier(scannedCode);
+                        ProcessScannedBarcode(pCode, mQty);
+                        if (txtBarcode != null)
+                        {
+                            txtBarcode.Clear();
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                        }
+                        return true;
+                    }
+                    _barcodeBuffer = "";
+                }
+
+                // إذا كان التركيز في الجدول ولكن ليس في وضع تعديل خلية
+                if (dgItems != null && dgItems.Focused)
+                {
+                    dgItems.EndEdit();
+                    var cur = dgItems.CurrentCell;
+                    if (cur != null && cur.RowIndex >= 0 && cur.RowIndex < dgItems.Rows.Count)
+                    {
+                        for (int col = cur.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
+                        {
+                            if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
+                            {
+                                dgItems.CurrentCell = dgItems.Rows[cur.RowIndex].Cells[col];
+                                dgItems.BeginEdit(true);
+                                return true;
+                            }
+                        }
+                        if (txtBarcode != null)
+                        {
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                        }
+                        else
+                        {
+                            cboProduct.Focus();
+                        }
+                        return true;
+                    }
+                    else
+                    {
+                        if (txtBarcode != null)
+                        {
+                            this.ActiveControl = txtBarcode;
+                            txtBarcode.Focus();
+                        }
+                        else
+                        {
+                            cboProduct.Focus();
+                        }
+                        return true;
+                    }
+                }
             }
 
             if (keyData == Keys.Insert)
@@ -1369,47 +1456,7 @@ namespace ChickenDist.Forms
                 AddNewCodeRow();
                 return true;
             }
-            if (keyData == Keys.Enter &&
-                (dgItems.Focused || dgItems.EditingControl != null))
-            {
-                dgItems.EndEdit();
-                var cur = dgItems.CurrentCell;
-                if (cur != null && cur.RowIndex >= 0 && cur.RowIndex < dgItems.Rows.Count)
-                {
-                    for (int col = cur.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
-                    {
-                        if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
-                        {
-                            dgItems.CurrentCell = dgItems.Rows[cur.RowIndex].Cells[col];
-                            dgItems.BeginEdit(true);
-                            return true;
-                        }
-                    }
-                    if (txtBarcode != null)
-                    {
-                        this.ActiveControl = txtBarcode;
-                        txtBarcode.Focus();
-                    }
-                    else
-                    {
-                        cboProduct.Focus();
-                    }
-                    return true;
-                }
-                else
-                {
-                    if (txtBarcode != null)
-                    {
-                        this.ActiveControl = txtBarcode;
-                        txtBarcode.Focus();
-                    }
-                    else
-                    {
-                        cboProduct.Focus();
-                    }
-                    return true;
-                }
-            }
+
             return base.ProcessCmdKey(ref msg, keyData);
         }
 

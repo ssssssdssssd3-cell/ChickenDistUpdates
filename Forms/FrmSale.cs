@@ -1693,10 +1693,24 @@ namespace ChickenDist.Forms
 
 		protected override void OnKeyPress(KeyPressEventArgs e)
 		{
+			// إذا كان التركيز داخل جدول الأصناف في وضع التعديل، أو داخل حقل إدخال عادي (بخلاف حقل الاسكنر)
+			// لا نسجل المفاتيح في بافر الاسكنر لمنع تداخل الكتابة اليدوية مع قراءة الباركود
+			bool isEditingGridCell = dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null);
+			bool isTypingInNormalInput = (this.ActiveControl is TextBoxBase tb && tb != txtBarcode)
+									  || (this.ActiveControl is NumericUpDown)
+									  || (this.ActiveControl is ComboBox cbo && cbo.DropDownStyle != ComboBoxStyle.DropDownList);
+
+			if (isEditingGridCell || isTypingInNormalInput)
+			{
+				_barcodeBuffer = "";
+				base.OnKeyPress(e);
+				return;
+			}
+
 			if (!char.IsControl(e.KeyChar))
 			{
 				double gap = (DateTime.Now - _lastKeyTime).TotalMilliseconds;
-				if (gap > 200)
+				if (gap > 75)
 				{
 					_barcodeBuffer = "";
 					_barcodeStartTime = DateTime.Now;
@@ -1882,54 +1896,13 @@ namespace ChickenDist.Forms
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
-			// فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer)
-			if ((keyData == Keys.Enter || keyData == Keys.Return) && !string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
+			if (keyData == Keys.Enter || keyData == Keys.Return)
 			{
-				double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
-				if (totalMs < _barcodeBuffer.Length * 150 + 300)
+				// أولوية مطلقة: إذا كان المستخدم يحرر خلية في جدول الأصناف (سعر البيع، الكمية، الخصم، إلخ) أو الجدول في بؤرة التركيز
+				// يتم تثبيت القيمة والتنقل للخلية التالية دون أي اعتراض من بافر الاسكنر ودون إلغاء التعديل
+				if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null || dgItems.Focused))
 				{
-					string scannedCode = _barcodeBuffer.Trim();
 					_barcodeBuffer = "";
-
-					// ✅ مسح حقل الباركود قبل المعالجة لمنع TxtBarcode_KeyDown من تشغيل ProcessScannedBarcode مرة ثانية
-					if (txtBarcode != null)
-						txtBarcode.Clear();
-
-					if (dgItems.IsCurrentCellInEditMode)
-						dgItems.CancelEdit();
-
-					var (parsedCode, multiQty) = ParseBarcodeMultiplier(scannedCode);
-					ProcessScannedBarcode(parsedCode, multiQty);
-					if (txtBarcode != null)
-					{
-						txtBarcode.Clear();
-						this.ActiveControl = txtBarcode;
-						txtBarcode.Focus();
-					}
-					return true;
-				}
-				_barcodeBuffer = "";
-			}
-
-
-			if (keyData == Keys.Insert || keyData == Keys.Down)
-			{
-				if (keyData == Keys.Down)
-				{
-					if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null))
-					{
-						return base.ProcessCmdKey(ref msg, keyData);
-					}
-				}
-
-				AddNewCodeRow();
-				return true;
-			}
-
-			if (keyData == Keys.Enter)
-			{
-				if (dgItems.Focused || dgItems.EditingControl != null)
-				{
 					var curCell = dgItems.CurrentCell;
 					if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
 					{
@@ -2000,7 +1973,48 @@ namespace ChickenDist.Forms
 						return true;
 					}
 				}
+
+				// فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer) فقط عند عدم التركيز على خلايا الجدول
+				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 3)
+				{
+					double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
+					if (totalMs < _barcodeBuffer.Length * 55 + 120)
+					{
+						string scannedCode = _barcodeBuffer.Trim();
+						_barcodeBuffer = "";
+
+						// ✅ مسح حقل الباركود قبل المعالجة لمنع TxtBarcode_KeyDown من تشغيل ProcessScannedBarcode مرة ثانية
+						if (txtBarcode != null)
+							txtBarcode.Clear();
+
+						var (parsedCode, multiQty) = ParseBarcodeMultiplier(scannedCode);
+						ProcessScannedBarcode(parsedCode, multiQty);
+						if (txtBarcode != null)
+						{
+							txtBarcode.Clear();
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
+						}
+						return true;
+					}
+					_barcodeBuffer = "";
+				}
 			}
+
+			if (keyData == Keys.Insert || keyData == Keys.Down)
+			{
+				if (keyData == Keys.Down)
+				{
+					if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null))
+					{
+						return base.ProcessCmdKey(ref msg, keyData);
+					}
+				}
+
+				AddNewCodeRow();
+				return true;
+			}
+
 			return base.ProcessCmdKey(ref msg, keyData);
 		}
 
