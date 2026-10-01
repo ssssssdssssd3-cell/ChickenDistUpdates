@@ -921,7 +921,10 @@ namespace ChickenDist.Forms
             decimal grossCOGS = grossCOGSObj != null ? Convert.ToDecimal(grossCOGSObj) : 0m;
 
             object returnsCOGSObj = DbHelper.Scalar(@"
-                SELECT ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) 
+                SELECT ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(
+                    NULLIF((SELECT TOP 1 si_orig.CostPrice FROM SaleItems si_orig WHERE si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID AND si_orig.CostPrice > 0), 0),
+                    NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
+                )), 0) 
                 FROM ReturnItems ri 
                 JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
                 JOIN Products p ON ri.ProductID = p.ProductID 
@@ -929,7 +932,11 @@ namespace ChickenDist.Forms
             decimal returnsCOGS = returnsCOGSObj != null ? Convert.ToDecimal(returnsCOGSObj) : 0m;
 
             decimal netCOGS = grossCOGS - returnsCOGS;
+            if (Math.Abs(grossSales - returns) < 0.01m && Math.Abs(netCOGS) <= 1.0m) netCOGS = 0m;
+            else if (Math.Abs(netCOGS) < 0.005m) netCOGS = 0m;
+
             decimal grossProfit = netSales - netCOGS;
+            if (Math.Abs(grossProfit) < 0.005m) grossProfit = 0m;
 
             // إيرادات تشغيلية أخرى
             object otherOpRevObj = DbHelper.Scalar("SELECT ISNULL(SUM(AmountIn), 0) FROM CashBox WHERE TransType = 'OtherIncome' AND CAST(TransDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));

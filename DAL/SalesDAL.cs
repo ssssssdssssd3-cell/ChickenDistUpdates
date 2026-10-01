@@ -2977,7 +2977,10 @@ namespace ChickenDist.DAL
                         ISNULL(cat.CategoryID, 0) AS CategoryID,
                         SUM(ri.Quantity) AS ReturnedQty,
                         SUM(ri.TotalPrice) AS ReturnedAmount,
-                        ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnedCost
+                        ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(
+                            NULLIF((SELECT TOP 1 si_orig.CostPrice FROM SaleItems si_orig WHERE si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID AND si_orig.CostPrice > 0), 0),
+                            NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
+                        )), 0) AS ReturnedCost
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                     JOIN Products p ON ri.ProductID = p.ProductID
@@ -2996,11 +2999,29 @@ namespace ChickenDist.DAL
                     cs.TotalAfterDiscount AS TotalSalesAmount,
                     ISNULL(cr.ReturnedAmount, 0) AS TotalReturns,
                     (cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) AS NetSales,
-                    (cs.TotalCost - ISNULL(cr.ReturnedCost, 0)) AS TotalCost,
-                    ((cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) - (cs.TotalCost - ISNULL(cr.ReturnedCost, 0))) AS NetProfit,
                     CASE 
+                        WHEN ABS(cs.TotalQtySold - ISNULL(cr.ReturnedQty, 0)) < 0.0001 THEN 0.0
+                        WHEN (cs.TotalCost - ISNULL(cr.ReturnedCost, 0)) < 0 THEN 0.0
+                        ELSE (cs.TotalCost - ISNULL(cr.ReturnedCost, 0))
+                    END AS TotalCost,
+                    CASE 
+                        WHEN ABS(cs.TotalQtySold - ISNULL(cr.ReturnedQty, 0)) < 0.0001 AND ABS(cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) < 0.01 THEN 0.0
+                        ELSE ((cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) - 
+                              CASE 
+                                  WHEN ABS(cs.TotalQtySold - ISNULL(cr.ReturnedQty, 0)) < 0.0001 THEN 0.0
+                                  WHEN (cs.TotalCost - ISNULL(cr.ReturnedCost, 0)) < 0 THEN 0.0
+                                  ELSE (cs.TotalCost - ISNULL(cr.ReturnedCost, 0))
+                              END)
+                    END AS NetProfit,
+                    CASE 
+                        WHEN ABS(cs.TotalQtySold - ISNULL(cr.ReturnedQty, 0)) < 0.0001 THEN 0.0
                         WHEN (cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) > 0 
-                        THEN ROUND((((cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) - (cs.TotalCost - ISNULL(cr.ReturnedCost, 0))) / (cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0))) * 100, 2)
+                        THEN ROUND((((cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0)) - 
+                                     CASE 
+                                         WHEN ABS(cs.TotalQtySold - ISNULL(cr.ReturnedQty, 0)) < 0.0001 THEN 0.0
+                                         WHEN (cs.TotalCost - ISNULL(cr.ReturnedCost, 0)) < 0 THEN 0.0
+                                         ELSE (cs.TotalCost - ISNULL(cr.ReturnedCost, 0))
+                                     END) / (cs.TotalAfterDiscount - ISNULL(cr.ReturnedAmount, 0))) * 100, 2)
                         ELSE 0 
                     END AS ProfitMarginPct
                 FROM CatSales cs
@@ -3336,7 +3357,10 @@ namespace ChickenDist.DAL
                 ClientReturnCosts AS (
                     SELECT sr.ClientID,
                            SUM(sr.TotalAmount) AS TotalReturns,
-                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                           ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(
+                               NULLIF((SELECT TOP 1 si_orig.CostPrice FROM SaleItems si_orig WHERE si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID AND si_orig.CostPrice > 0), 0),
+                               NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
+                           )), 0) AS ReturnsCost
                     FROM SalesReturns sr
                     LEFT JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
@@ -3361,8 +3385,20 @@ namespace ChickenDist.DAL
                      ISNULL((SELECT SUM(ct.Debit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0) - 
                      ISNULL((SELECT SUM(ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0)
                     ) AS CurrentBalance,
-                    (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) AS TotalCost,
-                    (ISNULL(sc.TotalAfterDiscount, 0) - ISNULL(rc.TotalReturns, 0)) - (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) AS NetProfit
+                    CASE 
+                        WHEN ABS(ISNULL(sc.TotalAfterDiscount, 0) - ISNULL(rc.TotalReturns, 0)) < 0.01 THEN 0.0
+                        WHEN (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) < 0 THEN 0.0
+                        ELSE (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0))
+                    END AS TotalCost,
+                    CASE 
+                        WHEN ABS(ISNULL(sc.TotalAfterDiscount, 0) - ISNULL(rc.TotalReturns, 0)) < 0.01 THEN 0.0
+                        ELSE ((ISNULL(sc.TotalAfterDiscount, 0) - ISNULL(rc.TotalReturns, 0)) - 
+                              CASE 
+                                  WHEN ABS(ISNULL(sc.TotalAfterDiscount, 0) - ISNULL(rc.TotalReturns, 0)) < 0.01 THEN 0.0
+                                  WHEN (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0)) < 0 THEN 0.0
+                                  ELSE (ISNULL(sc.SalesCost, 0) - ISNULL(rc.ReturnsCost, 0))
+                              END)
+                    END AS NetProfit
                 FROM Clients c
                 LEFT JOIN ClientSaleCosts sc ON c.ClientID = sc.ClientID
                 LEFT JOIN ClientReturnCosts rc ON c.ClientID = rc.ClientID
@@ -3417,7 +3453,10 @@ namespace ChickenDist.DAL
                     SELECT ri.ProductID,
                            SUM(ri.Quantity) AS ReturnedQty,
                            SUM(ri.TotalPrice) AS ReturnedAmount,
-                           SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) AS ReturnedCost
+                           SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(
+                               NULLIF((SELECT TOP 1 si_orig.CostPrice FROM SaleItems si_orig WHERE si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID AND si_orig.CostPrice > 0), 0),
+                               NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
+                           )) AS ReturnedCost
                     FROM ReturnItems ri
                     JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
                     JOIN Products p ON ri.ProductID = p.ProductID
@@ -3446,11 +3485,29 @@ namespace ChickenDist.DAL
                     ISNULL(rt.ReturnedAmount, 0.0) AS ReturnedAmount,
                     (ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) AS NetQty,
                     (ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) AS NetAmount,
-                    (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0)) AS TotalCost,
-                    ((ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) AS NetProfit,
                     CASE 
+                        WHEN ABS(ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) < 0.0001 THEN 0.0
+                        WHEN (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0)) < 0 THEN 0.0
+                        ELSE (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))
+                    END AS TotalCost,
+                    CASE 
+                        WHEN ABS(ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) < 0.0001 AND ABS(ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) < 0.01 THEN 0.0
+                        ELSE ((ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - 
+                              CASE 
+                                  WHEN ABS(ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) < 0.0001 THEN 0.0
+                                  WHEN (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0)) < 0 THEN 0.0
+                                  ELSE (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))
+                              END)
+                    END AS NetProfit,
+                    CASE 
+                        WHEN ABS(ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) < 0.0001 THEN 0.0
                         WHEN (ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) > 0 
-                        THEN ROUND((((ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))) / (ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0))) * 100, 2)
+                        THEN ROUND((((ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0)) - 
+                                     CASE 
+                                         WHEN ABS(ISNULL(st.TotalQty, 0.0) - ISNULL(rt.ReturnedQty, 0.0)) < 0.0001 THEN 0.0
+                                         WHEN (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0)) < 0 THEN 0.0
+                                         ELSE (ISNULL(st.TotalCost, 0.0) - ISNULL(rt.ReturnedCost, 0.0))
+                                     END) / (ISNULL(st.TotalAfterDiscount, 0.0) - ISNULL(rt.ReturnedAmount, 0.0))) * 100, 2)
                         ELSE 0 
                     END AS ProfitMargin
                 FROM Products p
@@ -3494,7 +3551,10 @@ namespace ChickenDist.DAL
                     
                     -- 2. تكلفة المبيعات
                     ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID JOIN Products p ON si.ProductID = p.ProductID WHERE s.IsPosted = 1 AND CAST(s.SaleDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)), 0) AS GrossCOGS,
-                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID JOIN Products p ON ri.ProductID = p.ProductID WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsCOGS,
+                    ISNULL((SELECT SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(
+                        NULLIF((SELECT TOP 1 si_orig.CostPrice FROM SaleItems si_orig WHERE si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID AND si_orig.CostPrice > 0), 0),
+                        NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
+                    )) FROM ReturnItems ri JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID JOIN Products p ON ri.ProductID = p.ProductID WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)), 0) AS ReturnsCOGS,
                     
                     -- 3. المصروفات
                     ISNULL((SELECT SUM(Amount) FROM Expenses WHERE CAST(ExpenseDate AS DATE) BETWEEN @f AND @t), 0) AS GeneralExpenses,

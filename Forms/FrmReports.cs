@@ -2564,15 +2564,26 @@ namespace ChickenDist.Forms
 					decimal returnsCOGS = Convert.ToDecimal(r["ReturnsCOGS"]);
 					decimal netCOGS = grossCOGS - returnsCOGS;
 
+					// معالجة فروقات التقريب: إذا تم إرجاع المبيعات بالكامل (الصافي صفر)، فتكلفة المبيعات الصافية تكون صفراً حتماً
+					if (Math.Abs(salesAfterReturns) < 0.01m && Math.Abs(netCOGS) <= 1.0m)
+					{
+						netCOGS = 0m;
+					}
+					else if (Math.Abs(netCOGS) < 0.005m)
+					{
+						netCOGS = 0m;
+					}
+
 					decimal grossProfit = netSales - netCOGS;
+					if (Math.Abs(grossProfit) < 0.005m) grossProfit = 0m;
 
 					// إضافة البنود بالترتيب الدقيق المطلوب
 					AddPlRow(dgPL, "قيمة المبيعات الافتراضية", grossSales, false);
 					AddPlRow(dgPL, "قيمة المرتجعات", returns, true);
-					AddPlRow(dgPL, "قيمة المبيعات بعد المرتجع", salesAfterReturns, false, Color.FromArgb(45, 65, 90));
+					AddPlRow(dgPL, "قيمة المبيعات بعد المرتجع", salesAfterReturns, salesAfterReturns < 0, Color.FromArgb(45, 65, 90));
 					AddPlRow(dgPL, "خصم البيع", discounts, true);
-					AddPlRow(dgPL, "قيمة صافي المبيعات", netSales, false, Color.FromArgb(30, 45, 60));
-					AddPlRow(dgPL, "تكلفة المبيعات", netCOGS, true);
+					AddPlRow(dgPL, "قيمة صافي المبيعات", netSales, netSales < 0, Color.FromArgb(30, 45, 60));
+					AddPlRow(dgPL, "تكلفة المبيعات", netCOGS, netCOGS > 0);
 					AddPlRow(dgPL, "الربح بعد التكلفة", grossProfit, grossProfit < 0, Color.FromArgb(50, 40, 70));
 
 					// تفصيل المصروفات التشغيلية
@@ -2609,6 +2620,7 @@ namespace ChickenDist.Forms
 					}
 
 					decimal netProfit = grossProfit - totalExpenses;
+					if (Math.Abs(netProfit) < 0.005m) netProfit = 0m;
 
 					AddPlRow(dgPL, "إجمالي المصروفات", totalExpenses, true, Color.FromArgb(70, 45, 45));
 					AddPlRow(dgPL, "صافي الربح", netProfit, netProfit < 0, Color.FromArgb(30, 60, 30));
@@ -2638,9 +2650,26 @@ namespace ChickenDist.Forms
 				decimal totalNetAmt = 0, totalCost = 0, totalProfit = 0;
 				foreach (DataRow row in dtProd.Rows)
 				{
+					decimal netQty = row.Table.Columns.Contains("NetQty") && row["NetQty"] != DBNull.Value ? Convert.ToDecimal(row["NetQty"]) : 0m;
 					decimal netAmt = Convert.ToDecimal(row["NetAmount"]);
 					decimal cost = Convert.ToDecimal(row["TotalCost"]);
 					decimal profit = Convert.ToDecimal(row["NetProfit"]);
+
+					if (Math.Abs(netQty) < 0.001m && Math.Abs(netAmt) < 0.01m)
+					{
+						netAmt = 0m;
+						cost = 0m;
+						profit = 0m;
+					}
+					else if (Math.Abs(netQty) < 0.001m && Math.Abs(cost) <= 0.05m)
+					{
+						cost = 0m;
+						profit = netAmt;
+					}
+
+					if (Math.Abs(profit) < 0.005m) profit = 0m;
+					if (Math.Abs(cost) < 0.005m) cost = 0m;
+
 					decimal margin = netAmt != 0 ? (profit / netAmt) * 100 : 0;
 
 					totalNetAmt += netAmt;
@@ -2649,7 +2678,7 @@ namespace ChickenDist.Forms
 
 					dgProd.Rows.Add(
 						row["ProductName"],
-						Convert.ToDecimal(row["NetQty"]).ToString("N2"),
+						netQty.ToString("N2"),
 						netAmt.ToString("N2"),
 						cost.ToString("N2"),
 						profit.ToString("N2"),
@@ -2658,11 +2687,20 @@ namespace ChickenDist.Forms
 				}
 				if (dgProd.Rows.Count > 0)
 				{
+					if (Math.Abs(totalNetAmt) < 0.01m && Math.Abs(totalCost) <= 0.05m)
+					{
+						totalCost = 0m;
+						totalProfit = 0m;
+					}
+					if (Math.Abs(totalProfit) < 0.005m) totalProfit = 0m;
+					if (Math.Abs(totalCost) < 0.005m) totalCost = 0m;
+
 					int idx = dgProd.Rows.Add();
 					dgProd.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(30, 60, 30);
 					dgProd.Rows[idx].DefaultCellStyle.ForeColor = Color.LightGreen;
 					dgProd.Rows[idx].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 					dgProd.Rows[idx].Cells[0].Value = "الإجمالي";
+					dgProd.Rows[idx].Cells[1].Value = (dgProd.Rows.Cast<DataGridViewRow>().Take(dgProd.Rows.Count - 1).Sum(r => decimal.TryParse(r.Cells[1].Value?.ToString(), out var q) ? q : 0m)).ToString("N2");
 					dgProd.Rows[idx].Cells[2].Value = totalNetAmt.ToString("N2");
 					dgProd.Rows[idx].Cells[3].Value = totalCost.ToString("N2");
 					dgProd.Rows[idx].Cells[4].Value = totalProfit.ToString("N2");
@@ -2697,6 +2735,16 @@ namespace ChickenDist.Forms
 					decimal netAmt = grossSales - returns;
 					decimal cost = Convert.ToDecimal(row["TotalCost"]);
 					decimal profit = Convert.ToDecimal(row["NetProfit"]);
+
+					if (Math.Abs(netAmt) < 0.01m && Math.Abs(cost) <= 0.05m)
+					{
+						netAmt = 0m;
+						cost = 0m;
+						profit = 0m;
+					}
+					if (Math.Abs(profit) < 0.005m) profit = 0m;
+					if (Math.Abs(cost) < 0.005m) cost = 0m;
+
 					decimal margin = netAmt != 0 ? (profit / netAmt) * 100 : 0;
 
 					totalCliNet += netAmt;
@@ -2713,6 +2761,14 @@ namespace ChickenDist.Forms
 				}
 				if (dgCli.Rows.Count > 0)
 				{
+					if (Math.Abs(totalCliNet) < 0.01m && Math.Abs(totalCliCost) <= 0.05m)
+					{
+						totalCliCost = 0m;
+						totalCliProfit = 0m;
+					}
+					if (Math.Abs(totalCliProfit) < 0.005m) totalCliProfit = 0m;
+					if (Math.Abs(totalCliCost) < 0.005m) totalCliCost = 0m;
+
 					int idx = dgCli.Rows.Add();
 					dgCli.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(30, 60, 30);
 					dgCli.Rows[idx].DefaultCellStyle.ForeColor = Color.LightGreen;
@@ -2734,14 +2790,21 @@ namespace ChickenDist.Forms
 
 		private void AddPlRow(DataGridView dg, string name, decimal val, bool isNegative, Color? customBg = null)
 		{
-			int index = dg.Rows.Add(name, (isNegative && val != 0 ? "-" : "") + val.ToString("N2"));
+			decimal roundedVal = Math.Round(val, 2);
+			if (Math.Abs(roundedVal) < 0.005m) roundedVal = 0m;
+
+			bool showMinus = (isNegative && roundedVal > 0) || (roundedVal < 0);
+			decimal absVal = Math.Abs(roundedVal);
+			string formattedText = (showMinus ? "-" : "") + absVal.ToString("N2");
+
+			int index = dg.Rows.Add(name, formattedText);
 			if (customBg.HasValue)
 			{
 				dg.Rows[index].DefaultCellStyle.BackColor = customBg.Value;
 				dg.Rows[index].DefaultCellStyle.ForeColor = Color.White;
 				dg.Rows[index].DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 			}
-			if (isNegative && val != 0)
+			if (showMinus)
 			{
 				dg.Rows[index].Cells[1].Style.ForeColor = Color.OrangeRed;
 				dg.Rows[index].Cells[1].Style.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
