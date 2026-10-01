@@ -3038,7 +3038,7 @@ namespace ChickenDist.Forms
                         if (costToSave <= 0m)
                         {
                             var lastPurCost = DbHelper.ScalarTrans(trans,
-                                "SELECT TOP 1 (UnitPrice / NULLIF(Factor, 0)) FROM PurchaseItems WHERE ProductID = @pid AND UnitPrice > 0 ORDER BY PurchaseItemID DESC",
+                                "SELECT TOP 1 (UnitPrice / NULLIF(ISNULL(Factor, 1), 0)) FROM PurchaseItems WHERE ProductID = @pid AND UnitPrice > 0 ORDER BY ItemID DESC",
                                 DbHelper.P("@pid", item.ProductID));
                             if (lastPurCost != null && lastPurCost != DBNull.Value)
                                 costToSave = Convert.ToDecimal(lastPurCost);
@@ -4736,7 +4736,7 @@ namespace ChickenDist.Forms
                         if (costToSave <= 0m)
                         {
                             var lastPurCost = DbHelper.ScalarTrans(trans,
-                                "SELECT TOP 1 (UnitPrice / NULLIF(Factor, 0)) FROM PurchaseItems WHERE ProductID = @pid AND UnitPrice > 0 ORDER BY PurchaseItemID DESC",
+                                "SELECT TOP 1 (UnitPrice / NULLIF(ISNULL(Factor, 1), 0)) FROM PurchaseItems WHERE ProductID = @pid AND UnitPrice > 0 ORDER BY ItemID DESC",
                                 DbHelper.P("@pid", item.ProductID));
                             if (lastPurCost != null && lastPurCost != DBNull.Value)
                                 costToSave = Convert.ToDecimal(lastPurCost);

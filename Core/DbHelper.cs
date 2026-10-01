@@ -1184,6 +1184,15 @@ namespace ChickenDist.Core
                     ALTER TABLE PurchaseItems ADD IMEI NVARCHAR(255) NULL;
             END");
 
+            SafeMigrate("PurchaseItems.PurchaseItemID_Alias", @"
+            IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+            BEGIN
+                IF COL_LENGTH('PurchaseItems', 'PurchaseItemID') IS NULL AND COL_LENGTH('PurchaseItems', 'ItemID') IS NOT NULL
+                BEGIN
+                    ALTER TABLE PurchaseItems ADD PurchaseItemID AS ItemID;
+                END
+            END");
+
             SafeMigrate("PurchaseItems.BonusQuantityColumn", @"
             IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
             BEGIN
