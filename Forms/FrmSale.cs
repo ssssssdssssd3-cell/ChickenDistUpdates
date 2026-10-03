@@ -2447,23 +2447,20 @@ namespace ChickenDist.Forms
 					{
 						cboDriver.SelectedIndex = 0;
 					}
-                    // تطبيق فئة السعر الافتراضية للعميل
+                    // تطبيق فئة السعر الافتراضية للعميل تلقائياً بناءً على نوع العميل (جملة/نصف جملة/قطاعي)
                     if (byID != null && byID["DefaultPriceTier"] != DBNull.Value && !string.IsNullOrEmpty(byID["DefaultPriceTier"].ToString()))
                     {
-                        string clientTier = byID["DefaultPriceTier"].ToString();
-                        if (Session.IsAdmin || string.Equals(clientTier, Session.GetDefaultPriceTier(), StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (clientTier != _selectedTier)
-                                SetTierButtons(clientTier); // تحديث التصميم فقط بدون سؤال
-                        }
+                        string clientTier = byID["DefaultPriceTier"].ToString().Trim();
+                        // تطبيق شريحة سعر العميل تلقائياً بغض النظر عن صلاحيات الموظف
+                        if (!string.Equals(clientTier, _selectedTier, StringComparison.OrdinalIgnoreCase))
+                            ApplyTierChange(clientTier, fromCustomerSelect: true);
                     }
                     else
                     {
                         string defEmpTier = Session.GetDefaultPriceTier();
-                        if (_selectedTier != defEmpTier)
-                            SetTierButtons(defEmpTier);
+                        if (!string.Equals(_selectedTier, defEmpTier, StringComparison.OrdinalIgnoreCase))
+                            ApplyTierChange(defEmpTier, fromCustomerSelect: true);
                     }
-
                     // تطبيق طريقة الدفع الافتراضية للعميل (كاش أو آجل)
                     if (byID != null && byID.Table.Columns.Contains("DefaultPaymentType") && byID["DefaultPaymentType"] != DBNull.Value)
                     {
@@ -2913,9 +2910,9 @@ namespace ChickenDist.Forms
 		/// <summary>
 		/// يُطبِّق فئة السعر المختارة: يُحدِّث الأزرار ويسأل عن تحديث الأصناف إن وُجدت.
 		/// </summary>
-		private void ApplyTierChange(string newTier)
+		private void ApplyTierChange(string newTier, bool fromCustomerSelect = false)
 		{
-			if (!Session.IsAdmin)
+			if (!Session.IsAdmin && !fromCustomerSelect)
 			{
 				string defTier = Session.GetDefaultPriceTier();
 				if (!string.Equals(newTier, defTier, StringComparison.OrdinalIgnoreCase))
