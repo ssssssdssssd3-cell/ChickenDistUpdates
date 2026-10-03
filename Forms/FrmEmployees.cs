@@ -28,6 +28,7 @@ namespace ChickenDist.Forms
         private ComboBox cboDefaultWarehouse;
         private CheckedListBox clbAllowedWarehouses;
         private ComboBox cboDefaultPriceTier;
+        private CheckBox chkUseSimpleSaleMode;
 
         // حقول إدارة الدوام والشيفتات
         private DateTimePicker dtpWorkStartTime, dtpWorkEndTime;
@@ -500,9 +501,21 @@ namespace ChickenDist.Forms
             cboDefaultPriceTier.Items.AddRange(new object[] { "قطاعي", "نصف جملة", "جملة" });
             cboDefaultPriceTier.SelectedIndex = 0;
             tab.Controls.Add(cboDefaultPriceTier);
-            y += 46;
+            y += 42;
 
-            // 3. المخازن المصرح بها للبيع والشراء
+            // 3. وضع واجهة المبيعات الافتراضية
+            chkUseSimpleSaleMode = new CheckBox
+            {
+                Text = "⚡ واجهة المبيعات: تفعيل وضع الكاشير المبسط (شاشة سريعة وخفيفة)",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = Theme.FontBold,
+                ForeColor = Color.FromArgb(0, 136, 255)
+            };
+            tab.Controls.Add(chkUseSimpleSaleMode);
+            y += 38;
+
+            // 4. المخازن المصرح بها للبيع والشراء
             var lblAllowedWh = new Label { Text = "المخازن المصرح بالتعامل عليها (بيع وشراء):", Location = new Point(190, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Primary };
             tab.Controls.Add(lblAllowedWh);
             y += 24;
@@ -800,6 +813,7 @@ namespace ChickenDist.Forms
             // Default Price Tier
             string priceTier = dr.Table.Columns.Contains("DefaultPriceTier") && dr["DefaultPriceTier"] != DBNull.Value ? dr["DefaultPriceTier"].ToString() : "قطاعي";
             cboDefaultPriceTier.Text = string.IsNullOrWhiteSpace(priceTier) ? "قطاعي" : priceTier.Trim();
+            chkUseSimpleSaleMode.Checked = dr.Table.Columns.Contains("UseSimpleSaleMode") && dr["UseSimpleSaleMode"] != DBNull.Value && Convert.ToBoolean(dr["UseSimpleSaleMode"]);
 
             // Selling Permissions Checkboxes
             chkCanSellCash.Checked = dr["CanSellCash"] == DBNull.Value || Convert.ToBoolean(dr["CanSellCash"]);
@@ -846,6 +860,7 @@ namespace ChickenDist.Forms
                     clbAllowedWarehouses.SetItemChecked(i, false);
             }
             if (cboDefaultPriceTier != null && cboDefaultPriceTier.Items.Count > 0) cboDefaultPriceTier.SelectedIndex = 0;
+            if (chkUseSimpleSaleMode != null) chkUseSimpleSaleMode.Checked = false;
             chkCanSellCash.Checked = true;
             chkCanSellCredit.Checked = true;
             chkCanSellVisa.Checked = true;
@@ -908,6 +923,7 @@ namespace ChickenDist.Forms
             }
             string allowedWarehouseIDs = string.Join(",", allowedWhList);
             string defaultPriceTier = (cboDefaultPriceTier != null && !string.IsNullOrWhiteSpace(cboDefaultPriceTier.Text)) ? cboDefaultPriceTier.Text.Trim() : "قطاعي";
+            bool useSimpleSaleMode = chkUseSimpleSaleMode != null && chkUseSimpleSaleMode.Checked;
 
             decimal.TryParse(txtSalary.Text.Trim(), out decimal sal);
             decimal.TryParse(txtDailyHours.Text.Trim(), out decimal dwh);
@@ -931,7 +947,8 @@ namespace ChickenDist.Forms
                     chkCanSelectDriver.Checked, chkCanSellVisa.Checked, chkCanSellBelowCost.Checked,
                     sal, dwh, hourlyRate, crate, target, jobTitle, null, nationalID,
                     workStartTime, workEndTime, gracePeriod,
-                    defaultWarehouseID, allowedWarehouseIDs, defaultPriceTier);
+                    defaultWarehouseID, allowedWarehouseIDs, defaultPriceTier,
+                    useSimpleSaleMode);
                 if (id > 0) { MessageBox.Show("✅ تم حفظ بيانات الموظف بنجاح"); _selectedID = id; LoadEmployees(); }
                 else
                 {

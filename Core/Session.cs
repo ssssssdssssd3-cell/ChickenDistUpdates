@@ -120,6 +120,7 @@ namespace ChickenDist.Core
         public static int? DefaultWarehouseID { get; set; }
         public static string AllowedWarehouseIDs { get; set; }
         public static string DefaultPriceTier { get; set; }
+        public static bool UseSimpleSaleMode { get; set; }
 
         /// <summary>
         /// الحصول على المعرف الافتراضي للمخزن للمستخدم الحالي
@@ -924,6 +925,7 @@ namespace ChickenDist.Core
             EmpID = 0; EmpName = ""; UserName = ""; Role = ""; IsDriver = false;
             DefaultSafeID = null; AllowedSafeIDs = "";
             DefaultWarehouseID = null; AllowedWarehouseIDs = ""; DefaultPriceTier = "قطاعي";
+            UseSimpleSaleMode = false;
             CanSellCash = true; CanSellCredit = true; CanSellVisa = true; CanSellDriverLoad = true; CanSellInstallment = true;
             CanEditShippingCharge = true;
             CanSelectDriver = true;

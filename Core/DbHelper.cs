@@ -4092,6 +4092,7 @@ namespace ChickenDist.Core
                         IF COL_LENGTH('Employees', 'DefaultWarehouseID') IS NULL ALTER TABLE Employees ADD DefaultWarehouseID INT NULL;
                         IF COL_LENGTH('Employees', 'AllowedWarehouseIDs') IS NULL ALTER TABLE Employees ADD AllowedWarehouseIDs NVARCHAR(250) NULL;
                         IF COL_LENGTH('Employees', 'DefaultPriceTier') IS NULL ALTER TABLE Employees ADD DefaultPriceTier NVARCHAR(50) NULL DEFAULT N'قطاعي';
+                        IF COL_LENGTH('Employees', 'UseSimpleSaleMode') IS NULL ALTER TABLE Employees ADD UseSimpleSaleMode BIT NOT NULL DEFAULT 0;
                     END");
             }
             catch (Exception ex)

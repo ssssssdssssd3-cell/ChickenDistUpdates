@@ -59,7 +59,8 @@ namespace ChickenDist.DAL
             decimal salary = 0, decimal dailyWorkHours = 8, decimal hourlyRate = 0, decimal commissionRate = 0, decimal targetAmount = 0,
             string jobTitle = null, DateTime? hireDate = null, string nationalID = null,
             string workStartTime = "09:00", string workEndTime = "17:00", int gracePeriodMinutes = 15,
-            int? defaultWarehouseID = null, string allowedWarehouseIDs = null, string defaultPriceTier = "قطاعي")
+            int? defaultWarehouseID = null, string allowedWarehouseIDs = null, string defaultPriceTier = "قطاعي",
+            bool useSimpleSaleMode = false)
         {
             DbHelper.ClearLastError();
             DbHelper.EnsureEmployeeColumnsExist();
@@ -89,8 +90,8 @@ namespace ChickenDist.DAL
 
             if (id == 0)
                 return DbHelper.ExecuteInsert(
-                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa,CanSellBelowCost,Salary,DailyWorkHours,HourlyRate,SalesCommissionRate,TargetAmount,JobTitle,HireDate,NationalID,WorkStartTime,WorkEndTime,GracePeriodMinutes,DefaultWarehouseID,AllowedWarehouseIDs,DefaultPriceTier) " +
-                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv,@csbc,@sal,@dwh,@hrate,@crate,@target,@jtitle,@hdate,@nid,@wstart,@wend,@gpm,@dwid,@awids,@dpt)",
+                    "INSERT INTO Employees(EmpName,UserName,Password,Role,Phone,IsDriver,IsActive,DefaultSafeID,AllowedSafeIDs,CanSellCash,CanSellCredit,CanSellDriverLoad,CanSellInstallment,CanEditShippingCharge,CanSelectDriver,CanSellVisa,CanSellBelowCost,Salary,DailyWorkHours,HourlyRate,SalesCommissionRate,TargetAmount,JobTitle,HireDate,NationalID,WorkStartTime,WorkEndTime,GracePeriodMinutes,DefaultWarehouseID,AllowedWarehouseIDs,DefaultPriceTier,UseSimpleSaleMode) " +
+                    "VALUES(@n,@u,@p,@r,@ph,@dr,@a,@dsid,@asids,@csc,@ccr,@cdl,@cins,@cesc,@csd,@csv,@csbc,@sal,@dwh,@hrate,@crate,@target,@jtitle,@hdate,@nid,@wstart,@wend,@gpm,@dwid,@awids,@dpt,@ussm)",
                     DbHelper.P("@n", name), DbHelper.P("@u", username), DbHelper.P("@p", hashedPassword),
                     DbHelper.P("@r", role), DbHelper.P("@ph", phone), DbHelper.P("@dr", isDriver), DbHelper.P("@a", isActive),
                     DbHelper.P("@dsid", defaultSafeID.HasValue ? (object)defaultSafeID.Value : (object)DBNull.Value),
@@ -113,7 +114,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@gpm", safeGrace),
                     DbHelper.P("@dwid", defaultWarehouseID.HasValue ? (object)defaultWarehouseID.Value : (object)DBNull.Value),
                     DbHelper.P("@awids", string.IsNullOrEmpty(allowedWarehouseIDs) ? (object)DBNull.Value : (object)allowedWarehouseIDs),
-                    DbHelper.P("@dpt", safeTier));
+                    DbHelper.P("@dpt", safeTier),
+                    DbHelper.P("@ussm", useSimpleSaleMode));
             else
             {
                 var prmsList = new System.Collections.Generic.List<SqlParameter>
@@ -148,6 +150,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@dwid", defaultWarehouseID.HasValue ? (object)defaultWarehouseID.Value : (object)DBNull.Value),
                     DbHelper.P("@awids", string.IsNullOrEmpty(allowedWarehouseIDs) ? (object)DBNull.Value : (object)allowedWarehouseIDs),
                     DbHelper.P("@dpt", safeTier),
+                    DbHelper.P("@ussm", useSimpleSaleMode),
                     DbHelper.P("@id", id)
                 };
 
@@ -155,7 +158,7 @@ namespace ChickenDist.DAL
                                    "DefaultSafeID=@dsid,AllowedSafeIDs=@asids,CanSellCash=@csc,CanSellCredit=@ccr,CanSellDriverLoad=@cdl,CanSellInstallment=@cins,CanEditShippingCharge=@cesc,CanSelectDriver=@csd,CanSellVisa=@csv,CanSellBelowCost=@csbc," +
                                    "Salary=@sal,DailyWorkHours=@dwh,HourlyRate=@hrate,SalesCommissionRate=@crate,TargetAmount=@target,JobTitle=@jtitle,HireDate=@hdate,NationalID=@nid," +
                                    "WorkStartTime=@wstart,WorkEndTime=@wend,GracePeriodMinutes=@gpm," +
-                                   "DefaultWarehouseID=@dwid,AllowedWarehouseIDs=@awids,DefaultPriceTier=@dpt";
+                                   "DefaultWarehouseID=@dwid,AllowedWarehouseIDs=@awids,DefaultPriceTier=@dpt,UseSimpleSaleMode=@ussm";
 
                 if (hashedPassword != null)
                 {

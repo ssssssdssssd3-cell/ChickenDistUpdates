@@ -80,6 +80,17 @@ namespace ChickenDist.Forms
 		private Label lblTotalQtyTitle;
 		private Label lblTotalQtyVal;
 
+		private Button _btnPriceChecker;
+		private Button _btnCustomizeCols;
+		private Button _btnPrepSlip;
+		private Button _btnIncomplete;
+		private Button _btnTawreed;
+		private Button _btnLoadQuote;
+		private Panel _pnlCostGrp;
+		private Panel _pnlProfitGrp;
+		private Button btnToggleSimpleMode;
+		private bool _isSimpleModeActive = false;
+
 		private TextBox txtBarcode;
 		private ComboBox cboProduct;
 		private string _barcodeBuffer = "";
@@ -931,13 +942,37 @@ namespace ChickenDist.Forms
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Margin = new Padding(3, 0, 3, 0)
 			};
-			btnPriceChecker.FlatAppearance.BorderSize = 0;
-			btnPriceChecker.Click += (s, e) => new FrmPriceChecker(false).ShowDialog(this);
+			_btnPriceChecker = btnPriceChecker;
+			_btnCustomizeCols = btnCustomizeCols;
+
+			btnToggleSimpleMode = new Button
+			{
+				Text      = "⚡ وضع الكاشير (مبسط)",
+				Size      = new Size(160, 30),
+				BackColor = Color.FromArgb(16, 185, 129),
+				ForeColor = Color.White,
+				FlatStyle = FlatStyle.Flat,
+				Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Cursor    = Cursors.Hand,
+				Margin    = new Padding(3, 0, 3, 0)
+			};
+			btnToggleSimpleMode.FlatAppearance.BorderSize = 0;
+			btnToggleSimpleMode.Click += (s, e) =>
+			{
+				// إذا كان موظف عادي يحاول فتح الوضع الكامل نطلب كلمة سر الإدارة
+				if (!Session.IsAdmin && _isSimpleModeActive)
+				{
+					if (!Session.PromptAdminPassword(this, "التبديل إلى الوضع التفصيلي يتطلب صلاحية المدير"))
+						return;
+				}
+				ApplySaleViewMode(!_isSimpleModeActive);
+			};
 
 			flowToolbar.Controls.Add(lblBarcode);
 			flowToolbar.Controls.Add(txtBarcode);
 			flowToolbar.Controls.Add(btnSearchProduct);
 			flowToolbar.Controls.Add(btnManualAdd);
+			flowToolbar.Controls.Add(btnToggleSimpleMode);
 			flowToolbar.Controls.Add(btnPriceChecker);
 			flowToolbar.Controls.Add(btnCustomizeCols);
 			pnlGridToolbar.Controls.Add(flowToolbar);
@@ -1332,6 +1367,9 @@ namespace ChickenDist.Forms
 				};
 				pnlCostGrp.Controls.Add(lblCostVal);
 				pnlCostGrp.Controls.Add(lblCostTitle);
+
+				_pnlCostGrp = pnlCostGrp;
+				_pnlProfitGrp = pnlProfitGrp;
 			}
 
 			// 4. شحن / تحميل
@@ -1573,6 +1611,11 @@ namespace ChickenDist.Forms
 			btnIncomplete.Margin = new Padding(2);
 			btnIncomplete.Click += (s, e) => OpenIncompleteSalesDialog();
 
+			_btnPrepSlip = btnPrepSlip;
+			_btnIncomplete = btnIncomplete;
+			_btnTawreed = btnTawreed;
+			_btnLoadQuote = btnLoadQuote;
+
 			pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrepSlip, btnNew, btnIncomplete, btnTawreed, btnLoadQuote, btnLoadHold, btnHold, btnSave });
 
 			// Status bar for Hotkeys
@@ -1606,6 +1649,7 @@ namespace ChickenDist.Forms
 			ToggleType();
 			Theme.ApplyFormRTL(this);
 			ApplyInputStyles(this);
+			ApplySaleViewMode(Session.UseSimpleSaleMode);
 		}
 
 		private void ApplyInputStyles(Control parent)
@@ -3048,20 +3092,91 @@ namespace ChickenDist.Forms
 			if (Session.IsAdmin)
 			{
 				if (nudShippingCharge != null) nudShippingCharge.Enabled = true;
+				if (btnTypeMixed != null) btnTypeMixed.Visible = !_isSimpleModeActive;
+				if (btnTypeDriverLoad != null) btnTypeDriverLoad.Visible = !_isSimpleModeActive;
+				if (btnTypeInstallment != null) btnTypeInstallment.Visible = !_isSimpleModeActive;
 				return;
 			}
 
 			btnTypeCash.Visible = Session.CanSellCash;
 			btnTypeCredit.Visible = Session.CanSellCredit;
 			if (btnTypeVisa != null) btnTypeVisa.Visible = Session.IsAdmin || Session.CanSellVisa;
-			if (btnTypeMixed != null) btnTypeMixed.Visible = Session.IsAdmin || (Session.CanSellCash && Session.CanSellVisa);
-			btnTypeDriverLoad.Visible = Session.CanSellDriverLoad;
-			btnTypeInstallment.Visible = Session.CanSellInstallment;
+			if (btnTypeMixed != null) btnTypeMixed.Visible = !_isSimpleModeActive && (Session.IsAdmin || (Session.CanSellCash && Session.CanSellVisa));
+			btnTypeDriverLoad.Visible = !_isSimpleModeActive && Session.CanSellDriverLoad;
+			btnTypeInstallment.Visible = !_isSimpleModeActive && Session.CanSellInstallment;
 
 			if (nudShippingCharge != null)
 			{
 				nudShippingCharge.Enabled = Session.CanEditShippingCharge;
 			}
+		}
+
+		/// <summary>
+		/// تطبيق وضع واجهة المبيعات (مبسط / تفصيلي)
+		/// </summary>
+		public void ApplySaleViewMode(bool isSimple)
+		{
+			_isSimpleModeActive = isSimple;
+			if (btnToggleSimpleMode != null)
+			{
+				btnToggleSimpleMode.Text = isSimple ? "⚡ وضع الكاشير (مبسط)" : "📋 الوضع التفصيلي";
+				btnToggleSimpleMode.BackColor = isSimple ? Color.FromArgb(16, 185, 129) : Color.FromArgb(71, 85, 105);
+			}
+
+			// 1. إظهار/إخفاء أعمدة جدول الأصناف
+			if (dgItems != null && dgItems.Columns.Count > 0)
+			{
+				if (isSimple)
+				{
+					// إخفاء الأعمدة الزائدة التي تشتت الكاشير اليومي
+					string[] nonEssential = new string[] {
+						"ProductSize", "Color", "PartNumber", "CarModel", "Brand",
+						"ShelfLocation", "LastClientPrice", "IMEI", "ExpiryDate",
+						"PurchasePrice", "CostTotal", "KitchenNotes"
+					};
+					foreach (var colName in nonEssential)
+					{
+						if (dgItems.Columns.Contains(colName))
+							dgItems.Columns[colName].Visible = false;
+					}
+
+					// ضمان ظهور الأعمدة الأساسية للكاشير السريع
+					string[] essential = new string[] {
+						"CodeEntry", "ProductName", "StockQty", "UnitName",
+						"Quantity", "UnitPrice", "DiscountPct", "DiscountAmt", "TotalPrice", "Delete"
+					};
+					foreach (var colName in essential)
+					{
+						if (dgItems.Columns.Contains(colName))
+							dgItems.Columns[colName].Visible = true;
+					}
+				}
+				else
+				{
+					LoadColumnSettings();
+					if (dgItems.Columns.Contains("PurchasePrice"))
+						dgItems.Columns["PurchasePrice"].Visible = Session.CanViewCost("Sales");
+					if (dgItems.Columns.Contains("CostTotal"))
+						dgItems.Columns["CostTotal"].Visible = Session.CanViewCost("Sales");
+				}
+			}
+
+			// 2. أزرار شريط الأدوات الأوسط
+			if (_btnPriceChecker != null) _btnPriceChecker.Visible = !isSimple;
+			if (_btnCustomizeCols != null) _btnCustomizeCols.Visible = !isSimple && Session.CanOrderColumns("Sales");
+
+			// 3. أزرار التذييل
+			if (_btnPrepSlip != null) _btnPrepSlip.Visible = !isSimple;
+			if (_btnIncomplete != null) _btnIncomplete.Visible = !isSimple;
+			if (_btnTawreed != null) _btnTawreed.Visible = !isSimple;
+			if (_btnLoadQuote != null) _btnLoadQuote.Visible = !isSimple;
+
+			// 4. أزرار طرق الدفع
+			ApplyInvoiceTypePermissions();
+
+			// 5. التكلفة والربح في شريط الإجماليات السفلي
+			if (_pnlCostGrp != null) _pnlCostGrp.Visible = !isSimple && Session.CanViewCost("Sales");
+			if (_pnlProfitGrp != null) _pnlProfitGrp.Visible = !isSimple && Session.CanViewCost("Sales");
 		}
 
 		private void ToggleType()
