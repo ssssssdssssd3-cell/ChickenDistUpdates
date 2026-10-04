@@ -1655,17 +1655,26 @@ namespace ChickenDist.Forms
 					if (dataGridView.Columns["ReturnID"] != null) dataGridView.Columns["ReturnID"].Visible = false;
 					break;
 				case "DetailedPurchaseReturns":
-					_currentDt = PurchaseReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
-					SetupGrid(new(string, string)[6]
+					int? retSuppID = (_preFilteredID > 0) ? _preFilteredID : (int?)null;
+					string retKeyword = txtSearchClient != null ? txtSearchClient.Text.Trim() : null;
+					_currentDt = PurchaseDAL.GetDetailedPurchaseReturns(dtpFrom.Value, dtpTo.Value, retSuppID, retKeyword, warehouseID);
+					SetupGrid(new(string, string)[]
 					{
 						("ReturnDate", "التاريخ والوقت"),
-						("PurchaseCode", "الفاتورة الأصلية"),
-						("SupplierName", "المورد / العميل"),
-						("TotalAmount", "قيمة المرتجع"),
-						("Notes", "البيان / الملاحظات"),
-						("ReturnID", "معرف المرتجع")
+						("ReturnCode", "رقم المرتجع"),
+						("OriginalPurchaseCode", "الفاتورة الأصلية"),
+						("SupplierName", "المورد / الجهة"),
+						("ProductCode", "كود الصنف"),
+						("ProductName", "اسم الصنف المرتجع"),
+						("ReturnedQty", "الكمية المرتجعة"),
+						("UnitName", "الوحدة"),
+						("UnitPrice", "سعر الوحدة"),
+						("TotalReturnAmount", "إجمالي المرتجع"),
+						("PaymentTypeArabic", "طريقة السداد"),
+						("WarehouseName", "المخزن"),
+						("CreatedByName", "القائم بالعمل"),
+						("Notes", "البيان / الملاحظات")
 					}, dataGridView);
-					if (dataGridView.Columns["ReturnID"] != null) dataGridView.Columns["ReturnID"].Visible = false;
 					break;
 				case "DailySalesSummary":
 					_currentDt = ReportDAL.GetDailySalesSummary(dtpFrom.Value, dtpTo.Value, warehouseID);
@@ -1981,22 +1990,28 @@ namespace ChickenDist.Forms
 					break;
 				case "PurchaseBonusReport":
 					int? bonusSuppID = (_preFilteredID > 0) ? _preFilteredID : (int?)null;
-					_currentDt = PurchaseDAL.GetPurchaseBonusReport(dtpFrom.Value, dtpTo.Value, bonusSuppID, warehouseID);
+					string bonusKw = txtSearchClient != null ? txtSearchClient.Text.Trim() : null;
+					_currentDt = PurchaseDAL.GetPurchaseBonusDetails(dtpFrom.Value, dtpTo.Value, bonusSuppID, warehouseID, bonusKw);
 					SetupGrid(new(string, string)[]
 					{
-						("SupplierName", "المورد"),
-						("Phone", "الهاتف"),
-						("InvoicesCount", "عدد الفواتير"),
-						("TotalPurchasedQty", "الكميات المشتراة"),
-						("TotalBonusQty", "إجمالي البونص المجاني 🎁"),
-						("ReturnedBonusQty", "مرتجع البونص"),
-						("NetBonusQty", "صافي البونص"),
-						("BonusRatioPct", "نسبة البونص %"),
+						("PurchaseDate", "التاريخ والوقت"),
+						("PurchaseCode", "رقم الفاتورة"),
+						("SupplierInvoiceNo", "فاتورة المورد"),
+						("SupplierName", "المورد / الجهة"),
+						("ProductCode", "كود الصنف"),
+						("ProductName", "الصنف الحاصل على البونص"),
+						("PurchasedQty", "الكمية المشتراة"),
+						("BonusQty", "كمية البونص المجاني 🎁"),
+						("UnitName", "الوحدة"),
+						("UnitPrice", "سعر الشراء"),
 						("EstimatedBonusValue", "القيمة التقديرية للبونص"),
-						("TotalPurchasesAmount", "إجمالي المشتريات"),
-						("SupplierID", "معرف المورد")
+						("LineTotal", "إجمالي الصنف"),
+						("InvoiceTotal", "إجمالي الفاتورة"),
+						("WarehouseName", "المخزن"),
+						("Notes", "الملاحظات"),
+						("PurchaseID", "معرف الفاتورة")
 					}, dataGridView);
-					if (dataGridView.Columns["SupplierID"] != null) dataGridView.Columns["SupplierID"].Visible = false;
+					if (dataGridView.Columns["PurchaseID"] != null) dataGridView.Columns["PurchaseID"].Visible = false;
 					break;
 
 				case "DetailedPurchases":
@@ -2989,11 +3004,12 @@ namespace ChickenDist.Forms
 					Resizable = DataGridViewTriState.True
 				};
 
-				if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "ReturnedQty" || name == "ReturnAmount")
+				if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "ReturnedQty" || name == "ReturnAmount" || name == "BonusQty" || name == "PurchasedQty")
 				{
 					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 					col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-					if (name == "TotalQty" || name == "TotalQtySold" || name == "NetQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
+					if (name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "PurchasedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
+					else if (name == "BonusQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(16, 185, 129);
 					else if (name == "ReturnAmount" || name == "ReturnedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
 				}
 				else if (name == "TotalBeforeDiscount" || name == "DiscountAmount" || name == "TotalDiscounts" || name == "DiscountAmt" || 
@@ -3292,6 +3308,12 @@ namespace ChickenDist.Forms
 					break;
 				case "Total":
 				case "TotalAmount":
+				case "TotalReturnAmount":
+				case "BonusQty":
+				case "PurchasedQty":
+				case "EstimatedBonusValue":
+				case "LineTotal":
+				case "InvoiceTotal":
 				case "Count":
 				case "CashTotal":
 				case "CreditTotal":
@@ -4886,6 +4908,12 @@ namespace ChickenDist.Forms
 						{
 							case "Total":
 							case "TotalAmount":
+							case "TotalReturnAmount":
+							case "BonusQty":
+							case "PurchasedQty":
+							case "EstimatedBonusValue":
+							case "LineTotal":
+							case "InvoiceTotal":
 							case "Count":
 							case "CashTotal":
 							case "CreditTotal":

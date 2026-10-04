@@ -540,6 +540,7 @@ namespace ChickenDist.Forms
                     MessageBox.Show("عفواً، ليس لديك صلاحية استخدام شاشة بحث الأصناف السريعة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+                if (!ValidateSupplierAndInvoiceBeforeAddingItem(true)) return;
                 try
                 {
                     _searchSessionActive = true;
@@ -1501,6 +1502,12 @@ namespace ChickenDist.Forms
         {
             if (string.IsNullOrWhiteSpace(code)) return;
 
+            if (!ValidateSupplierAndInvoiceBeforeAddingItem(true))
+            {
+                if (txtBarcode != null) txtBarcode.Clear();
+                return;
+            }
+
             if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
                 string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
                 (DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
@@ -1794,6 +1801,11 @@ namespace ChickenDist.Forms
                 if (_isScanningBarcode) return;
                 if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
                 {
+                    if (!ValidateSupplierAndInvoiceBeforeAddingItem(true))
+                    {
+                        cboProduct.SelectedIndex = 0;
+                        return;
+                    }
                     decimal price = ci.Extra;
                     decimal salePrice = ci.Price;
                     
@@ -1919,6 +1931,7 @@ namespace ChickenDist.Forms
         private void AddProductToGrid(int prodId, string prodCode, string prodName, decimal qty, decimal price, decimal disc, decimal salePrice)
         {
             if (prodId <= 0) return;
+            if (!ValidateSupplierAndInvoiceBeforeAddingItem(false)) return;
 
             ComboItem product = GetProductComboItem(prodId);
 
@@ -2070,6 +2083,8 @@ namespace ChickenDist.Forms
         /// <summary>يضيف سطراً فارغاً ويضع الكيرسور على عمود كود الصنف</summary>
         private void AddNewCodeRow()
         {
+            if (!ValidateSupplierAndInvoiceBeforeAddingItem(true)) return;
+
             if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count)
             {
                 var prevCell = dgItems.Rows[_pendingRowIdx].Cells["ProductCode"];
@@ -3713,9 +3728,44 @@ namespace ChickenDist.Forms
         // ══════════════════════════════════════════════════════════════════════
         // مساعدات خاصة
 
+        private bool ValidateSupplierAndInvoiceBeforeAddingItem(bool showMessage = true)
+        {
+            int? partyID = GetSelectedSupplier();
+            if (!partyID.HasValue)
+            {
+                if (showMessage)
+                {
+                    bool isClientPurchase = cboPurchaseSource != null && cboPurchaseSource.SelectedIndex == 1;
+                    string partyName = isClientPurchase ? "العميل" : "المورد";
+                    MessageBox.Show($"⚠️ يرجى اختيار {partyName} أولاً قبل إضافة الأصناف للفاتورة!", $"تنبيه اختيار {partyName}", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    if (cboSupplier != null)
+                    {
+                        this.BeginInvoke((MethodInvoker)delegate { cboSupplier.Focus(); });
+                    }
+                }
+                return false;
+            }
+
+            string suppInv = txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "";
+            if (string.IsNullOrWhiteSpace(suppInv))
+            {
+                if (showMessage)
+                {
+                    MessageBox.Show("⚠️ يرجى كتابة رقم فاتورة الشراء (رقم فاتورة المورد) أولاً قبل إضافة الأصناف للفاتورة!", "تنبيه رقم الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    if (txtSupplierInvoiceNo != null)
+                    {
+                        this.BeginInvoke((MethodInvoker)delegate { txtSupplierInvoiceNo.Focus(); });
+                    }
+                }
+                return false;
+            }
+
+            return true;
+        }
+
         private int? GetSelectedSupplier()
         {
-            if (cboSupplier.SelectedItem is ComboItem ci && ci.ID > 0)
+            if (cboSupplier != null && cboSupplier.SelectedItem is ComboItem ci && ci.ID > 0)
                 return ci.ID;
             return null;
         }

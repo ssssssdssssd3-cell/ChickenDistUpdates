@@ -994,37 +994,46 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>7. تقرير مرتجعات المشتريات التفصيلي</summary>
-        public static DataTable GetDetailedPurchaseReturns(DateTime from, DateTime to, int? supplierID = null, string keyword = null)
+        public static DataTable GetDetailedPurchaseReturns(DateTime from, DateTime to, int? supplierID = null, string keyword = null, int? warehouseID = null)
         {
-            DateTime f = from;
-            DateTime t = to;
-            if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
+            DateTime f = from.Date;
+            DateTime t = to.Date;
 
             return DbHelper.Query(
                 @"SELECT 
                     pr.ReturnDate AS ReturnDate,
                     CAST(pr.ReturnID AS NVARCHAR) AS ReturnCode,
-                    ISNULL(p.PurchaseCode, N'مرتجع عام') AS OriginalPurchaseCode,
-                    ISNULL(s.SupplierName, N'مورد عام') AS SupplierName,
-                    COALESCE(prod.ProductCode, prod.PartNumber, CAST(prod.ProductID AS NVARCHAR)) AS ProductCode,
-                    prod.ProductName AS ProductName,
-                    pri.Quantity AS ReturnedQty,
-                    COALESCE(pri.UnitName, prod.Unit, N'قطعة') AS UnitName,
-                    pri.UnitPrice AS UnitPrice,
-                    pri.TotalPrice AS TotalReturnAmount,
+                    ISNULL(p.PurchaseCode, N'مرتجع شراء عام (مباشر)') AS OriginalPurchaseCode,
+                    ISNULL(s.SupplierName, CASE WHEN p.PurchaseSource = 'Client' AND c.ClientName IS NOT NULL THEN c.ClientName ELSE N'مورد نقدي / عام' END) AS SupplierName,
+                    COALESCE(prod.ProductCode, prod.PartNumber, CAST(prod.ProductID AS NVARCHAR), N'---') AS ProductCode,
+                    ISNULL(prod.ProductName, N'---') AS ProductName,
+                    ISNULL(pri.Quantity, 0) AS ReturnedQty,
+                    COALESCE(pri.UnitName, prod.Unit, N'---') AS UnitName,
+                    ISNULL(pri.UnitPrice, 0) AS UnitPrice,
+                    COALESCE(pri.TotalPrice, pr.TotalAmount, 0) AS TotalReturnAmount,
+                    CASE 
+                        WHEN pr.PaymentType = 'Cash' OR pr.PaymentType LIKE '%نقدي%' THEN N'نقدي'
+                        WHEN pr.PaymentType = 'Visa' OR pr.PaymentType LIKE '%فيزا%' OR pr.PaymentType LIKE '%Bank%' THEN N'فيزا / بنك'
+                        ELSE N'آجل (خصم من الرصيد)'
+                    END AS PaymentTypeArabic,
+                    ISNULL(w.WarehouseName, N'المخزن الرئيسي') AS WarehouseName,
                     ISNULL(e.EmpName, N'---') AS CreatedByName,
                     ISNULL(pr.Notes, N'---') AS Notes
-                FROM PurchaseReturnItems pri
-                JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
-                JOIN Products prod ON pri.ProductID = prod.ProductID
+                FROM PurchaseReturns pr
+                LEFT JOIN PurchaseReturnItems pri ON pri.ReturnID = pr.ReturnID
+                LEFT JOIN Products prod ON pri.ProductID = prod.ProductID
                 LEFT JOIN Purchases p ON pr.PurchaseID = p.PurchaseID
                 LEFT JOIN Suppliers s ON pr.SupplierID = s.SupplierID
+                LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                LEFT JOIN Warehouses w ON pr.WarehouseID = w.WarehouseID
                 LEFT JOIN Employees e ON pr.CreatedBy = e.EmpID
-                WHERE pr.ReturnDate BETWEEN @f AND @t
+                WHERE CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t
+                  AND (@wid IS NULL OR pr.WarehouseID = @wid)
                   AND (@supID IS NULL OR pr.SupplierID = @supID)
-                  AND (@kw IS NULL OR prod.ProductName LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%')
-                ORDER BY pr.ReturnDate DESC",
+                  AND (@kw IS NULL OR prod.ProductName LIKE N'%' + @kw + N'%' OR prod.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%' OR CAST(pr.ReturnID AS NVARCHAR) LIKE N'%' + @kw + N'%')
+                ORDER BY pr.ReturnDate DESC, pr.ReturnID DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
+                DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
                 DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
                 DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
         }
@@ -1213,7 +1222,7 @@ namespace ChickenDist.DAL
                   AND (@supID IS NULL OR p.SupplierID = @supID)
                   AND (@wid IS NULL OR p.WarehouseID = @wid)
                 GROUP BY s.SupplierID, s.SupplierName, s.Phone, p.PurchaseSource, p.SupplierID, c.ClientName, c.Phone
-                HAVING ISNULL(SUM(pi.BonusQuantity), 0) > 0 OR ISNULL(SUM(pi.Quantity), 0) > 0
+                HAVING ISNULL(SUM(pi.BonusQuantity), 0) > 0
                 ORDER BY TotalBonusQty DESC, EstimatedBonusValue DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
@@ -1221,38 +1230,45 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>13. تفاصيل بنود بونص المشتريات بكل فاتورة</summary>
-        public static DataTable GetPurchaseBonusDetails(DateTime from, DateTime to, int? supplierID = null, int? warehouseID = null)
+        public static DataTable GetPurchaseBonusDetails(DateTime from, DateTime to, int? supplierID = null, int? warehouseID = null, string keyword = null)
         {
             DateTime f = from.Date;
             DateTime t = to.Date;
             return DbHelper.Query(
                 @"SELECT 
-                    p.PurchaseCode,
+                    p.PurchaseID,
                     p.PurchaseDate,
+                    p.PurchaseCode,
+                    ISNULL(p.SupplierInvoiceNo, N'---') AS SupplierInvoiceNo,
                     ISNULL(s.SupplierName, CASE WHEN p.PurchaseSource = 'Client' THEN ISNULL(c.ClientName, N'عميل') ELSE N'مورد نقدي/عام' END) AS SupplierName,
-                    pr.ProductCode,
+                    COALESCE(pr.ProductCode, pr.PartNumber, CAST(pr.ProductID AS NVARCHAR), N'---') AS ProductCode,
                     pr.ProductName,
-                    ISNULL(pi.UnitName, pr.Unit) AS UnitName,
                     pi.Quantity AS PurchasedQty,
                     pi.BonusQuantity AS BonusQty,
+                    COALESCE(pi.UnitName, pr.Unit, N'قطعة') AS UnitName,
                     pi.UnitPrice,
                     ROUND(pi.BonusQuantity * pi.UnitPrice, 2) AS EstimatedBonusValue,
                     pi.TotalPrice AS LineTotal,
-                    p.TotalAmount AS InvoiceTotal
+                    p.TotalAmount AS InvoiceTotal,
+                    ISNULL(w.WarehouseName, N'المخزن الرئيسي') AS WarehouseName,
+                    ISNULL(p.Notes, N'---') AS Notes
                 FROM Purchases p
                 JOIN PurchaseItems pi ON p.PurchaseID = pi.PurchaseID
                 JOIN Products pr ON pi.ProductID = pr.ProductID
                 LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                 LEFT JOIN Clients c ON p.ClientID = c.ClientID
+                LEFT JOIN Warehouses w ON p.WarehouseID = w.WarehouseID
                 WHERE p.IsPosted = 1
-                  AND pi.BonusQuantity > 0
+                  AND ISNULL(pi.BonusQuantity, 0) > 0
                   AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                   AND (@supID IS NULL OR p.SupplierID = @supID)
                   AND (@wid IS NULL OR p.WarehouseID = @wid)
+                  AND (@kw IS NULL OR pr.ProductName LIKE N'%' + @kw + N'%' OR pr.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%' OR p.SupplierInvoiceNo LIKE N'%' + @kw + N'%')
                 ORDER BY p.PurchaseDate DESC, p.PurchaseID DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
-                DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value));
+                DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
+                DbHelper.P("@kw", string.IsNullOrWhiteSpace(keyword) ? (object)DBNull.Value : keyword.Trim()));
         }
 
         /// <summary>
