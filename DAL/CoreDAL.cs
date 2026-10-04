@@ -511,19 +511,19 @@ namespace ChickenDist.DAL
                     LTRIM(RTRIM(p.InternationalCode)) = @code OR LTRIM(RTRIM(p.InternationalCode)) = @scannedTrimmed OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.InternationalCode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.InternationalCode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    p.InternationalCode LIKE '%' + @code + '%' OR
+                    (LEN(@code) >= 4 AND p.InternationalCode LIKE '%' + @code + '%') OR
                     
                     p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR
                     LTRIM(RTRIM(p.Unit1Barcode)) = @code OR LTRIM(RTRIM(p.Unit1Barcode)) = @scannedTrimmed OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    p.Unit1Barcode LIKE '%' + @code + '%' OR
+                    (LEN(@code) >= 4 AND p.Unit1Barcode LIKE '%' + @code + '%') OR
                     
                     p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR
                     LTRIM(RTRIM(p.Unit2Barcode)) = @code OR LTRIM(RTRIM(p.Unit2Barcode)) = @scannedTrimmed OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    p.Unit2Barcode LIKE '%' + @code + '%' OR
+                    (LEN(@code) >= 4 AND p.Unit2Barcode LIKE '%' + @code + '%') OR
                     
                     p.PartNumber = @code OR p.PartNumber = @scannedTrimmed OR LTRIM(RTRIM(p.PartNumber)) = @code OR
                     p.ScalePLU = @code OR p.ScalePLU = @scannedPadded OR p.ScalePLU = @scannedTrimmed OR
@@ -531,10 +531,11 @@ namespace ChickenDist.DAL
                     (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
                 )
                 ORDER BY CASE 
-                    WHEN (LTRIM(RTRIM(p.ProductCode)) = @code OR LTRIM(RTRIM(p.InternationalCode)) = @code OR LTRIM(RTRIM(p.Unit1Barcode)) = @code OR LTRIM(RTRIM(p.Unit2Barcode)) = @code OR LTRIM(RTRIM(p.PartNumber)) = @code) THEN 0
-                    WHEN (',' + REPLACE(REPLACE(p.InternationalCode, ' ', ''), ';', ',') + ',' LIKE '%,' + @code + ',%') THEN 1
-                    WHEN (p.ScalePLU = @code) THEN 2
-                    ELSE 3
+                    WHEN (LTRIM(RTRIM(p.ProductCode)) = @code OR LTRIM(RTRIM(p.ProductCode)) = @scannedTrimmed OR (@scannedInt > 0 AND (p.ProductID = @scannedInt OR (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)))) THEN 0
+                    WHEN (LTRIM(RTRIM(p.InternationalCode)) = @code OR LTRIM(RTRIM(p.Unit1Barcode)) = @code OR LTRIM(RTRIM(p.Unit2Barcode)) = @code OR LTRIM(RTRIM(p.PartNumber)) = @code) THEN 1
+                    WHEN (',' + REPLACE(REPLACE(p.InternationalCode, ' ', ''), ';', ',') + ',' LIKE '%,' + @code + ',%') THEN 2
+                    WHEN (p.ScalePLU = @code) THEN 3
+                    ELSE 4
                 END",
                 DbHelper.P("@code", scannedCode),
                 DbHelper.P("@scannedPadded", scannedPadded),

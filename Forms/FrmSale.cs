@@ -1751,15 +1751,15 @@ namespace ChickenDist.Forms
 					_barcodeStartTime = DateTime.Now;
 
 					// إذا كان في خلية رقمية أو حقل إدخال عادي → لا تسجّل في البافر
-					bool isEditingNumericCell = dgItems != null
-						&& (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null)
+					bool isGridEditing = dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null);
+					bool isEditingNumericCell = isGridEditing
 						&& dgItems.CurrentCell != null
 						&& (dgItems.CurrentCell.OwningColumn.Name == "Quantity"
 							|| dgItems.CurrentCell.OwningColumn.Name == "UnitPrice"
 							|| dgItems.CurrentCell.OwningColumn.Name == "DiscountPct"
 							|| dgItems.CurrentCell.OwningColumn.Name == "SuggestedSalePrice"
 							|| dgItems.CurrentCell.OwningColumn.Name == "BonusQuantity");
-					bool isTypingInNormalInput = (this.ActiveControl is TextBoxBase tb && tb != txtBarcode)
+					bool isTypingInNormalInput = (!isGridEditing && this.ActiveControl is TextBoxBase tb && tb != txtBarcode)
 											  || (this.ActiveControl is NumericUpDown)
 											  || (this.ActiveControl is ComboBox cbo && cbo.DropDownStyle != ComboBoxStyle.DropDownList);
 
@@ -1954,14 +1954,60 @@ namespace ChickenDist.Forms
 		{
 			if (keyData == Keys.Enter || keyData == Keys.Return)
 			{
-				// أولوية مطلقة: إذا كان المستخدم يحرر خلية في جدول الأصناف (سعر البيع، الكمية، الخصم، إلخ) أو الجدول في بؤرة التركيز
-				// يتم تثبيت القيمة والتنقل للخلية التالية دون أي اعتراض من بافر الاسكنر ودون إلغاء التعديل
+				// 1. أولوية عليا مطلقة لقراءة الاسكنر السريعة (Hardware Scanner Burst)
+				// جهاز الاسكنر يرسل سلسلة الحروف بفاصل زمني فائق السرعة (< 100ms للحرف) متبوعة بـ Enter.
+				// عند التقاط هذا التتابع، يتم تنفيذ قراءة الباركود فوراً وإلغاء أي تحرير معلق دون فتح أسطر فارغة.
+				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 1)
+				{
+					double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
+					if (totalMs < _barcodeBuffer.Length * 100 + 350)
+					{
+						string scannedCode = _barcodeBuffer.Trim();
+						_barcodeBuffer = "";
+
+						// إلغاء أي تعديل مؤقت في الجدول وإزالة السطر المعلق الفارغ إن وجد
+						if (dgItems != null)
+						{
+							try
+							{
+								if (dgItems.IsCurrentCellInEditMode) dgItems.CancelEdit();
+								dgItems.EndEdit();
+							}
+							catch { }
+
+							if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+							{
+								dgItems.Rows.RemoveAt(_pendingRowIdx);
+								_pendingRowIdx = -1;
+							}
+						}
+
+						if (txtBarcode != null)
+							txtBarcode.Clear();
+
+						var (parsedCode, multiQty) = ParseBarcodeMultiplier(scannedCode);
+						ProcessScannedBarcode(parsedCode, multiQty);
+						if (txtBarcode != null)
+						{
+							txtBarcode.Clear();
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
+							txtBarcode.SelectAll();
+						}
+						return true;
+					}
+					_barcodeBuffer = "";
+				}
+
+				// 2. إذا لم يكن إسكنر وكان المستخدم يحرر خلية في جدول الأصناف (سعر البيع، الكمية، الخصم، إلخ)
+				// أو كان الجدول في بؤرة التركيز: يتم تثبيت القيمة والتنقل للخلية التالية
 				if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null || dgItems.Focused))
 				{
 					_barcodeBuffer = "";
 					var curCell = dgItems.CurrentCell;
 					if (curCell != null && curCell.RowIndex >= 0 && curCell.RowIndex < dgItems.Rows.Count)
 					{
+						// إذا كان في سطر معلق (إدخال الكود يدوياً والضغط على Enter)
 						if (curCell.RowIndex >= _items.Count)
 						{
 							dgItems.EndEdit();
@@ -1969,7 +2015,7 @@ namespace ChickenDist.Forms
 						}
 						int productID = _items[curCell.RowIndex].ProductID;
 
-						// Find next editable cell in the same row
+						// البحث عن الخلية القابلة للتعديل التالية في نفس السطر
 						int nextCol = -1;
 						for (int col = curCell.ColumnIndex + 1; col < dgItems.ColumnCount; col++)
 						{
@@ -2003,70 +2049,51 @@ namespace ChickenDist.Forms
 									dgItems.CurrentCell = dgItems.Rows[targetRowIndex].Cells[nextColName];
 									dgItems.BeginEdit(true);
 								}
-								else
+								else if (txtBarcode != null)
 								{
-									AddNewCodeRow();
+									this.ActiveControl = txtBarcode;
+									txtBarcode.Focus();
+									txtBarcode.SelectAll();
 								}
 							});
 							return true;
 						}
 						else
 						{
-							this.BeginInvoke((MethodInvoker)delegate
+							// نهاية تعديل السطر: توجيه المؤشر لحقل الباركود لإضافة الصنف التالي (مثل شاشة المشتريات تماماً دون فتح سطور فارغة)
+							if (txtBarcode != null)
 							{
-								AddNewCodeRow();
-							});
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+								txtBarcode.SelectAll();
+							}
+							else
+							{
+								cboProduct.Focus();
+							}
 							return true;
 						}
 					}
 					else
 					{
 						dgItems.EndEdit();
-						this.BeginInvoke((MethodInvoker)delegate
-						{
-							AddNewCodeRow();
-						});
-						return true;
-					}
-				}
-
-				// فحص قراءة الباركود السريعة من الاسكنر (Scanner Buffer) فقط عند عدم التركيز على خلايا الجدول
-				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
-				{
-					double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
-					if (totalMs < _barcodeBuffer.Length * 100 + 300)
-					{
-						string scannedCode = _barcodeBuffer.Trim();
-						_barcodeBuffer = "";
-
-						// ✅ مسح حقل الباركود قبل المعالجة لمنع TxtBarcode_KeyDown من تشغيل ProcessScannedBarcode مرة ثانية
-						if (txtBarcode != null)
-							txtBarcode.Clear();
-
-						var (parsedCode, multiQty) = ParseBarcodeMultiplier(scannedCode);
-						ProcessScannedBarcode(parsedCode, multiQty);
 						if (txtBarcode != null)
 						{
-							txtBarcode.Clear();
 							this.ActiveControl = txtBarcode;
 							txtBarcode.Focus();
+							txtBarcode.SelectAll();
+						}
+						else
+						{
+							cboProduct.Focus();
 						}
 						return true;
 					}
-					_barcodeBuffer = "";
 				}
 			}
 
-			if (keyData == Keys.Insert || keyData == Keys.Down)
+			if (keyData == Keys.Insert)
 			{
-				if (keyData == Keys.Down)
-				{
-					if (dgItems != null && (dgItems.IsCurrentCellInEditMode || dgItems.EditingControl != null))
-					{
-						return base.ProcessCmdKey(ref msg, keyData);
-					}
-				}
-
 				AddNewCodeRow();
 				return true;
 			}
@@ -3676,6 +3703,11 @@ namespace ChickenDist.Forms
 						{
 							dgItems.Rows.RemoveAt(_pendingRowIdx);
 							_pendingRowIdx = -1;
+						}
+						if (txtBarcode != null)
+						{
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
 						}
 						return;
 					}
