@@ -925,7 +925,7 @@ namespace ChickenDist.Forms
                 {
                     lblSyncStatus.ForeColor = Color.FromArgb(244, 63, 94);
                     lblSyncStatus.Text = "⚠️ تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى Firebase (" + enteredProjectId + ")";
-                    MessageBox.Show($"تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى سيرفر Firebase للمشروع:\n({enteredProjectId})\n\nيرجى التأكد من اتصال الإنترنت وتفعيل Realtime Database وصحة قواعد الحماية في Firebase.", "تنبيه المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى سيرفر Firebase للمشروع:\n({enteredProjectId})\n\nسبب الفشل: {(string.IsNullOrWhiteSpace(CloudSyncService.LastSyncError) ? "غير معروف" : CloudSyncService.LastSyncError)}\n\nيرجى التأكد من اتصال الإنترنت وتفعيل Realtime Database وصحة قواعد الحماية في Firebase.", "تنبيه المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)

@@ -1229,8 +1229,12 @@ self.addEventListener('fetch', (event) => {
             return sb.ToString();
         }
 
+        /// <summary>سبب آخر فشل في رفع كتالوج المتجر إلى Firebase (للعرض للمستخدم)</summary>
+        public static string LastSyncError { get; private set; } = "";
+
         public static async Task<bool> SyncStoreCatalogToFirebaseAsync(string projectId = null)
         {
+            LastSyncError = "";
             if (string.IsNullOrEmpty(projectId))
             {
                 projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
@@ -1376,7 +1380,7 @@ self.addEventListener('fetch', (event) => {
 
                 using (var client = new HttpClient())
                 {
-                    client.Timeout = TimeSpan.FromSeconds(30);
+                    client.Timeout = TimeSpan.FromSeconds(120);
 
                     // A. رفع إعدادات المتجر store_config.json
                     var configContent = new StringContent(storeConfigJson, Encoding.UTF8, "application/json");
@@ -1444,6 +1448,7 @@ self.addEventListener('fetch', (event) => {
                     }
                     else
                     {
+                        LastSyncError = errorDetail != null && errorDetail.Length > 400 ? errorDetail.Substring(0, 400) + "..." : errorDetail;
                         AppLogger.Warn($"فشل رفع كتالوج المتجر إلى Firebase ({projectId}): {errorDetail}", "SyncStoreCatalogToFirebaseAsync");
                         return false;
                     }
@@ -1451,6 +1456,7 @@ self.addEventListener('fetch', (event) => {
             }
             catch (Exception ex)
             {
+                LastSyncError = ex.Message;
                 AppLogger.Error("خطأ في رفع كتالوج وإعدادات المتجر الإلكتروني", ex, "SyncStoreCatalogToFirebaseAsync");
                 return false;
             }
@@ -1858,7 +1864,28 @@ self.addEventListener('fetch', (event) => {
         private static string EscapeJsonString(string s)
         {
             if (string.IsNullOrEmpty(s)) return "";
-            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "");
+            var sb = new StringBuilder(s.Length + 8);
+            foreach (char c in s)
+            {
+                switch (c)
+                {
+                    case '\\': sb.Append("\\\\"); break;
+                    case '"':  sb.Append("\\\""); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': break;
+                    case '\t': sb.Append("\\t"); break;
+                    case '\b': sb.Append("\\b"); break;
+                    case '\f': sb.Append("\\f"); break;
+                    default:
+                        // أي حرف تحكم غير مرئي (مثلاً من استيراد إكسيل) يُهرَّب لتجنب JSON غير صالح
+                        if (c < 0x20 || c == '\u2028' || c == '\u2029')
+                            sb.Append("\\u").Append(((int)c).ToString("x4"));
+                        else
+                            sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
         }
 
         private static string ComputeSha256(string input)
