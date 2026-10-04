@@ -30,12 +30,14 @@ namespace ChickenDist.Forms
 
         // Financial Tab Controls
         private DataGridView dgStatement;
-        private Label lblDebit, lblCredit, lblBalance;
+        private Label lblDebit, lblCredit, lblBalance, lblDiscounts;
         private DataTable _dt;
         private decimal _totalSales = 0;
         private decimal _totalReturns = 0;
         private decimal _totalPayments = 0;
         private decimal _totalClientPurchases = 0;
+        private decimal _totalItemDiscounts = 0;
+        private decimal _totalInvoiceDiscounts = 0;
         private decimal _runBalance = 0;
 
         // Itemized Tab Controls
@@ -432,16 +434,23 @@ namespace ChickenDist.Forms
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
                 EnableHeadersVisualStyles = false
             };
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ والوقت", FillWeight = 55 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "النوع", FillWeight = 40 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit", HeaderText = "مدين", FillWeight = 40 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit", HeaderText = "دائن", FillWeight = 40 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد الجاري", FillWeight = 55 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "القائم بالعمل", FillWeight = 50 });
-            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "تفاصيل الأصناف والبيان المالي للحساب", FillWeight = 170 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ والوقت", FillWeight = 52 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "النوع", FillWeight = 38 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Debit", HeaderText = "مدين", FillWeight = 38 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemDiscount", HeaderText = "خصم أصناف", FillWeight = 36 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "InvoiceDiscount", HeaderText = "خصم فاتورة", FillWeight = 36 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Credit", HeaderText = "دائن", FillWeight = 38 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Balance", HeaderText = "الرصيد الجاري", FillWeight = 50 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "القائم بالعمل", FillWeight = 45 });
+            dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "تفاصيل الأصناف والبيان المالي للحساب", FillWeight = 160 });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransTypeRaw", Visible = false });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "RefID", Visible = false });
             dgStatement.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseNotes", Visible = false });
+
+            dgStatement.Columns["ItemDiscount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgStatement.Columns["ItemDiscount"].DefaultCellStyle.ForeColor = Color.FromArgb(190, 85, 0);
+            dgStatement.Columns["InvoiceDiscount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgStatement.Columns["InvoiceDiscount"].DefaultCellStyle.ForeColor = Color.FromArgb(190, 30, 30);
 
             var btnCol = new DataGridViewButtonColumn
             {
@@ -463,7 +472,7 @@ namespace ChickenDist.Forms
                         string typeRaw = row.Cells["TransTypeRaw"].Value?.ToString();
                         int refID = row.Cells["RefID"].Value != null ? Convert.ToInt32(row.Cells["RefID"].Value) : 0;
 
-                        if ((typeRaw == "Sale" || typeRaw == "Return") && refID > 0)
+                        if ((typeRaw == "Sale" || typeRaw == "Return" || typeRaw == "ClientPurchase") && refID > 0)
                         {
                             var frm = new FrmStatementItemsInfo(typeRaw, refID);
                             frm.ShowDialog();
@@ -472,11 +481,20 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var pnlFoot = new Panel { Dock = DockStyle.Fill, Height = 46, BackColor = Theme.BgCard, Padding = new Padding(8) };
-            lblBalance = new Label { Text = "الصافي: 0", ForeColor = Color.FromArgb(10, 60, 140), Location = new Point(680, 12), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
-            lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.FromArgb(15, 120, 50), Location = new Point(250, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.FromArgb(180, 20, 20), Location = new Point(20, 12), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblCredit, lblBalance });
+            var pnlFoot = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                Height = 46,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(10, 8, 10, 8),
+                RightToLeft = RightToLeft.Yes,
+                WrapContents = false
+            };
+            lblDebit = new Label { Text = "إجمالي مديونية: 0", ForeColor = Color.FromArgb(180, 20, 20), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Margin = new Padding(5, 4, 18, 4) };
+            lblDiscounts = new Label { Text = "إجمالي الخصومات: 0", ForeColor = Color.FromArgb(190, 80, 0), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Margin = new Padding(5, 4, 18, 4) };
+            lblCredit = new Label { Text = "إجمالي مرتجع: 0 | إجمالي توريد: 0", ForeColor = Color.FromArgb(15, 120, 50), AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Margin = new Padding(5, 4, 18, 4) };
+            lblBalance = new Label { Text = "الصافي: 0", ForeColor = Color.FromArgb(10, 60, 140), AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold), Margin = new Padding(5, 3, 10, 4) };
+            pnlFoot.Controls.AddRange(new Control[] { lblDebit, lblDiscounts, lblCredit, lblBalance });
 
             var tblFin = new TableLayoutPanel
             {
@@ -507,10 +525,26 @@ namespace ChickenDist.Forms
             _totalReturns = 0;
             _totalPayments = 0;
             _totalClientPurchases = 0;
+            _totalItemDiscounts = 0;
+            _totalInvoiceDiscounts = 0;
 
             if (prevBalance != 0)
             {
-                dgStatement.Rows.Add("", "رصيد افتتاحي سابق", "", "", prevBalance.ToString("N2") + " ج", "---", "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy"), "", 0, "");
+                int pIdx = dgStatement.Rows.Add();
+                var pRow = dgStatement.Rows[pIdx];
+                pRow.Cells["TransDate"].Value = "";
+                pRow.Cells["TransType"].Value = "رصيد افتتاحي سابق";
+                pRow.Cells["Debit"].Value = "";
+                pRow.Cells["ItemDiscount"].Value = "";
+                pRow.Cells["InvoiceDiscount"].Value = "";
+                pRow.Cells["Credit"].Value = "";
+                pRow.Cells["Balance"].Value = prevBalance.ToString("N2") + " ج";
+                pRow.Cells["CreatedByName"].Value = "---";
+                pRow.Cells["Notes"].Value = "رصيد ما قبل " + dtpFrom.Value.ToString("dd/MM/yyyy");
+                pRow.Cells["TransTypeRaw"].Value = "";
+                pRow.Cells["RefID"].Value = 0;
+                pRow.Cells["BaseNotes"].Value = "";
+                pRow.Cells["BtnView"] = new DataGridViewTextBoxCell { Value = "" };
             }
 
             foreach (DataRow r in _dt.Rows)
@@ -524,9 +558,15 @@ namespace ChickenDist.Forms
                 string baseNotes = r["Notes"].ToString();
                 string detailedNotes = baseNotes;
 
+                decimal itmDisc = r.Table.Columns.Contains("ItemDiscount") && r["ItemDiscount"] != DBNull.Value ? Convert.ToDecimal(r["ItemDiscount"]) : 0m;
+                decimal invDisc = r.Table.Columns.Contains("InvoiceDiscount") && r["InvoiceDiscount"] != DBNull.Value ? Convert.ToDecimal(r["InvoiceDiscount"]) : 0m;
+
                 if (typeStr == "Sale" && refID > 0)
                 {
                     _totalSales += deb;
+                    _totalItemDiscounts += itmDisc;
+                    _totalInvoiceDiscounts += invDisc;
+
                     var dtItems = DbHelper.Query(@"
                         SELECT p.ProductName, si.Quantity, p.Unit
                         FROM SaleItems si
@@ -588,24 +628,38 @@ namespace ChickenDist.Forms
                 }
 
                 string createdBy = r.Table.Columns.Contains("CreatedByName") && r["CreatedByName"] != DBNull.Value ? r["CreatedByName"].ToString() : "---";
-                var rowIdx = dgStatement.Rows.Add(
-                    Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
-                    TransTypeName(typeStr),
-                    deb > 0 ? deb.ToString("N2") : "",
-                    cred > 0 ? cred.ToString("N2") : "",
-                    _runBalance.ToString("N2") + " ج",
-                    createdBy,
-                    detailedNotes,
-                    typeStr,
-                    refID,
-                    baseNotes);
+                int rowIdx = dgStatement.Rows.Add();
+                var row = dgStatement.Rows[rowIdx];
+                row.Cells["TransDate"].Value = Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm");
+                row.Cells["TransType"].Value = TransTypeName(typeStr);
+                row.Cells["Debit"].Value = deb > 0 ? deb.ToString("N2") : "";
+                row.Cells["ItemDiscount"].Value = itmDisc > 0 ? itmDisc.ToString("N2") : "";
+                row.Cells["InvoiceDiscount"].Value = invDisc > 0 ? invDisc.ToString("N2") : "";
+                row.Cells["Credit"].Value = cred > 0 ? cred.ToString("N2") : "";
+                row.Cells["Balance"].Value = _runBalance.ToString("N2") + " ج";
+                row.Cells["CreatedByName"].Value = createdBy;
+                row.Cells["Notes"].Value = detailedNotes;
+                row.Cells["TransTypeRaw"].Value = typeStr;
+                row.Cells["RefID"].Value = refID;
+                row.Cells["BaseNotes"].Value = baseNotes;
 
-                if ((typeStr != "Sale" && typeStr != "Return") || refID <= 0)
+                if (itmDisc > 0)
                 {
-                    dgStatement.Rows[rowIdx].Cells["BtnView"] = new DataGridViewTextBoxCell { Value = "" };
+                    row.Cells["ItemDiscount"].Style.ForeColor = Color.FromArgb(190, 85, 0);
+                    row.Cells["ItemDiscount"].Style.Font = new Font(dgStatement.Font, FontStyle.Bold);
+                }
+                if (invDisc > 0)
+                {
+                    row.Cells["InvoiceDiscount"].Style.ForeColor = Color.FromArgb(190, 30, 30);
+                    row.Cells["InvoiceDiscount"].Style.Font = new Font(dgStatement.Font, FontStyle.Bold);
                 }
 
-                var rowStyle = dgStatement.Rows[rowIdx].DefaultCellStyle;
+                if ((typeStr != "Sale" && typeStr != "Return" && typeStr != "ClientPurchase") || refID <= 0)
+                {
+                    row.Cells["BtnView"] = new DataGridViewTextBoxCell { Value = "" };
+                }
+
+                var rowStyle = row.DefaultCellStyle;
                 if (typeStr == "Sale")
                 {
                     rowStyle.BackColor = Color.FromArgb(240, 244, 255);
@@ -634,6 +688,11 @@ namespace ChickenDist.Forms
             }
 
             lblDebit.Text = $"إجمالي مديونية: {_totalSales:N2} ج";
+            decimal grandDiscounts = _totalItemDiscounts + _totalInvoiceDiscounts;
+            if (lblDiscounts != null)
+            {
+                lblDiscounts.Text = $"إجمالي الخصومات: {grandDiscounts:N2} ج (أصناف: {_totalItemDiscounts:N2} | فواتير: {_totalInvoiceDiscounts:N2})";
+            }
             lblCredit.Text = $"إجمالي مرتجع: {_totalReturns:N2} ج  |  إجمالي توريد: {_totalPayments:N2} ج" +
                              (_totalClientPurchases > 0 ? $"  |  شراء من عميل: {_totalClientPurchases:N2} ج" : "");
             lblBalance.Text = $"الصافي: {_runBalance:N2} ج";
@@ -1079,6 +1138,11 @@ namespace ChickenDist.Forms
 
             sb.AppendLine("──────────────────────");
             sb.AppendLine($"💳 إجمالي مديونية الفواتير: {_totalSales:N2} ج");
+            if (_totalItemDiscounts > 0 || _totalInvoiceDiscounts > 0)
+            {
+                decimal totalAllDiscounts = _totalItemDiscounts + _totalInvoiceDiscounts;
+                sb.AppendLine($"🏷️ إجمالي الخصومات: {totalAllDiscounts:N2} ج (أصناف: {_totalItemDiscounts:N2} ج | فواتير: {_totalInvoiceDiscounts:N2} ج)");
+            }
             sb.AppendLine($"💵 إجمالي التحصيلات النقدية: {_totalPayments:N2} ج");
             if (_totalReturns > 0) sb.AppendLine($"🔄 إجمالي المرتجعات: {_totalReturns:N2} ج");
             if (_totalClientPurchases > 0) sb.AppendLine($"📦 شراء من عميل: {_totalClientPurchases:N2} ج");
@@ -1205,7 +1269,20 @@ namespace ChickenDist.Forms
                         if (typeRaw == "Sale")
                         {
                             dtItems = DbHelper.Query(@"
-                                SELECT p.ProductName, si.Quantity, ISNULL(si.UnitName, p.Unit) AS Unit, si.UnitPrice, (si.Quantity * si.UnitPrice) AS Total
+                                SELECT p.ProductName, si.Quantity, ISNULL(NULLIF(si.UnitName, ''), p.Unit) AS Unit,
+                                       si.UnitPrice,
+                                       CASE 
+                                           WHEN ISNULL(si.DiscountAmt, 0) > 0 THEN si.DiscountAmt 
+                                           WHEN ISNULL(si.DiscountPct, 0) > 0 THEN (si.Quantity * si.UnitPrice * si.DiscountPct / 100.0)
+                                           ELSE 0 
+                                       END AS ItemDiscount,
+                                       ISNULL(si.TotalPrice, (si.Quantity * si.UnitPrice) - 
+                                           CASE 
+                                               WHEN ISNULL(si.DiscountAmt, 0) > 0 THEN si.DiscountAmt 
+                                               WHEN ISNULL(si.DiscountPct, 0) > 0 THEN (si.Quantity * si.UnitPrice * si.DiscountPct / 100.0)
+                                               ELSE 0 
+                                           END
+                                       ) AS Total
                                 FROM SaleItems si
                                 JOIN Products p ON si.ProductID = p.ProductID
                                 WHERE si.SaleID = @id", DbHelper.P("@id", refID));
@@ -1213,7 +1290,7 @@ namespace ChickenDist.Forms
                         else if (typeRaw == "Return")
                         {
                             dtItems = DbHelper.Query(@"
-                                SELECT p.ProductName, ri.Quantity, ISNULL(ri.UnitName, p.Unit) AS Unit, ri.UnitPrice, (ri.Quantity * ri.UnitPrice) AS Total
+                                SELECT p.ProductName, ri.Quantity, ISNULL(NULLIF(ri.UnitName, ''), p.Unit) AS Unit, ri.UnitPrice, 0.00 AS ItemDiscount, (ri.Quantity * ri.UnitPrice) AS Total
                                 FROM ReturnItems ri
                                 JOIN Products p ON ri.ProductID = p.ProductID
                                 WHERE ri.ReturnID = @id", DbHelper.P("@id", refID));
@@ -1221,7 +1298,13 @@ namespace ChickenDist.Forms
                         else if (typeRaw == "ClientPurchase")
                         {
                             dtItems = DbHelper.Query(@"
-                                SELECT p.ProductName, pi2.Quantity, ISNULL(pi2.UnitName, p.Unit) AS Unit, pi2.UnitPrice, (pi2.Quantity * pi2.UnitPrice) AS Total
+                                SELECT p.ProductName, pi2.Quantity, ISNULL(NULLIF(pi2.UnitName, ''), p.Unit) AS Unit, pi2.UnitPrice,
+                                       CASE 
+                                           WHEN ISNULL(pi2.DiscountAmt, 0) > 0 THEN pi2.DiscountAmt 
+                                           WHEN ISNULL(pi2.DiscountPct, 0) > 0 THEN (pi2.Quantity * pi2.UnitPrice * pi2.DiscountPct / 100.0)
+                                           ELSE 0 
+                                       END AS ItemDiscount,
+                                       (pi2.Quantity * pi2.UnitPrice) AS Total
                                 FROM PurchaseItems pi2
                                 JOIN Products p ON pi2.ProductID = p.ProductID
                                 WHERE pi2.PurchaseID = @id", DbHelper.P("@id", refID));
@@ -1271,8 +1354,8 @@ namespace ChickenDist.Forms
                         g.FillRectangle(new SolidBrush(Color.FromArgb(232, 238, 248)), subLeft, y, subWidth, itemsHeaderHeight);
                         g.DrawRectangle(subGridPen, subLeft, y, subWidth, itemsHeaderHeight);
 
-                        float[] subCols = { subLeft, subLeft + (subWidth * 0.45f), subLeft + (subWidth * 0.60f), subLeft + (subWidth * 0.72f), subLeft + (subWidth * 0.85f), subLeft + subWidth };
-                        string[] subHeaders = { "اسم الصنف", "الكمية", "الوحدة", "سعر الوحدة", "الإجمالي" };
+                        float[] subCols = { subLeft, subLeft + (subWidth * 0.40f), subLeft + (subWidth * 0.52f), subLeft + (subWidth * 0.64f), subLeft + (subWidth * 0.76f), subLeft + (subWidth * 0.88f), subLeft + subWidth };
+                        string[] subHeaders = { "اسم الصنف", "الكمية", "الوحدة", "سعر الوحدة", "خصم الصنف", "الصافي" };
 
                         for (int k = 0; k < subHeaders.Length; k++)
                         {
@@ -1287,6 +1370,8 @@ namespace ChickenDist.Forms
                             string pQty   = Convert.ToDecimal(itemRow["Quantity"]).ToString("N2");
                             string pUnit  = itemRow["Unit"].ToString();
                             string pPrice = Convert.ToDecimal(itemRow["UnitPrice"]).ToString("N2");
+                            decimal discVal = itemRow.Table.Columns.Contains("ItemDiscount") && itemRow["ItemDiscount"] != DBNull.Value ? Convert.ToDecimal(itemRow["ItemDiscount"]) : 0;
+                            string pDisc  = discVal > 0 ? discVal.ToString("N2") : "-";
                             string pTot   = Convert.ToDecimal(itemRow["Total"]).ToString("N2");
 
                             g.FillRectangle(new SolidBrush(Color.FromArgb(254, 255, 255)), subLeft, y, subWidth, 18);
@@ -1296,7 +1381,8 @@ namespace ChickenDist.Forms
                             g.DrawString(pQty, itemFont, Brushes.Black, new RectangleF(subCols[1], y, subCols[2] - subCols[1], 18), sfCenter);
                             g.DrawString(pUnit, itemFont, Brushes.Black, new RectangleF(subCols[2], y, subCols[3] - subCols[2], 18), sfCenter);
                             g.DrawString(pPrice, itemFont, Brushes.Black, new RectangleF(subCols[3], y, subCols[4] - subCols[3], 18), sfCenter);
-                            g.DrawString(pTot, itemFont, Brushes.DarkBlue, new RectangleF(subCols[4], y, subCols[5] - subCols[4], 18), sfCenter);
+                            g.DrawString(pDisc, itemFont, discVal > 0 ? Brushes.DarkOrange : Brushes.Gray, new RectangleF(subCols[4], y, subCols[5] - subCols[4], 18), sfCenter);
+                            g.DrawString(pTot, itemFont, Brushes.DarkBlue, new RectangleF(subCols[5], y, subCols[6] - subCols[5], 18), sfCenter);
 
                             for (int k = 1; k < subCols.Length - 1; k++)
                                 g.DrawLine(subGridPen, subCols[k], y, subCols[k], y + 18);
@@ -1326,7 +1412,8 @@ namespace ChickenDist.Forms
                 g.FillRectangle(new SolidBrush(Color.FromArgb(235, 242, 252)), leftMargin, y + 4, tableWidth, 26);
                 g.DrawRectangle(borderPen, leftMargin, y + 4, tableWidth, 26);
 
-                string grandSummary = $"{lblDebit.Text}   |   {lblCredit.Text}   |   {lblBalance.Text}";
+                string discSummary = (lblDiscounts != null && !string.IsNullOrEmpty(lblDiscounts.Text)) ? $"{lblDiscounts.Text}   |   " : "";
+                string grandSummary = $"{lblDebit.Text}   |   {discSummary}{lblCredit.Text}   |   {lblBalance.Text}";
                 g.DrawString(grandSummary, boldDataFont, Brushes.DarkBlue, new RectangleF(leftMargin, y + 4, tableWidth, 26), sfCenter);
             };
 
@@ -1335,11 +1422,12 @@ namespace ChickenDist.Forms
         }
     }
 
-    /// <summary>نافذة فرعية لعرض تفاصيل الأصناف المضمنة في الفاتورة المحددة</summary>
+    /// <summary>نافذة فرعية لعرض تفاصيل الأصناف المضمنة في الفاتورة المحددة شاملاً الخصومات والصافي</summary>
     public class FrmStatementItemsInfo : Form
     {
         private DataGridView dgItems;
-        private Label lblTitle, lblTotal;
+        private Label lblTitle;
+        private Label lblGross, lblItemDiscount, lblInvoiceDiscount, lblTotalDiscount, lblNet;
         private Button btnClose;
 
         public FrmStatementItemsInfo(string transType, int refID)
@@ -1357,7 +1445,8 @@ namespace ChickenDist.Forms
             else if (transType == "ClientPurchase") titleText = $"تفاصيل أصناف الشراء من العميل رقم: #{refID}";
 
             this.Text = titleText;
-            this.Size = new Size(580, 420);
+            this.Size = new Size(840, 520);
+            this.MinimumSize = new Size(740, 440);
             this.StartPosition = FormStartPosition.CenterParent;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -1368,10 +1457,11 @@ namespace ChickenDist.Forms
             {
                 Text = titleText,
                 Dock = DockStyle.Top,
-                Height = 40,
+                Height = 44,
                 ForeColor = Theme.Accent,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleCenter
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Theme.BgCard
             };
             this.Controls.Add(lblTitle);
 
@@ -1391,30 +1481,56 @@ namespace ChickenDist.Forms
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Theme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 10, FontStyle.Bold) },
                 EnableHeadersVisualStyles = false
             };
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف" });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", FillWeight = 45 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 35 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Price", HeaderText = "السعر", FillWeight = 45 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Total", HeaderText = "الإجمالي", FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "اسم الصنف", FillWeight = 110 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية", FillWeight = 35 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit", HeaderText = "الوحدة", FillWeight = 30 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "السعر (ج)", FillWeight = 40 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "GrossTotal", HeaderText = "الإجمالي (ج)", FillWeight = 45 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ItemDiscount", HeaderText = "خصم الصنف", FillWeight = 45 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetTotal", HeaderText = "الصافي (ج)", FillWeight = 50 });
+
+            dgItems.Columns["Quantity"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns["Unit"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns["UnitPrice"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns["GrossTotal"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns["ItemDiscount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgItems.Columns["NetTotal"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
             this.Controls.Add(dgItems);
 
-            var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
-            
-            lblTotal = new Label
+            var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 84, BackColor = Theme.BgCard, Padding = new Padding(10, 8, 10, 8) };
+
+            var flowTotals = new FlowLayoutPanel
             {
-                Text = "إجمالي العملية: 0.00 ج",
-                Dock = DockStyle.Right,
-                Width = 250,
-                ForeColor = Theme.Accent,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight
+                Dock = DockStyle.Fill,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Color.Transparent,
+                WrapContents = true,
+                Padding = new Padding(4, 4, 4, 4)
             };
-            pnlBottom.Controls.Add(lblTotal);
 
-            btnClose = Theme.MakeButton("إغلاق", 10, 10, 100, 32, Color.FromArgb(90, 90, 90));
+            lblGross = new Label { Text = "الإجمالي قبل الخصم: 0.00 ج", ForeColor = Color.FromArgb(70, 80, 95), AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Margin = new Padding(6, 6, 12, 6) };
+            lblItemDiscount = new Label { Text = "خصم الأصناف: 0.00 ج", ForeColor = Color.FromArgb(190, 85, 0), AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Margin = new Padding(6, 6, 12, 6) };
+            lblInvoiceDiscount = new Label { Text = "خصم الفاتورة: 0.00 ج", ForeColor = Color.FromArgb(190, 30, 30), AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Margin = new Padding(6, 6, 12, 6) };
+            lblTotalDiscount = new Label { Text = "إجمالي الخصومات: 0.00 ج", ForeColor = Color.FromArgb(180, 20, 20), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), Margin = new Padding(6, 5, 12, 6) };
+            lblNet = new Label { Text = "الصافي النهائي: 0.00 ج", ForeColor = Color.FromArgb(10, 60, 140), AutoSize = true, Font = new Font("Segoe UI", 11f, FontStyle.Bold), Margin = new Padding(6, 4, 12, 6) };
+
+            flowTotals.Controls.AddRange(new Control[] { lblGross, lblItemDiscount, lblInvoiceDiscount, lblTotalDiscount, lblNet });
+            pnlBottom.Controls.Add(flowTotals);
+
+            var pnlActions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                Width = 120,
+                BackColor = Color.Transparent,
+                Padding = new Padding(4)
+            };
+
+            btnClose = Theme.MakeButton("✖ إغلاق", 0, 0, 110, 36, Color.FromArgb(90, 95, 105));
             btnClose.Click += (s, e) => this.Close();
-            pnlBottom.Controls.Add(btnClose);
+            pnlActions.Controls.Add(btnClose);
 
+            pnlBottom.Controls.Add(pnlActions);
             this.Controls.Add(pnlBottom);
 
             lblTitle.BringToFront();
@@ -1428,54 +1544,182 @@ namespace ChickenDist.Forms
         {
             dgItems.Rows.Clear();
             DataTable dt = null;
+            decimal headerDiscount = 0;
+            decimal finalNet = 0;
+            decimal shippingCharge = 0;
+            string codeStr = "";
+            DateTime? transDate = null;
 
             if (transType == "Sale")
             {
+                var dtHeader = DbHelper.Query("SELECT SaleCode, SaleDate, TotalAmount, DiscountAmount, DiscountPct, ShippingCharge FROM Sales WHERE SaleID = @id", DbHelper.P("@id", refID));
+                if (dtHeader.Rows.Count > 0)
+                {
+                    var hRow = dtHeader.Rows[0];
+                    codeStr = hRow["SaleCode"]?.ToString();
+                    if (hRow["SaleDate"] != DBNull.Value) transDate = Convert.ToDateTime(hRow["SaleDate"]);
+                    headerDiscount = hRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["DiscountAmount"]) : 0;
+                    finalNet = hRow["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["TotalAmount"]) : 0;
+                    shippingCharge = hRow["ShippingCharge"] != DBNull.Value ? Convert.ToDecimal(hRow["ShippingCharge"]) : 0;
+                }
+
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, si.Quantity, p.Unit, si.UnitPrice, (si.Quantity * si.UnitPrice) AS Total
+                    SELECT p.ProductName, si.Quantity, ISNULL(NULLIF(si.UnitName, ''), p.Unit) AS Unit,
+                           si.UnitPrice,
+                           (si.Quantity * si.UnitPrice) AS GrossTotal,
+                           CASE 
+                               WHEN ISNULL(si.DiscountAmt, 0) > 0 THEN si.DiscountAmt 
+                               WHEN ISNULL(si.DiscountPct, 0) > 0 THEN (si.Quantity * si.UnitPrice * si.DiscountPct / 100.0)
+                               ELSE 0 
+                           END AS ItemDiscount,
+                           ISNULL(si.TotalPrice, (si.Quantity * si.UnitPrice) - 
+                               CASE 
+                                   WHEN ISNULL(si.DiscountAmt, 0) > 0 THEN si.DiscountAmt 
+                                   WHEN ISNULL(si.DiscountPct, 0) > 0 THEN (si.Quantity * si.UnitPrice * si.DiscountPct / 100.0)
+                                   ELSE 0 
+                               END
+                           ) AS NetTotal,
+                           ISNULL(si.DiscountPct, 0) AS DiscountPct
                     FROM SaleItems si
                     JOIN Products p ON si.ProductID = p.ProductID
                     WHERE si.SaleID = @id", DbHelper.P("@id", refID));
             }
             else if (transType == "Return")
             {
+                var dtHeader = DbHelper.Query("SELECT ReturnCode, ReturnDate, TotalAmount FROM SalesReturns WHERE ReturnID = @id", DbHelper.P("@id", refID));
+                if (dtHeader.Rows.Count > 0)
+                {
+                    var hRow = dtHeader.Rows[0];
+                    codeStr = hRow["ReturnCode"]?.ToString();
+                    if (hRow["ReturnDate"] != DBNull.Value) transDate = Convert.ToDateTime(hRow["ReturnDate"]);
+                    finalNet = hRow["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["TotalAmount"]) : 0;
+                }
+
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, ri.Quantity, p.Unit, ri.UnitPrice, (ri.Quantity * ri.UnitPrice) AS Total
+                    SELECT p.ProductName, ri.Quantity, ISNULL(NULLIF(ri.UnitName, ''), p.Unit) AS Unit,
+                           ri.UnitPrice, (ri.Quantity * ri.UnitPrice) AS GrossTotal,
+                           0.00 AS ItemDiscount,
+                           ISNULL(ri.TotalPrice, (ri.Quantity * ri.UnitPrice)) AS NetTotal,
+                           0.00 AS DiscountPct
                     FROM ReturnItems ri
                     JOIN Products p ON ri.ProductID = p.ProductID
                     WHERE ri.ReturnID = @id", DbHelper.P("@id", refID));
             }
             else if (transType == "Purchase" || transType == "PurchaseCash" || transType == "ClientPurchase")
             {
+                var dtHeader = DbHelper.Query("SELECT PurchaseCode, PurchaseDate, TotalAmount, DiscountAmount, ShippingCharge FROM Purchases WHERE PurchaseID = @id", DbHelper.P("@id", refID));
+                if (dtHeader.Rows.Count > 0)
+                {
+                    var hRow = dtHeader.Rows[0];
+                    codeStr = hRow["PurchaseCode"]?.ToString();
+                    if (hRow["PurchaseDate"] != DBNull.Value) transDate = Convert.ToDateTime(hRow["PurchaseDate"]);
+                    headerDiscount = hRow["DiscountAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["DiscountAmount"]) : 0;
+                    finalNet = hRow["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["TotalAmount"]) : 0;
+                    shippingCharge = hRow["ShippingCharge"] != DBNull.Value ? Convert.ToDecimal(hRow["ShippingCharge"]) : 0;
+                }
+
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit, pi.UnitPrice, (pi.Quantity * pi.UnitPrice) AS Total
+                    SELECT p.ProductName, pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit,
+                           pi.UnitPrice,
+                           (pi.Quantity * pi.UnitPrice) AS GrossTotal,
+                           CASE 
+                               WHEN ISNULL(pi.DiscountAmt, 0) > 0 THEN pi.DiscountAmt 
+                               WHEN ISNULL(pi.DiscountPct, 0) > 0 THEN (pi.Quantity * pi.UnitPrice * pi.DiscountPct / 100.0)
+                               ELSE 0 
+                           END AS ItemDiscount,
+                           ISNULL(pi.TotalPrice, (pi.Quantity * pi.UnitPrice) - 
+                               CASE 
+                                   WHEN ISNULL(pi.DiscountAmt, 0) > 0 THEN pi.DiscountAmt 
+                                   WHEN ISNULL(pi.DiscountPct, 0) > 0 THEN (pi.Quantity * pi.UnitPrice * pi.DiscountPct / 100.0)
+                                   ELSE 0 
+                               END
+                           ) AS NetTotal,
+                           ISNULL(pi.DiscountPct, 0) AS DiscountPct
                     FROM PurchaseItems pi
                     JOIN Products p ON pi.ProductID = p.ProductID
                     WHERE pi.PurchaseID = @id", DbHelper.P("@id", refID));
             }
             else if (transType == "PurchaseReturn")
             {
+                var dtHeader = DbHelper.Query("SELECT ReturnCode, ReturnDate, TotalAmount FROM PurchaseReturns WHERE ReturnID = @id", DbHelper.P("@id", refID));
+                if (dtHeader.Rows.Count > 0)
+                {
+                    var hRow = dtHeader.Rows[0];
+                    codeStr = hRow["ReturnCode"]?.ToString();
+                    if (hRow["ReturnDate"] != DBNull.Value) transDate = Convert.ToDateTime(hRow["ReturnDate"]);
+                    finalNet = hRow["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["TotalAmount"]) : 0;
+                }
+
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit, pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS Total
+                    SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit,
+                           pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS GrossTotal,
+                           0.00 AS ItemDiscount,
+                           ISNULL(pri.TotalPrice, (pri.Quantity * pri.UnitPrice)) AS NetTotal,
+                           0.00 AS DiscountPct
                     FROM PurchaseReturnItems pri
                     JOIN Products p ON pri.ProductID = p.ProductID
                     WHERE pri.ReturnID = @id", DbHelper.P("@id", refID));
             }
 
+            if (!string.IsNullOrEmpty(codeStr))
+            {
+                string dtLabel = transDate.HasValue ? $" | التاريخ: {transDate.Value:yyyy/MM/dd HH:mm}" : "";
+                lblTitle.Text = $"{this.Text} (كود: {codeStr}{dtLabel})";
+            }
+
             if (dt == null) return;
 
-            decimal totalSum = 0;
+            decimal grossSum = 0;
+            decimal itemDiscSum = 0;
+            decimal linesNetSum = 0;
+
             foreach (DataRow r in dt.Rows)
             {
                 decimal qty = Convert.ToDecimal(r["Quantity"]);
                 decimal price = Convert.ToDecimal(r["UnitPrice"]);
-                decimal tot = Convert.ToDecimal(r["Total"]);
-                totalSum += tot;
+                decimal gross = Convert.ToDecimal(r["GrossTotal"]);
+                decimal itemDisc = Convert.ToDecimal(r["ItemDiscount"]);
+                decimal lineNet = Convert.ToDecimal(r["NetTotal"]);
+                decimal pct = r.Table.Columns.Contains("DiscountPct") && r["DiscountPct"] != DBNull.Value ? Convert.ToDecimal(r["DiscountPct"]) : 0;
 
-                dgItems.Rows.Add(r["ProductName"], qty.ToString("N0"), r["Unit"], price.ToString("N2"), tot.ToString("N2") + " ج");
+                grossSum += gross;
+                itemDiscSum += itemDisc;
+                linesNetSum += lineNet;
+
+                string discStr = itemDisc > 0 
+                    ? (pct > 0 ? $"{itemDisc:N2} ({pct:0.##}%)" : $"{itemDisc:N2}") 
+                    : "-";
+
+                int rowIdx = dgItems.Rows.Add(
+                    r["ProductName"],
+                    qty.ToString("N0"),
+                    r["Unit"],
+                    price.ToString("N2"),
+                    gross.ToString("N2"),
+                    discStr,
+                    lineNet.ToString("N2") + " ج"
+                );
+
+                if (itemDisc > 0)
+                {
+                    dgItems.Rows[rowIdx].Cells["ItemDiscount"].Style.ForeColor = Color.FromArgb(190, 85, 0);
+                    dgItems.Rows[rowIdx].Cells["ItemDiscount"].Style.Font = new Font(dgItems.Font, FontStyle.Bold);
+                }
             }
 
-            lblTotal.Text = $"إجمالي العملية: {totalSum:N2} ج";
+            if (finalNet == 0 && linesNetSum > 0)
+            {
+                finalNet = linesNetSum - headerDiscount + shippingCharge;
+            }
+
+            decimal totalDisc = itemDiscSum + headerDiscount;
+
+            lblGross.Text = $"الإجمالي قبل الخصم: {grossSum:N2} ج";
+            lblItemDiscount.Text = $"خصم الأصناف: {itemDiscSum:N2} ج";
+            lblInvoiceDiscount.Text = $"خصم الفاتورة: {headerDiscount:N2} ج";
+            lblTotalDiscount.Text = $"إجمالي الخصومات: {totalDisc:N2} ج";
+            string shipNote = shippingCharge > 0 ? $" (شامل شحن: {shippingCharge:N2} ج)" : "";
+            lblNet.Text = $"الصافي النهائي: {finalNet:N2} ج{shipNote}";
         }
     }
 }

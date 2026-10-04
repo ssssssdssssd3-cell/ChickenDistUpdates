@@ -1835,9 +1835,32 @@ namespace ChickenDist.DAL
         {
             return DbHelper.Query(
                 @"SELECT ct.TransDate, ct.TransType, ct.Debit, ct.Credit, ct.Notes, ct.RefID,
-                         ISNULL(e.EmpName, N'---') AS CreatedByName
+                         ISNULL(e.EmpName, N'---') AS CreatedByName,
+                         CASE 
+                             WHEN ct.TransType = 'Sale' AND ct.RefID > 0 THEN ISNULL(s.DiscountAmount, 0)
+                             ELSE 0 
+                         END AS InvoiceDiscount,
+                         CASE 
+                             WHEN ct.TransType = 'Sale' AND ct.RefID > 0 THEN ISNULL(itemDisc.ItemDiscountTotal, 0)
+                             ELSE 0 
+                         END AS ItemDiscount
                   FROM ClientTransactions ct
                   LEFT JOIN Employees e ON ct.CreatedBy = e.EmpID
+                  LEFT JOIN Sales s ON (ct.TransType = 'Sale' AND ct.RefID = s.SaleID)
+                  LEFT JOIN (
+                      SELECT si.SaleID, 
+                             SUM(CASE 
+                                   WHEN ISNULL(si.DiscountAmt, 0) > 0 THEN si.DiscountAmt 
+                                   WHEN ISNULL(si.DiscountPct, 0) > 0 THEN (si.Quantity * si.UnitPrice * si.DiscountPct / 100.0)
+                                   ELSE 0 
+                                 END) AS ItemDiscountTotal
+                      FROM SaleItems si
+                      WHERE si.SaleID IN (
+                          SELECT RefID FROM ClientTransactions 
+                          WHERE ClientID = @id AND TransType = 'Sale' AND RefID > 0
+                      )
+                      GROUP BY si.SaleID
+                  ) itemDisc ON (ct.TransType = 'Sale' AND ct.RefID = itemDisc.SaleID)
                   WHERE ct.ClientID=@id AND CAST(ct.TransDate AS DATE) BETWEEN @f AND @t
                   ORDER BY ct.TransDate",
                 DbHelper.P("@id", clientID), DbHelper.P("@f", from.Date), DbHelper.P("@t", to.Date));

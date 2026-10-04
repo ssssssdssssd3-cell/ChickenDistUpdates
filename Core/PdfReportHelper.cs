@@ -547,6 +547,8 @@ namespace ChickenDist.Core
                     using (var brAlt = new SolidBrush(Color.FromArgb(248, 250, 252)))
                     using (var brRed = new SolidBrush(Color.FromArgb(220, 38, 38)))
                     using (var brGreen = new SolidBrush(Color.FromArgb(5, 150, 105)))
+                    using (var brOrange = new SolidBrush(Color.FromArgb(190, 85, 0)))
+                    using (var brCrimson = new SolidBrush(Color.FromArgb(190, 30, 30)))
                     using (var fTitle = new Font("Arial", 22f, FontStyle.Bold))
                     using (var fSub = new Font("Arial", 13f, FontStyle.Bold))
                     using (var fBold = new Font("Arial", 11.5f, FontStyle.Bold))
@@ -592,8 +594,8 @@ namespace ChickenDist.Core
                         g.FillRectangle(brNavy, tLeft, y, tWidth, thH);
                         g.DrawRectangle(pBorder, tLeft, y, tWidth, thH);
 
-                        int[] colW = { 170, 130, 110, 110, 130, 120, 390 };
-                        string[] colHeaders = { "التاريخ والوقت", "النوع", "مدين (فاتورة)", "دائن (تحصيل)", "الرصيد الجاري", "القائم بالعمل", "تفاصيل الأصناف والبيان المالي" };
+                        int[] colW = { 140, 90, 90, 80, 80, 90, 100, 100, 390 };
+                        string[] colHeaders = { "التاريخ والوقت", "النوع", "مدين (فاتورة)", "خصم أصناف", "خصم فاتورة", "دائن (تحصيل)", "الرصيد الجاري", "القائم بالعمل", "تفاصيل الأصناف والبيان المالي" };
 
                         int curX = tLeft + tWidth;
                         for (int c = 0; c < colHeaders.Length; c++)
@@ -616,27 +618,31 @@ namespace ChickenDist.Core
                             if (alt) g.FillRectangle(brAlt, tLeft, y, tWidth, rowH);
                             g.DrawRectangle(pThin, tLeft, y, tWidth, rowH);
 
-                            string dtStr   = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
-                            string typeStr = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : "";
-                            string debit   = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : "";
-                            string credit  = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : "";
-                            string bal     = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
-                            string user    = dgStatement.Columns.Contains("CreatedByName") ? (dgr.Cells["CreatedByName"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("CreatedBy") ? (dgr.Cells["CreatedBy"]?.Value?.ToString() ?? "") : "");
-                            string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
+                            string dtStr    = dgStatement.Columns.Contains("TransDate") ? (dgr.Cells["TransDate"]?.Value?.ToString() ?? "") : (dgr.Cells.Count > 0 ? dgr.Cells[0].Value?.ToString() ?? "" : "");
+                            string typeStr  = dgStatement.Columns.Contains("TransType") ? (dgr.Cells["TransType"]?.Value?.ToString() ?? "") : "";
+                            string debit    = dgStatement.Columns.Contains("Debit") ? (dgr.Cells["Debit"]?.Value?.ToString() ?? "") : "";
+                            string itemDisc = dgStatement.Columns.Contains("ItemDiscount") ? (dgr.Cells["ItemDiscount"]?.Value?.ToString() ?? "") : "";
+                            string invDisc  = dgStatement.Columns.Contains("InvoiceDiscount") ? (dgr.Cells["InvoiceDiscount"]?.Value?.ToString() ?? "") : "";
+                            string credit   = dgStatement.Columns.Contains("Credit") ? (dgr.Cells["Credit"]?.Value?.ToString() ?? "") : "";
+                            string bal      = dgStatement.Columns.Contains("Balance") ? (dgr.Cells["Balance"]?.Value?.ToString() ?? "") : "";
+                            string user     = dgStatement.Columns.Contains("CreatedByName") ? (dgr.Cells["CreatedByName"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("CreatedBy") ? (dgr.Cells["CreatedBy"]?.Value?.ToString() ?? "") : "");
+                            string details  = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : (dgStatement.Columns.Contains("Details") ? (dgr.Cells["Details"]?.Value?.ToString() ?? "") : "");
 
-                            string[] rowVals = { dtStr, typeStr, debit, credit, bal, user, details };
+                            string[] rowVals = { dtStr, typeStr, debit, itemDisc, invDisc, credit, bal, user, details };
 
                             curX = tLeft + tWidth;
                             for (int c = 0; c < rowVals.Length; c++)
                             {
                                 curX -= colW[c];
-                                var sf = (c == 6) ? sfRight : sfCenter;
+                                var sf = (c == 8) ? sfRight : sfCenter;
                                 Brush brush = Brushes.Black;
                                 if (c == 2 && !string.IsNullOrEmpty(debit)) brush = brRed;
-                                else if (c == 3 && !string.IsNullOrEmpty(credit)) brush = brGreen;
-                                else if (c == 4) brush = brNavy;
+                                else if (c == 3 && !string.IsNullOrEmpty(itemDisc)) brush = brOrange;
+                                else if (c == 4 && !string.IsNullOrEmpty(invDisc)) brush = brCrimson;
+                                else if (c == 5 && !string.IsNullOrEmpty(credit)) brush = brGreen;
+                                else if (c == 6) brush = brNavy;
 
-                                var font = (c == 4 || c == 2 || c == 3) ? fBold : fNorm;
+                                var font = (c == 6 || c == 2 || c == 5 || (c == 3 && !string.IsNullOrEmpty(itemDisc)) || (c == 4 && !string.IsNullOrEmpty(invDisc))) ? fBold : fNorm;
                                 g.DrawString(rowVals[c], font, brush, new RectangleF(curX + 4, y + 7, colW[c] - 8, rowH - 7), sf);
                                 if (c > 0) g.DrawLine(pThin, curX, y, curX, y + rowH);
                             }
@@ -652,9 +658,26 @@ namespace ChickenDist.Core
                             g.FillRectangle(brAlt, tLeft, y, tWidth, 65);
                             g.DrawRectangle(pBorder, tLeft, y, tWidth, 65);
 
-                            g.DrawString($"إجمالي المديونية: {totalSales:N2} ج", fBold, brRed, new RectangleF(tLeft + tWidth - 280, y + 18, 260, 28), sfRight);
-                            g.DrawString($"إجمالي التحصيل: {totalPayments:N2} ج  |  المرتجع: {totalReturns:N2} ج", fBold, brGreen, new RectangleF(tLeft + 350, y + 18, 480, 28), sfCenter);
-                            g.DrawString($"الصافي المستحق: {runBalance:N2} ج", fTitle, brNavy, new RectangleF(tLeft + 20, y + 14, 320, 36), sfLeft);
+                            decimal totalDiscounts = 0;
+                            foreach (DataGridViewRow rowD in dgStatement.Rows)
+                            {
+                                if (rowD.IsNewRow) continue;
+                                if (dgStatement.Columns.Contains("ItemDiscount") && decimal.TryParse(rowD.Cells["ItemDiscount"]?.Value?.ToString(), out decimal itmD)) totalDiscounts += itmD;
+                                if (dgStatement.Columns.Contains("InvoiceDiscount") && decimal.TryParse(rowD.Cells["InvoiceDiscount"]?.Value?.ToString(), out decimal invD)) totalDiscounts += invD;
+                            }
+
+                            if (totalDiscounts > 0)
+                            {
+                                g.DrawString($"إجمالي المديونية: {totalSales:N2} ج   |   الخصومات: {totalDiscounts:N2} ج", fBold, brRed, new RectangleF(tLeft + tWidth - 420, y + 18, 400, 28), sfRight);
+                                g.DrawString($"إجمالي التحصيل: {totalPayments:N2} ج  |  المرتجع: {totalReturns:N2} ج", fBold, brGreen, new RectangleF(tLeft + 270, y + 18, 400, 28), sfCenter);
+                                g.DrawString($"الصافي المستحق: {runBalance:N2} ج", fTitle, brNavy, new RectangleF(tLeft + 20, y + 14, 250, 36), sfLeft);
+                            }
+                            else
+                            {
+                                g.DrawString($"إجمالي المديونية: {totalSales:N2} ج", fBold, brRed, new RectangleF(tLeft + tWidth - 280, y + 18, 260, 28), sfRight);
+                                g.DrawString($"إجمالي التحصيل: {totalPayments:N2} ج  |  المرتجع: {totalReturns:N2} ج", fBold, brGreen, new RectangleF(tLeft + 350, y + 18, 480, 28), sfCenter);
+                                g.DrawString($"الصافي المستحق: {runBalance:N2} ج", fTitle, brNavy, new RectangleF(tLeft + 20, y + 14, 320, 36), sfLeft);
+                            }
                         }
 
                         // Footer Page Number & Sign
