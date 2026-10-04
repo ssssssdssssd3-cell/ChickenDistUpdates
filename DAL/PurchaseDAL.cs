@@ -262,7 +262,8 @@ namespace ChickenDist.DAL
             string supplierInvoiceNo = "",
             decimal shippingCost = 0m, string shippingOn = "Company",
             int? clientID = null, string purchaseSource = "Supplier",
-            int? safeAccountID = null)
+            int? safeAccountID = null,
+            decimal marketCommission = 0m, decimal freightCost = 0m, decimal porterageFee = 0m, string deductionsNotes = null)
         {
             int returnedID = -1;
             DbHelper.EnsurePurchaseColumnsExist();
@@ -281,15 +282,19 @@ namespace ChickenDist.DAL
                     AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "سداد فاتورة مشتريات نقدية");
                 }
 
+                decimal totalDeductions = marketCommission + freightCost + porterageFee;
+
                 int purchaseID = DbHelper.ExecuteInsertTrans(trans,
                     @"INSERT INTO Purchases
                         (PurchaseCode, SupplierInvoiceNo, PurchaseDate, PurchaseType, SupplierID, ClientID, PurchaseSource,
                          TotalAmount, DiscountAmount, DiscountPct, TaxPct, TaxAmount,
-                         Notes, CreatedBy, IsPosted, WarehouseID, ShippingCost, ShippingOn, SafeAccountID)
+                         Notes, CreatedBy, IsPosted, WarehouseID, ShippingCost, ShippingOn, SafeAccountID,
+                         MarketCommission, FreightCost, PorterageFee, TotalDeductions, DeductionsNotes)
                       VALUES
                         (@code, @sinv, @dt, @typ, @sid, @cid, @psrc,
                          @tot, @discAmt, @discPct, @taxPct, @taxAmt,
-                         @n, @by, @ip, @wid, @shdost, @shon, @safeId)",
+                         @n, @by, @ip, @wid, @shdost, @shon, @safeId,
+                         @comm, @freight, @porter, @totDed, @dNotes)",
                     DbHelper.P("@code",    code),
                     DbHelper.P("@sinv",    (object)supplierInvoiceNo ?? DBNull.Value),
                     DbHelper.P("@dt",      DateTime.Now),
@@ -308,7 +313,12 @@ namespace ChickenDist.DAL
                     DbHelper.P("@wid",     warehouseID.HasValue ? (object)warehouseID.Value : 1),
                     DbHelper.P("@shdost",  shippingCost),
                     DbHelper.P("@shon",    shippingOn ?? "Company"),
-                    DbHelper.P("@safeId",  safeAccountID.HasValue && safeAccountID.Value > 0 ? (object)safeAccountID.Value : DBNull.Value));
+                    DbHelper.P("@safeId",  safeAccountID.HasValue && safeAccountID.Value > 0 ? (object)safeAccountID.Value : DBNull.Value),
+                    DbHelper.P("@comm",    marketCommission),
+                    DbHelper.P("@freight", freightCost),
+                    DbHelper.P("@porter",  porterageFee),
+                    DbHelper.P("@totDed",  totalDeductions),
+                    DbHelper.P("@dNotes",  string.IsNullOrWhiteSpace(deductionsNotes) ? DBNull.Value : (object)deductionsNotes.Trim()));
 
                 if (purchaseID <= 0)
                     throw new Exception("فشل في استخراج رقم فاتورة المشتريات الجديدة.");
@@ -553,13 +563,16 @@ namespace ChickenDist.DAL
 
         public static bool UpdatePurchase(int purchaseID, string purchaseType, int? supplierID, decimal total, string notes, List<PurchaseItemDTO> items,
             decimal discountAmount, decimal discountPct, decimal taxPct, decimal taxAmt, int? warehouseID, string supplierInvoiceNo = "",
-            decimal shippingCost = 0m, string shippingOn = "Company", int? safeAccountID = null)
+            decimal shippingCost = 0m, string shippingOn = "Company", int? safeAccountID = null,
+            decimal marketCommission = 0m, decimal freightCost = 0m, decimal porterageFee = 0m, string deductionsNotes = null)
         {
             try
             {
+                DbHelper.EnsurePurchaseColumnsExist();
                 DbHelper.RunInTransaction((con, trans) =>
                 {
                     int accId = safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
+                    decimal totalDeductions = marketCommission + freightCost + porterageFee;
 
                     var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, ISNULL(BonusQuantity, 0) AS BonusQuantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     int wid = warehouseID ?? 1;
@@ -590,7 +603,9 @@ namespace ChickenDist.DAL
                               DiscountAmount=@discAmt, DiscountPct=@discPct, TaxPct=@taxPct, TaxAmount=@taxAmt,
                               WarehouseID=@wid, SupplierInvoiceNo=@sinv,
                               ShippingCost=@shdost, ShippingOn=@shon,
-                              SafeAccountID=@safeId
+                              SafeAccountID=@safeId,
+                              MarketCommission=@comm, FreightCost=@freight, PorterageFee=@porter,
+                              TotalDeductions=@totDed, DeductionsNotes=@dNotes
                           WHERE PurchaseID=@id",
                         DbHelper.P("@typ",     purchaseType),
                         DbHelper.P("@sid",     supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
@@ -605,6 +620,11 @@ namespace ChickenDist.DAL
                         DbHelper.P("@shdost",  shippingCost),
                         DbHelper.P("@shon",    shippingOn ?? "Company"),
                         DbHelper.P("@safeId",  safeAccountID.HasValue && safeAccountID.Value > 0 ? (object)safeAccountID.Value : DBNull.Value),
+                        DbHelper.P("@comm",    marketCommission),
+                        DbHelper.P("@freight", freightCost),
+                        DbHelper.P("@porter",  porterageFee),
+                        DbHelper.P("@totDed",  totalDeductions),
+                        DbHelper.P("@dNotes",  string.IsNullOrWhiteSpace(deductionsNotes) ? DBNull.Value : (object)deductionsNotes.Trim()),
                         DbHelper.P("@id",      purchaseID));
 
                     foreach (var item in items)
@@ -666,13 +686,18 @@ namespace ChickenDist.DAL
 
                     if (purchaseType == "Credit" && supplierID.HasValue)
                     {
+                        string suppNote = "تعديل فاتورة مشتريات " + code;
+                        if (totalDeductions > 0)
+                        {
+                            suppNote += string.Format(" (خصم استقطاعات: {0:N2})", totalDeductions);
+                        }
                         DbHelper.ExecuteTrans(trans,
                             "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,RefID,Notes,CreatedBy)" +
                             " VALUES(@sid,'Purchase',@amt,@ref,@n,@by)",
                             DbHelper.P("@sid", supplierID.Value),
                             DbHelper.P("@amt", total),
                             DbHelper.P("@ref", purchaseID),
-                            DbHelper.P("@n",   "تعديل فاتورة مشتريات " + code),
+                            DbHelper.P("@n",   suppNote),
                             DbHelper.P("@by",  Session.EmpID));
                     }
 

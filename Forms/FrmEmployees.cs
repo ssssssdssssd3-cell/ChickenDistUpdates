@@ -1259,6 +1259,10 @@ namespace ChickenDist.Forms
                 HasEdit = true, HasDelete = false, HasCopySalesInvoice = true, HasViewSalesTotals = true
             },
             new ScreenDef {
+                Key = "PurchaseDeductions", Name = "استقطاعات فاتورة الشراء (عمولة / نولون / وهبة)", Category = "📥 المشتريات والموردين", Icon = "📉",
+                Description = "تفعيل زر استقطاعات الوكالة والمورد (عمولة المكان، نولون النقل، وهبة الشيالة) وخصمها تلقائياً من حساب المورد."
+            },
+            new ScreenDef {
                 Key = "Suppliers", Name = "إدارة بيانات الموردين", Category = "📥 المشتريات والموردين", Icon = "🏢",
                 Description = "إضافة وتعديل بيانات الموردين وجهات التوريد وحساباتهم.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true,

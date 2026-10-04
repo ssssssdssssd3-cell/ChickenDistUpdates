@@ -256,15 +256,15 @@ namespace ChickenDist.Core
                 // المدير لديه كل الصلاحيات للشاشات العادية
                 foreach (var s in AllScreens)
                 {
-                    // شاشات الأصول والشركاء حساسة ولا تظهر لأي حساب إلا بعد تفعيلها صراحة في شاشة الصلاحيات
-                    bool defaultAccess = (s != "FixedAssets" && s != "Shareholders");
+                    // شاشات الأصول والشركاء واستقطاعات الوكالة حساسة ولا تظهر لأي حساب إلا بعد تفعيلها صراحة في شاشة الصلاحيات
+                    bool defaultAccess = (s != "FixedAssets" && s != "Shareholders" && s != "PurchaseDeductions");
                     _perms[s] = new PermInfo { CanAccess = defaultAccess, CanAdd = true, CanEdit = true, CanDelete = true, CanEditPrice = true, CanEditSalesInvoice = true, CanDeleteSalesInvoice = true, CanCopySalesInvoice = true, CanViewCost = true, CanOrderColumns = true, CanViewDetails = true, CanViewBalance = true, CanChangeSafe = true, CanViewSalesTotals = true, CanViewQuickItems = true, CanSellBelowCost = true };
                 }
 
-                // قراءة الصلاحيات المخصصة لحساب المدير (لتفعيل الأصول والشركاء عند اختيارها له)
+                // قراءة الصلاحيات المخصصة لحساب المدير (لتفعيل الأصول والشركاء واستقطاعات الوكالة عند اختيارها له)
                 try
                 {
-                    var dtAdmin = DbHelper.Query("SELECT ScreenName, CanAccess FROM Permissions WHERE EmpID=@id AND ScreenName IN ('FixedAssets', 'Shareholders')", DbHelper.P("@id", empID));
+                    var dtAdmin = DbHelper.Query("SELECT ScreenName, CanAccess FROM Permissions WHERE EmpID=@id AND ScreenName IN ('FixedAssets', 'Shareholders', 'PurchaseDeductions')", DbHelper.P("@id", empID));
                     foreach (System.Data.DataRow row in dtAdmin.Rows)
                     {
                         string sName = row["ScreenName"]?.ToString();
@@ -330,8 +330,8 @@ namespace ChickenDist.Core
                 return true;
             }
 
-            // شاشات الأصول والشركاء: حساسة جداً ولا تظهر لأي حساب إلا بعد تفعيلها صراحة في شاشة الصلاحيات
-            if (screen == "FixedAssets" || screen == "Shareholders")
+            // شاشات الأصول والشركاء واستقطاعات الوكالة: حساسة جداً ولا تظهر لأي حساب إلا بعد تفعيلها صراحة في شاشة الصلاحيات
+            if (screen == "FixedAssets" || screen == "Shareholders" || screen == "PurchaseDeductions")
             {
                 if (_perms.ContainsKey(screen)) return _perms[screen].CanAccess;
                 return false;
@@ -941,7 +941,7 @@ namespace ChickenDist.Core
             "Clients", "ClientStatement", "InactiveClients", "Vehicles", "OnlineOrders", "OnlineStoreSettings",
             
             // Purchases & Suppliers
-            "Purchases", "PurchaseReturn", "PurchasesList",
+            "Purchases", "PurchaseReturn", "PurchasesList", "PurchaseDeductions",
             "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",
             
             // Inventory & Products

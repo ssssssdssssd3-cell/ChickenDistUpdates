@@ -644,6 +644,16 @@ namespace ChickenDist.Core
             BEGIN
                 IF COL_LENGTH('Purchases', 'SafeAccountID') IS NULL
                     ALTER TABLE Purchases ADD SafeAccountID INT NULL;
+                IF COL_LENGTH('Purchases','MarketCommission') IS NULL
+                    ALTER TABLE Purchases ADD MarketCommission DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','FreightCost') IS NULL
+                    ALTER TABLE Purchases ADD FreightCost DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','PorterageFee') IS NULL
+                    ALTER TABLE Purchases ADD PorterageFee DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','TotalDeductions') IS NULL
+                    ALTER TABLE Purchases ADD TotalDeductions DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','DeductionsNotes') IS NULL
+                    ALTER TABLE Purchases ADD DeductionsNotes NVARCHAR(255) NULL;
             END");
 
             // 2. إسقاط الفهارس المتعارضة قبل تعديل أنواع الأعمدة
@@ -3971,6 +3981,19 @@ namespace ChickenDist.Core
                 SafeMigrate("Purchases.PaymentType_col", @"
                 IF COL_LENGTH('Purchases','PaymentType') IS NULL
                     ALTER TABLE Purchases ADD PaymentType NVARCHAR(50) NOT NULL DEFAULT 'Cash';");
+
+                // ── Purchases: استقطاعات وتنزيلات الوكالة (عمولة / نولون / وهبة) ──
+                SafeMigrate("Purchases.AgencyDeductions", @"
+                IF COL_LENGTH('Purchases','MarketCommission') IS NULL
+                    ALTER TABLE Purchases ADD MarketCommission DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','FreightCost') IS NULL
+                    ALTER TABLE Purchases ADD FreightCost DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','PorterageFee') IS NULL
+                    ALTER TABLE Purchases ADD PorterageFee DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','TotalDeductions') IS NULL
+                    ALTER TABLE Purchases ADD TotalDeductions DECIMAL(18,2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('Purchases','DeductionsNotes') IS NULL
+                    ALTER TABLE Purchases ADD DeductionsNotes NVARCHAR(255) NULL;");
 
                 // ── Products: عمود Barcode ──
                 SafeMigrate("Products.Barcode", @"

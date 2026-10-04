@@ -46,6 +46,13 @@ namespace ChickenDist.Forms
         private ComboBox cboShippingOn;
         private Label lblShippingDisplay;
 
+        // ── الذيل — استقطاعات المشتريات (عمولة، نولون، وهبة عمال) ─────────────
+        private Button btnDeductions;
+        private decimal _marketCommission = 0m;
+        private decimal _freightCost = 0m;
+        private decimal _porterageFee = 0m;
+        private string _deductionsNotes = null;
+
         // ── أزرار الذيل ────────────────────────────────────────────────────────
         private Button btnSave, btnNew, btnPrint, btnHold, btnLoadHold;
 
@@ -1077,10 +1084,35 @@ namespace ChickenDist.Forms
             pnlNet.Controls.Add(lblNetVal);
             pnlNet.Controls.Add(lblNetTitle);
 
+            // استقطاعات المشتريات (عمولة الوكالة / النولون / وهبة العمال)
+            var pnlDeductions = new Panel
+            {
+                Height = 32,
+                Width = 145,
+                BackColor = Color.Transparent,
+                Margin = new Padding(3, 2, 3, 2),
+                RightToLeft = RightToLeft.No,
+                Visible = Session.CanAccess("PurchaseDeductions")
+            };
+            btnDeductions = new Button
+            {
+                Text = "✂️ استقطاعات",
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(70, 80, 95),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnDeductions.FlatAppearance.BorderSize = 0;
+            btnDeductions.Click += BtnDeductions_Click;
+            pnlDeductions.Controls.Add(btnDeductions);
+
             tblTotals.Controls.Add(pnlItemsTotal);
             tblTotals.Controls.Add(pnlDiscount);
             tblTotals.Controls.Add(pnlTax);
             tblTotals.Controls.Add(pnlShipping);
+            tblTotals.Controls.Add(pnlDeductions);
             tblTotals.Controls.Add(pnlItemCount);
             tblTotals.Controls.Add(pnlNet);
 
@@ -3008,8 +3040,11 @@ namespace ChickenDist.Forms
             if (lblShippingDisplay != null)
                 lblShippingDisplay.Text = (onCompany ? "+" : "-") + shippingCost.ToString("N2") + " ج";
 
+            // استقطاعات المشتريات (عمولة، نولون، وهبة)
+            decimal totalDeductions = _marketCommission + _freightCost + _porterageFee;
+
             // الصافي النهائي
-            decimal net = afterDisc + taxAmt + shippingEffect;
+            decimal net = Math.Max(0m, afterDisc + taxAmt + shippingEffect - totalDeductions);
             lblNetVal.Text = net.ToString("N2") + " ج";
 
             if (lblItemCount != null)
@@ -3018,6 +3053,44 @@ namespace ChickenDist.Forms
             }
 
             AutoSavePurchaseDraft();
+        }
+
+        private void UpdateDeductionsButtonText()
+        {
+            if (btnDeductions == null) return;
+            decimal tot = _marketCommission + _freightCost + _porterageFee;
+            if (tot > 0)
+            {
+                btnDeductions.Text = $"✂️ استقطاعات: {tot:N2} ج";
+                btnDeductions.BackColor = Color.FromArgb(192, 57, 43);
+            }
+            else
+            {
+                btnDeductions.Text = "✂️ استقطاعات";
+                btnDeductions.BackColor = Color.FromArgb(70, 80, 95);
+            }
+        }
+
+        private void BtnDeductions_Click(object sender, EventArgs e)
+        {
+            if (!Session.CanAccess("PurchaseDeductions"))
+            {
+                MessageBox.Show("عفواً، ليس لديك صلاحية استقطاعات فاتورة الشراء.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new FrmPurchaseDeductions(_marketCommission, _freightCost, _porterageFee, _deductionsNotes))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _marketCommission = dlg.MarketCommission;
+                    _freightCost = dlg.FreightCost;
+                    _porterageFee = dlg.PorterageFee;
+                    _deductionsNotes = dlg.DeductionsNotes;
+                    UpdateDeductionsButtonText();
+                    RecalcTotals();
+                }
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -3051,6 +3124,11 @@ namespace ChickenDist.Forms
             txtInvoiceDiscount.Text = "0";
             nudTaxPct.Value  = 0;
             txtNotes.Text    = "";
+            _marketCommission = 0m;
+            _freightCost = 0m;
+            _porterageFee = 0m;
+            _deductionsNotes = null;
+            UpdateDeductionsButtonText();
             _purchaseType    = "Credit";
             _isDirty         = false;
             _draftPurchaseID = 0;
@@ -3112,7 +3190,8 @@ namespace ChickenDist.Forms
                     discAmt, discPct, taxPct, taxAmt, isDraft: true, warehouseID: warehouseID,
                     supplierInvoiceNo: txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "",
                     shippingCost: shippingCost, shippingOn: shippingOn,
-                    safeAccountID: safeAccountID);
+                    safeAccountID: safeAccountID,
+                    marketCommission: _marketCommission, freightCost: _freightCost, porterageFee: _porterageFee, deductionsNotes: _deductionsNotes);
 
                 if (draftID > 0)
                 {
@@ -3481,7 +3560,8 @@ namespace ChickenDist.Forms
                 {
                     bool ok = PurchaseDAL.UpdatePurchase(_editPurchaseID, _purchaseType, supplierID, net, txtNotes.Text, _items,
                         discAmt, discPct, taxPct, taxAmt, warehouseID, supplierInvoiceNo: suppInvNo,
-                        shippingCost: shippingCost, shippingOn: shippingOn, safeAccountID: safeAccountID);
+                        shippingCost: shippingCost, shippingOn: shippingOn, safeAccountID: safeAccountID,
+                        marketCommission: _marketCommission, freightCost: _freightCost, porterageFee: _porterageFee, deductionsNotes: _deductionsNotes);
                     if (ok) id = _editPurchaseID;
                 }
                 else
@@ -3490,7 +3570,8 @@ namespace ChickenDist.Forms
                         _purchaseType, supplierID, net, txtNotes.Text, _items,
                         discAmt, discPct, taxPct, taxAmt, isDraft: false, warehouseID: warehouseID, supplierInvoiceNo: suppInvNo,
                         shippingCost: shippingCost, shippingOn: shippingOn, clientID: clientID, purchaseSource: purchaseSource,
-                        safeAccountID: safeAccountID);
+                        safeAccountID: safeAccountID,
+                        marketCommission: _marketCommission, freightCost: _freightCost, porterageFee: _porterageFee, deductionsNotes: _deductionsNotes);
                 }
 
                 if (id > 0)
@@ -3801,8 +3882,8 @@ namespace ChickenDist.Forms
             decimal.TryParse(txtShippingCost?.Text, out shippingCost);
             shippingOn = (cboShippingOn != null && cboShippingOn.SelectedIndex == 1) ? "Supplier" : "Company";
             decimal shippingEffect = (shippingOn == "Company") ? shippingCost : -shippingCost;
-
-            net = afterDisc + taxAmt + shippingEffect;
+            decimal totalDeductions = _marketCommission + _freightCost + _porterageFee;
+            net = Math.Max(0m, afterDisc + taxAmt + shippingEffect - totalDeductions);
         }
 
         private void SetupSearchableCombo(ComboBox cbo)
@@ -4286,7 +4367,12 @@ namespace ChickenDist.Forms
                          COALESCE(p.DiscountAmount, 0) AS DiscountAmount,
                          COALESCE(p.DiscountPct, 0) AS DiscountPct,
                          COALESCE(p.TaxPct, 0) AS TaxPct,
-                         p.WarehouseID, p.SafeAccountID
+                         p.WarehouseID, p.SafeAccountID,
+                         COALESCE(p.MarketCommission, 0) AS MarketCommission,
+                         COALESCE(p.FreightCost, 0) AS FreightCost,
+                         COALESCE(p.PorterageFee, 0) AS PorterageFee,
+                         COALESCE(p.TotalDeductions, 0) AS TotalDeductions,
+                         p.DeductionsNotes
                   FROM Purchases p WHERE p.PurchaseID=@id",
                 DbHelper.P("@id", purchaseID));
 
@@ -4373,6 +4459,13 @@ namespace ChickenDist.Forms
                 string sOn = row.Table.Columns.Contains("ShippingOn") && row["ShippingOn"] != DBNull.Value ? row["ShippingOn"].ToString() : "Company";
                 cboShippingOn.SelectedIndex = (sOn == "Supplier") ? 1 : 0;
             }
+
+            // استقطاعات المشتريات
+            _marketCommission = row.Table.Columns.Contains("MarketCommission") && row["MarketCommission"] != DBNull.Value ? Convert.ToDecimal(row["MarketCommission"]) : 0m;
+            _freightCost = row.Table.Columns.Contains("FreightCost") && row["FreightCost"] != DBNull.Value ? Convert.ToDecimal(row["FreightCost"]) : 0m;
+            _porterageFee = row.Table.Columns.Contains("PorterageFee") && row["PorterageFee"] != DBNull.Value ? Convert.ToDecimal(row["PorterageFee"]) : 0m;
+            _deductionsNotes = row.Table.Columns.Contains("DeductionsNotes") && row["DeductionsNotes"] != DBNull.Value ? row["DeductionsNotes"].ToString() : null;
+            UpdateDeductionsButtonText();
 
             // الأصناف
             var itemsDt = PurchaseDAL.GetItems(purchaseID);

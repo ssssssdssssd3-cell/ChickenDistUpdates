@@ -34,6 +34,11 @@ namespace ChickenDist.Forms
                 SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType, p.SupplierID, p.TotalAmount, p.Notes,
                        COALESCE(p.DiscountAmount, 0) AS DiscountAmount, COALESCE(p.DiscountPct, 0) AS DiscountPct,
                        COALESCE(p.TaxAmount, 0) AS TaxAmount, COALESCE(p.TaxPct, 0) AS TaxPct,
+                       COALESCE(p.MarketCommission, 0) AS MarketCommission,
+                       COALESCE(p.FreightCost, 0) AS FreightCost,
+                       COALESCE(p.PorterageFee, 0) AS PorterageFee,
+                       COALESCE(p.TotalDeductions, 0) AS TotalDeductions,
+                       p.DeductionsNotes,
                        COALESCE(s.SupplierName, N'---') AS SupplierName
                  FROM Purchases p
                  LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
@@ -176,6 +181,19 @@ namespace ChickenDist.Forms
                         g.DrawString($"الضريبة: {invTaxAmt:N2} ({invTaxPct:0.##}%)", normal, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
                     }
 
+                    decimal comm = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("MarketCommission") ? Convert.ToDecimal(_purchaseRow["MarketCommission"]) : 0m;
+                    decimal freight = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("FreightCost") ? Convert.ToDecimal(_purchaseRow["FreightCost"]) : 0m;
+                    decimal porter = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("PorterageFee") ? Convert.ToDecimal(_purchaseRow["PorterageFee"]) : 0m;
+                    decimal totDed = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("TotalDeductions") ? Convert.ToDecimal(_purchaseRow["TotalDeductions"]) : (comm + freight + porter);
+
+                    if (totDed > 0)
+                    {
+                        g.DrawString($"إجمالي الاستقطاعات: -{totDed:N2}", normal, Brushes.DarkRed, new RectangleF(margin, y, pageW - 2 * margin, 16), right); y += 16;
+                        if (comm > 0) { g.DrawString($"  • عمولة المكان: {comm:N2}", small, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 14), right); y += 14; }
+                        if (freight > 0) { g.DrawString($"  • نولون: {freight:N2}", small, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 14), right); y += 14; }
+                        if (porter > 0) { g.DrawString($"  • وهبة عمال: {porter:N2}", small, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 14), right); y += 14; }
+                    }
+
                     g.DrawString($"صافي الفاتورة: {netAmount:N2} جنيه", bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 20), right); y += 22;
 
                     // Notes
@@ -306,6 +324,24 @@ namespace ChickenDist.Forms
                     {
                         g.DrawString($"الضريبة: {invTaxAmt:N2} جنيه ({invTaxPct:0.##}%)",
                             normal, Brushes.Black, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                    }
+
+                    decimal a4Comm = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("MarketCommission") ? Convert.ToDecimal(_purchaseRow["MarketCommission"]) : 0m;
+                    decimal a4Freight = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("FreightCost") ? Convert.ToDecimal(_purchaseRow["FreightCost"]) : 0m;
+                    decimal a4Porter = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("PorterageFee") ? Convert.ToDecimal(_purchaseRow["PorterageFee"]) : 0m;
+                    decimal a4TotDed = _purchaseRow != null && _purchaseRow.Table.Columns.Contains("TotalDeductions") ? Convert.ToDecimal(_purchaseRow["TotalDeductions"]) : (a4Comm + a4Freight + a4Porter);
+
+                    if (a4TotDed > 0)
+                    {
+                        g.DrawString($"إجمالي الاستقطاعات: -{a4TotDed:N2} جنيه", boldSheet, Brushes.DarkRed, new RectangleF(0, y, pageW - margin, 20), right); y += 20;
+                        string details = "";
+                        if (a4Comm > 0) details += $"عمولة المكان: {a4Comm:N2}  ";
+                        if (a4Freight > 0) details += $"نولون: {a4Freight:N2}  ";
+                        if (a4Porter > 0) details += $"وهبة عمال: {a4Porter:N2}  ";
+                        if (!string.IsNullOrWhiteSpace(details))
+                        {
+                            g.DrawString($"({details.Trim()})", normal, Brushes.DarkSlateGray, new RectangleF(0, y, pageW - margin, 18), right); y += 18;
+                        }
                     }
 
                     // Net Amount
