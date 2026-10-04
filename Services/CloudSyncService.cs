@@ -1346,9 +1346,9 @@ self.addEventListener('fetch', (event) => {
                         string unit = EscapeJsonString(r["Unit"]?.ToString() ?? "قطعة");
                         decimal price = r["Price"] != DBNull.Value ? Convert.ToDecimal(r["Price"]) : 0m;
 
-                        string img1 = EscapeJsonString(r["ImageUrl1"]?.ToString() ?? "");
-                        string img2 = EscapeJsonString(r["ImageUrl2"]?.ToString() ?? "");
-                        string img3 = EscapeJsonString(r["ImageUrl3"]?.ToString() ?? "");
+                        string img1 = EscapeJsonString(ResolveImageUrlForStore(r["ImageUrl1"]?.ToString() ?? ""));
+                        string img2 = EscapeJsonString(ResolveImageUrlForStore(r["ImageUrl2"]?.ToString() ?? ""));
+                        string img3 = EscapeJsonString(ResolveImageUrlForStore(r["ImageUrl3"]?.ToString() ?? ""));
 
                         var sbImgs = new StringBuilder("[");
                         bool firstImg = true;
@@ -1859,6 +1859,41 @@ self.addEventListener('fetch', (event) => {
             }
             catch { }
             return "";
+        }
+
+        /// <summary>
+        /// تجهيز رابط صورة الصنف للمتجر الإلكتروني:
+        /// إذا كانت الصورة مساراً محلياً، يتم تحويلها لـ Base64 Data URL فائق الخفة
+        /// لتظهر في هواتف العملاء والويب فوراً دون الحاجة لسيرفر رفع خارجي.
+        /// </summary>
+        private static string ResolveImageUrlForStore(string pathOrUrl)
+        {
+            if (string.IsNullOrWhiteSpace(pathOrUrl)) return "";
+            pathOrUrl = pathOrUrl.Trim();
+            if (pathOrUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                pathOrUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                pathOrUrl.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
+            {
+                return pathOrUrl;
+            }
+
+            try
+            {
+                string fullPath = ProductImageService.ResolveFullPath(pathOrUrl);
+                if (!string.IsNullOrEmpty(fullPath) && System.IO.File.Exists(fullPath))
+                {
+                    byte[] bytes = System.IO.File.ReadAllBytes(fullPath);
+                    if (bytes != null && bytes.Length > 0)
+                    {
+                        string ext = System.IO.Path.GetExtension(fullPath).ToLowerInvariant();
+                        string mime = (ext == ".png") ? "image/png" : "image/jpeg";
+                        return $"data:{mime};base64," + Convert.ToBase64String(bytes);
+                    }
+                }
+            }
+            catch { }
+
+            return pathOrUrl;
         }
 
         private static string EscapeJsonString(string s)
