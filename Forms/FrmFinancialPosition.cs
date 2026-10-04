@@ -124,6 +124,11 @@ namespace ChickenDist.Forms
 
         public FrmFinancialPosition()
         {
+            try
+            {
+                DbHelper.EnsureFixedAssetsAndShareholdersSchema();
+            }
+            catch { }
             InitUI();
             LoadAdjustments();
             LoadDashboardData();
@@ -742,27 +747,30 @@ namespace ChickenDist.Forms
                 lblWorkingCapitalHint.Text = $"= متداولة ({currentAssets:N0}) - مطلوبات ({currentLiabilities:N0})";
 
                 // 6. الأصول الثابتة الدفترية الحية (من دليل الأصول المسجلة + التسويات الافتتاحية)
-                var dtAssetCats = DbHelper.Query(@"
-                    SELECT 
-                        ISNULL(fac.CategoryName, N'أصول وتجهيزات أخرى') AS CatName,
-                        COUNT(fa.AssetID) AS AssetCount,
-                        ISNULL(SUM(fa.PurchaseCost), 0) AS TotalCost,
-                        ISNULL(SUM(fa.TotalAccumulatedDepreciation), 0) AS TotalDep,
-                        ISNULL(SUM(fa.CurrentBookValue), 0) AS TotalBookValue
-                    FROM FixedAssets fa
-                    LEFT JOIN FixedAssetCategories fac ON fa.CategoryID = fac.CategoryID
-                    WHERE fa.Status NOT IN ('Sold', 'Scrapped')
-                    GROUP BY fac.CategoryName
-                    ORDER BY TotalBookValue DESC");
-
                 dgFixedAssetsSummary.Rows.Clear();
                 decimal liveAssetsBookValueTotal = 0m;
 
-                foreach (DataRow r in dtAssetCats.Rows)
+                if (DbHelper.TableExists("FixedAssets"))
                 {
-                    decimal bVal = Convert.ToDecimal(r["TotalBookValue"]);
-                    liveAssetsBookValueTotal += bVal;
-                    dgFixedAssetsSummary.Rows.Add(r["CatName"], r["AssetCount"], bVal.ToString("N2") + " ج");
+                    var dtAssetCats = DbHelper.Query(@"
+                        SELECT 
+                            ISNULL(fac.CategoryName, N'أصول وتجهيزات أخرى') AS CatName,
+                            COUNT(fa.AssetID) AS AssetCount,
+                            ISNULL(SUM(fa.PurchaseCost), 0) AS TotalCost,
+                            ISNULL(SUM(fa.TotalAccumulatedDepreciation), 0) AS TotalDep,
+                            ISNULL(SUM(fa.CurrentBookValue), 0) AS TotalBookValue
+                        FROM FixedAssets fa
+                        LEFT JOIN FixedAssetCategories fac ON fa.CategoryID = fac.CategoryID
+                        WHERE fa.Status NOT IN ('Sold', 'Scrapped')
+                        GROUP BY fac.CategoryName
+                        ORDER BY TotalBookValue DESC");
+
+                    foreach (DataRow r in dtAssetCats.Rows)
+                    {
+                        decimal bVal = Convert.ToDecimal(r["TotalBookValue"]);
+                        liveAssetsBookValueTotal += bVal;
+                        dgFixedAssetsSummary.Rows.Add(r["CatName"], r["AssetCount"], bVal.ToString("N2") + " ج");
+                    }
                 }
 
                 decimal adjFixedAssets = GetAdj("Land") + GetAdj("Buildings") + GetAdj("Machinery") + GetAdj("Vehicles") + GetAdj("Furniture") + GetAdj("Computers") + GetAdj("Investments") + GetAdj("Intangibles") - GetAdj("AccumulatedDepreciation");
@@ -795,42 +803,37 @@ namespace ChickenDist.Forms
                 lblQuickRatio.Text = $"{quickRatio:N2} : 1";
                 lblQuickRatio.ForeColor = quickRatio >= 1.0m ? Theme.Success : Theme.Danger;
 
-                // دوران المخزون (COGS السنوي المقدر / المخزون الحالي)
-                DataTable dtYearPL = GetCalculatedPL(new DateTime(DateTime.Now.Year, 1, 1), DateTime.Now);
-                decimal yearCOGS = 0m;
-                if (dtYearPL.Rows.Count > 0)
+                // دوران المخزون والعملاء والموردين
+                try
                 {
-                    foreach (DataRow r in dtYearPL.Rows)
+                    DataTable dtYearPL = GetCalculatedPL(new DateTime(DateTime.Now.Year, 1, 1), DateTime.Now);
+                    decimal yearCOGS = 0m;
+                    decimal yearSales = 0m;
+                    if (dtYearPL.Rows.Count > 0)
                     {
-                        if (r["AccountName"].ToString().Contains("صافي تكلفة المبيعات"))
+                        foreach (DataRow r in dtYearPL.Rows)
                         {
-                            yearCOGS = Convert.ToDecimal(r["NetValue"]);
-                            break;
+                            string acc = r["AccountName"].ToString();
+                            if (acc.Contains("صافي تكلفة المبيعات"))
+                            {
+                                yearCOGS = Math.Abs(Convert.ToDecimal(r["NetValue"]));
+                            }
+                            if (acc.Contains("صافي المبيعات"))
+                            {
+                                yearSales = Math.Abs(Convert.ToDecimal(r["NetValue"]));
+                            }
                         }
                     }
-                }
-                decimal invTurnover = liveInventory > 0 ? (yearCOGS / liveInventory) : 0m;
-                lblInvTurnover.Text = $"{invTurnover:N2} مرة";
+                    decimal invTurnover = liveInventory > 0 ? (yearCOGS / liveInventory) : 0m;
+                    lblInvTurnover.Text = $"{invTurnover:N2} مرة";
 
-                // دوران العملاء (المبيعات السنوية / متوسط الذمم)
-                decimal yearSales = 0m;
-                if (dtYearPL.Rows.Count > 0)
-                {
-                    foreach (DataRow r in dtYearPL.Rows)
-                    {
-                        if (r["AccountName"].ToString().Contains("صافي المبيعات"))
-                        {
-                            yearSales = Convert.ToDecimal(r["NetValue"]);
-                            break;
-                        }
-                    }
-                }
-                decimal clientTurnover = liveClients > 0 ? (yearSales / liveClients) : 0m;
-                lblClientTurnover.Text = $"{clientTurnover:N2} مرة";
+                    decimal clientTurnover = liveClients > 0 ? (yearSales / liveClients) : 0m;
+                    lblClientTurnover.Text = $"{clientTurnover:N2} مرة";
 
-                // دوران الموردين
-                decimal supplierTurnover = liveSuppliers > 0 ? (yearCOGS / liveSuppliers) : 0m;
-                lblSupplierTurnover.Text = $"{supplierTurnover:N2} مرة";
+                    decimal supplierTurnover = liveSuppliers > 0 ? (yearCOGS / liveSuppliers) : 0m;
+                    lblSupplierTurnover.Text = $"{supplierTurnover:N2} مرة";
+                }
+                catch { }
 
                 // ── شحن الجداول التفصيلية ──
                 var dtSafes = DbHelper.Query(@"
@@ -922,12 +925,19 @@ namespace ChickenDist.Forms
 
             object returnsCOGSObj = DbHelper.Scalar(@"
                 SELECT ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(
-                    NULLIF((SELECT TOP 1 si_orig.CostPrice FROM SaleItems si_orig WHERE si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID AND si_orig.CostPrice > 0), 0),
-                    NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
+                    NULLIF(si_orig.OrigCostPrice, 0),
+                    NULLIF(p.Unit1PurchasePrice, 0), 
+                    ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
                 )), 0) 
                 FROM ReturnItems ri 
                 JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID 
                 JOIN Products p ON ri.ProductID = p.ProductID 
+                LEFT JOIN (
+                    SELECT SaleID, ProductID, MAX(CostPrice) AS OrigCostPrice
+                    FROM SaleItems
+                    WHERE CostPrice > 0
+                    GROUP BY SaleID, ProductID
+                ) si_orig ON si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID
                 WHERE CAST(sr.ReturnDate AS DATE) BETWEEN @f AND @t", DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
             decimal returnsCOGS = returnsCOGSObj != null ? Convert.ToDecimal(returnsCOGSObj) : 0m;
 
@@ -969,12 +979,16 @@ namespace ChickenDist.Forms
             }
 
             // قسط إهلاك الأصول الثابتة للفترة (محسوب آلياً من سجل إهلاكات الأصول)
-            object depObj = DbHelper.Scalar(@"
-                SELECT ISNULL(SUM(Amount), 0) 
-                FROM FixedAssetDepreciations 
-                WHERE CAST(DepreciationDate AS DATE) BETWEEN @f AND @t", 
-                DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
-            decimal periodDepreciation = depObj != null ? Convert.ToDecimal(depObj) : 0m;
+            decimal periodDepreciation = 0m;
+            if (DbHelper.TableExists("FixedAssetDepreciations"))
+            {
+                object depObj = DbHelper.Scalar(@"
+                    SELECT ISNULL(SUM(Amount), 0) 
+                    FROM FixedAssetDepreciations 
+                    WHERE CAST(DepreciationDate AS DATE) BETWEEN @f AND @t", 
+                    DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+                periodDepreciation = depObj != null ? Convert.ToDecimal(depObj) : 0m;
+            }
 
             if (periodDepreciation > 0)
             {
@@ -986,19 +1000,24 @@ namespace ChickenDist.Forms
             dt.Rows.Add("⚖️ الربح (الخسارة) التشغيلي", 0, operatingProfit, operatingProfit);
 
             // أرباح وخسائر بيع وتخريد الأصول الثابتة من سجل العمليات الفعلي
-            object opGainObj = DbHelper.Scalar(@"
-                SELECT ISNULL(SUM(GainLossAmount), 0) 
-                FROM FixedAssetOperations 
-                WHERE OpType = 'Sale' AND GainLossAmount > 0 AND CAST(OpDate AS DATE) BETWEEN @f AND @t", 
-                DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
-            decimal liveGainAssetSale = opGainObj != null ? Convert.ToDecimal(opGainObj) : 0m;
+            decimal liveGainAssetSale = 0m;
+            decimal liveLossAssetSale = 0m;
+            if (DbHelper.TableExists("FixedAssetOperations"))
+            {
+                object opGainObj = DbHelper.Scalar(@"
+                    SELECT ISNULL(SUM(GainLossAmount), 0) 
+                    FROM FixedAssetOperations 
+                    WHERE OpType = 'Sale' AND GainLossAmount > 0 AND CAST(OpDate AS DATE) BETWEEN @f AND @t", 
+                    DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+                liveGainAssetSale = opGainObj != null ? Convert.ToDecimal(opGainObj) : 0m;
 
-            object opLossObj = DbHelper.Scalar(@"
-                SELECT ISNULL(SUM(ABS(GainLossAmount)), 0) 
-                FROM FixedAssetOperations 
-                WHERE (OpType = 'Sale' OR OpType = 'Scrap') AND GainLossAmount < 0 AND CAST(OpDate AS DATE) BETWEEN @f AND @t", 
-                DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
-            decimal liveLossAssetSale = opLossObj != null ? Convert.ToDecimal(opLossObj) : 0m;
+                object opLossObj = DbHelper.Scalar(@"
+                    SELECT ISNULL(SUM(ABS(GainLossAmount)), 0) 
+                    FROM FixedAssetOperations 
+                    WHERE (OpType = 'Sale' OR OpType = 'Scrap') AND GainLossAmount < 0 AND CAST(OpDate AS DATE) BETWEEN @f AND @t", 
+                    DbHelper.P("@f", f.Date), DbHelper.P("@t", t.Date));
+                liveLossAssetSale = opLossObj != null ? Convert.ToDecimal(opLossObj) : 0m;
+            }
 
             // الإيرادات الأخرى (غير تشغيلية) من العمليات والتسويات
             decimal gainAssetSale = liveGainAssetSale + GetAdj("GainOnAssetSale");
@@ -1152,40 +1171,43 @@ namespace ChickenDist.Forms
                 decimal catOther = 0m;
                 decimal liveTotalDep = 0m;
 
-                var dtAssetDetails = DbHelper.Query(@"
-                    SELECT 
-                        ISNULL(fac.CategoryName, N'أصول وتجهيزات أخرى') AS CatName,
-                        ISNULL(SUM(fa.PurchaseCost), 0) AS TotalCost,
-                        ISNULL(SUM(fa.TotalAccumulatedDepreciation), 0) AS TotalDep,
-                        ISNULL(SUM(fa.CurrentBookValue), 0) AS TotalBookValue
-                    FROM FixedAssets fa
-                    LEFT JOIN FixedAssetCategories fac ON fa.CategoryID = fac.CategoryID
-                    WHERE fa.Status NOT IN ('Sold', 'Scrapped')
-                    GROUP BY fac.CategoryName");
-
-                foreach (DataRow r in dtAssetDetails.Rows)
+                if (DbHelper.TableExists("FixedAssets"))
                 {
-                    string cname = r["CatName"].ToString();
-                    decimal cost = Convert.ToDecimal(r["TotalCost"]);
-                    decimal dep = Convert.ToDecimal(r["TotalDep"]);
-                    liveTotalDep += dep;
+                    var dtAssetDetails = DbHelper.Query(@"
+                        SELECT 
+                            ISNULL(fac.CategoryName, N'أصول وتجهيزات أخرى') AS CatName,
+                            ISNULL(SUM(fa.PurchaseCost), 0) AS TotalCost,
+                            ISNULL(SUM(fa.TotalAccumulatedDepreciation), 0) AS TotalDep,
+                            ISNULL(SUM(fa.CurrentBookValue), 0) AS TotalBookValue
+                        FROM FixedAssets fa
+                        LEFT JOIN FixedAssetCategories fac ON fa.CategoryID = fac.CategoryID
+                        WHERE fa.Status NOT IN ('Sold', 'Scrapped')
+                        GROUP BY fac.CategoryName");
 
-                    if (cname.Contains("أراض") || cname.ToLower().Contains("land"))
-                        catLand += cost;
-                    else if (cname.Contains("مبان") || cname.ToLower().Contains("building"))
-                        catBuildings += cost;
-                    else if (cname.Contains("آلات") || cname.Contains("معدات") || cname.Contains("ماكين") || cname.ToLower().Contains("machin"))
-                        catMachinery += cost;
-                    else if (cname.Contains("سيار") || cname.Contains("مركب") || cname.Contains("نقل") || cname.ToLower().Contains("vehic"))
-                        catVehicles += cost;
-                    else if (cname.Contains("أثاث") || cname.Contains("ديكور") || cname.Contains("تجهيز") || cname.ToLower().Contains("furnit"))
-                        catFurniture += cost;
-                    else if (cname.Contains("حاسب") || cname.Contains("كمبيوتر") || cname.Contains("طابع") || cname.Contains("شبك") || cname.ToLower().Contains("computer"))
-                        catComputers += cost;
-                    else if (cname.Contains("غير ملموس") || cname.Contains("برمج") || cname.ToLower().Contains("intang"))
-                        catIntangibles += cost;
-                    else
-                        catOther += cost;
+                    foreach (DataRow r in dtAssetDetails.Rows)
+                    {
+                        string cname = r["CatName"].ToString();
+                        decimal cost = Convert.ToDecimal(r["TotalCost"]);
+                        decimal dep = Convert.ToDecimal(r["TotalDep"]);
+                        liveTotalDep += dep;
+
+                        if (cname.Contains("أراض") || cname.ToLower().Contains("land"))
+                            catLand += cost;
+                        else if (cname.Contains("مبان") || cname.ToLower().Contains("building"))
+                            catBuildings += cost;
+                        else if (cname.Contains("آلات") || cname.Contains("معدات") || cname.Contains("ماكين") || cname.ToLower().Contains("machin"))
+                            catMachinery += cost;
+                        else if (cname.Contains("سيار") || cname.Contains("مركب") || cname.Contains("نقل") || cname.ToLower().Contains("vehic"))
+                            catVehicles += cost;
+                        else if (cname.Contains("أثاث") || cname.Contains("ديكور") || cname.Contains("تجهيز") || cname.ToLower().Contains("furnit"))
+                            catFurniture += cost;
+                        else if (cname.Contains("حاسب") || cname.Contains("كمبيوتر") || cname.Contains("طابع") || cname.Contains("شبك") || cname.ToLower().Contains("computer"))
+                            catComputers += cost;
+                        else if (cname.Contains("غير ملموس") || cname.Contains("برمج") || cname.ToLower().Contains("intang"))
+                            catIntangibles += cost;
+                        else
+                            catOther += cost;
+                    }
                 }
 
                 assets.Add(new KeyValuePair<string, decimal>("🟢 الأصول غير المتداولة (الثابتة)", 0m));
