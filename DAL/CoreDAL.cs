@@ -511,19 +511,16 @@ namespace ChickenDist.DAL
                     LTRIM(RTRIM(p.InternationalCode)) = @code OR LTRIM(RTRIM(p.InternationalCode)) = @scannedTrimmed OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.InternationalCode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.InternationalCode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    (LEN(@code) >= 4 AND p.InternationalCode LIKE '%' + @code + '%') OR
                     
                     p.Unit1Barcode = @code OR p.Unit1Barcode = @scannedTrimmed OR p.Unit1Barcode = @scannedPadded OR
                     LTRIM(RTRIM(p.Unit1Barcode)) = @code OR LTRIM(RTRIM(p.Unit1Barcode)) = @scannedTrimmed OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    (LEN(@code) >= 4 AND p.Unit1Barcode LIKE '%' + @code + '%') OR
                     
                     p.Unit2Barcode = @code OR p.Unit2Barcode = @scannedTrimmed OR p.Unit2Barcode = @scannedPadded OR
                     LTRIM(RTRIM(p.Unit2Barcode)) = @code OR LTRIM(RTRIM(p.Unit2Barcode)) = @scannedTrimmed OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%' OR
                     ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @scannedTrimmed + ',%' OR
-                    (LEN(@code) >= 4 AND p.Unit2Barcode LIKE '%' + @code + '%') OR
                     
                     p.PartNumber = @code OR p.PartNumber = @scannedTrimmed OR LTRIM(RTRIM(p.PartNumber)) = @code OR
                     p.ScalePLU = @code OR p.ScalePLU = @scannedPadded OR p.ScalePLU = @scannedTrimmed OR
@@ -531,11 +528,36 @@ namespace ChickenDist.DAL
                     (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)
                 )
                 ORDER BY CASE 
-                    WHEN (LTRIM(RTRIM(p.ProductCode)) = @code OR LTRIM(RTRIM(p.ProductCode)) = @scannedTrimmed OR (@scannedInt > 0 AND (p.ProductID = @scannedInt OR (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt)))) THEN 0
-                    WHEN (LTRIM(RTRIM(p.InternationalCode)) = @code OR LTRIM(RTRIM(p.Unit1Barcode)) = @code OR LTRIM(RTRIM(p.Unit2Barcode)) = @code OR LTRIM(RTRIM(p.PartNumber)) = @code) THEN 1
-                    WHEN (',' + REPLACE(REPLACE(p.InternationalCode, ' ', ''), ';', ',') + ',' LIKE '%,' + @code + ',%') THEN 2
-                    WHEN (p.ScalePLU = @code) THEN 3
-                    ELSE 4
+                    -- 0: تطابق تام وحرفي 100% مع الباركود المقروء (الكود الدولي، باركود الوحدات، كود الصنف الأصلي، رقم القطعة)
+                    WHEN (LTRIM(RTRIM(p.ProductCode)) = @code 
+                          OR LTRIM(RTRIM(p.InternationalCode)) = @code 
+                          OR LTRIM(RTRIM(p.Unit1Barcode)) = @code 
+                          OR LTRIM(RTRIM(p.Unit2Barcode)) = @code 
+                          OR LTRIM(RTRIM(p.PartNumber)) = @code) THEN 0
+
+                    -- 1: تطابق تام داخل قائمة باركودات متعددة
+                    WHEN (',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.InternationalCode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%'
+                          OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit1Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%'
+                          OR ',' + REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(p.Unit2Barcode, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), ';', ',') + ',' LIKE '%,' + @code + ',%') THEN 1
+
+                    -- 2: تطابق بعد إزالة أو ضبط الأصفار البادئة (Trimmed / Padded) لحقول الباركود الفعلية
+                    WHEN (LTRIM(RTRIM(p.ProductCode)) = @scannedTrimmed 
+                          OR LTRIM(RTRIM(p.ProductCode)) = @scannedPadded
+                          OR LTRIM(RTRIM(p.InternationalCode)) = @scannedTrimmed
+                          OR LTRIM(RTRIM(p.Unit1Barcode)) = @scannedTrimmed
+                          OR LTRIM(RTRIM(p.Unit1Barcode)) = @scannedPadded
+                          OR LTRIM(RTRIM(p.Unit2Barcode)) = @scannedTrimmed
+                          OR LTRIM(RTRIM(p.Unit2Barcode)) = @scannedPadded
+                          OR LTRIM(RTRIM(p.PartNumber)) = @scannedTrimmed) THEN 2
+
+                    -- 3: كود الميزان المباشر
+                    WHEN (p.ScalePLU = @code OR p.ScalePLU = @scannedTrimmed OR p.ScalePLU = @scannedPadded) THEN 3
+
+                    -- 4: الملاذ الأخير فقط: كود الصنف كرقم (عندما لا يوجد صنف آخر يحمل هذا الباركود الفعلي)
+                    WHEN (@scannedInt > 0 AND (LTRIM(RTRIM(p.ProductCode)) = @scannedTrimmed OR (ISNUMERIC(p.ProductCode) = 1 AND CAST(p.ProductCode AS INT) = @scannedInt))) THEN 4
+                    -- 5: الملاذ الأخير تماماً: معرف الصنف الداخلي ProductID
+                    WHEN (@scannedInt > 0 AND p.ProductID = @scannedInt) THEN 5
+                    ELSE 6
                 END",
                 DbHelper.P("@code", scannedCode),
                 DbHelper.P("@scannedPadded", scannedPadded),
@@ -567,10 +589,7 @@ namespace ChickenDist.DAL
                             BarcodeMatches(u1b, scannedCode) ||
                             BarcodeMatches(u2b, scannedCode) ||
                             BarcodeMatches(pc, scannedCode) ||
-                            BarcodeMatches(pn, scannedCode) ||
-                            (!string.IsNullOrWhiteSpace(ic) && ic.IndexOf(scannedCode, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                            (!string.IsNullOrWhiteSpace(pc) && pc.IndexOf(scannedCode, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                            (!string.IsNullOrWhiteSpace(pn) && pn.IndexOf(scannedCode, StringComparison.OrdinalIgnoreCase) >= 0))
+                            BarcodeMatches(pn, scannedCode))
                         {
                             matchedRow = row;
                             break;

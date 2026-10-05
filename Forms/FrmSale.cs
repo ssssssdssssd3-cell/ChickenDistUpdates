@@ -1818,12 +1818,12 @@ namespace ChickenDist.Forms
 				string rawInput = txtBarcode?.Text?.Trim() ?? "";
 				if (!string.IsNullOrEmpty(rawInput))
 				{
+					txtBarcode?.Clear();
 					var (code, multiQty) = ParseBarcodeMultiplier(rawInput);
 					if (!string.IsNullOrEmpty(_lastScannedBarcode) &&
 						string.Equals(_lastScannedBarcode, code, StringComparison.OrdinalIgnoreCase) &&
 						(DateTime.Now - _lastScanTime).TotalMilliseconds < BARCODE_DEBOUNCE_MS)
 					{
-						txtBarcode?.Clear();
 						return;
 					}
 					ProcessScannedBarcode(code, multiQty);
@@ -1954,50 +1954,64 @@ namespace ChickenDist.Forms
 		{
 			if (keyData == Keys.Enter || keyData == Keys.Return)
 			{
-				// 1. أولوية عليا مطلقة لقراءة الاسكنر السريعة (Hardware Scanner Burst)
-				// جهاز الاسكنر يرسل سلسلة الحروف بفاصل زمني فائق السرعة (< 100ms للحرف) متبوعة بـ Enter.
-				// عند التقاط هذا التتابع، يتم تنفيذ قراءة الباركود فوراً وإلغاء أي تحرير معلق دون فتح أسطر فارغة.
-				if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 1)
+				// 1. أولوية عليا مطلقة لقراءة الاسكنر أو الإدخال المباشر في حقل الباركود
+				string scannedCode = "";
+				string txtVal = txtBarcode?.Text?.Trim() ?? "";
+
+				// إذا كان التركيز على حقل الباركود وفيه نص مسجل بالكامل، يتم اعتماده فوراً
+				if (txtBarcode != null && (txtBarcode.Focused || this.ActiveControl == txtBarcode) && !string.IsNullOrEmpty(txtVal))
+				{
+					scannedCode = txtVal;
+				}
+				else if (!string.IsNullOrEmpty(_barcodeBuffer) && _barcodeBuffer.Length >= 2)
 				{
 					double totalMs = (DateTime.Now - _barcodeStartTime).TotalMilliseconds;
 					if (totalMs < _barcodeBuffer.Length * 100 + 350)
 					{
-						string scannedCode = _barcodeBuffer.Trim();
-						_barcodeBuffer = "";
-
-						// إلغاء أي تعديل مؤقت في الجدول وإزالة السطر المعلق الفارغ إن وجد
-						if (dgItems != null)
+						scannedCode = _barcodeBuffer.Trim();
+						if (!string.IsNullOrEmpty(txtVal) && txtVal.Length >= scannedCode.Length)
 						{
-							try
-							{
-								if (dgItems.IsCurrentCellInEditMode) dgItems.CancelEdit();
-								dgItems.EndEdit();
-							}
-							catch { }
-
-							if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
-							{
-								dgItems.Rows.RemoveAt(_pendingRowIdx);
-								_pendingRowIdx = -1;
-							}
+							scannedCode = txtVal;
 						}
-
-						if (txtBarcode != null)
-							txtBarcode.Clear();
-
-						var (parsedCode, multiQty) = ParseBarcodeMultiplier(scannedCode);
-						ProcessScannedBarcode(parsedCode, multiQty);
-						if (txtBarcode != null)
-						{
-							txtBarcode.Clear();
-							this.ActiveControl = txtBarcode;
-							txtBarcode.Focus();
-							txtBarcode.SelectAll();
-						}
-						return true;
 					}
-					_barcodeBuffer = "";
 				}
+
+				if (!string.IsNullOrEmpty(scannedCode))
+				{
+					_barcodeBuffer = "";
+
+					// إلغاء أي تعديل مؤقت في الجدول وإزالة السطر المعلق الفارغ إن وجد
+					if (dgItems != null)
+					{
+						try
+						{
+							if (dgItems.IsCurrentCellInEditMode) dgItems.CancelEdit();
+							dgItems.EndEdit();
+						}
+						catch { }
+
+						if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+						{
+							dgItems.Rows.RemoveAt(_pendingRowIdx);
+							_pendingRowIdx = -1;
+						}
+					}
+
+					if (txtBarcode != null)
+						txtBarcode.Clear();
+
+					var (parsedCode, multiQty) = ParseBarcodeMultiplier(scannedCode);
+					ProcessScannedBarcode(parsedCode, multiQty);
+					if (txtBarcode != null)
+					{
+						txtBarcode.Clear();
+						this.ActiveControl = txtBarcode;
+						txtBarcode.Focus();
+						txtBarcode.SelectAll();
+					}
+					return true;
+				}
+				_barcodeBuffer = "";
 
 				// 2. إذا لم يكن إسكنر وكان المستخدم يحرر خلية في جدول الأصناف (سعر البيع، الكمية، الخصم، إلخ)
 				// أو كان الجدول في بؤرة التركيز: يتم تثبيت القيمة والتنقل للخلية التالية
