@@ -19,6 +19,7 @@ namespace ChickenDist.Forms
         private ComboBox cboKitchenPrinter;   // طابعة المطبخ والتحضير
         private ComboBox cboInvoiceFormat;
         private ComboBox cboReportFormat;
+        private ComboBox cboVoucherFormat;
         private ComboBox cboPrintBehavior;
         private ComboBox cboReceiptPrintMode;
         private ComboBox cboPOSReceiptMode;
@@ -260,7 +261,33 @@ namespace ChickenDist.Forms
             page.Controls.Add(cboReportFormat);
             y += 42;
 
-            // 5. سلوك وسؤال الطباعة عند الحفظ
+            // 6. مقاس طباعة سندات الصرف والتوريد (سندات القبض والدفع)
+            AddLabel(page, "مقاس طباعة سندات الصرف والتوريد الافتراضي (سندات القبض والدفع):", 20, y);
+            y += 24;
+
+            cboVoucherFormat = new ComboBox
+            {
+                Location = new Point(20, y),
+                Width = 660,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                Font = new Font("Segoe UI", 10.5f)
+            };
+            cboVoucherFormat.Items.AddRange(new object[]
+            {
+                "ريسيت حراري (Receipt 80mm / 58mm) - طابعة الريسيت الافتراضية",
+                "ورق كامل A4 (210 x 297 mm)",
+                "نصف صفحة A5 (148 x 210 mm)",
+                "سؤال واختيار المقاس عند كل طباعة (Choice Dialog)"
+            });
+            cboVoucherFormat.SelectedIndex = AppConfig.VoucherPaperSize == "A4" ? 1 
+                                           : (AppConfig.VoucherPaperSize == "A5" ? 2 
+                                           : (AppConfig.VoucherPaperSize == "Ask" ? 3 : 0));
+            page.Controls.Add(cboVoucherFormat);
+            y += 42;
+
+            // 7 (old 5). سلوك وسؤال الطباعة عند الحفظ
             AddLabel(page, "سلوك وسؤال الطباعة عند حفظ الفاتورة (بيع / بيان تسعير / POS):", 20, y);
             y += 24;
             cboPrintBehavior = new ComboBox
@@ -914,6 +941,16 @@ namespace ChickenDist.Forms
                 AppConfig.KitchenPrintBlendRecipe = chkKitchenPrintBlendRecipe.Checked;
             AppConfig.DefaultInvoiceFormat = cboInvoiceFormat.SelectedIndex == 0 ? "Receipt" : (cboInvoiceFormat.SelectedIndex == 2 ? "A5" : "A4");
             AppConfig.DefaultReportFormat = cboReportFormat.SelectedIndex == 1 ? "A5" : (cboReportFormat.SelectedIndex == 2 ? "Receipt" : "A4");
+            if (cboVoucherFormat != null)
+            {
+                AppConfig.VoucherPaperSize = cboVoucherFormat.SelectedIndex switch
+                {
+                    1 => "A4",
+                    2 => "A5",
+                    3 => "Ask",
+                    _ => "Receipt"
+                };
+            }
             AppConfig.PrintBehaviorOnSave = cboPrintBehavior.SelectedIndex == 1 ? "Direct" : (cboPrintBehavior.SelectedIndex == 2 ? "None" : "Prompt");
             AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
             AppConfig.POSReceiptMode = cboPOSReceiptMode.SelectedIndex == 2 ? "Never" : cboPOSReceiptMode.SelectedIndex == 1 ? "Ask" : "Always";

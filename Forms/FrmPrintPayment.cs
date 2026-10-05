@@ -22,10 +22,11 @@ namespace ChickenDist.Forms
         private decimal _netBalance;
         private string _voucherTemplate;
         private bool _showPreview;
+        private string _format;
         private int _currentRowIndex = 0;
         private int _pageNumber = 0;
 
-        public FrmPrintPayment(DataTable dtTrans, string accountName, decimal startBalance, string template = null, bool showPreview = true)
+        public FrmPrintPayment(DataTable dtTrans, string accountName, decimal startBalance, string template = null, bool showPreview = true, string format = null)
         {
             _dtTransactions = dtTrans;
             _accountName = accountName ?? "الخزينة الرئيسية";
@@ -34,21 +35,59 @@ namespace ChickenDist.Forms
             if (string.IsNullOrEmpty(_voucherTemplate))
                 _voucherTemplate = "AlTarekVoucher";
             _showPreview = showPreview;
+            _format = ResolveFormat(format);
+            if (string.IsNullOrEmpty(_format)) return; // Canceled
 
             CalculateTotals();
             DoPrint();
         }
 
-        public FrmPrintPayment(int cashTransID, string template = null, bool showPreview = true)
+        public FrmPrintPayment(int cashTransID, string template = null, bool showPreview = true, string format = null)
         {
             _voucherTemplate = template ?? AppConfig.VoucherTemplate;
             if (string.IsNullOrEmpty(_voucherTemplate))
                 _voucherTemplate = "AlTarekVoucher";
             _showPreview = showPreview;
+            _format = ResolveFormat(format);
+            if (string.IsNullOrEmpty(_format)) return; // Canceled
 
             LoadSingleTrans(cashTransID);
             CalculateTotals();
             DoPrint();
+        }
+
+        private string ResolveFormat(string format)
+        {
+            if (!string.IsNullOrEmpty(format))
+            {
+                if (string.Equals(format, "Receipt", StringComparison.OrdinalIgnoreCase)) return "Receipt";
+                if (string.Equals(format, "A5", StringComparison.OrdinalIgnoreCase)) return "A5";
+                if (string.Equals(format, "A4", StringComparison.OrdinalIgnoreCase)) return "A4";
+                if (string.Equals(format, "Ask", StringComparison.OrdinalIgnoreCase))
+                {
+                    using (var dlg = new FrmPrintChoiceDialog("يرجى اختيار مقاس ونوع طباعة سند الصرف / التوريد:", allowPrep: false))
+                    {
+                        if (dlg.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(dlg.SelectedChoice))
+                            return dlg.SelectedChoice;
+                        return null;
+                    }
+                }
+            }
+
+            string configFormat = AppConfig.VoucherPaperSize;
+            if (string.Equals(configFormat, "Ask", StringComparison.OrdinalIgnoreCase))
+            {
+                using (var dlg = new FrmPrintChoiceDialog("يرجى اختيار مقاس ونوع طباعة سند الصرف / التوريد:", allowPrep: false))
+                {
+                    if (dlg.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(dlg.SelectedChoice))
+                        return dlg.SelectedChoice;
+                    return null;
+                }
+            }
+
+            if (string.Equals(configFormat, "A5", StringComparison.OrdinalIgnoreCase)) return "A5";
+            if (string.Equals(configFormat, "A4", StringComparison.OrdinalIgnoreCase)) return "A4";
+            return "Receipt"; // Default is Receipt
         }
 
         private void LoadSingleTrans(int transID)
@@ -86,8 +125,21 @@ namespace ChickenDist.Forms
 
         private void DoPrint()
         {
+            if (string.Equals(_format, "Receipt", StringComparison.OrdinalIgnoreCase))
+            {
+                DoPrintReceipt();
+            }
+            else
+            {
+                DoPrintA4A5();
+            }
+        }
+
+        private void DoPrintA4A5()
+        {
             var pd = new PrintDocument();
             pd.PrintController = new StandardPrintController();
+            bool isA5 = string.Equals(_format, "A5", StringComparison.OrdinalIgnoreCase);
             pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169);
             pd.DefaultPageSettings.Margins = new Margins(20, 20, 20, 20);
             AppConfig.SetPrinter(pd, AppConfig.A4PrinterName);
@@ -381,6 +433,323 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void DoPrintReceipt()
+        {
+            var pd = new PrintDocument();
+            pd.PrintController = new StandardPrintController();
+
+            int paperW = AppConfig.ReceiptPaperWidth == 58 ? 205 : 300;
+            pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", paperW, 1000);
+            int margin = paperW == 205 ? 6 : 10;
+            pd.DefaultPageSettings.Margins = new Margins(margin, margin, 10, 10);
+            AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
+
+            pd.PrintPage += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                int pageW = paperW;
+                int lMargin = margin;
+                int rMargin = margin;
+                int printableW = pageW - lMargin - rMargin;
+                int y = 10;
+
+                bool is58 = (paperW == 205);
+                var fontCompany = new Font("Arial", is58 ? 11f : 13f, FontStyle.Bold);
+                var fontTitle = new Font("Arial", is58 ? 10f : 12f, FontStyle.Bold);
+                var fontSection = new Font("Arial", is58 ? 8.5f : 9.5f, FontStyle.Bold);
+                var fontRegular = new Font("Arial", is58 ? 7.5f : 8.5f, FontStyle.Regular);
+                var fontBold = new Font("Arial", is58 ? 8f : 9f, FontStyle.Bold);
+                var fontAmount = new Font("Arial", is58 ? 12.5f : 15f, FontStyle.Bold);
+                var fontTafqeet = new Font("Arial", is58 ? 7.5f : 8.5f, FontStyle.Bold);
+
+                var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                var sfRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                var sfLeft = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+
+                // 1. Logo (if enabled)
+                if (AppConfig.PrintShopLogo && !string.IsNullOrEmpty(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
+                {
+                    try
+                    {
+                        using (var img = Image.FromFile(AppConfig.ShopLogoPath))
+                        {
+                            int maxLogoW = is58 ? 100 : 140;
+                            int maxLogoH = 45;
+                            double ratio = Math.Min((double)maxLogoW / img.Width, (double)maxLogoH / img.Height);
+                            int lw = (int)(img.Width * ratio);
+                            int lh = (int)(img.Height * ratio);
+                            int lx = (pageW - lw) / 2;
+                            g.DrawImage(img, lx, y, lw, lh);
+                            y += lh + 6;
+                        }
+                    }
+                    catch { }
+                }
+
+                // 2. Company Info
+                string compName = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "مؤسسة التوزيع والتجارة" : AppConfig.CompanyName;
+                g.DrawString(compName, fontCompany, Brushes.Black, new RectangleF(lMargin, y, printableW, 22), sfCenter);
+                y += 24;
+
+                if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress))
+                {
+                    g.DrawString(AppConfig.CompanyAddress, fontRegular, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 16), sfCenter);
+                    y += 18;
+                }
+                if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
+                {
+                    g.DrawString($"هاتف: {AppConfig.CompanyPhone}", fontRegular, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 16), sfCenter);
+                    y += 18;
+                }
+
+                y += 4;
+                DrawDottedLine(g, lMargin, y, printableW);
+                y += 8;
+
+                // 3. Single Voucher vs Multi-Row
+                if (_dtTransactions != null && _dtTransactions.Rows.Count == 1)
+                {
+                    DataRow row = _dtTransactions.Rows[0];
+                    int transId = row.Table.Columns.Contains("TransID") && row["TransID"] != DBNull.Value ? Convert.ToInt32(row["TransID"]) : 0;
+                    DateTime dt = row.Table.Columns.Contains("TransDate") && row["TransDate"] != DBNull.Value ? Convert.ToDateTime(row["TransDate"]) : DateTime.Now;
+                    string tType = row["TransType"]?.ToString() ?? "";
+                    decimal inAmt = row.Table.Columns.Contains("AmountIn") && row["AmountIn"] != DBNull.Value ? Convert.ToDecimal(row["AmountIn"]) : 0m;
+                    decimal outAmt = row.Table.Columns.Contains("AmountOut") && row["AmountOut"] != DBNull.Value ? Convert.ToDecimal(row["AmountOut"]) : 0m;
+                    decimal amount = inAmt > 0 ? inAmt : outAmt;
+                    bool isDeposit = inAmt > 0 || tType == "Deposit" || tType == "ClientPayment" || tType == "SaleIncome";
+                    string rawNotes = row["Notes"]?.ToString() ?? "";
+                    string safeName = row.Table.Columns.Contains("AccountName") && row["AccountName"] != DBNull.Value ? row["AccountName"].ToString() : _accountName;
+                    string userName = row.Table.Columns.Contains("CreatedByName") && row["CreatedByName"] != DBNull.Value ? row["CreatedByName"].ToString() : (Session.EmpName ?? "---");
+
+                    // Extract party name, balance note, and clean notes
+                    string partyName = "";
+                    string balanceNote = "";
+                    string cleanNotes = rawNotes;
+
+                    if (cleanNotes.Contains("[") && cleanNotes.Contains("]"))
+                    {
+                        int startB = cleanNotes.IndexOf('[');
+                        int closeB = cleanNotes.IndexOf(']');
+                        if (closeB > startB)
+                        {
+                            partyName = cleanNotes.Substring(startB + 1, closeB - startB - 1).Trim();
+                            cleanNotes = (cleanNotes.Substring(0, startB) + " " + cleanNotes.Substring(closeB + 1)).Trim();
+                            if (partyName.StartsWith("عميل:")) partyName = partyName.Substring(5).Trim();
+                            else if (partyName.StartsWith("مورد:")) partyName = partyName.Substring(5).Trim();
+                        }
+                    }
+
+                    if (cleanNotes.Contains("(رصيد"))
+                    {
+                        int balIdx = cleanNotes.IndexOf("(رصيد");
+                        int closeP = cleanNotes.IndexOf(')', balIdx);
+                        if (closeP > balIdx)
+                        {
+                            balanceNote = cleanNotes.Substring(balIdx + 1, closeP - balIdx - 1).Trim();
+                            cleanNotes = (cleanNotes.Substring(0, balIdx) + " " + cleanNotes.Substring(closeP + 1)).Trim();
+                        }
+                    }
+
+                    // Clean prefixes
+                    if (cleanNotes.StartsWith("سداد من عميل -")) cleanNotes = cleanNotes.Substring("سداد من عميل -".Length).Trim();
+                    if (cleanNotes.StartsWith("سداد للمورد -")) cleanNotes = cleanNotes.Substring("سداد للمورد -".Length).Trim();
+                    if (cleanNotes.StartsWith("توريد نقدية -")) cleanNotes = cleanNotes.Substring("توريد نقدية -".Length).Trim();
+                    if (cleanNotes.StartsWith("صرف نقدية -")) cleanNotes = cleanNotes.Substring("صرف نقدية -".Length).Trim();
+                    cleanNotes = cleanNotes.TrimStart('-', ':', ' ');
+
+                    // Fallback party name if empty
+                    if (string.IsNullOrEmpty(partyName))
+                    {
+                        if (tType == "Expense") partyName = "مصروفات عامة / تشغيل";
+                        else if (tType == "ClientPayment") partyName = "عميل";
+                        else if (tType == "SupplierPayment") partyName = "مورد";
+                    }
+
+                    // Determine Title & Theme Colors
+                    string voucherTitle = isDeposit ? "سند توريد نقدي (قبض)" : "سند صرف نقدي (دفع)";
+                    Color titleBg = isDeposit ? Color.FromArgb(240, 253, 244) : Color.FromArgb(254, 242, 242);
+                    Color titleBorder = isDeposit ? Color.FromArgb(34, 197, 94) : Color.FromArgb(239, 68, 68);
+                    Color amountColor = isDeposit ? Color.FromArgb(22, 101, 52) : Color.FromArgb(153, 27, 27);
+
+                    if (tType.Contains("Transfer"))
+                    {
+                        voucherTitle = "سند تحويل نقدية";
+                        titleBg = Color.FromArgb(245, 243, 255);
+                        titleBorder = Color.FromArgb(147, 51, 234);
+                        amountColor = Color.FromArgb(107, 33, 168);
+                    }
+                    else if (tType.Contains("Deficit") || tType.Contains("Surplus") || tType.Contains("Adjustment") || tType.Contains("Reconcile"))
+                    {
+                        voucherTitle = "سند تسوية حساب نقدي";
+                        titleBg = Color.FromArgb(254, 252, 232);
+                        titleBorder = Color.FromArgb(234, 179, 8);
+                        amountColor = Color.FromArgb(133, 77, 14);
+                    }
+
+                    // Title Banner
+                    int titleH = 28;
+                    g.FillRectangle(new SolidBrush(titleBg), lMargin, y, printableW, titleH);
+                    using (var p = new Pen(titleBorder, 1.2f))
+                    {
+                        g.DrawRectangle(p, lMargin, y, printableW, titleH);
+                    }
+                    g.DrawString(voucherTitle, fontTitle, Brushes.Black, new RectangleF(lMargin, y, printableW, titleH), sfCenter);
+                    y += titleH + 8;
+
+                    // Details
+                    DrawReceiptKeyValue(g, "رقم السند:", $"#{transId}", fontBold, fontRegular, lMargin, ref y, printableW);
+                    DrawReceiptKeyValue(g, "تاريخ السند:", dt.ToString("yyyy/MM/dd  hh:mm tt"), fontBold, fontRegular, lMargin, ref y, printableW);
+                    DrawReceiptKeyValue(g, "الخزنة / الحساب:", safeName, fontBold, fontRegular, lMargin, ref y, printableW);
+                    DrawReceiptKeyValue(g, "المستخدم:", userName, fontBold, fontRegular, lMargin, ref y, printableW);
+
+                    if (!string.IsNullOrEmpty(partyName))
+                    {
+                        y += 2;
+                        DrawDottedLine(g, lMargin, y, printableW);
+                        y += 6;
+                        string partyLabel = isDeposit ? "ورد من السيد/ة:" : "صرف إلى السيد/ة:";
+                        DrawReceiptKeyValue(g, partyLabel, partyName, fontSection, fontSection, lMargin, ref y, printableW);
+                    }
+
+                    if (!string.IsNullOrEmpty(balanceNote))
+                    {
+                        y += 3;
+                        g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), lMargin, y, printableW, 20);
+                        g.DrawRectangle(Pens.LightGray, lMargin, y, printableW, 20);
+                        g.DrawString(balanceNote, fontRegular, Brushes.DarkSlateGray, new RectangleF(lMargin + 4, y, printableW - 8, 20), sfCenter);
+                        y += 24;
+                    }
+
+                    y += 4;
+                    DrawDottedLine(g, lMargin, y, printableW);
+                    y += 8;
+
+                    // Prominent Amount Box
+                    int amtBoxH = 56;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), lMargin, y, printableW, amtBoxH);
+                    using (var p = new Pen(amountColor, 1.5f))
+                    {
+                        g.DrawRectangle(p, lMargin, y, printableW, amtBoxH);
+                    }
+
+                    string amtText = $"{amount:N2} ج.م";
+                    using (var br = new SolidBrush(amountColor))
+                    {
+                        g.DrawString(amtText, fontAmount, br, new RectangleF(lMargin, y + 4, printableW, 26), sfCenter);
+                    }
+
+                    string tafqeet = TafqeetHelper.ConvertToArabicWords(amount);
+                    g.DrawString($"فقط {tafqeet} لا غير", fontTafqeet, Brushes.Black, new RectangleF(lMargin + 4, y + 30, printableW - 8, 22), sfCenter);
+                    y += amtBoxH + 10;
+
+                    // Notes / Reason
+                    if (!string.IsNullOrWhiteSpace(cleanNotes))
+                    {
+                        g.DrawString("البيان والسبب المحاسبي:", fontBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), sfRight);
+                        y += 18;
+
+                        var sfNotes = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Near, FormatFlags = StringFormatFlags.DirectionRightToLeft };
+                        SizeF szNotes = g.MeasureString(cleanNotes, fontRegular, printableW, sfNotes);
+                        int notesH = Math.Max(20, (int)Math.Ceiling(szNotes.Height));
+                        g.DrawString(cleanNotes, fontRegular, Brushes.Black, new RectangleF(lMargin, y, printableW, notesH), sfNotes);
+                        y += notesH + 8;
+                    }
+
+                    y += 4;
+                    DrawDottedLine(g, lMargin, y, printableW);
+                    y += 8;
+
+                    // Footer Note
+                    if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptFooterNote))
+                    {
+                        g.DrawString(AppConfig.ReceiptFooterNote, fontRegular, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 18), sfCenter);
+                        y += 22;
+                        DrawDottedLine(g, lMargin, y, printableW);
+                        y += 8;
+                    }
+
+                    // Signatures
+                    y += 6;
+                    int halfW = printableW / 2;
+                    g.DrawString("توقيع المستلم:", fontBold, Brushes.Black, new RectangleF(lMargin + halfW, y, halfW, 18), sfRight);
+                    g.DrawString("أمين الخزينة:", fontBold, Brushes.Black, new RectangleF(lMargin, y, halfW, 18), sfRight);
+                    y += 22;
+
+                    g.DrawString("............................", fontRegular, Brushes.Gray, new RectangleF(lMargin + halfW, y, halfW, 16), sfCenter);
+                    g.DrawString("............................", fontRegular, Brushes.Gray, new RectangleF(lMargin, y, halfW, 16), sfCenter);
+                    y += 35;
+                }
+                else
+                {
+                    // Multi-row transaction statement on receipt
+                    int titleH = 28;
+                    g.FillRectangle(new SolidBrush(Color.FromArgb(224, 242, 254)), lMargin, y, printableW, titleH);
+                    g.DrawRectangle(Pens.SteelBlue, lMargin, y, printableW, titleH);
+                    g.DrawString($"كشف حركة نقدية | {_accountName}", fontTitle, Brushes.Black, new RectangleF(lMargin, y, printableW, titleH), sfCenter);
+                    y += titleH + 8;
+
+                    DrawReceiptKeyValue(g, "تاريخ الطباعة:", DateTime.Now.ToString("yyyy/MM/dd hh:mm tt"), fontBold, fontRegular, lMargin, ref y, printableW);
+                    DrawReceiptKeyValue(g, "عدد الحركات:", $"{_dtTransactions.Rows.Count}", fontBold, fontRegular, lMargin, ref y, printableW);
+
+                    y += 4;
+                    DrawDottedLine(g, lMargin, y, printableW);
+                    y += 8;
+
+                    foreach (DataRow r in _dtTransactions.Rows)
+                    {
+                        decimal inAmt = r.Table.Columns.Contains("AmountIn") && r["AmountIn"] != DBNull.Value ? Convert.ToDecimal(r["AmountIn"]) : 0m;
+                        decimal outAmt = r.Table.Columns.Contains("AmountOut") && r["AmountOut"] != DBNull.Value ? Convert.ToDecimal(r["AmountOut"]) : 0m;
+                        DateTime dt = Convert.ToDateTime(r["TransDate"]);
+                        string tType = r["TransType"]?.ToString() ?? "";
+                        string n = r["Notes"]?.ToString() ?? "";
+                        if (n.Length > 25) n = n.Substring(0, 22) + "...";
+
+                        string typeName = GetTransTypeArabicShort(tType);
+                        string amtStr = inAmt > 0 ? $"+{inAmt:N2}" : $"-{outAmt:N2}";
+                        Brush amtBrush = inAmt > 0 ? Brushes.DarkGreen : Brushes.DarkRed;
+
+                        g.DrawString($"{dt:dd/MM} {typeName}", fontRegular, Brushes.Black, new RectangleF(lMargin + printableW - 140, y, 140, 18), sfRight);
+                        g.DrawString(amtStr, fontBold, amtBrush, new RectangleF(lMargin, y, printableW - 145, 18), sfLeft);
+                        y += 18;
+
+                        if (!string.IsNullOrEmpty(n))
+                        {
+                            g.DrawString(n, fontRegular, Brushes.Gray, new RectangleF(lMargin, y, printableW, 16), sfRight);
+                            y += 16;
+                        }
+                    }
+
+                    y += 4;
+                    DrawDottedLine(g, lMargin, y, printableW);
+                    y += 8;
+
+                    DrawReceiptKeyValue(g, "إجمالي المقبوضات:", $"{_totalIn:N2} ج", fontBold, fontBold, lMargin, ref y, printableW);
+                    DrawReceiptKeyValue(g, "إجمالي المدفوعات:", $"{_totalOut:N2} ج", fontBold, fontBold, lMargin, ref y, printableW);
+                    DrawReceiptKeyValue(g, "الصافي:", $"{_netBalance:N2} ج", fontSection, fontSection, lMargin, ref y, printableW);
+
+                    y += 30;
+                }
+            };
+
+            if (_showPreview)
+            {
+                var preview = new PrintPreviewDialog
+                {
+                    Document = pd,
+                    Width = 460,
+                    Height = 720,
+                    Text = "معاينة طباعة سند الصرف والتوريد (بون حراري)"
+                };
+                preview.ShowDialog();
+            }
+            else
+            {
+                AppConfig.PrintInBackground(pd);
+            }
+        }
+
         private string GetTransTypeName(string type)
         {
             if (string.IsNullOrWhiteSpace(type)) return "---";
@@ -516,6 +885,27 @@ namespace ChickenDist.Forms
 
             if (currentFont != font) currentFont.Dispose();
             sfNoWrap.Dispose();
+        }
+
+        private void DrawReceiptKeyValue(Graphics g, string label, string value, Font fontLbl, Font fontVal, int lMargin, ref int y, int printableW)
+        {
+            var sfR = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap };
+            var sfL = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
+
+            int h = 20;
+            int lblW = Math.Min(120, printableW / 2);
+            int valW = printableW - lblW - 2;
+            g.DrawString(label, fontLbl, Brushes.Black, new RectangleF(lMargin + valW, y, lblW, h), sfR);
+            g.DrawString(value, fontVal, Brushes.Black, new RectangleF(lMargin, y, valW, h), sfL);
+            y += h;
+        }
+
+        private void DrawDottedLine(Graphics g, int x, int y, int width)
+        {
+            using (var p = new Pen(Color.Gray, 1f) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot })
+            {
+                g.DrawLine(p, x, y, x + width, y);
+            }
         }
     }
 }

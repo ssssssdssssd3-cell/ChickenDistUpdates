@@ -162,6 +162,26 @@ namespace ChickenDist.Forms
             btnPrintSelected.Font = Theme.FontBold;
             btnPrintSelected.Margin = new Padding(15, 0, 5, 0);
             btnPrintSelected.Click += BtnPrintSelected_Click;
+
+            var ctxPrint = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
+            var miReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt 80mm / 58mm)");
+            miReceipt.Click += (s, e) => PrintVoucherWithFormat("Receipt");
+            ctxPrint.Items.Add(miReceipt);
+
+            var miA4 = new ToolStripMenuItem("📄 طباعة ورق كامل A4");
+            miA4.Click += (s, e) => PrintVoucherWithFormat("A4");
+            ctxPrint.Items.Add(miA4);
+
+            var miA5 = new ToolStripMenuItem("📑 طباعة نصف صفحة A5");
+            miA5.Click += (s, e) => PrintVoucherWithFormat("A5");
+            ctxPrint.Items.Add(miA5);
+
+            ctxPrint.Items.Add(new ToolStripSeparator());
+            var miAsk = new ToolStripMenuItem("❓ اختيار المقاس عند الطباعة...");
+            miAsk.Click += (s, e) => PrintVoucherWithFormat("Ask");
+            ctxPrint.Items.Add(miAsk);
+
+            btnPrintSelected.ContextMenuStrip = ctxPrint;
             pnlActions.Controls.Add(btnPrintSelected);
 
             var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب للعميل", Color.FromArgb(37, 211, 102));
@@ -1014,7 +1034,7 @@ namespace ChickenDist.Forms
 
                         if (printResult == DialogResult.Yes)
                         {
-                            new FrmPrintPayment(newTransID, "AlTarekVoucher", true);
+                            new FrmPrintPayment(newTransID, "AlTarekVoucher", true, AppConfig.VoucherPaperSize);
                         }
 
                         // ── سؤال الإرسال عبر الواتساب ───────────────────────────
@@ -1097,6 +1117,11 @@ namespace ChickenDist.Forms
 
         private void BtnPrintSelected_Click(object sender, EventArgs e)
         {
+            PrintVoucherWithFormat(AppConfig.VoucherPaperSize);
+        }
+
+        private void PrintVoucherWithFormat(string format)
+        {
             if (dgVouchers.CurrentRow == null)
             {
                 MessageBox.Show("يرجى تحديد السند من القائمة أولاً للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -1104,7 +1129,7 @@ namespace ChickenDist.Forms
             }
 
             int transID = Convert.ToInt32(dgVouchers.CurrentRow.Cells["TransID"].Value);
-            new FrmPrintPayment(transID, "AlTarekVoucher", true);
+            new FrmPrintPayment(transID, "AlTarekVoucher", true, format);
         }
 
         private void BtnWhatsApp_Click(object sender, EventArgs e)

@@ -1236,7 +1236,29 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                MessageBox.Show("✅ تم تسجيل الحركة المالية بنجاح وتحديث الحسابات المقابلة!");
+                int lastCashID = 0;
+                try
+                {
+                    var obj = DbHelper.Scalar("SELECT TOP 1 CashID FROM CashBox ORDER BY CashID DESC");
+                    if (obj != null && obj != DBNull.Value) lastCashID = Convert.ToInt32(obj);
+                }
+                catch { }
+
+                string actName = type == "Deposit" ? "التوريد النقدي" : (type == "Withdraw" ? "الصرف النقدي" : "التسوية النقدية");
+                MessageBox.Show($"✅ تم تسجيل حركة {actName} بنجاح وتحديث الحسابات المقابلة!");
+
+                if (lastCashID > 0 && type != "Reconcile")
+                {
+                    string defFormat = AppConfig.VoucherPaperSize;
+                    string formatLabel = string.Equals(defFormat, "Receipt", StringComparison.OrdinalIgnoreCase) ? "طابعة الريسيت الحراري"
+                                       : (string.Equals(defFormat, "A5", StringComparison.OrdinalIgnoreCase) ? "ورق A5" : "ورق A4");
+
+                    if (MessageBox.Show($"🖨️ هل تريد طباعة سند {actName} (رقم #{lastCashID}) الآن على ({formatLabel})؟", "طباعة السند", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        new FrmPrintPayment(lastCashID, null, true, defFormat);
+                    }
+                }
+
                 dlg.DialogResult = DialogResult.OK;
                 dlg.Close();
             };

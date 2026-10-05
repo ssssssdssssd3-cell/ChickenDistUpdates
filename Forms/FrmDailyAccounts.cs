@@ -1372,7 +1372,7 @@ namespace ChickenDist.Forms
                 if (val != null && int.TryParse(val.ToString(), out int transID))
                 {
                     if (transID <= 0) return; // Total summary row
-                    new FrmPrintPayment(transID, null, true);
+                    new FrmPrintPayment(transID, null, true, AppConfig.VoucherPaperSize);
                 }
                 else
                 {
@@ -1393,7 +1393,7 @@ namespace ChickenDist.Forms
                 if (dt != null && dt.Rows.Count > 0 && dt.Rows[0]["CashID"] != DBNull.Value)
                 {
                     int cashID = Convert.ToInt32(dt.Rows[0]["CashID"]);
-                    new FrmPrintPayment(cashID, null, true);
+                    new FrmPrintPayment(cashID, null, true, AppConfig.VoucherPaperSize);
                 }
                 else
                 {
