@@ -1,5 +1,5 @@
-version=3.9.58
+version=3.9.59
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.58&t=1791506384
-sha256=11A64D4262E2FF66964AD1C45FDD1E4A9EF7F485DE72023676F745E3068EB44C
-changelog=v3.9.58 - 2026-10-09: Real-time stock movement sync, instant StockCache reflection in POS/Sales/Returns/Products, POS new client (+) button, and client blend improvements
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.59&t=1791508542
+sha256=BAB88F9656C9A4D9AE1412A44D014295FC788E7EF1A51166C5689180E0FB7AEE
+changelog=v3.9.59 - 2026-10-09: Kitchen slip unit display fix (dedicated Unit column, UnitName fallback, clean qty format, dynamic printer paper width)
