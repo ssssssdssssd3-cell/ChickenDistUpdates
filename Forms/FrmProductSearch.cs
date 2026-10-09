@@ -466,8 +466,8 @@ namespace ChickenDist.Forms
         {
             try
             {
-                _stockCache = StockCache.GetStockSummary(_warehouseID);
-                _globalStockCache = StockCache.GetStockSummary(null);
+                _stockCache = StockCache.GetStockSummary(_warehouseID, forceRefresh: true);
+                _globalStockCache = StockCache.GetStockSummary(null, forceRefresh: true);
             }
             catch { }
         }

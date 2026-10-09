@@ -453,6 +453,10 @@ namespace ChickenDist.DAL
                 try
                 {
                     List<int> purchasedPids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
+                    int wid = warehouseID ?? 1;
+                    InventoryDAL.SyncProductsStock(purchasedPids, wid);
+                    StockCache.Invalidate(wid);
+                    foreach (var p in purchasedPids) StockCache.UpdateProductInCache(p, wid);
                     ShortageDAL.ProcessStockReplenishmentAfterPurchase(purchasedPids);
                 }
                 catch (Exception ex) { AppLogger.Error("PurchaseDAL.ProcessStockReplenishmentAfterPurchase", ex); }
@@ -516,6 +520,7 @@ namespace ChickenDist.DAL
         {
             try
             {
+                int targetWid = 1;
                 DbHelper.RunInTransaction((con, trans) =>
                 {
                     var dtPurchase = DbHelper.QueryTrans(trans, "SELECT PurchaseType, TotalAmount, SupplierID, IsPosted, WarehouseID FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
@@ -526,6 +531,7 @@ namespace ChickenDist.DAL
                     decimal total = Convert.ToDecimal(pRow["TotalAmount"]);
                     int? supplierID = pRow["SupplierID"] == DBNull.Value ? (int?)null : Convert.ToInt32(pRow["SupplierID"]);
                     int wid = pRow["WarehouseID"] == DBNull.Value ? 1 : Convert.ToInt32(pRow["WarehouseID"]);
+                    targetWid = wid;
 
                     if (isPosted)
                     {
@@ -552,6 +558,14 @@ namespace ChickenDist.DAL
                     DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                 });
+
+                try
+                {
+                    InventoryDAL.SyncAllProductStock(targetWid);
+                    StockCache.Invalidate(targetWid);
+                }
+                catch { }
+
                 return true;
             }
             catch (Exception ex)
@@ -1789,6 +1803,19 @@ namespace ChickenDist.DAL
                         DbHelper.P("@by",  Session.EmpID));
                 }
             });
+
+            if (returnedRetID > 0)
+            {
+                try
+                {
+                    int targetWh = warehouseID ?? 1;
+                    var pids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
+                    InventoryDAL.SyncProductsStock(pids, targetWh);
+                    StockCache.Invalidate(targetWh);
+                    foreach (var p in pids) StockCache.UpdateProductInCache(p, targetWh);
+                }
+                catch { }
+            }
 
             return returnedRetID;
         }

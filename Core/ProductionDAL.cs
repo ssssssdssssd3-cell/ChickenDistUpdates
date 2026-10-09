@@ -665,6 +665,7 @@ namespace ChickenDist.Core
 
                         trans.Commit();
                         ProductCache.Refresh();
+                        try { StockCache.Invalidate(order.WarehouseID); } catch { }
                         return order.ProductionID;
                     }
                     catch

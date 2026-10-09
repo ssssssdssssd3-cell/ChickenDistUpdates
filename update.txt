@@ -1,5 +1,5 @@
-version=3.9.57
+version=3.9.58
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.57&t=1791301019
-sha256=41756D8ACD12C45B6EA799474D0C7482AD603F6A5C11D08E8D09106EC63D8307
-changelog=v3.9.57 - 2026-10-06: Support thermal receipt printing for cash disbursement and receipt vouchers (Receipt 80mm/58mm) with full customization
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.58&t=1791506384
+sha256=11A64D4262E2FF66964AD1C45FDD1E4A9EF7F485DE72023676F745E3068EB44C
+changelog=v3.9.58 - 2026-10-09: Real-time stock movement sync, instant StockCache reflection in POS/Sales/Returns/Products, POS new client (+) button, and client blend improvements

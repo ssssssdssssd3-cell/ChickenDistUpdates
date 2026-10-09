@@ -669,6 +669,16 @@ namespace ChickenDist.DAL
 
             if (returnedSaleID > 0 && !isDraft)
             {
+                try
+                {
+                    int targetWh = warehouseID ?? 1;
+                    var pids = items != null ? items.Select(x => x.ProductID).Where(x => x > 0).Distinct().ToList() : new List<int>();
+                    InventoryDAL.SyncProductsStock(pids, targetWh);
+                    StockCache.Invalidate(targetWh);
+                    foreach (var p in pids) StockCache.UpdateProductInCache(p, targetWh);
+                }
+                catch { }
+
                 // Run price threshold checks asynchronously in the background to free the UI thread instantly
                 System.Threading.Tasks.Task.Run(() =>
                 {
@@ -885,6 +895,22 @@ namespace ChickenDist.DAL
 
                 success = true;
             });
+
+            if (success)
+            {
+                try
+                {
+                    var pids = new List<int>();
+                    var dtOldItems = DbHelper.Query("SELECT DISTINCT ProductID FROM SaleItemsHistory WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                    foreach (DataRow r in dtOldItems.Rows)
+                    {
+                        if (r["ProductID"] != DBNull.Value) pids.Add(Convert.ToInt32(r["ProductID"]));
+                    }
+                    InventoryDAL.SyncProductsStock(pids);
+                    StockCache.Invalidate();
+                }
+                catch { }
+            }
 
             return success;
         }
@@ -2489,6 +2515,16 @@ namespace ChickenDist.DAL
 
             if (returnedRetID > 0)
             {
+                try
+                {
+                    var pids = items != null ? items.Select(x => x.ProductID).Where(x => x > 0).Distinct().ToList() : new List<int>();
+                    int targetWh = warehouseID ?? 1;
+                    InventoryDAL.SyncProductsStock(pids, targetWh);
+                    StockCache.Invalidate(targetWh);
+                    foreach (var p in pids) StockCache.UpdateProductInCache(p, targetWh);
+                }
+                catch { }
+
                 try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
             }
 
@@ -2707,6 +2743,18 @@ namespace ChickenDist.DAL
                     }
                 }
             });
+
+            try
+            {
+                var pids = new List<int>();
+                if (returnedItems != null) pids.AddRange(returnedItems.Select(x => x.ProductID));
+                if (newItems != null) pids.AddRange(newItems.Select(x => x.ProductID));
+                pids = pids.Where(x => x > 0).Distinct().ToList();
+                InventoryDAL.SyncProductsStock(pids, warehouseID);
+                StockCache.Invalidate(warehouseID);
+                foreach (var p in pids) StockCache.UpdateProductInCache(p, warehouseID);
+            }
+            catch { }
 
             return true;
         }

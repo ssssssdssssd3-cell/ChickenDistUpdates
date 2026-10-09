@@ -2495,7 +2495,7 @@ namespace ChickenDist.Forms
 			// تحميل أرصدة المخزون بالكامل للمخزن المختار عبر StockCache
 			try
 			{
-				_stockCache = StockCache.GetStockSummary(GetSelectedWarehouseID());
+				_stockCache = StockCache.GetStockSummary(GetSelectedWarehouseID(), forceRefresh: true);
 			}
 			catch { }
 			
@@ -5055,7 +5055,7 @@ namespace ChickenDist.Forms
 			_items.Clear();
 			try
 			{
-				_stockCache = StockCache.GetStockSummary(GetSelectedWarehouseID());
+				_stockCache = StockCache.GetStockSummary(GetSelectedWarehouseID(), forceRefresh: true);
 			}
 			catch { }
 			foreach (DataRow iRow in dtItems.Rows)

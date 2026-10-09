@@ -550,16 +550,13 @@ namespace ChickenDist.Forms
                 {
                     int pid = Convert.ToInt32(dgProducts.SelectedRows[0].Cells["ProductID"].Value);
                     string name = dgProducts.SelectedRows[0].Cells["ProductName"].Value?.ToString() ?? "";
-                    var dt = DbHelper.Query(@"
-                        SELECT w.WarehouseName, ISNULL(ps.Quantity, 0) AS Qty
-                        FROM Warehouses w
-                        LEFT JOIN ProductStock ps ON w.WarehouseID = ps.WarehouseID AND ps.ProductID = @pid",
-                        DbHelper.P("@pid", pid));
+                    var dtWh = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
                     string msg = $"📦 تفاصيل رصيد الصنف: {name}\n" + new string('-', 40) + "\n";
                     decimal totalStock = 0;
-                    foreach (DataRow r in dt.Rows)
+                    foreach (DataRow r in dtWh.Rows)
                     {
-                        decimal q = Convert.ToDecimal(r["Qty"]);
+                        int wid = Convert.ToInt32(r["WarehouseID"]);
+                        decimal q = InventoryDAL.GetProductStock(pid, wid);
                         totalStock += q;
                         msg += $"• {r["WarehouseName"]}: {q:N2}\n";
                     }
@@ -793,17 +790,8 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                // 4. Stock totals
-                var dtStock = DbHelper.Query("SELECT ProductID, SUM(Quantity) AS TotalQty FROM ProductStock GROUP BY ProductID");
-                foreach (DataRow r in dtStock.Rows)
-                {
-                    if (r["ProductID"] != DBNull.Value)
-                    {
-                        int pid = Convert.ToInt32(r["ProductID"]);
-                        decimal qty = r["TotalQty"] != DBNull.Value ? Convert.ToDecimal(r["TotalQty"]) : 0m;
-                        _stockTotals[pid] = qty;
-                    }
-                }
+                // 4. Stock totals (حساب دفتري مباشر دقيق لكافة الأصناف دفعة واحدة)
+                _stockTotals = InventoryDAL.GetStockSummary(null) ?? new Dictionary<int, decimal>();
             }
             catch (Exception ex)
             {

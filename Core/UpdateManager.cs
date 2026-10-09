@@ -12,7 +12,7 @@ namespace ChickenDist.Core
 {
     public static class UpdateManager
     {
-        public const string CurrentVersion = "3.9.57";
+        public const string CurrentVersion = "3.9.58";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";

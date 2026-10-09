@@ -44,7 +44,7 @@ namespace ChickenDist.Forms
                 tmrOrdersBadge.Start();
             }
             catch { }
-            try { System.Threading.Tasks.Task.Run(async () => { await System.Threading.Tasks.Task.Delay(15000); InventoryDAL.SyncAllProductStock(); }); } catch {}
+            try { System.Threading.Tasks.Task.Run(() => InventoryDAL.SyncAllProductStock()); } catch {}
         }
 
         private void InitializeComponent()

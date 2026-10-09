@@ -2132,6 +2132,7 @@ namespace ChickenDist.Forms
                             _activeDraftKey = null;
 
                             ProductCache.Invalidate(); // تحديث كاش الأصناف فوراً لتعكس الأسعار الجديدة في كل الشاشات
+                            StockCache.Invalidate(wid);
                             LoadStock();
                             LoadLogs();
 
@@ -2358,6 +2359,7 @@ namespace ChickenDist.Forms
                     });
 
                     ProductCache.Invalidate();
+                    StockCache.Invalidate(wid);
                     MessageBox.Show($"✅ تم تصفير جميع أرصدة المخزن [{wName}] بنجاح، وأصبح رصيد كافة الأصناف = 0.", "تم التصفير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadStock();
                     LoadLogs();
@@ -2563,6 +2565,7 @@ namespace ChickenDist.Forms
                     });
 
                     ProductCache.Invalidate();
+                    StockCache.Invalidate();
                     MessageBox.Show($"✅ تم حفظ وتصحيح بيانات ({updatedCount}) صنف بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     loadOutliers();
                     LoadStock();
@@ -2772,6 +2775,7 @@ namespace ChickenDist.Forms
                     });
 
                     ProductCache.Invalidate();
+                    StockCache.Invalidate(wid);
                     MessageBox.Show($"✅ تم تصحيح رصيد الصنف [{pName}] إلى ({correctQty:N3}) بنجاح!", "تم التصحيح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadStock();
                 }

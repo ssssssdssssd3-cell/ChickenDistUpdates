@@ -101,9 +101,6 @@ namespace ChickenDist.Core
             }
         }
 
-        /// <summary>
-        /// تفريغ الكاش وإعادة تحميله عند حدوث حركة بيع أو شراء أو تسوية مخزنية
-        /// </summary>
         public static void Invalidate(int? warehouseID = null)
         {
             if (warehouseID.HasValue)
@@ -115,9 +112,44 @@ namespace ChickenDist.Core
             {
                 _warehouseStockCache.Clear();
                 _warehouseLastUpdated.Clear();
-                _globalStockCache = null;
-                _globalLastUpdated = DateTime.MinValue;
             }
+            // تفريغ الكاش الشامل دائماً لضمان عدم بقاء أي رصيد قديم
+            _globalStockCache = null;
+            _globalLastUpdated = DateTime.MinValue;
+        }
+
+        /// <summary>
+        /// تحديث رصيد صنف محدد في كاش الذاكرة فوراً لضمان الانعكاس اللحظي (0 مللي ثانية) في شاشات البيع والبحث المفتوحة
+        /// </summary>
+        public static void UpdateProductInCache(int productID, int? warehouseID = null)
+        {
+            if (productID <= 0) return;
+            try
+            {
+                if (warehouseID.HasValue)
+                {
+                    decimal q = InventoryDAL.GetProductStock(productID, warehouseID.Value);
+                    if (_warehouseStockCache.TryGetValue(warehouseID.Value, out var map) && map != null)
+                    {
+                        lock (_syncLock) { map[productID] = q; }
+                    }
+                }
+                else
+                {
+                    foreach (var kvp in _warehouseStockCache)
+                    {
+                        decimal q = InventoryDAL.GetProductStock(productID, kvp.Key);
+                        lock (_syncLock) { kvp.Value[productID] = q; }
+                    }
+                }
+
+                if (_globalStockCache != null)
+                {
+                    decimal gq = InventoryDAL.GetProductStock(productID, null);
+                    lock (_syncLock) { _globalStockCache[productID] = gq; }
+                }
+            }
+            catch { }
         }
 
         /// <summary>

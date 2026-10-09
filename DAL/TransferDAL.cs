@@ -104,6 +104,24 @@ namespace ChickenDist.DAL
                 }
             });
 
+            if (returnedID > 0)
+            {
+                try
+                {
+                    var pids = items != null ? items.ConvertAll(x => x.ProductID) : new List<int>();
+                    InventoryDAL.SyncProductsStock(pids, fromWarehouseID);
+                    InventoryDAL.SyncProductsStock(pids, toWarehouseID);
+                    StockCache.Invalidate(fromWarehouseID);
+                    StockCache.Invalidate(toWarehouseID);
+                    foreach (var p in pids)
+                    {
+                        StockCache.UpdateProductInCache(p, fromWarehouseID);
+                        StockCache.UpdateProductInCache(p, toWarehouseID);
+                    }
+                }
+                catch { }
+            }
+
             return returnedID;
         }
     }

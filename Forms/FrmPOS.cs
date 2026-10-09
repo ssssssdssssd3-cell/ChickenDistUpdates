@@ -86,7 +86,7 @@ namespace ChickenDist.Forms
             LoadCategories();
             LoadDeliveryDrivers();
             LoadClients();
-            LoadStockCache();
+            LoadStockCache(forceRefresh: true);
             if (AppConfig.ScaleEnabled)
             {
                 try { ScaleService.Instance.WeightChanged += ScaleService_WeightChanged; } catch { }
@@ -96,6 +96,10 @@ namespace ChickenDist.Forms
                 {
                     try { ScaleService.Instance.WeightChanged -= ScaleService_WeightChanged; } catch { }
                 }
+            };
+            this.Activated += (s, e) => {
+                LoadStockCache(forceRefresh: true);
+                try { FilterQuickItems(_currentQuickCategoryId); } catch { }
             };
             this.Load += (s, e) => {
                 LayoutPanels();
@@ -201,7 +205,7 @@ namespace ChickenDist.Forms
             cboWarehouse.Enabled = Session.IsAdmin || whDt.Rows.Count > 1;
             cboWarehouse.SelectedIndexChanged += (s, e) =>
             {
-                LoadStockCache();
+                LoadStockCache(forceRefresh: true);
                 RefreshGrid();
                 FilterQuickItems(_currentQuickCategoryId);
             };
@@ -674,14 +678,14 @@ namespace ChickenDist.Forms
             this.Controls.Add(dgItems);
 
             // ── لوحة العميل ───────────────────────────────────
-            pnlClient = new Panel { Location = new Point(660, 85), Size = new Size(420, 55), BackColor = Theme.BgCard };
-            var lClient = new Label { Text = "العميل:", Location = new Point(5, 5), Size = new Size(60, 25), ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            cboClient = new ComboBox { Location = new Point(70, 3), Size = new Size(165, 28), DropDownStyle = ComboBoxStyle.DropDown, Font = Theme.FontMain, BackColor = Theme.BgInput };
+            pnlClient = new Panel { Location = new Point(660, 85), Size = new Size(430, 55), BackColor = Theme.BgCard };
+            var lClient = new Label { Text = "العميل:", Location = new Point(5, 6), Size = new Size(48, 22), ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            cboClient = new ComboBox { Location = new Point(55, 3), Size = new Size(135, 28), DropDownStyle = ComboBoxStyle.DropDown, Font = Theme.FontMain, BackColor = Theme.BgInput };
             cboClient.SelectedIndexChanged += CboClient_Changed;
 
             var btnClientSearch = Theme.MakeButton("🔍", Theme.Accent);
-            btnClientSearch.Location = new Point(238, 3);
-            btnClientSearch.Size = new Size(36, 28);
+            btnClientSearch.Location = new Point(193, 3);
+            btnClientSearch.Size = new Size(30, 28);
             btnClientSearch.Click += (s, e) =>
             {
                 using (var frm = new FrmClientSearch())
@@ -709,13 +713,38 @@ namespace ChickenDist.Forms
                 }
             };
 
-            lblClientPoints = new Label { Text = "", Location = new Point(280, 5), Size = new Size(130, 25), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            chkRedeemPoints = new CheckBox { Text = "استرداد نقاط", Location = new Point(280, 28), Size = new Size(120, 22), ForeColor = Theme.TextMain, Font = Theme.FontMain, Checked = false };
+            var btnClientAdd = Theme.MakeButton("➕", Theme.Success);
+            btnClientAdd.Location = new Point(225, 3);
+            btnClientAdd.Size = new Size(30, 28);
+            btnClientAdd.Font = Theme.FontBold;
+            btnClientAdd.ForeColor = Color.White;
+            btnClientAdd.Cursor = Cursors.Hand;
+            btnClientAdd.Click += (s, e) =>
+            {
+                new FrmClients().ShowDialog();
+                LoadClients();
+                object latestIdObj = DbHelper.Scalar("SELECT TOP 1 ClientID FROM Clients ORDER BY ClientID DESC");
+                if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
+                {
+                    for (int i = 0; i < cboClient.Items.Count; i++)
+                    {
+                        if (cboClient.Items[i] is ComboItem ci && ci.ID == latestId)
+                        {
+                            cboClient.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            };
+
+            lblClientPoints = new Label { Text = "", Location = new Point(258, 4), Size = new Size(160, 22), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            chkRedeemPoints = new CheckBox { Text = "استرداد نقاط", Location = new Point(258, 28), Size = new Size(90, 24), ForeColor = Theme.TextMain, Font = Theme.FontMain, Checked = false };
             chkRedeemPoints.CheckedChanged += (s, e) => RefreshGrid();
 
             pnlClient.Controls.Add(lClient);
             pnlClient.Controls.Add(cboClient);
             pnlClient.Controls.Add(btnClientSearch);
+            pnlClient.Controls.Add(btnClientAdd);
             pnlClient.Controls.Add(lblClientPoints);
             pnlClient.Controls.Add(chkRedeemPoints);
 
@@ -723,8 +752,8 @@ namespace ChickenDist.Forms
             if (AppConfig.IsRestaurant)
             {
                 var btnBlend = Theme.MakeButton("☕ توليفة", Color.FromArgb(110, 65, 25));
-                btnBlend.Location = new Point(278, 28);
-                btnBlend.Size = new Size(90, 26);
+                btnBlend.Location = new Point(350, 27);
+                btnBlend.Size = new Size(74, 26);
                 btnBlend.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
                 btnBlend.Name = "btnBlend";
                 btnBlend.Click += (s, e) => OpenClientBlendsDialog();
@@ -1079,7 +1108,7 @@ namespace ChickenDist.Forms
 
             if (showQuick)
             {
-                int rightW = Math.Max(320, Math.Min(450, (int)(w * 0.35)));
+                int rightW = Math.Max(430, Math.Min(480, (int)(w * 0.35)));
                 int leftW = w - rightW - 30;
 
                 // ضبط مواقع لوحات العميل والأصناف السريعة لتكون على اليمين (X = 10)
@@ -2248,13 +2277,13 @@ namespace ChickenDist.Forms
                     return qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
                 }
 
-                if (_stockCache != null && _stockCache.TryGetValue(productID, out decimal cachedStock))
-                {
-                    return cachedStock;
-                }
-
                 int wid = GetSelectedWarehouseID();
-                return InventoryDAL.GetProductStock(productID, wid);
+                decimal liveStock = InventoryDAL.GetProductStock(productID, wid);
+                if (_stockCache != null)
+                {
+                    _stockCache[productID] = liveStock;
+                }
+                return liveStock;
             }
             catch
             {
@@ -3210,7 +3239,10 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
-                StockCache.Invalidate(GetSelectedWarehouseID());
+                int curWhId = GetSelectedWarehouseID();
+                StockCache.Invalidate(curWhId);
+                LoadStockCache(forceRefresh: true);
+                try { FilterQuickItems(_currentQuickCategoryId); } catch { }
 
                 // زيادة عداد استخدام بون الخصم لو طبّق
                 if (_appliedVoucherID > 0 && _voucherDiscount > 0)
@@ -4221,12 +4253,12 @@ namespace ChickenDist.Forms
             return 0;
         }
 
-        private void LoadStockCache()
+        private void LoadStockCache(bool forceRefresh = false)
         {
             try
             {
                 int wid = GetSelectedWarehouseID();
-                _stockCache = StockCache.GetStockSummary(wid);
+                _stockCache = StockCache.GetStockSummary(wid, forceRefresh);
             }
             catch { }
         }

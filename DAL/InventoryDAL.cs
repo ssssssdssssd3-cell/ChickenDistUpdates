@@ -937,6 +937,7 @@ namespace ChickenDist.DAL
         /// <summary>مزامنة رصيد صنف محدد في جدول ProductStock</summary>
         public static void SyncProductStock(int productID, int? warehouseID = null)
         {
+            if (productID <= 0) return;
             try
             {
                 string whSql = warehouseID.HasValue 
@@ -958,8 +959,71 @@ namespace ChickenDist.DAL
                         DbHelper.P("@wid", wid),
                         DbHelper.P("@q", dynamicQty));
                 }
+
+                // تحديث حقل Quantity في جدول Products إن وُجد
+                DbHelper.Execute(@"
+                    IF COL_LENGTH('Products', 'Quantity') IS NOT NULL
+                        UPDATE Products SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductStock WHERE ProductID = @pid)
+                        WHERE ProductID = @pid",
+                    DbHelper.P("@pid", productID));
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"InventoryDAL.SyncProductStock({productID})", ex);
+            }
+        }
+
+        /// <summary>مزامنة أرصدة قائمة أصناف في جدول ProductStock دفعة واحدة بسرعة فائقة</summary>
+        public static void SyncProductsStock(IEnumerable<int> productIDs, int? warehouseID = null)
+        {
+            if (productIDs == null) return;
+            var pids = new List<int>();
+            foreach (var id in productIDs)
+            {
+                if (id > 0 && !pids.Contains(id)) pids.Add(id);
+            }
+            if (pids.Count == 0) return;
+
+            try
+            {
+                string whSql = warehouseID.HasValue 
+                    ? "SELECT WarehouseID FROM Warehouses WHERE WarehouseID = @wid" 
+                    : "SELECT WarehouseID FROM Warehouses WHERE IsActive = 1";
+                var prms = warehouseID.HasValue ? new[] { DbHelper.P("@wid", warehouseID.Value) } : new System.Data.SqlClient.SqlParameter[0];
+                var dtWh = DbHelper.Query(whSql, prms);
+
+                foreach (DataRow wr in dtWh.Rows)
+                {
+                    int wid = Convert.ToInt32(wr["WarehouseID"]);
+                    var stockMap = GetStockSummaryForProducts(pids, wid);
+                    if (stockMap == null) continue;
+
+                    DbHelper.RunInTransaction((con, trans) =>
+                    {
+                        foreach (var kvp in stockMap)
+                        {
+                            DbHelper.ExecuteTrans(trans, @"
+                                IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = @wid)
+                                    UPDATE ProductStock SET Quantity = @q, LastUpdated = GETDATE() WHERE ProductID = @pid AND WarehouseID = @wid
+                                ELSE
+                                    INSERT INTO ProductStock (ProductID, WarehouseID, Quantity, LastUpdated) VALUES (@pid, @wid, @q, GETDATE())",
+                                DbHelper.P("@pid", kvp.Key),
+                                DbHelper.P("@wid", wid),
+                                DbHelper.P("@q", kvp.Value));
+
+                            DbHelper.ExecuteTrans(trans, @"
+                                IF COL_LENGTH('Products', 'Quantity') IS NOT NULL
+                                    UPDATE Products SET Quantity = (SELECT COALESCE(SUM(Quantity), 0) FROM ProductStock WHERE ProductID = @pid)
+                                    WHERE ProductID = @pid",
+                                DbHelper.P("@pid", kvp.Key));
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("InventoryDAL.SyncProductsStock", ex);
+            }
         }
 
         /// <summary>

@@ -907,11 +907,7 @@ namespace ChickenDist.Forms
             decimal totalStock = 0m;
             try
             {
-                object stockObj = DbHelper.Scalar("SELECT SUM(Quantity) FROM ProductStock WHERE ProductID = @pid", DbHelper.P("@pid", productID));
-                if (stockObj != null && stockObj != DBNull.Value)
-                {
-                    totalStock = Convert.ToDecimal(stockObj);
-                }
+                totalStock = InventoryDAL.GetProductStock(productID);
             }
             catch { }
 

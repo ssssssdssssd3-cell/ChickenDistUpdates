@@ -306,7 +306,24 @@ namespace ChickenDist.Forms
                         Convert.ToBoolean(r["IsDefault"])
                     );
                     if (Convert.ToBoolean(r["IsDefault"]))
-                        dgBlends.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(35, 70, 35);
+                    {
+                        bool isDark = (AppConfig.AppTheme == "Dark");
+                        if (isDark)
+                        {
+                            dgBlends.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(30, 75, 45);
+                            dgBlends.Rows[idx].DefaultCellStyle.ForeColor = Color.FromArgb(230, 255, 230);
+                            dgBlends.Rows[idx].DefaultCellStyle.SelectionBackColor = Color.FromArgb(46, 125, 50);
+                            dgBlends.Rows[idx].DefaultCellStyle.SelectionForeColor = Color.White;
+                        }
+                        else
+                        {
+                            dgBlends.Rows[idx].DefaultCellStyle.BackColor = Color.FromArgb(220, 248, 224);
+                            dgBlends.Rows[idx].DefaultCellStyle.ForeColor = Color.FromArgb(20, 90, 35);
+                            dgBlends.Rows[idx].DefaultCellStyle.SelectionBackColor = Color.FromArgb(40, 140, 70);
+                            dgBlends.Rows[idx].DefaultCellStyle.SelectionForeColor = Color.White;
+                        }
+                        dgBlends.Rows[idx].DefaultCellStyle.Font = new Font(dgBlends.Font, FontStyle.Bold);
+                    }
                 }
             }
             catch (Exception ex)

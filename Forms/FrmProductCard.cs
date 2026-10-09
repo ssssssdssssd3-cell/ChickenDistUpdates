@@ -1174,11 +1174,7 @@ namespace ChickenDist.Forms
         {
             try
             {
-                var dt = DbHelper.Query("SELECT ISNULL(SUM(Quantity), 0) FROM ProductStock WHERE ProductID = @pid", DbHelper.P("@pid", productId));
-                if (dt.Rows.Count > 0)
-                {
-                    return Convert.ToDecimal(dt.Rows[0][0]);
-                }
+                return InventoryDAL.GetProductStock(productId);
             }
             catch { }
             return 0;
