@@ -831,7 +831,8 @@ namespace ChickenDist.DAL
 
         public static DataTable GetQuickItems()
         {
-            string sql = @"SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice, COALESCE(p.IsService, 0) AS IsService
+            string sql = @"SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice, COALESCE(p.IsService, 0) AS IsService,
+                                  p.Unit, p.Unit1Name, p.Unit1SalePrice, p.Unit2Name, p.Unit2Factor, p.Unit2SalePrice, p.Unit3Factor, p.DefaultSaleUnit
                            FROM Products p
                            WHERE p.IsActive = 1 AND p.IsQuickItem = 1
                            ORDER BY p.ProductName";

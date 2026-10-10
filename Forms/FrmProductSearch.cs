@@ -499,6 +499,35 @@ namespace ChickenDist.Forms
                 string pColor = row.Table.Columns.Contains("Color") && row["Color"] != DBNull.Value ? row["Color"].ToString() : "";
                 string lastPriceText = _clientLastPrices.TryGetValue(pid, out decimal lp) ? lp.ToString("N2") + " ج" : "-";
 
+                decimal u2f = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
+                decimal u3f = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
+                decimal majorFactor = (u3f > 0 ? u3f : 1m) * (u2f > 0 ? u2f : 1m);
+                if (majorFactor <= 0) majorFactor = 1m;
+
+                string defUnit = row.Table.Columns.Contains("DefaultSaleUnit") && row["DefaultSaleUnit"] != DBNull.Value ? row["DefaultSaleUnit"].ToString().Trim() : "";
+                string u1Name = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString().Trim() : "";
+                string u2Name = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString().Trim() : "";
+                string baseUnit = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString().Trim() : "وحدة";
+
+                string rowUnit = baseUnit;
+                decimal rowPrice = price;
+                decimal rowFactor = majorFactor;
+
+                if (defUnit == "الصغرى" && !string.IsNullOrEmpty(u1Name))
+                {
+                    rowUnit = u1Name;
+                    rowFactor = 1m;
+                    if (row.Table.Columns.Contains("Unit1SalePrice") && row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0)
+                        rowPrice = Convert.ToDecimal(row["Unit1SalePrice"]);
+                }
+                else if (defUnit == "الوسطى" && !string.IsNullOrEmpty(u2Name))
+                {
+                    rowUnit = u2Name;
+                    rowFactor = u2f > 0 ? u2f : 1m;
+                    if (row.Table.Columns.Contains("Unit2SalePrice") && row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0)
+                        rowPrice = Convert.ToDecimal(row["Unit2SalePrice"]);
+                }
+
                 if (pendingPrice > 0m && Math.Abs(pendingPrice - price) > 0.005m)
                 {
                     decimal oldStockAvailable = threshold > 0 ? Math.Max(0m, Math.Min(totalStock, threshold)) : totalStock;
@@ -507,33 +536,37 @@ namespace ChickenDist.Forms
                     if (chkShowZeroStock.Checked || totalStock > 0m)
                     {
                         displayedCount++;
+                        decimal dispOldStock = oldStockAvailable / rowFactor;
+                        string dispOldStockStr = (dispOldStock == Math.Floor(dispOldStock)) ? dispOldStock.ToString("N0") : dispOldStock.ToString("N2");
                         int rowIdx = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 
                             row["ProductName"].ToString() + " (السعر الحالي)", 
                             pSize,
                             pColor,
-                            row["Unit"],
+                            rowUnit,
                             catName,
-                            price.ToString("F2"), 
+                            rowPrice.ToString("F2"), 
                             lastPriceText,
-                            oldStockAvailable.ToString("F2")
+                            dispOldStockStr
                         );
-                        ColorStockCell(rowIdx, oldStockAvailable);
+                        ColorStockCell(rowIdx, dispOldStock);
 
+                        decimal dispNewStock = newStockAvailable / rowFactor;
+                        string dispNewStockStr = (dispNewStock == Math.Floor(dispNewStock)) ? dispNewStock.ToString("N0") : dispNewStock.ToString("N2");
                         int rowIdx2 = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 
                             row["ProductName"].ToString() + " [سعر جديد]", 
                             pSize,
                             pColor,
-                            row["Unit"],
+                            rowUnit,
                             catName,
                             pendingPrice.ToString("F2"), 
                             lastPriceText,
-                            newStockAvailable.ToString("F2")
+                            dispNewStockStr
                         );
-                        ColorStockCell(rowIdx2, newStockAvailable);
+                        ColorStockCell(rowIdx2, dispNewStock);
                     }
                 }
                 else
@@ -541,19 +574,21 @@ namespace ChickenDist.Forms
                     if (chkShowZeroStock.Checked || totalStock > 0m)
                     {
                         displayedCount++;
+                        decimal dispTotalStock = totalStock / rowFactor;
+                        string dispTotalStockStr = (dispTotalStock == Math.Floor(dispTotalStock)) ? dispTotalStock.ToString("N0") : dispTotalStock.ToString("N2");
                         int rowIdx = dgProducts.Rows.Add(
                             row["ProductID"], 
                             row["ProductCode"], 
                             row["ProductName"], 
                             pSize,
                             pColor,
-                            row["Unit"],
+                            rowUnit,
                             catName,
-                            price.ToString("F2"), 
+                            rowPrice.ToString("F2"), 
                             lastPriceText,
-                            totalStock.ToString("F2")
+                            dispTotalStockStr
                         );
-                        ColorStockCell(rowIdx, totalStock);
+                        ColorStockCell(rowIdx, dispTotalStock);
                     }
                 }
             }
@@ -813,9 +848,10 @@ namespace ChickenDist.Forms
             // 1. Base Unit (الكبرى)
             decimal baseStock = stock / baseFactor;
             decimal baseGlobalStock = globalStock / baseFactor;
+            string baseStockStr = (baseStock == Math.Floor(baseStock)) ? baseStock.ToString("N0") : baseStock.ToString("N2");
             cboUnits.Items.Add(new UnitComboItem
             {
-                DisplayText = $"{baseUnit} - {basePrice:F2} ج (رصيد: {baseStock:N0})",
+                DisplayText = $"{baseUnit} - {basePrice:F2} ج (رصيد: {baseStockStr})",
                 UnitName = baseUnit,
                 SalePrice = basePrice,
                 PurchasePrice = basePP,
@@ -830,9 +866,10 @@ namespace ChickenDist.Forms
             {
                 decimal pStock = prodRow.Table.Columns.Contains("PendingQtyThreshold") && prodRow["PendingQtyThreshold"] != DBNull.Value ? Math.Max(0m, stock - Convert.ToDecimal(prodRow["PendingQtyThreshold"])) : stock;
                 decimal pStockMajor = pStock / baseFactor;
+                string pStockStr = (pStockMajor == Math.Floor(pStockMajor)) ? pStockMajor.ToString("N0") : pStockMajor.ToString("N2");
                 cboUnits.Items.Add(new UnitComboItem
                 {
-                    DisplayText = $"{baseUnit} [سعر جديد] - {pendingPrice:F2} ج (رصيد: {pStockMajor:N0})",
+                    DisplayText = $"{baseUnit} [سعر جديد] - {pendingPrice:F2} ج (رصيد: {pStockStr})",
                     UnitName = baseUnit,
                     SalePrice = pendingPrice,
                     PurchasePrice = basePP,
@@ -848,9 +885,10 @@ namespace ChickenDist.Forms
             {
                 decimal u2Stock = stock / unit2FactorVal;
                 decimal u2GlobalStock = globalStock / unit2FactorVal;
+                string u2StockStr = (u2Stock == Math.Floor(u2Stock)) ? u2Stock.ToString("N0") : u2Stock.ToString("N2");
                 cboUnits.Items.Add(new UnitComboItem
                 {
-                    DisplayText = $"{unit2} - {unit2Price:F2} ج (رصيد: {u2Stock:N0})",
+                    DisplayText = $"{unit2} - {unit2Price:F2} ج (رصيد: {u2StockStr})",
                     UnitName = unit2,
                     SalePrice = unit2Price,
                     PurchasePrice = unit2PP,
@@ -864,9 +902,10 @@ namespace ChickenDist.Forms
             // 3. Unit 1 (الصغرى)
             if (!string.IsNullOrEmpty(unit1) && unit1 != baseUnit)
             {
+                string u1StockStr = (stock == Math.Floor(stock)) ? stock.ToString("N0") : stock.ToString("N2");
                 cboUnits.Items.Add(new UnitComboItem
                 {
-                    DisplayText = $"{unit1} - {unit1Price:F2} ج (رصيد: {stock:N0})",
+                    DisplayText = $"{unit1} - {unit1Price:F2} ج (رصيد: {u1StockStr})",
                     UnitName = unit1,
                     SalePrice = unit1Price,
                     PurchasePrice = unit1PP,
@@ -948,6 +987,24 @@ namespace ChickenDist.Forms
         private void CboUnits_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateSelectedInputFields();
+            if (cboUnits != null && cboUnits.SelectedItem is UnitComboItem uItem)
+            {
+                DataGridViewRow row = null;
+                if (dgProducts != null && dgProducts.SelectedRows.Count > 0)
+                    row = dgProducts.SelectedRows[0];
+                else if (dgProducts != null && dgProducts.CurrentRow != null)
+                    row = dgProducts.CurrentRow;
+
+                if (row != null)
+                {
+                    row.Cells["Unit"].Value = uItem.UnitName;
+                    row.Cells["SalePrice"].Value = uItem.SalePrice.ToString("F2");
+                    decimal sQty = uItem.StockQty;
+                    string sStr = (sQty == Math.Floor(sQty)) ? sQty.ToString("N0") : sQty.ToString("N2");
+                    row.Cells["StockQty"].Value = sStr;
+                    ColorStockCell(row.Index, sQty);
+                }
+            }
         }
 
         private void UpdateSelectedInputFields()

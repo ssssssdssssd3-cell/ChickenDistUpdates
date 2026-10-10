@@ -2016,7 +2016,8 @@ namespace ChickenDist.Forms
                 var row = dgItems.Rows[rIdx];
                 row.Cells["Code"].Value = item.Code;
                 row.Cells["Name"].Value = item.Name;
-                row.Cells["StockQty"].Value = item.IsService ? "خدمي" : stockInUnit.ToString("G29");
+                string stockStr = (stockInUnit == Math.Floor(stockInUnit)) ? stockInUnit.ToString("N0") : stockInUnit.ToString("N2");
+                row.Cells["StockQty"].Value = item.IsService ? "خدمي" : stockStr;
                 row.Cells["Qty"].Value = item.Qty.ToString("G");
                 row.Cells["QtyPlus"].Value = "+";
                 row.Cells["QtyMinus"].Value = "-";
@@ -2040,13 +2041,14 @@ namespace ChickenDist.Forms
                     var stockCell = row.Cells["StockQty"];
                     if (stockCell != null && !item.IsService)
                     {
+                        decimal minStockInUnit = item.MinStockLimit > 0 ? (item.MinStockLimit / f) : 0m;
                         if (stockInUnit <= 0)
                         {
                             stockCell.Style.ForeColor = Color.FromArgb(231, 76, 60); // Red
                             stockCell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                             stockCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                         }
-                        else if (item.MinStockLimit > 0 && stockInUnit <= item.MinStockLimit)
+                        else if (minStockInUnit > 0 && stockInUnit <= minStockInUnit)
                         {
                             stockCell.Style.ForeColor = Color.FromArgb(230, 126, 34); // Orange
                             stockCell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
@@ -3811,6 +3813,7 @@ namespace ChickenDist.Forms
 
             string query = @"
                 SELECT p.ProductID, p.ProductCode, p.ProductName, p.SalePrice, p.WholesalePrice, p.SemiWholesalePrice,
+                       p.Unit, p.Unit1Name, p.Unit1SalePrice, p.Unit2Name, p.Unit2Factor, p.Unit2SalePrice, p.Unit3Factor, p.DefaultSaleUnit,
                        COALESCE(p.IsService, 0) AS IsService
                 FROM Products p WITH (NOLOCK)
                 WHERE p.IsActive = 1 AND ISNULL(p.IsQuickItem, 0) = 1";
@@ -3849,26 +3852,61 @@ namespace ChickenDist.Forms
                     continue; // إظهار الأصناف التي لها رصيد متوفر فقط في المخزن المحدد
                 }
 
+                string defUnit = row.Table.Columns.Contains("DefaultSaleUnit") && row["DefaultSaleUnit"] != DBNull.Value 
+                    ? row["DefaultSaleUnit"].ToString() : "";
+                if (string.IsNullOrEmpty(defUnit)) defUnit = "الكبرى";
+
+                string u1Name = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString() : null;
+                string u2Name = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString() : null;
+                string baseUnit = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString() : null;
+
+                decimal btnFactor = 1m;
+                decimal u2f = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
+                decimal u3f = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
+                if (u2f <= 0) u2f = 1m;
+                if (u3f <= 0) u3f = 1m;
+
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
                 if (curTier == "جملة" && row.Table.Columns.Contains("WholesalePrice") && row["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["WholesalePrice"]) > 0)
                     price = Convert.ToDecimal(row["WholesalePrice"]);
                 else if (curTier == "نصف جملة" && row.Table.Columns.Contains("SemiWholesalePrice") && row["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["SemiWholesalePrice"]) > 0)
                     price = Convert.ToDecimal(row["SemiWholesalePrice"]);
 
+                if (defUnit == "الوسطى" && !string.IsNullOrEmpty(u2Name))
+                {
+                    btnFactor = u2f;
+                    if (row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0)
+                        price = Convert.ToDecimal(row["Unit2SalePrice"]);
+                }
+                else if (defUnit == "الصغرى" && !string.IsNullOrEmpty(u1Name))
+                {
+                    btnFactor = 1m;
+                    if (row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0)
+                        price = Convert.ToDecimal(row["Unit1SalePrice"]);
+                }
+                else
+                {
+                    btnFactor = u2f * u3f;
+                }
+                if (btnFactor <= 0) btnFactor = 1m;
+
+                decimal dispStock = stock / btnFactor;
+                string stockStr = (dispStock == Math.Floor(dispStock)) ? dispStock.ToString("N0") : dispStock.ToString("N2");
+
                 Color btnColor = colors[colorIndex++ % colors.Length];
-                if (stock <= 0 && !isService)
+                if (dispStock <= 0 && !isService)
                 {
                     btnColor = Color.FromArgb(108, 117, 125); // رمادي للأصناف غير المتوفرة
                 }
 
                 string priceText = price > 0 ? $"{price:N2} ج" : "⚠️ بدون سعر";
-                string stockText = isService ? "خدمة" : (stock > 0 ? $"رصيد: {stock:G29}" : "❌ نفد");
+                string stockText = isService ? "خدمة" : (dispStock > 0 ? $"رصيد: {stockStr}" : "❌ نفد");
 
                 float nameFontSize = name.Length > 24 ? 9.5f : (name.Length > 14 ? 10.5f : 11.5f);
                 string pText = priceText;
                 string sText = stockText;
                 string pName = name;
-                bool isOut = (stock <= 0 && !isService);
+                bool isOut = (dispStock <= 0 && !isService);
 
                 var btn = new Button
                 {

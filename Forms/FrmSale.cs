@@ -2981,6 +2981,37 @@ namespace ChickenDist.Forms
 					// حصر الأصناف الظاهرة على الأصناف المتوفرة بالمخزن المحدد أو الخدمات
 					if (stock <= 0 && !isService) continue;
 
+					string defUnit = row.Table.Columns.Contains("DefaultSaleUnit") && row["DefaultSaleUnit"] != DBNull.Value ? row["DefaultSaleUnit"].ToString().Trim() : "";
+					string u1Name = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString().Trim() : "";
+					string u2Name = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString().Trim() : "";
+					string baseUnit = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString().Trim() : "";
+					decimal u2f = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
+					decimal u3f = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
+					decimal majorFactor = (u3f > 0 ? u3f : 1m) * (u2f > 0 ? u2f : 1m);
+					if (majorFactor <= 0) majorFactor = 1m;
+
+					decimal quickFactor = majorFactor;
+					string quickUnit = baseUnit;
+					decimal quickPrice = price;
+
+					if (defUnit == "الصغرى" && !string.IsNullOrEmpty(u1Name))
+					{
+						quickFactor = 1m;
+						quickUnit = u1Name;
+						decimal u1sp = row.Table.Columns.Contains("Unit1SalePrice") && row["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit1SalePrice"]) : 0m;
+						if (u1sp > 0) quickPrice = u1sp;
+					}
+					else if (defUnit == "الوسطى" && !string.IsNullOrEmpty(u2Name))
+					{
+						quickFactor = u2f > 0 ? u2f : 1m;
+						quickUnit = u2Name;
+						decimal u2sp = row.Table.Columns.Contains("Unit2SalePrice") && row["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row["Unit2SalePrice"]) : 0m;
+						if (u2sp > 0) quickPrice = u2sp;
+					}
+
+					decimal dispStock = isService ? 9999m : (stock / (quickFactor > 0 ? quickFactor : 1m));
+					string stockStr = (dispStock == Math.Floor(dispStock)) ? dispStock.ToString("N0") : dispStock.ToString("N2");
+
 					Button btn = new Button
 					{
 						Width = 95,
@@ -2990,14 +3021,16 @@ namespace ChickenDist.Forms
 						ForeColor = Color.White,
 						Font = new Font(Theme.FontMain.FontFamily, 8f, FontStyle.Bold),
 						Cursor = Cursors.Hand,
-						Text = $"{name}\n{price:N2} ج\n(رصيد: {stock:G29})",
+						Text = isService ? $"{name}\n{quickPrice:N2} ج\n(خدمة)" : $"{name}\n{quickPrice:N2} ج\n(رصيد: {stockStr})",
 						Margin = new Padding(3),
 						Tag = id
 					};
 					btn.FlatAppearance.BorderSize = 0;
+					string targetUnit = quickUnit;
+					decimal targetPrice = quickPrice;
 					btn.Click += (s, e) =>
 					{
-						AddOrUpdateProduct(id, 1.00m);
+						AddOrUpdateProduct(id, 1.00m, targetPrice, false, targetUnit);
 					};
 					flowQuickItems.Controls.Add(btn);
 				}
@@ -4060,6 +4093,24 @@ namespace ChickenDist.Forms
 			row.Cells["TotalPrice"].Value = dto.TotalPrice.ToString("F2");
 			if (dgItems.Columns.Contains("PurchasePrice"))
 				row.Cells["PurchasePrice"].Value = dto.PurchasePrice.ToString("F2");
+
+			// تحديث الرصيد الفعلي المعروض بحسب الوحدة المختارة
+			decimal itemFac = dto.Factor > 0 ? dto.Factor : 1m;
+			decimal stockInUnit = dto.StockQty / itemFac;
+			string stockStr = (stockInUnit == Math.Floor(stockInUnit)) ? stockInUnit.ToString("N0") : stockInUnit.ToString("N2");
+			row.Cells["StockQty"].Value = stockStr;
+			var cell = row.Cells["StockQty"];
+			if (cell != null)
+			{
+				decimal minStockInUnit = dto.MinStockLimit > 0 ? (dto.MinStockLimit / itemFac) : 0m;
+				if (stockInUnit <= 0)
+					cell.Style.ForeColor = Color.FromArgb(231, 76, 60);
+				else if (minStockInUnit > 0 && stockInUnit <= minStockInUnit)
+					cell.Style.ForeColor = Color.FromArgb(230, 126, 34);
+				else
+					cell.Style.ForeColor = Color.FromArgb(46, 204, 113);
+			}
+
 			CalculateNet();
 		}
 
@@ -4095,7 +4146,9 @@ namespace ChickenDist.Forms
 						_stockCache[item.ProductID] = item.StockQty;
 					}
 				}
-				string stockStr = (item.StockQty == Math.Floor(item.StockQty)) ? item.StockQty.ToString("N0") : item.StockQty.ToString("N2");
+				decimal itemFac = item.Factor > 0 ? item.Factor : 1m;
+				decimal stockInUnit = item.StockQty / itemFac;
+				string stockStr = (stockInUnit == Math.Floor(stockInUnit)) ? stockInUnit.ToString("N0") : stockInUnit.ToString("N2");
 
 				int rIndex = dgItems.Rows.Add(
 					item.ProductCode, // CodeEntry - عرض الكود المحلي للصنف
@@ -4236,13 +4289,14 @@ namespace ChickenDist.Forms
                 var cell = dgItems.Rows[rIndex].Cells["StockQty"];
                 if (cell != null)
                 {
-                    if (item.StockQty <= 0)
+                    decimal minStockInUnit = item.MinStockLimit > 0 ? (item.MinStockLimit / itemFac) : 0m;
+                    if (stockInUnit <= 0)
                     {
                         cell.Style.ForeColor = Color.FromArgb(231, 76, 60); // Red
                         cell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                         cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                     }
-                    else if (item.MinStockLimit > 0 && item.StockQty <= item.MinStockLimit)
+                    else if (minStockInUnit > 0 && stockInUnit <= minStockInUnit)
                     {
                         cell.Style.ForeColor = Color.FromArgb(230, 126, 34); // Orange
                         cell.Style.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
