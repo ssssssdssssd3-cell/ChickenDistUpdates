@@ -18,6 +18,7 @@ namespace ChickenDist.Forms
         private CheckBox chkAllowSellExpired;
         private ComboBox cboWhatsAppInvoiceTemplate;
         private CheckBox chkKioskShowAlternatives;
+        private CheckBox chkLockPurchaseToMajorUnit;
 
         public FrmGeneralSettings()
         {
@@ -109,6 +110,18 @@ namespace ChickenDist.Forms
                 Checked = AppConfig.KioskShowAlternatives
             };
             pnlBody.Controls.Add(chkKioskShowAlternatives);
+            y += 30;
+
+            chkLockPurchaseToMajorUnit = new CheckBox
+            {
+                Text = "🔒 قفل الشراء بالوحدة الكبرى فقط (منع تسجيل فواتير الشراء بالوحدات الصغرى والفرعية)",
+                Location = new Point(15, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.LockPurchaseToMajorUnit
+            };
+            pnlBody.Controls.Add(chkLockPurchaseToMajorUnit);
             y += 40;
 
             var sep1 = new Panel { Location = new Point(15, y), Size = new Size(560, 2), BackColor = Theme.BorderColor };
@@ -354,6 +367,7 @@ namespace ChickenDist.Forms
         {
             AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
             AppConfig.KioskShowAlternatives = chkKioskShowAlternatives.Checked;
+            AppConfig.LockPurchaseToMajorUnit = chkLockPurchaseToMajorUnit.Checked;
             AppConfig.ShiftRequired = chkShiftRequired.Checked;
             AppConfig.AllowSellExpired = chkAllowSellExpired.Checked;
 

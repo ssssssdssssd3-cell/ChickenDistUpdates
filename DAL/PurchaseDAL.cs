@@ -1376,8 +1376,8 @@ namespace ChickenDist.DAL
                         // إذا كان الرصيد قبل الشراء سالباً بسبب إدخال المبيعات قبل المشتريات،
                         // نحسب المتوسط التراكمي المرجح من واقع جميع فواتير الشراء المسجلة للصنف لتجنب تصفير التكلفة السابقة
                         var histObj = DbHelper.ScalarTrans(trans, @"
-                            SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * ISNULL(pi.Factor, 1.0) * pi.UnitPrice) / 
-                                   NULLIF(SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * ISNULL(pi.Factor, 1.0)), 0)
+                            SELECT SUM(ISNULL(pi.TotalPrice, (pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * pi.UnitPrice)) / 
+                                   NULLIF(SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * COALESCE(NULLIF(pi.Factor, 0), 1.0)), 0)
                             FROM PurchaseItems pi
                             JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
                             WHERE pi.ProductID = @pid AND pu.IsPosted = 1", DbHelper.P("@pid", prodId));
@@ -1404,15 +1404,108 @@ namespace ChickenDist.DAL
 
                 newAverageCost = Math.Round(newAverageCost, 4);
 
-                DbHelper.ExecuteTrans(trans,
-                    @"UPDATE Products 
-                      SET CostPrice = @cp,
-                          Unit1PurchasePrice = ROUND(@cp, 2),
-                          Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
-                          PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
-                      WHERE ProductID = @pid",
-                    DbHelper.P("@cp", newAverageCost),
+                // جلب بيانات وحدات الصنف والأسعار الحالية لحمايتها من التشويه
+                DataTable dtP = DbHelper.QueryTrans(trans,
+                    "SELECT Unit, Unit1Name, Unit2Name, Unit2Factor, Unit3Factor, PurchasePrice, Unit1PurchasePrice, Unit2PurchasePrice FROM Products WHERE ProductID = @pid",
                     DbHelper.P("@pid", prodId));
+
+                if (dtP.Rows.Count > 0)
+                {
+                    var pRow = dtP.Rows[0];
+                    string baseUnit = pRow["Unit"]?.ToString()?.Trim() ?? "";
+                    string u1Name = pRow["Unit1Name"] != DBNull.Value ? pRow["Unit1Name"].ToString().Trim() : "";
+                    string u2Name = pRow["Unit2Name"] != DBNull.Value ? pRow["Unit2Name"].ToString().Trim() : "";
+                    decimal u2Factor = pRow["Unit2Factor"] != DBNull.Value && Convert.ToDecimal(pRow["Unit2Factor"]) > 0 ? Convert.ToDecimal(pRow["Unit2Factor"]) : 1m;
+                    decimal u3Factor = pRow["Unit3Factor"] != DBNull.Value && Convert.ToDecimal(pRow["Unit3Factor"]) > 0 ? Convert.ToDecimal(pRow["Unit3Factor"]) : 1m;
+                    decimal currPP = pRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["PurchasePrice"]) : 0m;
+                    decimal currU1PP = pRow["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit1PurchasePrice"]) : 0m;
+                    decimal currU2PP = pRow["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["Unit2PurchasePrice"]) : 0m;
+
+                    bool hasUnit2 = !string.IsNullOrWhiteSpace(u2Name);
+                    bool hasUnit1 = !string.IsNullOrWhiteSpace(u1Name);
+                    decimal majorFactor = hasUnit2 ? (u3Factor * u2Factor) : (u2Factor > 1m ? u2Factor : (u3Factor > 1m ? u3Factor : 1m));
+                    if (majorFactor <= 0m) majorFactor = 1m;
+
+                    bool boughtMajor = false;
+                    decimal lastMajorBuyPrice = 0m;
+                    bool boughtUnit2 = false;
+                    decimal lastUnit2BuyPrice = 0m;
+                    bool boughtUnit1 = false;
+                    decimal lastUnit1BuyPrice = 0m;
+
+                    foreach (var itm in group)
+                    {
+                        if (hasUnit1 && (string.Equals(itm.UnitName, u1Name, StringComparison.OrdinalIgnoreCase) || (itm.Factor == 1m && !hasUnit2 && itm.UnitName != baseUnit)))
+                        {
+                            boughtUnit1 = true;
+                            lastUnit1BuyPrice = itm.UnitPrice;
+                        }
+                        else if (hasUnit2 && (string.Equals(itm.UnitName, u2Name, StringComparison.OrdinalIgnoreCase) || itm.Factor == u2Factor))
+                        {
+                            boughtUnit2 = true;
+                            lastUnit2BuyPrice = itm.UnitPrice;
+                        }
+                        else
+                        {
+                            boughtMajor = true;
+                            lastMajorBuyPrice = itm.UnitPrice;
+                        }
+                    }
+
+                    decimal finalPP = currPP;
+                    decimal finalU1PP = currU1PP;
+                    decimal finalU2PP = currU2PP;
+
+                    if (boughtMajor)
+                    {
+                        finalPP = lastMajorBuyPrice;
+                        if (hasUnit1 && (!boughtUnit1 || finalU1PP <= 0m))
+                            finalU1PP = Math.Round(lastMajorBuyPrice / majorFactor, 2);
+                        if (hasUnit2 && (!boughtUnit2 || finalU2PP <= 0m))
+                            finalU2PP = Math.Round(lastMajorBuyPrice / (u3Factor > 0 ? u3Factor : 1m), 2);
+                    }
+
+                    if (boughtUnit2)
+                    {
+                        finalU2PP = lastUnit2BuyPrice;
+                        if (finalPP <= 0m)
+                            finalPP = Math.Round(lastUnit2BuyPrice * (u3Factor > 0 ? u3Factor : 1m), 2);
+                    }
+
+                    if (boughtUnit1)
+                    {
+                        finalU1PP = lastUnit1BuyPrice;
+                        // الشراء بالوحدة الصغرى يسمع في سعر شراء الوحدة الصغرى فقط ولا يغير سعر شراء الكبرى المسجل
+                        if (finalPP <= 0m)
+                            finalPP = Math.Round(lastUnit1BuyPrice * majorFactor, 2);
+                    }
+
+                    if (!hasUnit1 && !hasUnit2 && boughtMajor)
+                    {
+                        finalPP = lastMajorBuyPrice;
+                        finalU1PP = lastMajorBuyPrice;
+                    }
+
+                    DbHelper.ExecuteTrans(trans,
+                        @"UPDATE Products 
+                          SET CostPrice = @cp,
+                              Unit1PurchasePrice = @u1pp,
+                              Unit2PurchasePrice = @u2pp,
+                              PurchasePrice = @pp
+                          WHERE ProductID = @pid",
+                        DbHelper.P("@cp", newAverageCost),
+                        DbHelper.P("@u1pp", finalU1PP > 0m ? (object)finalU1PP : DBNull.Value),
+                        DbHelper.P("@u2pp", finalU2PP > 0m ? (object)finalU2PP : DBNull.Value),
+                        DbHelper.P("@pp", finalPP > 0m ? (object)finalPP : DBNull.Value),
+                        DbHelper.P("@pid", prodId));
+                }
+                else
+                {
+                    DbHelper.ExecuteTrans(trans,
+                        "UPDATE Products SET CostPrice = @cp WHERE ProductID = @pid",
+                        DbHelper.P("@cp", newAverageCost),
+                        DbHelper.P("@pid", prodId));
+                }
             }
         }
 
@@ -1590,10 +1683,7 @@ namespace ChickenDist.DAL
             newAverageBaseCost = Math.Round(newAverageBaseCost, 4);
             DbHelper.Execute(
                 @"UPDATE Products 
-                  SET CostPrice = @cp,
-                      Unit1PurchasePrice = ROUND(@cp, 2),
-                      Unit2PurchasePrice = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
-                      PurchasePrice = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2)
+                  SET CostPrice = @cp
                   WHERE ProductID = @pid",
                 DbHelper.P("@cp", newAverageBaseCost),
                 DbHelper.P("@pid", productID));

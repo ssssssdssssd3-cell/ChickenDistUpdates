@@ -322,6 +322,13 @@ namespace ChickenDist.Core
             set => Set("PurchaseSearchShowZeroStock", value ? "true" : "false");
         }
 
+        /// <summary>قفل الشراء بالوحدات الصغرى والفرعية (السماح بالشراء بالوحدة الكبرى فقط)</summary>
+        public static bool LockPurchaseToMajorUnit
+        {
+            get => Get("LockPurchaseToMajorUnit", "false") == "true";
+            set => Set("LockPurchaseToMajorUnit", value ? "true" : "false");
+        }
+
         // ===== إعدادات المتجر الإلكتروني للعملاء (Online Web Store) =====
         public static bool Store_IsActive
         {

@@ -1027,10 +1027,7 @@ namespace ChickenDist.DAL
                 DbHelper.Execute(
                     $@"UPDATE Products
                       SET {saleCol}            = @sp,
-                          CostPrice            = @cp,
-                          Unit1PurchasePrice   = @cp,
-                          Unit2PurchasePrice   = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
-                          PurchasePrice        = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2),
+                          CostPrice            = CASE WHEN @cp > 0 THEN @cp ELSE CostPrice END,
                           PendingSalePrice     = NULL,
                           PendingQtyThreshold  = NULL,
                           PendingPriceSourceRefID = NULL
@@ -1079,10 +1076,7 @@ namespace ChickenDist.DAL
 
                 DbHelper.Execute(
                     $@"UPDATE Products
-                      SET CostPrice            = @cp,
-                          Unit1PurchasePrice   = @cp,
-                          Unit2PurchasePrice   = CASE WHEN Unit2Name IS NOT NULL AND LEN(Unit2Name) > 0 THEN ROUND(@cp * COALESCE(NULLIF(Unit2Factor, 0), 1), 2) ELSE 0 END,
-                          PurchasePrice        = ROUND(@cp * COALESCE(NULLIF(Unit3Factor, 0), 1) * COALESCE(NULLIF(Unit2Factor, 0), 1), 2),
+                      SET CostPrice            = CASE WHEN @cp > 0 THEN @cp ELSE CostPrice END,
                           PendingSalePrice     = @psp,
                           PendingQtyThreshold  = @pqt,
                           PendingPriceSourceRefID = @pref,

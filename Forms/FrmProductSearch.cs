@@ -37,6 +37,7 @@ namespace ChickenDist.Forms
         public DateTime? SelectedExpiryDate { get; private set; } = null;
 
         public decimal SelectedQuantity { get; private set; } = 1m;
+        public decimal SelectedFactor { get; private set; } = 1m;
         public decimal SelectedPurchasePrice { get; private set; } = 0m;
         public decimal SelectedSalePrice { get; private set; } = 0m;
         public decimal SelectedDiscount { get; private set; } = 0m;
@@ -1055,6 +1056,7 @@ namespace ChickenDist.Forms
             {
                 SelectedPrice = _isPurchaseMode ? uItem.PurchasePrice : uItem.SalePrice;
                 SelectedUnitName = uItem.UnitName;
+                SelectedFactor = uItem.Factor > 0m ? uItem.Factor : 1m;
                 SelectedBatchID = uItem.BatchID;
                 SelectedExpiryDate = uItem.ExpiryDate;
             }
@@ -1063,6 +1065,7 @@ namespace ChickenDist.Forms
                 decimal.TryParse(row.Cells["SalePrice"].Value?.ToString(), out decimal sp);
                 SelectedPrice = sp;
                 SelectedUnitName = row.Cells["Unit"].Value?.ToString() ?? "";
+                SelectedFactor = 1m;
             }
 
             if (txtSelectedQty != null && decimal.TryParse(txtSelectedQty.Text.Trim(), out decimal q) && q > 0)
