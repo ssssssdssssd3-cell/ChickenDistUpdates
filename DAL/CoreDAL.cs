@@ -725,6 +725,13 @@ namespace ChickenDist.DAL
                     throw new Exception($"⚠️ كود الميزان (PLU) [{cleanPLU}] مخصص بالفعل لصنف آخر: [{existingName}]!\nلا يمكن تكرار نفس كود الميزان لصنفين مختلفين.");
                 }
             }
+            decimal safeU2f = (unit2Factor.HasValue && unit2Factor.Value > 0) ? unit2Factor.Value : 1m;
+            decimal safeU3f = (unit3Factor.HasValue && unit3Factor.Value > 0) ? unit3Factor.Value : 1m;
+            decimal? safeU1sp = unit1SalePrice.HasValue && unit1SalePrice.Value > 0 ? unit1SalePrice : (safeU2f == 1m && safeU3f == 1m && price > 0 ? (decimal?)price : unit1SalePrice);
+            decimal? safeU1pp = unit1PurchasePrice.HasValue && unit1PurchasePrice.Value > 0 ? unit1PurchasePrice : (safeU2f == 1m && safeU3f == 1m && purchasePrice > 0 ? (decimal?)purchasePrice : unit1PurchasePrice);
+            decimal? safeU2sp = unit2SalePrice.HasValue && unit2SalePrice.Value > 0 ? unit2SalePrice : (safeU2f == 1m && safeU3f == 1m && !string.IsNullOrWhiteSpace(unit2Name) && price > 0 ? (decimal?)price : unit2SalePrice);
+            decimal? safeU2pp = unit2PurchasePrice.HasValue && unit2PurchasePrice.Value > 0 ? unit2PurchasePrice : (safeU2f == 1m && safeU3f == 1m && !string.IsNullOrWhiteSpace(unit2Name) && purchasePrice > 0 ? (decimal?)purchasePrice : unit2PurchasePrice);
+
             if (id == 0)
             {
                 int newId = DbHelper.ExecuteInsert(
@@ -742,9 +749,9 @@ namespace ChickenDist.DAL
                     DbHelper.P("@plb", printLocalBarcode),
                     DbHelper.P("@srv", isService),
                     DbHelper.P("@qi", isQuickItem),
-                    DbHelper.P("@u1n", unit1Name), DbHelper.P("@u1b", unit1Barcode), DbHelper.P("@u1sp", unit1SalePrice ?? (object)DBNull.Value), DbHelper.P("@u1pp", unit1PurchasePrice ?? (object)DBNull.Value),
-                    DbHelper.P("@u2n", unit2Name), DbHelper.P("@u2f", unit2Factor ?? (object)DBNull.Value), DbHelper.P("@u2b", unit2Barcode), DbHelper.P("@u2sp", unit2SalePrice ?? (object)DBNull.Value), DbHelper.P("@u2pp", unit2PurchasePrice ?? (object)DBNull.Value),
-                    DbHelper.P("@u3f", unit3Factor ?? (object)DBNull.Value),
+                    DbHelper.P("@u1n", unit1Name), DbHelper.P("@u1b", unit1Barcode), DbHelper.P("@u1sp", safeU1sp ?? (object)DBNull.Value), DbHelper.P("@u1pp", safeU1pp ?? (object)DBNull.Value),
+                    DbHelper.P("@u2n", unit2Name), DbHelper.P("@u2f", safeU2f), DbHelper.P("@u2b", unit2Barcode), DbHelper.P("@u2sp", safeU2sp ?? (object)DBNull.Value), DbHelper.P("@u2pp", safeU2pp ?? (object)DBNull.Value),
+                    DbHelper.P("@u3f", safeU3f),
                     DbHelper.P("@comp", producerCompany),
                     DbHelper.P("@hexp", hasExpiry),
                     DbHelper.P("@expd", defaultExpiryDays.HasValue ? (object)defaultExpiryDays.Value : DBNull.Value),
@@ -787,9 +794,9 @@ namespace ChickenDist.DAL
                     DbHelper.P("@plb", printLocalBarcode),
                     DbHelper.P("@srv", isService),
                     DbHelper.P("@qi", isQuickItem),
-                    DbHelper.P("@u1n", unit1Name), DbHelper.P("@u1b", unit1Barcode), DbHelper.P("@u1sp", unit1SalePrice ?? (object)DBNull.Value), DbHelper.P("@u1pp", unit1PurchasePrice ?? (object)DBNull.Value),
-                    DbHelper.P("@u2n", unit2Name), DbHelper.P("@u2f", unit2Factor ?? (object)DBNull.Value), DbHelper.P("@u2b", unit2Barcode), DbHelper.P("@u2sp", unit2SalePrice ?? (object)DBNull.Value), DbHelper.P("@u2pp", unit2PurchasePrice ?? (object)DBNull.Value),
-                    DbHelper.P("@u3f", unit3Factor ?? (object)DBNull.Value),
+                    DbHelper.P("@u1n", unit1Name), DbHelper.P("@u1b", unit1Barcode), DbHelper.P("@u1sp", safeU1sp ?? (object)DBNull.Value), DbHelper.P("@u1pp", safeU1pp ?? (object)DBNull.Value),
+                    DbHelper.P("@u2n", unit2Name), DbHelper.P("@u2f", safeU2f), DbHelper.P("@u2b", unit2Barcode), DbHelper.P("@u2sp", safeU2sp ?? (object)DBNull.Value), DbHelper.P("@u2pp", safeU2pp ?? (object)DBNull.Value),
+                    DbHelper.P("@u3f", safeU3f),
                     DbHelper.P("@comp", producerCompany),
                     DbHelper.P("@hexp", hasExpiry),
                     DbHelper.P("@expd", defaultExpiryDays.HasValue ? (object)defaultExpiryDays.Value : DBNull.Value),

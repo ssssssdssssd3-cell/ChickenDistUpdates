@@ -236,6 +236,8 @@ namespace ChickenDist.Forms
             u2y += 38;
             
             AddNud(grpUnit2, "الكرتونة تحتوي كم وسطى؟:", 10, u2y, out nudUnit3Factor, 0);
+            nudUnit3Factor.Minimum = 1;
+            nudUnit3Factor.Value = 1;
             u2y += 38;
 
             grpUnit2.Controls.Add(new Label { Text = "باركود الوسطى:", Location = new Point(10, u2y + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
@@ -265,6 +267,8 @@ namespace ChickenDist.Forms
             u1y += 38;
 
             AddNud(grpUnit1, "الوسطى/الكبرى فيها كم صغرى؟:", 10, u1y, out nudUnit2Factor, 0);
+            nudUnit2Factor.Minimum = 1;
+            nudUnit2Factor.Value = 1;
             u1y += 38;
 
             grpUnit1.Controls.Add(new Label { Text = "باركود الصغرى:", Location = new Point(10, u1y + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
@@ -372,10 +376,10 @@ namespace ChickenDist.Forms
                 string unit1 = cboUnit1Name.Text.Trim();
 
                 decimal u3f = nudUnit3Factor.Value; // عدد المتوسطة في الكبرى
-                if (u3f <= 0) u3f = 1;
+                if (u3f <= 0) { u3f = 1; nudUnit3Factor.Value = 1; }
 
                 decimal u2f = nudUnit2Factor.Value; // عدد الصغرى في المتوسطة (أو في الكبرى مباشرة)
-                if (u2f <= 0) u2f = 1;
+                if (u2f <= 0) { u2f = 1; nudUnit2Factor.Value = 1; }
 
                 // ─────────────────────────────────────────────────────────────
                 // حساب أسعار الشراء دائماً (للقراءة فقط)
@@ -412,8 +416,9 @@ namespace ChickenDist.Forms
                 {
                     nudUnit2SalePrice.Value     = 0;
                     nudUnit2PurchasePrice.Value = 0;
-                    nudUnit1SalePrice.Value     = 0;
-                    nudUnit1PurchasePrice.Value = 0;
+                    if (!_unit1SaleOverride)
+                        nudUnit1SalePrice.Value = largeSale;
+                    nudUnit1PurchasePrice.Value = largePurchase;
                 }
             }
             catch { }
@@ -789,16 +794,31 @@ namespace ChickenDist.Forms
 
                 cboUnit2Name.Text = dr.Table.Columns.Contains("Unit2Name") && dr["Unit2Name"] != DBNull.Value ? dr["Unit2Name"].ToString() : "";
                 txtUnit2Barcode.Text = dr.Table.Columns.Contains("Unit2Barcode") && dr["Unit2Barcode"] != DBNull.Value ? dr["Unit2Barcode"].ToString() : "";
-                nudUnit2Factor.Value = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2Factor"]) : 0m;
+                
+                decimal u2fVal = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2Factor"]) : 1m;
+                nudUnit2Factor.Value = u2fVal >= 1m ? u2fVal : 1m;
                 nudUnit2SalePrice.Value = dr.Table.Columns.Contains("Unit2SalePrice") && dr["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2SalePrice"]) : 0m;
                 decimal u2pp = dr.Table.Columns.Contains("Unit2PurchasePrice") && dr["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2PurchasePrice"]) : 0m;
                 if (u2pp > 0) nudUnit2PurchasePrice.Value = u2pp;
 
-                nudUnit3Factor.Value = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 0m;
+                decimal u3fVal = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 1m;
+                nudUnit3Factor.Value = u3fVal >= 1m ? u3fVal : 1m;
 
-                decimal origU2Factor = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2Factor"]) : 0m;
-                decimal origU3Factor = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 0m;
-                _originalTotalFactor = (origU3Factor > 0 && origU2Factor > 0) ? (origU3Factor * origU2Factor) : (origU3Factor > 0 ? origU3Factor : (origU2Factor > 0 ? origU2Factor : 1.0m));
+                decimal origU2Factor = u2fVal >= 1m ? u2fVal : 1m;
+                decimal origU3Factor = u3fVal >= 1m ? u3fVal : 1m;
+                _originalTotalFactor = (origU3Factor * origU2Factor > 0) ? (origU3Factor * origU2Factor) : 1.0m;
+
+                // للأصناف غير المجزأة: مزامنة أسعار البيع والشراء للوحدات مع سعر الكبرى إذا كانت أصفاراً
+                if (_originalTotalFactor <= 1.0m)
+                {
+                    if (nudUnit1SalePrice.Value <= 0) nudUnit1SalePrice.Value = nudPrice.Value;
+                    if (nudUnit1PurchasePrice.Value <= 0) nudUnit1PurchasePrice.Value = nudPurchasePrice.Value;
+                    if (!string.IsNullOrWhiteSpace(cboUnit2Name.Text))
+                    {
+                        if (nudUnit2SalePrice.Value <= 0) nudUnit2SalePrice.Value = nudPrice.Value;
+                        if (nudUnit2PurchasePrice.Value <= 0) nudUnit2PurchasePrice.Value = nudPurchasePrice.Value;
+                    }
+                }
 
                 UpdateDefaultSaleUnitItems();
 
@@ -883,11 +903,11 @@ namespace ChickenDist.Forms
 
             cboUnit2Name.Text = "";
             txtUnit2Barcode.Clear();
-            nudUnit2Factor.Value = 0;
+            nudUnit2Factor.Value = 1;
             nudUnit2SalePrice.Value = 0;
             nudUnit2PurchasePrice.Value = 0;
 
-            nudUnit3Factor.Value = 0;
+            nudUnit3Factor.Value = 1;
             _originalTotalFactor = 1.0m;
             if (cboDefaultSaleUnit != null) cboDefaultSaleUnit.SelectedIndex = 0;
             
@@ -1077,9 +1097,24 @@ namespace ChickenDist.Forms
                 cboDefaultSaleUnit.Text = "الكبرى";
             }
 
-            decimal newU2Factor = nudUnit2Factor.Value;
-            decimal newU3Factor = nudUnit3Factor.Value;
-            decimal newTotalFactor = (newU3Factor > 0 && newU2Factor > 0) ? (newU3Factor * newU2Factor) : (newU3Factor > 0 ? newU3Factor : (newU2Factor > 0 ? newU2Factor : 1.0m));
+            if (nudUnit2Factor.Value <= 0) nudUnit2Factor.Value = 1;
+            if (nudUnit3Factor.Value <= 0) nudUnit3Factor.Value = 1;
+
+            decimal newU2Factor = nudUnit2Factor.Value >= 1 ? nudUnit2Factor.Value : 1m;
+            decimal newU3Factor = nudUnit3Factor.Value >= 1 ? nudUnit3Factor.Value : 1m;
+            decimal newTotalFactor = newU3Factor * newU2Factor;
+
+            // للأصناف غير المجزأة: مزامنة أسعار البيع والشراء للوحدات مع سعر الكبرى إذا كانت أصفاراً
+            if (newTotalFactor <= 1.0m)
+            {
+                if (nudUnit1SalePrice.Value <= 0 && nudPrice.Value > 0) nudUnit1SalePrice.Value = nudPrice.Value;
+                if (nudUnit1PurchasePrice.Value <= 0 && nudPurchasePrice.Value > 0) nudUnit1PurchasePrice.Value = nudPurchasePrice.Value;
+                if (!string.IsNullOrWhiteSpace(cboUnit2Name.Text))
+                {
+                    if (nudUnit2SalePrice.Value <= 0 && nudPrice.Value > 0) nudUnit2SalePrice.Value = nudPrice.Value;
+                    if (nudUnit2PurchasePrice.Value <= 0 && nudPurchasePrice.Value > 0) nudUnit2PurchasePrice.Value = nudPurchasePrice.Value;
+                }
+            }
 
             bool shouldScaleStock = false;
             decimal origStockToScale = 0m;
@@ -1118,8 +1153,8 @@ namespace ChickenDist.Forms
                     nudWholesalePrice.Value, nudSemiWholesalePrice.Value, normalisedIntlBarcodes, chkPrintLocalBarcode.Checked,
                     chkIsService.Checked,
                     cboUnit1Name.Text.Trim(), normalisedU1Barcode, nudUnit1SalePrice.Value, nudUnit1PurchasePrice.Value,
-                    cboUnit2Name.Text.Trim(), nudUnit2Factor.Value > 0 ? (decimal?)nudUnit2Factor.Value : null, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
-                    nudUnit3Factor.Value > 0 ? (decimal?)nudUnit3Factor.Value : null, chkIsQuickItem.Checked, producerVal,
+                    cboUnit2Name.Text.Trim(), newU2Factor, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
+                    newU3Factor, chkIsQuickItem.Checked, producerVal,
                     chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal,
                     _imageUrl1, _imageUrl2, _imageUrl3);
 

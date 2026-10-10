@@ -1,5 +1,5 @@
-version=3.9.63
+version=3.9.64
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.63&t=1791670733
-sha256=4F1F81705B0FD3E28FAFBB9244E72F79069A9F262878371EB9D5BFCD225D8E4E
-changelog=v3.9.63 - 2026-10-11: Kitchen slip unit display fix (dedicated Unit column, UnitName fallback, clean qty format, dynamic printer paper width)
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.64&t=1791672271
+sha256=84ACF6B797640832BB362F57145E99F4ACF53B7E802248F5A72EFA164B11767F
+changelog=v3.9.64 - 2026-10-11: Kitchen slip unit display fix (dedicated Unit column, UnitName fallback, clean qty format, dynamic printer paper width)

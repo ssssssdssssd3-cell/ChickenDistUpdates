@@ -623,6 +623,72 @@ namespace ChickenDist.Core
             }
         }
 
+        public static void EnsureProductUnitsSafety()
+        {
+            try
+            {
+                // تصحيح معاملات الوحدات للأصناف غير المجزأة:
+                // الأصناف التي لم يتم تجزئتها (معاملاتها صفر أو فارغة) تصبح معاملاتها 1 لحمايتها من القسمة على صفر أو بيع بوحدة معاملها 0
+                // الحفاظ التام والكامل على داتا العملاء للأصناف المجزأة بالفعل (Unit2Factor > 1 OR Unit3Factor > 1) دون أي مساس بها
+                Execute(@"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    -- 1. أي صنف معامل وحدته الصغرى صفر أو فارغ وهو غير مجزأ -> تعيين المعامل 1
+                    UPDATE Products
+                    SET Unit2Factor = 1
+                    WHERE (Unit2Factor IS NULL OR Unit2Factor <= 0)
+                      AND (Unit3Factor IS NULL OR Unit3Factor <= 1);
+
+                    -- 2. أي صنف معامل وحدته الوسطى صفر أو فارغ وهو غير مجزأ -> تعيين المعامل 1
+                    UPDATE Products
+                    SET Unit3Factor = 1
+                    WHERE (Unit3Factor IS NULL OR Unit3Factor <= 0)
+                      AND (Unit2Factor IS NULL OR Unit2Factor <= 1);
+
+                    -- 3. في حال وجود أي صنف معامله صفر أو فارغ -> ضبطه لـ 1
+                    UPDATE Products
+                    SET Unit2Factor = 1
+                    WHERE Unit2Factor IS NULL OR Unit2Factor <= 0;
+
+                    UPDATE Products
+                    SET Unit3Factor = 1
+                    WHERE Unit3Factor IS NULL OR Unit3Factor <= 0;
+
+                    -- 4. للأصناف غير المجزأة فقط (Unit2Factor = 1 AND Unit3Factor = 1):
+                    -- مزامنة أسعار البيع والشراء للوحدات الفرعية مساوية للكبرى إذا كانت أصفاراً أو فارغة
+                    UPDATE Products
+                    SET Unit1SalePrice = SalePrice
+                    WHERE Unit2Factor = 1 AND Unit3Factor = 1
+                      AND (Unit1SalePrice IS NULL OR Unit1SalePrice <= 0)
+                      AND SalePrice > 0;
+
+                    UPDATE Products
+                    SET Unit1PurchasePrice = PurchasePrice
+                    WHERE Unit2Factor = 1 AND Unit3Factor = 1
+                      AND (Unit1PurchasePrice IS NULL OR Unit1PurchasePrice <= 0)
+                      AND PurchasePrice > 0;
+
+                    UPDATE Products
+                    SET Unit2SalePrice = SalePrice
+                    WHERE Unit2Factor = 1 AND Unit3Factor = 1
+                      AND (Unit2SalePrice IS NULL OR Unit2SalePrice <= 0)
+                      AND SalePrice > 0
+                      AND Unit2Name IS NOT NULL AND LEN(LTRIM(RTRIM(Unit2Name))) > 0;
+
+                    UPDATE Products
+                    SET Unit2PurchasePrice = PurchasePrice
+                    WHERE Unit2Factor = 1 AND Unit3Factor = 1
+                      AND (Unit2PurchasePrice IS NULL OR Unit2PurchasePrice <= 0)
+                      AND PurchasePrice > 0
+                      AND Unit2Name IS NOT NULL AND LEN(LTRIM(RTRIM(Unit2Name))) > 0;
+                END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureProductUnitsSafety", ex);
+            }
+        }
+
         public static void EnsurePurchaseColumnsExist()
         {
             EnsurePendingSaleColExists();
@@ -1343,6 +1409,7 @@ namespace ChickenDist.Core
         {
             EnsureProductImagesColumnsExist();
             EnsureRestaurantBlendsSchema();
+            EnsureProductUnitsSafety();
 
             try
             {
