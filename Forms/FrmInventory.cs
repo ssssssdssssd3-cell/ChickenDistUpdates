@@ -2043,12 +2043,15 @@ namespace ChickenDist.Forms
                                         // تسجيل حركة التسوية في السجل
                                         string dispUnit = (mainItem ?? pendingItem)?.DisplayUnit ?? "";
                                         decimal fac = (mainItem ?? pendingItem)?.Factor ?? 1.0m;
+                                        if (fac <= 0) fac = 1.0m;
+                                        decimal dispBook = (mainItem != null ? mainItem.DisplayedBookQty : 0m) + (pendingItem != null ? pendingItem.DisplayedBookQty : 0m);
+                                        decimal dispActual = (mainItem != null ? (mainItem.ActualEntered ?? mainItem.DisplayedBookQty) : 0m) + (pendingItem != null ? (pendingItem.ActualEntered ?? pendingItem.DisplayedBookQty) : 0m);
                                         string notes = $"[جرد صنف بسعرين: قديم={actual1:N2}, جديد={actual2:N2}] " + ((mainItem?.Notes ?? "") + " " + (pendingItem?.Notes ?? "")).Trim();
                                         DbHelper.ExecuteTrans(trans,
                                             @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
                                               VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac, @bcode)",
                                             DbHelper.P("@pid", pid), DbHelper.P("@wid", wid),
-                                            DbHelper.P("@bq", totalBook), DbHelper.P("@aq", totalActual),
+                                            DbHelper.P("@bq", dispBook), DbHelper.P("@aq", dispActual),
                                             DbHelper.P("@notes", notes), DbHelper.P("@by", Session.EmpID),
                                             DbHelper.P("@un", dispUnit), DbHelper.P("@fac", fac),
                                             DbHelper.P("@bcode", sessionBatchCode));
@@ -2097,13 +2100,15 @@ namespace ChickenDist.Forms
                                                 DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@aq", baseActual));
                                         }
 
+                                        decimal dispActualSingle = item.ActualEntered ?? item.DisplayedBookQty;
+                                        decimal singleFac = item.Factor <= 0 ? 1.0m : item.Factor;
                                         DbHelper.ExecuteTrans(trans,
                                             @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
                                               VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, @fac, @bcode)",
                                             DbHelper.P("@pid", pid), DbHelper.P("@wid", wid),
-                                            DbHelper.P("@bq", baseBook), DbHelper.P("@aq", baseActual),
+                                            DbHelper.P("@bq", item.DisplayedBookQty), DbHelper.P("@aq", dispActualSingle),
                                             DbHelper.P("@notes", item.Notes), DbHelper.P("@by", Session.EmpID),
-                                            DbHelper.P("@un", item.DisplayUnit), DbHelper.P("@fac", item.Factor),
+                                            DbHelper.P("@un", item.DisplayUnit), DbHelper.P("@fac", singleFac),
                                             DbHelper.P("@bcode", sessionBatchCode));
                                     }
                                 }
@@ -2681,6 +2686,10 @@ namespace ChickenDist.Forms
             int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
             string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
             string curBook = r.Cells["BookQty"].Value?.ToString() ?? "0";
+            string curUnit = r.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "").Trim() ?? "";
+            decimal curFactor = r.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["CurrentFactor"].Value) : 1.0m;
+            if (curFactor <= 0) curFactor = 1.0m;
+            decimal curDisplayedBook = decimal.TryParse(curBook, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var cbVal) ? cbVal : 0m;
 
             var promptDlg = new Form
             {
@@ -2695,7 +2704,7 @@ namespace ChickenDist.Forms
 
             var lbl = new Label
             {
-                Text = $"الصنف: [{pName}]\nالرصيد الدفتري المسجل حالياً: {curBook}\n\nأدخل الرصيد الفعلي الحقيقي للصنف في المخزن:",
+                Text = $"الصنف: [{pName}]\nالرصيد الدفتري المسجل حالياً: {curDisplayedBook:N3} {curUnit}\n\nأدخل الرصيد الفعلي الحقيقي للصنف في المخزن بالوحدة ({curUnit}):",
                 Location = new Point(15, 12),
                 Size = new Size(415, 65),
                 ForeColor = Theme.TextMain,
@@ -2710,7 +2719,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput,
                 ForeColor = Color.DarkBlue,
                 TextAlign = HorizontalAlignment.Center,
-                Text = "0"
+                Text = curDisplayedBook.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
             };
 
             var btnSave = Theme.MakeButton("💾 اعتماد وتصحيح الرصيد", 230, 135, 200, 36, Theme.Success);
@@ -2742,6 +2751,7 @@ namespace ChickenDist.Forms
             if (promptDlg.ShowDialog(this) == DialogResult.OK)
             {
                 decimal correctQty = Convert.ToDecimal(txtQty.Text.Trim(), System.Globalization.CultureInfo.InvariantCulture);
+                decimal baseCorrectQty = correctQty * curFactor;
                 try
                 {
                     int wid = 1;
@@ -2755,28 +2765,28 @@ namespace ChickenDist.Forms
                         // 1. تسجيل تسوية جردية لتصحيح الصنف
                         DbHelper.ExecuteTrans(trans, @"
                             INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
-                            SELECT ps.ProductID, ps.WarehouseID, ps.Quantity, @q, N'[تصحيح رصيد يدوي مباشر]', @uid, p.Unit, 1
-                            FROM ProductStock ps
-                            JOIN Products p ON ps.ProductID = p.ProductID
-                            WHERE ps.ProductID = @pid AND ps.WarehouseID = @wid",
-                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", correctQty), DbHelper.P("@uid", Session.EmpID));
+                            VALUES (@pid, @wid, @bq, @aq, N'[تصحيح رصيد يدوي مباشر]', @uid, @un, @fac)",
+                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid),
+                            DbHelper.P("@bq", curDisplayedBook), DbHelper.P("@aq", correctQty),
+                            DbHelper.P("@uid", Session.EmpID),
+                            DbHelper.P("@un", curUnit), DbHelper.P("@fac", curFactor));
 
-                        // 2. تحديث ProductStock
+                        // 2. تحديث ProductStock بالوحدة الأساسية (الصغرى)
                         DbHelper.ExecuteTrans(trans, @"
                             IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID = @pid AND WarehouseID = @wid)
                                 UPDATE ProductStock SET Quantity = @q WHERE ProductID = @pid AND WarehouseID = @wid
                             ELSE
                                 INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @q)",
-                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", correctQty));
+                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", baseCorrectQty));
 
                         // 3. تحديث ProductBatches
                         DbHelper.ExecuteTrans(trans, "UPDATE ProductBatches SET Quantity = @q WHERE ProductID = @pid AND WarehouseID = @wid",
-                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", correctQty));
+                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@q", baseCorrectQty));
                     });
 
                     ProductCache.Invalidate();
                     StockCache.Invalidate(wid);
-                    MessageBox.Show($"✅ تم تصحيح رصيد الصنف [{pName}] إلى ({correctQty:N3}) بنجاح!", "تم التصحيح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"✅ تم تصحيح رصيد الصنف [{pName}] إلى ({correctQty:N3} {curUnit}) بنجاح!", "تم التصحيح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadStock();
                 }
                 catch (Exception ex)

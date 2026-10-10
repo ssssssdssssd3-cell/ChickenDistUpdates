@@ -39,6 +39,7 @@ namespace ChickenDist.Forms
         private bool _unit1SaleOverride = false;
         private bool _unit2SaleOverride = false;
         private bool _inRecalc = false; // منع التداخل
+        private decimal _originalTotalFactor = 1.0m;
 
         public FrmProductCard(int id = 0)
         {
@@ -795,13 +796,19 @@ namespace ChickenDist.Forms
 
                 nudUnit3Factor.Value = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 0m;
 
+                decimal origU2Factor = dr.Table.Columns.Contains("Unit2Factor") && dr["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit2Factor"]) : 0m;
+                decimal origU3Factor = dr.Table.Columns.Contains("Unit3Factor") && dr["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(dr["Unit3Factor"]) : 0m;
+                _originalTotalFactor = (origU3Factor > 0 && origU2Factor > 0) ? (origU3Factor * origU2Factor) : (origU3Factor > 0 ? origU3Factor : (origU2Factor > 0 ? origU2Factor : 1.0m));
+
+                UpdateDefaultSaleUnitItems();
+
                 // Default sale unit loading
                 string dsu = dr.Table.Columns.Contains("DefaultSaleUnit") && dr["DefaultSaleUnit"] != DBNull.Value ? dr["DefaultSaleUnit"].ToString() : "";
                 if (cboDefaultSaleUnit != null)
                 {
-                    if (dsu == "الوسطى") cboDefaultSaleUnit.SelectedIndex = 1;
-                    else if (dsu == "الصغرى") cboDefaultSaleUnit.SelectedIndex = 2;
-                    else cboDefaultSaleUnit.SelectedIndex = 0;
+                    if (dsu == "الوسطى" && cboDefaultSaleUnit.Items.Contains("الوسطى")) cboDefaultSaleUnit.SelectedItem = "الوسطى";
+                    else if (dsu == "الصغرى" && cboDefaultSaleUnit.Items.Contains("الصغرى")) cboDefaultSaleUnit.SelectedItem = "الصغرى";
+                    else cboDefaultSaleUnit.SelectedItem = "الكبرى";
                 }
 
                 // تحديد التصنيف في الـ ComboBox
@@ -881,6 +888,7 @@ namespace ChickenDist.Forms
             nudUnit2PurchasePrice.Value = 0;
 
             nudUnit3Factor.Value = 0;
+            _originalTotalFactor = 1.0m;
             if (cboDefaultSaleUnit != null) cboDefaultSaleUnit.SelectedIndex = 0;
             
             RecalculateSubUnitPrices();
@@ -1059,6 +1067,48 @@ namespace ChickenDist.Forms
             string enNameVal = txtEnglishName != null ? txtEnglishName.Text.Trim() : "";
             string scalePLUVal = txtScalePLU != null ? txtScalePLU.Text.Trim() : "";
 
+            // التحقق من صحة وحدة البيع الافتراضية
+            if (cboDefaultSaleUnit.Text == "الوسطى" && string.IsNullOrWhiteSpace(cboUnit2Name.Text))
+            {
+                cboDefaultSaleUnit.Text = "الكبرى";
+            }
+            if (cboDefaultSaleUnit.Text == "الصغرى" && string.IsNullOrWhiteSpace(cboUnit1Name.Text))
+            {
+                cboDefaultSaleUnit.Text = "الكبرى";
+            }
+
+            decimal newU2Factor = nudUnit2Factor.Value;
+            decimal newU3Factor = nudUnit3Factor.Value;
+            decimal newTotalFactor = (newU3Factor > 0 && newU2Factor > 0) ? (newU3Factor * newU2Factor) : (newU3Factor > 0 ? newU3Factor : (newU2Factor > 0 ? newU2Factor : 1.0m));
+
+            bool shouldScaleStock = false;
+            decimal origStockToScale = 0m;
+            if (_selectedID > 0 && _originalTotalFactor <= 1.0m && newTotalFactor > 1.0m)
+            {
+                decimal currentStock = GetProductTotalStock(_selectedID);
+                if (currentStock > 0)
+                {
+                    string subUnitName = !string.IsNullOrWhiteSpace(cboUnit1Name.Text) ? cboUnit1Name.Text.Trim() : (!string.IsNullOrWhiteSpace(cboUnit2Name.Text) ? cboUnit2Name.Text.Trim() : "وحدة صغرى");
+                    string mainUnitName = !string.IsNullOrWhiteSpace(cboUnit.Text) ? cboUnit.Text.Trim() : "الوحدة الكبرى";
+                    string msg = $"⚠️ تنبيه تجزئة صنف مسجل له رصيد مسبقاً:\n\n" +
+                                 $"هذا الصنف لديه رصيد حالي مسجل قدره ({currentStock:N3} {mainUnitName}).\n" +
+                                 $"تم تقسيم كارت الصنف الآن بمعامل ({newTotalFactor:N0}) ليصبح بالوحدة ({subUnitName}).\n\n" +
+                                 $"هل ترغب في ضرب الرصيد الحالي تلقائياً في المعامل ليصبح ({currentStock * newTotalFactor:N3} {subUnitName})؟\n\n" +
+                                 $"• اضغط [نعم]: لتحويل الرصيد المسجل من كبرى إلى صغرى ({currentStock * newTotalFactor:N3} {subUnitName}).\n" +
+                                 $"• اضغط [لا]: للإبقاء على الرصيد بالرقم الحالي ({currentStock:N3}) كوحدات صغرى.";
+                    var drQuestion = MessageBox.Show(msg, "تحديث رصيد الصنف المجزأ", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    if (drQuestion == DialogResult.Cancel)
+                    {
+                        return;
+                    }
+                    if (drQuestion == DialogResult.Yes)
+                    {
+                        shouldScaleStock = true;
+                        origStockToScale = currentStock;
+                    }
+                }
+            }
+
             try
             {
                 // الحفظ في قاعدة البيانات
@@ -1075,6 +1125,31 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
+                    if (shouldScaleStock && origStockToScale > 0)
+                    {
+                        try
+                        {
+                            decimal newStockQty = origStockToScale * newTotalFactor;
+                            DbHelper.RunInTransaction((con, trans) =>
+                            {
+                                DbHelper.ExecuteTrans(trans, "UPDATE ProductStock SET Quantity = Quantity * @fac WHERE ProductID = @pid",
+                                    DbHelper.P("@fac", newTotalFactor), DbHelper.P("@pid", id));
+                                DbHelper.ExecuteTrans(trans, "UPDATE ProductBatches SET Quantity = Quantity * @fac WHERE ProductID = @pid",
+                                    DbHelper.P("@fac", newTotalFactor), DbHelper.P("@pid", id));
+                                DbHelper.ExecuteTrans(trans, @"
+                                    INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
+                                    VALUES (@pid, 1, @old, @new, N'[تعديل رصيد آلي عند تجزئة وحدات الصنف لأول مرة]', @uid, @un, 1.0)",
+                                    DbHelper.P("@pid", id), DbHelper.P("@old", origStockToScale), DbHelper.P("@new", newStockQty),
+                                    DbHelper.P("@uid", Session.EmpID), DbHelper.P("@un", cboUnit1Name.Text.Trim()));
+                            });
+                            StockCache.Invalidate();
+                        }
+                        catch (Exception exStock)
+                        {
+                            MessageBox.Show("تم حفظ بيانات الصنف ولكن حدث خطأ أثناء تعديل الرصيد:\n" + exStock.Message, "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+
                     ChickenDist.Core.ProductCache.Refresh();
                     FrmQuickAdd.RaiseProductSaved();
                     MessageBox.Show("✅ تم الحفظ");
@@ -1158,6 +1233,36 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void UpdateDefaultSaleUnitItems()
+        {
+            if (cboDefaultSaleUnit == null) return;
+            string selected = cboDefaultSaleUnit.SelectedItem?.ToString() ?? cboDefaultSaleUnit.Text;
+
+            cboDefaultSaleUnit.BeginUpdate();
+            cboDefaultSaleUnit.Items.Clear();
+            cboDefaultSaleUnit.Items.Add("الكبرى");
+
+            if (!string.IsNullOrWhiteSpace(cboUnit2Name?.Text))
+            {
+                cboDefaultSaleUnit.Items.Add("الوسطى");
+            }
+
+            if (!string.IsNullOrWhiteSpace(cboUnit1Name?.Text))
+            {
+                cboDefaultSaleUnit.Items.Add("الصغرى");
+            }
+
+            if (!string.IsNullOrWhiteSpace(selected) && cboDefaultSaleUnit.Items.Contains(selected))
+            {
+                cboDefaultSaleUnit.SelectedItem = selected;
+            }
+            else
+            {
+                cboDefaultSaleUnit.SelectedIndex = 0; // "الكبرى"
+            }
+            cboDefaultSaleUnit.EndUpdate();
+        }
+
         private void UpdateUnitHeaders()
         {
             if (lblUnit2Header != null && cboUnit2Name != null)
@@ -1170,6 +1275,7 @@ namespace ChickenDist.Forms
                 string unit1 = string.IsNullOrWhiteSpace(cboUnit1Name.Text) ? "غير محددة" : cboUnit1Name.Text;
                 lblUnit1Header.Text = $"⚙️ خانات الوحدة الصغرى ({unit1}):";
             }
+            UpdateDefaultSaleUnitItems();
         }
 
         private decimal GetProductTotalStock(int productId)

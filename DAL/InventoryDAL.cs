@@ -607,7 +607,7 @@ namespace ChickenDist.DAL
                         END AS PersonName,
                         w.WarehouseName,
                         0.00 AS QtyIn,
-                        si.Quantity * COALESCE(si.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
+                        si.Quantity * COALESCE(si.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) AS QtyOut,
                         s.Notes
                     FROM SaleItems si
                     JOIN Sales s ON si.SaleID = s.SaleID
@@ -629,7 +629,7 @@ namespace ChickenDist.DAL
                         ISNULL(s.SaleCode, N'---') AS RefCode,
                         ISNULL(c.ClientName, N'---') AS PersonName,
                         w.WarehouseName,
-                        ri.Quantity * COALESCE(ri.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
+                        ri.Quantity * COALESCE(ri.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         sr.Notes
                     FROM ReturnItems ri
@@ -650,7 +650,7 @@ namespace ChickenDist.DAL
                         ISNULL(s.SaleCode, N'---') AS RefCode,
                         ISNULL(e.EmpName, N'---') AS PersonName,
                         w.WarehouseName,
-                        hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
+                        hi.ReturnedQty * COALESCE(hi.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         dh.Notes
                     FROM HandoverItems hi
@@ -672,8 +672,8 @@ namespace ChickenDist.DAL
                         N'تسوية #' + CAST(sa.AdjID AS NVARCHAR(20)) AS RefCode,
                         ISNULL(e.EmpName, N'---') AS PersonName,
                         w.WarehouseName,
-                        CASE WHEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) > 0 THEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) ELSE 0.00 END AS QtyIn,
-                        CASE WHEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) < 0 THEN ABS((sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0))) ELSE 0.00 END AS QtyOut,
+                        CASE WHEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) > 0 THEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) ELSE 0.00 END AS QtyIn,
+                        CASE WHEN (sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) < 0 THEN ABS((sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))) ELSE 0.00 END AS QtyOut,
                         sa.Notes
                     FROM StockAdjustments sa
                     JOIN Products p ON sa.ProductID = p.ProductID
@@ -696,8 +696,8 @@ namespace ChickenDist.DAL
                         pu.PurchaseCode AS RefCode,
                         ISNULL(sup.SupplierName, N'---') AS PersonName,
                         w.WarehouseName,
-                        pi.Quantity * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) +
-                        ISNULL(pi.BonusQuantity, 0) * COALESCE(pi.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
+                        pi.Quantity * COALESCE(pi.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) +
+                        ISNULL(pi.BonusQuantity, 0) * COALESCE(pi.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         pu.Notes
                     FROM PurchaseItems pi
@@ -718,7 +718,7 @@ namespace ChickenDist.DAL
                         ISNULL(sup.SupplierName, N'---') AS PersonName,
                         w.WarehouseName,
                         0.00 AS QtyIn,
-                        (pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(NULLIF(pri.Factor, 0), COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
+                        (pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(NULLIF(pri.Factor, 0), COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) AS QtyOut,
                         pr.Notes
                     FROM PurchaseReturnItems pri
                     JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID
@@ -737,7 +737,7 @@ namespace ChickenDist.DAL
                         t.TransferCode AS RefCode,
                         N'من: ' + wFrom.WarehouseName AS PersonName,
                         wTo.WarehouseName,
-                        ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyIn,
+                        ti.Quantity * COALESCE(ti.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) AS QtyIn,
                         0.00 AS QtyOut,
                         t.Notes
                     FROM WarehouseTransferItems ti
@@ -758,7 +758,7 @@ namespace ChickenDist.DAL
                         N'إلى: ' + wTo.WarehouseName AS PersonName,
                         wFrom.WarehouseName,
                         0.00 AS QtyIn,
-                        ti.Quantity * COALESCE(ti.Factor, COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0)) AS QtyOut,
+                        ti.Quantity * COALESCE(ti.Factor, COALESCE(NULLIF(p.Unit3Factor, 0) * NULLIF(p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)) AS QtyOut,
                         t.Notes
                     FROM WarehouseTransferItems ti
                     JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID
