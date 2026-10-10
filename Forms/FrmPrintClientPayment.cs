@@ -110,8 +110,9 @@ namespace ChickenDist.Forms
 
             if (isReceipt)
             {
-                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", 300, 700);
-                pd.DefaultPageSettings.Margins = new Margins(10, 10, 10, 10);
+                int paperW = AppConfig.ReceiptPaperWidth == 58 ? 205 : 300;
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Receipt", paperW, 700);
+                pd.DefaultPageSettings.Margins = new Margins(paperW == 58 ? 6 : 10, paperW == 58 ? 6 : 10, 10, 10);
                 AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
             }
             else

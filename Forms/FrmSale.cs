@@ -147,10 +147,10 @@ namespace ChickenDist.Forms
 		private NumericUpDown nudShippingCharge;
 		private Panel pnlQuickItems;
 		private FlowLayoutPanel flowQuickItems;
-		private Label lblShiftTitleHeader;
 		private Label lblShiftSummaryBar;
 		private Label lblClientAddress;
 		private TextBox txtClientAddress;
+		private TextBox txtClientPhone;
 
 		// ── بونات الخصم ──────────────────────────────────────
 		private TextBox txtVoucherCode;
@@ -459,11 +459,13 @@ namespace ChickenDist.Forms
 			tblDetails.Controls.Add(lblDate, 2, 0);
 			tblDetails.Controls.Add(dtpDate, 3, 0);
 
-			// Row 1: Client Address & Warehouse
+			// Row 1: Client Address & Phone & Warehouse
 			lblClientAddress = MakeLabel("العنوان :", 0, 0);
 			lblClientAddress.Dock = DockStyle.Fill;
 			lblClientAddress.TextAlign = ContentAlignment.MiddleRight;
 			lblClientAddress.Margin = new Padding(2);
+
+			var pnlAddressAndPhone = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
 
 			txtClientAddress = new TextBox
 			{
@@ -476,6 +478,45 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes,
 				Margin = new Padding(2)
 			};
+
+			var pnlPhoneBox = new Panel
+			{
+				Dock = DockStyle.Left,
+				Width = 175,
+				BackColor = Color.Transparent,
+				Margin = new Padding(0)
+			};
+
+			var lblPhoneTitle = new Label
+			{
+				Text = "رقم العميل:",
+				Dock = DockStyle.Right,
+				Width = 65,
+				ForeColor = Theme.TextSub,
+				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+				TextAlign = ContentAlignment.MiddleRight
+			};
+
+			txtClientPhone = new TextBox
+			{
+				Dock = DockStyle.Fill,
+				ReadOnly = true,
+				BackColor = Theme.BgInput,
+				ForeColor = Color.FromArgb(56, 189, 248),
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				BorderStyle = BorderStyle.FixedSingle,
+				RightToLeft = RightToLeft.No,
+				TextAlign = HorizontalAlignment.Center,
+				Margin = new Padding(2)
+			};
+
+			pnlPhoneBox.Controls.Add(txtClientPhone);
+			pnlPhoneBox.Controls.Add(lblPhoneTitle);
+			txtClientPhone.BringToFront();
+
+			pnlAddressAndPhone.Controls.Add(txtClientAddress);
+			pnlAddressAndPhone.Controls.Add(pnlPhoneBox);
+			txtClientAddress.BringToFront();
 
 			lblDriver = MakeLabel("المندوب :", 0, 0);
 			cboDriver = new ComboBox
@@ -507,7 +548,7 @@ namespace ChickenDist.Forms
 			};
 
 			tblDetails.Controls.Add(lblClientAddress, 0, 1);
-			tblDetails.Controls.Add(txtClientAddress, 1, 1);
+			tblDetails.Controls.Add(pnlAddressAndPhone, 1, 1);
 			tblDetails.Controls.Add(lblWarehouse, 2, 1);
 			tblDetails.Controls.Add(cboWarehouse, 3, 1);
 
@@ -653,16 +694,6 @@ namespace ChickenDist.Forms
 				Padding = new Padding(4, 2, 4, 2),
 				Margin = new Padding(0, 0, 0, 2)
 			};
-			var lblTypeHeader = new Label
-			{
-				Text = "💳 نوع الدفع / الفاتورة :",
-				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-				ForeColor = Color.FromArgb(226, 232, 240),
-				Dock = DockStyle.Top,
-				Height = 16,
-				TextAlign = ContentAlignment.TopRight
-			};
-			pnlTypeGroup.Controls.Add(lblTypeHeader);
 
 			var tblTypeButtons = new TableLayoutPanel
 			{
@@ -753,16 +784,6 @@ namespace ChickenDist.Forms
 				Padding = new Padding(6, 2, 6, 2),
 				Margin = new Padding(0)
 			};
-			lblShiftTitleHeader = new Label
-			{
-				Text = "الوردية والدرج المفتوح :",
-				Font = Theme.FontSmall,
-				ForeColor = Theme.TextSub,
-				Dock = DockStyle.Top,
-				Height = 15,
-				TextAlign = ContentAlignment.TopRight
-			};
-			pnlShiftGroup.Controls.Add(lblShiftTitleHeader);
 
 			lblShiftSummaryBar = new Label
 			{
@@ -797,16 +818,6 @@ namespace ChickenDist.Forms
 				Padding = new Padding(4, 2, 4, 2),
 				Margin = new Padding(0)
 			};
-			var lblTierHeader = new Label
-			{
-				Text = "🏷️ فئة السعر :",
-				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-				ForeColor = Color.FromArgb(226, 232, 240),
-				Dock = DockStyle.Top,
-				Height = 16,
-				TextAlign = ContentAlignment.TopRight
-			};
-			pnlTierGroup.Controls.Add(lblTierHeader);
 
 			var tblTierButtons = new TableLayoutPanel
 			{
@@ -973,7 +984,6 @@ namespace ChickenDist.Forms
 			flowToolbar.Controls.Add(btnSearchProduct);
 			flowToolbar.Controls.Add(btnManualAdd);
 			flowToolbar.Controls.Add(btnToggleSimpleMode);
-			flowToolbar.Controls.Add(btnPriceChecker);
 			flowToolbar.Controls.Add(btnCustomizeCols);
 			pnlGridToolbar.Controls.Add(flowToolbar);
 
@@ -2574,11 +2584,26 @@ namespace ChickenDist.Forms
                             txtClientAddress.Text = "";
                         }
                     }
+
+                    if (txtClientPhone != null)
+                    {
+                        string phone = "";
+                        if (byID != null)
+                        {
+                            if (byID.Table.Columns.Contains("Phone") && byID["Phone"] != DBNull.Value && !string.IsNullOrWhiteSpace(byID["Phone"].ToString()))
+                                phone = byID["Phone"].ToString().Trim();
+                            else if (byID.Table.Columns.Contains("Phone2") && byID["Phone2"] != DBNull.Value && !string.IsNullOrWhiteSpace(byID["Phone2"].ToString()))
+                                phone = byID["Phone2"].ToString().Trim();
+                        }
+                        txtClientPhone.Text = phone;
+                    }
 				}
                 else
                 {
                     if (txtClientAddress != null)
                         txtClientAddress.Text = "";
+                    if (txtClientPhone != null)
+                        txtClientPhone.Text = "";
 
                     string defEmpTier = Session.GetDefaultPriceTier();
                     if (_selectedTier != defEmpTier)
@@ -2917,11 +2942,6 @@ namespace ChickenDist.Forms
 
 					bool canViewDrawer = Session.CanViewDrawerBalance();
 
-					if (lblShiftTitleHeader != null)
-					{
-						lblShiftTitleHeader.Text = canViewDrawer ? "الوردية والدرج المفتوح :" : "رقم الوردية المفتوحة :";
-					}
-
 					if (canViewDrawer)
 					{
 						lblShiftSummaryBar.Text = $"🟢 وردية #{shiftId} | 👤 {emp} | 💵 فتح: {openingCash:N0}ج | 🏦 {safe}";
@@ -2935,10 +2955,6 @@ namespace ChickenDist.Forms
 				else
 				{
 					Session.CurrentShiftID = null;
-					if (lblShiftTitleHeader != null)
-					{
-						lblShiftTitleHeader.Text = "حالة الوردية :";
-					}
 					lblShiftSummaryBar.Text = "🔴 لا توجد وردية مفتوحة (اضغط هنا لفتح وردية)";
 					lblShiftSummaryBar.ForeColor = Color.FromArgb(248, 113, 113);
 				}
@@ -3203,7 +3219,7 @@ namespace ChickenDist.Forms
 			}
 
 			// 2. أزرار شريط الأدوات الأوسط
-			if (_btnPriceChecker != null) _btnPriceChecker.Visible = !isSimple;
+			if (_btnPriceChecker != null) _btnPriceChecker.Visible = false;
 			if (_btnCustomizeCols != null) _btnCustomizeCols.Visible = !isSimple && Session.CanOrderColumns("Sales");
 
 			// 3. أزرار التذييل
@@ -8269,6 +8285,7 @@ namespace ChickenDist.Forms
 			if (lblNetVal != null) lblNetVal.Text = "0.00 ج";
 			txtNotes.Clear();
 			if (txtClientAddress != null) txtClientAddress.Clear();
+			if (txtClientPhone != null) txtClientPhone.Clear();
 			txtPrice.Clear();
 			nudQty.Value = 1m;
 			if (nudCratesOut != null) nudCratesOut.Value = 0;

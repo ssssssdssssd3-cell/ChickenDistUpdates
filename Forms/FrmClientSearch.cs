@@ -37,8 +37,8 @@ namespace ChickenDist.Forms
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            // لون مميز لشاشة البحث - بترولي/كحلي فاخر يختلف عن الشاشات العادية
-            this.BackColor = Color.FromArgb(15, 30, 50);
+            // ثيم رمادي فاتح هادئ ومريح للعين بناءً على طلب المستخدم
+            this.BackColor = Color.FromArgb(241, 245, 249);
             this.Font = Theme.FontMain;
 
             // Search Header Panel
@@ -47,7 +47,7 @@ namespace ChickenDist.Forms
                 Name = "pnlSearch",
                 Dock = DockStyle.Top,
                 Height = 65,
-                BackColor = Theme.BgSearchPanel,
+                BackColor = Color.FromArgb(241, 245, 249),
                 RightToLeft = RightToLeft.No,
                 Padding = new Padding(12)
             };
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
                 Text = "🔍 نوع البحث:",
                 Location = new Point(690, 22),
                 Width = 130,
-                ForeColor = Color.FromArgb(255, 220, 110),
+                ForeColor = Color.FromArgb(30, 41, 59),
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = Theme.FontBold
             };
@@ -94,14 +94,13 @@ namespace ChickenDist.Forms
             pnlSearch.Controls.Add(lblSearch);
             pnlSearch.Controls.Add(cboSearchType);
             pnlSearch.Controls.Add(txtSearch);
-            Theme.StyleSearchPanel(pnlSearch);
 
             // DataGridView Panel
             var pnlGrid = new Panel
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(12, 0, 12, 0),
-                BackColor = Color.FromArgb(15, 30, 50)
+                BackColor = Color.FromArgb(241, 245, 249)
             };
 
             dgClients = new DataGridView
@@ -113,29 +112,29 @@ namespace ChickenDist.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
-                BackgroundColor = Color.FromArgb(245, 247, 250),
-                ForeColor = Color.FromArgb(20, 25, 35),
-                GridColor = Color.FromArgb(220, 225, 235),
+                BackgroundColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                GridColor = Color.FromArgb(226, 232, 240),
                 BorderStyle = BorderStyle.None,
                 RowTemplate = { Height = 32 },
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = Color.White,
-                    ForeColor = Color.FromArgb(20, 25, 35),
-                    SelectionBackColor = Color.FromArgb(0, 120, 215),
+                    ForeColor = Color.FromArgb(30, 41, 59),
+                    SelectionBackColor = Color.FromArgb(37, 99, 235),
                     SelectionForeColor = Color.White
                 },
                 AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.FromArgb(240, 243, 248),
-                    ForeColor = Color.FromArgb(20, 25, 35),
-                    SelectionBackColor = Color.FromArgb(0, 120, 215),
+                    BackColor = Color.FromArgb(248, 250, 252),
+                    ForeColor = Color.FromArgb(30, 41, 59),
+                    SelectionBackColor = Color.FromArgb(37, 99, 235),
                     SelectionForeColor = Color.White
                 },
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.FromArgb(24, 43, 73),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(226, 232, 240),
+                    ForeColor = Color.FromArgb(30, 41, 59),
                     Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                     Alignment = DataGridViewContentAlignment.MiddleCenter
                 },
@@ -153,10 +152,11 @@ namespace ChickenDist.Forms
                 Dock = DockStyle.Bottom,
                 Height = 60,
                 Padding = new Padding(12),
-                BackColor = Color.FromArgb(10, 22, 38)
+                BackColor = Color.FromArgb(241, 245, 249)
             };
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 14, 100, 34, Color.FromArgb(140, 40, 40));
+            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 14, 100, 34, Color.FromArgb(148, 163, 184));
+            btnCancel.ForeColor = Color.FromArgb(30, 41, 59);
             btnCancel.Click += (s, e) => this.Close();
 
             btnSelect = Theme.MakeButton("✅ اختيار", 130, 14, 120, 34, Theme.Accent);
@@ -239,16 +239,19 @@ namespace ChickenDist.Forms
                     col.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
                 }
 
-                // Grid coloring & styling - نطبق رأس الجدول فقط بدون كتابة فوق ألوان السطور المتبادلة
-                Theme.StyleGridHeader(dgClients);
-                // نُعيد تطبيق ألوان السطور المتبادلة لأن StyleGridHeader قد يؤثر عليها
-                dgClients.DefaultCellStyle.BackColor = Color.FromArgb(22, 42, 65);
-                dgClients.DefaultCellStyle.ForeColor = Color.FromArgb(220, 235, 255);
-                dgClients.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 150, 200);
+                // Grid coloring & styling - ثيم رمادي فاتح مريح وعالي الوضوح
+                dgClients.EnableHeadersVisualStyles = false;
+                dgClients.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(226, 232, 240);
+                dgClients.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(30, 41, 59);
+                dgClients.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+
+                dgClients.DefaultCellStyle.BackColor = Color.White;
+                dgClients.DefaultCellStyle.ForeColor = Color.FromArgb(30, 41, 59);
+                dgClients.DefaultCellStyle.SelectionBackColor = Color.FromArgb(37, 99, 235);
                 dgClients.DefaultCellStyle.SelectionForeColor = Color.White;
-                dgClients.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(14, 28, 46);
-                dgClients.AlternatingRowsDefaultCellStyle.ForeColor = Color.FromArgb(220, 235, 255);
-                dgClients.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 150, 200);
+                dgClients.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
+                dgClients.AlternatingRowsDefaultCellStyle.ForeColor = Color.FromArgb(30, 41, 59);
+                dgClients.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.FromArgb(37, 99, 235);
                 dgClients.AlternatingRowsDefaultCellStyle.SelectionForeColor = Color.White;
             }
             catch (Exception ex)

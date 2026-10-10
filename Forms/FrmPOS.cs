@@ -23,7 +23,6 @@ namespace ChickenDist.Forms
         private DataGridView dgItems;
         private Label lblTotal, lblChange, lblItemCount, lblClientPoints;
         private Label lblInvoiceItemsBadge;
-        private CheckBox chkQuickInStockOnly;
         private int? _currentQuickCategoryId = null;
         private Label _lPaid, _lVisaPaid;
         private Button _btnPrint, _btnWhatsApp, btnOpenDrawer;
@@ -47,7 +46,7 @@ namespace ChickenDist.Forms
         private Label lblTableNum;
         private TextBox txtTableNum;
         private ComboBox cboDeliveryDriver;
-        private Button btnSuspend, btnRecall, btnModelLookup, btnIncompletePOS, btnKitchenPrint;
+        private Button btnSuspend, btnRecall, btnModelLookup, btnClientPayment, btnKitchenPrint;
         private int _loadedDraftSaleID = 0;
         private bool _isSaving = false;
         private int? _selectedVisaAccountID = null;
@@ -810,7 +809,7 @@ namespace ChickenDist.Forms
             flowCategories = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 50,
+                Height = 52,
                 AutoScroll = true,
                 WrapContents = false,
                 FlowDirection = FlowDirection.RightToLeft,
@@ -831,33 +830,9 @@ namespace ChickenDist.Forms
                 catch { }
             };
 
-            var pnlQuickHeader = new Panel { Dock = DockStyle.Top, Height = 32, BackColor = Color.Transparent, Padding = new Padding(4, 2, 4, 2) };
-
-            chkQuickInStockOnly = new CheckBox
-            {
-                Text = "رصيد متوفر فقط",
-                Dock = DockStyle.Left,
-                Width = 140,
-                ForeColor = Color.FromArgb(226, 232, 240),
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Checked = AppConfig.POSQuickInStockOnly,
-                Cursor = Cursors.Hand,
-                RightToLeft = RightToLeft.Yes
-            };
-            chkQuickInStockOnly.CheckedChanged += (s, e) =>
-            {
-                AppConfig.POSQuickInStockOnly = chkQuickInStockOnly.Checked;
-                FilterQuickItems(_currentQuickCategoryId);
-            };
-
-            var lQuick = new Label { Text = "⚡ أصناف سريعة", Dock = DockStyle.Fill, ForeColor = Theme.Accent, Font = new Font("Segoe UI", 10f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, BackColor = Color.Transparent };
-            pnlQuickHeader.Controls.Add(lQuick);
-            pnlQuickHeader.Controls.Add(chkQuickInStockOnly);
-
             flowQuickItems = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Transparent, FlowDirection = FlowDirection.RightToLeft, RightToLeft = RightToLeft.Yes };
             pnlQuick.Controls.Add(flowQuickItems);
             pnlQuick.Controls.Add(flowCategories);
-            pnlQuick.Controls.Add(pnlQuickHeader);
             this.Controls.Add(pnlQuick);
 
             // ── لوحة الإجماليات ───────────────────────────────
@@ -1000,10 +975,10 @@ namespace ChickenDist.Forms
             btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnRecall.Click += (s, e) => RecallDraftSale();
 
-            btnIncompletePOS = Theme.MakeButton("📂 فواتير\nغير مكتملة", Color.FromArgb(70, 40, 130), new Point(0, 128), new Size(115, 56));
-            btnIncompletePOS.Name = "btnIncompletePOS";
-            btnIncompletePOS.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            btnIncompletePOS.Click += (s, e) => OpenIncompletePOSDialog();
+            btnClientPayment = Theme.MakeButton("📥 توريد\nمن عميل", Color.FromArgb(16, 120, 140), new Point(0, 128), new Size(115, 56));
+            btnClientPayment.Name = "btnClientPayment";
+            btnClientPayment.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnClientPayment.Click += (s, e) => OpenClientPaymentDialog();
 
             if (AppConfig.IsClothing)
             {
@@ -1030,7 +1005,7 @@ namespace ChickenDist.Forms
             pnlTotals.Controls.Add(btnOpenDrawer);
             pnlTotals.Controls.Add(btnSuspend);
             pnlTotals.Controls.Add(btnRecall);
-            pnlTotals.Controls.Add(btnIncompletePOS);
+            pnlTotals.Controls.Add(btnClientPayment);
 
             // ── بون الخصم (Voucher Code) ──
             txtVoucherCode = new TextBox
@@ -1262,10 +1237,10 @@ namespace ChickenDist.Forms
             if (btnModelLookup != null && btnModelLookup.Visible)
                 orderedButtons.Add((btnModelLookup, 125, 95));
 
-            // 3) إدارة طلبات وحالات الفواتير (الوسط)
-            var incompleteBtn = btnIncompletePOS ?? pnlTotals.Controls["btnIncompletePOS"];
-            if (incompleteBtn != null && incompleteBtn.Visible)
-                orderedButtons.Add((incompleteBtn, 115, 85));
+            // 3) إدارة طلبات وحالات الفواتير والتوريد (الوسط)
+            var clientPayBtn = btnClientPayment ?? pnlTotals.Controls["btnClientPayment"];
+            if (clientPayBtn != null && clientPayBtn.Visible)
+                orderedButtons.Add((clientPayBtn, 115, 85));
 
             if (btnRecall != null && btnRecall.Visible)
                 orderedButtons.Add((btnRecall, 120, 90));
@@ -3451,6 +3426,145 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void OpenClientPaymentDialog()
+        {
+            using var dlg = new Form
+            {
+                Text = "📥 توريد نقدية من عميل (سند قبض)",
+                Size = new Size(460, 430),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                RightToLeft = RightToLeft.Yes,
+                RightToLeftLayout = true,
+                BackColor = Color.FromArgb(245, 247, 250),
+                Font = new Font("Segoe UI", 10f)
+            };
+
+            var lblC = new Label { Text = "العميل:", Location = new Point(25, 18), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            var cboC = new ComboBox { Location = new Point(25, 42), Size = new Size(390, 30), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10.5f) };
+
+            var dtClients = ClientDAL.GetAll(activeOnly: true);
+            int preselectedClientId = (cboClient?.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.ID : 0;
+            int selIndex = -1;
+            for (int i = 0; i < dtClients.Rows.Count; i++)
+            {
+                var r = dtClients.Rows[i];
+                int id = Convert.ToInt32(r["ClientID"]);
+                string name = r["ClientName"].ToString();
+                cboC.Items.Add(new ComboItem(id, name));
+                if (id == preselectedClientId) selIndex = i;
+            }
+            if (selIndex >= 0) cboC.SelectedIndex = selIndex;
+            else if (cboC.Items.Count > 0) cboC.SelectedIndex = 0;
+
+            var lblBal = new Label { Text = "الرصيد الحالي: 0.00 ج", Location = new Point(25, 78), Size = new Size(390, 25), ForeColor = Color.FromArgb(30, 64, 175), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+
+            var updateBalance = new Action(() =>
+            {
+                if (cboC.SelectedItem is ComboItem cItem && cItem.ID > 0)
+                {
+                    decimal bal = ClientDAL.GetBalance(cItem.ID);
+                    lblBal.Text = $"الرصيد الحالي: {bal:N2} ج " + (bal > 0 ? "(عليه مديونية)" : (bal < 0 ? "(له رصيد دائن)" : "(خالص)"));
+                    lblBal.ForeColor = bal > 0 ? Color.FromArgb(185, 28, 28) : Color.FromArgb(16, 120, 140);
+                }
+                else
+                {
+                    lblBal.Text = "الرصيد الحالي: 0.00 ج";
+                }
+            });
+            cboC.SelectedIndexChanged += (s, e) => updateBalance();
+            updateBalance();
+
+            var lblAmt = new Label { Text = "المبلغ المحصَّل (المورَّد):", Location = new Point(25, 110), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            var txtAmt = new TextBox { Location = new Point(25, 134), Size = new Size(390, 34), Font = new Font("Segoe UI", 13f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, BackColor = Color.White };
+
+            var lblSafe = new Label { Text = "الخزنة / الدرج المستلم:", Location = new Point(25, 178), AutoSize = true, Font = new Font("Segoe UI", 9.5f) };
+            var cboSafe = new ComboBox { Location = new Point(25, 202), Size = new Size(390, 28), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
+
+            var dtSafes = AccountDAL.GetAllowedSafeAccounts();
+            int defSafe = Session.GetDefaultSafeID();
+            int safeSel = 0;
+            for (int i = 0; i < dtSafes.Rows.Count; i++)
+            {
+                var sr = dtSafes.Rows[i];
+                int sId = Convert.ToInt32(sr["AccountID"]);
+                string sName = sr["AccountName"].ToString();
+                cboSafe.Items.Add(new ComboItem(sId, sName));
+                if (sId == defSafe) safeSel = i;
+            }
+            if (cboSafe.Items.Count > 0) cboSafe.SelectedIndex = safeSel;
+
+            var lblNotes = new Label { Text = "ملاحظات / البيان:", Location = new Point(25, 240), AutoSize = true, Font = new Font("Segoe UI", 9.5f) };
+            var txtNotes = new TextBox { Location = new Point(25, 264), Size = new Size(390, 26), Font = new Font("Segoe UI", 9.5f), Text = "توريد نقدية من شاشة POS" };
+
+            var btnSave = new Button
+            {
+                Text = "💾 حفظ وطباعة / إرسال",
+                Location = new Point(25, 312),
+                Size = new Size(240, 44),
+                BackColor = Color.FromArgb(16, 120, 140),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnSave.FlatAppearance.BorderSize = 0;
+
+            var btnCancel = new Button
+            {
+                Text = "إلغاء",
+                Location = new Point(275, 312),
+                Size = new Size(140, 44),
+                BackColor = Color.FromArgb(200, 205, 215),
+                ForeColor = Color.FromArgb(40, 40, 40),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10.5f),
+                Cursor = Cursors.Hand
+            };
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.Click += (s, e) => dlg.Close();
+
+            btnSave.Click += (s, e) =>
+            {
+                if (!(cboC.SelectedItem is ComboItem cItem) || cItem.ID <= 0)
+                {
+                    MessageBox.Show("يرجى اختيار العميل أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                if (!decimal.TryParse(txtAmt.Text.Trim(), out decimal amt) || amt <= 0)
+                {
+                    MessageBox.Show("يرجى إدخال مبلغ صحيح أكبر من الصفر!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtAmt.Focus();
+                    return;
+                }
+
+                int? chosenSafe = (cboSafe.SelectedItem is ComboItem sItem && sItem.ID > 0) ? sItem.ID : (int?)null;
+                string notes = txtNotes.Text.Trim();
+
+                try
+                {
+                    ClientDAL.AddPayment(cItem.ID, amt, notes, chosenSafe);
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+
+                    try { LoadClients(); } catch { }
+
+                    var prt = new FrmPrintClientPayment(cItem.ID, amt, notes, chosenSafe, cItem.Text);
+                    prt.ShowOptionsDialog(this);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء حفظ التوريد:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+
+            dlg.Controls.AddRange(new Control[] { lblC, cboC, lblBal, lblAmt, txtAmt, lblSafe, cboSafe, lblNotes, txtNotes, btnSave, btnCancel });
+            dlg.Shown += (s, e) => { txtAmt.Focus(); txtAmt.SelectAll(); };
+            dlg.ShowDialog(this);
+        }
+
         private void RestorePOSFromDraft(string json, int draftId, string draftKey = null)
         {
             try
@@ -3692,7 +3806,6 @@ namespace ChickenDist.Forms
             _currentQuickCategoryId = categoryID;
             flowQuickItems.Controls.Clear();
 
-            bool inStockOnly = chkQuickInStockOnly == null || chkQuickInStockOnly.Checked;
             int whId = GetSelectedWarehouseID();
             var stockMap = StockCache.GetStockSummary(whId);
 
@@ -3731,9 +3844,9 @@ namespace ChickenDist.Forms
                 bool isService = Convert.ToBoolean(row["IsService"]);
                 decimal stock = stockMap.TryGetValue(pid, out var s) ? s : 0m;
 
-                if (inStockOnly && stock <= 0 && !isService)
+                if (stock <= 0 && !isService)
                 {
-                    continue; // إخفاء الأصناف غير المتوفرة في المخزن المحدد
+                    continue; // إظهار الأصناف التي لها رصيد متوفر فقط في المخزن المحدد
                 }
 
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
@@ -3879,12 +3992,12 @@ namespace ChickenDist.Forms
             }
             flowCategories.Visible = true;
 
-            Font catFont = new Font("Segoe UI", 9f, FontStyle.Bold);
+            Font catFont = new Font("Segoe UI", 10.5f, FontStyle.Bold);
 
             var btnAll = new Button
             {
                 Text = "الكل",
-                Size = new Size(60, 28),
+                Size = new Size(72, 36),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.Primary,
                 ForeColor = Color.White,
@@ -3904,12 +4017,12 @@ namespace ChickenDist.Forms
                 int catId = Convert.ToInt32(row["CategoryID"]);
                 string catName = row["CategoryName"].ToString();
 
-                int btnWidth = Math.Max(75, TextRenderer.MeasureText(catName, catFont).Width + 18);
+                int btnWidth = Math.Max(88, TextRenderer.MeasureText(catName, catFont).Width + 24);
 
                 var btnCat = new Button
                 {
                     Text = catName,
-                    Size = new Size(btnWidth, 28),
+                    Size = new Size(btnWidth, 36),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(60, 70, 85),
                     ForeColor = Color.White,
