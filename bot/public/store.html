@@ -408,6 +408,27 @@
       </button>
     </div>
 
+    <!-- شريط تنبيه الصنف المشارك (Shared Product Banner) -->
+    <div id="sharedProductBanner" class="hidden glass-card bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/80 border border-blue-500/50 rounded-2xl p-3 sm:p-4 mb-4 flex items-center justify-between gap-3 text-right shadow-xl">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-blue-600/30 text-blue-400 flex items-center justify-center text-base flex-shrink-0 border border-blue-500/30">
+          <i class="fa-solid fa-bullhorn animate-pulse"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs sm:text-sm font-black text-white truncate">
+            📌 أنت تتصفح الصنف المشارك حالياً: <span class="text-blue-300 font-extrabold" id="sharedProductNameLabel"></span>
+          </div>
+          <div class="text-[10px] sm:text-[11px] text-slate-300 truncate">
+            اضغط لمشاهدة تفاصيل الصنف أو استعرض كامل أصناف المنيو
+          </div>
+        </div>
+      </div>
+      <button onclick="clearSharedProductFilter()" class="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 transition flex-shrink-0 shadow-md active:scale-95 cursor-pointer">
+        <i class="fa-solid fa-store text-xs"></i>
+        <span>عرض كامل المنيو</span>
+      </button>
+    </div>
+
     <!-- شبكة كروت المنتجات -->
     <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"></div>
 
@@ -763,36 +784,34 @@
 
       <!-- قسم هواتف الآيفون (iOS Safari) -->
       <div id="iosInstallGuideSection" class="hidden space-y-3">
-        <div class="p-3 bg-indigo-950/50 border border-indigo-500/30 rounded-xl text-xs text-indigo-200 leading-relaxed">
-          <p class="font-bold mb-2 flex items-center gap-1.5 text-white">
-            <i class="fa-brands fa-apple text-base"></i>
-            خطوات التثبيت على هواتف الآيفون (Safari):
+        <div class="p-3 bg-indigo-950/60 border border-indigo-500/40 rounded-2xl text-xs text-indigo-200 leading-relaxed space-y-2.5">
+          <p class="font-bold flex items-center gap-2 text-white">
+            <i class="fa-brands fa-apple text-lg text-white"></i>
+            <span>تثبيت التطبيق على الآيفون (Safari):</span>
           </p>
-          <ol class="space-y-2 text-[11px] text-slate-300 list-decimal list-inside pr-1">
-            <li>
-              اضغط على أيقونة المشاركة 
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-600/30 text-blue-300 font-bold rounded border border-blue-500/40 text-xs">
-                <i class="fa-solid fa-arrow-up-from-bracket"></i> المشاركة (Share)
-              </span> 
-              في أسفل متصفح Safari.
-            </li>
-            <li>
-              مرر القائمة للأعلى قليلاً واختر 
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-600/30 text-emerald-300 font-bold rounded border border-emerald-500/40 text-xs">
-                <i class="fa-regular fa-square-plus"></i> إضافة إلى الشاشة الرئيسية (Add to Home Screen)
-              </span>
-            </li>
-            <li>
-              اضغط على كلمة 
-              <span class="inline-flex items-center px-2 py-0.5 bg-slate-800 text-white font-bold rounded border border-slate-700 text-xs">
-                إضافة (Add)
-              </span> 
-              في أعلى اليمين.
-            </li>
-          </ol>
+          <div class="space-y-2 text-[11px] text-slate-200">
+            <div class="flex items-start gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">1</span>
+              <span>اضغط على زر المشاركة <span class="text-blue-400 font-bold mx-0.5"><i class="fa-solid fa-arrow-up-from-bracket"></i> (Share)</span> في أسفل متصفح Safari.</span>
+            </div>
+            <div class="flex items-start gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+              <span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">2</span>
+              <span>مرر القائمة للأعلى واختر <span class="text-emerald-400 font-bold mx-0.5"><i class="fa-regular fa-square-plus"></i> "إضافة إلى الشاشة الرئيسية" (Add to Home Screen)</span>.</span>
+            </div>
+            <div class="flex items-start gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+              <span class="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">3</span>
+              <span>اضغط على كلمة <b class="text-white mx-0.5">"إضافة" (Add)</b> أعلى اليمين وسيثبت كأيقونة تطبيق كاملة!</span>
+            </div>
+          </div>
         </div>
+
+        <button onclick="triggerIosShareSheet()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-arrow-up-from-bracket text-sm"></i>
+          <span>فتح قائمة المشاركة والتثبيت الآن 📲</span>
+        </button>
+
         <p class="text-[11px] text-emerald-400 font-bold text-center">
-          ✨ ستظهر أيقونة المتجر فوراً على شاشة هاتفك وتفتح كتطبيق كامل بدون شريط متصفح!
+          ✨ يفتح كتطبيق مستقل وسريع جداً بدون شريط متصفح!
         </p>
       </div>
 
@@ -911,15 +930,21 @@
   <div id="productGalleryModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4" onclick="if(event.target===this) closeProductGalleryModal()">
     <div class="glass-card rounded-3xl p-4 sm:p-5 w-full max-w-md shadow-2xl border border-slate-700 text-right relative overflow-hidden flex flex-col max-h-[92vh]">
       
-      <!-- الهيدر: التصنيف وزر الإغلاق -->
+      <!-- الهيدر: التصنيف وزر المشاركة والإغلاق -->
       <div class="flex items-center justify-between pb-3 border-b border-slate-800 flex-shrink-0">
         <div class="flex items-center gap-2">
           <span id="galleryCategoryBadge" class="text-xs font-bold text-blue-400 bg-blue-950/60 px-2.5 py-1 rounded-full border border-blue-500/30">عام</span>
           <span id="galleryStockBadge" class="text-xs font-bold px-2 py-0.5 rounded-full"></span>
         </div>
-        <button onclick="closeProductGalleryModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
-          <i class="fa-solid fa-xmark text-sm"></i>
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="shareActiveGalleryProduct()" title="مشاركة رابط هذا الصنف" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white flex items-center gap-1.5 transition text-xs font-bold border border-slate-700/80 active:scale-95 cursor-pointer">
+            <i class="fa-solid fa-share-nodes text-xs text-blue-400"></i>
+            <span>مشاركة</span>
+          </button>
+          <button onclick="closeProductGalleryModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
       </div>
 
       <!-- محتوى المعرض المنزلق وتفاصيل المنتج -->
@@ -968,6 +993,94 @@
   </div>
 
   <!-- ========================================== -->
+  <!-- 11. نافذة تأكيد الخروج من المتجر (EXIT CONFIRMATION MODAL) -->
+  <!-- ========================================== -->
+  <div id="exitConfirmModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-slate-700 text-center relative overflow-hidden space-y-4">
+      <div class="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mx-auto border border-amber-500/30 shadow-inner">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </div>
+      <div>
+        <h3 class="text-base sm:text-lg font-black text-white">هل تريد الخروج من المتجر؟</h3>
+        <p class="text-xs text-slate-300 mt-1">هل أنت متأكد من رغبتك في مغادرة الموقع؟</p>
+      </div>
+      <div class="space-y-2 pt-2">
+        <button onclick="closeExitConfirmModal()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span>البقاء في المتجر ومتابعة التسوق</span>
+        </button>
+        <button onclick="confirmExitStore()" class="w-full py-2.5 bg-slate-800 hover:bg-rose-950/60 hover:text-rose-400 hover:border-rose-500/40 text-slate-400 font-bold rounded-xl text-xs transition border border-slate-700/80 active:scale-95 cursor-pointer">
+          <span>نعم، مغادرة المتجر</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 12. نافذة التوجيه لمتصفح Safari للآيفون (IOS IN-APP BROWSER MODAL) -->
+  <!-- ========================================== -->
+  <div id="iosInAppModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-indigo-500/50 text-right relative overflow-hidden space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg">
+            <i class="fa-brands fa-apple"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-white text-sm">تثبيت التطبيق على الآيفون</h3>
+            <span class="text-[10px] text-slate-400">يلزم الفتح في متصفح Safari</span>
+          </div>
+        </div>
+        <button onclick="closeIosInAppModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 leading-relaxed space-y-2">
+        <p class="font-extrabold text-amber-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          أنت تتصفح من داخل تطبيق (واتساب / فيسبوك)
+        </p>
+        <p class="text-[11px] text-slate-300">
+          نظام حماية Apple يمنع تثبيت التطبيقات من داخل متصفحات الشات. للتثبيت على هاتفك بسهولة:
+        </p>
+        <ol class="text-[11px] text-slate-200 list-decimal list-inside space-y-1.5 pr-1 font-bold">
+          <li>اضغط على أيقونة (⋯) أو المشاركة أعلى أو أسفل الشاشة.</li>
+          <li>اختر <span class="text-white underline">فتح في Safari (Open in Safari)</span>.</li>
+          <li>من Safari، اضغط 'تثبيت' وسيثبت التطبيق فوراً!</li>
+        </ol>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <button onclick="copyCurrentStoreLink()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition active:scale-95 cursor-pointer">
+          <i class="fa-regular fa-copy"></i>
+          <span>نسخ الرابط لفتحه في Safari</span>
+        </button>
+        <button onclick="closeIosInAppModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          متابعة التصفح هنا
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- مؤشر توجيه سفاري العائم أسفل الشاشة (IOS SAFARI POINTER BAR) -->
+  <div id="iosSafariPointerBar" class="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:max-w-md z-50 hidden transition-all duration-300">
+    <div class="bg-indigo-950/95 border-2 border-indigo-400 rounded-2xl p-3 shadow-2xl backdrop-blur-md text-center text-white space-y-1">
+      <div class="text-xs font-black flex items-center justify-center gap-2 text-indigo-300">
+        <i class="fa-solid fa-arrow-down animate-bounce text-base text-amber-400"></i>
+        <span>من شريط Safari بالأسفل: اضغط أيقونة المشاركة ⎋</span>
+        <i class="fa-solid fa-arrow-down animate-bounce text-base text-amber-400"></i>
+      </div>
+      <div class="text-[11px] text-slate-200">
+        ثم مرر القائمة للأعلى واختر <b class="text-emerald-400">"إضافة إلى الشاشة الرئيسية" ➕</b> ثم "إضافة"
+      </div>
+      <button onclick="dismissIosPointerBar()" class="mt-1 px-3 py-1 bg-indigo-600/60 hover:bg-indigo-600 text-[10px] font-bold rounded-lg text-white cursor-pointer">
+        تم، إغلاق الإرشاد ✕
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
   <!-- JavaScript Logic -->
   <!-- ========================================== -->
   <script>
@@ -1004,14 +1117,28 @@
     let cart = []; // [{ ProductID, ProductName, Unit, Price, Quantity, TotalPrice }]
     let selectedCatID = 0;
     let lastCreatedOrder = null;
+    let activeSharedProductId = null; // معرّف الصنف المشارك حالياً للفلترة الفردية
+    let allowExitWithoutPrompt = false; // راية السماح بالخروج دون تكرار رسالة التأكيد
+
+    function isPureNumber(str) {
+      return typeof str === 'string' && /^\d+$/.test(str.trim());
+    }
 
     // تحديد مشروع Firebase تلقائياً وبأعلى دقة من معلمات الرابط أو اسم الدومين المخصص
     function getFirebaseProjectId() {
-      // 1. من معلمات الرابط (?project=... أو ?p=... أو ?proj=...)
       const urlParams = new URLSearchParams(window.location.search);
-      const qp = urlParams.get('project') || urlParams.get('p') || urlParams.get('proj');
+      // 1. من معلمات الرابط (?project=... أو ?proj=...)
+      const qp = urlParams.get('project') || urlParams.get('proj');
       if (qp && qp.trim()) {
         const clean = qp.trim();
+        try { localStorage.setItem('prosoft_store_project_id', clean); } catch (e) {}
+        return clean;
+      }
+
+      // إذا كان ?p= موجوداً وهو ليس رقماً مجرداً (لأن الرقم المجرد هو كود صنف مشارك)
+      const qpCandidate = urlParams.get('p');
+      if (qpCandidate && qpCandidate.trim() && !isPureNumber(qpCandidate)) {
+        const clean = qpCandidate.trim();
         try { localStorage.setItem('prosoft_store_project_id', clean); } catch (e) {}
         return clean;
       }
@@ -1119,8 +1246,28 @@
         showLoading(false);
         renderStoreHeader();
         renderCategoryPills();
+
+        // فحص وجود صنف مشارك في الرابط (?product=... أو ?item=... أو ?prod=... أو ?p=NUMBER)
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const pCandidate = urlParams.get('product') || urlParams.get('item') || urlParams.get('prod') || (isPureNumber(urlParams.get('p')) ? urlParams.get('p') : null);
+          if (pCandidate) {
+            const found = products.find(p => String(p.ProductID) === String(pCandidate));
+            if (found) {
+              activeSharedProductId = found.ProductID;
+            }
+          }
+        } catch(e) {}
+
         renderProducts();
         loadCartFromStorage();
+
+        // إذا كان هناك صنف مشارك تم جلبه، فتح نافذة صوره وتفاصيله تلقائياً للعميل
+        if (activeSharedProductId) {
+          setTimeout(() => {
+            openProductGalleryModal(activeSharedProductId);
+          }, 350);
+        }
       }
     }
 
@@ -1229,6 +1376,11 @@
     }
 
     function selectCategory(catId) {
+      if (activeSharedProductId) {
+        activeSharedProductId = null;
+        const banner = document.getElementById('sharedProductBanner');
+        if (banner) banner.classList.add('hidden');
+      }
       selectedCatID = catId;
       document.querySelectorAll('#categoryPillsContainer button').forEach(b => b.classList.remove('active-pill'));
       const activeBtn = document.getElementById(`pill-cat-${catId}`);
@@ -1237,6 +1389,11 @@
     }
 
     function clearSearch() {
+      if (activeSharedProductId) {
+        activeSharedProductId = null;
+        const banner = document.getElementById('sharedProductBanner');
+        if (banner) banner.classList.add('hidden');
+      }
       const input = document.getElementById('searchInput');
       if (input) input.value = '';
       const btn = document.getElementById('btnClearSearch');
@@ -1245,6 +1402,11 @@
     }
 
     function filterProducts() {
+      if (activeSharedProductId) {
+        activeSharedProductId = null;
+        const banner = document.getElementById('sharedProductBanner');
+        if (banner) banner.classList.add('hidden');
+      }
       const q = (document.getElementById('searchInput')?.value || '').trim();
       const btn = document.getElementById('btnClearSearch');
       if (btn) btn.classList.toggle('hidden', q.length === 0);
@@ -1255,6 +1417,8 @@
       const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
       let grid = document.getElementById('productsGrid');
       const empty = document.getElementById('emptyState');
+      const sharedBanner = document.getElementById('sharedProductBanner');
+      const sharedLabel = document.getElementById('sharedProductNameLabel');
 
       // حماية فائقة: إذا لم تكن شبكة الأصناف موجودة في DOM لسبب ما، يتم إنشاؤها فوراً
       if (!grid) {
@@ -1270,11 +1434,27 @@
         }
       }
 
-      const filtered = products.filter(p => {
-        if (selectedCatID !== 0 && selectedCatID !== '0' && String(p.CategoryID) !== String(selectedCatID)) return false;
-        if (q && !(p.ProductName || '').toLowerCase().includes(q) && !(p.ProductCode || '').toLowerCase().includes(q)) return false;
-        return true;
-      });
+      let filtered = [];
+      if (activeSharedProductId) {
+        const target = products.find(p => String(p.ProductID) === String(activeSharedProductId));
+        if (target) {
+          filtered = [target];
+          if (sharedBanner) sharedBanner.classList.remove('hidden');
+          if (sharedLabel) sharedLabel.textContent = target.ProductName;
+        } else {
+          activeSharedProductId = null;
+          if (sharedBanner) sharedBanner.classList.add('hidden');
+        }
+      }
+
+      if (!activeSharedProductId) {
+        if (sharedBanner) sharedBanner.classList.add('hidden');
+        filtered = products.filter(p => {
+          if (selectedCatID !== 0 && selectedCatID !== '0' && String(p.CategoryID) !== String(selectedCatID)) return false;
+          if (q && !(p.ProductName || '').toLowerCase().includes(q) && !(p.ProductCode || '').toLowerCase().includes(q)) return false;
+          return true;
+        });
+      }
 
       if (!filtered.length) {
         grid.innerHTML = '';
@@ -1345,6 +1525,13 @@
           return `
             <div class="glass-card rounded-2xl p-3 sm:p-4 border border-slate-800/80 hover:border-blue-500/40 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between relative overflow-hidden group">
               
+              <!-- زر مشاركة رابط هذا الصنف -->
+              <button onclick="event.stopPropagation(); shareProduct(${p.ProductID})" 
+                      title="مشاركة رابط هذا الصنف" 
+                      class="absolute top-2.5 left-2.5 z-20 w-8 h-8 rounded-xl bg-slate-900/85 hover:bg-blue-600 border border-slate-700/70 hover:border-blue-400 text-slate-300 hover:text-white flex items-center justify-center transition-all duration-200 shadow-md backdrop-blur-sm active:scale-90 cursor-pointer">
+                <i class="fa-solid fa-share-nodes text-xs"></i>
+              </button>
+
               <!-- صورة الصنف أو الأيقونة المنظمة -->
               ${imgHtml}
 
@@ -1561,31 +1748,46 @@
       const inCartQty = inCartItem ? inCartItem.Quantity : 0;
       const isOutOfStock = storeConfig.ShowStockQty && parseFloat(p.StockQty || 0) <= 0;
 
+      const shareBtnHtml = `
+        <button onclick="shareActiveGalleryProduct()" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700/80 flex-shrink-0 active:scale-95 cursor-pointer shadow-md" title="مشاركة رابط هذا الصنف">
+          <i class="fa-solid fa-share-nodes text-base text-blue-400 group-hover:text-white"></i>
+        </button>
+      `;
+
       if (inCartQty > 0) {
         container.innerHTML = `
-          <div class="flex items-center justify-between bg-slate-900 rounded-xl p-1.5 border border-blue-500/40">
-            <button onclick="updateItemQuantity(${p.ProductID}, -1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition">
-              <i class="fa-solid fa-minus text-xs"></i>
-            </button>
-            <span class="font-black text-white text-sm px-3">${inCartQty} في السلة</span>
-            <button onclick="updateItemQuantity(${p.ProductID}, 1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center transition">
-              <i class="fa-solid fa-plus text-xs"></i>
-            </button>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 flex items-center justify-between bg-slate-900 rounded-xl p-1.5 border border-blue-500/40">
+              <button onclick="updateItemQuantity(${p.ProductID}, -1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition">
+                <i class="fa-solid fa-minus text-xs"></i>
+              </button>
+              <span class="font-black text-white text-sm px-3">${inCartQty} في السلة</span>
+              <button onclick="updateItemQuantity(${p.ProductID}, 1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center transition">
+                <i class="fa-solid fa-plus text-xs"></i>
+              </button>
+            </div>
+            ${shareBtnHtml}
           </div>
         `;
       } else if (isOutOfStock) {
         container.innerHTML = `
-          <button disabled class="w-full py-3 bg-slate-800/80 text-rose-400 font-bold rounded-xl text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-rose-900/30">
-            <i class="fa-solid fa-ban text-rose-500"></i>
-            <span>غير متوفر حالياً بالمخزن</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button disabled class="flex-1 py-3 bg-slate-800/80 text-rose-400 font-bold rounded-xl text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-rose-900/30">
+              <i class="fa-solid fa-ban text-rose-500"></i>
+              <span>غير متوفر حالياً بالمخزن</span>
+            </button>
+            ${shareBtnHtml}
+          </div>
         `;
       } else {
         container.innerHTML = `
-          <button onclick="addToCart(${p.ProductID}); renderGalleryFooterAction();" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition">
-            <i class="fa-solid fa-cart-plus"></i>
-            <span>إضافة إلى السلة</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="addToCart(${p.ProductID}); renderGalleryFooterAction();" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition cursor-pointer">
+              <i class="fa-solid fa-cart-plus"></i>
+              <span>إضافة إلى السلة</span>
+            </button>
+            ${shareBtnHtml}
+          </div>
         `;
       }
     }
@@ -2305,8 +2507,241 @@ ${itemsText}
       } catch (e) {}
     }
 
+    // ──────────────────────────────────────────
+    // مشاركة الأصناف وروابطها (Product Sharing Engine)
+    // ──────────────────────────────────────────
+    function getProductShareUrl(productId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('product', productId);
+      url.searchParams.delete('item');
+      url.searchParams.delete('prod');
+      if (isPureNumber(url.searchParams.get('p'))) {
+        url.searchParams.delete('p');
+      }
+      if (!url.searchParams.has('project') && projectId && projectId !== 'checkin-192ab') {
+        url.searchParams.set('project', projectId);
+      }
+      return url.toString();
+    }
+
+    async function shareProduct(productId) {
+      const prod = products.find(p => String(p.ProductID) === String(productId));
+      if (!prod) return;
+
+      const shareUrl = getProductShareUrl(productId);
+      const shareTitle = `${prod.ProductName} | ${storeConfig.StoreName || 'متجرنا الإلكتروني'}`;
+      const priceText = storeConfig.ShowPrices && prod.Price ? `بسعر ${parseFloat(prod.Price).toFixed(2)} ج.م` : '';
+      const shareText = `شاهد صنف "${prod.ProductName}" ${priceText} في ${storeConfig.StoreName || 'متجرنا'}:`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl
+          });
+          showToast("✅ تم فتح نافذة المشاركة بنجاح");
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+
+      // بديل النسخ للحافظة (Clipboard Fallback)
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+        } else {
+          const tempInput = document.createElement('textarea');
+          tempInput.value = shareUrl;
+          tempInput.style.position = 'fixed';
+          tempInput.style.opacity = '0';
+          document.body.appendChild(tempInput);
+          tempInput.focus();
+          tempInput.select();
+          document.execCommand('copy');
+          document.body.removeChild(tempInput);
+        }
+        showToast("📋 تم نسخ رابط الصنف إلى الحافظة بنجاح!");
+      } catch (clipErr) {
+        prompt("انسخ رابط مشاركة هذا الصنف:", shareUrl);
+      }
+    }
+
+    function shareActiveGalleryProduct() {
+      if (activeGalleryProduct) {
+        shareProduct(activeGalleryProduct.ProductID);
+      }
+    }
+
+    function clearSharedProductFilter() {
+      activeSharedProductId = null;
+      const banner = document.getElementById('sharedProductBanner');
+      if (banner) banner.classList.add('hidden');
+      try {
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete('product');
+        cleanUrl.searchParams.delete('item');
+        cleanUrl.searchParams.delete('prod');
+        if (isPureNumber(cleanUrl.searchParams.get('p'))) {
+          cleanUrl.searchParams.delete('p');
+        }
+        window.history.replaceState({}, '', cleanUrl.toString());
+      } catch (e) {}
+      renderCategoryPills();
+      renderProducts();
+    }
+
+    // ──────────────────────────────────────────
+    // تأكيد الخروج من الموقع (Exit Confirmation Engine)
+    // ──────────────────────────────────────────
+    function beforeUnloadHandler(e) {
+      if (allowExitWithoutPrompt) return;
+      e.preventDefault();
+      e.returnValue = 'هل تريد الخروج من المتجر؟';
+      return 'هل تريد الخروج من المتجر؟';
+    }
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+
+    function openExitConfirmModal() {
+      const modal = document.getElementById('exitConfirmModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeExitConfirmModal() {
+      const modal = document.getElementById('exitConfirmModal');
+      if (modal) modal.classList.add('hidden');
+      try {
+        history.pushState({ page: 'store_home' }, '', window.location.href);
+      } catch (e) {}
+    }
+
+    function confirmExitStore() {
+      allowExitWithoutPrompt = true;
+      const modal = document.getElementById('exitConfirmModal');
+      if (modal) modal.classList.add('hidden');
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.close();
+      }
+    }
+
+    function closeAnyOpenModal() {
+      const modalIds = [
+        'exitConfirmModal',
+        'productGalleryModal',
+        'cartModal',
+        'checkoutModal',
+        'orderSuccessModal',
+        'myOrdersModal',
+        'pwaInstallModal',
+        'themeSelectorModal',
+        'iosInAppModal'
+      ];
+      for (const id of modalIds) {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) {
+          el.classList.add('hidden');
+          if (id === 'productGalleryModal') activeGalleryProduct = null;
+          dismissIosPointerBar();
+          return true;
+        }
+      }
+      return false;
+    }
+
+    try {
+      history.pushState({ page: 'store_home' }, '', window.location.href);
+      window.addEventListener('popstate', (e) => {
+        if (closeAnyOpenModal()) {
+          history.pushState({ page: 'store_home' }, '', window.location.href);
+          return;
+        }
+        openExitConfirmModal();
+      });
+    } catch (e) {}
+
+    // ──────────────────────────────────────────
+    // محرك تثبيت PWA للأندرويد والآيفون (iOS / Android PWA Engine)
+    // ──────────────────────────────────────────
+    function isIosDevice() {
+      return (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ||
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    function isIosInAppBrowser() {
+      const ua = navigator.userAgent || '';
+      return isIosDevice() && (/FBAN|FBAV|Instagram|WhatsApp|Line|Messenger|Twitter|Snapchat|TikTok|MicroMessenger/i.test(ua));
+    }
+
+    function openIosInAppModal() {
+      const m = document.getElementById('iosInAppModal');
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeIosInAppModal() {
+      const m = document.getElementById('iosInAppModal');
+      if (m) m.classList.add('hidden');
+    }
+
+    function copyCurrentStoreLink() {
+      const url = window.location.href;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url);
+        } else {
+          const t = document.createElement('textarea');
+          t.value = url;
+          document.body.appendChild(t);
+          t.select();
+          document.execCommand('copy');
+          document.body.removeChild(t);
+        }
+        showToast("📋 تم نسخ الرابط! افتح متصفح Safari والصقه للتثبيت.");
+      } catch(e) {
+        prompt("انسخ الرابط لفتحه في Safari:", url);
+      }
+    }
+
+    function showIosPointerBar() {
+      const bar = document.getElementById('iosSafariPointerBar');
+      if (bar) bar.classList.remove('hidden');
+    }
+
+    function dismissIosPointerBar() {
+      const bar = document.getElementById('iosSafariPointerBar');
+      if (bar) bar.classList.add('hidden');
+    }
+
+    async function triggerIosShareSheet() {
+      showIosPointerBar();
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: storeConfig.StoreName || 'المتجر الإلكتروني',
+            text: `طلب أونلاين من متجر ${storeConfig.StoreName || ''}`,
+            url: window.location.href
+          });
+        } catch(e) {}
+      }
+    }
+
     async function triggerStoreAppInstall() {
-      // 1. تجربة التثبيت التلقائي المباشر (مثل تطبيق المالك)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (isStandalone) {
+        showToast("🎉 التطبيق مثبت بالفعل على شاشتك الرئيسية ويعمل كتطبيق مستقل!");
+        return;
+      }
+
+      // فحص هل العميل على جهاز آيفون وداخل متصفح واتساب أو فيسبوك
+      if (isIosInAppBrowser()) {
+        openIosInAppModal();
+        return;
+      }
+
+      // 1. أجهزة أندرويد والكمبيوتر: تجربة التثبيت التلقائي المباشر
       if (deferredInstallPrompt) {
         try {
           deferredInstallPrompt.prompt();
@@ -2322,49 +2757,43 @@ ${itemsText}
         }
       }
 
-      // 2. إذا لم يكن متاحاً أو على جهاز iPhone، فتح نافذة الخطوات الإرشادية
-      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      const iosSection = document.getElementById('iosInstallGuideSection');
-      const androidSection = document.getElementById('androidInstallGuideSection');
-
-      if (isIos) {
+      // 2. إذا كان جهاز iPhone في متصفح Safari
+      if (isIosDevice()) {
+        const iosSection = document.getElementById('iosInstallGuideSection');
+        const androidSection = document.getElementById('androidInstallGuideSection');
         if (iosSection) iosSection.classList.remove('hidden');
         if (androidSection) androidSection.classList.add('hidden');
-      } else {
-        if (iosSection) iosSection.classList.add('hidden');
-        if (androidSection) androidSection.classList.remove('hidden');
+        document.getElementById('pwaInstallModal')?.classList.remove('hidden');
+        dismissAutoInstallBanner();
+        showIosPointerBar();
+
+        if (navigator.share) {
+          try {
+            navigator.share({
+              title: storeConfig.StoreName || 'المتجر الإلكتروني',
+              text: `طلب أونلاين من متجر ${storeConfig.StoreName || ''}`,
+              url: window.location.href
+            }).catch(() => {});
+          } catch(e) {}
+        }
+        return;
       }
 
+      // أجهزة أندرويد والكمبيوتر بدون موجه مباشر
+      const iosSection = document.getElementById('iosInstallGuideSection');
+      const androidSection = document.getElementById('androidInstallGuideSection');
+      if (iosSection) iosSection.classList.add('hidden');
+      if (androidSection) androidSection.classList.remove('hidden');
       document.getElementById('pwaInstallModal')?.classList.remove('hidden');
     }
 
     function closePwaInstallModal() {
       document.getElementById('pwaInstallModal')?.classList.add('hidden');
+      dismissIosPointerBar();
     }
 
     async function executeBrowserPwaInstall() {
-      if (deferredInstallPrompt) {
-        try {
-          deferredInstallPrompt.prompt();
-          const { outcome } = await deferredInstallPrompt.userChoice;
-          if (outcome === 'accepted') {
-            showToast("🎉 تم تثبيت تطبيق المتجر بنجاح على الشاشة الرئيسية!");
-            closePwaInstallModal();
-            dismissAutoInstallBanner();
-            deferredInstallPrompt = null;
-            return;
-          }
-        } catch (err) {
-          console.log("Install prompt error:", err);
-        }
-      }
-
-      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      if (isIos) {
-        triggerStoreAppInstall();
-      } else {
-        showToast("📱 من قائمة المتصفح (⋮) اختر: 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'");
-      }
+      await triggerStoreAppInstall();
     }
 
     function generateStoreAppIconCanvas() {

@@ -1542,6 +1542,12 @@
           <span class="w-5 h-5 rounded-full bg-slate-800 text-brand-400 font-bold flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">3</span>
           <span>اضغط على <strong>"إضافة" (Add)</strong> في الزاوية العلوية وسيظهر التطبيق بلوجو المكان مباشرة على شاشتك.</span>
         </div>
+        <div class="pt-2">
+          <button onclick="triggerIosShareSheet()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition active:scale-95 cursor-pointer">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            <span>فتح قائمة المشاركة والتثبيت في Safari 📲</span>
+          </button>
+        </div>
       </div>
 
       <!-- خيارات إضافية: تنزيل الأيقونة أو فتح QR -->
@@ -1555,6 +1561,68 @@
           <span>رمز QR للموبايل</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- نافذة التوجيه لمتصفح Safari للآيفون لتطبيق المالك -->
+  <div id="iosInAppModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+    <div class="glass-card rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl border border-indigo-500/50 text-right relative overflow-hidden space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg">
+            <i class="fa-brands fa-apple"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-white text-sm">تثبيت التطبيق على الآيفون</h3>
+            <span class="text-[10px] text-slate-400">يلزم الفتح في متصفح Safari</span>
+          </div>
+        </div>
+        <button onclick="closeIosInAppModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 leading-relaxed space-y-2">
+        <p class="font-extrabold text-amber-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          أنت تتصفح من داخل تطبيق (واتساب / فيسبوك)
+        </p>
+        <p class="text-[11px] text-slate-300">
+          نظام حماية Apple يمنع تثبيت أي تطبيقات من داخل متصفحات الشات. للتثبيت على هاتفك بسهولة:
+        </p>
+        <ol class="text-[11px] text-slate-200 list-decimal list-inside space-y-1.5 pr-1 font-bold">
+          <li>اضغط على أيقونة (⋯) أو المشاركة أعلى أو أسفل الشاشة.</li>
+          <li>اختر <span class="text-white underline">فتح في Safari (Open in Safari)</span>.</li>
+          <li>من Safari، اضغط 'تثبيت' وسيثبت التطبيق فوراً!</li>
+        </ol>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <button onclick="copyCurrentAppUrl()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition active:scale-95 cursor-pointer">
+          <i class="fa-regular fa-copy"></i>
+          <span>نسخ الرابط لفتحه في Safari</span>
+        </button>
+        <button onclick="closeIosInAppModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          متابعة التصفح هنا
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- مؤشر توجيه سفاري العائم أسفل الشاشة لتطبيق المالك -->
+  <div id="iosSafariPointerBar" class="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:max-w-md z-50 hidden transition-all duration-300">
+    <div class="bg-indigo-950/95 border-2 border-indigo-400 rounded-2xl p-3 shadow-2xl backdrop-blur-md text-center text-white space-y-1">
+      <div class="text-xs font-black flex items-center justify-center gap-2 text-indigo-300">
+        <i class="fa-solid fa-arrow-down animate-bounce text-base text-amber-400"></i>
+        <span>من شريط Safari بالأسفل: اضغط أيقونة المشاركة ⎋</span>
+        <i class="fa-solid fa-arrow-down animate-bounce text-base text-amber-400"></i>
+      </div>
+      <div class="text-[11px] text-slate-200">
+        ثم مرر القائمة للأعلى واختر <b class="text-emerald-400">"إضافة إلى الشاشة الرئيسية" ➕</b> ثم "إضافة"
+      </div>
+      <button onclick="dismissIosPointerBar()" class="mt-1 px-3 py-1 bg-indigo-600/60 hover:bg-indigo-600 text-[10px] font-bold rounded-lg text-white cursor-pointer">
+        تم، إغلاق الإرشاد ✕
+      </button>
     </div>
   </div>
 
@@ -4271,7 +4339,82 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
       }
     }
 
+    function isIosDevice() {
+      return (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ||
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    function isIosInAppBrowser() {
+      const ua = navigator.userAgent || '';
+      return isIosDevice() && (/FBAN|FBAV|Instagram|WhatsApp|Line|Messenger|Twitter|Snapchat|TikTok|MicroMessenger/i.test(ua));
+    }
+
+    function openIosInAppModal() {
+      const m = document.getElementById('iosInAppModal');
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeIosInAppModal() {
+      const m = document.getElementById('iosInAppModal');
+      if (m) m.classList.add('hidden');
+    }
+
+    function copyCurrentAppUrl() {
+      const url = window.location.href;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url);
+        } else {
+          const t = document.createElement('textarea');
+          t.value = url;
+          document.body.appendChild(t);
+          t.select();
+          document.execCommand('copy');
+          document.body.removeChild(t);
+        }
+        showToast("📋 تم نسخ الرابط! افتح متصفح Safari والصقه للتثبيت.");
+      } catch(e) {
+        prompt("انسخ الرابط لفتحه في Safari:", url);
+      }
+    }
+
+    function showIosPointerBar() {
+      const bar = document.getElementById('iosSafariPointerBar');
+      if (bar) bar.classList.remove('hidden');
+    }
+
+    function dismissIosPointerBar() {
+      const bar = document.getElementById('iosSafariPointerBar');
+      if (bar) bar.classList.add('hidden');
+    }
+
+    async function triggerIosShareSheet() {
+      showIosPointerBar();
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: rawData?.StoreName || 'لوحة تحكم المالك',
+            text: `تطبيق ${rawData?.StoreName || 'المالك'}`,
+            url: window.location.href
+          });
+        } catch(e) {}
+      }
+    }
+
     async function triggerInstallApp() {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (isStandalone) {
+        showToast("🎉 التطبيق مثبت بالفعل على هاتفك ويعمل كتطبيق مستقل!");
+        return;
+      }
+
+      // فحص هل هو آيفون وداخل متصفح واتساب أو فيسبوك
+      if (isIosInAppBrowser()) {
+        openIosInAppModal();
+        return;
+      }
+
+      // 1. تجربة التثبيت التلقائي المباشر (أندرويد / كروم)
       if (deferredInstallPrompt) {
         try {
           deferredInstallPrompt.prompt();
@@ -4286,14 +4429,26 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
         }
       }
 
-      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      const iosSection = document.getElementById('installIosSection');
-      const androidSection = document.getElementById('installAndroidSection');
-
-      if (isIos) {
+      // 2. إذا كان جهاز iPhone في متصفح Safari
+      if (isIosDevice()) {
+        const iosSection = document.getElementById('installIosSection');
+        const androidSection = document.getElementById('installAndroidSection');
         if (iosSection) iosSection.classList.remove('hidden');
         if (androidSection) androidSection.classList.add('hidden');
+        showIosPointerBar();
+
+        if (navigator.share) {
+          try {
+            navigator.share({
+              title: rawData?.StoreName || 'لوحة تحكم المالك',
+              text: `تطبيق ${rawData?.StoreName || 'المالك'}`,
+              url: window.location.href
+            }).catch(() => {});
+          } catch(e) {}
+        }
       } else {
+        const iosSection = document.getElementById('installIosSection');
+        const androidSection = document.getElementById('installAndroidSection');
         if (iosSection) iosSection.classList.add('hidden');
         if (androidSection) androidSection.classList.remove('hidden');
       }
@@ -4307,30 +4462,11 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
 
     function closeInstallModal() {
       document.getElementById('installModal')?.classList.add('hidden');
+      dismissIosPointerBar();
     }
 
     async function executePwaInstall() {
-      if (deferredInstallPrompt) {
-        try {
-          deferredInstallPrompt.prompt();
-          const { outcome } = await deferredInstallPrompt.userChoice;
-          if (outcome === 'accepted') {
-            showToast("🎉 تم تثبيت التطبيق على الشاشة الرئيسية بنجاح!");
-            closeInstallModal();
-          }
-          deferredInstallPrompt = null;
-          return;
-        } catch (err) {
-          console.log("Prompt error:", err);
-        }
-      }
-      
-      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      if (isIos) {
-        showToast("🍏 من أسفل متصفح Safari اضغط على زر المشاركة ثم 'إضافة إلى الصفحة الرئيسية'");
-      } else {
-        showToast("📱 من قائمة المتصفح (⋮) اختر: 'تثبيت التطبيق' أو 'إضافة للشاشة الرئيسية'");
-      }
+      await triggerInstallApp();
     }
 
     function downloadAppIconPng() {
