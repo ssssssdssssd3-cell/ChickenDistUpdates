@@ -276,53 +276,29 @@ namespace ChickenDist.Forms
                 bool isClient = cboPurchaseSource.SelectedIndex == 1;
                 if (isClient)
                 {
+                    int prevMax = 0;
+                    object prevMaxObj = DbHelper.Scalar("SELECT ISNULL(MAX(ClientID), 0) FROM Clients");
+                    if (prevMaxObj != null && int.TryParse(prevMaxObj.ToString(), out int pm)) prevMax = pm;
+
                     new FrmClients().ShowDialog();
-                    LoadCombos();
+
                     object latestIdObj = DbHelper.Scalar("SELECT TOP 1 ClientID FROM Clients ORDER BY ClientID DESC");
-                    if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
-                    {
-                        var allItems = cboSupplier.Tag as List<ComboItem>;
-                        if (allItems != null)
-                        {
-                            cboSupplier.BeginUpdate();
-                            cboSupplier.Items.Clear();
-                            cboSupplier.Items.AddRange(allItems.ToArray());
-                            cboSupplier.EndUpdate();
-                        }
-                        for (int i = 0; i < cboSupplier.Items.Count; i++)
-                        {
-                            if (cboSupplier.Items[i] is ComboItem ci && ci.ID == latestId)
-                            {
-                                cboSupplier.SelectedIndex = i;
-                                break;
-                            }
-                        }
-                    }
+                    int latestId = (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int lid)) ? lid : 0;
+                    int? targetId = latestId > prevMax ? (int?)latestId : null;
+                    LoadCombos(reloadParties: true, reloadProducts: false, explicitPartyId: targetId);
                 }
                 else
                 {
+                    int prevMax = 0;
+                    object prevMaxObj = DbHelper.Scalar("SELECT ISNULL(MAX(SupplierID), 0) FROM Suppliers");
+                    if (prevMaxObj != null && int.TryParse(prevMaxObj.ToString(), out int pm)) prevMax = pm;
+
                     new FrmSuppliers().ShowDialog();
-                    LoadCombos();
+
                     object latestIdObj = DbHelper.Scalar("SELECT TOP 1 SupplierID FROM Suppliers ORDER BY SupplierID DESC");
-                    if (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int latestId) && latestId > 0)
-                    {
-                        var allItems = cboSupplier.Tag as List<ComboItem>;
-                        if (allItems != null)
-                        {
-                            cboSupplier.BeginUpdate();
-                            cboSupplier.Items.Clear();
-                            cboSupplier.Items.AddRange(allItems.ToArray());
-                            cboSupplier.EndUpdate();
-                        }
-                        for (int i = 0; i < cboSupplier.Items.Count; i++)
-                        {
-                            if (cboSupplier.Items[i] is ComboItem ci && ci.ID == latestId)
-                            {
-                                cboSupplier.SelectedIndex = i;
-                                break;
-                            }
-                        }
-                    }
+                    int latestId = (latestIdObj != null && int.TryParse(latestIdObj.ToString(), out int lid)) ? lid : 0;
+                    int? targetId = latestId > prevMax ? (int?)latestId : null;
+                    LoadCombos(reloadParties: true, reloadProducts: false, explicitPartyId: targetId);
                 }
             };
 
@@ -572,7 +548,7 @@ namespace ChickenDist.Forms
                                 ComboItem prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
                                 if (prodItem == null)
                                 {
-                                    LoadCombos();
+                                    LoadCombos(reloadParties: false, reloadProducts: true);
                                     prodItem = GetProductComboItem(dlgSearch.SelectedProductID);
                                 }
                                 string prodCode = prodItem?.ProductCode ?? "";
@@ -596,6 +572,19 @@ namespace ChickenDist.Forms
                                 if (AppConfig.LockPurchaseToMajorUnit)
                                 {
                                     matchedUnit = 3;
+                                    if (prodItem != null)
+                                    {
+                                        decimal majorCost = prodItem.PurchasePrice > 0 ? prodItem.PurchasePrice : prodItem.Extra;
+                                        if (dlgSearch.SelectedUnitName == prodItem.BaseUnitName || string.IsNullOrEmpty(dlgSearch.SelectedUnitName))
+                                        {
+                                            purchasePrice = dlgSearch.SelectedPurchasePrice > 0 ? dlgSearch.SelectedPurchasePrice : majorCost;
+                                        }
+                                        else
+                                        {
+                                            purchasePrice = majorCost > 0 ? majorCost : dlgSearch.SelectedPurchasePrice;
+                                        }
+                                        salePrice = prodItem.Price > 0 ? prodItem.Price : dlgSearch.SelectedSalePrice;
+                                    }
                                 }
                                 _pendingMatchedUnit = matchedUnit;
 
@@ -620,6 +609,8 @@ namespace ChickenDist.Forms
                                             decimal u2f = prodItem != null && prodItem.Unit2Factor > 0 ? prodItem.Unit2Factor : 1m;
                                             decimal u3f = prodItem != null && prodItem.Unit3Factor > 0 ? prodItem.Unit3Factor : 1m;
                                             lastItem.Factor = u2f * u3f;
+                                            lastItem.UnitPrice = purchasePrice;
+                                            lastItem.SuggestedSalePrice = salePrice;
                                         }
                                         else if (!string.IsNullOrEmpty(dlgSearch.SelectedUnitName))
                                         {
@@ -1328,6 +1319,12 @@ namespace ChickenDist.Forms
 			// ─── اختصارات تغيير الوحدات بالكيبورد (Ctrl + 1/2/3) ───
 			if (e.Control && (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1 || e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2 || e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3))
 			{
+				if (AppConfig.LockPurchaseToMajorUnit && (e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2 || e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3))
+				{
+					MessageBox.Show("تم تفعيل خاصية قفل الشراء بالوحدة الكبرى فقط.\nلا يمكن التحويل إلى الوحدة الوسطى أو الصغرى في المشتريات.", "قفل الشراء بالوحدة الكبرى", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					e.Handled = true;
+					return;
+				}
 				if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
 				{
 					int rowIndex = dgItems.CurrentRow.Index;
@@ -1770,10 +1767,24 @@ namespace ChickenDist.Forms
 
         // ══════════════════════════════════════════════════════════════════════
         // تحميل الكومبوات
-        private void LoadCombos()
+        private void LoadCombos(bool reloadParties = true, bool reloadProducts = true, int? explicitPartyId = null)
         {
-            if (cboSupplier != null)
+            if (reloadParties && cboSupplier != null)
             {
+                int savedPartyId = explicitPartyId ?? 0;
+                if (savedPartyId <= 0)
+                {
+                    if (cboSupplier.SelectedItem is ComboItem currentCi && currentCi.ID > 0)
+                    {
+                        savedPartyId = currentCi.ID;
+                    }
+                    else if (cboSupplier.Tag is List<ComboItem> allTagItems && !string.IsNullOrWhiteSpace(cboSupplier.Text))
+                    {
+                        var matched = allTagItems.FirstOrDefault(x => x.ID > 0 && (x.Text.Equals(cboSupplier.Text, StringComparison.OrdinalIgnoreCase) || (x.ProductCode != null && x.ProductCode.Equals(cboSupplier.Text, StringComparison.OrdinalIgnoreCase))));
+                        if (matched != null) savedPartyId = matched.ID;
+                    }
+                }
+
                 bool isClient = cboPurchaseSource != null && cboPurchaseSource.SelectedIndex == 1;
                 cboSupplier.BeginUpdate();
                 cboSupplier.Items.Clear();
@@ -1815,103 +1826,126 @@ namespace ChickenDist.Forms
                 cboSupplier.Items.AddRange(partyItems.ToArray());
                 cboSupplier.Tag = partyItems;
                 cboSupplier.DisplayMember = "Text";
-                if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
+
+                int selIdx = 0;
+                if (savedPartyId > 0)
+                {
+                    for (int i = 0; i < partyItems.Count; i++)
+                    {
+                        if (partyItems[i].ID == savedPartyId)
+                        {
+                            selIdx = i;
+                            break;
+                        }
+                    }
+                }
+                if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = selIdx;
                 cboSupplier.EndUpdate();
             }
 
             // الأصناف
-            DataTable dtProd = ProductCache.GetActive();
-            cboProduct.BeginUpdate();
-            cboProduct.Items.Clear();
-            List<ComboItem> productItems = new List<ComboItem>();
-            productItems.Add(new ComboItem(0, "-- اختر الصنف --"));
-            foreach (DataRow r in dtProd.Rows)
+            if (reloadProducts && cboProduct != null)
             {
-                var ci = new ComboItem(
-                    Convert.ToInt32(r["ProductID"]),
-                    r["ProductName"].ToString(),
-                    r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m);
-                ci.Extra = r["PurchasePrice"] != DBNull.Value
-                    ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
-                ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
-                ci.InternationalCode = r["InternationalCode"]?.ToString() ?? "";
-                ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
-
-                // وحدات متعددة
-                ci.BaseUnitName = r["Unit"]?.ToString() ?? "";
-                ci.Unit1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : null;
-                ci.Unit1SalePrice = r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
-                ci.Unit1PurchasePrice = r["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1PurchasePrice"]) : 0m;
-                ci.Unit1Factor = 1m;
-                ci.Unit2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : null;
-                ci.Unit2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
-                ci.Unit2SalePrice = r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
-                ci.Unit2PurchasePrice = r["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2PurchasePrice"]) : 0m;
-                ci.Unit3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
-                ci.Unit1Barcode = r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
-                ci.Unit2Barcode = r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
-                ci.HasExpiry = r.Table.Columns.Contains("HasExpiry") && r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
-                ci.DefaultExpiryDays = r.Table.Columns.Contains("DefaultExpiryDays") && r["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(r["DefaultExpiryDays"]) : (int?)null;
-
-                productItems.Add(ci);
-            }
-            cboProduct.Items.AddRange(productItems.ToArray());
-            cboProduct.DisplayMember = "Text";
-            cboProduct.SelectedIndex = 0;
-            cboProduct.EndUpdate();
-            SetupSearchableCombo(cboProduct);
-            cboProduct.SelectedIndexChanged += (s, e) =>
-            {
-                if (_isScanningBarcode) return;
-                if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
+                DataTable dtProd = ProductCache.GetActive();
+                cboProduct.BeginUpdate();
+                cboProduct.Items.Clear();
+                List<ComboItem> productItems = new List<ComboItem>();
+                productItems.Add(new ComboItem(0, "-- اختر الصنف --"));
+                foreach (DataRow r in dtProd.Rows)
                 {
-                    if (!ValidateSupplierAndInvoiceBeforeAddingItem(true))
-                    {
-                        cboProduct.SelectedIndex = 0;
-                        return;
-                    }
-                    decimal price = ci.Extra;
-                    decimal salePrice = ci.Price;
-                    
-                    var timer = new System.Windows.Forms.Timer { Interval = 50 };
-                    timer.Tick += (ts, te) =>
-                    {
-                        timer.Stop();
-                        timer.Dispose();
-                        if (_isScanningBarcode) return;
-                        decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1m);
-                        _pendingBarcodeWeight = null;
-                        _pendingScaleWeight = null;
-                        AddProductToGrid(ci.ID, ci.ProductCode, ci.Text, qtyToAdd, price, 0m, salePrice);
-                        cboProduct.SelectedIndex = 0;
-                    };
-                    timer.Start();
+                    var ci = new ComboItem(
+                        Convert.ToInt32(r["ProductID"]),
+                        r["ProductName"].ToString(),
+                        r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m);
+                    ci.Extra = r["PurchasePrice"] != DBNull.Value
+                        ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                    ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
+                    ci.InternationalCode = r["InternationalCode"]?.ToString() ?? "";
+                    ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
+
+                    // وحدات متعددة
+                    ci.BaseUnitName = r["Unit"]?.ToString() ?? "";
+                    ci.Unit1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : null;
+                    ci.Unit1SalePrice = r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
+                    ci.Unit1PurchasePrice = r["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1PurchasePrice"]) : 0m;
+                    ci.Unit1Factor = 1m;
+                    ci.Unit2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : null;
+                    ci.Unit2Factor = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
+                    ci.Unit2SalePrice = r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
+                    ci.Unit2PurchasePrice = r["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2PurchasePrice"]) : 0m;
+                    ci.Unit3Factor = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
+                    ci.Unit1Barcode = r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
+                    ci.Unit2Barcode = r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
+                    ci.HasExpiry = r.Table.Columns.Contains("HasExpiry") && r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
+                    ci.DefaultExpiryDays = r.Table.Columns.Contains("DefaultExpiryDays") && r["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(r["DefaultExpiryDays"]) : (int?)null;
+
+                    productItems.Add(ci);
                 }
-            };
+                cboProduct.Items.AddRange(productItems.ToArray());
+                cboProduct.Tag = productItems;
+                cboProduct.DisplayMember = "Text";
+                cboProduct.SelectedIndex = 0;
+                cboProduct.EndUpdate();
+                SetupSearchableCombo(cboProduct);
+                cboProduct.SelectedIndexChanged -= CboProduct_SelectedIndexChanged;
+                cboProduct.SelectedIndexChanged += CboProduct_SelectedIndexChanged;
+            }
 
             // المخازن
-            try
+            if (cboWarehouse != null && cboWarehouse.Items.Count == 0)
             {
-                var whDt = Session.GetAllowedWarehouses(true);
-                cboWarehouse.BeginUpdate();
-                cboWarehouse.Items.Clear();
-                int defWhId = Session.GetDefaultWarehouseID();
-                int selIdx = 0;
-                for (int i = 0; i < whDt.Rows.Count; i++)
+                try
                 {
-                    int wid = Convert.ToInt32(whDt.Rows[i]["WarehouseID"]);
-                    string wname = whDt.Rows[i]["WarehouseName"].ToString();
-                    cboWarehouse.Items.Add(new ComboItem(wid, wname));
-                    if (wid == defWhId) selIdx = i;
+                    var whDt = Session.GetAllowedWarehouses(true);
+                    cboWarehouse.BeginUpdate();
+                    cboWarehouse.Items.Clear();
+                    int defWhId = Session.GetDefaultWarehouseID();
+                    int selIdx = 0;
+                    for (int i = 0; i < whDt.Rows.Count; i++)
+                    {
+                        int wid = Convert.ToInt32(whDt.Rows[i]["WarehouseID"]);
+                        string wname = whDt.Rows[i]["WarehouseName"].ToString();
+                        cboWarehouse.Items.Add(new ComboItem(wid, wname));
+                        if (wid == defWhId) selIdx = i;
+                    }
+                    cboWarehouse.DisplayMember = "Text";
+                    if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
+                    cboWarehouse.Enabled = Session.IsAdmin || whDt.Rows.Count > 1;
+                    cboWarehouse.EndUpdate();
                 }
-                cboWarehouse.DisplayMember = "Text";
-                if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
-                cboWarehouse.Enabled = Session.IsAdmin || whDt.Rows.Count > 1;
-                cboWarehouse.EndUpdate();
+                catch { /* تجاهل لو مافيش مخازن */ }
             }
-            catch { /* تجاهل لو مافيش مخازن */ }
 
             LoadSafeAccounts();
+        }
+
+        private void CboProduct_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isScanningBarcode) return;
+            if (cboProduct.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                if (!ValidateSupplierAndInvoiceBeforeAddingItem(true))
+                {
+                    cboProduct.SelectedIndex = 0;
+                    return;
+                }
+                decimal price = ci.Extra;
+                decimal salePrice = ci.Price;
+                
+                var timer = new System.Windows.Forms.Timer { Interval = 50 };
+                timer.Tick += (ts, te) =>
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    if (_isScanningBarcode) return;
+                    decimal qtyToAdd = _pendingBarcodeWeight ?? (_pendingScaleWeight ?? 1m);
+                    _pendingBarcodeWeight = null;
+                    _pendingScaleWeight = null;
+                    AddProductToGrid(ci.ID, ci.ProductCode, ci.Text, qtyToAdd, price, 0m, salePrice);
+                    cboProduct.SelectedIndex = 0;
+                };
+                timer.Start();
+            }
         }
 
         private void LoadSafeAccounts()
@@ -2020,64 +2054,89 @@ namespace ChickenDist.Forms
                 decimal u3f = product.Unit3Factor > 0 ? product.Unit3Factor : 1m;
                 decimal totalFactor = u2f * u3f;
 
-                // إذا لم يتم تحديد matchedUnit عبر باركود مخصص، نعتمد DefaultSaleUnit المحدد في كارت الصنف (إذا لم يكن الشراء مقفلاً على الكبرى)
-                if (!AppConfig.LockPurchaseToMajorUnit && matchedUnit == 3 && !string.IsNullOrEmpty(product.DefaultSaleUnit))
+                if (AppConfig.LockPurchaseToMajorUnit)
                 {
-                    string dsu = product.DefaultSaleUnit.Trim();
-                    if (dsu == "الصغرى" && !string.IsNullOrEmpty(product.Unit1Name)) matchedUnit = 1;
-                    else if (dsu == "الوسطى" && !string.IsNullOrEmpty(product.Unit2Name)) matchedUnit = 2;
-                }
-
-                if (matchedUnit == 1 && !string.IsNullOrEmpty(product.Unit1Name))
-                {
-                    defaultUnit = product.Unit1Name;
-                    defaultFactor = 1m;
-                    if (product.Unit1PurchasePrice > 0)
-                        defaultPrice = product.Unit1PurchasePrice;
-                    else if (price > 0 && price != majorCost)
+                    matchedUnit = 3;
+                    defaultUnit = !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName : "وحدة";
+                    defaultFactor = totalFactor > 0 ? totalFactor : 1m;
+                    if (price <= 0 || (product.Unit1PurchasePrice > 0 && price == product.Unit1PurchasePrice) || (product.Unit2PurchasePrice > 0 && price == product.Unit2PurchasePrice))
+                    {
+                        defaultPrice = majorCost > 0 ? majorCost : price;
+                    }
+                    else
+                    {
                         defaultPrice = price;
-                    else if (totalFactor > 0 && majorCost > 0)
-                        defaultPrice = Math.Round(majorCost / totalFactor, 2);
+                    }
+                    if (salePrice <= 0 || (product.Unit1SalePrice > 0 && salePrice == product.Unit1SalePrice) || (product.Unit2SalePrice > 0 && salePrice == product.Unit2SalePrice))
+                    {
+                        defaultSalePrice = majorSale > 0 ? majorSale : salePrice;
+                    }
                     else
-                        defaultPrice = price > 0 ? price : majorCost;
-
-                    if (product.Unit1SalePrice > 0)
-                        defaultSalePrice = product.Unit1SalePrice;
-                    else if (salePrice > 0 && salePrice != majorSale)
+                    {
                         defaultSalePrice = salePrice;
-                    else if (totalFactor > 0 && majorSale > 0)
-                        defaultSalePrice = Math.Round(majorSale / totalFactor, 2);
-                    else
-                        defaultSalePrice = salePrice > 0 ? salePrice : majorSale;
-                }
-                else if (matchedUnit == 2 && !string.IsNullOrEmpty(product.Unit2Name))
-                {
-                    defaultUnit = product.Unit2Name;
-                    defaultFactor = u2f > 0 ? u2f : 1m;
-                    if (product.Unit2PurchasePrice > 0)
-                        defaultPrice = product.Unit2PurchasePrice;
-                    else if (price > 0 && price != majorCost)
-                        defaultPrice = price;
-                    else if (u3f > 0 && majorCost > 0)
-                        defaultPrice = Math.Round(majorCost / u3f, 2);
-                    else
-                        defaultPrice = price > 0 ? price : majorCost;
-
-                    if (product.Unit2SalePrice > 0)
-                        defaultSalePrice = product.Unit2SalePrice;
-                    else if (salePrice > 0 && salePrice != majorSale)
-                        defaultSalePrice = salePrice;
-                    else if (u3f > 0 && majorSale > 0)
-                        defaultSalePrice = Math.Round(majorSale / u3f, 2);
-                    else
-                        defaultSalePrice = salePrice > 0 ? salePrice : majorSale;
+                    }
                 }
                 else
                 {
-                    defaultUnit = !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName : product.Unit1Name;
-                    defaultFactor = totalFactor > 0 ? totalFactor : 1m;
-                    defaultPrice = price > 0 ? price : (majorCost > 0 ? majorCost : price);
-                    defaultSalePrice = salePrice > 0 ? salePrice : (majorSale > 0 ? majorSale : salePrice);
+                    // إذا لم يتم تحديد matchedUnit عبر باركود مخصص، نعتمد DefaultSaleUnit المحدد في كارت الصنف (إذا لم يكن الشراء مقفلاً على الكبرى)
+                    if (matchedUnit == 3 && !string.IsNullOrEmpty(product.DefaultSaleUnit))
+                    {
+                        string dsu = product.DefaultSaleUnit.Trim();
+                        if (dsu == "الصغرى" && !string.IsNullOrEmpty(product.Unit1Name)) matchedUnit = 1;
+                        else if (dsu == "الوسطى" && !string.IsNullOrEmpty(product.Unit2Name)) matchedUnit = 2;
+                    }
+
+                    if (matchedUnit == 1 && !string.IsNullOrEmpty(product.Unit1Name))
+                    {
+                        defaultUnit = product.Unit1Name;
+                        defaultFactor = 1m;
+                        if (product.Unit1PurchasePrice > 0)
+                            defaultPrice = product.Unit1PurchasePrice;
+                        else if (price > 0 && price != majorCost)
+                            defaultPrice = price;
+                        else if (totalFactor > 0 && majorCost > 0)
+                            defaultPrice = Math.Round(majorCost / totalFactor, 2);
+                        else
+                            defaultPrice = price > 0 ? price : majorCost;
+
+                        if (product.Unit1SalePrice > 0)
+                            defaultSalePrice = product.Unit1SalePrice;
+                        else if (salePrice > 0 && salePrice != majorSale)
+                            defaultSalePrice = salePrice;
+                        else if (totalFactor > 0 && majorSale > 0)
+                            defaultSalePrice = Math.Round(majorSale / totalFactor, 2);
+                        else
+                            defaultSalePrice = salePrice > 0 ? salePrice : majorSale;
+                    }
+                    else if (matchedUnit == 2 && !string.IsNullOrEmpty(product.Unit2Name))
+                    {
+                        defaultUnit = product.Unit2Name;
+                        defaultFactor = u2f > 0 ? u2f : 1m;
+                        if (product.Unit2PurchasePrice > 0)
+                            defaultPrice = product.Unit2PurchasePrice;
+                        else if (price > 0 && price != majorCost)
+                            defaultPrice = price;
+                        else if (u3f > 0 && majorCost > 0)
+                            defaultPrice = Math.Round(majorCost / u3f, 2);
+                        else
+                            defaultPrice = price > 0 ? price : majorCost;
+
+                        if (product.Unit2SalePrice > 0)
+                            defaultSalePrice = product.Unit2SalePrice;
+                        else if (salePrice > 0 && salePrice != majorSale)
+                            defaultSalePrice = salePrice;
+                        else if (u3f > 0 && majorSale > 0)
+                            defaultSalePrice = Math.Round(majorSale / u3f, 2);
+                        else
+                            defaultSalePrice = salePrice > 0 ? salePrice : majorSale;
+                    }
+                    else
+                    {
+                        defaultUnit = !string.IsNullOrEmpty(product.BaseUnitName) ? product.BaseUnitName : product.Unit1Name;
+                        defaultFactor = totalFactor > 0 ? totalFactor : 1m;
+                        defaultPrice = price > 0 ? price : (majorCost > 0 ? majorCost : price);
+                        defaultSalePrice = salePrice > 0 ? salePrice : (majorSale > 0 ? majorSale : salePrice);
+                    }
                 }
             }
 
@@ -2665,6 +2724,17 @@ namespace ChickenDist.Forms
             ComboItem prod = GetProductComboItem(dto.ProductID);
             if (prod == null) return;
 
+            if (AppConfig.LockPurchaseToMajorUnit)
+            {
+                string majorUnit = !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName : "وحدة";
+                if (newUnit != majorUnit)
+                {
+                    MessageBox.Show("تم تفعيل خاصية قفل الشراء بالوحدة الكبرى فقط. لا يمكن تغيير الوحدة.", "قفل الشراء بالوحدة الكبرى", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    row.Cells["UnitName"].Value = majorUnit;
+                    newUnit = majorUnit;
+                }
+            }
+
             dto.UnitName = newUnit;
 
             decimal majorCost = prod.PurchasePrice > 0 ? prod.PurchasePrice : prod.Extra;
@@ -2752,7 +2822,7 @@ namespace ChickenDist.Forms
                         {
                             if (frm.ShowDialog(this) == DialogResult.OK)
                             {
-                                LoadCombos();
+                                LoadCombos(reloadParties: false, reloadProducts: true);
                                 RefreshGrid();
                             }
                         }
@@ -3513,6 +3583,23 @@ namespace ChickenDist.Forms
                 return;
             }
 
+            if (AppConfig.LockPurchaseToMajorUnit)
+            {
+                foreach (var item in _items)
+                {
+                    ComboItem prod = GetProductComboItem(item.ProductID);
+                    if (prod != null)
+                    {
+                        string majorUnit = !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName : "وحدة";
+                        if (!string.IsNullOrEmpty(item.UnitName) && item.UnitName != majorUnit)
+                        {
+                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" مسجل بوحدة ({item.UnitName})، بينما تم تفعيل قفل الشراء بالوحدة الكبرى فقط ({majorUnit})!\nيرجى تعديل الصنف إلى الوحدة الكبرى قبل الحفظ.", "قفل الشراء بالوحدة الكبرى", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                    }
+                }
+            }
+
             // تحقق سريع ومجمع من وجود تاريخ صلاحية للأصناف التي تتطلب ذلك دفعة واحدة
             if (_items.Count > 0)
             {
@@ -3923,6 +4010,11 @@ namespace ChickenDist.Forms
         {
             if (cboSupplier != null && cboSupplier.SelectedItem is ComboItem ci && ci.ID > 0)
                 return ci.ID;
+            if (cboSupplier != null && cboSupplier.Tag is List<ComboItem> list && !string.IsNullOrWhiteSpace(cboSupplier.Text))
+            {
+                var match = list.FirstOrDefault(x => x.ID > 0 && (string.Equals(x.Text, cboSupplier.Text, StringComparison.OrdinalIgnoreCase) || string.Equals(x.ProductCode, cboSupplier.Text, StringComparison.OrdinalIgnoreCase) || string.Equals(x.ClientCode, cboSupplier.Text, StringComparison.OrdinalIgnoreCase)));
+                if (match != null) return match.ID;
+            }
             return null;
         }
 

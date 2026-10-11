@@ -880,40 +880,45 @@ namespace ChickenDist.Forms
                 });
             }
 
-            // 2. Unit 2 (الوسطى)
-            if (!string.IsNullOrEmpty(unit2))
-            {
-                decimal u2Stock = stock / unit2FactorVal;
-                decimal u2GlobalStock = globalStock / unit2FactorVal;
-                string u2StockStr = (u2Stock == Math.Floor(u2Stock)) ? u2Stock.ToString("N0") : u2Stock.ToString("N2");
-                cboUnits.Items.Add(new UnitComboItem
-                {
-                    DisplayText = $"{unit2} - {unit2Price:F2} ج (رصيد: {u2StockStr})",
-                    UnitName = unit2,
-                    SalePrice = unit2Price,
-                    PurchasePrice = unit2PP,
-                    Factor = unit2FactorVal,
-                    StockQty = u2Stock,
-                    GlobalStockQty = u2GlobalStock,
-                    MatchedUnit = unit2
-                });
-            }
+            bool lockToMajor = _isPurchaseMode && AppConfig.LockPurchaseToMajorUnit;
 
-            // 3. Unit 1 (الصغرى)
-            if (!string.IsNullOrEmpty(unit1) && unit1 != baseUnit)
+            if (!lockToMajor)
             {
-                string u1StockStr = (stock == Math.Floor(stock)) ? stock.ToString("N0") : stock.ToString("N2");
-                cboUnits.Items.Add(new UnitComboItem
+                // 2. Unit 2 (الوسطى)
+                if (!string.IsNullOrEmpty(unit2))
                 {
-                    DisplayText = $"{unit1} - {unit1Price:F2} ج (رصيد: {u1StockStr})",
-                    UnitName = unit1,
-                    SalePrice = unit1Price,
-                    PurchasePrice = unit1PP,
-                    Factor = 1m,
-                    StockQty = stock,
-                    GlobalStockQty = globalStock,
-                    MatchedUnit = unit1
-                });
+                    decimal u2Stock = stock / unit2FactorVal;
+                    decimal u2GlobalStock = globalStock / unit2FactorVal;
+                    string u2StockStr = (u2Stock == Math.Floor(u2Stock)) ? u2Stock.ToString("N0") : u2Stock.ToString("N2");
+                    cboUnits.Items.Add(new UnitComboItem
+                    {
+                        DisplayText = $"{unit2} - {unit2Price:F2} ج (رصيد: {u2StockStr})",
+                        UnitName = unit2,
+                        SalePrice = unit2Price,
+                        PurchasePrice = unit2PP,
+                        Factor = unit2FactorVal,
+                        StockQty = u2Stock,
+                        GlobalStockQty = u2GlobalStock,
+                        MatchedUnit = unit2
+                    });
+                }
+
+                // 3. Unit 1 (الصغرى)
+                if (!string.IsNullOrEmpty(unit1) && unit1 != baseUnit)
+                {
+                    string u1StockStr = (stock == Math.Floor(stock)) ? stock.ToString("N0") : stock.ToString("N2");
+                    cboUnits.Items.Add(new UnitComboItem
+                    {
+                        DisplayText = $"{unit1} - {unit1Price:F2} ج (رصيد: {u1StockStr})",
+                        UnitName = unit1,
+                        SalePrice = unit1Price,
+                        PurchasePrice = unit1PP,
+                        Factor = 1m,
+                        StockQty = stock,
+                        GlobalStockQty = globalStock,
+                        MatchedUnit = unit1
+                    });
+                }
             }
 
             // 4. Batches / Expiry Dates
@@ -953,30 +958,39 @@ namespace ChickenDist.Forms
 
             if (cboUnits.Items.Count > 0)
             {
-                string defUnit = prodRow.Table.Columns.Contains("DefaultSaleUnit") && prodRow["DefaultSaleUnit"] != DBNull.Value ? prodRow["DefaultSaleUnit"].ToString().Trim() : "";
-                int selectedIdx = 0;
-                for (int i = 0; i < cboUnits.Items.Count; i++)
+                if (lockToMajor)
                 {
-                    if (cboUnits.Items[i] is UnitComboItem uItem)
+                    cboUnits.SelectedIndex = 0;
+                    cboUnits.Enabled = false;
+                }
+                else
+                {
+                    cboUnits.Enabled = true;
+                    string defUnit = prodRow.Table.Columns.Contains("DefaultSaleUnit") && prodRow["DefaultSaleUnit"] != DBNull.Value ? prodRow["DefaultSaleUnit"].ToString().Trim() : "";
+                    int selectedIdx = 0;
+                    for (int i = 0; i < cboUnits.Items.Count; i++)
                     {
-                        if (defUnit == "الصغرى" && !string.IsNullOrEmpty(unit1) && uItem.UnitName == unit1)
+                        if (cboUnits.Items[i] is UnitComboItem uItem)
                         {
-                            selectedIdx = i;
-                            break;
-                        }
-                        else if (defUnit == "الوسطى" && !string.IsNullOrEmpty(unit2) && uItem.UnitName == unit2)
-                        {
-                            selectedIdx = i;
-                            break;
-                        }
-                        else if ((defUnit == "الكبرى" || string.IsNullOrEmpty(defUnit)) && uItem.UnitName == baseUnit)
-                        {
-                            selectedIdx = i;
-                            break;
+                            if (defUnit == "الصغرى" && !string.IsNullOrEmpty(unit1) && uItem.UnitName == unit1)
+                            {
+                                selectedIdx = i;
+                                break;
+                            }
+                            else if (defUnit == "الوسطى" && !string.IsNullOrEmpty(unit2) && uItem.UnitName == unit2)
+                            {
+                                selectedIdx = i;
+                                break;
+                            }
+                            else if ((defUnit == "الكبرى" || string.IsNullOrEmpty(defUnit)) && uItem.UnitName == baseUnit)
+                            {
+                                selectedIdx = i;
+                                break;
+                            }
                         }
                     }
+                    cboUnits.SelectedIndex = selectedIdx;
                 }
-                cboUnits.SelectedIndex = selectedIdx;
             }
             else
             {
