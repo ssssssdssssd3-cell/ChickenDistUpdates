@@ -285,8 +285,7 @@ namespace ChickenDist.DAL
             DbHelper.RunInTransaction((con, trans) =>
             {
                 string typeStr = saleTypeName;
-                var nextSaleResult = DbHelper.ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales");
-                string code = nextSaleResult != null ? nextSaleResult.ToString() : "1";
+                string code = DbHelper.GetNextSaleCodeTrans(trans);
                 int targetWarehouse = warehouseID ?? 1;
 
                 decimal vPaidVal = visaPaid.HasValue ? visaPaid.Value : (typeStr == "Visa" ? total : 0m);
@@ -681,6 +680,27 @@ namespace ChickenDist.DAL
                                 DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice));
                         }
                     }
+
+                    // ترحيل قيد اليومية العامة المزدوج اللحظي
+                    try
+                    {
+                        string cName = null;
+                        if (clientID.HasValue)
+                        {
+                            var cObj = DbHelper.ScalarTrans(trans, "SELECT ClientName FROM Clients WHERE ClientID = @cid", DbHelper.P("@cid", clientID.Value));
+                            cName = cObj?.ToString();
+                        }
+                        else if (!string.IsNullOrWhiteSpace(customClientName))
+                        {
+                            cName = customClientName;
+                        }
+
+                        JournalDAL.PostSaleJournalTrans(trans, saleID, code, DateTime.Now, typeStr, total, clientID, cName, finalCashPaid, visaPaid, visaAccountID ?? safeAccountID, Session.EmpID);
+                    }
+                    catch (Exception exJour)
+                    {
+                        AppLogger.Error("JournalDAL.PostSaleJournalTrans failed in SaveSale", exJour);
+                    }
                 }
             });
 
@@ -902,7 +922,10 @@ namespace ChickenDist.DAL
                     }
                 }
 
-                // 7. حذف الفاتورة نفسها (سوف تحذف الأصناف تلقائياً بسبب CASCADE)
+                // 7. حذف القيد المحاسبي المزدوج المرتبط بالفاتورة
+                JournalDAL.DeleteEntryTrans(trans, "Sale", saleID);
+
+                // 8. حذف الفاتورة نفسها (سوف تحذف الأصناف تلقائياً بسبب CASCADE)
                 int rows = DbHelper.ExecuteTrans(trans,
                     "DELETE FROM Sales WHERE SaleID=@id",
                     DbHelper.P("@id", saleID));
@@ -1035,7 +1058,8 @@ namespace ChickenDist.DAL
                         DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
                 }
 
-                // 4. عكس الحركات المالية والفوارغ السابقة (العملاء، الخزينة، المندوب، الأقفاص)
+                // 4. عكس الحركات المالية والفوارغ والقيود السابقة (العملاء، الخزينة، المندوب، الأقفاص، قيود اليومية)
+                JournalDAL.DeleteEntryTrans(trans, "Sale", saleID);
                 DbHelper.ExecuteTrans(trans,
                     "DELETE FROM ClientCratesTransactions WHERE RefSaleID=@id",
                     DbHelper.P("@id", saleID));
@@ -1284,6 +1308,27 @@ namespace ChickenDist.DAL
                                 DbHelper.P("@lid", loadID), DbHelper.P("@pid", item.ProductID),
                                 DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice));
                         }
+                    }
+
+                    // ترحيل قيد اليومية العامة المزدوج اللحظي بعد التعديل
+                    try
+                    {
+                        string cName = null;
+                        if (clientID.HasValue)
+                        {
+                            var cObj = DbHelper.ScalarTrans(trans, "SELECT ClientName FROM Clients WHERE ClientID = @cid", DbHelper.P("@cid", clientID.Value));
+                            cName = cObj?.ToString();
+                        }
+                        else if (!string.IsNullOrWhiteSpace(customClientName))
+                        {
+                            cName = customClientName;
+                        }
+
+                        JournalDAL.PostSaleJournalTrans(trans, saleID, code, DateTime.Now, typeStr, total, clientID, cName, cashPaid, visaPaid, visaAccountID ?? safeAccountID, Session.EmpID);
+                    }
+                    catch (Exception exJour)
+                    {
+                        AppLogger.Error("JournalDAL.PostSaleJournalTrans failed in UpdateSale", exJour);
                     }
                 }
 
@@ -2527,6 +2572,23 @@ namespace ChickenDist.DAL
                 if (saleID > 0 && paymentType == "Installment")
                 {
                     InstallmentDAL.HandleSalesReturn(trans, saleID, total);
+                }
+
+                // ترحيل قيد مردودات المبيعات المزدوج اللحظي
+                try
+                {
+                    string cName = null;
+                    if (clientID.HasValue)
+                    {
+                        var cObj = DbHelper.ScalarTrans(trans, "SELECT ClientName FROM Clients WHERE ClientID = @cid", DbHelper.P("@cid", clientID.Value));
+                        cName = cObj?.ToString();
+                    }
+
+                    JournalDAL.PostSaleReturnJournalTrans(trans, retID, saleID > 0 ? (int?)saleID : null, DateTime.Now, paymentType, total, clientID, cName, Session.GetDefaultSafeID(), Session.EmpID);
+                }
+                catch (Exception exJour)
+                {
+                    AppLogger.Error("JournalDAL.PostSaleReturnJournalTrans failed in SaveReturn", exJour);
                 }
             });
 

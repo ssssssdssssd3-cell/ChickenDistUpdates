@@ -1,5 +1,5 @@
-version=3.9.67
+version=3.9.68
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.67&t=1791711999
-sha256=6A90D95DAF8A5A766CAAAB22F3794CB00353C99E4D25CEF077659CE550CB31D1
-changelog=v3.9.67 - 2026-10-11: Kitchen slip unit display fix (dedicated Unit column, UnitName fallback, clean qty format, dynamic printer paper width)
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.68&t=1791715847
+sha256=30870861EDAA09516A48939CC1568C6E62A703C496847F9DA513D3D1248EDBD4
+changelog=v3.9.68 - 2026-10-11: Safe concurrency sequence invoice numbering, UI decoupling from DbHelper, real-time double-entry general ledger posting

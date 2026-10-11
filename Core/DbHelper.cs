@@ -4134,6 +4134,41 @@ namespace ChickenDist.Core
                     ALTER TABLE Employees ADD DefaultPriceTier NVARCHAR(50) NULL DEFAULT N'قطاعي';
                 END");
 
+                SafeMigrate("Sequences.SalesAndPurchases", @"
+                IF NOT EXISTS (SELECT * FROM sys.sequences WHERE name = 'SalesCodeSeq')
+                BEGIN
+                    DECLARE @maxSaleId BIGINT = (SELECT ISNULL(MAX(SaleID), 0) FROM Sales);
+                    DECLARE @sql1 NVARCHAR(MAX) = N'CREATE SEQUENCE dbo.SalesCodeSeq START WITH ' + CAST((@maxSaleId + 1) AS NVARCHAR(20)) + N' INCREMENT BY 1';
+                    EXEC sp_executesql @sql1;
+                END
+                ELSE
+                BEGIN
+                    DECLARE @maxS BIGINT = (SELECT ISNULL(MAX(SaleID), 0) FROM Sales);
+                    DECLARE @curS BIGINT = CAST((SELECT current_value FROM sys.sequences WHERE name = 'SalesCodeSeq') AS BIGINT);
+                    IF @curS <= @maxS
+                    BEGIN
+                        DECLARE @restartS NVARCHAR(MAX) = N'ALTER SEQUENCE dbo.SalesCodeSeq RESTART WITH ' + CAST((@maxS + 1) AS NVARCHAR(20));
+                        EXEC sp_executesql @restartS;
+                    END
+                END
+
+                IF NOT EXISTS (SELECT * FROM sys.sequences WHERE name = 'PurchaseCodeSeq')
+                BEGIN
+                    DECLARE @maxPurId BIGINT = (SELECT ISNULL(MAX(PurchaseID), 0) FROM Purchases);
+                    DECLARE @sql2 NVARCHAR(MAX) = N'CREATE SEQUENCE dbo.PurchaseCodeSeq START WITH ' + CAST((@maxPurId + 1) AS NVARCHAR(20)) + N' INCREMENT BY 1';
+                    EXEC sp_executesql @sql2;
+                END
+                ELSE
+                BEGIN
+                    DECLARE @maxP BIGINT = (SELECT ISNULL(MAX(PurchaseID), 0) FROM Purchases);
+                    DECLARE @curP BIGINT = CAST((SELECT current_value FROM sys.sequences WHERE name = 'PurchaseCodeSeq') AS BIGINT);
+                    IF @curP <= @maxP
+                    BEGIN
+                        DECLARE @restartP NVARCHAR(MAX) = N'ALTER SEQUENCE dbo.PurchaseCodeSeq RESTART WITH ' + CAST((@maxP + 1) AS NVARCHAR(20));
+                        EXEC sp_executesql @restartP;
+                    END
+                END");
+
                 // Save schema version to cache so subsequent launches skip inspection
                 try
                 {
@@ -4392,9 +4427,9 @@ namespace ChickenDist.Core
             }
             catch (Exception ex)
             {
+                LastException = ex;
                 AppLogger.Error("DbHelper.Scalar failed", ex, sql.Length > 80 ? sql.Substring(0, 80) : sql);
-                MessageBox.Show("حدث خطأ أثناء استرجاع البيانات.\nيرجى مراجعة المسؤول أو ملف app.log للتفاصيل.",
-                    "خطأ في قاعدة البيانات", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine("حدث خطأ أثناء استرجاع البيانات. " + ex.Message);
                 return null;
             }
         }
@@ -4417,10 +4452,9 @@ namespace ChickenDist.Core
                     }
                     catch (Exception ex)
                     {
+                        LastException = ex;
                         try { trans.Rollback(); } catch (Exception rbEx) { AppLogger.Error("trans.Rollback failed", rbEx); }
                         AppLogger.Error("RunInTransaction: تم التراجع عن العملية", ex, "DbHelper.RunInTransaction");
-                        MessageBox.Show("حدث خطأ وتم التراجع عن العملية بأمان.\n\n" + ex.Message,
-                            "خطأ في العملية", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         throw;
                     }
                 }
@@ -4473,6 +4507,48 @@ namespace ChickenDist.Core
                     adapter.Fill(dt);
                 return dt;
             }
+        }
+
+        /// <summary>
+        /// الحصول على كود الفاتورة التالي بطريقة ذرية وسريعة وآمنة ضد التزامن في بيئات الشبكة والكاشيرات المتعددة
+        /// </summary>
+        public static string GetNextSaleCodeTrans(SqlTransaction trans)
+        {
+            try
+            {
+                var seqVal = ScalarTrans(trans, "SELECT NEXT VALUE FOR dbo.SalesCodeSeq");
+                if (seqVal != null && seqVal != DBNull.Value)
+                    return seqVal.ToString();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Warn("GetNextSaleCodeTrans: Sequence not available or failed, falling back to locked MAX query. " + ex.Message);
+            }
+
+            // Fallback: استخدام قفل حصري UPDLOCK, HOLDLOCK لمنع Race Condition بين أجهزة الشبكة
+            var maxVal = ScalarTrans(trans, "SELECT COALESCE(MAX(SaleID), 0) + 1 FROM Sales WITH (UPDLOCK, HOLDLOCK)");
+            return maxVal != null ? maxVal.ToString() : "1";
+        }
+
+        /// <summary>
+        /// الحصول على كود فاتورة المشتريات التالي بطريقة ذرية وآمنة تماماً ضد التزامن في بيئات الشبكة
+        /// </summary>
+        public static string GetNextPurchaseCodeTrans(SqlTransaction trans)
+        {
+            try
+            {
+                var seqVal = ScalarTrans(trans, "SELECT NEXT VALUE FOR dbo.PurchaseCodeSeq");
+                if (seqVal != null && seqVal != DBNull.Value)
+                    return seqVal.ToString();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Warn("GetNextPurchaseCodeTrans: Sequence not available or failed, falling back to locked MAX query. " + ex.Message);
+            }
+
+            // Fallback: استخدام قفل حصري UPDLOCK, HOLDLOCK لمنع Race Condition بين أجهزة الشبكة
+            var maxVal = ScalarTrans(trans, "SELECT COALESCE(MAX(PurchaseID), 0) + 1 FROM Purchases WITH (UPDLOCK, HOLDLOCK)");
+            return maxVal != null ? maxVal.ToString() : "1";
         }
 
         /// <summary>

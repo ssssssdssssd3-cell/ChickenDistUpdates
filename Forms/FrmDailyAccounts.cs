@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -1177,9 +1178,17 @@ namespace ChickenDist.Forms
 
         private void LoadJournalHistory()
         {
-            var dt = DbHelper.Query(
-                @"SELECT 1 AS [رقم القيد], GETDATE() AS [التاريخ], N'قيد افتتاحي / مرجعي' AS [المرجع], N'1000.00' AS [إجمالي القيد], N'قيد متوازن' AS [الحالة]");
-            dgJournalHistory.DataSource = dt;
+            try
+            {
+                if (dgJournalHistory == null) return;
+                DateTime f = dtpJourHistoryFrom != null ? dtpJourHistoryFrom.Value : DateTime.Today.AddMonths(-1);
+                DateTime t = dtpJourHistoryTo != null ? dtpJourHistoryTo.Value : DateTime.Now;
+                dgJournalHistory.DataSource = JournalDAL.GetJournalEntriesHistory(f, t);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadJournalHistory failed", ex);
+            }
         }
 
         private void LoadCashBankMovements()
@@ -1646,7 +1655,61 @@ namespace ChickenDist.Forms
 
         private void BtnSaveJournal_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("✅ تم حفظ القيد المحاسبي المزدوج وتحديث الأرصدة بنجاح!", "نجاح الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            try
+            {
+                var lines = new List<JournalLine>();
+                foreach (DataGridViewRow row in dgJournalLines.Rows)
+                {
+                    if (row.IsNewRow) continue;
+                    string acc = row.Cells["AccountName"]?.Value?.ToString()?.Trim();
+                    if (string.IsNullOrEmpty(acc)) continue;
+
+                    decimal deb = 0m, cred = 0m;
+                    decimal.TryParse(row.Cells["Debit"]?.Value?.ToString(), out deb);
+                    decimal.TryParse(row.Cells["Credit"]?.Value?.ToString(), out cred);
+
+                    if (deb > 0 || cred > 0)
+                    {
+                        lines.Add(new JournalLine(acc, deb, cred));
+                    }
+                }
+
+                if (lines.Count == 0)
+                {
+                    MessageBox.Show("يرجى إدخال بنود القيد أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                decimal sumDeb = lines.Sum(x => x.Debit);
+                decimal sumCred = lines.Sum(x => x.Credit);
+                if (Math.Abs(sumDeb - sumCred) > 0.05m)
+                {
+                    MessageBox.Show($"القيد غير متوازن!\nالمدين: {sumDeb:N2}\nالدائن: {sumCred:N2}", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                DateTime dt = dtpJournalDate != null ? dtpJournalDate.Value : DateTime.Now;
+                string desc = txtJournalNotes?.Text?.Trim();
+                if (string.IsNullOrEmpty(desc)) desc = "قيد يومية يدوي";
+
+                int refId = 0;
+                int.TryParse(txtJournalRef?.Text?.Trim(), out refId);
+
+                DbHelper.RunInTransaction((con, trans) =>
+                {
+                    JournalDAL.PostEntryTrans(trans, dt, desc, "Manual", refId, Session.EmpID, lines);
+                });
+
+                MessageBox.Show("✅ تم حفظ القيد المحاسبي المزدوج وتحديث اليومية بنجاح!", "نجاح الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                txtJournalNotes?.Clear();
+                txtJournalRef?.Clear();
+                LoadJournalHistory();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("BtnSaveJournal_Click failed", ex);
+                MessageBox.Show("فشل حفظ القيد: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
 

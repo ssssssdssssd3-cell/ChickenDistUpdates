@@ -270,9 +270,7 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                var nextResult = DbHelper.ScalarTrans(trans,
-                    "SELECT COALESCE(MAX(PurchaseID), 0) + 1 FROM Purchases");
-                string code = nextResult != null ? nextResult.ToString() : "1";
+                string code = DbHelper.GetNextPurchaseCodeTrans(trans);
 
                 int accId = safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
 
@@ -444,6 +442,23 @@ namespace ChickenDist.DAL
                                 DbHelper.P("@by",  Session.EmpID),
                                 DbHelper.P("@accId", accId));
                         }
+
+                        // ترحيل قيد اليومية العامة المزدوج اللحظي للمشتريات
+                        try
+                        {
+                            string sName = null;
+                            if (supplierID.HasValue)
+                            {
+                                var sObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID = @sid", DbHelper.P("@sid", supplierID.Value));
+                                sName = sObj?.ToString();
+                            }
+
+                            JournalDAL.PostPurchaseJournalTrans(trans, purchaseID, code, DateTime.Now, purchaseType, total, supplierID, sName, safeAccountID, Session.EmpID);
+                        }
+                        catch (Exception exJour)
+                        {
+                            AppLogger.Error("JournalDAL.PostPurchaseJournalTrans failed in SavePurchase", exJour);
+                        }
                     }
                 }
             });
@@ -554,6 +569,7 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans, "DELETE FROM SupplierTransactions WHERE RefID=@id AND TransType='Purchase'", DbHelper.P("@id", purchaseID));
                         DbHelper.ExecuteTrans(trans, "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType='ClientPurchase'", DbHelper.P("@id", purchaseID));
                         DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND (TransType='PurchaseExpense' OR TransType='ClientPurchaseCash')", DbHelper.P("@id", purchaseID));
+                        JournalDAL.DeleteEntryTrans(trans, "Purchase", purchaseID);
                     }
                     DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
@@ -610,6 +626,7 @@ namespace ChickenDist.DAL
                     DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM SupplierTransactions WHERE RefID=@id AND TransType='Purchase'", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND (TransType='PurchaseExpense' OR TransType='ClientPurchaseCash')", DbHelper.P("@id", purchaseID));
+                    JournalDAL.DeleteEntryTrans(trans, "Purchase", purchaseID);
 
                     DbHelper.ExecuteTrans(trans,
                         @"UPDATE Purchases 
@@ -727,6 +744,23 @@ namespace ChickenDist.DAL
                             DbHelper.P("@n",   "تعديل مشتريات نقدية " + code),
                             DbHelper.P("@by",  Session.EmpID),
                             DbHelper.P("@accId", accId));
+                    }
+
+                    // ترحيل قيد اليومية العامة المزدوج اللحظي بعد التعديل
+                    try
+                    {
+                        string sName = null;
+                        if (supplierID.HasValue)
+                        {
+                            var sObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID = @sid", DbHelper.P("@sid", supplierID.Value));
+                            sName = sObj?.ToString();
+                        }
+
+                        JournalDAL.PostPurchaseJournalTrans(trans, purchaseID, code, DateTime.Now, purchaseType, total, supplierID, sName, safeAccountID, Session.EmpID);
+                    }
+                    catch (Exception exJour)
+                    {
+                        AppLogger.Error("JournalDAL.PostPurchaseJournalTrans failed in UpdatePurchase", exJour);
                     }
                 });
 
@@ -1891,6 +1925,23 @@ namespace ChickenDist.DAL
                         DbHelper.P("@ref", retID),
                         DbHelper.P("@n",   purchaseID > 0 ? ("مرتجع شراء — فاتورة رقم " + purchaseID) : ("مرتجع شراء عام آجل " + (notes ?? ""))),
                         DbHelper.P("@by",  Session.EmpID));
+                }
+
+                // ترحيل قيد مردودات المشتريات المزدوج اللحظي
+                try
+                {
+                    string sName = null;
+                    if (supplierID.HasValue)
+                    {
+                        var sObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID = @sid", DbHelper.P("@sid", supplierID.Value));
+                        sName = sObj?.ToString();
+                    }
+
+                    JournalDAL.PostPurchaseReturnJournalTrans(trans, retID, purchaseID > 0 ? (int?)purchaseID : null, DateTime.Now, purType, total, supplierID, sName, targetAccountID ?? Session.GetDefaultSafeID(), Session.EmpID);
+                }
+                catch (Exception exJour)
+                {
+                    AppLogger.Error("JournalDAL.PostPurchaseReturnJournalTrans failed in SavePurchaseReturn", exJour);
                 }
             });
 
