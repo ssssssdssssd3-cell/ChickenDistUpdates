@@ -443,18 +443,34 @@ self.addEventListener('fetch', (event) => {
                     ),
                     TodayReturns AS (
                         SELECT ISNULL(SUM(sr.TotalAmount), 0) AS ReturnsTotal,
-                               ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0))), 0) AS ReturnsCost
+                               ISNULL(SUM(ri.Quantity * ISNULL(ri.Factor, 1.0) * COALESCE(
+                                   NULLIF(si_orig.OrigCostPrice, 0),
+                                   NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0),
+                                   ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)
+                               )), 0) AS ReturnsCost
                         FROM SalesReturns sr WITH (NOLOCK)
                         LEFT JOIN ReturnItems ri WITH (NOLOCK) ON sr.ReturnID = ri.ReturnID
                         LEFT JOIN Products p WITH (NOLOCK) ON ri.ProductID = p.ProductID
+                        LEFT JOIN (
+                            SELECT SaleID, ProductID, MAX(CostPrice) AS OrigCostPrice
+                            FROM SaleItems WITH (NOLOCK)
+                            WHERE CostPrice > 0
+                            GROUP BY SaleID, ProductID
+                        ) si_orig ON si_orig.SaleID = sr.SaleID AND si_orig.ProductID = ri.ProductID
                         WHERE CAST(sr.ReturnDate AS DATE) = CAST(GETDATE() AS DATE)
                     )
                     SELECT 
-                        (ISNULL((SELECT SUM(TotalAmount) FROM TodayInvoiceCosts), 0) 
-                         - ISNULL((SELECT ReturnsTotal FROM TodayReturns), 0))
-                        -
-                        (ISNULL((SELECT SUM(SaleCost) FROM TodayInvoiceCosts), 0) 
-                         - ISNULL((SELECT ReturnsCost FROM TodayReturns), 0))");
+                        CASE 
+                            WHEN ABS(ISNULL((SELECT SUM(TotalAmount) FROM TodayInvoiceCosts), 0) - ISNULL((SELECT ReturnsTotal FROM TodayReturns), 0)) < 0.01 THEN 0.0
+                            ELSE
+                                (ISNULL((SELECT SUM(TotalAmount) FROM TodayInvoiceCosts), 0) 
+                                 - ISNULL((SELECT ReturnsTotal FROM TodayReturns), 0))
+                                -
+                                CASE 
+                                    WHEN (ISNULL((SELECT SUM(SaleCost) FROM TodayInvoiceCosts), 0) - ISNULL((SELECT ReturnsCost FROM TodayReturns), 0)) < 0 THEN 0.0
+                                    ELSE (ISNULL((SELECT SUM(SaleCost) FROM TodayInvoiceCosts), 0) - ISNULL((SELECT ReturnsCost FROM TodayReturns), 0))
+                                END
+                        END");
                 decimal todayProfit = profitObj != null && profitObj != DBNull.Value ? Convert.ToDecimal(profitObj) : 0m;
 
                 // 2. مشتريات اليوم

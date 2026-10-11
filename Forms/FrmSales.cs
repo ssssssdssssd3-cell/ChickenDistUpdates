@@ -988,6 +988,7 @@ namespace ChickenDist.Forms
 
 					decimal netProfit = row.Table.Columns.Contains("NetProfit") && row["NetProfit"] != DBNull.Value
 					                  ? Convert.ToDecimal(row["NetProfit"]) : 0m;
+					if (netAmt <= 0.001m || returnAmt >= num) netProfit = 0m;
 
 					totBeforeDisc += beforeDiscAmt;
 					totDisc += discAmt;
