@@ -1,5 +1,5 @@
-version=3.9.68
+version=3.9.69
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.68&t=1791715847
-sha256=30870861EDAA09516A48939CC1568C6E62A703C496847F9DA513D3D1248EDBD4
-changelog=v3.9.68 - 2026-10-11: Safe concurrency sequence invoice numbering, UI decoupling from DbHelper, real-time double-entry general ledger posting
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.69&t=1791723802
+sha256=1906BCD81E5E1F84DA8DA0465C1C9211A9AFD4A912D7AF0FFE85EDB835F71F69
+changelog=v3.9.69 - 2026-10-11: Direct mobile camera upload via QR code, automatic price and catalog store sync without manual action

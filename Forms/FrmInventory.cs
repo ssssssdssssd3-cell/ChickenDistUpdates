@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
+using ChickenDist.Services;
 
 namespace ChickenDist.Forms
 {
@@ -2137,6 +2138,7 @@ namespace ChickenDist.Forms
                             _activeDraftKey = null;
 
                             ProductCache.Invalidate(); // تحديث كاش الأصناف فوراً لتعكس الأسعار الجديدة في كل الشاشات
+                            CloudSyncService.TriggerStoreCatalogSyncDebounced();
                             StockCache.Invalidate(wid);
                             LoadStock();
                             LoadLogs();
@@ -2570,6 +2572,7 @@ namespace ChickenDist.Forms
                     });
 
                     ProductCache.Invalidate();
+                    CloudSyncService.TriggerStoreCatalogSyncDebounced();
                     StockCache.Invalidate();
                     MessageBox.Show($"✅ تم حفظ وتصحيح بيانات ({updatedCount}) صنف بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     loadOutliers();

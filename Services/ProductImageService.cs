@@ -136,6 +136,36 @@ namespace ChickenDist.Services
         }
 
         /// <summary>
+        /// حفظ ومعالجة صورة قادمة بصيغة Base64 مباشرة (من كاميرا الموبايل أو صفحة الرفع السحابية)
+        /// </summary>
+        public static string SaveAndCompressFromBase64(string base64Data, string productCode, int slot)
+        {
+            if (string.IsNullOrWhiteSpace(base64Data)) return null;
+
+            string cleaned = base64Data.Trim();
+            int commaIndex = cleaned.IndexOf(',');
+            if (commaIndex >= 0)
+            {
+                cleaned = cleaned.Substring(commaIndex + 1);
+            }
+
+            try
+            {
+                byte[] imageBytes = Convert.FromBase64String(cleaned);
+                using (var ms = new MemoryStream(imageBytes))
+                using (var img = Image.FromStream(ms))
+                {
+                    return SaveAndCompressImage(img, productCode, slot);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ProductImageService.SaveAndCompressFromBase64 failed", ex);
+                return null;
+            }
+        }
+
+        /// <summary>
         /// ضغط الصورة وإعادة تحجيمها مع الحفاظ التام على النسبة والأبعاد (Aspect Ratio) وجودة واضحة بحجم 25-35 KB
         /// </summary>
         public static byte[] CompressToJpegBytes(Image source, int maxWidth, int maxHeight, long quality = 75L)

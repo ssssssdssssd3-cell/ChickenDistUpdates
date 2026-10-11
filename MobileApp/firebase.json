@@ -41,7 +41,9 @@
     ],
     "rewrites": [
       { "source": "/store", "destination": "/store.html" },
-      { "source": "/store/**", "destination": "/store.html" }
+      { "source": "/store/**", "destination": "/store.html" },
+      { "source": "/upload", "destination": "/upload.html" },
+      { "source": "/upload/**", "destination": "/upload.html" }
     ]
   },
   "database": {

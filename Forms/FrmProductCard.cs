@@ -19,6 +19,7 @@ namespace ChickenDist.Forms
         private NumericUpDown nudDefaultExpiryDays;
         private Button btnSave, btnCancel;
         private Button btnProductImages;
+        private Button btnMobileUpload;
         private string _imageUrl1 = null;
         private string _imageUrl2 = null;
         private string _imageUrl3 = null;
@@ -177,9 +178,13 @@ namespace ChickenDist.Forms
             grpBasic.Controls.AddRange(new Control[] { lblDesc, txtDescription });
             ry += 50;
 
-            btnProductImages = Theme.MakeButton("📷 صور الصنف للمتجر (0/3)", 5, ry, 285, 36, Color.FromArgb(40, 90, 160));
+            btnProductImages = Theme.MakeButton("📷 صور الصنف (0/3)", 135, ry, 155, 36, Color.FromArgb(40, 90, 160));
             btnProductImages.Click += BtnProductImages_Click;
-            grpBasic.Controls.Add(btnProductImages);
+
+            btnMobileUpload = Theme.MakeButton("📱 تصوير موبايل", 5, ry, 125, 36, Color.FromArgb(16, 185, 129));
+            btnMobileUpload.Click += BtnMobileUpload_Click;
+
+            grpBasic.Controls.AddRange(new Control[] { btnProductImages, btnMobileUpload });
 
 
             bool canSeeCost = Session.CanViewCost("Products");
@@ -1231,6 +1236,33 @@ namespace ChickenDist.Forms
                     _imageUrl2 = frm.ImageUrl2;
                     _imageUrl3 = frm.ImageUrl3;
                     UpdateProductImagesButton();
+                }
+            }
+        }
+
+        private void BtnMobileUpload_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtCode.Text))
+            {
+                MessageBox.Show("يرجى إدخال أو توليد كود الصنف أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var frm = new FrmMobileImageUpload(_selectedID, txtCode.Text.Trim(), txtName.Text.Trim(), nudPrice.Value))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK)
+                {
+                    if (!string.IsNullOrEmpty(frm.SavedImageUrl1)) _imageUrl1 = frm.SavedImageUrl1;
+                    if (!string.IsNullOrEmpty(frm.SavedImageUrl2)) _imageUrl2 = frm.SavedImageUrl2;
+                    if (!string.IsNullOrEmpty(frm.SavedImageUrl3)) _imageUrl3 = frm.SavedImageUrl3;
+
+                    if (frm.ResultPrice.HasValue && frm.ResultPrice.Value > 0)
+                    {
+                        nudPrice.Value = frm.ResultPrice.Value;
+                    }
+
+                    UpdateProductImagesButton();
+                    MessageBox.Show("✅ تم استلام وحفظ الصور من الموبايل بنجاح وتحديث الصنف!", "تم الاستلام", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }

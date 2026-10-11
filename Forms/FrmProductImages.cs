@@ -137,7 +137,10 @@ namespace ChickenDist.Forms
             btnCancel = Theme.MakeButton("❌ إلغاء", 290, 12, 130, 36, Color.FromArgb(100, 110, 120));
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
-            pnlFooter.Controls.AddRange(new Control[] { btnSave, btnCancel });
+            var btnMobile = Theme.MakeButton("📱 تصوير ورفع من الموبايل (QR)", 15, 12, 260, 36, Color.FromArgb(16, 185, 129));
+            btnMobile.Click += BtnMobile_Click;
+
+            pnlFooter.Controls.AddRange(new Control[] { btnSave, btnCancel, btnMobile });
             this.Controls.Add(pnlFooter);
 
             Theme.ApplyFormRTL(this);
@@ -419,6 +422,32 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("فشل تحديث صور الصنف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnMobile_Click(object sender, EventArgs e)
+        {
+            using (var frm = new FrmMobileImageUpload(_productId, _productCode, _productName))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK)
+                {
+                    if (!string.IsNullOrEmpty(frm.SavedImageUrl1))
+                    {
+                        ImageUrl1 = frm.SavedImageUrl1;
+                        UpdateSlotDisplay(1, ImageUrl1);
+                    }
+                    if (!string.IsNullOrEmpty(frm.SavedImageUrl2))
+                    {
+                        ImageUrl2 = frm.SavedImageUrl2;
+                        UpdateSlotDisplay(2, ImageUrl2);
+                    }
+                    if (!string.IsNullOrEmpty(frm.SavedImageUrl3))
+                    {
+                        ImageUrl3 = frm.SavedImageUrl3;
+                        UpdateSlotDisplay(3, ImageUrl3);
+                    }
+                    MessageBox.Show("✅ تم استلام الصور المرفوعة من الموبايل وتحديث كارت الصنف والمتجر بنجاح!", "نجاح الاستلام", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 

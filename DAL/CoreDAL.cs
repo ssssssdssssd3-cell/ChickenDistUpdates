@@ -819,6 +819,7 @@ namespace ChickenDist.DAL
                 }
 
                 ProductCache.Invalidate();
+                Services.CloudSyncService.TriggerStoreCatalogSyncDebounced();
                 return id;
             }
         }
@@ -834,6 +835,7 @@ namespace ChickenDist.DAL
                 DbHelper.P("@img2", string.IsNullOrWhiteSpace(imageUrl2) ? (object)DBNull.Value : imageUrl2.Trim()),
                 DbHelper.P("@img3", string.IsNullOrWhiteSpace(imageUrl3) ? (object)DBNull.Value : imageUrl3.Trim()));
             ProductCache.Invalidate();
+            Services.CloudSyncService.TriggerStoreCatalogSyncDebounced();
         }
 
         public static DataTable GetQuickItems()
@@ -877,6 +879,7 @@ namespace ChickenDist.DAL
         {
             DbHelper.Execute("UPDATE Products SET IsActive=0 WHERE ProductID=@id", DbHelper.P("@id", id));
             ProductCache.Invalidate();
+            Services.CloudSyncService.TriggerStoreCatalogSyncDebounced();
         }
 
         /// <summary>

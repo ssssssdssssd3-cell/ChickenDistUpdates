@@ -21,6 +21,18 @@ namespace ChickenDist.Services
         public DateTime? LastSyncDate { get; set; }
     }
 
+    public class MobileUploadResult
+    {
+        public string ProductCode { get; set; }
+        public int ProductId { get; set; }
+        public string ProductName { get; set; }
+        public decimal? Price { get; set; }
+        public string Image1 { get; set; }
+        public string Image2 { get; set; }
+        public string Image3 { get; set; }
+        public long Timestamp { get; set; }
+    }
+
     public static class CloudSyncService
     {
         public static event Action<int> OnNewOrdersReceived;
@@ -93,6 +105,14 @@ namespace ChickenDist.Services
       {
         ""source"": ""/store/**"",
         ""destination"": ""/store.html""
+      },
+      {
+        ""source"": ""/upload"",
+        ""destination"": ""/upload.html""
+      },
+      {
+        ""source"": ""/upload/**"",
+        ""destination"": ""/upload.html""
       }
     ]
   },
@@ -272,6 +292,67 @@ self.addEventListener('fetch', (event) => {
                             {
                                 System.IO.File.WriteAllText(storeHtmlPath, html, new System.Text.UTF8Encoding(false));
                                 storeUpdated = true;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                // 8. استخراج وتحديث صفحة تصوير ورفع الأصناف من الموبايل upload.html
+                string uploadHtmlPath = System.IO.Path.Combine(mobileAppDir, "upload.html");
+                string devUpload = @"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\upload.html";
+                bool uploadUpdated = false;
+
+                if (System.IO.File.Exists(devUpload))
+                {
+                    try
+                    {
+                        System.IO.File.Copy(devUpload, uploadHtmlPath, true);
+                        uploadUpdated = true;
+                    }
+                    catch { }
+                }
+
+                if (!uploadUpdated)
+                {
+                    try
+                    {
+                        var asm = typeof(CloudSyncService).Assembly;
+                        foreach (var resName in asm.GetManifestResourceNames())
+                        {
+                            if (resName.EndsWith("upload.html", StringComparison.OrdinalIgnoreCase))
+                            {
+                                using (var stream = asm.GetManifestResourceStream(resName))
+                                using (var reader = new System.IO.StreamReader(stream, System.Text.Encoding.UTF8))
+                                {
+                                    string content = reader.ReadToEnd();
+                                    if (!string.IsNullOrEmpty(content) && content.Contains("upload_product_images"))
+                                    {
+                                        System.IO.File.WriteAllText(uploadHtmlPath, content, new System.Text.UTF8Encoding(false));
+                                        uploadUpdated = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                if (!uploadUpdated)
+                {
+                    try
+                    {
+                        using (var wc = new System.Net.WebClient())
+                        {
+                            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12 | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls | (System.Net.SecurityProtocolType)12288;
+                            wc.Encoding = System.Text.Encoding.UTF8;
+                            wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                            string html = wc.DownloadString("https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/MobileApp/upload.html?t=" + DateTime.Now.Ticks);
+                            if (!string.IsNullOrEmpty(html) && html.Contains("upload_product_images"))
+                            {
+                                System.IO.File.WriteAllText(uploadHtmlPath, html, new System.Text.UTF8Encoding(false));
+                                uploadUpdated = true;
                             }
                         }
                     }
@@ -1245,6 +1326,45 @@ self.addEventListener('fetch', (event) => {
             return sb.ToString();
         }
 
+        private static System.Threading.Timer _catalogDebounceTimer;
+        private static readonly object _catalogDebounceLock = new object();
+
+        /// <summary>
+        /// تشغيل مزامنة كتالوج وإعدادات المتجر إلى Firebase بطريقة ذكية (Debounced)
+        /// ينتظر 2.5 ثانية بعد آخر تعديل للأسعار أو صور الأصناف ثم يرفع البيانات تلقائياً دون إجهاد السيرفر ودون حاجة لتدخل المستخدم
+        /// </summary>
+        public static void TriggerStoreCatalogSyncDebounced(int delayMilliseconds = 2500)
+        {
+            try
+            {
+                lock (_catalogDebounceLock)
+                {
+                    if (_catalogDebounceTimer != null)
+                    {
+                        _catalogDebounceTimer.Change(delayMilliseconds, System.Threading.Timeout.Infinite);
+                    }
+                    else
+                    {
+                        _catalogDebounceTimer = new System.Threading.Timer(async _ =>
+                        {
+                            try
+                            {
+                                await SyncStoreCatalogToFirebaseAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                AppLogger.Error("TriggerStoreCatalogSyncDebounced failed", ex);
+                            }
+                        }, null, delayMilliseconds, System.Threading.Timeout.Infinite);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("TriggerStoreCatalogSyncDebounced initialization failed", ex);
+            }
+        }
+
         /// <summary>سبب آخر فشل في رفع كتالوج المتجر إلى Firebase (للعرض للمستخدم)</summary>
         public static string LastSyncError { get; private set; } = "";
 
@@ -1550,6 +1670,150 @@ self.addEventListener('fetch', (event) => {
                 AppLogger.Error("SyncVouchersToFirebaseAsync error", ex, "CloudSyncService");
             }
             return false;
+        }
+
+        private static string SanitizeFirebaseKey(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return "item";
+            return key.Trim()
+                      .Replace(".", "_")
+                      .Replace("#", "_")
+                      .Replace("$", "_")
+                      .Replace("[", "_")
+                      .Replace("]", "_")
+                      .Replace("/", "_");
+        }
+
+        /// <summary>
+        /// استعلام سحابي خفيف جداً لفحص هل قام المستخدم بتصوير ورفع صور للصنف من الموبايل
+        /// </summary>
+        public static async Task<MobileUploadResult> FetchPendingMobileUploadAsync(string productCode, string projectId = null)
+        {
+            if (string.IsNullOrWhiteSpace(productCode)) return null;
+            if (string.IsNullOrEmpty(projectId))
+            {
+                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+            }
+            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+
+            string cleanCode = SanitizeFirebaseKey(productCode);
+
+            try
+            {
+                string json = null;
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                    try
+                    {
+                        var resp = await client.GetAsync($"https://{projectId}-default-rtdb.firebaseio.com/pending_product_uploads/{cleanCode}.json");
+                        if (resp != null && resp.IsSuccessStatusCode)
+                        {
+                            json = await resp.Content.ReadAsStringAsync();
+                        }
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            var respFallback = await client.GetAsync($"https://{projectId}.firebaseio.com/pending_product_uploads/{cleanCode}.json");
+                            if (respFallback != null && respFallback.IsSuccessStatusCode)
+                            {
+                                json = await respFallback.Content.ReadAsStringAsync();
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(json) || json == "null" || json.Trim() == "{}")
+                    return null;
+
+                var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+                serializer.MaxJsonLength = 20 * 1024 * 1024; // 20 MB Base64 allowance
+                var dict = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(json);
+                if (dict == null || dict.Count == 0) return null;
+
+                var result = new MobileUploadResult
+                {
+                    ProductCode = GetDictString(dict, "productCode", productCode),
+                    ProductName = GetDictString(dict, "productName", ""),
+                    Image1 = GetDictString(dict, "image1", null),
+                    Image2 = GetDictString(dict, "image2", null),
+                    Image3 = GetDictString(dict, "image3", null)
+                };
+
+                if (dict.TryGetValue("productId", out var pidVal) && pidVal != null)
+                {
+                    int.TryParse(pidVal.ToString(), out int pid);
+                    result.ProductId = pid;
+                }
+
+                if (dict.TryGetValue("price", out var pVal) && pVal != null && !string.IsNullOrWhiteSpace(pVal.ToString()))
+                {
+                    if (decimal.TryParse(pVal.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal prc))
+                    {
+                        result.Price = prc;
+                    }
+                }
+
+                if (dict.TryGetValue("timestamp", out var tsVal) && tsVal != null)
+                {
+                    long.TryParse(tsVal.ToString(), out long ts);
+                    result.Timestamp = ts;
+                }
+
+                if (!string.IsNullOrEmpty(result.Image1) || !string.IsNullOrEmpty(result.Image2) || !string.IsNullOrEmpty(result.Image3) || result.Price.HasValue)
+                {
+                    return result;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Warn($"FetchPendingMobileUploadAsync error for {productCode}: {ex.Message}", "FetchPendingMobileUploadAsync");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// حذف النود المؤقت من Firebase بعد استلام وتخزين الصور محلياً بنجاح
+        /// </summary>
+        public static async Task<bool> DeletePendingMobileUploadAsync(string productCode, string projectId = null)
+        {
+            if (string.IsNullOrWhiteSpace(productCode)) return false;
+            if (string.IsNullOrEmpty(projectId))
+            {
+                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+            }
+            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+
+            string cleanCode = SanitizeFirebaseKey(productCode);
+
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                    try
+                    {
+                        await client.DeleteAsync($"https://{projectId}-default-rtdb.firebaseio.com/pending_product_uploads/{cleanCode}.json");
+                    }
+                    catch { }
+
+                    try
+                    {
+                        await client.DeleteAsync($"https://{projectId}.firebaseio.com/pending_product_uploads/{cleanCode}.json");
+                    }
+                    catch { }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static async Task<int> PullOnlineOrdersFromFirebaseAsync(string projectId = null)

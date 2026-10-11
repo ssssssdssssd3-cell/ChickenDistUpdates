@@ -966,10 +966,11 @@
                 <th class="p-2.5">الكمية</th>
                 <th class="p-2.5">سعر التكلفة</th>
                 <th class="p-2.5 text-emerald-400">سعر البيع</th>
+                <th class="p-2.5 text-center">تصوير بالموبايل</th>
               </tr>
             </thead>
             <tbody id="tblProductsCatalog" class="divide-y divide-slate-800 text-slate-300">
-              <tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد أصناف</td></tr>
+              <tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد أصناف</td></tr>
             </tbody>
           </table>
         </div>
@@ -3378,7 +3379,7 @@
 
       const tbody = document.getElementById('tblProductsCatalog');
       if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد أصناف مطابقة للبحث</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد أصناف مطابقة للبحث</td></tr>`;
         return;
       }
 
@@ -3389,6 +3390,13 @@
           <td class="p-2.5 font-bold text-slate-200">${p.Quantity || 0}</td>
           <td class="p-2.5 text-slate-400">${parseFloat(p.PurchasePrice || 0).toFixed(2)}</td>
           <td class="p-2.5 font-black text-emerald-400">${parseFloat(p.SalePrice || 0).toFixed(2)}</td>
+          <td class="p-2.5 text-center">
+            <a href="./upload.html?code=${encodeURIComponent(p.ProductCode || '')}&name=${encodeURIComponent(p.ProductName || '')}&price=${p.SalePrice || 0}&p=${FIREBASE_PROJECT_ID}" target="_blank"
+               class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] shadow transition active:scale-95">
+              <i class="fa-solid fa-camera"></i>
+              <span>تصوير</span>
+            </a>
+          </td>
         </tr>
       `).join('');
     }
