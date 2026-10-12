@@ -289,18 +289,17 @@ namespace ChickenDist.Forms
                     decimal mediumFactor = 1m;
                     decimal smallFactor = 1.0m;
 
+                    decimal f2 = u2Factor > 0 ? u2Factor : 1m;
+                    decimal f3 = u3Factor > 0 ? u3Factor : 1m;
+
                     if (!string.IsNullOrWhiteSpace(unit2))
                     {
-                        decimal f2 = u2Factor > 0 ? u2Factor : 1m;
-                        decimal f3 = u3Factor > 0 ? u3Factor : 1m;
                         mediumFactor = f2;
                         majorFactor = f2 * f3;
                     }
                     else
                     {
-                        if (u3Factor > 0) majorFactor = u3Factor;
-                        else if (u2Factor > 0) majorFactor = u2Factor;
-                        else majorFactor = 1m;
+                        majorFactor = (f2 > 1m && f3 > 1m) ? (f2 * f3) : (f2 > 1m ? f2 : (f3 > 1m ? f3 : 1m));
                         mediumFactor = majorFactor;
                     }
                     if (majorFactor <= 0) majorFactor = 1m;
@@ -331,14 +330,18 @@ namespace ChickenDist.Forms
                         cboUnit.Items.Add(optMedium);
                     }
 
-                    // 3. الوحدة الصغرى (إن وجدت ومختلفة عن الكبرى)
+                    // 3. الوحدة الصغرى (إن وجدت ومختلفة عن الكبرى أو المعامل أكبر من 1)
                     if (!string.IsNullOrWhiteSpace(smallName) && (!string.Equals(smallName, majorName, StringComparison.OrdinalIgnoreCase) || majorFactor > 1m))
                     {
+                        string sDisplayName = (!string.IsNullOrWhiteSpace(smallName) && !string.Equals(smallName, majorName, StringComparison.OrdinalIgnoreCase))
+                            ? smallName
+                            : $"{majorName} (تجزئة)";
+
                         var optSmall = new UnitOption 
                         { 
-                            Name = smallName, 
+                            Name = sDisplayName, 
                             Factor = smallFactor, 
-                            DisplayText = $"🔹 {smallName} (الوحدة الصغرى - تجزئة - معامل: 1)" 
+                            DisplayText = $"🔹 {sDisplayName} (الوحدة الصغرى - تجزئة - معامل: 1)" 
                         };
                         cboUnit.Items.Add(optSmall);
                     }

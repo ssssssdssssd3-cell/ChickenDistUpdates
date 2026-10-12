@@ -846,18 +846,17 @@ namespace ChickenDist.Forms
                 decimal mediumFactor = 1m;
                 decimal smallFactor = 1.0m;
 
+                decimal f2 = u2Factor > 0 ? u2Factor : 1m;
+                decimal f3 = u3Factor > 0 ? u3Factor : 1m;
+
                 if (!string.IsNullOrWhiteSpace(unit2))
                 {
-                    decimal f2 = u2Factor > 0 ? u2Factor : 1m;
-                    decimal f3 = u3Factor > 0 ? u3Factor : 1m;
                     mediumFactor = f2;
                     majorFactor = f2 * f3;
                 }
                 else
                 {
-                    if (u3Factor > 0) majorFactor = u3Factor;
-                    else if (u2Factor > 0) majorFactor = u2Factor;
-                    else majorFactor = 1m;
+                    majorFactor = (f2 > 1m && f3 > 1m) ? (f2 * f3) : (f2 > 1m ? f2 : (f3 > 1m ? f3 : 1m));
                     mediumFactor = majorFactor;
                 }
                 if (majorFactor <= 0) majorFactor = 1m;
@@ -906,12 +905,12 @@ namespace ChickenDist.Forms
                 else if (curFactor == 1.0m)
                 {
                     displayedPP = unit1PP > 0 ? unit1PP : pieceCost;
-                    displayedSP = unit1SP > 0 ? unit1SP : pieceSale;
+                    displayedSP = (priceTypeIdx == 0 && unit1SP > 0) ? unit1SP : pieceSale;
                 }
                 else if (u2Factor > 0 && curFactor == u2Factor)
                 {
                     displayedPP = unit2PP > 0 ? unit2PP : (pieceCost * curFactor);
-                    displayedSP = unit2SP > 0 ? unit2SP : (pieceSale * curFactor);
+                    displayedSP = (priceTypeIdx == 0 && unit2SP > 0) ? unit2SP : (pieceSale * curFactor);
                 }
                 else
                 {
@@ -1548,18 +1547,17 @@ namespace ChickenDist.Forms
             decimal mediumFactor = 1m;
             decimal smallFactor = 1.0m;
 
+            decimal f2 = u2Factor > 0 ? u2Factor : 1m;
+            decimal f3 = u3Factor > 0 ? u3Factor : 1m;
+
             if (!string.IsNullOrWhiteSpace(unit2))
             {
-                decimal f2 = u2Factor > 0 ? u2Factor : 1m;
-                decimal f3 = u3Factor > 0 ? u3Factor : 1m;
                 mediumFactor = f2;
                 majorFactor = f2 * f3;
             }
             else
             {
-                if (u3Factor > 0) majorFactor = u3Factor;
-                else if (u2Factor > 0) majorFactor = u2Factor;
-                else majorFactor = 1m;
+                majorFactor = (f2 > 1m && f3 > 1m) ? (f2 * f3) : (f2 > 1m ? f2 : (f3 > 1m ? f3 : 1m));
                 mediumFactor = majorFactor;
             }
             if (majorFactor <= 0) majorFactor = 1m;
@@ -1575,18 +1573,21 @@ namespace ChickenDist.Forms
             var miMajor = menu.Items.Add($"📦 {majorName} (الوحدة الكبرى - معامل: {majorFactor:G29})");
             miMajor.Click += (s, e) => SwitchRowUnit(row, majorName, majorFactor);
 
-            // 2. الوحدة الوسطى (إن وجدت)
-            if (!string.IsNullOrWhiteSpace(mediumName) && !string.Equals(mediumName, majorName, StringComparison.OrdinalIgnoreCase))
+            // 2. الوحدة الوسطى (إن وجدت ومختلفة)
+            if (!string.IsNullOrWhiteSpace(mediumName) && !string.Equals(mediumName, majorName, StringComparison.OrdinalIgnoreCase) && mediumFactor > 1m && mediumFactor != majorFactor)
             {
                 var miMedium = menu.Items.Add($"⚙️ {mediumName} (الوحدة الوسطى - معامل: {mediumFactor:G29})");
                 miMedium.Click += (s, e) => SwitchRowUnit(row, mediumName, mediumFactor);
             }
 
-            // 3. الوحدة الصغرى (إن وجدت ومختلفة)
-            if (!string.IsNullOrWhiteSpace(smallName) && !string.Equals(smallName, majorName, StringComparison.OrdinalIgnoreCase) && !string.Equals(smallName, mediumName, StringComparison.OrdinalIgnoreCase))
+            // 3. الوحدة الصغرى (إن وجدت ومختلفة أو المعامل أكبر من 1)
+            if (!string.IsNullOrWhiteSpace(smallName) && (!string.Equals(smallName, majorName, StringComparison.OrdinalIgnoreCase) || majorFactor > 1m))
             {
-                var miSmall = menu.Items.Add($"🔹 {smallName} (الوحدة الصغرى - تجزئة - معامل: 1)");
-                miSmall.Click += (s, e) => SwitchRowUnit(row, smallName, smallFactor);
+                string sDisplayName = (!string.IsNullOrWhiteSpace(smallName) && !string.Equals(smallName, majorName, StringComparison.OrdinalIgnoreCase))
+                    ? smallName
+                    : $"{majorName} (تجزئة)";
+                var miSmall = menu.Items.Add($"🔹 {sDisplayName} (الوحدة الصغرى - تجزئة - معامل: 1)");
+                miSmall.Click += (s, e) => SwitchRowUnit(row, sDisplayName, smallFactor);
             }
 
             if (menu.Items.Count > 0)
@@ -1622,13 +1623,18 @@ namespace ChickenDist.Forms
             decimal unit2PP = row.Cells["Unit2PurchasePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2PurchasePrice"].Value) : 0m;
             decimal unit2SP = row.Cells["Unit2SalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2SalePrice"].Value) : 0m;
             decimal u2Factor = row.Cells["Unit2Factor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 0m;
+            decimal baseWP = row.Cells["BaseWholesalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseWholesalePrice"].Value) : baseSP;
+            decimal baseSWP = row.Cells["BaseSemiWholesalePrice"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["BaseSemiWholesalePrice"].Value) : baseSP;
+
+            int priceTypeIdx = (cboPriceType != null && cboPriceType.SelectedIndex >= 0) ? cboPriceType.SelectedIndex : 0;
+            decimal currentBaseSP = priceTypeIdx == 2 ? baseWP : (priceTypeIdx == 1 ? baseSWP : baseSP);
 
             // 2. حساب الرصيد الدفتري الجديد بالنسبة للوحدة المختارة
             decimal newBookQty = baseBookQty / factor;
 
             // 3. حساب أسعار الشراء والبيع الخاصة بالوحدة المختارة
             decimal piecePP = majorFactor > 0 ? (basePP / majorFactor) : basePP;
-            decimal pieceSP = majorFactor > 0 ? (baseSP / majorFactor) : baseSP;
+            decimal pieceSP = majorFactor > 0 ? (currentBaseSP / majorFactor) : currentBaseSP;
 
             decimal newPP;
             decimal newSP;
@@ -1636,17 +1642,17 @@ namespace ChickenDist.Forms
             if (factor == majorFactor)
             {
                 newPP = basePP;
-                newSP = baseSP;
+                newSP = currentBaseSP;
             }
             else if (factor == 1.0m)
             {
                 newPP = unit1PP > 0 ? unit1PP : piecePP;
-                newSP = unit1SP > 0 ? unit1SP : pieceSP;
+                newSP = (priceTypeIdx == 0 && unit1SP > 0 && !isPending) ? unit1SP : pieceSP;
             }
             else if (u2Factor > 0 && factor == u2Factor)
             {
                 newPP = unit2PP > 0 ? unit2PP : (piecePP * factor);
-                newSP = unit2SP > 0 ? unit2SP : (pieceSP * factor);
+                newSP = (priceTypeIdx == 0 && unit2SP > 0 && !isPending) ? unit2SP : (pieceSP * factor);
             }
             else
             {
@@ -1691,6 +1697,8 @@ namespace ChickenDist.Forms
                     row.Cells["DiffQty"].Style.ForeColor = diff > 0 ? Color.DarkGreen : (diff < 0 ? Color.OrangeRed : Theme.TextMain);
                 }
             }
+
+            RecalculateStockTotals();
         }
 
         private void ClearAdjustmentForm()

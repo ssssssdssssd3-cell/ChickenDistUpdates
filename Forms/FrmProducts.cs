@@ -990,17 +990,16 @@ namespace ChickenDist.Forms
                         decimal u3Factor = r.Table.Columns.Contains("Unit3Factor") && r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 0m;
 
                         decimal majorFactor = 1m;
+                        decimal f2 = u2Factor > 0 ? u2Factor : 1m;
+                        decimal f3 = u3Factor > 0 ? u3Factor : 1m;
+
                         if (!string.IsNullOrWhiteSpace(unit2))
                         {
-                            decimal f2 = u2Factor > 0 ? u2Factor : 1m;
-                            decimal f3 = u3Factor > 0 ? u3Factor : 1m;
                             majorFactor = f2 * f3;
                         }
                         else
                         {
-                            if (u3Factor > 0) majorFactor = u3Factor;
-                            else if (u2Factor > 0) majorFactor = u2Factor;
-                            else majorFactor = 1m;
+                            majorFactor = (f2 > 1m && f3 > 1m) ? (f2 * f3) : (f2 > 1m ? f2 : (f3 > 1m ? f3 : 1m));
                         }
                         if (majorFactor <= 0) majorFactor = 1m;
 
