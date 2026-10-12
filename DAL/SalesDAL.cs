@@ -220,13 +220,14 @@ namespace ChickenDist.DAL
                           p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation, p.Color, p.ProductSize,
                           p.Unit AS BaseUnitName, p.Unit1Name, p.Unit1SalePrice, p.Unit2Name, p.Unit2Factor, p.Unit2SalePrice, p.Unit3Factor,
                           COALESCE(NULLIF(si.UnitName, N''), NULLIF(p.Unit, N''), N'قطعة') AS UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI,
-                          COALESCE(ret.PrevReturnedQty, 0.0) AS PrevReturnedQty,
+                          COALESCE(ret.PrevReturnedQtyInSmallest, 0.0) AS PrevReturnedQtyInSmallest,
+                          ROUND(COALESCE(ret.PrevReturnedQtyInSmallest, 0.0) / NULLIF(COALESCE(si.Factor, 1.0), 0.0), 4) AS PrevReturnedQty,
                           COALESCE(si.KitchenNotes, N'') AS KitchenNotes,
                           COALESCE(si.KitchenNotes, N'') AS Notes
                   FROM SaleItems si 
                   JOIN Products p ON si.ProductID = p.ProductID
                   LEFT JOIN (
-                      SELECT ri.ProductID, ISNULL(SUM(ri.Quantity), 0.0) AS PrevReturnedQty
+                      SELECT ri.ProductID, ISNULL(SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)), 0.0) AS PrevReturnedQtyInSmallest
                       FROM SalesReturns sr
                       JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                       WHERE sr.SaleID = @id

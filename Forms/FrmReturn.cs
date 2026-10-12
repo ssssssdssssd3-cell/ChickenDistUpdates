@@ -1048,6 +1048,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetUnitPrice", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoldQtyInSmallest", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQtyInSmallest", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualStockInSmallest", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "BaseUnitName", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1Name", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit1SalePrice", Visible = false });
@@ -1195,6 +1196,8 @@ namespace ChickenDist.Forms
                 MinimumWidth = 80, 
                 DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.FromArgb(30, 58, 138) } 
             });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", Visible = false });
+            dgExchangeNewItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Factor", Visible = false });
             dgExchangeNewItems.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(40, 110, 60);
             dgExchangeNewItems.CellValueChanged += (s, e) => RecalcTotals();
             dgExchangeNewItems.Visible = false;
@@ -1407,55 +1410,18 @@ namespace ChickenDist.Forms
             var row = dgItems.Rows[idx];
             int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
             decimal actStock = GetProductActualStock(ci.ID, selectedWh);
+            row.Cells["ActualStockInSmallest"].Value = actStock;
 
-            var dtProdInfo = DbHelper.Query("SELECT Unit, Unit1Name, Unit1SalePrice, Unit2Name, Unit2Factor, Unit2SalePrice, Unit3Factor, SalePrice, Color, ProductSize FROM Products WHERE ProductID = @id", DbHelper.P("@id", ci.ID));
-            string baseUnit = "";
-            string u1Name = null, u2Name = null;
-            decimal u2Factor = 1m, u3Factor = 1m;
-            if (dtProdInfo.Rows.Count > 0)
-            {
-                var pr = dtProdInfo.Rows[0];
-                baseUnit = pr["Unit"]?.ToString() ?? "";
-                u1Name = pr["Unit1Name"]?.ToString();
-                u2Name = pr["Unit2Name"]?.ToString();
-                if (pr["Unit2Factor"] != DBNull.Value) decimal.TryParse(pr["Unit2Factor"].ToString(), out u2Factor);
-                if (pr["Unit3Factor"] != DBNull.Value) decimal.TryParse(pr["Unit3Factor"].ToString(), out u3Factor);
-                row.Cells["BaseUnitName"].Value = baseUnit;
-                row.Cells["Unit1Name"].Value = u1Name;
-                row.Cells["Unit1SalePrice"].Value = pr["Unit1SalePrice"]?.ToString();
-                row.Cells["Unit2Name"].Value = u2Name;
-                row.Cells["Unit2Factor"].Value = u2Factor;
-                row.Cells["Unit2SalePrice"].Value = pr["Unit2SalePrice"]?.ToString();
-                row.Cells["Unit3Factor"].Value = u3Factor;
-
-                string pColor = pr.Table.Columns.Contains("Color") && pr["Color"] != DBNull.Value ? pr["Color"].ToString().Trim() : "";
-                string pSize = pr.Table.Columns.Contains("ProductSize") && pr["ProductSize"] != DBNull.Value ? pr["ProductSize"].ToString().Trim() : "";
-                if (dgItems.Columns.Contains("Color"))
-                {
-                    row.Cells["Color"].Value = pColor;
-                    if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
-                }
-                if (dgItems.Columns.Contains("ProductSize"))
-                {
-                    row.Cells["ProductSize"].Value = pSize;
-                    if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
-                }
-            }
-
-            var comboCell = (DataGridViewComboBoxCell)row.Cells["UnitName"];
-            comboCell.Items.Clear();
-            if (!string.IsNullOrEmpty(u1Name)) comboCell.Items.Add(u1Name);
-            if (!string.IsNullOrEmpty(u2Name) && !comboCell.Items.Contains(u2Name)) comboCell.Items.Add(u2Name);
-            if (!string.IsNullOrEmpty(baseUnit) && !comboCell.Items.Contains(baseUnit)) comboCell.Items.Add(baseUnit);
-
-            if (comboCell.Items.Count > 0)
-                comboCell.Value = comboCell.Items[0];
+            PopulateItemUnitData(row, ci.ID, null);
 
             row.Cells["ProductID"].Value       = ci.ID;
             row.Cells["ProductName"].Value     = ci.Text;
             row.Cells["SoldQty"].Value         = "عام";
             row.Cells["PrevReturnedQty"].Value = "0";
-            row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
+
+            string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+            decimal factor = GetRowUnitFactor(row, selectedUnit);
+            row.Cells["CurrentStock"].Value    = (factor > 0 ? (actStock / factor) : actStock).ToString("G29");
             row.Cells["NewReturnedQty"].Value  = qty;
             if (row.Cells["OriginalUnitPrice"] != null) row.Cells["OriginalUnitPrice"].Value = price.ToString("N2");
             if (row.Cells["Discount"] != null) row.Cells["Discount"].Value = "-";
@@ -1495,11 +1461,19 @@ namespace ChickenDist.Forms
             row.Cells["ProductID"].Value   = ci.ID;
             row.Cells["ProductName"].Value = ci.Text;
 
-            var dtExProd = DbHelper.Query("SELECT Color, ProductSize FROM Products WHERE ProductID = @id", DbHelper.P("@id", ci.ID));
+            var dtExProd = DbHelper.Query("SELECT Color, ProductSize, Unit, Unit1Name, Unit2Name, Unit2Factor, Unit3Factor FROM Products WHERE ProductID = @id", DbHelper.P("@id", ci.ID));
+            string exUnit = "قطعة";
+            decimal exFac = 1m;
             if (dtExProd.Rows.Count > 0)
             {
-                string exColor = dtExProd.Rows[0]["Color"]?.ToString() ?? "";
-                string exSize = dtExProd.Rows[0]["ProductSize"]?.ToString() ?? "";
+                var er = dtExProd.Rows[0];
+                string exColor = er["Color"]?.ToString() ?? "";
+                string exSize = er["ProductSize"]?.ToString() ?? "";
+                exUnit = er["Unit"]?.ToString() ?? (er["Unit1Name"]?.ToString() ?? "قطعة");
+                decimal.TryParse(er["Unit2Factor"]?.ToString(), out decimal u2f);
+                decimal.TryParse(er["Unit3Factor"]?.ToString(), out decimal u3f);
+                exFac = (u2f > 0 ? u2f : 1m) * (u3f > 0 ? u3f : 1m);
+
                 if (dgExchangeNewItems.Columns.Contains("Color"))
                 {
                     row.Cells["Color"].Value = exColor;
@@ -1512,6 +1486,8 @@ namespace ChickenDist.Forms
                 }
             }
 
+            row.Cells["UnitName"].Value    = exUnit;
+            row.Cells["Factor"].Value      = exFac > 0 ? exFac : 1m;
             row.Cells["NewQty"].Value      = qty;
             row.Cells["UnitPrice"].Value   = price.ToString("N2");
             row.Cells["TotalPrice"].Value  = (qty * price).ToString("N2");
@@ -1594,6 +1570,109 @@ namespace ChickenDist.Forms
             }
             catch { }
             return 0m;
+        }
+
+        private decimal GetRowUnitFactor(DataGridViewRow row, string unitName = null)
+        {
+            if (row == null) return 1m;
+            string selectedUnit = unitName ?? row.Cells["UnitName"]?.Value?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedUnit))
+            {
+                if (row.Cells["OriginalFactor"]?.Value != null && decimal.TryParse(row.Cells["OriginalFactor"].Value.ToString(), out decimal origFac) && origFac > 0)
+                    return origFac;
+                return 1m;
+            }
+
+            string u1Name = row.Cells["Unit1Name"]?.Value?.ToString();
+            string u2Name = row.Cells["Unit2Name"]?.Value?.ToString();
+            string baseUnit = row.Cells["BaseUnitName"]?.Value?.ToString();
+
+            decimal u2Factor = 1m;
+            if (row.Cells["Unit2Factor"]?.Value != null && decimal.TryParse(row.Cells["Unit2Factor"].Value.ToString(), out decimal parsedU2) && parsedU2 > 0)
+                u2Factor = parsedU2;
+
+            decimal u3Factor = 1m;
+            if (row.Cells["Unit3Factor"]?.Value != null && decimal.TryParse(row.Cells["Unit3Factor"].Value.ToString(), out decimal parsedU3) && parsedU3 > 0)
+                u3Factor = parsedU3;
+
+            if (!string.IsNullOrEmpty(u2Name) && selectedUnit.Trim().Equals(u2Name.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return u2Factor > 0 ? u2Factor : 1m;
+            }
+            else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit.Trim().Equals(baseUnit.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return (u2Factor > 0 ? u2Factor : 1m) * (u3Factor > 0 ? u3Factor : 1m);
+            }
+            else if (!string.IsNullOrEmpty(u1Name) && selectedUnit.Trim().Equals(u1Name.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return 1m;
+            }
+
+            if (row.Cells["OriginalFactor"]?.Value != null && decimal.TryParse(row.Cells["OriginalFactor"].Value.ToString(), out decimal f) && f > 0)
+            {
+                return f;
+            }
+
+            return 1m;
+        }
+
+        private void PopulateItemUnitData(DataGridViewRow row, int productID, string defaultUnitName = null)
+        {
+            if (row == null || productID <= 0) return;
+            var dtProdInfo = DbHelper.Query("SELECT Unit, Unit1Name, Unit1SalePrice, Unit2Name, Unit2Factor, Unit2SalePrice, Unit3Factor, SalePrice, Color, ProductSize FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+            string baseUnit = "";
+            string u1Name = null, u2Name = null;
+            decimal u2Factor = 1m, u3Factor = 1m;
+            decimal baseSalePrice = 0m;
+            if (dtProdInfo.Rows.Count > 0)
+            {
+                var pr = dtProdInfo.Rows[0];
+                baseUnit = pr["Unit"]?.ToString() ?? "";
+                u1Name = pr["Unit1Name"]?.ToString();
+                u2Name = pr["Unit2Name"]?.ToString();
+                if (pr["Unit2Factor"] != DBNull.Value) decimal.TryParse(pr["Unit2Factor"].ToString(), out u2Factor);
+                if (pr["Unit3Factor"] != DBNull.Value) decimal.TryParse(pr["Unit3Factor"].ToString(), out u3Factor);
+                if (pr["SalePrice"] != DBNull.Value) decimal.TryParse(pr["SalePrice"].ToString(), out baseSalePrice);
+
+                row.Cells["BaseUnitName"].Value = baseUnit;
+                row.Cells["Unit1Name"].Value = u1Name;
+                row.Cells["Unit1SalePrice"].Value = pr["Unit1SalePrice"]?.ToString();
+                row.Cells["Unit2Name"].Value = u2Name;
+                row.Cells["Unit2Factor"].Value = u2Factor;
+                row.Cells["Unit2SalePrice"].Value = pr["Unit2SalePrice"]?.ToString();
+                row.Cells["Unit3Factor"].Value = u3Factor;
+
+                string pColor = pr.Table.Columns.Contains("Color") && pr["Color"] != DBNull.Value ? pr["Color"].ToString().Trim() : "";
+                string pSize = pr.Table.Columns.Contains("ProductSize") && pr["ProductSize"] != DBNull.Value ? pr["ProductSize"].ToString().Trim() : "";
+                if (row.DataGridView != null && row.DataGridView.Columns.Contains("Color"))
+                {
+                    row.Cells["Color"].Value = pColor;
+                    if (!string.IsNullOrEmpty(pColor)) row.DataGridView.Columns["Color"].Visible = true;
+                }
+                if (row.DataGridView != null && row.DataGridView.Columns.Contains("ProductSize"))
+                {
+                    row.Cells["ProductSize"].Value = pSize;
+                    if (!string.IsNullOrEmpty(pSize)) row.DataGridView.Columns["ProductSize"].Visible = true;
+                }
+            }
+
+            if (row.Cells["UnitName"] is DataGridViewComboBoxCell comboCell)
+            {
+                comboCell.Items.Clear();
+                if (!string.IsNullOrEmpty(u1Name)) comboCell.Items.Add(u1Name);
+                if (!string.IsNullOrEmpty(u2Name) && !comboCell.Items.Contains(u2Name)) comboCell.Items.Add(u2Name);
+                if (!string.IsNullOrEmpty(baseUnit) && !comboCell.Items.Contains(baseUnit)) comboCell.Items.Add(baseUnit);
+
+                if (!string.IsNullOrEmpty(defaultUnitName))
+                {
+                    if (!comboCell.Items.Contains(defaultUnitName)) comboCell.Items.Add(defaultUnitName);
+                    comboCell.Value = defaultUnitName;
+                }
+                else if (comboCell.Items.Count > 0)
+                {
+                    comboCell.Value = comboCell.Items[0];
+                }
+            }
         }
 
         private void CboEmployeeFilter_SelectedIndexChanged(object sender, EventArgs e)
@@ -1817,17 +1896,25 @@ namespace ChickenDist.Forms
                 }
 
                 decimal invoiceFactor = 1m;
-                if (!string.IsNullOrEmpty(u2Name) && invoiceUnitName == u2Name)
+                if (dtItems.Columns.Contains("Factor") && row["Factor"] != DBNull.Value && decimal.TryParse(row["Factor"].ToString(), out decimal savedFac) && savedFac > 0)
+                {
+                    invoiceFactor = savedFac;
+                }
+                else if (!string.IsNullOrEmpty(u2Name) && invoiceUnitName.Trim().Equals(u2Name.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     invoiceFactor = u2Factor;
                 }
-                else if (!string.IsNullOrEmpty(baseUnit) && invoiceUnitName == baseUnit)
+                else if (!string.IsNullOrEmpty(baseUnit) && invoiceUnitName.Trim().Equals(baseUnit.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     invoiceFactor = u2Factor * u3Factor;
                 }
 
                 decimal soldQtyInSmallest = soldQty * invoiceFactor;
                 decimal prevQtyInSmallest = prevRetQty * invoiceFactor;
+                if (dtItems.Columns.Contains("PrevReturnedQtyInSmallest") && row["PrevReturnedQtyInSmallest"] != DBNull.Value && decimal.TryParse(row["PrevReturnedQtyInSmallest"].ToString(), out decimal pSmallest))
+                {
+                    prevQtyInSmallest = pSmallest;
+                }
 
                 dgRow.Cells["OriginalFactor"].Value = invoiceFactor;
                 dgRow.Cells["OriginalUnitPrice"].Value = origUnitPrice.ToString("N2");
@@ -1881,15 +1968,24 @@ namespace ChickenDist.Forms
                 if (!string.IsNullOrEmpty(u2Name) && !comboCell.Items.Contains(u2Name)) comboCell.Items.Add(u2Name);
                 if (!string.IsNullOrEmpty(baseUnit) && !comboCell.Items.Contains(baseUnit)) comboCell.Items.Add(baseUnit);
 
+                if (!string.IsNullOrEmpty(invoiceUnitName) && !comboCell.Items.Contains(invoiceUnitName))
+                    comboCell.Items.Add(invoiceUnitName);
+
                 if (comboCell.Items.Contains(invoiceUnitName))
                     comboCell.Value = invoiceUnitName;
+                else if (comboCell.Items.Count > 0)
+                    comboCell.Value = comboCell.Items[0];
+
                 int pid = Convert.ToInt32(row["ProductID"]);
                 int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
                 decimal actStock = GetProductActualStock(pid, selectedWh);
+                dgRow.Cells["ActualStockInSmallest"].Value = actStock;
+
+                decimal displayStock = invoiceFactor > 0 ? (actStock / invoiceFactor) : actStock;
 
                 dgRow.Cells["SoldQty"].Value = soldQty.ToString("G29");
                 dgRow.Cells["PrevReturnedQty"].Value = prevRetQty.ToString("G29");
-                dgRow.Cells["CurrentStock"].Value = actStock.ToString("G29");
+                dgRow.Cells["CurrentStock"].Value = displayStock.ToString("G29");
                 dgRow.Cells["NewReturnedQty"].Value = 0m;
                 dgRow.Cells["UnitPrice"].Value = netUnitPrice.ToString("F2");
                 dgRow.Cells["TotalPrice"].Value = "0.00";
@@ -1929,36 +2025,18 @@ namespace ChickenDist.Forms
 
                 var row = dgItems.Rows[e.RowIndex];
                 string selectedUnit = row.Cells["UnitName"].Value?.ToString();
-                string baseUnit = row.Cells["BaseUnitName"].Value?.ToString() ?? "";
-                string u1Name = row.Cells["Unit1Name"].Value?.ToString();
-                string u2Name = row.Cells["Unit2Name"].Value?.ToString();
-
-                decimal selectedFactor = 1m;
-                if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
-                {
-                    decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
-                    selectedFactor = u2Factor > 0 ? u2Factor : 1m;
-                }
-                else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name)
-                {
-                    selectedFactor = 1m;
-                }
-                else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
-                {
-                    decimal u2Factor = Convert.ToDecimal(row.Cells["Unit2Factor"].Value);
-                    decimal u3Factor = Convert.ToDecimal(row.Cells["Unit3Factor"].Value);
-                    selectedFactor = (u3Factor > 0 ? u3Factor : 1m) * (u2Factor > 0 ? u2Factor : 1m);
-                }
+                decimal selectedFactor = GetRowUnitFactor(row, selectedUnit);
+                if (selectedFactor <= 0) selectedFactor = 1m;
 
                 decimal soldQtyInSmallest = Convert.ToDecimal(row.Cells["SoldQtyInSmallest"].Value);
                 decimal prevQtyInSmallest = Convert.ToDecimal(row.Cells["PrevReturnedQtyInSmallest"].Value);
                 decimal newQtyInSmallest = newQty * selectedFactor;
 
-                if (newQtyInSmallest + prevQtyInSmallest > soldQtyInSmallest)
+                if (newQtyInSmallest + prevQtyInSmallest > soldQtyInSmallest + 0.0001m)
                 {
-                    decimal maxAllowedInSmallest = soldQtyInSmallest - prevQtyInSmallest;
+                    decimal maxAllowedInSmallest = Math.Max(0m, soldQtyInSmallest - prevQtyInSmallest);
                     decimal maxAllowedInSelected = maxAllowedInSmallest / selectedFactor;
-                    MessageBox.Show($"الكمية المرتجعة الجديدة ({newQty} {selectedUnit}) تتجاوز الكمية الأصلية بالفاتورة.\nالحد الأقصى المسموح به: {maxAllowedInSelected:N3} {selectedUnit}", "تجاوز الكمية المتاحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"الكمية المرتجعة الجديدة ({newQty} {selectedUnit}) تتجاوز الكمية المتاحة بالفاتورة.\nالحد الأقصى المسموح به: {maxAllowedInSelected:N3} {selectedUnit}", "تجاوز الكمية المتاحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     e.Cancel = true;
                 }
             }
@@ -2028,22 +2106,80 @@ namespace ChickenDist.Forms
             else if (colName == "UnitName")
             {
                 string selectedUnit = row.Cells["UnitName"].Value?.ToString();
-                string u1Name = row.Cells["Unit1Name"]?.Value?.ToString();
-                string u2Name = row.Cells["Unit2Name"]?.Value?.ToString();
+                decimal selectedFactor = GetRowUnitFactor(row, selectedUnit);
+                if (selectedFactor <= 0) selectedFactor = 1m;
 
-                decimal u1Price = 0m, u2Price = 0m;
-                if (row.Cells["Unit1SalePrice"]?.Value != null) decimal.TryParse(row.Cells["Unit1SalePrice"].Value.ToString(), out u1Price);
-                if (row.Cells["Unit2SalePrice"]?.Value != null) decimal.TryParse(row.Cells["Unit2SalePrice"].Value.ToString(), out u2Price);
-
-                decimal autoPrice = 0m;
-                if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name && u2Price > 0)
-                    autoPrice = u2Price;
-                else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name && u1Price > 0)
-                    autoPrice = u1Price;
-
-                if (autoPrice > 0)
+                if (cboMode != null && cboMode.SelectedIndex == 0) // مرتجع فاتورة
                 {
-                    row.Cells["UnitPrice"].Value = autoPrice.ToString("F2");
+                    decimal soldInSmallest = 0m;
+                    decimal prevInSmallest = 0m;
+                    decimal netUnitPrice = 0m;
+                    decimal origFactor = 1m;
+                    decimal actStockInSmallest = 0m;
+                    decimal origUnitPrice = 0m;
+
+                    if (row.Cells["SoldQtyInSmallest"]?.Value != null) decimal.TryParse(row.Cells["SoldQtyInSmallest"].Value.ToString(), out soldInSmallest);
+                    if (row.Cells["PrevReturnedQtyInSmallest"]?.Value != null) decimal.TryParse(row.Cells["PrevReturnedQtyInSmallest"].Value.ToString(), out prevInSmallest);
+                    if (row.Cells["NetUnitPrice"]?.Value != null) decimal.TryParse(row.Cells["NetUnitPrice"].Value.ToString(), out netUnitPrice);
+                    if (row.Cells["OriginalFactor"]?.Value != null) decimal.TryParse(row.Cells["OriginalFactor"].Value.ToString(), out origFactor);
+                    if (row.Cells["ActualStockInSmallest"]?.Value != null) decimal.TryParse(row.Cells["ActualStockInSmallest"].Value.ToString(), out actStockInSmallest);
+                    if (row.Cells["OriginalUnitPrice"]?.Value != null) decimal.TryParse(row.Cells["OriginalUnitPrice"].Value.ToString(), out origUnitPrice);
+                    if (origFactor <= 0) origFactor = 1m;
+
+                    decimal unitPriceSmallest = netUnitPrice / origFactor;
+                    decimal newUnitPrice = Math.Round(unitPriceSmallest * selectedFactor, 2);
+                    row.Cells["UnitPrice"].Value = newUnitPrice.ToString("F2");
+
+                    if (origUnitPrice > 0)
+                    {
+                        decimal origPriceSmallest = origUnitPrice / origFactor;
+                        row.Cells["OriginalUnitPrice"].Value = (origPriceSmallest * selectedFactor).ToString("N2");
+                    }
+
+                    if (soldInSmallest > 0)
+                    {
+                        decimal newSold = soldInSmallest / selectedFactor;
+                        decimal newPrev = prevInSmallest / selectedFactor;
+                        row.Cells["SoldQty"].Value = newSold.ToString("G29");
+                        row.Cells["PrevReturnedQty"].Value = newPrev.ToString("G29");
+                    }
+                    if (actStockInSmallest > 0)
+                    {
+                        row.Cells["CurrentStock"].Value = (actStockInSmallest / selectedFactor).ToString("G29");
+                    }
+                }
+                else // مرتجع عام أو استبدال
+                {
+                    string u1Name = row.Cells["Unit1Name"]?.Value?.ToString();
+                    string u2Name = row.Cells["Unit2Name"]?.Value?.ToString();
+                    string baseUnit = row.Cells["BaseUnitName"]?.Value?.ToString();
+
+                    decimal u1Price = 0m, u2Price = 0m, basePrice = 0m;
+                    if (row.Cells["Unit1SalePrice"]?.Value != null) decimal.TryParse(row.Cells["Unit1SalePrice"].Value.ToString(), out u1Price);
+                    if (row.Cells["Unit2SalePrice"]?.Value != null) decimal.TryParse(row.Cells["Unit2SalePrice"].Value.ToString(), out u2Price);
+                    if (row.Cells["OriginalUnitPrice"]?.Value != null) decimal.TryParse(row.Cells["OriginalUnitPrice"].Value.ToString(), out basePrice);
+
+                    decimal autoPrice = 0m;
+                    if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name && u2Price > 0)
+                        autoPrice = u2Price;
+                    else if (!string.IsNullOrEmpty(u1Name) && selectedUnit == u1Name && u1Price > 0)
+                        autoPrice = u1Price;
+                    else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit && basePrice > 0)
+                        autoPrice = basePrice;
+                    else if (u1Price > 0)
+                        autoPrice = u1Price * selectedFactor;
+
+                    if (autoPrice > 0)
+                    {
+                        row.Cells["UnitPrice"].Value = autoPrice.ToString("F2");
+                    }
+
+                    decimal actStockInSmallest = 0m;
+                    if (row.Cells["ActualStockInSmallest"]?.Value != null) decimal.TryParse(row.Cells["ActualStockInSmallest"].Value.ToString(), out actStockInSmallest);
+                    if (actStockInSmallest > 0)
+                    {
+                        row.Cells["CurrentStock"].Value = (actStockInSmallest / selectedFactor).ToString("G29");
+                    }
                 }
 
                 decimal.TryParse(row.Cells["NewReturnedQty"]?.Value?.ToString(), out decimal newQty);
@@ -2121,6 +2257,9 @@ namespace ChickenDist.Forms
                         }
                         decimal effectiveUnitPrice = newQty > 0 ? Math.Round(rowTotal / newQty, 2) : price;
 
+                        string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+                        decimal itemFactor = GetRowUnitFactor(row, selectedUnit);
+
                         returnItems.Add(new SaleItemDTO 
                         { 
                             ProductID = prodID, 
@@ -2128,8 +2267,8 @@ namespace ChickenDist.Forms
                             Quantity = newQty, 
                             UnitPrice = effectiveUnitPrice,
                             TotalPrice = rowTotal,
-                            UnitName = row.Cells["UnitName"].Value?.ToString(),
-                            Factor = 1m,
+                            UnitName = selectedUnit,
+                            Factor = itemFactor,
                             Color = row.Cells["Color"]?.Value?.ToString() ?? "",
                             ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? ""
                         });
@@ -2201,22 +2340,7 @@ namespace ChickenDist.Forms
                     if (newQty > 0)
                     {
                         string selectedUnit = row.Cells["UnitName"].Value?.ToString();
-                        string u1Name = row.Cells["Unit1Name"]?.Value?.ToString();
-                        string u2Name = row.Cells["Unit2Name"]?.Value?.ToString();
-                        string baseUnit = row.Cells["BaseUnitName"]?.Value?.ToString();
-
-                        decimal factor = 1m;
-                        if (!string.IsNullOrEmpty(u2Name) && selectedUnit == u2Name)
-                        {
-                            decimal u2Factor = row.Cells["Unit2Factor"]?.Value != null ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 1m;
-                            factor = u2Factor > 0 ? u2Factor : 1m;
-                        }
-                        else if (!string.IsNullOrEmpty(baseUnit) && selectedUnit == baseUnit)
-                        {
-                            decimal u2Factor = row.Cells["Unit2Factor"]?.Value != null ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 1m;
-                            decimal u3Factor = row.Cells["Unit3Factor"]?.Value != null ? Convert.ToDecimal(row.Cells["Unit3Factor"].Value) : 1m;
-                            factor = (u2Factor > 0 ? u2Factor : 1m) * (u3Factor > 0 ? u3Factor : 1m);
-                        }
+                        decimal factor = GetRowUnitFactor(row, selectedUnit);
 
                         returnItems.Add(new SaleItemDTO 
                         { 
@@ -2224,6 +2348,7 @@ namespace ChickenDist.Forms
                             ProductName = prodName, 
                             Quantity = newQty, 
                             UnitPrice = price,
+                            TotalPrice = Math.Round(newQty * price, 2),
                             UnitName = selectedUnit,
                             Factor = factor,
                             Color = row.Cells["Color"]?.Value?.ToString() ?? "",
@@ -2283,6 +2408,9 @@ namespace ChickenDist.Forms
                         }
                         decimal effectiveUnitPrice = q > 0 ? Math.Round(rowTotal / q, 2) : p;
 
+                        string selectedUnit = r.Cells["UnitName"].Value?.ToString();
+                        decimal factor = GetRowUnitFactor(r, selectedUnit);
+
                         retItems.Add(new SaleItemDTO 
                         { 
                             ProductID = pid, 
@@ -2290,6 +2418,8 @@ namespace ChickenDist.Forms
                             Quantity = q, 
                             UnitPrice = effectiveUnitPrice,
                             TotalPrice = rowTotal,
+                            UnitName = selectedUnit,
+                            Factor = factor,
                             Color = r.Cells["Color"]?.Value?.ToString() ?? "",
                             ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
                         });
@@ -2303,15 +2433,39 @@ namespace ChickenDist.Forms
                     string name = r.Cells["ProductName"].Value.ToString();
                     decimal.TryParse(r.Cells["NewQty"].Value?.ToString(), out decimal q);
                     decimal.TryParse(r.Cells["UnitPrice"].Value?.ToString(), out decimal p);
-                    if (q > 0) newItems.Add(new SaleItemDTO 
-                    { 
-                        ProductID = pid, 
-                        ProductName = name, 
-                        Quantity = q, 
-                        UnitPrice = p,
-                        Color = r.Cells["Color"]?.Value?.ToString() ?? "",
-                        ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
-                    });
+                    if (q > 0)
+                    {
+                        string uName = r.Cells["UnitName"]?.Value?.ToString();
+                        decimal fac = 1m;
+                        if (r.Cells["Factor"]?.Value != null && decimal.TryParse(r.Cells["Factor"].Value.ToString(), out decimal parsedFac) && parsedFac > 0)
+                        {
+                            fac = parsedFac;
+                        }
+                        else
+                        {
+                            var pRow = ProductDAL.GetByID(pid);
+                            if (pRow != null)
+                            {
+                                if (string.IsNullOrEmpty(uName)) uName = pRow["Unit"]?.ToString() ?? "قطعة";
+                                decimal.TryParse(pRow["Unit2Factor"]?.ToString(), out decimal u2f);
+                                decimal.TryParse(pRow["Unit3Factor"]?.ToString(), out decimal u3f);
+                                fac = (u2f > 0 ? u2f : 1m) * (u3f > 0 ? u3f : 1m);
+                            }
+                        }
+
+                        newItems.Add(new SaleItemDTO 
+                        { 
+                            ProductID = pid, 
+                            ProductName = name, 
+                            Quantity = q, 
+                            UnitPrice = p,
+                            TotalPrice = Math.Round(q * p, 2),
+                            UnitName = !string.IsNullOrEmpty(uName) ? uName : "قطعة",
+                            Factor = fac > 0 ? fac : 1m,
+                            Color = r.Cells["Color"]?.Value?.ToString() ?? "",
+                            ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
+                        });
+                    }
                 }
 
                 if (retItems.Count == 0 || newItems.Count == 0)
@@ -2515,26 +2669,25 @@ namespace ChickenDist.Forms
                     var row = dgItems.Rows[idx];
                     int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
                     decimal actStock = GetProductActualStock(pid, selectedWh);
+                    row.Cells["ActualStockInSmallest"].Value = actStock;
+
+                    string defaultUnit = null;
+                    if (mu == 1 && pRow.Table.Columns.Contains("Unit1Name"))
+                        defaultUnit = pRow["Unit1Name"]?.ToString();
+                    else if (mu == 2 && pRow.Table.Columns.Contains("Unit2Name"))
+                        defaultUnit = pRow["Unit2Name"]?.ToString();
+
+                    PopulateItemUnitData(row, pid, defaultUnit);
 
                     row.Cells["ProductID"].Value       = pid;
                     row.Cells["ProductName"].Value     = pname;
 
-                    if (dgItems.Columns.Contains("Color"))
-                    {
-                        string pColor = pRow.Table.Columns.Contains("Color") && pRow["Color"] != DBNull.Value ? pRow["Color"].ToString().Trim() : "";
-                        row.Cells["Color"].Value = pColor;
-                        if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
-                    }
-                    if (dgItems.Columns.Contains("ProductSize"))
-                    {
-                        string pSize = pRow.Table.Columns.Contains("ProductSize") && pRow["ProductSize"] != DBNull.Value ? pRow["ProductSize"].ToString().Trim() : "";
-                        row.Cells["ProductSize"].Value = pSize;
-                        if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
-                    }
-
                     row.Cells["SoldQty"].Value         = "عام";
                     row.Cells["PrevReturnedQty"].Value = "0";
-                    row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
+
+                    string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+                    decimal factor = GetRowUnitFactor(row, selectedUnit);
+                    row.Cells["CurrentStock"].Value    = (factor > 0 ? (actStock / factor) : actStock).ToString("G29");
                     row.Cells["NewReturnedQty"].Value  = qty;
                     if (row.Cells["OriginalUnitPrice"] != null) row.Cells["OriginalUnitPrice"].Value = price.ToString("N2");
                     if (row.Cells["Discount"] != null) row.Cells["Discount"].Value = "-";
@@ -2593,30 +2746,19 @@ namespace ChickenDist.Forms
                     int idx = dgItems.Rows.Add();
                     var row = dgItems.Rows[idx];
                     decimal actStock = GetProductActualStock(dlg.SelectedProductID, whId);
+                    row.Cells["ActualStockInSmallest"].Value = actStock;
+
+                    PopulateItemUnitData(row, dlg.SelectedProductID, null);
 
                     row.Cells["ProductID"].Value       = dlg.SelectedProductID;
                     row.Cells["ProductName"].Value     = pname;
 
-                    var dtSrchProd = DbHelper.Query("SELECT Color, ProductSize FROM Products WHERE ProductID = @id", DbHelper.P("@id", dlg.SelectedProductID));
-                    if (dtSrchProd.Rows.Count > 0)
-                    {
-                        string pColor = dtSrchProd.Rows[0]["Color"]?.ToString().Trim() ?? "";
-                        string pSize = dtSrchProd.Rows[0]["ProductSize"]?.ToString().Trim() ?? "";
-                        if (dgItems.Columns.Contains("Color"))
-                        {
-                            row.Cells["Color"].Value = pColor;
-                            if (!string.IsNullOrEmpty(pColor)) dgItems.Columns["Color"].Visible = true;
-                        }
-                        if (dgItems.Columns.Contains("ProductSize"))
-                        {
-                            row.Cells["ProductSize"].Value = pSize;
-                            if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
-                        }
-                    }
-
                     row.Cells["SoldQty"].Value         = "عام";
                     row.Cells["PrevReturnedQty"].Value = "0";
-                    row.Cells["CurrentStock"].Value    = actStock.ToString("G29");
+
+                    string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+                    decimal factor = GetRowUnitFactor(row, selectedUnit);
+                    row.Cells["CurrentStock"].Value    = (factor > 0 ? (actStock / factor) : actStock).ToString("G29");
                     row.Cells["NewReturnedQty"].Value  = qty;
                     if (row.Cells["OriginalUnitPrice"] != null) row.Cells["OriginalUnitPrice"].Value = price.ToString("N2");
                     if (row.Cells["Discount"] != null) row.Cells["Discount"].Value = "-";
