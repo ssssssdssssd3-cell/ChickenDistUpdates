@@ -3757,6 +3757,7 @@ namespace ChickenDist.Forms
                     }
 
                     ProductCache.Refresh();
+                    StockCache.Invalidate(warehouseID);
                     FrmQuickAdd.RaiseProductSaved();
 
                     _lastPurchaseID = id;

@@ -2163,6 +2163,8 @@ namespace ChickenDist.Forms
                     if (id > 0) 
                     { 
                         _lastSavedReturnID = id;
+                        StockCache.Invalidate(warehouseID);
+                        FrmQuickAdd.RaiseProductSaved();
                         FrmPrintChoiceDialog.PromptAndPrintReturn(this, id, "✅ تم حفظ مرتجع البيع بنجاح!");
                         txtNotes.Text = "";
                         LoadSales();
@@ -2243,6 +2245,8 @@ namespace ChickenDist.Forms
                     if (id > 0)
                     {
                         _lastSavedReturnID = id;
+                        StockCache.Invalidate(warehouseID);
+                        FrmQuickAdd.RaiseProductSaved();
                         FrmPrintChoiceDialog.PromptAndPrintReturn(this, id, "✅ تم حفظ مرتجع البيع العام بنجاح!");
                         txtNotes.Text = "";
                         dgItems.Rows.Clear();
@@ -2321,6 +2325,8 @@ namespace ChickenDist.Forms
                     bool ok = ReturnDAL.SaveItemExchange(clientID, warehouseID.Value, retItems, newItems, returnType, txtNotes.Text, shiftID);
                     if (ok)
                     {
+                        StockCache.Invalidate(warehouseID);
+                        FrmQuickAdd.RaiseProductSaved();
                         MessageBox.Show("✅ تم إنجاز عملية استبدال الأصناف وتصفية الفرق بنجاح!", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         txtNotes.Text = "";
                         dgItems.Rows.Clear();

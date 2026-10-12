@@ -219,6 +219,9 @@ namespace ChickenDist.Forms
 			KeyPreview = true;
 			this.KeyDown += FrmSale_KeyDown;
 			this.FormClosing += FrmSale_FormClosing;
+			this.Activated += FrmSale_Activated;
+			StockCache.StockChanged += OnGlobalStockChanged;
+			FrmQuickAdd.ProductSaved += OnGlobalProductSaved;
 			
 			_barcodeTimer = new System.Windows.Forms.Timer { Interval = 100 };
 			_barcodeTimer.Tick += BarcodeTimer_Tick;
@@ -2638,137 +2641,7 @@ namespace ChickenDist.Forms
 			cboDriver.SelectedIndex = 0;
 			cboDriver.EndUpdate();
 			
-			DataTable all2 = ProductCache.GetActive();
-			cboProduct.BeginUpdate();
-			cboProduct.Items.Clear();
-			List<ComboItem> productItems = new List<ComboItem>();
-			productItems.Add(new ComboItem(0, "-- اختر صنف --"));
-			foreach (DataRow row3 in all2.Rows)
-			{
-				string name = row3["ProductName"].ToString();
-				decimal price = (decimal)row3["SalePrice"];
-				decimal pendingPrice = row3["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PendingSalePrice"]) : 0m;
-				decimal pendingQtyThreshold = row3["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row3["PendingQtyThreshold"]) : 0m;
-				decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
-
-				// ── بيانات الوحدات المتعددة (مشتركة بين كل فروع الـ if/else) ──
-				string unit1Name   = row3.Table.Columns.Contains("Unit1Name")   && row3["Unit1Name"]   != DBNull.Value ? row3["Unit1Name"].ToString()   : null;
-				string unit1Barcode = row3.Table.Columns.Contains("Unit1Barcode") && row3["Unit1Barcode"] != DBNull.Value ? row3["Unit1Barcode"].ToString() : "";
-				decimal unit1SP    = row3.Table.Columns.Contains("Unit1SalePrice") && row3["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1SalePrice"]) : 0m;
-				decimal unit1PP    = row3.Table.Columns.Contains("Unit1PurchasePrice") && row3["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1PurchasePrice"]) : 0m;
-				string unit2Name   = row3.Table.Columns.Contains("Unit2Name")   && row3["Unit2Name"]   != DBNull.Value ? row3["Unit2Name"].ToString()   : null;
-				string unit2Barcode = row3.Table.Columns.Contains("Unit2Barcode") && row3["Unit2Barcode"] != DBNull.Value ? row3["Unit2Barcode"].ToString() : "";
-				decimal unit2Factor = row3.Table.Columns.Contains("Unit2Factor") && row3["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2Factor"]) : 1m;
-				decimal unit2SP    = row3.Table.Columns.Contains("Unit2SalePrice") && row3["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2SalePrice"]) : 0m;
-				decimal unit2PP    = row3.Table.Columns.Contains("Unit2PurchasePrice") && row3["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2PurchasePrice"]) : 0m;
-				decimal unit3Factor = row3.Table.Columns.Contains("Unit3Factor") && row3["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit3Factor"]) : 1m;
-				string baseUnit    = row3.Table.Columns.Contains("Unit")         && row3["Unit"]         != DBNull.Value ? row3["Unit"].ToString()         : "";
-
-				if (pendingPrice > 0m && pendingQtyThreshold > 0m)
-				{
-					// إضافة السعر الحالي كخيار مستقل
-					var itemOld = new ComboItem(
-						(int)row3["ProductID"], 
-						name,
-						$"{name} (سعر: {price:N2})",
-						price, 
-						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
-						purchasePrice
-					);
-					itemOld.PendingSalePrice = 0m;
-					itemOld.PendingQtyThreshold = 0m;
-					itemOld.ProductSize = row3.Table.Columns.Contains("ProductSize") && row3["ProductSize"] != DBNull.Value ? row3["ProductSize"].ToString().Trim() : "";
-					itemOld.Color = row3.Table.Columns.Contains("Color") && row3["Color"] != DBNull.Value ? row3["Color"].ToString().Trim() : "";
-					itemOld.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
-					itemOld.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
-					itemOld.Brand = row3["Brand"]?.ToString().Trim() ?? "";
-					itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
-					itemOld.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
-					itemOld.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
-					itemOld.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
-					itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
-					itemOld.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
-					itemOld.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
-					itemOld.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
-					// وحدات متعددة
-					itemOld.BaseUnitName = baseUnit;
-					itemOld.Unit1Name = unit1Name; itemOld.Unit1Barcode = unit1Barcode; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
-					itemOld.Unit2Name = unit2Name; itemOld.Unit2Barcode = unit2Barcode; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
-					itemOld.Unit3Factor = unit3Factor;
-					productItems.Add(itemOld);
-
-					// إضافة السعر المعلق كخيار مستقل
-					var itemPending = new ComboItem(
-						(int)row3["ProductID"], 
-						name,
-						$"{name} (معلق: {pendingPrice:N2})",
-						pendingPrice, 
-						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
-						purchasePrice
-					);
-					itemPending.PendingSalePrice = 0m;
-					itemPending.PendingQtyThreshold = 0m;
-					itemPending.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
-					itemPending.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
-					itemPending.Brand = row3["Brand"]?.ToString().Trim() ?? "";
-					itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
-					itemPending.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
-					itemPending.InternationalCode = row3["InternationalCode"]?.ToString().Trim() ?? "";
-					itemPending.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
-					itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
-					itemPending.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
-					itemPending.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
-					itemPending.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
-					// وحدات متعددة
-					itemPending.BaseUnitName = baseUnit;
-					itemPending.Unit1Name = unit1Name; itemPending.Unit1Barcode = unit1Barcode; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
-					itemPending.Unit2Name = unit2Name; itemPending.Unit2Barcode = unit2Barcode; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
-					itemPending.Unit3Factor = unit3Factor;
-					productItems.Add(itemPending);
-				}
-				else
-				{
-					var comboItem = new ComboItem(
-						(int)row3["ProductID"], 
-						name,
-						$"{name} ({price:N2})",
-						price, 
-						row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
-						purchasePrice
-					);
-					comboItem.PendingSalePrice = pendingPrice;
-					comboItem.PendingQtyThreshold = pendingQtyThreshold;
-					comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
-					comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
-					comboItem.Brand = row3["Brand"]?.ToString() ?? "";
-					comboItem.ProductSize = row3.Table.Columns.Contains("ProductSize") && row3["ProductSize"] != DBNull.Value ? row3["ProductSize"].ToString() : "";
-					comboItem.Color = row3.Table.Columns.Contains("Color") && row3["Color"] != DBNull.Value ? row3["Color"].ToString() : "";
-					comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
-					comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
-					comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
-					comboItem.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
-					comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
-					comboItem.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
-					comboItem.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
-					comboItem.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
-					// وحدات متعددة
-					comboItem.BaseUnitName = baseUnit;
-					comboItem.Unit1Name = unit1Name; comboItem.Unit1Barcode = unit1Barcode; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
-					comboItem.Unit2Name = unit2Name; comboItem.Unit2Barcode = unit2Barcode; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
-					comboItem.Unit3Factor = unit3Factor;
-					productItems.Add(comboItem);
-				}
-			}
-			_productCache = productItems;
-			// نحدّث cboProduct أيضاً للتوافق مع الكود القديم
-			cboProduct.BeginUpdate();
-			cboProduct.Items.Clear();
-			cboProduct.Items.AddRange(productItems.ToArray());
-			cboProduct.DisplayMember = "Text";
-			cboProduct.Tag = productItems;
-			cboProduct.SelectedIndex = 0;
-			cboProduct.EndUpdate();
-			// لا نضيف SelectedIndexChanged - cboProduct مخفي
+			SyncProductCatalogFast();
 			dtpDate.Value = DateTime.Today;
 			SetInvoiceType(GetDefaultAllowedInvoiceType());
 
@@ -2800,12 +2673,8 @@ namespace ChickenDist.Forms
 
 				cboWarehouse.SelectedIndexChanged += (s, e) =>
 				{
-					foreach (var item in _items)
-					{
-						item.StockQty = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
-					}
+					RefreshStockData(reloadProductCatalog: false);
 					RefreshGrid();
-					LoadQuickItems();
 				};
 			}
 			catch { /* لو مافيش مخازن نكمل بدون خطأ */ }
@@ -2859,6 +2728,274 @@ namespace ChickenDist.Forms
 			}
 			catch { }
 			UpdateShiftSummaryLabel();
+		}
+
+		private DateTime _lastStockRefreshTime = DateTime.MinValue;
+
+		private void OnGlobalStockChanged(int? warehouseID)
+		{
+			if (this.IsDisposed) return;
+			int? currentWh = GetSelectedWarehouseID();
+			if (warehouseID.HasValue && warehouseID.Value > 0 && currentWh.HasValue && warehouseID.Value != currentWh.Value)
+				return;
+
+			if (this.InvokeRequired)
+			{
+				this.BeginInvoke((MethodInvoker)(() => RefreshStockData(reloadProductCatalog: false)));
+			}
+			else
+			{
+				RefreshStockData(reloadProductCatalog: false);
+			}
+		}
+
+		private void OnGlobalProductSaved(object sender, EventArgs e)
+		{
+			if (this.IsDisposed) return;
+			if (this.InvokeRequired)
+			{
+				this.BeginInvoke((MethodInvoker)(() => RefreshStockData(reloadProductCatalog: true)));
+			}
+			else
+			{
+				RefreshStockData(reloadProductCatalog: true);
+			}
+		}
+
+		private void FrmSale_Activated(object sender, EventArgs e)
+		{
+			if ((DateTime.Now - _lastStockRefreshTime).TotalMilliseconds < 400)
+				return;
+
+			RefreshStockData(reloadProductCatalog: false);
+		}
+
+		public void RefreshStockData(bool reloadProductCatalog = false)
+		{
+			if (this.IsDisposed) return;
+			if (this.InvokeRequired)
+			{
+				this.BeginInvoke((MethodInvoker)(() => RefreshStockData(reloadProductCatalog)));
+				return;
+			}
+
+			try
+			{
+				if (reloadProductCatalog)
+				{
+					ProductCache.Refresh();
+					SyncProductCatalogFast();
+					LoadQuickItems();
+				}
+
+				int? whId = GetSelectedWarehouseID();
+				_stockCache = StockCache.GetStockSummary(whId, forceRefresh: true);
+				_lastStockRefreshTime = DateTime.Now;
+
+				if (_editSaleID > 0 && !_isCopyMode)
+				{
+					try
+					{
+						var dtItems = SaleDAL.GetItems(_editSaleID);
+						if (dtItems != null)
+						{
+							foreach (DataRow iRow in dtItems.Rows)
+							{
+								int pid = Convert.ToInt32(iRow["ProductID"]);
+								decimal qty = Convert.ToDecimal(iRow["Quantity"]);
+								decimal fac = (iRow.Table.Columns.Contains("Factor") && iRow["Factor"] != DBNull.Value) ? Convert.ToDecimal(iRow["Factor"]) : 1m;
+								decimal baseQty = qty * (fac > 0 ? fac : 1m);
+								if (_stockCache.ContainsKey(pid))
+									_stockCache[pid] += baseQty;
+								else
+									_stockCache[pid] = baseQty;
+							}
+						}
+					}
+					catch { }
+				}
+
+				UpdateGridStockDisplay();
+			}
+			catch (Exception ex)
+			{
+				AppLogger.Error("RefreshStockData error", ex);
+			}
+		}
+
+		private void UpdateGridStockDisplay()
+		{
+			if (this.IsDisposed) return;
+			try
+			{
+				int? whId = GetSelectedWarehouseID();
+				for (int i = 0; i < _items.Count; i++)
+				{
+					var item = _items[i];
+					if (_stockCache.TryGetValue(item.ProductID, out decimal st))
+					{
+						item.StockQty = st;
+					}
+					else
+					{
+						item.StockQty = InventoryDAL.GetProductStock(item.ProductID, whId);
+						_stockCache[item.ProductID] = item.StockQty;
+					}
+
+					if (dgItems != null && i < dgItems.Rows.Count && dgItems.Columns.Contains("StockQty"))
+					{
+						decimal itemFac = item.Factor > 0 ? item.Factor : 1m;
+						decimal stockInUnit = item.StockQty / itemFac;
+						string stockStr = (stockInUnit == Math.Floor(stockInUnit)) ? stockInUnit.ToString("N0") : stockInUnit.ToString("N2");
+						dgItems.Rows[i].Cells["StockQty"].Value = stockStr;
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				AppLogger.Error("UpdateGridStockDisplay error", ex);
+			}
+		}
+
+		private void SyncProductCatalogFast()
+		{
+			try
+			{
+				DataTable all2 = ProductCache.GetActive();
+				List<ComboItem> productItems = new List<ComboItem>();
+				productItems.Add(new ComboItem(0, "-- اختر صنف --"));
+				foreach (DataRow row3 in all2.Rows)
+				{
+					string name = row3["ProductName"].ToString();
+					decimal price = (decimal)row3["SalePrice"];
+					decimal pendingPrice = row3["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PendingSalePrice"]) : 0m;
+					decimal pendingQtyThreshold = row3["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row3["PendingQtyThreshold"]) : 0m;
+					decimal purchasePrice = row3["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["PurchasePrice"]) : 0m;
+
+					// ── بيانات الوحدات المتعددة (مشتركة بين كل فروع الـ if/else) ──
+					string unit1Name   = row3.Table.Columns.Contains("Unit1Name")   && row3["Unit1Name"]   != DBNull.Value ? row3["Unit1Name"].ToString()   : null;
+					string unit1Barcode = row3.Table.Columns.Contains("Unit1Barcode") && row3["Unit1Barcode"] != DBNull.Value ? row3["Unit1Barcode"].ToString() : "";
+					decimal unit1SP    = row3.Table.Columns.Contains("Unit1SalePrice") && row3["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1SalePrice"]) : 0m;
+					decimal unit1PP    = row3.Table.Columns.Contains("Unit1PurchasePrice") && row3["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit1PurchasePrice"]) : 0m;
+					string unit2Name   = row3.Table.Columns.Contains("Unit2Name")   && row3["Unit2Name"]   != DBNull.Value ? row3["Unit2Name"].ToString()   : null;
+					string unit2Barcode = row3.Table.Columns.Contains("Unit2Barcode") && row3["Unit2Barcode"] != DBNull.Value ? row3["Unit2Barcode"].ToString() : "";
+					decimal unit2Factor = row3.Table.Columns.Contains("Unit2Factor") && row3["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2Factor"]) : 1m;
+					decimal unit2SP    = row3.Table.Columns.Contains("Unit2SalePrice") && row3["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2SalePrice"]) : 0m;
+					decimal unit2PP    = row3.Table.Columns.Contains("Unit2PurchasePrice") && row3["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2PurchasePrice"]) : 0m;
+					decimal unit3Factor = row3.Table.Columns.Contains("Unit3Factor") && row3["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit3Factor"]) : 1m;
+					string baseUnit    = row3.Table.Columns.Contains("Unit")         && row3["Unit"]         != DBNull.Value ? row3["Unit"].ToString()         : "";
+
+					if (pendingPrice > 0m && pendingQtyThreshold > 0m)
+					{
+						// إضافة السعر الحالي كخيار مستقل
+						var itemOld = new ComboItem(
+							(int)row3["ProductID"], 
+							name,
+							$"{name} (سعر: {price:N2})",
+							price, 
+							row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+							purchasePrice
+						);
+						itemOld.PendingSalePrice = 0m;
+						itemOld.PendingQtyThreshold = 0m;
+						itemOld.ProductSize = row3.Table.Columns.Contains("ProductSize") && row3["ProductSize"] != DBNull.Value ? row3["ProductSize"].ToString().Trim() : "";
+						itemOld.Color = row3.Table.Columns.Contains("Color") && row3["Color"] != DBNull.Value ? row3["Color"].ToString().Trim() : "";
+						itemOld.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
+						itemOld.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
+						itemOld.Brand = row3["Brand"]?.ToString().Trim() ?? "";
+						itemOld.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
+						itemOld.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
+						itemOld.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+						itemOld.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
+						itemOld.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+						itemOld.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
+						itemOld.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
+						itemOld.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
+						// وحدات متعددة
+						itemOld.BaseUnitName = baseUnit;
+						itemOld.Unit1Name = unit1Name; itemOld.Unit1Barcode = unit1Barcode; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
+						itemOld.Unit2Name = unit2Name; itemOld.Unit2Barcode = unit2Barcode; itemOld.Unit2Factor = unit2Factor; itemOld.Unit2SalePrice = unit2SP; itemOld.Unit2PurchasePrice = unit2PP;
+						itemOld.Unit3Factor = unit3Factor;
+						productItems.Add(itemOld);
+
+						// إضافة السعر المعلق كخيار مستقل
+						var itemPending = new ComboItem(
+							(int)row3["ProductID"], 
+							name,
+							$"{name} (معلق: {pendingPrice:N2})",
+							pendingPrice, 
+							row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+							purchasePrice
+						);
+						itemPending.PendingSalePrice = 0m;
+						itemPending.PendingQtyThreshold = 0m;
+						itemPending.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
+						itemPending.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
+						itemPending.Brand = row3["Brand"]?.ToString().Trim() ?? "";
+						itemPending.ShelfLocation = row3["ShelfLocation"]?.ToString().Trim() ?? "";
+						itemPending.ProductCode = row3["ProductCode"]?.ToString().Trim() ?? "";
+						itemPending.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+						itemPending.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
+						itemPending.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+						itemPending.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
+						itemPending.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
+						itemPending.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
+						// وحدات متعددة
+						itemPending.BaseUnitName = baseUnit;
+						itemPending.Unit1Name = unit1Name; itemPending.Unit1Barcode = unit1Barcode; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
+						itemPending.Unit2Name = unit2Name; itemPending.Unit2Barcode = unit2Barcode; itemPending.Unit2Factor = unit2Factor; itemPending.Unit2SalePrice = unit2SP; itemPending.Unit2PurchasePrice = unit2PP;
+						itemPending.Unit3Factor = unit3Factor;
+						productItems.Add(itemPending);
+					}
+					else
+					{
+						var comboItem = new ComboItem(
+							(int)row3["ProductID"], 
+							name,
+							$"{name} ({price:N2})",
+							price, 
+							row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
+							purchasePrice
+						);
+						comboItem.PendingSalePrice = pendingPrice;
+						comboItem.PendingQtyThreshold = pendingQtyThreshold;
+						comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
+						comboItem.CarModel = row3["CarModel"]?.ToString() ?? "";
+						comboItem.Brand = row3["Brand"]?.ToString() ?? "";
+						comboItem.ProductSize = row3.Table.Columns.Contains("ProductSize") && row3["ProductSize"] != DBNull.Value ? row3["ProductSize"].ToString() : "";
+						comboItem.Color = row3.Table.Columns.Contains("Color") && row3["Color"] != DBNull.Value ? row3["Color"].ToString() : "";
+						comboItem.ShelfLocation = row3["ShelfLocation"]?.ToString() ?? "";
+						comboItem.ProductCode = row3["ProductCode"]?.ToString() ?? "";
+						comboItem.InternationalCode = row3["InternationalCode"]?.ToString() ?? "";
+						comboItem.ScalePLU = row3.Table.Columns.Contains("ScalePLU") && row3["ScalePLU"] != DBNull.Value ? row3["ScalePLU"].ToString().Trim() : "";
+						comboItem.IsService = row3.Table.Columns.Contains("IsService") && row3["IsService"] != DBNull.Value && Convert.ToBoolean(row3["IsService"]);
+						comboItem.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
+						comboItem.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
+						comboItem.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
+						// وحدات متعددة
+						comboItem.BaseUnitName = baseUnit;
+						comboItem.Unit1Name = unit1Name; comboItem.Unit1Barcode = unit1Barcode; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
+						comboItem.Unit2Name = unit2Name; comboItem.Unit2Barcode = unit2Barcode; comboItem.Unit2Factor = unit2Factor; comboItem.Unit2SalePrice = unit2SP; comboItem.Unit2PurchasePrice = unit2PP;
+						comboItem.Unit3Factor = unit3Factor;
+						productItems.Add(comboItem);
+					}
+				}
+				_productCache = productItems;
+				if (cboProduct != null)
+				{
+					cboProduct.BeginUpdate();
+					cboProduct.Items.Clear();
+					cboProduct.Items.AddRange(productItems.ToArray());
+					cboProduct.DisplayMember = "Text";
+					cboProduct.Tag = productItems;
+					cboProduct.SelectedIndex = 0;
+					cboProduct.EndUpdate();
+				}
+			}
+			catch (Exception ex)
+			{
+				AppLogger.Error("SyncProductCatalogFast error", ex);
+			}
 		}
 
 		private void UpdateShiftSummaryLabel()
@@ -4134,17 +4271,14 @@ namespace ChickenDist.Forms
 				decimal? lastPrice = (clientID > 0) ? SaleDAL.GetLastPriceForClient(item.ProductID, clientID) : null;
 				string lastPriceStr = lastPrice.HasValue ? lastPrice.Value.ToString("N2") : "-";
 
-				if (item.StockQty <= 0)
+				if (_stockCache.TryGetValue(item.ProductID, out decimal cachedStock))
 				{
-					if (_stockCache.TryGetValue(item.ProductID, out decimal cachedStock))
-					{
-						item.StockQty = cachedStock;
-					}
-					else
-					{
-						item.StockQty = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
-						_stockCache[item.ProductID] = item.StockQty;
-					}
+					item.StockQty = cachedStock;
+				}
+				else
+				{
+					item.StockQty = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
+					_stockCache[item.ProductID] = item.StockQty;
 				}
 				decimal itemFac = item.Factor > 0 ? item.Factor : 1m;
 				decimal stockInUnit = item.StockQty / itemFac;
@@ -4551,6 +4685,8 @@ namespace ChickenDist.Forms
 					else
 					{
 						existingRow.Quantity = newQty;
+						existingRow.StockQty = stock;
+						_stockCache[productID] = stock;
 						if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
 						if (discountPct > 0)
 						{
@@ -4570,6 +4706,7 @@ namespace ChickenDist.Forms
 				{
 					if (qtyToAdd > 0)
 					{
+						_stockCache[productID] = stock;
 						_items.Add(tempItem);
 					}
 				}
@@ -4646,6 +4783,8 @@ namespace ChickenDist.Forms
 						else
 						{
 							existingRow.Quantity = newQty;
+							existingRow.StockQty = stock;
+							_stockCache[productID] = stock;
 							if (manualPrice.HasValue) existingRow.UnitPrice = manualPrice.Value;
 							if (discountPct > 0)
 							{
@@ -4665,6 +4804,7 @@ namespace ChickenDist.Forms
 					{
 						if (qtyToAdd > 0)
 						{
+							_stockCache[productID] = stock;
 							_items.Add(tempItem);
 						}
 					}
@@ -4741,6 +4881,7 @@ namespace ChickenDist.Forms
 				return;
 			}
 
+			_stockCache[productID] = stock;
 			var dto = CreateSaleItemDTO(product, 1m, product.Price, stock);
 			dto.IMEI = imei;
 			_items.Add(dto);
@@ -6355,8 +6496,13 @@ namespace ChickenDist.Forms
 				if (res == DialogResult.No)
 				{
 					e.Cancel = true;
+					return;
 				}
 			}
+
+			this.Activated -= FrmSale_Activated;
+			StockCache.StockChanged -= OnGlobalStockChanged;
+			FrmQuickAdd.ProductSaved -= OnGlobalProductSaved;
 		}
 
 		private void BtnPrint_Click(object sender, EventArgs e)

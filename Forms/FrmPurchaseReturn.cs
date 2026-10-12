@@ -943,6 +943,8 @@ namespace ChickenDist.Forms
                     txtNotes.Text, returnItems, warehouseID, returnType, shiftID);
                 if (id > 0)
                 {
+                    StockCache.Invalidate(warehouseID);
+                    FrmQuickAdd.RaiseProductSaved();
                     MessageBox.Show("✅ تم حفظ مرتجع الشراء بنجاح!\nتم احتساب الصافي وتحديث المخزن وحساب المورد/العميل والخزينة تلقائياً.",
                         "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtNotes.Text = "";

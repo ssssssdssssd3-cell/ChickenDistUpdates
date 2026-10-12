@@ -101,6 +101,12 @@ namespace ChickenDist.Core
             }
         }
 
+        /// <summary>
+        /// حدث فوري يُطلق عند حدوث أي حركة مخزنية (شراء، بيع، مرتجع مبيعات، مرتجع مشتريات، تحويل، جرد)
+        /// لتنبيه كافة شاشات البيع والـ POS المفتوحة بالتحديث اللحظي للأرصدة دون الحاجة لإغلاق الشاشات.
+        /// </summary>
+        public static event Action<int?> StockChanged;
+
         public static void Invalidate(int? warehouseID = null)
         {
             if (warehouseID.HasValue)
@@ -116,6 +122,20 @@ namespace ChickenDist.Core
             // تفريغ الكاش الشامل دائماً لضمان عدم بقاء أي رصيد قديم
             _globalStockCache = null;
             _globalLastUpdated = DateTime.MinValue;
+
+            NotifyStockChanged(warehouseID);
+        }
+
+        public static void NotifyStockChanged(int? warehouseID = null)
+        {
+            try
+            {
+                StockChanged?.Invoke(warehouseID);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("StockCache.NotifyStockChanged", ex);
+            }
         }
 
         /// <summary>
@@ -148,6 +168,8 @@ namespace ChickenDist.Core
                     decimal gq = InventoryDAL.GetProductStock(productID, null);
                     lock (_syncLock) { _globalStockCache[productID] = gq; }
                 }
+
+                NotifyStockChanged(warehouseID);
             }
             catch { }
         }
