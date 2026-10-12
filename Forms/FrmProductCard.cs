@@ -36,6 +36,7 @@ namespace ChickenDist.Forms
         private NumericUpDown nudUnit3Factor;
         private Button btnUnit1MultiBarcode, btnUnit2MultiBarcode;
         private Label lblUnit1Header, lblUnit2Header;
+        private Label lblUnit3FactorPrompt, lblUnit2FactorPrompt, lblUnitFormula;
         // flags لتتبع التعديل اليدوي على أسعار البيع الفرعية
         private bool _unit1SaleOverride = false;
         private bool _unit2SaleOverride = false;
@@ -240,7 +241,7 @@ namespace ChickenDist.Forms
             btnAddUnit2Name.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             u2y += 38;
             
-            AddNud(grpUnit2, "الكرتونة تحتوي كم وسطى؟:", 10, u2y, out nudUnit3Factor, 0);
+            AddNud(grpUnit2, "الكرتونة تحتوي كم وسطى؟:", 10, u2y, out nudUnit3Factor, 0, out lblUnit3FactorPrompt);
             nudUnit3Factor.Minimum = 1;
             nudUnit3Factor.Value = 1;
             u2y += 38;
@@ -271,7 +272,7 @@ namespace ChickenDist.Forms
             btnAddUnit1Name.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             u1y += 38;
 
-            AddNud(grpUnit1, "الوسطى/الكبرى فيها كم صغرى؟:", 10, u1y, out nudUnit2Factor, 0);
+            AddNud(grpUnit1, "الوسطى/الكبرى فيها كم صغرى؟:", 10, u1y, out nudUnit2Factor, 0, out lblUnit2FactorPrompt);
             nudUnit2Factor.Minimum = 1;
             nudUnit2Factor.Value = 1;
             u1y += 38;
@@ -297,6 +298,21 @@ namespace ChickenDist.Forms
             cboDefaultSaleUnit.Items.AddRange(new string[] { "الكبرى", "الوسطى", "الصغرى" });
             cboDefaultSaleUnit.SelectedIndex = 0;
             grpUnit1.Controls.AddRange(new Control[] { lblDefaultSaleUnit, cboDefaultSaleUnit });
+            u1y += 38;
+
+            lblUnitFormula = new Label
+            {
+                Location = new Point(10, u1y),
+                Width = 285,
+                Height = 85,
+                ForeColor = Color.FromArgb(254, 240, 138),
+                BackColor = Color.FromArgb(25, 40, 60),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font(Theme.FontMain.FontFamily, 9.5f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Padding = new Padding(4)
+            };
+            grpUnit1.Controls.Add(lblUnitFormula);
 
             // أسعار الشراء: للقراءة فقط (محسوبة)
             nudUnit2PurchasePrice.ReadOnly = true;
@@ -338,6 +354,8 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlFooter);
 
             // Bind Combo events to update Headers
+            cboUnit.SelectedIndexChanged += (s, e) => UpdateUnitHeaders();
+            cboUnit.TextChanged += (s, e) => UpdateUnitHeaders();
             cboUnit2Name.SelectedIndexChanged += (s, e) => UpdateUnitHeaders();
             cboUnit2Name.TextChanged += (s, e) => UpdateUnitHeaders();
             cboUnit1Name.SelectedIndexChanged += (s, e) => UpdateUnitHeaders();
@@ -425,6 +443,7 @@ namespace ChickenDist.Forms
                         nudUnit1SalePrice.Value = largeSale;
                     nudUnit1PurchasePrice.Value = largePurchase;
                 }
+                UpdateUnitHeaders();
             }
             catch { }
             finally { _inRecalc = false; }
@@ -727,6 +746,14 @@ namespace ChickenDist.Forms
         {
             var lbl = new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 160, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Visible = visible };
             parent.Controls.Add(lbl);
+            nud = new NumericUpDown { Location = new Point(x + 175, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Visible = visible };
+            parent.Controls.Add(nud);
+        }
+
+        private void AddNud(Control parent, string label, int x, int y, out NumericUpDown nud, int decimals, out Label lblOut, bool visible = true)
+        {
+            lblOut = new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 160, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Visible = visible };
+            parent.Controls.Add(lblOut);
             nud = new NumericUpDown { Location = new Point(x + 175, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Visible = visible };
             parent.Controls.Add(nud);
         }
@@ -1332,16 +1359,65 @@ namespace ChickenDist.Forms
 
         private void UpdateUnitHeaders()
         {
-            if (lblUnit2Header != null && cboUnit2Name != null)
+            string unit3 = string.IsNullOrWhiteSpace(cboUnit?.Text) ? "الكبرى" : cboUnit.Text.Trim();
+            string unit2 = string.IsNullOrWhiteSpace(cboUnit2Name?.Text) ? "" : cboUnit2Name.Text.Trim();
+            string unit1 = string.IsNullOrWhiteSpace(cboUnit1Name?.Text) ? "" : cboUnit1Name.Text.Trim();
+
+            if (lblUnit2Header != null)
             {
-                string unit2 = string.IsNullOrWhiteSpace(cboUnit2Name.Text) ? "غير محددة" : cboUnit2Name.Text;
-                lblUnit2Header.Text = $"⚙️ خانات الوحدة الوسطى ({unit2}):";
+                lblUnit2Header.Text = $"⚙️ خانات الوحدة الوسطى ({(string.IsNullOrEmpty(unit2) ? "غير محددة" : unit2)}):";
             }
-            if (lblUnit1Header != null && cboUnit1Name != null)
+            if (lblUnit1Header != null)
             {
-                string unit1 = string.IsNullOrWhiteSpace(cboUnit1Name.Text) ? "غير محددة" : cboUnit1Name.Text;
-                lblUnit1Header.Text = $"⚙️ خانات الوحدة الصغرى ({unit1}):";
+                lblUnit1Header.Text = $"⚙️ خانات الوحدة الصغرى ({(string.IsNullOrEmpty(unit1) ? "غير محددة" : unit1)}):";
             }
+
+            if (lblUnit3FactorPrompt != null)
+            {
+                lblUnit3FactorPrompt.Text = !string.IsNullOrEmpty(unit2) 
+                    ? $"الـ ({unit3}) كم ({unit2})؟:" 
+                    : $"الـ ({unit3}) كم وسطى؟:";
+            }
+
+            if (lblUnit2FactorPrompt != null)
+            {
+                if (!string.IsNullOrEmpty(unit2))
+                {
+                    lblUnit2FactorPrompt.Text = !string.IsNullOrEmpty(unit1) 
+                        ? $"الـ ({unit2}) كم ({unit1})؟:" 
+                        : $"الـ ({unit2}) كم صغرى؟:";
+                }
+                else
+                {
+                    lblUnit2FactorPrompt.Text = !string.IsNullOrEmpty(unit1) 
+                        ? $"الـ ({unit3}) كم ({unit1})؟:" 
+                        : "الكبرى فيها كم صغرى؟:";
+                }
+            }
+
+            if (lblUnitFormula != null)
+            {
+                decimal u3f = nudUnit3Factor != null && nudUnit3Factor.Value >= 1 ? nudUnit3Factor.Value : 1m;
+                decimal u2f = nudUnit2Factor != null && nudUnit2Factor.Value >= 1 ? nudUnit2Factor.Value : 1m;
+                decimal total = u3f * u2f;
+
+                if (!string.IsNullOrEmpty(unit2) && !string.IsNullOrEmpty(unit1))
+                {
+                    lblUnitFormula.Text = $"💡 معادلة التجزئة للصنف:\n1 {unit3} = {u3f:0.##} {unit2} = {total:0.##} {unit1}\n(كل 1 {unit2} تحتوي {u2f:0.##} {unit1})";
+                    lblUnitFormula.ForeColor = Color.FromArgb(254, 240, 138);
+                }
+                else if (!string.IsNullOrEmpty(unit1))
+                {
+                    lblUnitFormula.Text = $"💡 معادلة التجزئة للصنف:\n1 {unit3} = {u2f:0.##} {unit1}";
+                    lblUnitFormula.ForeColor = Color.FromArgb(160, 230, 255);
+                }
+                else
+                {
+                    lblUnitFormula.Text = $"💡 صنف بوحدة واحدة ({unit3}) بدون تجزئة.";
+                    lblUnitFormula.ForeColor = Color.FromArgb(200, 210, 220);
+                }
+            }
+
             UpdateDefaultSaleUnitItems();
         }
 
