@@ -1996,8 +1996,8 @@ namespace ChickenDist.DAL
                         ELSE (s.OpeningCash + 
                               ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) -
                               ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr JOIN Sales sl ON sr.SaleID = sl.SaleID WHERE (sl.ShiftID = s.ShiftID OR (sl.ShiftID IS NULL AND sl.SaleDate >= s.OpenTime))), 0) -
-                              ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0) +
-                              ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0)
+                              ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0) +
+                              ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0)
                              )
                     END AS ExpectedCash,
                     s.ActualCash,
@@ -2568,21 +2568,29 @@ namespace ChickenDist.DAL
                 string srcName = DbHelper.ScalarTrans(trans, "SELECT AccountName FROM SafeAccounts WHERE AccountID=@id", DbHelper.P("@id", sourceAccountID))?.ToString();
                 string destName = DbHelper.ScalarTrans(trans, "SELECT AccountName FROM SafeAccounts WHERE AccountID=@id", DbHelper.P("@id", destAccountID))?.ToString();
 
+                object srcShiftObj = DbHelper.ScalarTrans(trans, "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND SafeAccountID = @id ORDER BY ShiftID DESC", DbHelper.P("@id", sourceAccountID));
+                object srcShiftID = (srcShiftObj != null && srcShiftObj != DBNull.Value) ? srcShiftObj : DBNull.Value;
+
+                object destShiftObj = DbHelper.ScalarTrans(trans, "SELECT TOP 1 ShiftID FROM Shifts WHERE Status = 'Open' AND SafeAccountID = @id ORDER BY ShiftID DESC", DbHelper.P("@id", destAccountID));
+                object destShiftID = (destShiftObj != null && destShiftObj != DBNull.Value) ? destShiftObj : DBNull.Value;
+
                 // Outflow from source
                 DbHelper.ExecuteTrans(trans,
-                    "INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID) VALUES(GETDATE(), 'Transfer', @amt, @notes, @uid, @src)",
+                    "INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Transfer', @amt, @notes, @uid, @src, @sid)",
                     DbHelper.P("@amt", amount),
                     DbHelper.P("@notes", $"تحويل صادر إلى {destName} | " + notes),
                     DbHelper.P("@uid", Session.EmpID),
-                    DbHelper.P("@src", sourceAccountID));
+                    DbHelper.P("@src", sourceAccountID),
+                    DbHelper.P("@sid", srcShiftID));
                 
                 // Inflow to destination
                 DbHelper.ExecuteTrans(trans,
-                    "INSERT INTO CashBox(TransDate, TransType, AmountIn, Notes, CreatedBy, AccountID) VALUES(GETDATE(), 'Transfer', @amt, @notes, @uid, @dest)",
+                    "INSERT INTO CashBox(TransDate, TransType, AmountIn, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Transfer', @amt, @notes, @uid, @dest, @sid)",
                     DbHelper.P("@amt", amount),
                     DbHelper.P("@notes", $"تحويل وارد من {srcName} | " + notes),
                     DbHelper.P("@uid", Session.EmpID),
-                    DbHelper.P("@dest", destAccountID));
+                    DbHelper.P("@dest", destAccountID),
+                    DbHelper.P("@sid", destShiftID));
             });
         }
     }

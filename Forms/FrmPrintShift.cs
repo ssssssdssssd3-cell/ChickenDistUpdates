@@ -198,19 +198,28 @@ namespace ChickenDist.Forms
                 int drawerSafeID = _shiftRow != null && _shiftRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_shiftRow["SafeAccountID"]) : 1;
                 int openedBy = _shiftRow != null && _shiftRow["OpenedBy"] != DBNull.Value ? Convert.ToInt32(_shiftRow["OpenedBy"]) : Session.EmpID;
 
-                // المصروفات والتوريدات النقدية للدرج حصراً
+                // المصروفات والتوريدات والتحويلات النقدية للدرج حصراً
+                DateTime? closeDt = (_status != "Open" && _closeTime != DateTime.MinValue) ? _closeTime : (DateTime?)null;
                 var dtExp = DbHelper.Query(@"
                     SELECT 
                         ISNULL(SUM(AmountOut), 0) AS TotalExpenses,
                         ISNULL(SUM(AmountIn), 0) AS TotalCashIn
                     FROM CashBox 
-                    WHERE (ShiftID = @sid OR (ShiftID IS NULL AND CreatedBy = @emp AND TransDate >= @dt))
-                      AND (AccountID = @accId OR (@accId = 0 AND (AccountID IS NULL OR AccountID = 1)))
-                      AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
+                    WHERE (
+                        ShiftID = @sid 
+                        OR (
+                            (AccountID = @accId OR (@accId = 0 AND (AccountID IS NULL OR AccountID = 1)))
+                            AND TransDate >= @dt
+                            AND (@closeDt IS NULL OR TransDate <= @closeDt)
+                            AND (ShiftID IS NULL OR ShiftID = @sid OR TransType IN ('ShiftCloseIn', 'Transfer'))
+                        )
+                    )
+                    AND (AccountID = @accId OR (@accId = 0 AND (AccountID IS NULL OR AccountID = 1)))
+                    AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ReturnOutcome', 'VisaReturn', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')",
                     DbHelper.P("@sid", _shiftID),
                     DbHelper.P("@dt", _openTime),
                     DbHelper.P("@accId", drawerSafeID),
-                    DbHelper.P("@emp", openedBy));
+                    DbHelper.P("@closeDt", closeDt.HasValue ? (object)closeDt.Value : DBNull.Value));
 
                 if (dtExp.Rows.Count > 0)
                 {
@@ -353,13 +362,30 @@ namespace ChickenDist.Forms
                     UNION ALL
                     SELECT 
                         cb.TransDate AS TransTime,
-                        CASE WHEN cb.AmountIn > 0 THEN N'وارد للدرج' ELSE N'مصروفات' END AS TransType,
+                        CASE 
+                            WHEN cb.TransType = 'ShiftCloseIn' THEN N'تحويل وارد تقفيل (+)'
+                            WHEN cb.TransType = 'Transfer' AND cb.AmountIn > 0 THEN N'تحويل وارد (+)'
+                            WHEN cb.TransType = 'Transfer' AND cb.AmountOut > 0 THEN N'تحويل صادر (-)'
+                            WHEN cb.AmountIn > 0 THEN N'وارد للدرج (+)' 
+                            ELSE N'مصروفات (-)' 
+                        END AS TransType,
                         CAST(cb.CashID AS NVARCHAR) AS RefCode,
                         ISNULL(cb.Notes, N'حركة نقدية') AS Details,
                         CASE WHEN cb.AmountIn > 0 THEN cb.AmountIn ELSE -cb.AmountOut END AS Amount
-                    FROM CashBox cb WHERE cb.TransDate >= @dt AND cb.TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftCloseIn', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
+                    FROM CashBox cb 
+                    WHERE (
+                        cb.ShiftID = @sid 
+                        OR (
+                            (cb.AccountID = @accId OR (@accId = 0 AND (cb.AccountID IS NULL OR cb.AccountID = 1)))
+                            AND cb.TransDate >= @dt
+                            AND (@closeDt IS NULL OR cb.TransDate <= @closeDt)
+                            AND (cb.ShiftID IS NULL OR cb.ShiftID = @sid OR cb.TransType IN ('ShiftCloseIn', 'Transfer'))
+                        )
+                    )
+                    AND (cb.AccountID = @accId OR (@accId = 0 AND (cb.AccountID IS NULL OR cb.AccountID = 1)))
+                    AND cb.TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ReturnOutcome', 'VisaReturn', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')
                     ORDER BY TransTime DESC",
-                    DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime));
+                    DbHelper.P("@sid", _shiftID), DbHelper.P("@dt", _openTime), DbHelper.P("@accId", drawerSafeID), DbHelper.P("@closeDt", closeDt.HasValue ? (object)closeDt.Value : DBNull.Value));
             }
             catch (Exception ex)
             {
