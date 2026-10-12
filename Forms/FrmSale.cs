@@ -6738,74 +6738,71 @@ namespace ChickenDist.Forms
 
 				int colCodeW, colProdW, colUnitW, colQtyW, colExtraW, colNumW;
 
-				if (isDisbursement || isModern)
+				// أبعاد وتوزيع أعمدة بون التحضير الحراري الشبكي (اسم الصنف | الوحدة | الكمية)
+				int colPrepQtyW = pageW <= 230 ? 44 : 52;
+				int colPrepUnitW = pageW <= 230 ? 44 : 52;
+				int colPrepProdW = width - colPrepQtyW - colPrepUnitW;
+				int colPrepQtyX = left;
+				int colPrepUnitX = colPrepQtyX + colPrepQtyW;
+				int colPrepProdX = colPrepUnitX + colPrepUnitW;
+
+				if (isReceipt)
+				{
+					colCodeW = 0; colExtraW = 0; colNumW = 0;
+					colQtyW = colPrepQtyW; colUnitW = colPrepUnitW; colProdW = colPrepProdW;
+
+					// ترويسة سوداء داكنة بخط أبيض عريض وفواصل بيضاء (مطابقة تماماً لصورة إذن صرف بضاعة)
+					g.FillRectangle(Brushes.Black, left, y, width, headerRowH);
+					g.DrawRectangle(Pens.Black, left, y, width, headerRowH);
+					g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(colPrepProdX, y + 2, colPrepProdW, headerRowH - 2), sfCenter);
+					g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(colPrepUnitX, y + 2, colPrepUnitW, headerRowH - 2), sfCenter);
+					g.DrawString("الكمية", fontHeader, Brushes.White, new RectangleF(colPrepQtyX, y + 2, colPrepQtyW, headerRowH - 2), sfCenter);
+					g.DrawLine(Pens.White, colPrepUnitX, y, colPrepUnitX, y + headerRowH);
+					g.DrawLine(Pens.White, colPrepProdX, y, colPrepProdX, y + headerRowH);
+					y += headerRowH;
+				}
+				else if (isDisbursement || isModern)
 				{
 					// توزيع أعمدة إذن صرف بضاعة (ك. الصنف | اسم الصنف | الوحدة | الكمية | ملاحظات)
-					colCodeW  = isReceipt ? 35 : (int)(width * 0.14);
-					colUnitW  = isReceipt ? 30 : (int)(width * 0.12);
-					colQtyW   = isReceipt ? 30 : (int)(width * 0.13);
-					colExtraW = isReceipt ? 0  : (int)(width * 0.18); // ملاحظات
+					colCodeW  = (int)(width * 0.14);
+					colUnitW  = (int)(width * 0.12);
+					colQtyW   = (int)(width * 0.13);
+					colExtraW = (int)(width * 0.18); // ملاحظات
 					colNumW   = 0;
 					colProdW  = width - colCodeW - colUnitW - colQtyW - colExtraW;
 
-					if (!isReceipt)
-					{
-						g.FillRectangle(brushHeaderBg, left, y, width, headerRowH);
-						g.DrawRectangle(penDark, left, y, width, headerRowH);
+					g.FillRectangle(brushHeaderBg, left, y, width, headerRowH);
+					g.DrawRectangle(penDark, left, y, width, headerRowH);
 
-						int curX = right;
-						curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, headerRowH);  g.DrawString("ك. الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, headerRowH), sfCenter);
-						curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, headerRowH);  g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, headerRowH), sfCenter);
-						curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, headerRowH);  g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, headerRowH), sfCenter);
-						curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, headerRowH);   g.DrawString("الكمية", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, headerRowH), sfCenter);
-						curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, headerRowH); g.DrawString("ملاحظات", fontHeader, Brushes.White, new RectangleF(curX, y, colExtraW, headerRowH), sfCenter);
-						y += headerRowH;
-					}
-					else
-					{
-						g.DrawString("كود", fontHeader, Brushes.Black, right - colCodeW, y);
-						g.DrawString("الصنف", fontHeader, Brushes.Black, right - colCodeW - colProdW, y);
-						g.DrawString("الكمية", fontHeader, Brushes.Black, right - colCodeW - colProdW - colQtyW, y);
-						g.DrawString("الوحدة", fontHeader, Brushes.Black, right - colCodeW - colProdW - colQtyW - colUnitW, y);
-						y += headerRowH;
-						g.DrawLine(penGrid, left, y, right, y);
-						y += 4;
-					}
+					int curX = right;
+					curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, headerRowH);  g.DrawString("ك. الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, headerRowH), sfCenter);
+					curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, headerRowH);  g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, headerRowH), sfCenter);
+					curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, headerRowH);  g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, headerRowH), sfCenter);
+					curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, headerRowH);   g.DrawString("الكمية", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, headerRowH), sfCenter);
+					curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, headerRowH); g.DrawString("ملاحظات", fontHeader, Brushes.White, new RectangleF(curX, y, colExtraW, headerRowH), sfCenter);
+					y += headerRowH;
 				}
 				else
 				{
 					// توزيع أعمدة النموذج القياسي (# | الكود | اسم الصنف | الكمية المطلوبة | الوحدة | مكان التخزين / الرف)
-					colNumW   = isReceipt ? 18 : (int)(width * 0.05);
-					colCodeW  = isReceipt ? 35 : (int)(width * 0.13);
-					colExtraW = isReceipt ? 45 : (int)(width * 0.20); // الرف
-					colUnitW  = isReceipt ? 30 : (int)(width * 0.11);
-					colQtyW   = isReceipt ? 30 : (int)(width * 0.13);
+					colNumW   = (int)(width * 0.05);
+					colCodeW  = (int)(width * 0.13);
+					colExtraW = (int)(width * 0.20); // الرف
+					colUnitW  = (int)(width * 0.11);
+					colQtyW   = (int)(width * 0.13);
 					colProdW  = width - colNumW - colCodeW - colExtraW - colUnitW - colQtyW;
 
-					if (!isReceipt)
-					{
-						g.FillRectangle(brushHeaderBg, left, y, width, headerRowH);
-						g.DrawRectangle(penDark, left, y, width, headerRowH);
+					g.FillRectangle(brushHeaderBg, left, y, width, headerRowH);
+					g.DrawRectangle(penDark, left, y, width, headerRowH);
 
-						int curX = right;
-						curX -= colNumW;   g.DrawRectangle(penGrid, curX, y, colNumW, headerRowH);   g.DrawString("#", fontHeader, Brushes.White, new RectangleF(curX, y, colNumW, headerRowH), sfCenter);
-						curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, headerRowH);  g.DrawString("الكود", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, headerRowH), sfCenter);
-						curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, headerRowH);  g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, headerRowH), sfCenter);
-						curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, headerRowH);   g.DrawString("الكمية المطلوبة", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, headerRowH), sfCenter);
-						curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, headerRowH);  g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, headerRowH), sfCenter);
-						curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, headerRowH); g.DrawString("مكان التخزين / الرف", fontHeader, Brushes.White, new RectangleF(curX, y, colExtraW, headerRowH), sfCenter);
-						y += headerRowH;
-					}
-					else
-					{
-						g.DrawString("الصنف",  fontHeader, Brushes.Black, right - colNumW - colProdW, y);
-						g.DrawString("الكمية",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW, y);
-						g.DrawString("الوحدة",  fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW, y);
-						g.DrawString("الرف",   fontHeader, Brushes.Black, right - colNumW - colProdW - colQtyW - colUnitW - colExtraW, y);
-						y += headerRowH;
-						g.DrawLine(penGrid, left, y, right, y);
-						y += 4;
-					}
+					int curX = right;
+					curX -= colNumW;   g.DrawRectangle(penGrid, curX, y, colNumW, headerRowH);   g.DrawString("#", fontHeader, Brushes.White, new RectangleF(curX, y, colNumW, headerRowH), sfCenter);
+					curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, headerRowH);  g.DrawString("الكود", fontHeader, Brushes.White, new RectangleF(curX, y, colCodeW, headerRowH), sfCenter);
+					curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, headerRowH);  g.DrawString("اسم الصنف", fontHeader, Brushes.White, new RectangleF(curX, y, colProdW, headerRowH), sfCenter);
+					curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, headerRowH);   g.DrawString("الكمية المطلوبة", fontHeader, Brushes.White, new RectangleF(curX, y, colQtyW, headerRowH), sfCenter);
+					curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, headerRowH);  g.DrawString("الوحدة", fontHeader, Brushes.White, new RectangleF(curX, y, colUnitW, headerRowH), sfCenter);
+					curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, headerRowH); g.DrawString("مكان التخزين / الرف", fontHeader, Brushes.White, new RectangleF(curX, y, colExtraW, headerRowH), sfCenter);
+					y += headerRowH;
 				}
 
 				// ── 3. سطور أصناف التحضير بارتفاع ديناميكي لاسم الصنف ──
@@ -6823,79 +6820,70 @@ namespace ChickenDist.Forms
 					string unit = !string.IsNullOrWhiteSpace(item.UnitName) ? item.UnitName : "قطعة";
 					string code = !string.IsNullOrWhiteSpace(item.ProductCode) ? item.ProductCode : (!string.IsNullOrWhiteSpace(item.PartNumber) ? item.PartNumber : item.ProductID.ToString());
 					string qty  = item.Quantity % 1 == 0 ? item.Quantity.ToString("N0") : item.Quantity.ToString("N2");
-					totalQty += item.Quantity;
-					rowNum++;
 
 					// حساب ارتفاع السطر ديناميكياً لاسم الصنف ليتسع لسطرين بدون قص
 					SizeF nameSize = g.MeasureString(item.ProductName, fontBody, colProdW - 8);
-					int baseH = isReceipt ? 22 : (isA4Page ? 30 : 26);
+					int baseH = isReceipt ? 20 : (isA4Page ? 30 : 26);
 					int actualRowH = Math.Max(baseH, (int)Math.Ceiling(nameSize.Height) + (isReceipt ? 4 : 8));
 					if (actualRowH > 65) actualRowH = 65;
 
-					if (isDisbursement || isModern)
-					{
-						if (!isReceipt)
-						{
-							if (rowNum % 2 == 0)
-								g.FillRectangle(brushRowAlt, left, y, width, actualRowH);
-
-							g.DrawRectangle(penGrid, left, y, width, actualRowH);
-
-							int curX = right;
-							curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, actualRowH);  g.DrawString(code, fontBody, Brushes.Black, new RectangleF(curX, y, colCodeW, actualRowH), sfCenter);
-							curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, actualRowH);  g.DrawString(item.ProductName, fontBody, Brushes.Black, new RectangleF(curX + 4, y + 1, colProdW - 8, actualRowH - 2), sfProd);
-							curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, actualRowH);  g.DrawString(unit, fontBody, Brushes.DarkBlue, new RectangleF(curX, y, colUnitW, actualRowH), sfCenter);
-							curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, actualRowH);   g.DrawString(qty, fontBold, Brushes.Black, new RectangleF(curX, y, colQtyW, actualRowH), sfCenter);
-							curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, actualRowH); g.DrawString("", fontBody, Brushes.Black, new RectangleF(curX, y, colExtraW, actualRowH), sfCenter);
-						}
-						else
-						{
-							int tx = y;
-							g.DrawString(code, fontBody, Brushes.Gray, right - colCodeW, tx);
-							g.DrawString(item.ProductName, fontBody, Brushes.Black, new RectangleF(right - colCodeW - colProdW, tx, colProdW, actualRowH), sfProd);
-							g.DrawString(qty, fontBold, Brushes.Black, right - colCodeW - colProdW - colQtyW, tx);
-							g.DrawString(unit, fontBody, brushDarkBlue, right - colCodeW - colProdW - colQtyW - colUnitW, tx);
-							g.DrawLine(penGrid, left, y + actualRowH, right, y + actualRowH);
-						}
-					}
-					else
-					{
-						if (!isReceipt)
-						{
-							if (rowNum % 2 == 0)
-								g.FillRectangle(brushRowAlt, left, y, width, actualRowH);
-
-							g.DrawRectangle(penGrid, left, y, width, actualRowH);
-
-							int curX = right;
-							curX -= colNumW;   g.DrawRectangle(penGrid, curX, y, colNumW, actualRowH);   g.DrawString(rowNum.ToString(), fontBody, Brushes.Black, new RectangleF(curX, y, colNumW, actualRowH), sfCenter);
-							curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, actualRowH);  g.DrawString(code, fontBody, Brushes.Gray, new RectangleF(curX, y, colCodeW, actualRowH), sfCenter);
-							curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, actualRowH);  g.DrawString(item.ProductName, fontBody, Brushes.Black, new RectangleF(curX + 4, y + 1, colProdW - 8, actualRowH - 2), sfProd);
-							curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, actualRowH);   g.DrawString(qty, fontBold, Brushes.Black, new RectangleF(curX, y, colQtyW, actualRowH), sfCenter);
-							curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, actualRowH);  g.DrawString(unit, fontBody, Brushes.DarkBlue, new RectangleF(curX, y, colUnitW, actualRowH), sfCenter);
-							curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, actualRowH); g.DrawString(loc, fontBold, brushDarkBlue, new RectangleF(curX, y, colExtraW, actualRowH), sfCenter);
-						}
-						else
-						{
-							int tx = y;
-							g.DrawString(item.ProductName, fontBody,   Brushes.Black,  new RectangleF(right - colNumW - colProdW, tx, colProdW, actualRowH), sfProd);
-							g.DrawString(qty,              fontBold,   Brushes.Black,  right - colNumW - colProdW - colQtyW,                    tx);
-							g.DrawString(unit,             fontBody,   brushDarkBlue,  right - colNumW - colProdW - colQtyW - colUnitW,         tx);
-							g.DrawString(loc,              fontBold,   brushDarkBlue,  right - colNumW - colProdW - colQtyW - colUnitW - colExtraW,tx);
-							g.DrawString(rowNum.ToString(),fontBody,   Brushes.Black,  left,                                                   tx);
-							g.DrawLine(penGrid, left, y + actualRowH, right, y + actualRowH);
-						}
-					}
-
-					y += actualRowH;
-					itemIdx++;
-
-					int footerReserve = isReceipt ? 40 : (isA5 ? 70 : 90);
+					int footerReserve = isReceipt ? 30 : (isA5 ? 65 : 85);
 					if (y + actualRowH + footerReserve > pageHeight && itemIdx < _items.Count)
 					{
 						e.HasMorePages = true;
 						return;
 					}
+
+					totalQty += item.Quantity;
+					rowNum++;
+
+					if (isReceipt)
+					{
+						int itemY = y;
+						float textY = y + (actualRowH - 14) / 2f;
+						g.DrawString(item.ProductName, fontBold, Brushes.Black, new RectangleF(colPrepProdX + 2, y + 2, colPrepProdW - 4, actualRowH - 4), sfProd);
+						g.DrawString(unit, fontBody, Brushes.Black, new RectangleF(colPrepUnitX, textY, colPrepUnitW, 14), sfCenter);
+						g.DrawString(qty, fontBold, Brushes.Black, new RectangleF(colPrepQtyX, textY, colPrepQtyW, 14), sfCenter);
+
+						// رسم حدود الخلايا والشبكة المغلقة
+						g.DrawLine(Pens.Black, left, y + actualRowH, right, y + actualRowH);
+						g.DrawLine(Pens.Black, colPrepQtyX, itemY, colPrepQtyX, y + actualRowH);
+						g.DrawLine(Pens.Black, colPrepUnitX, itemY, colPrepUnitX, y + actualRowH);
+						g.DrawLine(Pens.Black, colPrepProdX, itemY, colPrepProdX, y + actualRowH);
+						g.DrawLine(Pens.Black, right, itemY, right, y + actualRowH);
+					}
+					else if (isDisbursement || isModern)
+					{
+						if (rowNum % 2 == 0)
+							g.FillRectangle(brushRowAlt, left, y, width, actualRowH);
+
+						g.DrawRectangle(penGrid, left, y, width, actualRowH);
+
+						int curX = right;
+						curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, actualRowH);  g.DrawString(code, fontBody, Brushes.Black, new RectangleF(curX, y, colCodeW, actualRowH), sfCenter);
+						curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, actualRowH);  g.DrawString(item.ProductName, fontBody, Brushes.Black, new RectangleF(curX + 4, y + 1, colProdW - 8, actualRowH - 2), sfProd);
+						curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, actualRowH);  g.DrawString(unit, fontBody, Brushes.DarkBlue, new RectangleF(curX, y, colUnitW, actualRowH), sfCenter);
+						curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, actualRowH);   g.DrawString(qty, fontBold, Brushes.Black, new RectangleF(curX, y, colQtyW, actualRowH), sfCenter);
+						curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, actualRowH); g.DrawString("", fontBody, Brushes.Black, new RectangleF(curX, y, colExtraW, actualRowH), sfCenter);
+					}
+					else
+					{
+						if (rowNum % 2 == 0)
+							g.FillRectangle(brushRowAlt, left, y, width, actualRowH);
+
+						g.DrawRectangle(penGrid, left, y, width, actualRowH);
+
+						int curX = right;
+						curX -= colNumW;   g.DrawRectangle(penGrid, curX, y, colNumW, actualRowH);   g.DrawString(rowNum.ToString(), fontBody, Brushes.Black, new RectangleF(curX, y, colNumW, actualRowH), sfCenter);
+						curX -= colCodeW;  g.DrawRectangle(penGrid, curX, y, colCodeW, actualRowH);  g.DrawString(code, fontBody, Brushes.Gray, new RectangleF(curX, y, colCodeW, actualRowH), sfCenter);
+						curX -= colProdW;  g.DrawRectangle(penGrid, curX, y, colProdW, actualRowH);  g.DrawString(item.ProductName, fontBody, Brushes.Black, new RectangleF(curX + 4, y + 1, colProdW - 8, actualRowH - 2), sfProd);
+						curX -= colQtyW;   g.DrawRectangle(penGrid, curX, y, colQtyW, actualRowH);   g.DrawString(qty, fontBold, Brushes.Black, new RectangleF(curX, y, colQtyW, actualRowH), sfCenter);
+						curX -= colUnitW;  g.DrawRectangle(penGrid, curX, y, colUnitW, actualRowH);  g.DrawString(unit, fontBody, Brushes.DarkBlue, new RectangleF(curX, y, colUnitW, actualRowH), sfCenter);
+						curX -= colExtraW; g.DrawRectangle(penGrid, curX, y, colExtraW, actualRowH); g.DrawString(loc, fontBold, brushDarkBlue, new RectangleF(curX, y, colExtraW, actualRowH), sfCenter);
+					}
+
+					y += actualRowH;
+					itemIdx++;
 				}
 
 				// ── 4. الإجماليات والتوقيعات ──
@@ -6927,18 +6915,20 @@ namespace ChickenDist.Forms
 
 						y += boxH + 20;
 
-						string sigDisb = "توقيع مسؤول الصرف بالمخزن: ..................................";
-						string sigRecv = "توقيع المستلم / السائق: ..................................";
+						string sigDisb = isA4Page ? "توقيع مسؤول الصرف بالمخزن: .................................." : "مسؤول الصرف: ...................";
+						string sigRecv = isA4Page ? "توقيع المستلم / السائق: .................................." : "توقيع المستلم: ...................";
 						g.DrawString(sigDisb, fontHeader, Brushes.Black, right - g.MeasureString(sigDisb, fontHeader).Width, y);
 						g.DrawString(sigRecv, fontHeader, Brushes.Black, left, y);
 					}
 					else
 					{
 						y += 8;
-						g.DrawLine(penDark, left, y, right, y); y += 6;
-						g.DrawString($"عدد الأصناف: {_items.Count} | إجمالي القطع: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}", fontHeader, Brushes.Black, left, y);
-						y += 18;
-						g.DrawString("توقيع مسؤول الصرف: ......................", fontBody, Brushes.Black, left, y);
+						string overallItemsQtyStr = (totalQty % 1 == 0) ? totalQty.ToString("N0") : totalQty.ToString("N2");
+						g.DrawRectangle(penDark, left, y, width, 22);
+						g.DrawString($"عدد الأصناف: {_items.Count}   |   إجمالي الكمية: {overallItemsQtyStr}", fontBold, Brushes.Black, new RectangleF(left, y + 2, width, 18), sfCenter);
+						y += 28;
+						string sigDisbReceipt = "توقيع مسؤول الصرف / المستلم: ....................";
+						g.DrawString(sigDisbReceipt, fontHeader, Brushes.Black, right - g.MeasureString(sigDisbReceipt, fontHeader).Width, y);
 					}
 				}
 				else
@@ -6950,27 +6940,22 @@ namespace ChickenDist.Forms
 
 						string totStr = $"إجمالي الأصناف: {_items.Count} صنف  |  إجمالي كميات التحضير: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
 						g.DrawString(totStr, fontHeader, Brushes.Black, new RectangleF(left, y, width, headerRowH), sfCenter);
-						y += headerRowH + 15;
+						y += headerRowH + (isA4Page ? 15 : 10);
 
-						string sig1 = "مسؤول التحضير بالمخزن: ..................................";
-						string sig2 = "توقيع المستلم / السائق: ..................................";
+						string sig1 = isA4Page ? "مسؤول التحضير بالمخزن: .................................." : "مسؤول التحضير: ...................";
+						string sig2 = isA4Page ? "توقيع المستلم / السائق: .................................." : "توقيع المستلم: ...................";
 						g.DrawString(sig1, fontHeader, Brushes.Black, right - g.MeasureString(sig1, fontHeader).Width, y);
 						g.DrawString(sig2, fontHeader, Brushes.Black, left, y);
 					}
 					else
 					{
-						y += 6;
-						g.DrawLine(penDark, left, y, right, y);
-						y += 6;
-						string totStr = $"إجمالي الأصناف: {_items.Count}  |  إجمالي الكميات: {(totalQty % 1 == 0 ? totalQty.ToString("N0") : totalQty.ToString("N2"))}";
-						g.DrawString(totStr, fontHeader, Brushes.Black, left, y);
-						y += 18;
-
-						y += (isReceipt ? 6 : 14);
-						g.DrawLine(penDark, left, y, right, y);
-						y += (isReceipt ? 6 : 12);
-						string sig1 = "مسؤول التحضير بالمخزن: ..................................";
-						g.DrawString(sig1, fontHeader, Brushes.Black, left, y);
+						y += 8;
+						string totQtyStr = (totalQty % 1 == 0) ? totalQty.ToString("N0") : totalQty.ToString("N2");
+						g.DrawRectangle(penDark, left, y, width, 22);
+						g.DrawString($"عدد الأصناف: {_items.Count}   |   إجمالي الكمية: {totQtyStr}", fontBold, Brushes.Black, new RectangleF(left, y + 2, width, 18), sfCenter);
+						y += 28;
+						string sig1 = "توقيع مسؤول التحضير بالمخزن: ..................................";
+						g.DrawString(sig1, fontHeader, Brushes.Black, right - g.MeasureString(sig1, fontHeader).Width, y);
 					}
 				}
 
@@ -6994,7 +6979,7 @@ namespace ChickenDist.Forms
 				}
 				else
 				{
-					AppConfig.PrintInBackground(pd);
+					AppConfig.PrintInBackground(pd, copies: isReceipt ? AppConfig.PreparationSlipCopies : 1);
 				}
 			}
 			catch (Exception ex)

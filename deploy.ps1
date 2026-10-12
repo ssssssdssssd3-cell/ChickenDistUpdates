@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-$VERSION = "3.9.69";
+$VERSION = "3.9.70";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -184,7 +184,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 }
 
 # Step 6: Update update.txt
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Direct mobile camera upload via QR code, automatic price and catalog store sync without manual action"
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Configurable receipt & prep slip print copies, new dark grid & dark rows thermal receipt templates, structured grid prep slip layout"
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"

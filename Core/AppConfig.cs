@@ -212,6 +212,19 @@ namespace ChickenDist.Core
             set => Set("ReceiptTemplate", value);
         }
 
+        /// <summary>
+        /// عدد نسخ طباعة ريسيت البيع الحراري الافتراضية (مثلاً 2 لطباعة نسخة للمحل ونسخة للعميل)
+        /// </summary>
+        public static int ReceiptCopies
+        {
+            get
+            {
+                string val = Get("ReceiptCopies", "1");
+                return int.TryParse(val, out int c) && c >= 1 ? c : 1;
+            }
+            set => Set("ReceiptCopies", Math.Max(1, value).ToString());
+        }
+
         public static string A4Template
         {
             get => Get("A4Template", "AlTarekGrid");
@@ -234,6 +247,19 @@ namespace ChickenDist.Core
         {
             get => Get("PreparationSlipTemplate", "Disbursement"); // "Disbursement", "Standard", "Modern"
             set => Set("PreparationSlipTemplate", value);
+        }
+
+        /// <summary>
+        /// عدد نسخ طباعة إذن التحضير وصرف البضاعة
+        /// </summary>
+        public static int PreparationSlipCopies
+        {
+            get
+            {
+                string val = Get("PreparationSlipCopies", "1");
+                return int.TryParse(val, out int c) && c >= 1 ? c : 1;
+            }
+            set => Set("PreparationSlipCopies", Math.Max(1, value).ToString());
         }
 
         public static string PreparationPaperSize
@@ -562,18 +588,27 @@ namespace ChickenDist.Core
         /// <summary>
         /// تشغيل أمر الطباعة في الخلفية (Background Thread) مع منع تجميد/تهنيج البرنامج
         /// وإخفاء نافذة الـ Popup المزعجة (الصفحة X من document) عبر StandardPrintController
+        /// مع دعم طباعة عدد نسخ مخصص (copies) بشكل متتالي وسلس دون تعليق درايفر الطابعة الحرارية
         /// </summary>
-        public static void PrintInBackground(System.Drawing.Printing.PrintDocument pd, Action onCompleted = null, Action<Exception> onError = null)
+        public static void PrintInBackground(System.Drawing.Printing.PrintDocument pd, Action onCompleted = null, Action<Exception> onError = null, int copies = 1)
         {
             if (pd == null) return;
             try
             {
                 pd.PrintController = new System.Drawing.Printing.StandardPrintController();
+                int printCount = Math.Max(1, copies);
                 System.Threading.ThreadPool.QueueUserWorkItem(_ =>
                 {
                     try
                     {
-                        pd.Print();
+                        for (int c = 0; c < printCount; c++)
+                        {
+                            if (c > 0)
+                            {
+                                System.Threading.Thread.Sleep(200); // مهلة قصيرة بين النسخ لتفريغ بفر طابعة الريسيت وقص الورق
+                            }
+                            pd.Print();
+                        }
                         onCompleted?.Invoke();
                     }
                     catch (Exception ex)

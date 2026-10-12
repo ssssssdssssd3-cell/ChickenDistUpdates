@@ -1,5 +1,5 @@
-version=3.9.69
+version=3.9.70
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.69&t=1791723802
-sha256=1906BCD81E5E1F84DA8DA0465C1C9211A9AFD4A912D7AF0FFE85EDB835F71F69
-changelog=v3.9.69 - 2026-10-11: Direct mobile camera upload via QR code, automatic price and catalog store sync without manual action
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.70&t=1791799043
+sha256=78678237ED2CCCC991B748F8299A2B590152435A23F08F144942B0364B21DEE0
+changelog=v3.9.70 - 2026-10-12: Configurable receipt & prep slip print copies, new dark grid & dark rows thermal receipt templates, structured grid prep slip layout

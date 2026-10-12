@@ -14,6 +14,7 @@ namespace ChickenDist.Forms
     {
         // ── Tab 1 Controls: الطابعات وسلوك الطباعة ──────────────────
         private ComboBox cboReceiptPrinter;
+        private NumericUpDown numReceiptCopies;       // عدد نسخ طباعة ريسيت البيع
         private ComboBox cboA4Printer;
         private ComboBox cboBarcodePrinter;
         private ComboBox cboKitchenPrinter;   // طابعة المطبخ والتحضير
@@ -39,6 +40,7 @@ namespace ChickenDist.Forms
         // ── Tab 3 Controls: أذونات التحضير والباركود ──────────────────
         private ComboBox cboPrepTemplate;
         private ComboBox cboPrepPaperSize;
+        private NumericUpDown numPrepCopies;          // عدد نسخ طباعة إذن التحضير
         private ComboBox cboPrepA5Shift;
         private NumericUpDown numPrepA5ShiftCm;
         private ComboBox cboBarcodeTemplate;
@@ -134,6 +136,32 @@ namespace ChickenDist.Forms
             cboReceiptPrinter.SelectedItem = string.IsNullOrEmpty(AppConfig.ReceiptPrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.ReceiptPrinterName;
             if (cboReceiptPrinter.SelectedIndex == -1 && cboReceiptPrinter.Items.Count > 0) cboReceiptPrinter.SelectedIndex = 0;
             page.Controls.Add(cboReceiptPrinter);
+            y += 38;
+
+            AddLabel(page, "عدد نسخ طباعة ريسيت البيع تلقائياً (نسخة للمحل + نسخة للعميل):", 20, y);
+            y += 24;
+            numReceiptCopies = new NumericUpDown
+            {
+                Location = new Point(20, y),
+                Width = 120,
+                Minimum = 1,
+                Maximum = 10,
+                Value = AppConfig.ReceiptCopies,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            page.Controls.Add(numReceiptCopies);
+
+            var lblReceiptCopiesHint = new Label
+            {
+                Text = "↪ اضبط القيمة على (2) لطباعة نسختين تلقائياً عند كل بيع (نسخة يحتفظ بها المحل ونسخة يستلمها العميل).",
+                Location = new Point(155, y + 4),
+                AutoSize = true,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 9f, FontStyle.Italic)
+            };
+            page.Controls.Add(lblReceiptCopiesHint);
             y += 38;
 
             // 2. طابعة A4 الافتراضية
@@ -369,6 +397,8 @@ namespace ChickenDist.Forms
             };
             cboReceiptTemplate.Items.AddRange(new object[]
             {
+                "النموذج الشبكي المبوب (أعمدة سوداء بارزة - زي الصورة)",
+                "النموذج الشبكي المخطط (سطور سوداء عريضة ومتبادلة)",
                 "القياسي (Standard)",
                 "العصري (Modern)",
                 "المبسط السريع (Compact)",
@@ -381,6 +411,8 @@ namespace ChickenDist.Forms
             });
             cboReceiptTemplate.SelectedItem = AppConfig.ReceiptTemplate switch
             {
+                "DarkGridReceipt" => "النموذج الشبكي المبوب (أعمدة سوداء بارزة - زي الصورة)",
+                "DarkRowsReceipt" => "النموذج الشبكي المخطط (سطور سوداء عريضة ومتبادلة)",
                 "Modern" => "العصري (Modern)",
                 "Compact" => "المبسط السريع (Compact)",
                 "Elegant" => "الفواتير الاحترافية (Elegant)",
@@ -389,7 +421,7 @@ namespace ChickenDist.Forms
                 "FancyReceipt" => "النموذج الزخرفي (FancyReceipt)",
                 "RestaurantReceipt" => "قالب كافيه ومطاعم (RestaurantReceipt)",
                 "PharmacyReceipt" => "قالب صيدليات وأغذية (PharmacyReceipt)",
-                _ => "القياسي (Standard)"
+                _ => "النموذج الشبكي المبوب (أعمدة سوداء بارزة - زي الصورة)"
             };
             if (cboReceiptTemplate.SelectedIndex == -1) cboReceiptTemplate.SelectedIndex = 0;
             page.Controls.Add(cboReceiptTemplate);
@@ -661,6 +693,32 @@ namespace ChickenDist.Forms
             page.Controls.Add(cboPrepPaperSize);
             y += 40;
 
+            AddLabel(page, "عدد نسخ طباعة إذن التحضير وصرف البضاعة:", 20, y);
+            y += 24;
+            numPrepCopies = new NumericUpDown
+            {
+                Location = new Point(20, y),
+                Width = 120,
+                Minimum = 1,
+                Maximum = 10,
+                Value = AppConfig.PreparationSlipCopies,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            page.Controls.Add(numPrepCopies);
+
+            var lblPrepCopiesHint = new Label
+            {
+                Text = "↪ عدد النسخ المطبوعة من إذن التحضير وصرف البضاعة (مثلاً نسخة للمخزن ونسخة مع السائق أو المستلم).",
+                Location = new Point(155, y + 4),
+                AutoSize = true,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 9f, FontStyle.Italic)
+            };
+            page.Controls.Add(lblPrepCopiesHint);
+            y += 38;
+
             // محاذاة إذن التحضير A5
             AddLabel(page, "محاذاة إذن التحضير A5 (إزاحة درج الطابعة):", 20, y);
             y += 24;
@@ -925,6 +983,8 @@ namespace ChickenDist.Forms
         private void ApplyCurrentToAppConfig()
         {
             AppConfig.ReceiptPrinterName = cboReceiptPrinter.SelectedIndex <= 0 ? "" : cboReceiptPrinter.SelectedItem.ToString();
+            if (numReceiptCopies != null)
+                AppConfig.ReceiptCopies = (int)numReceiptCopies.Value;
             AppConfig.A4PrinterName = cboA4Printer.SelectedIndex <= 0 ? "" : cboA4Printer.SelectedItem.ToString();
             AppConfig.BarcodePrinterName = cboBarcodePrinter.SelectedIndex <= 0 ? "" : cboBarcodePrinter.SelectedItem.ToString();
 
@@ -955,16 +1015,18 @@ namespace ChickenDist.Forms
             AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
             AppConfig.POSReceiptMode = cboPOSReceiptMode.SelectedIndex == 2 ? "Never" : cboPOSReceiptMode.SelectedIndex == 1 ? "Ask" : "Always";
 
-            AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedIndex switch
+            AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedItem?.ToString() switch
             {
-                1 => "Modern",
-                2 => "Compact",
-                3 => "Elegant",
-                4 => "MiniMarket",
-                5 => "GridReceipt",
-                6 => "FancyReceipt",
-                7 => "RestaurantReceipt",
-                8 => "PharmacyReceipt",
+                "النموذج الشبكي المبوب (أعمدة سوداء بارزة - زي الصورة)" => "DarkGridReceipt",
+                "النموذج الشبكي المخطط (سطور سوداء عريضة ومتبادلة)" => "DarkRowsReceipt",
+                "العصري (Modern)" => "Modern",
+                "المبسط السريع (Compact)" => "Compact",
+                "الفواتير الاحترافية (Elegant)" => "Elegant",
+                "قالب ميني ماركت (MiniMarket)" => "MiniMarket",
+                "النموذج الشبكي (GridReceipt)" => "GridReceipt",
+                "النموذج الزخرفي (FancyReceipt)" => "FancyReceipt",
+                "قالب كافيه ومطاعم (RestaurantReceipt)" => "RestaurantReceipt",
+                "قالب صيدليات وأغذية (PharmacyReceipt)" => "PharmacyReceipt",
                 _ => "Standard"
             };
             AppConfig.ReceiptShowDiscount = chkReceiptShowDiscount.Checked;
@@ -1012,6 +1074,10 @@ namespace ChickenDist.Forms
                     2 => "Receipt",
                     _ => "A4"
                 };
+            }
+            if (numPrepCopies != null)
+            {
+                AppConfig.PreparationSlipCopies = (int)numPrepCopies.Value;
             }
             if (cboPrepA5Shift != null && numPrepA5ShiftCm != null)
             {
