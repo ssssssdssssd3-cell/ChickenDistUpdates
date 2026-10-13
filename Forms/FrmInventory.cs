@@ -436,11 +436,6 @@ namespace ChickenDist.Forms
             btnScaleReport.Margin = new Padding(2, 1, 3, 0);
             btnScaleReport.Click += (s, e) => PrintScaleProductsReport();
 
-            var btnZeroOutWarehouse = Theme.MakeButton("⚠️ تصفير المخزن", Color.FromArgb(190, 40, 40));
-            btnZeroOutWarehouse.Size = new Size(100, 28);
-            btnZeroOutWarehouse.Margin = new Padding(2, 1, 3, 0);
-            btnZeroOutWarehouse.Click += BtnZeroOutWarehouse_Click;
-
             var btnSerialsStockReport = Theme.MakeButton("📱 جرد السيريلات", Color.FromArgb(13, 148, 136));
             btnSerialsStockReport.Size = new Size(115, 28);
             btnSerialsStockReport.Margin = new Padding(2, 1, 3, 0);
@@ -450,7 +445,7 @@ namespace ChickenDist.Forms
                 btnStartInventory,
                 btnSaveAdj, btnClearAdj,
                 btnPrintStock, btnPrintIncreaseBarcodes, btnVarianceReport, btnMovement, btnAddExpiryRow,
-                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnSerialsStockReport, btnZeroOutWarehouse
+                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnSerialsStockReport
             });
 
             pnlHeaderContainer.Controls.Add(pnlRow3);
@@ -2278,111 +2273,6 @@ namespace ChickenDist.Forms
             else
             {
                 MessageBox.Show("لا توجد أصناف بها زيادة بالكميات (فارق جرد موجب) في الجدول حالياً.\nأدخل الرصيد الفعلي في الجدول ثم اضغط الزر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
-
-        private void BtnZeroOutWarehouse_Click(object sender, EventArgs e)
-        {
-            int? selectedWid = null;
-            if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
-            {
-                selectedWid = ci.ID;
-            }
-
-            if (!selectedWid.HasValue || selectedWid.Value <= 0)
-            {
-                MessageBox.Show("يرجى اختيار مخزن محدد من القائمة العلوية لتصفيره (لا يمكن تصفير كافة المخازن معاً دفعة واحدة كإجراء أمان).", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            int wid = selectedWid.Value;
-            string wName = cboWarehouse.Text;
-
-            var confirmDlg = new Form
-            {
-                Text = "⚠️ تأكيد تصفير رصيد المخزن بالكامل",
-                Size = new Size(480, 250),
-                StartPosition = FormStartPosition.CenterParent,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox = false, MinimizeBox = false,
-                RightToLeft = RightToLeft.Yes, RightToLeftLayout = true,
-                BackColor = Theme.BgMain, Font = Theme.FontMain
-            };
-
-            var lblMsg = new Label
-            {
-                Text = $"⚠️ تحذير شديد:\nأنت على وشك تصفير جميع كميات أصناف المخزن: [{wName}].\nسيتم جعل رصيد كافة الأصناف بالمخزن = 0 فوراً.\n\nاكتب كلمة (تصفير) في المربع أدناه للتأكيد القاطع:",
-                Location = new Point(15, 12),
-                Size = new Size(435, 80),
-                ForeColor = Color.FromArgb(220, 53, 69),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
-            };
-
-            var txtConfirm = new TextBox
-            {
-                Location = new Point(15, 100),
-                Size = new Size(435, 30),
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                TextAlign = HorizontalAlignment.Center
-            };
-
-            var btnConfirm = Theme.MakeButton("⚠️ نعم، قم بتصفير المخزن", 235, 145, 215, 36, Color.FromArgb(190, 40, 40));
-            var btnCancel = Theme.MakeButton("❌ تراجع وإلغاء", 15, 145, 150, 36, Color.FromArgb(100, 110, 120));
-
-            btnConfirm.Click += (s2, e2) =>
-            {
-                if (txtConfirm.Text.Trim() != "تصفير")
-                {
-                    MessageBox.Show("كلمة التأكيد غير صحيحة. يرجى كتابة كلمة 'تصفير' بحروف صحيحة.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                confirmDlg.DialogResult = DialogResult.OK;
-                confirmDlg.Close();
-            };
-
-            btnCancel.Click += (s2, e2) =>
-            {
-                confirmDlg.DialogResult = DialogResult.Cancel;
-                confirmDlg.Close();
-            };
-
-            confirmDlg.Controls.AddRange(new Control[] { lblMsg, txtConfirm, btnConfirm, btnCancel });
-
-            if (confirmDlg.ShowDialog(this) == DialogResult.OK)
-            {
-                try
-                {
-                    DbHelper.RunInTransaction((con, trans) =>
-                    {
-                        // 1. تسجيل حركة تسوية شاملة لكل صنف كان له رصيد
-                        DbHelper.ExecuteTrans(trans, @"
-                            INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor)
-                            SELECT ps.ProductID, ps.WarehouseID, ps.Quantity, 0, N'[تصفير شامل لرصيد المخزن بالكامل]', @uid, p.Unit, 1
-                            FROM ProductStock ps
-                            JOIN Products p ON ps.ProductID = p.ProductID
-                            WHERE ps.WarehouseID = @wid AND ps.Quantity <> 0",
-                            DbHelper.P("@wid", wid),
-                            DbHelper.P("@uid", Session.EmpID));
-
-                        // 2. تصفير ProductStock
-                        DbHelper.ExecuteTrans(trans, "UPDATE ProductStock SET Quantity = 0 WHERE WarehouseID = @wid", DbHelper.P("@wid", wid));
-
-                        // 3. تصفير ProductBatches للصلاحيات
-                        DbHelper.ExecuteTrans(trans, "UPDATE ProductBatches SET Quantity = 0 WHERE WarehouseID = @wid", DbHelper.P("@wid", wid));
-                    });
-
-                    ProductCache.Invalidate();
-                    StockCache.Invalidate(wid);
-                    MessageBox.Show($"✅ تم تصفير جميع أرصدة المخزن [{wName}] بنجاح، وأصبح رصيد كافة الأصناف = 0.", "تم التصفير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadStock();
-                    LoadLogs();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("حدث خطأ أثناء تصفير المخزن:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
             }
         }
 
