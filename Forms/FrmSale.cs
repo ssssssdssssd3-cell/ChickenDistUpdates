@@ -83,6 +83,9 @@ namespace ChickenDist.Forms
 		private Button _btnPriceChecker;
 		private Button _btnCustomizeCols;
 		private Button _btnPrepSlip;
+
+		private decimal? _lastCustomerTendered = null;
+		private decimal? _lastCustomerChange = null;
 		private Button _btnIncomplete;
 		private Button _btnTawreed;
 		private Button _btnLoadQuote;
@@ -1222,25 +1225,32 @@ namespace ChickenDist.Forms
 				BackColor = Theme.BgCard
 			};
 
+			var pnlSummaryBar = new Panel
+			{
+				Dock = DockStyle.Fill,
+				BackColor = Color.FromArgb(18, 22, 31),
+				Padding = new Padding(4, 2, 4, 2)
+			};
+
 			var pnlSummaryFlow = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Fill,
 				FlowDirection = FlowDirection.RightToLeft,
 				WrapContents = false,
 				BackColor = Color.FromArgb(18, 22, 31),
-				Padding = new Padding(6, 3, 6, 3),
+				Padding = new Padding(2, 1, 2, 1),
 				RightToLeft = RightToLeft.Yes,
-				AutoScroll = true
+				AutoScroll = false // منع ظهور أي شريط تمرير أو أسهم نهائياً فوق الصافي
 			};
 
-			// 1. بطاقة صافي الفاتورة المميزة والبارزة جداً على الشمال (Super Prominent Net Total Card on Left)
+			// 1. بطاقة صافي الفاتورة المميزة مثبتة تماماً على أقصى الشمال خارج شريط التمرير
 			var pnlNetGrp = new Panel
 			{
-				Height = 40,
-				Width = 260,
+				Dock = DockStyle.Left,
+				Width = 230,
 				BackColor = Color.FromArgb(6, 95, 70), // Rich Glowing Emerald
-				Margin = new Padding(6, 0, 4, 0),
-				Padding = new Padding(6, 1, 6, 1)
+				Padding = new Padding(6, 1, 6, 1),
+				Margin = new Padding(0)
 			};
 			Label lblNetTitle = new Label
 			{
@@ -1266,7 +1276,7 @@ namespace ChickenDist.Forms
 			var pnlCountGrp = new Panel
 			{
 				Height = 38,
-				Width = 105,
+				Width = 85,
 				BackColor = Color.FromArgb(28, 33, 46),
 				Margin = new Padding(3, 0, 3, 0),
 				Padding = new Padding(4, 1, 4, 1)
@@ -1277,7 +1287,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(148, 163, 184),
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Dock = DockStyle.Right,
-				Width = 58,
+				Width = 46,
 				TextAlign = ContentAlignment.MiddleRight
 			};
 			lblItemCountVal = new Label
@@ -1295,7 +1305,7 @@ namespace ChickenDist.Forms
 			var pnlQtyGrp = new Panel
 			{
 				Height = 38,
-				Width = 115,
+				Width = 85,
 				BackColor = Color.FromArgb(28, 33, 46),
 				Margin = new Padding(3, 0, 3, 0),
 				Padding = new Padding(4, 1, 4, 1)
@@ -1306,7 +1316,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(148, 163, 184),
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Dock = DockStyle.Right,
-				Width = 50,
+				Width = 38,
 				TextAlign = ContentAlignment.MiddleRight
 			};
 			lblTotalQtyVal = new Label
@@ -1328,7 +1338,7 @@ namespace ChickenDist.Forms
 				pnlProfitGrp = new Panel
 				{
 					Height = 38,
-					Width = 135,
+					Width = 115,
 					BackColor = Color.FromArgb(28, 33, 46),
 					Margin = new Padding(3, 0, 3, 0),
 					Padding = new Padding(4, 1, 4, 1)
@@ -1339,7 +1349,7 @@ namespace ChickenDist.Forms
 					ForeColor = Color.FromArgb(148, 163, 184),
 					Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 					Dock = DockStyle.Right,
-					Width = 45,
+					Width = 40,
 					TextAlign = ContentAlignment.MiddleRight
 				};
 				lblProfitVal = new Label
@@ -1356,7 +1366,7 @@ namespace ChickenDist.Forms
 				pnlCostGrp = new Panel
 				{
 					Height = 38,
-					Width = 140,
+					Width = 115,
 					BackColor = Color.FromArgb(28, 33, 46),
 					Margin = new Padding(3, 0, 3, 0),
 					Padding = new Padding(4, 1, 4, 1)
@@ -1367,7 +1377,7 @@ namespace ChickenDist.Forms
 					ForeColor = Color.FromArgb(148, 163, 184),
 					Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 					Dock = DockStyle.Right,
-					Width = 50,
+					Width = 45,
 					TextAlign = ContentAlignment.MiddleRight
 				};
 				lblCostVal = new Label
@@ -1389,7 +1399,7 @@ namespace ChickenDist.Forms
 			var pnlShipGrp = new Panel
 			{
 				Height = 38,
-				Width = 145,
+				Width = 110,
 				BackColor = Color.FromArgb(28, 33, 46),
 				Margin = new Padding(3, 0, 3, 0),
 				Padding = new Padding(4, 4, 4, 4)
@@ -1400,7 +1410,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(148, 163, 184),
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Dock = DockStyle.Right,
-				Width = 45,
+				Width = 38,
 				TextAlign = ContentAlignment.MiddleRight
 			};
 			nudShippingCharge = new NumericUpDown
@@ -1424,7 +1434,7 @@ namespace ChickenDist.Forms
 			var pnlDiscGrp = new Panel
 			{
 				Height = 38,
-				Width = 220,
+				Width = 160,
 				BackColor = Color.FromArgb(28, 33, 46),
 				Margin = new Padding(3, 0, 3, 0),
 				Padding = new Padding(4, 4, 4, 4)
@@ -1435,7 +1445,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(148, 163, 184),
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Dock = DockStyle.Right,
-				Width = 50,
+				Width = 40,
 				TextAlign = ContentAlignment.MiddleRight
 			};
 			cboInvoiceDiscountType = new ComboBox
@@ -1446,7 +1456,7 @@ namespace ChickenDist.Forms
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
 				Dock = DockStyle.Right,
-				Width = 72,
+				Width = 55,
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold)
 			};
 			cboInvoiceDiscountType.Items.AddRange(new object[] { "قيمة", "نسبة %" });
@@ -1474,18 +1484,18 @@ namespace ChickenDist.Forms
 			var pnlTotalGrp = new Panel
 			{
 				Height = 38,
-				Width = 200,
+				Width = 150,
 				BackColor = Color.FromArgb(28, 33, 46),
 				Margin = new Padding(3, 0, 3, 0),
 				Padding = new Padding(4, 1, 4, 1)
 			};
 			Label lblTotalTitle = new Label
 			{
-				Text = "إجمالي الأصناف:",
+				Text = "الإجمالي:",
 				ForeColor = Color.FromArgb(148, 163, 184),
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
 				Dock = DockStyle.Right,
-				Width = 100,
+				Width = 58,
 				TextAlign = ContentAlignment.MiddleRight
 			};
 			lblTotalVal = new Label
@@ -1499,7 +1509,7 @@ namespace ChickenDist.Forms
 			pnlTotalGrp.Controls.Add(lblTotalVal);
 			pnlTotalGrp.Controls.Add(lblTotalTitle);
 
-			// ترتيب العناصر في شريط الإجماليات (الصافي على أقصى الشمال في الاتجاه من اليمين لليسار)
+			// ترتيب العناصر في شريط الإجماليات من اليمين لليسار
 			pnlSummaryFlow.Controls.Add(pnlTotalGrp);
 			pnlSummaryFlow.Controls.Add(pnlDiscGrp);
 			pnlSummaryFlow.Controls.Add(pnlShipGrp);
@@ -1512,7 +1522,7 @@ namespace ChickenDist.Forms
 			var pnlVoucherGrp = new Panel
 			{
 				Height = 38,
-				Width = 250,
+				Width = 150,
 				BackColor = Color.FromArgb(28, 33, 46),
 				Margin = new Padding(3, 0, 3, 0),
 				Padding = new Padding(4, 4, 4, 4)
@@ -1526,7 +1536,7 @@ namespace ChickenDist.Forms
 				BorderStyle = BorderStyle.FixedSingle,
 				Font = new Font("Consolas", 9f, FontStyle.Bold),
 				TextAlign = HorizontalAlignment.Center,
-				Width = 95,
+				Width = 75,
 				Dock = DockStyle.Right
 			};
 			txtVoucherCode.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyVoucherCodeSale(); };
@@ -1538,7 +1548,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.White,
 				FlatStyle = FlatStyle.Flat,
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-				Width = 28,
+				Width = 26,
 				Dock = DockStyle.Right,
 				Cursor = Cursors.Hand
 			};
@@ -1547,7 +1557,7 @@ namespace ChickenDist.Forms
 
 			lblVoucherDiscount = new Label
 			{
-				Text = "🎟️ بون:",
+				Text = "🎟️:",
 				ForeColor = Color.FromArgb(148, 163, 184),
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
@@ -1559,7 +1569,9 @@ namespace ChickenDist.Forms
 			pnlVoucherGrp.Controls.Add(lblVoucherDiscount);
 			pnlSummaryFlow.Controls.Add(pnlVoucherGrp);
 
-			pnlSummaryFlow.Controls.Add(pnlNetGrp);
+			// تجميع شريط الإجماليات: بطاقة الصافي مثبتة على الشمال والشريط المرن يملأ الباقي
+			pnlSummaryBar.Controls.Add(pnlSummaryFlow);
+			pnlSummaryBar.Controls.Add(pnlNetGrp);
 
 			// Footer buttons (RTL flow)
 			btnSave = Theme.MakeButton("💾 حفظ الفاتورة (F5)", 0, 0, 180, 28, Theme.Accent);
@@ -1650,7 +1662,7 @@ namespace ChickenDist.Forms
 			};
 			pnlStatus.Controls.Add(lblHotkeys);
 
-			pnlFooter.Controls.Add(pnlSummaryFlow);
+			pnlFooter.Controls.Add(pnlSummaryBar);
 			pnlFooter.Controls.Add(pnlFooterButtons);
 			pnlFooter.Controls.Add(pnlStatus);
 
@@ -5658,7 +5670,7 @@ namespace ChickenDist.Forms
 				decimal? defaultPaid = null;
 				if (_editSaleID > 0)
 				{
-					var existingPaidObj = DbHelper.Scalar("SELECT CashPaid FROM Sales WHERE SaleID=@id", DbHelper.P("@id", _editSaleID));
+					var existingPaidObj = DbHelper.Scalar("SELECT COALESCE(CustomerTendered, CashPaid) FROM Sales WHERE SaleID=@id", DbHelper.P("@id", _editSaleID));
 					if (existingPaidObj != null && existingPaidObj != DBNull.Value)
 					{
 						defaultPaid = Convert.ToDecimal(existingPaidObj);
@@ -5668,6 +5680,8 @@ namespace ChickenDist.Forms
 				{
 					if (frm.ShowDialog() != DialogResult.OK) return;
 					paidAmount = frm.PaidAmount;
+					_lastCustomerTendered = frm.CustomerTendered;
+					_lastCustomerChange = frm.CustomerChange;
 				}
 			}
 
@@ -5734,7 +5748,8 @@ namespace ChickenDist.Forms
 						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
 						visaAccountID: visaAccountID, 
 						visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
-						customClientName: customClientName);
+						customClientName: customClientName,
+						customerTendered: _lastCustomerTendered, customerChange: _lastCustomerChange);
 					if (updated)
 					{
 						_isDirty = false;
@@ -5830,7 +5845,8 @@ namespace ChickenDist.Forms
 						cratesOut: (int)nudCratesOut.Value, cratesIn: (int)nudCratesIn.Value, shippingCharge: shippingAtSave,
 						visaAccountID: visaAccountID, 
 						visaPaid: (_invoiceType == "Mixed" ? mixedVisaPaid : (_invoiceType == "Visa" ? net : (decimal?)null)),
-						customClientName: customClientName);
+						customClientName: customClientName,
+						customerTendered: _lastCustomerTendered, customerChange: _lastCustomerChange);
 					if (num3 > 0)
 					{
 						_lastSaleID = num3;
@@ -8493,6 +8509,8 @@ namespace ChickenDist.Forms
 			_isDirty = false;
 			_activeDraftID = 0;
 			_activeDraftKey = null;
+			_lastCustomerTendered = null;
+			_lastCustomerChange = null;
 
 			// إعادة تحميل الكومبو لإعادة تعيين الفلترة والبحث ومنح تجربة سريعة بين الفواتير
 			LoadCombos();

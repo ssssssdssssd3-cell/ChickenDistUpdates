@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-$VERSION = "3.9.75";
+$VERSION = "3.9.76";
 $CHANGELOG = Get-Content -Path (Join-Path $PSScriptRoot "changelog.txt") -Raw -Encoding UTF8
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
@@ -80,7 +80,7 @@ if (Test-Path $obfuscatedSource) {
     Remove-Item $obfuscatedSource -Force -ErrorAction SilentlyContinue
 }
 if (Test-Path $obfuscarExe) {
-    & $obfuscarExe "$PROJECT_DIR\obfuscar.xml"
+    & $obfuscarExe -s "$PROJECT_DIR\obfuscar.xml"
     Write-OK "Obfuscar completed successfully"
 }
 

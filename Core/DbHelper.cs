@@ -4036,6 +4036,12 @@ namespace ChickenDist.Core
                 IF COL_LENGTH('Sales','InvoiceType') IS NULL
                     ALTER TABLE Sales ADD InvoiceType NVARCHAR(50) NOT NULL DEFAULT 'Sale';");
 
+                SafeMigrate("Sales.CustomerTenderedAndChange", @"
+                IF COL_LENGTH('Sales','CustomerTendered') IS NULL
+                    ALTER TABLE Sales ADD CustomerTendered DECIMAL(18,2) NULL;
+                IF COL_LENGTH('Sales','CustomerChange') IS NULL
+                    ALTER TABLE Sales ADD CustomerChange DECIMAL(18,2) NULL;");
+
                 // ── Purchases: أعمدة الدفع الجديدة ──
                 SafeMigrate("Purchases.PaidAmount", @"
                 IF COL_LENGTH('Purchases','PaidAmount') IS NULL

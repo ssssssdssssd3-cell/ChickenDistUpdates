@@ -1,5 +1,5 @@
-version=3.9.75
+version=3.9.76
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.75&t=1791826340
-sha256=72C550D91DABC0BE936FEBBB7040CBB3DE2986559515B851413BD784EE924E49
-changelog=v3.9.75 - 2026-10-12: Configurable receipt & prep slip print copies, new dark grid & dark rows thermal receipt templates, structured grid prep slip layout
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.76&t=1791877701
+sha256=70A953EC5898D6F07867F34450E2343C5BB6E49496E8C86E779882B9300BFFC0
+changelog=v3.9.76 - 2026-10-13: Configurable receipt & prep slip print copies, new dark grid & dark rows thermal receipt templates, structured grid prep slip layout

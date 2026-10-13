@@ -241,7 +241,8 @@ namespace ChickenDist.DAL
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             decimal downPayment = 0m, int installmentCount = 1, string installmentPeriod = "Monthly", DateTime? startDate = null, List<InstallmentScheduleDTO> schedule = null, int branchID = 1, int? safeAccountID = null, decimal? cashPaid = null,
             int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null,
-            int? visaAccountID = null, decimal? visaPaid = null, string customClientName = null)
+            int? visaAccountID = null, decimal? visaPaid = null, string customClientName = null,
+            decimal? customerTendered = null, decimal? customerChange = null)
         {
             int? activeShiftID = ShiftDAL.GetActiveShiftID();
             if (!activeShiftID.HasValue && !isDraft)
@@ -311,6 +312,19 @@ namespace ChickenDist.DAL
 
                 if (saleID <= 0) throw new Exception("فشل في استخراج رقم الفاتورة الجديد.");
                 returnedSaleID = saleID;
+
+                if (customerTendered.HasValue && customerTendered.Value > 0)
+                {
+                    try
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE Sales SET CustomerTendered = @ct, CustomerChange = @cc WHERE SaleID = @sid",
+                            DbHelper.P("@ct", customerTendered.Value),
+                            DbHelper.P("@cc", customerChange ?? 0m),
+                            DbHelper.P("@sid", saleID));
+                    }
+                    catch { }
+                }
 
                 // تسجيل حركة إنشاء جديدة في الـ Audit
                 DbHelper.ExecuteTrans(trans,
@@ -987,7 +1001,8 @@ namespace ChickenDist.DAL
             List<SaleItemDTO> items, decimal discountAmount = 0m, decimal discountPct = 0m, bool isDraft = false, int? warehouseID = null, string priceTier = "قطاعي",
             DateTime? loadedLastModified = null, int? safeAccountID = null, decimal? cashPaid = null,
             int cratesOut = 0, int cratesIn = 0, decimal shippingCharge = 0m, string orderType = null, string tableNumber = null,
-            int? visaAccountID = null, decimal? visaPaid = null, string customClientName = null)
+            int? visaAccountID = null, decimal? visaPaid = null, string customClientName = null,
+            decimal? customerTendered = null, decimal? customerChange = null)
         {
             bool success = false;
 
@@ -1121,6 +1136,19 @@ namespace ChickenDist.DAL
                     DbHelper.P("@tn", string.IsNullOrEmpty(tableNumber) ? DBNull.Value : (object)tableNumber),
                     DbHelper.P("@custName", string.IsNullOrWhiteSpace(customClientName) ? DBNull.Value : (object)customClientName.Trim()),
                     DbHelper.P("@id", saleID));
+
+                if (customerTendered.HasValue && customerTendered.Value > 0)
+                {
+                    try
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE Sales SET CustomerTendered = @ct, CustomerChange = @cc WHERE SaleID = @sid",
+                            DbHelper.P("@ct", customerTendered.Value),
+                            DbHelper.P("@cc", customerChange ?? 0m),
+                            DbHelper.P("@sid", saleID));
+                    }
+                    catch { }
+                }
 
                 // 7. إدخال البنود الجديدة
                 foreach (var item in items)

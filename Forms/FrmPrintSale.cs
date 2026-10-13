@@ -55,8 +55,13 @@ namespace ChickenDist.Forms
 
         private void LoadData()
         {
+            var tenderColCheck = DbHelper.Scalar("SELECT COL_LENGTH('Sales', 'CustomerTendered')");
+            string extraTenderCols = (tenderColCheck != null && tenderColCheck != DBNull.Value)
+                ? ", s.CustomerTendered, s.CustomerChange "
+                : ", NULL AS CustomerTendered, 0.00 AS CustomerChange ";
+
             var dt = DbHelper.Query(@"
-                SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes, s.CashPaid,
+                SELECT s.SaleID, s.SaleCode, s.SaleDate, s.SaleType, s.ClientID, s.TotalAmount, s.Notes, s.CashPaid" + extraTenderCols + @",
                        ISNULL(s.VisaPaid, 0) AS VisaPaid, s.VisaAccountID, sa.AccountName AS VisaAccountName,
                        COALESCE(s.CratesOut, 0) AS CratesOut, COALESCE(s.CratesIn, 0) AS CratesIn,
                        COALESCE(s.DiscountAmount, 0) AS DiscountAmount, COALESCE(s.DiscountPct, 0) AS DiscountPct,
@@ -922,6 +927,21 @@ namespace ChickenDist.Forms
                         // ── 3. جدول السداد الثنائي (المدفوع | الباقي) ──
                         if (_saleRow != null && _saleRow["SaleType"]?.ToString() == "Cash")
                         {
+                            decimal displayPaid = receiptCashPaid;
+                            decimal displayChange = receiptRemaining;
+
+                            if (_saleRow.Table.Columns.Contains("CustomerTendered") && _saleRow["CustomerTendered"] != DBNull.Value)
+                            {
+                                decimal ct = Convert.ToDecimal(_saleRow["CustomerTendered"]);
+                                if (ct > 0)
+                                {
+                                    displayPaid = ct;
+                                    displayChange = _saleRow.Table.Columns.Contains("CustomerChange") && _saleRow["CustomerChange"] != DBNull.Value
+                                        ? Convert.ToDecimal(_saleRow["CustomerChange"])
+                                        : (ct - netAmount > 0 ? ct - netAmount : 0m);
+                                }
+                            }
+
                             int w2 = printableW / 2;
                             int col2_left = lMargin;
                             int col2_right = col2_left + w2;
@@ -930,15 +950,15 @@ namespace ChickenDist.Forms
                             // صف العناوين
                             g.FillRectangle(Brushes.Black, lMargin, y, printableW, boxH);
                             g.DrawRectangle(Pens.Black, lMargin, y, printableW, boxH);
-                            g.DrawString("المدفوع", smallBold, Brushes.White, new RectangleF(col2_right, y + 2, w2_right, boxH - 2), center);
-                            g.DrawString("الباقي", smallBold, Brushes.White, new RectangleF(col2_left, y + 2, w2, boxH - 2), center);
+                            g.DrawString("المدفوع (المستلم)", smallBold, Brushes.White, new RectangleF(col2_right, y + 2, w2_right, boxH - 2), center);
+                            g.DrawString("الباقي للعميل", smallBold, Brushes.White, new RectangleF(col2_left, y + 2, w2, boxH - 2), center);
                             g.DrawLine(Pens.White, col2_right, y, col2_right, y + boxH);
                             y += boxH;
 
                             // صف القيم
                             g.DrawRectangle(Pens.Black, lMargin, y, printableW, boxH);
-                            g.DrawString(receiptCashPaid.ToString("N2"), smallBold, Brushes.Black, new RectangleF(col2_right, y + 2, w2_right, boxH - 2), center);
-                            g.DrawString(receiptRemaining.ToString("N2"), smallBold, Brushes.Black, new RectangleF(col2_left, y + 2, w2, boxH - 2), center);
+                            g.DrawString(displayPaid.ToString("N2"), smallBold, Brushes.Black, new RectangleF(col2_right, y + 2, w2_right, boxH - 2), center);
+                            g.DrawString(displayChange.ToString("N2"), smallBold, Brushes.Black, new RectangleF(col2_left, y + 2, w2, boxH - 2), center);
                             g.DrawLine(Pens.Black, col2_right, y, col2_right, y + boxH);
                             y += boxH + 6;
                         }
@@ -965,8 +985,27 @@ namespace ChickenDist.Forms
 
                         if (_saleRow != null && _saleRow["SaleType"]?.ToString() == "Cash")
                         {
-                            g.DrawString($"المدفوع نقداً: {receiptCashPaid:N2} جنيه", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 18;
-                            if (receiptRemaining > 0)
+                            decimal displayPaid = receiptCashPaid;
+                            decimal displayChange = receiptRemaining;
+
+                            if (_saleRow.Table.Columns.Contains("CustomerTendered") && _saleRow["CustomerTendered"] != DBNull.Value)
+                            {
+                                decimal ct = Convert.ToDecimal(_saleRow["CustomerTendered"]);
+                                if (ct > 0)
+                                {
+                                    displayPaid = ct;
+                                    displayChange = _saleRow.Table.Columns.Contains("CustomerChange") && _saleRow["CustomerChange"] != DBNull.Value
+                                        ? Convert.ToDecimal(_saleRow["CustomerChange"])
+                                        : (ct - netAmount > 0 ? ct - netAmount : 0m);
+                                }
+                            }
+
+                            g.DrawString($"المدفوع من العميل: {displayPaid:N2} جنيه", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 18;
+                            if (displayChange > 0)
+                            {
+                                g.DrawString($"الباقي للعميل (فكة): {displayChange:N2} جنيه", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 18;
+                            }
+                            else if (receiptRemaining > 0)
                             {
                                 g.DrawString($"المتبقي (آجل): {receiptRemaining:N2} جنيه", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right); y += 18;
                                 g.DrawString("(سيتم إضافة المتبقي على حساب العميل)", small, Brushes.DimGray, new RectangleF(lMargin, y, printableW, 14), right); y += 15;
