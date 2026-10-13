@@ -46,8 +46,8 @@ namespace ChickenDist.Forms
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            // خلفية داكنة ثابتة لضمان وضوح كل النصوص بغض النظر عن الثيم الحالي
-            this.BackColor = Color.FromArgb(24, 30, 42);
+            // خلفية رمادية فاتحة هادئة وأنيقة ومريحة جداً للعين
+            this.BackColor = Color.FromArgb(241, 245, 249);
             this.Font = Theme.FontMain;
 
             // ── 1. بطاقة إجمالي الفاتورة (المطلوب سداده) ──
@@ -55,7 +55,12 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(20, 15),
                 Size = new Size(415, 60),
-                BackColor = Color.FromArgb(15, 20, 30)
+                BackColor = Color.White
+            };
+            pnlTotalCard.Paint += (s, e) =>
+            {
+                using (var p = new Pen(Color.FromArgb(226, 232, 240), 1.5f))
+                    e.Graphics.DrawRectangle(p, 0, 0, pnlTotalCard.Width - 1, pnlTotalCard.Height - 1);
             };
 
             Label lblTotalTitle = new Label
@@ -64,7 +69,7 @@ namespace ChickenDist.Forms
                 Location = new Point(190, 18),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(203, 213, 225),
+                ForeColor = Color.FromArgb(71, 85, 105),
                 BackColor = Color.Transparent
             };
 
@@ -75,7 +80,7 @@ namespace ChickenDist.Forms
                 Size = new Size(170, 36),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Font = new Font("Segoe UI", 18f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21),
+                ForeColor = Color.FromArgb(180, 83, 9),
                 BackColor = Color.Transparent
             };
 
@@ -89,7 +94,7 @@ namespace ChickenDist.Forms
                 Location = new Point(20, 88),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
-                ForeColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
                 BackColor = Color.Transparent
             };
 
@@ -128,7 +133,12 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(20, 178),
                 Size = new Size(415, 84),
-                BackColor = Color.FromArgb(15, 20, 30)
+                BackColor = Color.White
+            };
+            pnlChangeCard.Paint += (s, e) =>
+            {
+                using (var p = new Pen(Color.FromArgb(226, 232, 240), 1.5f))
+                    e.Graphics.DrawRectangle(p, 0, 0, pnlChangeCard.Width - 1, pnlChangeCard.Height - 1);
             };
 
             lblChangeTitle = new Label
@@ -138,7 +148,7 @@ namespace ChickenDist.Forms
                 Size = new Size(385, 22),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(203, 213, 225),
+                ForeColor = Color.FromArgb(71, 85, 105),
                 BackColor = Color.Transparent
             };
 
@@ -149,7 +159,7 @@ namespace ChickenDist.Forms
                 Size = new Size(395, 34),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 20f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(52, 211, 153),
+                ForeColor = Color.FromArgb(21, 128, 61),
                 BackColor = Color.Transparent
             };
 
@@ -160,7 +170,7 @@ namespace ChickenDist.Forms
                 Size = new Size(395, 18),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(203, 213, 225),
+                ForeColor = Color.FromArgb(71, 85, 105),
                 BackColor = Color.Transparent
             };
 
@@ -175,7 +185,7 @@ namespace ChickenDist.Forms
                 Size = new Size(405, 24),
                 AutoSize = true,
                 Text = "إضافة الزيادة لحساب العميل كرصيد دائن بدل إرجاعها كاش",
-                ForeColor = Color.FromArgb(226, 232, 240),
+                ForeColor = Color.FromArgb(51, 65, 85),
                 BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 Visible = _hasClient
@@ -216,46 +226,46 @@ namespace ChickenDist.Forms
                 if (diff >= 0)
                 {
                     lblChangeTitle.Text = "الباقي للعميل (فكة مسترجعة):";
-                    lblChangeTitle.ForeColor = Color.FromArgb(203, 213, 225);
+                    lblChangeTitle.ForeColor = Color.FromArgb(71, 85, 105);
                     lblChange.Text = diff.ToString("N2") + " ج";
-                    lblChange.ForeColor = Color.FromArgb(52, 211, 153);
+                    lblChange.ForeColor = Color.FromArgb(21, 128, 61);
 
                     if (diff > 0)
                     {
                         if (_hasClient && chkKeepExcess != null && chkKeepExcess.Checked)
                         {
                             lblStatusHint.Text = $"ستضاف الزيادة ({diff:N2} ج) كرصيد دائن بحساب العميل";
-                            lblStatusHint.ForeColor = Color.FromArgb(56, 189, 248);
+                            lblStatusHint.ForeColor = Color.FromArgb(2, 132, 199);
                         }
                         else
                         {
                             lblStatusHint.Text = $"يرجى تسليم العميل الباقي: {diff:N2} ج";
-                            lblStatusHint.ForeColor = Color.FromArgb(52, 211, 153);
+                            lblStatusHint.ForeColor = Color.FromArgb(21, 128, 61);
                         }
                     }
                     else
                     {
                         lblStatusHint.Text = "المبلغ المدفوع مضبوط بالتمام";
-                        lblStatusHint.ForeColor = Color.FromArgb(52, 211, 153);
+                        lblStatusHint.ForeColor = Color.FromArgb(71, 85, 105);
                     }
                 }
                 else
                 {
                     decimal remainingDue = _totalAmount - paidVal;
                     lblChangeTitle.Text = "المتبقي على الفاتورة:";
-                    lblChangeTitle.ForeColor = Color.FromArgb(252, 165, 165);
+                    lblChangeTitle.ForeColor = Color.FromArgb(185, 28, 28);
                     lblChange.Text = remainingDue.ToString("N2") + " ج";
-                    lblChange.ForeColor = Color.FromArgb(248, 113, 113);
+                    lblChange.ForeColor = Color.FromArgb(220, 38, 38);
 
                     if (_hasClient)
                     {
                         lblStatusHint.Text = $"سيتم ترحيل {remainingDue:N2} ج كدين آجل على حساب العميل";
-                        lblStatusHint.ForeColor = Color.FromArgb(251, 191, 36);
+                        lblStatusHint.ForeColor = Color.FromArgb(180, 83, 9);
                     }
                     else
                     {
                         lblStatusHint.Text = $"المبلغ غير كافٍ! ينقص {remainingDue:N2} ج";
-                        lblStatusHint.ForeColor = Color.FromArgb(248, 113, 113);
+                        lblStatusHint.ForeColor = Color.FromArgb(220, 38, 38);
                     }
                 }
             }

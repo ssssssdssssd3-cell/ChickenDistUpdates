@@ -1222,13 +1222,13 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Bottom,
 				Height = 128,
 				Width = 1024,
-				BackColor = Theme.BgCard
+				BackColor = Color.FromArgb(235, 238, 243)
 			};
 
 			var pnlSummaryBar = new Panel
 			{
 				Dock = DockStyle.Fill,
-				BackColor = Color.FromArgb(18, 22, 31),
+				BackColor = Color.FromArgb(235, 238, 243),
 				Padding = new Padding(4, 3, 4, 3)
 			};
 
@@ -1236,8 +1236,8 @@ namespace ChickenDist.Forms
 			var pnlCards = new Panel
 			{
 				Dock = DockStyle.Fill,
-				BackColor = Color.FromArgb(18, 22, 31),
-				Padding = new Padding(6, 0, 0, 0)
+				BackColor = Color.FromArgb(235, 238, 243),
+				Padding = new Padding(0, 0, 6, 0)
 			};
 
 			var summaryCards = new List<KeyValuePair<Panel, float>>();
@@ -1278,8 +1278,15 @@ namespace ChickenDist.Forms
 			{
 				var card = new Panel
 				{
-					BackColor = Color.FromArgb(28, 33, 46),
+					BackColor = Color.White,
 					Padding = new Padding(3, 2, 3, 3)
+				};
+				card.Paint += (s, e) =>
+				{
+					using (var p = new Pen(Color.FromArgb(215, 222, 230), 1f))
+					{
+						e.Graphics.DrawRectangle(p, 0, 0, card.Width - 1, card.Height - 1);
+					}
 				};
 				value.Dock = DockStyle.Fill;
 				titleLabel = new Label
@@ -1288,7 +1295,7 @@ namespace ChickenDist.Forms
 					Dock = DockStyle.Top,
 					Height = 17,
 					AutoSize = false,
-					ForeColor = Color.FromArgb(148, 163, 184),
+					ForeColor = Color.FromArgb(71, 85, 105),
 					Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 					TextAlign = ContentAlignment.MiddleCenter
 				};
@@ -1300,39 +1307,46 @@ namespace ChickenDist.Forms
 				return card;
 			}
 
-			// 1. بطاقة صافي الفاتورة مثبتة على أقصى الشمال خارج حاوية البطاقات
+			// 1. بطاقة صافي الفاتورة مثبتة على أقصى اليمين، وكلمة (الصافي:) على يمين البطاقة
 			var pnlNetGrp = new Panel
 			{
-				Dock = DockStyle.Left,
-				Width = 210,
-				BackColor = Color.FromArgb(6, 95, 70), // Rich Glowing Emerald
-				Padding = new Padding(6, 2, 6, 3)
+				Dock = DockStyle.Right,
+				Width = 250,
+				BackColor = Color.FromArgb(226, 232, 240), // رصاصي فاتح هادئ وأنيق
+				Padding = new Padding(8, 2, 8, 2)
+			};
+			pnlNetGrp.Paint += (s, e) =>
+			{
+				using (var p = new Pen(Color.FromArgb(190, 200, 215), 1.5f))
+				{
+					e.Graphics.DrawRectangle(p, 0, 0, pnlNetGrp.Width - 1, pnlNetGrp.Height - 1);
+				}
 			};
 			Label lblNetTitle = new Label
 			{
-				Text = "الصافي",
-				ForeColor = Color.FromArgb(167, 243, 208), // Light Emerald
-				Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-				Dock = DockStyle.Top,
-				Height = 20,
+				Text = "الصافي:",
+				ForeColor = Color.FromArgb(30, 41, 59),
+				Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
+				Dock = DockStyle.Right,
+				Width = 72,
 				AutoSize = false,
-				TextAlign = ContentAlignment.MiddleCenter
+				TextAlign = ContentAlignment.MiddleRight
 			};
-			lblNetVal = MakeValueLabel("0.00 ج", Color.FromArgb(250, 204, 21), 17f); // Glowing Gold
+			lblNetVal = MakeValueLabel("0.00 ج", Color.FromArgb(21, 128, 61), 19f);
 			lblNetVal.Dock = DockStyle.Fill;
 			pnlNetGrp.Controls.Add(lblNetVal);
 			pnlNetGrp.Controls.Add(lblNetTitle);
 
 			// 2. الإجمالي
-			lblTotalVal = MakeValueLabel("0.00 ج", Color.FromArgb(241, 245, 249), 12f);
+			lblTotalVal = MakeValueLabel("0.00 ج", Color.FromArgb(30, 41, 59), 12f);
 			AddSummaryCard("الإجمالي", lblTotalVal, 1.4f, out _);
 
 			// 3. الخصم (النوع + القيمة)
 			cboInvoiceDiscountType = new ComboBox
 			{
 				DropDownStyle = ComboBoxStyle.DropDownList,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				FlatStyle = FlatStyle.Flat,
 				RightToLeft = RightToLeft.Yes,
 				Dock = DockStyle.Right,
@@ -1346,8 +1360,8 @@ namespace ChickenDist.Forms
 			txtInvoiceDiscount = new TextBox
 			{
 				Text = "0",
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
 				Dock = DockStyle.Fill,
@@ -1368,8 +1382,8 @@ namespace ChickenDist.Forms
 				Maximum = 1000000,
 				DecimalPlaces = 2,
 				Value = 0,
-				BackColor = Theme.BgInput,
-				ForeColor = Theme.TextMain,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
 				BorderStyle = BorderStyle.FixedSingle,
 				RightToLeft = RightToLeft.Yes,
 				Font = new Font("Segoe UI", 10f, FontStyle.Bold)
@@ -1383,26 +1397,26 @@ namespace ChickenDist.Forms
 			// 5. التكلفة والربح (إن وجدت الصلاحية)
 			if (Session.CanViewCost("Sales"))
 			{
-				lblCostVal = MakeValueLabel("0.00 ج", Color.FromArgb(226, 232, 240), 11.5f);
+				lblCostVal = MakeValueLabel("0.00 ج", Color.FromArgb(71, 85, 105), 11.5f);
 				_pnlCostGrp = AddSummaryCard("التكلفة", lblCostVal, 1.2f, out lblCostTitle);
 
-				lblProfitVal = MakeValueLabel("0.00 ج", Theme.Success, 11.5f);
+				lblProfitVal = MakeValueLabel("0.00 ج", Color.FromArgb(22, 163, 74), 11.5f);
 				_pnlProfitGrp = AddSummaryCard("الربح", lblProfitVal, 1.2f, out lblProfitTitle);
 			}
 
 			// 6. عدد الأصناف وإجمالي القطع
-			lblItemCountVal = MakeValueLabel("0", Color.FromArgb(56, 189, 248), 13f);
+			lblItemCountVal = MakeValueLabel("0", Color.FromArgb(2, 132, 199), 13f);
 			AddSummaryCard("الأصناف", lblItemCountVal, 0.8f, out lblItemCountTitle);
 
-			lblTotalQtyVal = MakeValueLabel("0", Color.FromArgb(56, 189, 248), 13f);
+			lblTotalQtyVal = MakeValueLabel("0", Color.FromArgb(2, 132, 199), 13f);
 			AddSummaryCard("القطع", lblTotalQtyVal, 0.8f, out lblTotalQtyTitle);
 
 			// 7. بون الخصم (Voucher)
 			txtVoucherCode = new TextBox
 			{
 				Text = "",
-				BackColor = Color.FromArgb(15, 20, 30),
-				ForeColor = Color.FromArgb(253, 230, 138),
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(146, 64, 14),
 				BorderStyle = BorderStyle.FixedSingle,
 				Font = new Font("Consolas", 10f, FontStyle.Bold),
 				TextAlign = HorizontalAlignment.Center,
@@ -1429,9 +1443,11 @@ namespace ChickenDist.Forms
 			pnlVoucherInner.Controls.Add(btnApplyVoucher);
 			AddSummaryCard("🎟️ بون:", pnlVoucherInner, 1.5f, out lblVoucherDiscount);
 
-			// تجميع الشريط: بطاقة الصافي مثبتة على الشمال وحاوية البطاقات تملأ الباقي
-			pnlSummaryBar.Controls.Add(pnlCards);
+			// تجميع الشريط: بطاقة الصافي مثبتة على اليمين وحاوية البطاقات تملأ الباقي
 			pnlSummaryBar.Controls.Add(pnlNetGrp);
+			pnlSummaryBar.Controls.Add(pnlCards);
+			pnlNetGrp.SendToBack();
+			pnlCards.BringToFront();
 
 			// Footer buttons (RTL flow)
 			btnSave = Theme.MakeButton("💾 حفظ الفاتورة (F5)", 0, 0, 240, 40, Theme.Accent);
@@ -1509,13 +1525,13 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Bottom,
 				Height = 18,
-				BackColor = Theme.BgMain,
+				BackColor = Color.FromArgb(226, 232, 240),
 				Padding = new Padding(10, 1, 10, 1)
 			};
 			var lblHotkeys = new Label
 			{
 				Text = "الاختصارات: [F2] جديدة | [F5] حفظ | [F9] إذن تحضير | [F12] تركيز الصنف | [F3] بحث سريع | [Ctrl+1/2/3] تغيير الوحدة",
-				ForeColor = Theme.TextSub,
+				ForeColor = Color.FromArgb(71, 85, 105),
 				Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
 				Dock = DockStyle.Fill,
 				TextAlign = ContentAlignment.MiddleRight,
@@ -1526,6 +1542,7 @@ namespace ChickenDist.Forms
 			pnlFooter.Controls.Add(pnlSummaryBar);
 			pnlFooter.Controls.Add(pnlFooterButtons);
 			pnlFooter.Controls.Add(pnlStatus);
+			pnlSummaryBar.BringToFront();
 
 			base.Controls.Add(pnlItems);
 			base.Controls.Add(pnlFooter);
