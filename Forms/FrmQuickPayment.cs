@@ -38,15 +38,16 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💳 سداد الفاتورة - المدفوع والمتبقي";
-            this.Size = new Size(470, 480);
+            this.Text = "سداد الفاتورة - المدفوع والمتبقي";
+            this.Size = new Size(470, 420);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Theme.BgMain;
+            // خلفية داكنة ثابتة لضمان وضوح كل النصوص بغض النظر عن الثيم الحالي
+            this.BackColor = Color.FromArgb(24, 30, 42);
             this.Font = Theme.FontMain;
 
             // ── 1. بطاقة إجمالي الفاتورة (المطلوب سداده) ──
@@ -54,27 +55,28 @@ namespace ChickenDist.Forms
             {
                 Location = new Point(20, 15),
                 Size = new Size(415, 60),
-                BackColor = Color.FromArgb(24, 30, 42),
-                Padding = new Padding(12, 8, 12, 8)
+                BackColor = Color.FromArgb(15, 20, 30)
             };
 
             Label lblTotalTitle = new Label
             {
-                Text = "المطلوب سداده (قيمة الفاتورة):",
-                Location = new Point(220, 18),
+                Text = "مطلوب سداده (قيمة الفاتورة):",
+                Location = new Point(190, 18),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(148, 163, 184)
+                ForeColor = Color.FromArgb(203, 213, 225),
+                BackColor = Color.Transparent
             };
 
             lblTotal = new Label
             {
                 Text = _totalAmount.ToString("N2") + " ج",
                 Location = new Point(15, 12),
-                Size = new Size(200, 36),
+                Size = new Size(170, 36),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Font = new Font("Segoe UI", 18f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(250, 204, 21) // Glowing Amber/Gold
+                ForeColor = Color.FromArgb(250, 204, 21),
+                BackColor = Color.Transparent
             };
 
             pnlTotalCard.Controls.Add(lblTotalTitle);
@@ -83,23 +85,25 @@ namespace ChickenDist.Forms
             // ── 2. خانة دفع العميل (المبلغ المستلم نقدياً) ──
             Label lblPaidTitle = new Label
             {
-                Text = "دفع العميل (المبلغ المستلم نقدياً 💵):",
-                Location = new Point(20, 85),
+                Text = "دفع العميل (المبلغ المستلم نقداً):",
+                Location = new Point(20, 88),
                 AutoSize = true,
-                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(241, 245, 249)
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.Transparent
             };
 
             txtPaid = new TextBox
             {
-                Location = new Point(20, 114),
-                Size = new Size(415, 42),
-                Font = new Font("Segoe UI", 18f, FontStyle.Bold),
+                Location = new Point(20, 118),
+                Size = new Size(415, 44),
+                Font = new Font("Segoe UI", 20f, FontStyle.Bold),
                 Text = _defaultPaid.ToString("F2"),
-                BackColor = Theme.BgInput,
-                ForeColor = Color.White,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42), // نص داكن واضح على خلفية بيضاء
                 BorderStyle = BorderStyle.FixedSingle,
-                TextAlign = HorizontalAlignment.Center
+                TextAlign = HorizontalAlignment.Center,
+                RightToLeft = RightToLeft.No
             };
             txtPaid.TextChanged += (s, e) => CalculateChange();
             txtPaid.KeyPress += (s, e) =>
@@ -119,122 +123,74 @@ namespace ChickenDist.Forms
                 }
             };
 
-            // ── 3. أزرار الفئات النقدية السريعة ──
-            FlowLayoutPanel pnlDenominations = new FlowLayoutPanel
-            {
-                Location = new Point(20, 165),
-                Size = new Size(415, 34),
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                Margin = new Padding(0)
-            };
-
-            Button btnExact = MakeQuickButton("المبلغ بالضبط", 100, Color.FromArgb(30, 58, 138));
-            btnExact.Click += (s, e) => { SetPaidAmount(_totalAmount); };
-
-            Button btn50 = MakeQuickButton("50 ج", 70, Color.FromArgb(31, 41, 55));
-            btn50.Click += (s, e) => { SetPaidAmount(50m); };
-
-            Button btn100 = MakeQuickButton("100 ج", 70, Color.FromArgb(31, 41, 55));
-            btn100.Click += (s, e) => { SetPaidAmount(100m); };
-
-            Button btn200 = MakeQuickButton("200 ج", 70, Color.FromArgb(31, 41, 55));
-            btn200.Click += (s, e) => { SetPaidAmount(200m); };
-
-            Button btn500 = MakeQuickButton("500 ج", 70, Color.FromArgb(31, 41, 55));
-            btn500.Click += (s, e) => { SetPaidAmount(500m); };
-
-            pnlDenominations.Controls.AddRange(new Control[] { btnExact, btn50, btn100, btn200, btn500 });
-
-            // صف إضافي للزيادات السريعة
-            FlowLayoutPanel pnlIncrements = new FlowLayoutPanel
-            {
-                Location = new Point(20, 203),
-                Size = new Size(415, 32),
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                Margin = new Padding(0)
-            };
-
-            Button btnAdd10 = MakeQuickButton("+10 ج", 70, Color.FromArgb(30, 41, 59));
-            btnAdd10.Click += (s, e) => { AddToPaidAmount(10m); };
-
-            Button btnAdd20 = MakeQuickButton("+20 ج", 70, Color.FromArgb(30, 41, 59));
-            btnAdd20.Click += (s, e) => { AddToPaidAmount(20m); };
-
-            Button btnAdd50 = MakeQuickButton("+50 ج", 70, Color.FromArgb(30, 41, 59));
-            btnAdd50.Click += (s, e) => { AddToPaidAmount(50m); };
-
-            Button btnAdd100 = MakeQuickButton("+100 ج", 75, Color.FromArgb(30, 41, 59));
-            btnAdd100.Click += (s, e) => { AddToPaidAmount(100m); };
-
-            Button btnAdd200 = MakeQuickButton("+200 ج", 75, Color.FromArgb(30, 41, 59));
-            btnAdd200.Click += (s, e) => { AddToPaidAmount(200m); };
-
-            pnlIncrements.Controls.AddRange(new Control[] { btnAdd10, btnAdd20, btnAdd50, btnAdd100, btnAdd200 });
-
-            // ── 4. بطاقة الباقي للعميل (أو المتبقي) ──
+            // ── 3. بطاقة الباقي للعميل (أو المتبقي) ──
             Panel pnlChangeCard = new Panel
             {
-                Location = new Point(20, 245),
-                Size = new Size(415, 78),
-                BackColor = Color.FromArgb(16, 24, 39),
-                Padding = new Padding(12, 6, 12, 6)
+                Location = new Point(20, 178),
+                Size = new Size(415, 84),
+                BackColor = Color.FromArgb(15, 20, 30)
             };
 
             lblChangeTitle = new Label
             {
-                Text = "الباقي للعميل (فكة مسترجعة 🪙):",
+                Text = "الباقي للعميل (فكة مسترجعة):",
                 Location = new Point(15, 6),
-                AutoSize = true,
+                Size = new Size(385, 22),
+                TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(148, 163, 184)
+                ForeColor = Color.FromArgb(203, 213, 225),
+                BackColor = Color.Transparent
             };
 
             lblChange = new Label
             {
                 Text = "0.00 ج",
-                Location = new Point(10, 26),
-                Size = new Size(395, 30),
+                Location = new Point(10, 28),
+                Size = new Size(395, 34),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 18f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(52, 211, 153) // Vibrant Emerald
+                Font = new Font("Segoe UI", 20f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(52, 211, 153),
+                BackColor = Color.Transparent
             };
 
             lblStatusHint = new Label
             {
-                Text = "المبلغ مطابق بالتمام",
-                Location = new Point(10, 56),
+                Text = "",
+                Location = new Point(10, 62),
                 Size = new Size(395, 18),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(148, 163, 184)
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(203, 213, 225),
+                BackColor = Color.Transparent
             };
 
             pnlChangeCard.Controls.Add(lblChangeTitle);
             pnlChangeCard.Controls.Add(lblChange);
             pnlChangeCard.Controls.Add(lblStatusHint);
 
-            // ── 5. خيار العميل المسجل ──
+            // ── 4. خيار العميل المسجل ──
             chkKeepExcess = new CheckBox
             {
-                Location = new Point(25, 330),
+                Location = new Point(25, 270),
                 Size = new Size(405, 24),
                 AutoSize = true,
                 Text = "إضافة الزيادة لحساب العميل كرصيد دائن بدل إرجاعها كاش",
-                ForeColor = Color.FromArgb(203, 213, 225),
+                ForeColor = Color.FromArgb(226, 232, 240),
+                BackColor = Color.Transparent,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 Visible = _hasClient
             };
             chkKeepExcess.CheckedChanged += (s, e) => CalculateChange();
 
-            // ── 6. أزرار الحفظ والإلغاء ──
-            btnOK = Theme.MakeButton("💾 تأكيد وسداد (Enter)", 235, 370, 200, 42, Color.FromArgb(5, 150, 105));
-            btnOK.Font = new Font("Segoe UI", 11.5f, FontStyle.Bold);
+            // ── 5. أزرار الحفظ والإلغاء (حفظ كبير وواضح) ──
+            btnOK = Theme.MakeButton("تأكيد وحفظ (Enter)", 175, 300, 260, 58, Color.FromArgb(5, 150, 105));
+            btnOK.Font = new Font("Segoe UI", 14f, FontStyle.Bold);
+            btnOK.ForeColor = Color.White;
             btnOK.Click += BtnOK_Click;
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", 20, 370, 120, 42, Color.FromArgb(220, 38, 38));
-            btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            btnCancel = Theme.MakeButton("إلغاء (Esc)", 20, 300, 140, 58, Color.FromArgb(220, 38, 38));
+            btnCancel.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            btnCancel.ForeColor = Color.White;
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
             this.Controls.AddRange(new Control[]
@@ -242,8 +198,6 @@ namespace ChickenDist.Forms
                 pnlTotalCard,
                 lblPaidTitle,
                 txtPaid,
-                pnlDenominations,
-                pnlIncrements,
                 pnlChangeCard,
                 chkKeepExcess,
                 btnOK,
@@ -254,40 +208,6 @@ namespace ChickenDist.Forms
             this.CancelButton = btnCancel;
         }
 
-        private Button MakeQuickButton(string text, int width, Color backColor)
-        {
-            Button btn = new Button
-            {
-                Text = text,
-                Width = width,
-                Height = 30,
-                BackColor = backColor,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                Margin = new Padding(2, 0, 2, 0)
-            };
-            btn.FlatAppearance.BorderSize = 0;
-            return btn;
-        }
-
-        private void SetPaidAmount(decimal amount)
-        {
-            txtPaid.Text = amount.ToString("F2");
-            txtPaid.Focus();
-            txtPaid.SelectAll();
-        }
-
-        private void AddToPaidAmount(decimal add)
-        {
-            decimal current = 0m;
-            decimal.TryParse(txtPaid.Text, out current);
-            txtPaid.Text = (current + add).ToString("F2");
-            txtPaid.Focus();
-            txtPaid.SelectAll();
-        }
-
         private void CalculateChange()
         {
             if (decimal.TryParse(txtPaid.Text, out decimal paidVal))
@@ -295,47 +215,47 @@ namespace ChickenDist.Forms
                 decimal diff = paidVal - _totalAmount;
                 if (diff >= 0)
                 {
-                    lblChangeTitle.Text = "الباقي للعميل (فكة مسترجعة 🪙):";
-                    lblChangeTitle.ForeColor = Color.FromArgb(148, 163, 184);
+                    lblChangeTitle.Text = "الباقي للعميل (فكة مسترجعة):";
+                    lblChangeTitle.ForeColor = Color.FromArgb(203, 213, 225);
                     lblChange.Text = diff.ToString("N2") + " ج";
-                    lblChange.ForeColor = Color.FromArgb(52, 211, 153); // Emerald
-                    
+                    lblChange.ForeColor = Color.FromArgb(52, 211, 153);
+
                     if (diff > 0)
                     {
                         if (_hasClient && chkKeepExcess != null && chkKeepExcess.Checked)
                         {
-                            lblStatusHint.Text = $"➕ ستضاف الزيادة ({diff:N2} ج) كرصيد دائن بحساب العميل";
-                            lblStatusHint.ForeColor = Color.FromArgb(56, 189, 248); // Sky blue
+                            lblStatusHint.Text = $"ستضاف الزيادة ({diff:N2} ج) كرصيد دائن بحساب العميل";
+                            lblStatusHint.ForeColor = Color.FromArgb(56, 189, 248);
                         }
                         else
                         {
-                            lblStatusHint.Text = $"✅ يتبقى للعميل {diff:N2} ج (يرجى تسليم الباقي)";
+                            lblStatusHint.Text = $"يرجى تسليم العميل الباقي: {diff:N2} ج";
                             lblStatusHint.ForeColor = Color.FromArgb(52, 211, 153);
                         }
                     }
                     else
                     {
-                        lblStatusHint.Text = "✅ المبلغ المدفوع مضبوط بالتمام";
+                        lblStatusHint.Text = "المبلغ المدفوع مضبوط بالتمام";
                         lblStatusHint.ForeColor = Color.FromArgb(52, 211, 153);
                     }
                 }
                 else
                 {
                     decimal remainingDue = _totalAmount - paidVal;
-                    lblChangeTitle.Text = "المتبقي على الفاتورة (عجز):";
-                    lblChangeTitle.ForeColor = Color.FromArgb(248, 113, 113);
+                    lblChangeTitle.Text = "المتبقي على الفاتورة:";
+                    lblChangeTitle.ForeColor = Color.FromArgb(252, 165, 165);
                     lblChange.Text = remainingDue.ToString("N2") + " ج";
-                    lblChange.ForeColor = Color.FromArgb(239, 68, 68); // Red
-                    
+                    lblChange.ForeColor = Color.FromArgb(248, 113, 113);
+
                     if (_hasClient)
                     {
-                        lblStatusHint.Text = $"⚠️ سيتم ترحيل {remainingDue:N2} ج كدين آجل على حساب العميل";
-                        lblStatusHint.ForeColor = Color.FromArgb(251, 191, 36); // Amber
+                        lblStatusHint.Text = $"سيتم ترحيل {remainingDue:N2} ج كدين آجل على حساب العميل";
+                        lblStatusHint.ForeColor = Color.FromArgb(251, 191, 36);
                     }
                     else
                     {
-                        lblStatusHint.Text = $"❌ المبلغ غير كافٍ! ينقص {remainingDue:N2} ج لسداد الفاتورة";
-                        lblStatusHint.ForeColor = Color.FromArgb(239, 68, 68);
+                        lblStatusHint.Text = $"المبلغ غير كافٍ! ينقص {remainingDue:N2} ج";
+                        lblStatusHint.ForeColor = Color.FromArgb(248, 113, 113);
                     }
                 }
             }
@@ -362,14 +282,13 @@ namespace ChickenDist.Forms
                 if (paidValue < _totalAmount)
                 {
                     decimal diff = _totalAmount - paidValue;
-                    MessageBox.Show($"⚠️ عذراً: المبلغ المستلم من العميل ({paidValue:N2} ج) أقل من إجمالي الفاتورة ({_totalAmount:N2} ج) بمقدار ({diff:N2} ج)!\n\nالعميل النقدي يجب أن يسدد كامل قيمة الفاتورة.",
+                    MessageBox.Show($"عذراً: المبلغ المستلم من العميل ({paidValue:N2} ج) أقل من إجمالي الفاتورة ({_totalAmount:N2} ج) بمقدار ({diff:N2} ج)!\n\nالعميل النقدي يجب أن يسدد كامل قيمة الفاتورة.",
                         "المبلغ المستلم غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtPaid.Focus();
                     txtPaid.SelectAll();
                     return;
                 }
 
-                // دفع العميل مساوٍ أو أكبر من الفاتورة:
                 // يسدد كامل الفاتورة، والباقي فكة مسترجعة للعميل
                 PaidAmount = _totalAmount;
                 CustomerTendered = paidValue;
