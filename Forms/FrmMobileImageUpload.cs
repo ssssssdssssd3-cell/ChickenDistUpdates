@@ -42,8 +42,8 @@ namespace ChickenDist.Forms
             _productName = productName ?? "صنف";
             _currentPrice = currentPrice;
 
-            string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+            string projectId = AppConfig.FirebaseProjectId;
+            if (string.IsNullOrWhiteSpace(projectId)) projectId = "prosoft";
 
             string encName = Uri.EscapeDataString(_productName);
             string encCode = Uri.EscapeDataString(_productCode);

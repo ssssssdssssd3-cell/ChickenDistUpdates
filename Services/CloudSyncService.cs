@@ -471,8 +471,11 @@ self.addEventListener('fetch', (event) => {
         {
             try
             {
-                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+                string projectId = AppConfig.FirebaseProjectId;
+                if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+                {
+                    return (false, "لم يتم تعيين معرّف مشروع Firebase الخاص بالعميل في الإعدادات.");
+                }
 
                 bool ok = await PushLiveStatsToFirebaseAsync(projectId);
                 string statusMsg = ok 
@@ -498,9 +501,13 @@ self.addEventListener('fetch', (event) => {
         {
             if (string.IsNullOrEmpty(projectId))
             {
-                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                projectId = AppConfig.FirebaseProjectId;
             }
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+            if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+            {
+                AppLogger.Warn("تم تخطي المزامنة السحابية لعدم تحديد Firebase Project ID مخصص للعميل.", "CloudSyncService.PushLiveStatsToFirebaseAsync");
+                return false;
+            }
 
             bool rtdbOk = false;
             bool firestoreOk = false;
@@ -1373,9 +1380,13 @@ self.addEventListener('fetch', (event) => {
             LastSyncError = "";
             if (string.IsNullOrEmpty(projectId))
             {
-                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                projectId = AppConfig.FirebaseProjectId;
             }
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+            if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+            {
+                LastSyncError = "لم يتم تحديد معرّف مشروع Firebase مخصص للعميل في الإعدادات.";
+                return false;
+            }
 
             try
             {
@@ -1605,9 +1616,9 @@ self.addEventListener('fetch', (event) => {
         {
             if (string.IsNullOrEmpty(projectId))
             {
-                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                projectId = AppConfig.FirebaseProjectId;
             }
-            if (string.IsNullOrEmpty(projectId)) return false;
+            if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)) return false;
 
             try
             {
@@ -1692,9 +1703,9 @@ self.addEventListener('fetch', (event) => {
             if (string.IsNullOrWhiteSpace(productCode)) return null;
             if (string.IsNullOrEmpty(projectId))
             {
-                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                projectId = AppConfig.FirebaseProjectId;
             }
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+            if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)) return null;
 
             string cleanCode = SanitizeFirebaseKey(productCode);
 
@@ -1785,9 +1796,9 @@ self.addEventListener('fetch', (event) => {
             if (string.IsNullOrWhiteSpace(productCode)) return false;
             if (string.IsNullOrEmpty(projectId))
             {
-                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                projectId = AppConfig.FirebaseProjectId;
             }
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+            if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)) return false;
 
             string cleanCode = SanitizeFirebaseKey(productCode);
 
@@ -1820,9 +1831,9 @@ self.addEventListener('fetch', (event) => {
         {
             if (string.IsNullOrEmpty(projectId))
             {
-                projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
+                projectId = AppConfig.FirebaseProjectId;
             }
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+            if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)) return 0;
 
             int newlySaved = 0;
 
@@ -1997,8 +2008,11 @@ self.addEventListener('fetch', (event) => {
             {
                 if (_onlineOrdersTimer != null) return;
 
-                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrWhiteSpace(projectId)) projectId = "checkin-192ab";
+                string projectId = AppConfig.FirebaseProjectId;
+                if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+                {
+                    return; // لا يوجد مشروع مخصص صالح - لن يتم بدء المراقبة
+                }
 
                 _onlineOrdersTimer = new System.Threading.Timer(async _ =>
                 {
@@ -2049,8 +2063,8 @@ self.addEventListener('fetch', (event) => {
                 }
 
                 // 2. التحقق من ضبط معرف مشروع حقيقي صالح
-                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrWhiteSpace(projectId))
+                string projectId = AppConfig.FirebaseProjectId;
+                if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
                 {
                     return; // لا يوجد مشروع مخصص - لا يتم تشغيل المزامنة في الخلفية
                 }

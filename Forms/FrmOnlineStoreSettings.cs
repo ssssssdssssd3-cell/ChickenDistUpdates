@@ -775,8 +775,7 @@ namespace ChickenDist.Forms
             if (string.IsNullOrEmpty(storePhone)) storePhone = AppConfig.CompanyPhone;
             txtNotificationWhatsApp.Text = storePhone ?? "";
 
-            string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+            string projectId = AppConfig.FirebaseProjectId;
             txtFirebaseProjectId.Text = projectId;
             UpdateStoreUrlAndQr();
 
@@ -786,12 +785,11 @@ namespace ChickenDist.Forms
         private void UpdateStoreUrlAndQr()
         {
             string pId = txtFirebaseProjectId != null ? txtFirebaseProjectId.Text.Trim() : "";
-            if (string.IsNullOrEmpty(pId)) pId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-            if (string.IsNullOrEmpty(pId)) pId = "checkin-192ab";
+            if (string.IsNullOrEmpty(pId)) pId = AppConfig.FirebaseProjectId;
 
-            if (pId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(pId) || pId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
             {
-                txtStoreUrl.Text = "https://checkin-192ab.web.app/store.html";
+                txtStoreUrl.Text = "(يرجى إدخال معرّف مشروع Firebase للعميل لعرض الرابط)";
             }
             else
             {
@@ -881,7 +879,7 @@ namespace ChickenDist.Forms
                 AppConfig.Store_IsActive = chkStoreActive.Checked;
 
                 string enteredProjectId = txtFirebaseProjectId != null ? txtFirebaseProjectId.Text.Trim() : "";
-                if (string.IsNullOrEmpty(enteredProjectId)) enteredProjectId = "checkin-192ab";
+                if (enteredProjectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)) enteredProjectId = "";
                 AppConfig.FirebaseProjectId = enteredProjectId;
 
                 if (rbWholesale.Checked) AppConfig.Store_PriceTier = "Wholesale";

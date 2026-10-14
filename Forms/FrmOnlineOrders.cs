@@ -205,22 +205,26 @@ namespace ChickenDist.Forms
             btnOpenStore = CreateTopButton("🌐 فتح المتجر", Color.FromArgb(16, 185, 129));
             btnOpenStore.Click += (s, e) =>
             {
-                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                string url = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
-                    ? "https://checkin-192ab.web.app/store.html"
-                    : $"https://{projectId}.web.app/store.html?p={projectId}";
+                string projectId = AppConfig.FirebaseProjectId;
+                if (string.IsNullOrWhiteSpace(projectId))
+                {
+                    MessageBox.Show("يرجى ضبط معرّف مشروع Firebase للعميل من شاشة إعدادات المتجر أو شاشة النسخ الاحتياطي أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                string url = $"https://{projectId}.web.app/store.html?p={projectId}";
                 try { System.Diagnostics.Process.Start(url); } catch { }
             };
 
             btnCopyUrl = CreateTopButton("📋 نسخ الرابط", Color.FromArgb(71, 85, 105));
             btnCopyUrl.Click += (s, e) =>
             {
-                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                string url = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
-                    ? "https://checkin-192ab.web.app/store.html"
-                    : $"https://{projectId}.web.app/store.html?p={projectId}";
+                string projectId = AppConfig.FirebaseProjectId;
+                if (string.IsNullOrWhiteSpace(projectId))
+                {
+                    MessageBox.Show("يرجى ضبط معرّف مشروع Firebase للعميل من شاشة إعدادات المتجر أو شاشة النسخ الاحتياطي أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                string url = $"https://{projectId}.web.app/store.html?p={projectId}";
                 Clipboard.SetText(url);
                 MessageBox.Show("تم نسخ رابط المتجر الإلكتروني بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };

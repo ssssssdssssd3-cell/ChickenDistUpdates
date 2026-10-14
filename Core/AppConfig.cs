@@ -480,19 +480,34 @@ namespace ChickenDist.Core
 
         public static string FirebaseProjectId
         {
-            get => Get("FirebaseProjectId", "checkin-192ab");
+            get
+            {
+                string pid = Get("FirebaseProjectId", "");
+                if (pid.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)) return "";
+                return pid;
+            }
             set => Set("FirebaseProjectId", value);
         }
 
+        public static bool HasValidFirebaseProject => !string.IsNullOrWhiteSpace(FirebaseProjectId);
+
         public static string FirebaseStorageBucket
         {
-            get => Get("FirebaseStorageBucket", "checkin-192ab.firebasestorage.app");
+            get
+            {
+                string pid = FirebaseProjectId;
+                return !string.IsNullOrWhiteSpace(pid) ? $"{pid}.firebasestorage.app" : Get("FirebaseStorageBucket", "");
+            }
             set => Set("FirebaseStorageBucket", value);
         }
 
         public static string FirebaseWebUrl
         {
-            get => Get("FirebaseWebUrl", "https://checkin-192ab.web.app");
+            get
+            {
+                string pid = FirebaseProjectId;
+                return !string.IsNullOrWhiteSpace(pid) ? $"https://{pid}.web.app" : Get("FirebaseWebUrl", "");
+            }
             set => Set("FirebaseWebUrl", value);
         }
 

@@ -1022,11 +1022,10 @@ namespace ChickenDist.Forms
                     string name = dgClients.SelectedRows[0].Cells["ClientName"].Value?.ToString() ?? "";
                     if (!string.IsNullOrEmpty(phone))
                     {
-                        string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                        if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                        string storeUrl = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
-                            ? "https://checkin-192ab.web.app/store.html"
-                            : $"https://{projectId}.web.app/store.html?p={projectId}";
+                        string projectId = AppConfig.FirebaseProjectId;
+                        string storeUrl = !string.IsNullOrWhiteSpace(projectId)
+                            ? $"https://{projectId}.web.app/store.html?p={projectId}"
+                            : "https://prosoft.web.app/store.html";
                         string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "متجرنا الإلكتروني";
                         string msg = Uri.EscapeDataString($"مرحباً {name}، يسعدنا تواصلكم معنا! ✨\nيمكنكم الآن تصفح كافة منتجاتنا وقائمة الأسعار والطلب أونلاين مباشرة عبر الرابط التالي:\n{storeUrl}\n\nنتشرف بخدمتكم دائماً في {comp}.");
                         string cleanPhone = phone.Replace(" ", "").Replace("-", "");

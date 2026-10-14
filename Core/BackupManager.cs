@@ -504,9 +504,13 @@ namespace ChickenDist.Core
                 byte[] fileBytes = File.ReadAllBytes(filePath);
                 string base64Data = Convert.ToBase64String(fileBytes);
 
-                string configuredPid = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrWhiteSpace(configuredPid)) configuredPid = "checkin-192ab";
-                var targetProjects = new System.Collections.Generic.List<string> { configuredPid };
+                string configuredPid = AppConfig.FirebaseProjectId;
+                if (string.IsNullOrWhiteSpace(configuredPid) || configuredPid.Trim().Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+                {
+                    errorMessage = "لم يتم تعيين معرّف مشروع Firebase المخصص لهذا العميل.\nيرجى فتح شاشة إعدادات النسخ الاحتياطي وكتابة معرّف المشروع (Project ID) الخاص بالعميل أولاً لحفظ نسخته في مساحته الخاصة بأمان تام وتفادي تداخل النسخ.";
+                    return false;
+                }
+                var targetProjects = new System.Collections.Generic.List<string> { configuredPid.Trim() };
 
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {

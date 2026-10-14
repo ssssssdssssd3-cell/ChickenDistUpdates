@@ -352,8 +352,7 @@ namespace ChickenDist.Forms
         {
             try
             {
-                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+                string projectId = AppConfig.FirebaseProjectId;
                 txtFirebaseProjectId.Text = projectId;
                 UpdateWebUrlLabel();
 
@@ -413,9 +412,16 @@ namespace ChickenDist.Forms
             try
             {
                 string projectId = txtFirebaseProjectId.Text.Trim();
-                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+                if (string.IsNullOrWhiteSpace(projectId) || projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("يرجى كتابة معرّف مشروع Firebase الخاص بحساب هذا العميل (Project ID) أولاً لحفظ البيانات ومزامنتها في سحابته الخاصة بأمان.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtFirebaseProjectId.Focus();
+                    btnSyncNow.Enabled = true;
+                    btnSyncNow.Text = "🚀 مزامنة ورفع فوري الآن";
+                    return;
+                }
 
-                AppConfig.Set("FirebaseProjectId", projectId);
+                AppConfig.FirebaseProjectId = projectId;
                 bool ok = await CloudSyncService.PushLiveStatsToFirebaseAsync(projectId);
 
                 if (ok)
@@ -890,9 +896,15 @@ namespace ChickenDist.Forms
             try
             {
                 string projectId = txtFirebaseProjectId.Text.Trim();
-                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
+                if (projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)) projectId = "";
 
-                AppConfig.Set("FirebaseProjectId", projectId);
+                if (chkAutoSync.Checked && string.IsNullOrWhiteSpace(projectId))
+                {
+                    MessageBox.Show("لا يمكن تفعيل المزامنة التلقائية بدون إدخال معرّف مشروع Firebase للعميل أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                AppConfig.FirebaseProjectId = projectId;
 
                 int interval = cboInterval.SelectedIndex == 0 ? 15 : cboInterval.SelectedIndex == 1 ? 30 : cboInterval.SelectedIndex == 2 ? 60 : 120;
                 DbHelper.Execute(@"

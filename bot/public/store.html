@@ -1157,16 +1157,16 @@
       // 3. من الـ LocalStorage إذا تم حفظه مسبقاً لهذا المتصفح
       try {
         const saved = localStorage.getItem('prosoft_store_project_id');
-        if (saved && saved.trim()) return saved.trim();
+        if (saved && saved.trim() && saved.trim() !== 'checkin-192ab') return saved.trim();
       } catch (e) {}
 
-      // 4. المشروع الافتراضي المشترك
-      return 'checkin-192ab';
+      // 4. لا يتم إرجاع أي مشروع افتراضي مشترك
+      return '';
     }
 
     const projectId = getFirebaseProjectId();
-    const RTDB_BASE = `https://${projectId}-default-rtdb.firebaseio.com`;
-    const RTDB_FALLBACK = `https://${projectId}.firebaseio.com`;
+    const RTDB_BASE = projectId ? `https://${projectId}-default-rtdb.firebaseio.com` : '';
+    const RTDB_FALLBACK = projectId ? `https://${projectId}.firebaseio.com` : '';
 
     // ──────────────────────────────────────────
     // 2. تحميل البيانات من السحابة (Firebase RTDB)

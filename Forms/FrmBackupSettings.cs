@@ -16,6 +16,8 @@ namespace ChickenDist.Forms
         private CheckBox chkBackupOnExit;
         private ComboBox cboBackupInterval;
         private TextBox txtLocalCloudPath;
+        private TextBox txtFirebaseProjectId;
+        private Label lblFirebaseWebUrl;
         private TextBox txtWhatsAppPhone;
         private Label lblLastBackup;
         private Panel pnlStatusCard;
@@ -215,6 +217,73 @@ namespace ChickenDist.Forms
             pnlBody.Controls.Add(btnAutoDetectGDrive);
             y += 42;
 
+            // ── إعدادات النسخ السحابي فيربيز وتطبيق الموبايل (Firebase Cloud Backup) ─────────
+            AddLabel(pnlBody, "🌐 معرّف مشروع Firebase للعميل (Project ID) للنسخ السحابي وتطبيق الموبايل:", 15, y);
+            y += 24;
+
+            txtFirebaseProjectId = new TextBox
+            {
+                Location = new Point(15, y),
+                Width = 350,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                RightToLeft = RightToLeft.No,
+                Text = AppConfig.FirebaseProjectId
+            };
+            pnlBody.Controls.Add(txtFirebaseProjectId);
+
+            lblFirebaseWebUrl = new Label
+            {
+                Location = new Point(15, y + 28),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(56, 189, 248),
+                Font = new Font("Segoe UI", 8.5f),
+                Text = string.IsNullOrWhiteSpace(txtFirebaseProjectId.Text)
+                    ? "رابط تطبيق الموبايل: (أدخل معرّف المشروع الخاص بالعميل لعرض رابطه المخصص)"
+                    : $"رابط تطبيق الموبايل: https://{txtFirebaseProjectId.Text.Trim()}.web.app"
+            };
+            pnlBody.Controls.Add(lblFirebaseWebUrl);
+
+            txtFirebaseProjectId.TextChanged += (s, e) =>
+            {
+                string pid = txtFirebaseProjectId.Text.Trim();
+                lblFirebaseWebUrl.Text = string.IsNullOrWhiteSpace(pid)
+                    ? "رابط تطبيق الموبايل: (أدخل معرّف المشروع الخاص بالعميل لعرض رابطه المخصص)"
+                    : $"رابط تطبيق الموبايل: https://{pid}.web.app";
+            };
+
+            var btnCopyFirebaseUrl = Theme.MakeButton("📋 نسخ رابط الموبايل", 375, y - 2, 130, 30, Color.FromArgb(14, 116, 144));
+            btnCopyFirebaseUrl.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            btnCopyFirebaseUrl.Click += (s, e) =>
+            {
+                string pid = txtFirebaseProjectId.Text.Trim();
+                if (!string.IsNullOrWhiteSpace(pid))
+                {
+                    Clipboard.SetText($"https://{pid}.web.app");
+                    MessageBox.Show($"تم نسخ رابط تطبيق الموبايل المخصص للعميل بنجاح:\nhttps://{pid}.web.app\n\nيُفتح هذا الرابط على هاتف العميل لتحميل نسخ احتياطية خاصة به فقط بأمان تام.", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("يرجى إدخال معرّف مشروع Firebase للعميل أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+            pnlBody.Controls.Add(btnCopyFirebaseUrl);
+
+            var btnOpenCloudSync = Theme.MakeButton("⚙️ إعدادات السحابة", 510, y - 2, 95, 30, Color.FromArgb(55, 65, 81));
+            btnOpenCloudSync.Font = new Font("Segoe UI", 8.5f);
+            btnOpenCloudSync.Click += (s, e) =>
+            {
+                using (var frm = new FrmCloudSync())
+                {
+                    frm.ShowDialog(this);
+                    txtFirebaseProjectId.Text = AppConfig.FirebaseProjectId;
+                }
+            };
+            pnlBody.Controls.Add(btnOpenCloudSync);
+            y += 54;
+
             // ── إعدادات الواتساب للنسخ الاحتياطي ───────────────────
             AddLabel(pnlBody, "رقم هاتف استلام النسخ الاحتياطية عبر الواتساب (WhatsApp Backup Phone):", 15, y);
             y += 24;
@@ -312,7 +381,12 @@ namespace ChickenDist.Forms
             bool isOverdue = BackupManager.IsBackupOverdue();
             string overdueStr = isOverdue ? " ⚠️ متأخر!" : " ✅ حديث";
 
-            lblLastBackup.Text = $"آخر نسخة احتياطية: {lastStr}{overdueStr}";
+            string cloudPid = AppConfig.FirebaseProjectId;
+            string cloudInfo = !string.IsNullOrWhiteSpace(cloudPid)
+                ? $" | ☁️ سحابة العميل: {cloudPid}"
+                : " | ☁️ السحابة: ⚠️ غير مضبوطة (Project ID فارغ)";
+
+            lblLastBackup.Text = $"آخر نسخة: {lastStr}{overdueStr}{cloudInfo}";
             lblLastBackup.ForeColor = isOverdue
                 ? Color.FromArgb(239, 68, 68)
                 : Color.FromArgb(34, 197, 94);
@@ -361,7 +435,15 @@ namespace ChickenDist.Forms
             AppConfig.BackupLocalPath = txtLocalCloudPath.Text.Trim();
             AppConfig.WhatsAppBackupPhone = txtWhatsAppPhone.Text.Trim();
 
-            MessageBox.Show("✅ تم حفظ إعدادات النسخ الاحتياطي بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            string enteredPid = txtFirebaseProjectId != null ? txtFirebaseProjectId.Text.Trim() : "";
+            AppConfig.FirebaseProjectId = enteredPid;
+            if (!string.IsNullOrWhiteSpace(enteredPid))
+            {
+                AppConfig.FirebaseWebUrl = $"https://{enteredPid}.web.app";
+                AppConfig.FirebaseStorageBucket = $"{enteredPid}.firebasestorage.app";
+            }
+
+            MessageBox.Show("✅ تم حفظ إعدادات النسخ الاحتياطي ومشروع السحابة بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
     }

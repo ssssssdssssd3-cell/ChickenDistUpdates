@@ -43,11 +43,10 @@ namespace ChickenDist.Forms
 
         private void InitializeData()
         {
-            string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-            if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-            _storeUrl = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
-                ? "https://checkin-192ab.web.app/store.html"
-                : $"https://{projectId}.web.app/store.html?p={projectId}";
+            string projectId = AppConfig.FirebaseProjectId;
+            _storeUrl = !string.IsNullOrWhiteSpace(projectId)
+                ? $"https://{projectId}.web.app/store.html?p={projectId}"
+                : "https://prosoft.web.app/store.html";
 
             _companyName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المتجر الإلكتروني";
             _storePhone = !string.IsNullOrWhiteSpace(AppConfig.Store_OrderNotificationWhatsApp)

@@ -19,10 +19,9 @@ namespace ChickenDist.Core
         {
             if (string.IsNullOrWhiteSpace(content))
             {
-                string projectId = AppConfig.Get("FirebaseProjectId", "checkin-192ab");
-                if (string.IsNullOrEmpty(projectId)) projectId = "checkin-192ab";
-                content = projectId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase)
-                    ? "https://checkin-192ab.web.app/store.html"
+                string projectId = AppConfig.FirebaseProjectId;
+                content = string.IsNullOrWhiteSpace(projectId)
+                    ? "https://prosoft.web.app"
                     : $"https://{projectId}.web.app/store.html?p={projectId}";
             }
 
