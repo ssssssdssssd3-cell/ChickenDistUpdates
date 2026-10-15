@@ -2213,7 +2213,8 @@ namespace ChickenDist.Forms
                         if (isAlTarek)
                         {
                             // ════════════════════════════════════════════════════════════════════════
-                            // 5-Column Invoice Summary Table: [ إجمالي | مدفوع | أجل | سابق | حالي ]
+                            // 5-Column Invoice Summary Table: من اليمين إلى اليسار:
+                            // [ إجمالي | مدفوع | أجل | سابق | حالي ]
                             // ════════════════════════════════════════════════════════════════════════
                             int sumTableW = pageW - 2 * margin;
                             float colW5 = sumTableW / 5f;
@@ -2226,8 +2227,10 @@ namespace ChickenDist.Forms
                             string[] h5 = { "إجمالي", "مدفوع", "أجل", "سابق", "حالي" };
                             for (int i = 0; i < 5; i++)
                             {
-                                g.DrawString(h5[i], boldSheet, Brushes.Black, new RectangleF(x5 + i * colW5, y + 2, colW5, 18), center);
-                                if (i > 0) g.DrawLine(Pens.Black, x5 + i * colW5, y, x5 + i * colW5, y + 22);
+                                // في الطباعة العربية (RTL): العمود 0 (إجمالي) يظهر أقصى اليمين، والعمود 4 (حالي) أقصى اليسار
+                                float colX = x5 + (4 - i) * colW5;
+                                g.DrawString(h5[i], boldSheet, Brushes.Black, new RectangleF(colX, y + 2, colW5, 18), center);
+                                if (i > 0) g.DrawLine(Pens.Black, colX + colW5, y, colX + colW5, y + 22);
                             }
                             y += 22;
 
@@ -2236,8 +2239,9 @@ namespace ChickenDist.Forms
                             string[] v5 = { netAmount.ToString("N2"), sheetCashPaid.ToString("N2"), remainingFromInvoice.ToString("N2"), previousBalance.ToString("N2"), currentBalance.ToString("N2") };
                             for (int i = 0; i < 5; i++)
                             {
-                                g.DrawString(v5[i], boldSheet, Brushes.Black, new RectangleF(x5 + i * colW5, y + 3, colW5, 18), center);
-                                if (i > 0) g.DrawLine(Pens.Black, x5 + i * colW5, y, x5 + i * colW5, y + 24);
+                                float colX = x5 + (4 - i) * colW5;
+                                g.DrawString(v5[i], boldSheet, Brushes.Black, new RectangleF(colX, y + 3, colW5, 18), center);
+                                if (i > 0) g.DrawLine(Pens.Black, colX + colW5, y, colX + colW5, y + 24);
                             }
                             y += 28;
 
