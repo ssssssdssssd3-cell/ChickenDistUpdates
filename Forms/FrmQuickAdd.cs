@@ -20,8 +20,14 @@ namespace ChickenDist.Forms
         private Label lblStatus;
         private Timer statusTimer;
 
-        public FrmQuickAdd()
+        // اسم/كود أولي اختياري (لاستخدامه عند الفتح من شاشة الشراء لصنف غير موجود)
+        private readonly string _initialName;
+        private readonly string _initialCode;
+
+        public FrmQuickAdd(string initialName = null, string initialCode = null)
         {
+            _initialName = initialName;
+            _initialCode = initialCode;
             InitUI();
             
             // مؤقت لمسح حالة الحفظ بعد ثانيتين
@@ -256,6 +262,13 @@ namespace ChickenDist.Forms
             chkIsQuickItem.Checked = false;
             chkIsService.Checked = false;
             if (string.IsNullOrEmpty(cboUnit.Text)) cboUnit.Text = "قطعة";
+
+            // تعبئة الاسم والكود الأولي إن وُجدا (عند الفتح من شاشة الشراء)
+            if (!string.IsNullOrWhiteSpace(_initialName))
+                txtName.Text = _initialName;
+            if (!string.IsNullOrWhiteSpace(_initialCode))
+                txtCode.Text = _initialCode;
+
             txtName.Focus();
             txtName.SelectAll();
         }

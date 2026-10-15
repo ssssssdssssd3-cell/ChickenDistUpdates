@@ -656,7 +656,35 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(lblWarehouse, 0, 2);
             tbl.Controls.Add(cboWarehouse, 1, 2);
             tbl.Controls.Add(btnSearchProduct, 2, 2);
-            tbl.SetColumnSpan(btnSearchProduct, 2);
+            // لم نعد نمد بحث الأصناف لعمودين - أفردنا عمود 3 لزر الإضافة السريعة
+
+            // زر إضافة صنف جديد سريعاً من شاشة الشراء مباشرة
+            var btnQuickAddProduct = new Button
+            {
+                Text = "⚡ صنف جديد",
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(34, 139, 34),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 3, 2, 3),
+                Font = Theme.FontBold
+            };
+            btnQuickAddProduct.FlatAppearance.BorderSize = 0;
+            btnQuickAddProduct.Click += (s, e) =>
+            {
+                if (!ValidateSupplierAndInvoiceBeforeAddingItem(false)) return;
+                using (var frmQ = new FrmQuickAdd())
+                {
+                    if (frmQ.ShowDialog(this) == DialogResult.OK)
+                    {
+                        LoadCombos(reloadParties: false, reloadProducts: true);
+                    }
+                }
+                // إعادة التركيز على حقل الباركود
+                if (txtBarcode != null) { txtBarcode.Focus(); txtBarcode.SelectAll(); }
+            };
+            tbl.Controls.Add(btnQuickAddProduct, 3, 2);
 
             var lblBarcode = MakeLabel("📷 باركود الصنف (الاسكنر):", 0, 0);
             lblBarcode.Dock = DockStyle.Fill;
@@ -2339,11 +2367,55 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+                        var ans = MessageBox.Show(
+                            $"الصنف [{code}] غير موجود في قاعدة البيانات.\nهل تريد إضافته كصنف جديد سريعاً؟",
+                            "صنف غير موجود",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+
+                        if (ans == DialogResult.Yes)
                         {
-                            dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["ProductCode"];
-                            dgItems.BeginEdit(true);
+                            using (var frmQ = new FrmQuickAdd(initialName: code))
+                            {
+                                frmQ.ShowDialog(this);
+                            }
+                            // إعادة تحميل الأصناف ثم محاولة إيجاد الصنف الجديد
+                            LoadCombos(reloadParties: false, reloadProducts: true);
+                            var dtRetry = ProductDAL.FindByCode(code);
+                            if (dtRetry != null && dtRetry.Rows.Count > 0)
+                            {
+                                var newRow = dtRetry.Rows[0];
+                                int newPid   = Convert.ToInt32(newRow["ProductID"]);
+                                string newCode = newRow["ProductCode"].ToString();
+                                string newName = newRow["ProductName"].ToString();
+                                decimal newPP  = newRow["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(newRow["PurchasePrice"]) : 0m;
+                                decimal newSP  = newRow["SalePrice"]     != DBNull.Value ? Convert.ToDecimal(newRow["SalePrice"])     : 0m;
+
+                                if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+                                    dgItems.Rows.RemoveAt(rowIdx);
+                                _pendingRowIdx = -1;
+
+                                AddProductToGrid(newPid, newCode, newName, 1m, newPP, 0m, newSP);
+                                // فتح سطر جديد للإدخال التالي
+                                AddNewCodeRow();
+                            }
+                            else
+                            {
+                                // الصنف لم يُحفظ - إبقاء المؤشر على الخلية
+                                if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+                                {
+                                    dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["ProductCode"];
+                                    dgItems.BeginEdit(true);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+                            {
+                                dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["ProductCode"];
+                                dgItems.BeginEdit(true);
+                            }
                         }
                     }
                 });

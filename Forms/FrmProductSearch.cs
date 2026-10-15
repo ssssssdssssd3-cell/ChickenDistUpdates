@@ -400,17 +400,19 @@ namespace ChickenDist.Forms
             btnSelect.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSelect.Enabled = false;
 
-            var btnAddNewProduct = Theme.MakeButton("➕ إضافة صنف جديد", 270, 6, 165, 34, Theme.Success);
+            var btnAddNewProduct = Theme.MakeButton("⚡ إدخال سريع لصنف جديد", 270, 6, 175, 34, Theme.Success);
             btnAddNewProduct.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnAddNewProduct.Visible = _isPurchaseMode;
             btnAddNewProduct.Click += (s, e) =>
             {
-                using (var frm = new FrmProducts())
+                using (var frm = new FrmQuickAdd())
                 {
                     frm.ShowDialog(this);
                 }
                 ProductCache.Invalidate();
                 LoadProducts();
+                txtSearch.Focus();
+                txtSearch.SelectAll();
             };
             btnCancel = Theme.MakeButton("❌ إلغاء", 130, 6, 125, 34, Color.FromArgb(120, 40, 40));
             btnCancel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
