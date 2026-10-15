@@ -1,5 +1,5 @@
-version=3.9.81
+version=3.9.82
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.81&t=1792065048
-sha256=8F4C4F911F39275BF33684C0BF1CFE5F89DBD3AB0ECC0F336B34E070BD84E120
-changelog=v3.9.81 - 2026-10-15: Fix Purchase Return to use actual purchase price directly without discount deduction
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.82&t=1792066578
+sha256=F1F3E55CFBB53E5CAB7E0E12D9A8FDCA1ADB9A16710578E598A4A8CB4B27809B
+changelog=v3.9.82 - 2026-10-15: Remove net price column and calculate purchase return on actual purchase price directly

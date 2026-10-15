@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.81";
-$CHANGELOG = "v3.9.81 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Purchase Return to use actual purchase price directly without discount deduction"
+$VERSION = "3.9.82";
+$CHANGELOG = "v3.9.82 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Remove net price column and calculate purchase return on actual purchase price directly"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -182,7 +182,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 }
 
 # Step 6: Update update.txt
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Purchase Return to use actual purchase price directly without discount deduction"
+$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Remove net price column and calculate purchase return on actual purchase price directly"
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"

@@ -349,9 +349,9 @@ namespace ChickenDist.Forms
             colNewBonus.DefaultCellStyle.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             dgItems.Columns.Add(colNewBonus);
 
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "GrossUnitPrice", HeaderText = "سعر الشراء الأصلي", ReadOnly = true, FillWeight = 55 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", HeaderText = "نسبة الخصم %", ReadOnly = true, FillWeight = 45 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetUnitPrice", HeaderText = "سعر الشراء الصافي", ReadOnly = true, FillWeight = 55 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "GrossUnitPrice", HeaderText = "سعر الشراء", ReadOnly = true, FillWeight = 55 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetUnitPrice", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي المرتجع", ReadOnly = true, FillWeight = 60 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Factor", Visible = false });
