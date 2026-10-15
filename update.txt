@@ -1,5 +1,5 @@
-version=3.9.80
+version=3.9.81
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.80&t=1791977445
-sha256=0D15A5CB3E6539D92C0970FA9A487CB346E5A2979D61CBC2D79038217E96DCFF
-changelog=v3.9.80 - 2026-10-14: Configurable receipt & prep slip print copies, new dark grid & dark rows thermal receipt templates, structured grid prep slip layout
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.81&t=1792065048
+sha256=8F4C4F911F39275BF33684C0BF1CFE5F89DBD3AB0ECC0F336B34E070BD84E120
+changelog=v3.9.81 - 2026-10-15: Fix Purchase Return to use actual purchase price directly without discount deduction

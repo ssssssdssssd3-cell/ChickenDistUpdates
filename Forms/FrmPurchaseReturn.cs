@@ -644,14 +644,10 @@ namespace ChickenDist.Forms
                 if (remainingQty <= 0 && remainingBonus <= 0) continue; // تم إرجاع الفاتورة والبونص بالكامل مسبقاً
 
                 decimal grossUnitPrice = Convert.ToDecimal(r["UnitPrice"]);
-                decimal itemDiscPct = Convert.ToDecimal(r["DiscountPct"]);
-
-                // حساب سعر الشراء الصافي الحقيقي بعد الخصم المباشر وخصم الفاتورة
-                decimal itemPriceAfterDisc = grossUnitPrice * (1.0m - (itemDiscPct / 100.0m));
-                decimal netUnitPrice = Math.Round(itemPriceAfterDisc * headerFactor, 4);
-
-                // نسبة الخصم الإجمالية الفعلية
-                decimal effectiveDiscPct = grossUnitPrice > 0 ? Math.Round(((grossUnitPrice - netUnitPrice) / grossUnitPrice) * 100.0m, 2) : 0m;
+                // اعتماد سعر الشراء الفعلي المباشر للفاتورة دون تخفيضه بخصومات إضافية
+                decimal netUnitPrice = grossUnitPrice;
+                decimal itemDiscPct = r.Table.Columns.Contains("DiscountPct") && r["DiscountPct"] != DBNull.Value 
+                    ? Convert.ToDecimal(r["DiscountPct"]) : 0m;
 
                 int rowIdx = dgItems.Rows.Add();
                 var row = dgItems.Rows[rowIdx];
@@ -664,7 +660,7 @@ namespace ChickenDist.Forms
                 row.Cells["PrevReturnedBonusQty"].Value = prevRetBonus.ToString("N3");
                 row.Cells["NewReturnedBonusQty"].Value  = 0;
                 row.Cells["GrossUnitPrice"].Value      = grossUnitPrice.ToString("N2");
-                row.Cells["DiscountPct"].Value         = effectiveDiscPct > 0 ? (effectiveDiscPct.ToString("N2") + "%") : "0%";
+                row.Cells["DiscountPct"].Value         = itemDiscPct > 0 ? (itemDiscPct.ToString("N2") + "%") : "0%";
                 row.Cells["NetUnitPrice"].Value        = netUnitPrice.ToString("N2");
                 row.Cells["TotalPrice"].Value          = "0.00";
                 row.Cells["UnitName"].Value            = r["UnitName"]?.ToString() ?? "";
