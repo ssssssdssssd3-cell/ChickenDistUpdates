@@ -147,6 +147,13 @@ namespace ChickenDist.Forms
                     g.TranslateTransform(a5Shift, 0);
                 }
 
+                // إزاحة نموذج A4 لليمين لمعالجة مشكلة الهامش الأيمن الزائد في إعدادات الطابعة
+                int a4Shift = isA4Page ? AppConfig.A4ShiftRight : 0;
+                if (a4Shift != 0)
+                {
+                    g.TranslateTransform(a4Shift, 0);
+                }
+
                 int lMargin = isReceipt ? (pageW <= 230 ? 6 : 12) : (isA4Page ? 30 : 24);
                 int rMargin = isReceipt ? (pageW <= 230 ? 8 : 28) : (isA4Page ? 30 : 24);
                 int printableW = pageW - lMargin - rMargin;

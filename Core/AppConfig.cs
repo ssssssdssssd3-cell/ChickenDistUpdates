@@ -279,6 +279,20 @@ namespace ChickenDist.Core
             set => Set("A5ShiftRight", value.ToString());
         }
 
+        /// <summary>
+        /// إزاحة محتوى فاتورة A4 لليمين (بالنقاط/هندرث بوصة) لمعالجة مشكلة الهامش الأيمن الزائد في إعدادات الطابعة.
+        /// القيمة الافتراضية = 0 (بدون إزاحة). يمكن ضبطها من شاشة إعدادات الطابعات.
+        /// </summary>
+        public static int A4ShiftRight
+        {
+            get
+            {
+                string val = Get("A4ShiftRight", "0");
+                return int.TryParse(val, out int s) ? s : 0;
+            }
+            set => Set("A4ShiftRight", value.ToString());
+        }
+
         public static bool PreparationA5UseCustomShift
         {
             get => Get("PreparationA5UseCustomShift", "false") == "true";

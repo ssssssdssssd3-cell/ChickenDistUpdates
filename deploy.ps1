@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.84";
-$CHANGELOG = "v3.9.84 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Quick-Add new product from purchase screen - button and auto-register on unknown code"
+$VERSION = "3.9.85";
+$CHANGELOG = "v3.9.85 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): A4 invoice right-margin shift setting added to printer config screen"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

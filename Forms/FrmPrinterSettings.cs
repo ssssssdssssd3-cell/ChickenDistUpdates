@@ -36,6 +36,7 @@ namespace ChickenDist.Forms
         private ComboBox cboA4Template;
         private ComboBox cboA5Shift;
         private NumericUpDown numA5ShiftCm;
+        private NumericUpDown numA4ShiftCm;
 
         // ── Tab 3 Controls: أذونات التحضير والباركود ──────────────────
         private ComboBox cboPrepTemplate;
@@ -628,6 +629,36 @@ namespace ChickenDist.Forms
 
             page.Controls.Add(cboA5Shift);
             page.Controls.Add(numA5ShiftCm);
+
+            y += 38;
+
+            // 4. إزاحة محتوى فاتورة A4 لليمين
+            AddLabel(page, "📐 إزاحة محتوى فاتورة A4 لليمين (لمعالجة الهامش الزائد في الطابعة):", 20, y);
+            y += 24;
+
+            AddLabel(page, "الإزاحة بالسنتيمتر (0 = بدون إزاحة):", 20, y + 4);
+            numA4ShiftCm = new NumericUpDown
+            {
+                Location = new Point(350, y),
+                Width = 140,
+                Height = 30,
+                DecimalPlaces = 1,
+                Increment = 0.5m,
+                Minimum = -5.0m,
+                Maximum = 15.0m,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            decimal curA4Cm = Math.Round((decimal)(AppConfig.A4ShiftRight * 0.0254), 1);
+            if (curA4Cm < -5m) curA4Cm = 0m;
+            if (curA4Cm > 15m) curA4Cm = 0m;
+            numA4ShiftCm.Value = curA4Cm;
+
+            AddLabel(page, "💡 اضبط الإزاحة حتى يتمركز المحتوى في منتصف ورقة A4 (جرب 1.0 ~ 4.0 سم)", 20, y + 34);
+
+            page.Controls.Add(numA4ShiftCm);
+            y += 70;
         }
 
         private void BuildTabPrepAndBarcode(TabPage page)
@@ -1055,6 +1086,12 @@ namespace ChickenDist.Forms
             {
                 int pts = (int)Math.Round(((double)numA5ShiftCm.Value / 2.54) * 100);
                 AppConfig.A5ShiftRight = pts;
+            }
+
+            if (numA4ShiftCm != null)
+            {
+                int pts4 = (int)Math.Round(((double)numA4ShiftCm.Value / 2.54) * 100);
+                AppConfig.A4ShiftRight = pts4;
             }
 
             if (cboPrepTemplate != null)
