@@ -233,7 +233,7 @@ namespace ChickenDist.Forms
 			pnlHeader = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = AppConfig.EnableCratesTracking ? 144 : 124,
+				Height = AppConfig.EnableCratesTracking ? 172 : 148,
 				Width = 1024,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(10, 6, 10, 6)
@@ -254,7 +254,7 @@ namespace ChickenDist.Forms
 			var tblDetails = new TableLayoutPanel
 			{
 				Dock = DockStyle.Fill,
-				RowCount = AppConfig.EnableCratesTracking ? 4 : 3,
+				RowCount = AppConfig.EnableCratesTracking ? 5 : 4,
 				ColumnCount = 4,
 				BackColor = Color.Transparent,
 				Padding = new Padding(0)
@@ -264,6 +264,7 @@ namespace ChickenDist.Forms
 			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));  // Col 2: Label
 			tblDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32f));   // Col 3: Control (Date/Warehouse)
 
+			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
 			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
 			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
 			tblDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
@@ -524,7 +525,7 @@ namespace ChickenDist.Forms
 			pnlAddressAndPhone.Controls.Add(pnlPhoneBox);
 			txtClientAddress.BringToFront();
 
-			lblDriver = MakeLabel("المندوب :", 0, 0);
+			lblDriver = MakeLabel("البائع / المندوب:", 0, 0);
 			cboDriver = new ComboBox
 			{
 				Dock = DockStyle.Fill,
@@ -536,6 +537,34 @@ namespace ChickenDist.Forms
 				Margin = new Padding(2)
 			};
 			SetupSearchableCombo(cboDriver);
+
+			var pnlDriverBox = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
+			var btnOpenSalesComm = new Button
+			{
+				Text = "💼 عمولات",
+				Width = 68,
+				Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
+				FlatStyle = FlatStyle.Flat,
+				BackColor = Color.FromArgb(16, 149, 193),
+				ForeColor = Color.White,
+				Cursor = Cursors.Hand,
+				Dock = DockStyle.Left,
+				Margin = new Padding(1)
+			};
+			btnOpenSalesComm.FlatAppearance.BorderSize = 0;
+			btnOpenSalesComm.Click += (s, e) =>
+			{
+				if (!Session.CanAccess("EmployeeCommissions") && !Session.CanAccess("Employees"))
+				{
+					MessageBox.Show("ليس لديك صلاحية فتح شاشة العمولات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					return;
+				}
+				int selectedEmpId = (cboDriver.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.ID : 0;
+				new FrmEmployeeCommissions(selectedEmpId).ShowDialog(this);
+			};
+			pnlDriverBox.Controls.Add(cboDriver);
+			pnlDriverBox.Controls.Add(btnOpenSalesComm);
+			cboDriver.BringToFront();
 
 			var lblWarehouse = MakeLabel("المخزن :", 0, 0);
 			lblWarehouse.Dock = DockStyle.Fill;
@@ -595,7 +624,12 @@ namespace ChickenDist.Forms
 			tblDetails.Controls.Add(lblNotes, 2, 2);
 			tblDetails.Controls.Add(txtNotes, 3, 2);
 
-			// Row 3: Crates Tracking (only if enabled)
+			// Row 3: البائع / مسؤول المبيعات والمندوب
+			tblDetails.Controls.Add(lblDriver, 0, 3);
+			tblDetails.Controls.Add(pnlDriverBox, 1, 3);
+			tblDetails.SetColumnSpan(pnlDriverBox, 3);
+
+			// Row 4: Crates Tracking (only if enabled)
 			lblCratesOut = MakeLabel("فوارغ صادرة :", 0, 0);
 			lblCratesOut.Dock = DockStyle.Fill;
 			lblCratesOut.TextAlign = ContentAlignment.MiddleRight;
@@ -646,10 +680,10 @@ namespace ChickenDist.Forms
 
 			if (AppConfig.EnableCratesTracking)
 			{
-				tblDetails.Controls.Add(lblCratesOut, 0, 3);
-				tblDetails.Controls.Add(nudCratesOut, 1, 3);
-				tblDetails.Controls.Add(lblCratesIn, 2, 3);
-				tblDetails.Controls.Add(pnlCratesInBalance, 3, 3);
+				tblDetails.Controls.Add(lblCratesOut, 0, 4);
+				tblDetails.Controls.Add(nudCratesOut, 1, 4);
+				tblDetails.Controls.Add(lblCratesIn, 2, 4);
+				tblDetails.Controls.Add(pnlCratesInBalance, 3, 4);
 			}
 			else
 			{
@@ -2516,14 +2550,17 @@ namespace ChickenDist.Forms
                 }
 			};
 			
-			DataTable drivers = EmployeeDAL.GetDrivers();
+			DataTable drivers = EmployeeDAL.GetSalesRepsAndDrivers();
 			cboDriver.BeginUpdate();
 			cboDriver.Items.Clear();
 			List<ComboItem> driverItems = new List<ComboItem>();
-			driverItems.Add(new ComboItem(0, "-- اختر مندوب --"));
+			driverItems.Add(new ComboItem(0, "-- اختر البائع / المندوب --"));
 			foreach (DataRow row2 in drivers.Rows)
 			{
-				driverItems.Add(new ComboItem((int)row2["EmpID"], row2["EmpName"].ToString()));
+				string empName = row2["EmpName"].ToString();
+				string jTitle = row2.Table.Columns.Contains("JobTitle") && row2["JobTitle"] != DBNull.Value ? row2["JobTitle"].ToString().Trim() : "";
+				string display = string.IsNullOrWhiteSpace(jTitle) ? empName : $"{empName} ({jTitle})";
+				driverItems.Add(new ComboItem((int)row2["EmpID"], display));
 			}
 			cboDriver.Items.AddRange(driverItems.ToArray());
 			cboDriver.DisplayMember = "Text";

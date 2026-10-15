@@ -35,10 +35,22 @@ namespace ChickenDist.Forms
         private decimal _lastCalculatedCommission = 0m;
         private int _lastCalculatedEmpID = 0;
 
-        public FrmEmployeeCommissions()
+        public FrmEmployeeCommissions(int initialEmpID = 0)
         {
             InitUI();
             LoadEmployeesDropdowns();
+            if (initialEmpID > 0)
+            {
+                for (int i = 0; i < cboCalcEmp.Items.Count; i++)
+                {
+                    if (cboCalcEmp.Items[i] is ComboItem ci && ci.ID == initialEmpID)
+                    {
+                        cboCalcEmp.SelectedIndex = i;
+                        RunCommissionsCalculation();
+                        break;
+                    }
+                }
+            }
         }
 
         private void InitUI()

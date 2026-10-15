@@ -19,6 +19,18 @@ namespace ChickenDist.DAL
             return DbHelper.Query("SELECT EmpID,EmpName FROM Employees WHERE IsDriver=1 AND IsActive=1 ORDER BY EmpName");
         }
 
+        public static DataTable GetSalesRepsAndDrivers()
+        {
+            // جلب مسؤولي المبيعات والمناديب والموظفين النشطين لتحديدهم في فواتير البيع واحتساب العمولات
+            return DbHelper.Query(@"
+                SELECT EmpID, EmpName, JobTitle, IsDriver 
+                FROM Employees 
+                WHERE IsActive = 1 
+                ORDER BY 
+                    CASE WHEN IsDriver = 1 OR JobTitle LIKE N'%مبيعات%' OR JobTitle LIKE N'%سيلز%' OR JobTitle LIKE N'%بائع%' THEN 0 ELSE 1 END,
+                    EmpName");
+        }
+
         public static DataRow GetByID(int id)
         {
             var dt = DbHelper.Query("SELECT * FROM Employees WHERE EmpID=@id", DbHelper.P("@id", id));

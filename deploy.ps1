@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.86";
-$CHANGELOG = "v3.9.86 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Reorder A4 invoice summary table from right to left: Total, Paid, Credit, Previous, Current"
+$VERSION = "3.9.87";
+$CHANGELOG = "v3.9.87 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add salesperson role in sales screen with commission calculation and direct report shortcut"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
