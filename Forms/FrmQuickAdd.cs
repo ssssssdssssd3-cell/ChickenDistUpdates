@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -12,6 +13,7 @@ namespace ChickenDist.Forms
     public class FrmQuickAdd : Form
     {
         private TextBox txtName, txtCode;
+        private ComboBox cboCategory, cboUnit;
         private NumericUpDown nudPurchasePrice, nudPrice;
         private CheckBox chkIsService, chkIsQuickItem;
         private Button btnSave, btnClose;
@@ -33,7 +35,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "⚡ الإدخال السريع للأصناف";
-            this.Size = new Size(500, 485);
+            this.Size = new Size(500, 565);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -49,7 +51,7 @@ namespace ChickenDist.Forms
             var pnlForm = new Panel
             {
                 Location = new Point(20, 80),
-                Size = new Size(445, 275),
+                Size = new Size(445, 355),
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15)
             };
@@ -66,6 +68,35 @@ namespace ChickenDist.Forms
             pnlForm.Controls.Add(new Label { Text = "اسم الصنف:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
             txtName = new TextBox { Location = new Point(165, y), Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle };
             pnlForm.Controls.Add(txtName);
+            y += 40;
+
+            // التصنيف
+            pnlForm.Controls.Add(new Label { Text = "التصنيف:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            cboCategory = new ComboBox
+            {
+                Location = new Point(165, y),
+                Width = 260,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 10.5f),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+            pnlForm.Controls.Add(cboCategory);
+            y += 40;
+
+            // الوحدة
+            pnlForm.Controls.Add(new Label { Text = "الوحدة الأساسية:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            cboUnit = new ComboBox
+            {
+                Location = new Point(165, y),
+                Width = 260,
+                Font = new Font("Segoe UI", 10.5f),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat
+            };
+            pnlForm.Controls.Add(cboUnit);
             y += 40;
 
             // سعر الشراء
@@ -121,7 +152,7 @@ namespace ChickenDist.Forms
             lblStatus = new Label
             {
                 Text = "",
-                Location = new Point(20, 365),
+                Location = new Point(20, 445),
                 Size = new Size(445, 25),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -130,12 +161,12 @@ namespace ChickenDist.Forms
             this.Controls.Add(lblStatus);
 
             // الأزرار
-            btnSave = Theme.MakeButton("💾 حفظ الصنف (Ctrl+S)", 250, 395, 215, 36, Theme.Success);
+            btnSave = Theme.MakeButton("💾 حفظ الصنف (Ctrl+S)", 250, 475, 215, 36, Theme.Success);
             btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            btnClose = Theme.MakeButton("إغلاق ↩", 20, 395, 220, 36, Color.FromArgb(70, 80, 95));
+            btnClose = Theme.MakeButton("إغلاق ↩", 20, 475, 220, 36, Color.FromArgb(70, 80, 95));
             btnClose.Click += (s, e) => {
                 this.DialogResult = DialogResult.OK;
                 this.Close();
@@ -158,10 +189,45 @@ namespace ChickenDist.Forms
 
             // تهيئة الحقول عند التحميل
             this.Load += (s, e) => {
+                LoadCombos();
                 ResetForm();
             };
 
             Theme.ApplyFormRTL(this);
+        }
+
+        private void LoadCombos()
+        {
+            try
+            {
+                // تحميل التصنيفات
+                cboCategory.Items.Clear();
+                cboCategory.Items.Add(new ComboItem(0, "-- بدون تصنيف --"));
+                DataTable dtCat = CategoryDAL.GetAll(true);
+                foreach (DataRow r in dtCat.Rows)
+                {
+                    cboCategory.Items.Add(new ComboItem(Convert.ToInt32(r["CategoryID"]), r["CategoryName"].ToString()));
+                }
+                cboCategory.DisplayMember = "Text";
+                cboCategory.SelectedIndex = 0;
+
+                // تحميل الوحدات
+                cboUnit.Items.Clear();
+                DataTable dtUnits = UnitDAL.GetAll();
+                foreach (DataRow r in dtUnits.Rows)
+                {
+                    cboUnit.Items.Add(r["UnitName"].ToString());
+                }
+                if (cboUnit.Items.Count == 0)
+                {
+                    cboUnit.Items.AddRange(new string[] { "قطعة", "علبة", "كرتونة", "كيلو", "لتر", "متر" });
+                }
+                cboUnit.Text = "قطعة";
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("LoadCombos in FrmQuickAdd failed", ex);
+            }
         }
 
         private void FrmQuickAdd_KeyDown(object sender, KeyEventArgs e)
@@ -189,6 +255,7 @@ namespace ChickenDist.Forms
             nudPrice.Value = 0;
             chkIsQuickItem.Checked = false;
             chkIsService.Checked = false;
+            if (string.IsNullOrEmpty(cboUnit.Text)) cboUnit.Text = "قطعة";
             txtName.Focus();
             txtName.SelectAll();
         }
@@ -222,6 +289,13 @@ namespace ChickenDist.Forms
 
             string name = txtName.Text.Trim();
             string code = txtCode.Text.Trim();
+            string unit = string.IsNullOrWhiteSpace(cboUnit.Text) ? "قطعة" : cboUnit.Text.Trim();
+
+            int? categoryID = null;
+            if (cboCategory.SelectedItem is ComboItem ci && ci.ID > 0)
+            {
+                categoryID = ci.ID;
+            }
 
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -258,8 +332,8 @@ namespace ChickenDist.Forms
             try
             {
                 int id = ProductDAL.Save(
-                    0, code, name, "قطعة", nudPrice.Value, true,
-                    nudPurchasePrice.Value, 0, "", "", null, "", "", "", 
+                    0, code, name, unit, nudPrice.Value, true,
+                    nudPurchasePrice.Value, 0, "", "", categoryID, "", "", "", 
                     0, 0, null, true,
                     chkIsService.Checked,
                     null, null, null, null,

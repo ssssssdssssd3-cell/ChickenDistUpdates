@@ -1,5 +1,5 @@
-version=3.9.82
+version=3.9.83
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.82&t=1792066578
-sha256=F1F3E55CFBB53E5CAB7E0E12D9A8FDCA1ADB9A16710578E598A4A8CB4B27809B
-changelog=v3.9.82 - 2026-10-15: Remove net price column and calculate purchase return on actual purchase price directly
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=3.9.83&t=1792082026
+sha256=CE8B44AAF4658A103285BDE11867E141347D5E995E3799AE02388D232FD659FB
+changelog=v3.9.83 - 2026-10-15: Add category and unit selectors to Quick Add Products screen
