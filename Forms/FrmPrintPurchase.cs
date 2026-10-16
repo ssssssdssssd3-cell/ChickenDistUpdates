@@ -72,6 +72,22 @@ namespace ChickenDist.Forms
             {
                 _printItemIndex = 0;
                 _runningTotal = 0;
+
+                if (_items != null && _items.Columns.Contains("IMEI"))
+                {
+                    foreach (DataRow r in _items.Rows)
+                    {
+                        string imei = r["IMEI"]?.ToString()?.Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(imei))
+                        {
+                            string pName = r["ProductName"]?.ToString() ?? "";
+                            if (!pName.Contains(imei))
+                            {
+                                r["ProductName"] = pName + " (سيريال: " + imei + ")";
+                            }
+                        }
+                    }
+                }
             };
 
             pd.PrintPage += (s, e) =>

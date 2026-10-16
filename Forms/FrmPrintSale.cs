@@ -119,15 +119,19 @@ namespace ChickenDist.Forms
                 _runningTotal = 0;
                 _runningQtyTotal = 0;
 
-                // Prepend/append IMEI to ProductName for mobile business type
-                if (AppConfig.BusinessType == "Mobiles" && _items != null && _items.Columns.Contains("IMEI"))
+                // Append IMEI to ProductName if present (prevents duplicates on multi-page or preview re-runs)
+                if (_items != null && _items.Columns.Contains("IMEI"))
                 {
                     foreach (DataRow r in _items.Rows)
                     {
-                        string imei = r["IMEI"]?.ToString() ?? "";
+                        string imei = r["IMEI"]?.ToString()?.Trim() ?? "";
                         if (!string.IsNullOrWhiteSpace(imei))
                         {
-                            r["ProductName"] = r["ProductName"].ToString() + " (IMEI: " + imei + ")";
+                            string pName = r["ProductName"]?.ToString() ?? "";
+                            if (!pName.Contains(imei))
+                            {
+                                r["ProductName"] = pName + " (سيريال: " + imei + ")";
+                            }
                         }
                     }
                 }

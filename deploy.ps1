@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.0.6";
-$CHANGELOG = "v4.0.6 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show IMEI serial in sales and purchase returns and enable barcode/IMEI scanner search"
+$VERSION = "4.0.7";
+$CHANGELOG = "v4.0.7 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Link purchase returns with stock balance and mobile IMEIs, prevent negative inventory, and show serial across all printouts (sales, returns, purchases)"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

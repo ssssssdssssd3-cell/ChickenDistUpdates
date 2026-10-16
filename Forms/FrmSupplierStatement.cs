@@ -1051,7 +1051,7 @@ namespace ChickenDist.Forms
                     if ((typeRaw == "Purchase" || typeRaw == "PurchaseCash") && refID > 0)
                     {
                         dtItems = DbHelper.Query(@"
-                            SELECT p.ProductName, pi2.Quantity, ISNULL(NULLIF(pi2.UnitName, ''), p.Unit) AS Unit, pi2.UnitPrice, (pi2.Quantity * pi2.UnitPrice) AS Total
+                            SELECT p.ProductName, pi2.Quantity, ISNULL(NULLIF(pi2.UnitName, ''), p.Unit) AS Unit, pi2.UnitPrice, (pi2.Quantity * pi2.UnitPrice) AS Total, ISNULL(pi2.IMEI, N'') AS IMEI
                             FROM PurchaseItems pi2
                             JOIN Products p ON pi2.ProductID = p.ProductID
                             WHERE pi2.PurchaseID = @id", DbHelper.P("@id", refID));
@@ -1059,7 +1059,7 @@ namespace ChickenDist.Forms
                     else if (typeRaw == "PurchaseReturn" && refID > 0)
                     {
                         dtItems = DbHelper.Query(@"
-                            SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit, pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS Total
+                            SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit, pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS Total, ISNULL(pri.IMEI, N'') AS IMEI
                             FROM PurchaseReturnItems pri
                             JOIN Products p ON pri.ProductID = p.ProductID
                             WHERE pri.ReturnID = @id", DbHelper.P("@id", refID));
@@ -1130,6 +1130,11 @@ namespace ChickenDist.Forms
                         foreach (DataRow ir in dtItems.Rows)
                         {
                             string pName = ir["ProductName"].ToString();
+                            string pImei = ir.Table.Columns.Contains("IMEI") && ir["IMEI"] != DBNull.Value ? ir["IMEI"].ToString().Trim() : "";
+                            if (!string.IsNullOrEmpty(pImei))
+                            {
+                                pName = $"{pName} (سيريال: {pImei})";
+                            }
                             decimal pQty = Convert.ToDecimal(ir["Quantity"]);
                             string pUnit = ir["Unit"]?.ToString() ?? "";
                             decimal pPrice = Convert.ToDecimal(ir["UnitPrice"]);

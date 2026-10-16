@@ -370,6 +370,19 @@ namespace ChickenDist.Forms
             });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedQty", HeaderText = "الكمية بالفاتورة", ReadOnly = true, FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQty", HeaderText = "المرتجع السابق", ReadOnly = true, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "AvailableStock", 
+                HeaderText = "الرصيد المتاح بالمخزن", 
+                ReadOnly = true, 
+                FillWeight = 50,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter, 
+                    ForeColor = Color.LightSkyBlue, 
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) 
+                } 
+            });
 
             var colNew = new DataGridViewTextBoxColumn
             {
@@ -540,6 +553,7 @@ namespace ChickenDist.Forms
             cboWarehouse.DisplayMember = "Text";
             if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
             cboWarehouse.Enabled = Session.IsAdmin || dtWh.Rows.Count > 1;
+            cboWarehouse.SelectedIndexChanged += (s, e) => UpdateAvailableStockColumn();
 
             // جميع الأصناف للمرتجع العام
             var dtProd = ProductDAL.GetAll(true);
@@ -560,6 +574,20 @@ namespace ChickenDist.Forms
                     txtGenPrice.Text = ci.Extra.ToString("N2");
                 }
             };
+        }
+
+        private void UpdateAvailableStockColumn()
+        {
+            if (dgItems == null || !dgItems.Columns.Contains("AvailableStock")) return;
+            int whId = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? cw.ID : Session.GetDefaultWarehouseID();
+            foreach (DataGridViewRow r in dgItems.Rows)
+            {
+                if (r.Cells["ProductID"].Value != null && int.TryParse(r.Cells["ProductID"].Value.ToString(), out int pid))
+                {
+                    decimal stock = InventoryDAL.GetProductStock(pid, whId);
+                    r.Cells["AvailableStock"].Value = stock.ToString("0.##");
+                }
+            }
         }
 
         private void LoadPurchasesGrid()
@@ -721,6 +749,11 @@ namespace ChickenDist.Forms
 
                 row.Cells["PurchasedQty"].Value        = purQty.ToString("N3");
                 row.Cells["PrevReturnedQty"].Value     = prevRet.ToString("N3");
+
+                int curWhId = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? cw.ID : Session.GetDefaultWarehouseID();
+                decimal currentStock = InventoryDAL.GetProductStock(pid, curWhId);
+                row.Cells["AvailableStock"].Value      = currentStock.ToString("0.##");
+
                 row.Cells["NewReturnedQty"].Value      = 0;
                 row.Cells["PurchasedBonusQty"].Value   = purBonus.ToString("N3");
                 row.Cells["PrevReturnedBonusQty"].Value = prevRetBonus.ToString("N3");
@@ -804,6 +837,11 @@ namespace ChickenDist.Forms
             newRow.Cells["ProductName"].Value         = name;
             newRow.Cells["PurchasedQty"].Value        = "عام";
             newRow.Cells["PrevReturnedQty"].Value     = "0";
+
+            int curWhId = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? cw.ID : Session.GetDefaultWarehouseID();
+            decimal currentStock = InventoryDAL.GetProductStock(productID, curWhId);
+            newRow.Cells["AvailableStock"].Value      = currentStock.ToString("0.##");
+
             newRow.Cells["NewReturnedQty"].Value      = defaultQty;
             newRow.Cells["PurchasedBonusQty"].Value   = "0";
             newRow.Cells["PrevReturnedBonusQty"].Value = "0";
@@ -858,6 +896,11 @@ namespace ChickenDist.Forms
             row.Cells["IMEI"].Value                = imei;
             row.Cells["PurchasedQty"].Value        = "عام";
             row.Cells["PrevReturnedQty"].Value     = "0.000";
+
+            int curWhId = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? cw.ID : Session.GetDefaultWarehouseID();
+            decimal currentStock = InventoryDAL.GetProductStock(productID, curWhId);
+            row.Cells["AvailableStock"].Value      = currentStock.ToString("0.##");
+
             row.Cells["NewReturnedQty"].Value      = 1m;
             row.Cells["PurchasedBonusQty"].Value   = "0.000";
             row.Cells["PrevReturnedBonusQty"].Value = "0.000";
@@ -1316,6 +1359,68 @@ namespace ChickenDist.Forms
             int purchaseID = isGeneral ? 0 : _selectedPurchaseID;
             int? supplierID = (cboSupplier.SelectedItem is ComboItem cs && cs.ID > 0) ? (int?)cs.ID : null;
             int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : Session.GetDefaultWarehouseID();
+            int effWhId = warehouseID ?? 1;
+
+            // ── 1. التحقق من السيريالات للأجهزة (IMEI) لنشاط الموبايلات ──
+            if (AppConfig.BusinessType == "Mobiles" || returnItems.Any(x => !string.IsNullOrWhiteSpace(x.IMEI)))
+            {
+                foreach (var item in returnItems)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.IMEI))
+                    {
+                        string cleanImei = PurchaseDAL.SanitizeIMEIString(item.IMEI);
+
+                        // فحص هل تم بيع الجهاز لعميل
+                        if (PurchaseDAL.IsIMEISoldToClient(cleanImei, out string sCode, out string cName, out DateTime sDate))
+                        {
+                            MessageBox.Show(
+                                $"❌ لا يمكن إرجاع الجهاز ذو السيريال [{cleanImei}] ({item.ProductName}) للمورد!\n\n" +
+                                $"هذا الجهاز تم بيعه مسبقاً للعميل: [{cName}]\n" +
+                                $"بموجب الفاتورة رقم: [{sCode}] بتاريخ [{sDate:yyyy/MM/dd}]\n\n" +
+                                $"يجب استرجاع الجهاز أولاً من العميل (مرتجع بيع) ليدخل المخزن قبل إمكانية إرجاعه للمورد.",
+                                "الجهاز مباع للعميل", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                            return;
+                        }
+
+                        // فحص هل تم إرجاعه للمورد مسبقاً
+                        if (PurchaseDAL.IsIMEIAlreadyReturnedToSupplier(cleanImei, out int retId, out DateTime retDate, out string supName))
+                        {
+                            MessageBox.Show(
+                                $"❌ لا يمكن إرجاع الجهاز ذو السيريال [{cleanImei}] ({item.ProductName}) للمورد!\n\n" +
+                                $"هذا الجهاز تم إرجاعه للمورد مسبقاً في مرتجع الشراء رقم [PRT-{retId}] بتاريخ [{retDate:yyyy/MM/dd}].",
+                                "الجهاز مرتجع مسبقاً", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // ── 2. التحقق من رصيد الصنف المتوفر بالمخزن (لكل الأنشطة والموبايلات لمنع الرصيد السالب) ──
+            var groupedItems = returnItems
+                .GroupBy(x => x.ProductID)
+                .Select(g => new
+                {
+                    ProductID = g.Key,
+                    ProductName = g.First().ProductName,
+                    TotalReturningBaseQty = g.Sum(x => (x.Quantity + x.BonusQuantity) * (x.Factor > 0 ? x.Factor : 1.0m))
+                })
+                .ToList();
+
+            foreach (var grp in groupedItems)
+            {
+                decimal currentStock = InventoryDAL.GetProductStock(grp.ProductID, effWhId);
+                if (grp.TotalReturningBaseQty > currentStock)
+                {
+                    MessageBox.Show(
+                        $"❌ لا يمكن إتمام مرتجع الشراء للصنف [{grp.ProductName}]!\n\n" +
+                        $"• الكمية المطلوب إرجاعها للمورد: {grp.TotalReturningBaseQty:0.##}\n" +
+                        $"• الرصيد الفعلي المتوفر حالياً بالمخزن: {currentStock:0.##}\n\n" +
+                        $"الكمية المطلوب إرجاعها تتجاوز الرصيد المتوفر بالمخزن (تم بيع جزء منها للعملاء مسبقاً).\n" +
+                        $"الرجاء تعديل الكمية المرتجعة لتطابق أو تقل عن الرصيد المتاح لمنع تحول رصيد المخزن إلى سالب.",
+                        "تجاوز الرصيد المتوفر بالمخزن", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    return;
+                }
+            }
             
             string returnType = "Credit";
             if (cboReturnType.SelectedIndex == 1 || cboReturnType.Text.Contains("Cash") || cboReturnType.Text.Contains("نقدي"))
@@ -1341,8 +1446,6 @@ namespace ChickenDist.Forms
                 {
                     StockCache.Invalidate(warehouseID);
                     FrmQuickAdd.RaiseProductSaved();
-                    MessageBox.Show("✅ تم حفظ مرتجع الشراء بنجاح!\nتم احتساب الصافي وتحديث المخزن وحساب المورد/العميل والخزينة تلقائياً.",
-                        "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtNotes.Text = "";
                     dgItems.Rows.Clear();
                     lblTotal.Text = "إجمالي مرتجع الشراء: 0.00 ج";
@@ -1352,6 +1455,9 @@ namespace ChickenDist.Forms
                     {
                         LoadPurchasesGrid();
                     }
+
+                    // عرض خيارات الطباعة (حراري 80mm / A4 / A5)
+                    FrmPrintChoiceDialog.PromptAndPrintPurchaseReturn(this, id, "✅ تم حفظ مرتجع الشراء وتحديث المخزن وحساب المورد بنجاح!");
                 }
                 else
                 {

@@ -1019,6 +1019,99 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>
+        /// فحص هل السيريال (IMEI) مباع لعميل على فاتورة بيع مرحلة ولم يتم استرجاعه من العميل (مرتجع بيع)
+        /// لمنع إرجاعه للمورد وهو مباع للعميل
+        /// </summary>
+        public static bool IsIMEISoldToClient(string rawImei, out string saleCode, out string clientName, out DateTime saleDate)
+        {
+            saleCode = "";
+            clientName = "";
+            saleDate = DateTime.MinValue;
+
+            if (string.IsNullOrWhiteSpace(rawImei)) return false;
+            string imei = SanitizeIMEIString(rawImei);
+            if (string.IsNullOrWhiteSpace(imei)) return false;
+
+            var testList = new List<string> { imei };
+            if (imei.Length == 15 && imei.All(char.IsDigit))
+            {
+                testList.AddRange(GetCandidatePairedIMEIs(imei));
+            }
+
+            foreach (var test in testList)
+            {
+                string sql = @"
+                    SELECT TOP 1 s.SaleCode, s.SaleDate, 
+                           COALESCE(NULLIF(s.CustomClientName, N''), NULLIF(c.ClientName, N''), N'عميل نقدي') AS ClientName
+                    FROM SaleItems si
+                    JOIN Sales s ON si.SaleID = s.SaleID
+                    LEFT JOIN Clients c ON s.ClientID = c.ClientID
+                    WHERE LTRIM(RTRIM(si.IMEI)) = @imei
+                      AND s.IsPosted = 1
+                      AND NOT EXISTS (
+                          SELECT 1 
+                          FROM ReturnItems ri
+                          JOIN SalesReturns sr ON ri.ReturnID = sr.ReturnID
+                          WHERE LTRIM(RTRIM(ri.IMEI)) = @imei
+                      )
+                    ORDER BY s.SaleID DESC";
+
+                var dt = DbHelper.Query(sql, DbHelper.P("@imei", test));
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    saleCode = dt.Rows[0]["SaleCode"]?.ToString() ?? "";
+                    clientName = dt.Rows[0]["ClientName"]?.ToString() ?? "عميل نقدي";
+                    saleDate = dt.Rows[0]["SaleDate"] != DBNull.Value ? Convert.ToDateTime(dt.Rows[0]["SaleDate"]) : DateTime.Now;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// فحص هل السيريال (IMEI) تم إرجاعه للمورد مسبقاً في مرتجع شراء
+        /// </summary>
+        public static bool IsIMEIAlreadyReturnedToSupplier(string rawImei, out int returnID, out DateTime returnDate, out string supplierName)
+        {
+            returnID = 0;
+            returnDate = DateTime.MinValue;
+            supplierName = "";
+
+            if (string.IsNullOrWhiteSpace(rawImei)) return false;
+            string imei = SanitizeIMEIString(rawImei);
+            if (string.IsNullOrWhiteSpace(imei)) return false;
+
+            var testList = new List<string> { imei };
+            if (imei.Length == 15 && imei.All(char.IsDigit))
+            {
+                testList.AddRange(GetCandidatePairedIMEIs(imei));
+            }
+
+            foreach (var test in testList)
+            {
+                string sql = @"
+                    SELECT TOP 1 prt.ReturnID, prt.ReturnDate, COALESCE(s.SupplierName, N'المورد') AS SupplierName
+                    FROM PurchaseReturnItems pri
+                    JOIN PurchaseReturns prt ON pri.ReturnID = prt.ReturnID
+                    LEFT JOIN Suppliers s ON prt.SupplierID = s.SupplierID
+                    WHERE LTRIM(RTRIM(pri.IMEI)) = @imei
+                    ORDER BY prt.ReturnID DESC";
+
+                var dt = DbHelper.Query(sql, DbHelper.P("@imei", test));
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    returnID = Convert.ToInt32(dt.Rows[0]["ReturnID"]);
+                    returnDate = dt.Rows[0]["ReturnDate"] != DBNull.Value ? Convert.ToDateTime(dt.Rows[0]["ReturnDate"]) : DateTime.Now;
+                    supplierName = dt.Rows[0]["SupplierName"]?.ToString() ?? "المورد";
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// فحص هل السيريال مسجل مسبقاً في فواتير الشراء لمنع تكراره بالخطأ أثناء إدخال المشتريات
         /// </summary>
         public static bool IsIMEIAlreadyExists(string imei, int? excludePurchaseID = null)
@@ -1971,6 +2064,36 @@ namespace ChickenDist.DAL
                 if (purType != null && (purType.Contains("Cash") || purType.Contains("نقدي"))) pType = "Cash";
                 else if (purType != null && (purType.Contains("Visa") || purType.Contains("Bank") || purType.Contains("فيزا") || purType.Contains("بنك"))) pType = "Visa";
                 else pType = "Credit";
+
+                // ── التحقق من الرصيد المتوفر لمنع حدوث رصيد سالب ──
+                foreach (var grp in items.GroupBy(x => x.ProductID))
+                {
+                    decimal totalReturningBase = grp.Sum(x => (x.Quantity + x.BonusQuantity) * (x.Factor > 0 ? x.Factor : 1.0m));
+                    decimal currentStock = InventoryDAL.GetProductStock(grp.Key, whID, trans);
+                    if (totalReturningBase > currentStock)
+                    {
+                        var prodRow = DbHelper.QueryTrans(trans, "SELECT ProductName FROM Products WHERE ProductID = @id", DbHelper.P("@id", grp.Key));
+                        string pName = prodRow.Rows.Count > 0 ? prodRow.Rows[0]["ProductName"].ToString() : ("صنف " + grp.Key);
+                        throw new Exception($"رصيد الصنف [{pName}] في المخزن هو [{currentStock:0.##}] فقط، والكمية المراد إرجاعها للمورد هي [{totalReturningBase:0.##}].\nلا يمكن إرجاع كمية أكبر من الرصيد المتاح (تم بيع جزء منها للعملاء مسبقاً وسيتسبب ذلك في رصيد سالب).");
+                    }
+                }
+
+                // ── التحقق من السيريالات (IMEI) ──
+                foreach (var itm in items)
+                {
+                    if (!string.IsNullOrWhiteSpace(itm.IMEI))
+                    {
+                        string cleanImei = PurchaseDAL.SanitizeIMEIString(itm.IMEI);
+                        if (PurchaseDAL.IsIMEISoldToClient(cleanImei, out string sCode, out string cName, out DateTime sDate))
+                        {
+                            throw new Exception($"الجهاز ذو السيريال [{cleanImei}] تم بيعه للعميل [{cName}] بالفاتورة [{sCode}] بتاريخ [{sDate:yyyy/MM/dd}] ولا يمكن إرجاعه للمورد قبل استرجاعه من العميل.");
+                        }
+                        if (PurchaseDAL.IsIMEIAlreadyReturnedToSupplier(cleanImei, out int prevRetId, out DateTime prevRetDate, out string prevSup))
+                        {
+                            throw new Exception($"الجهاز ذو السيريال [{cleanImei}] تم إرجاعه للمورد مسبقاً في مرتجع [{prevRetId}] بتاريخ [{prevRetDate:yyyy/MM/dd}].");
+                        }
+                    }
+                }
 
                 // تسجيل المرتجع
                 int retID = DbHelper.ExecuteInsertTrans(trans,
