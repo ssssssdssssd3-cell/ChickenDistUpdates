@@ -1237,6 +1237,20 @@ namespace ChickenDist.Core
                 ALTER TABLE Products ADD IsOffer BIT NULL CONSTRAINT DF_Products_IsOffer DEFAULT 0;
             END");
 
+            SafeMigrate("Products.OfferPeriodColumns", @"
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'OfferPrice')
+            BEGIN
+                ALTER TABLE Products ADD OfferPrice DECIMAL(18,2) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'OfferStartDate')
+            BEGIN
+                ALTER TABLE Products ADD OfferStartDate DATETIME NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'OfferEndDate')
+            BEGIN
+                ALTER TABLE Products ADD OfferEndDate DATETIME NULL;
+            END");
+
             SafeMigrate("InstallmentSchedules.Notes", @"
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('InstallmentSchedules') AND name = 'Notes')
             BEGIN
@@ -5143,6 +5157,91 @@ namespace ChickenDist.Core
             {
                 AppLogger.Error("DbHelper.EnsureOnlineOrdersSchema", ex);
             }
+        }
+
+        private static bool _offerColsChecked = false;
+        private static DateTime _lastOfferSyncTime = DateTime.MinValue;
+
+        public static void EnsureOfferColumnsExist()
+        {
+            if (_offerColsChecked) return;
+            try
+            {
+                Execute(@"
+                    IF OBJECT_ID('Products', 'U') IS NOT NULL
+                    BEGIN
+                        IF COL_LENGTH('Products', 'OriginalPrice') IS NULL
+                            ALTER TABLE Products ADD OriginalPrice DECIMAL(18,2) NULL;
+                        IF COL_LENGTH('Products', 'DiscountPct') IS NULL
+                            ALTER TABLE Products ADD DiscountPct DECIMAL(5,2) NULL DEFAULT 0;
+                        IF COL_LENGTH('Products', 'IsOffer') IS NULL
+                            ALTER TABLE Products ADD IsOffer BIT NULL DEFAULT 0;
+                        IF COL_LENGTH('Products', 'OfferPrice') IS NULL
+                            ALTER TABLE Products ADD OfferPrice DECIMAL(18,2) NULL;
+                        IF COL_LENGTH('Products', 'OfferStartDate') IS NULL
+                            ALTER TABLE Products ADD OfferStartDate DATETIME NULL;
+                        IF COL_LENGTH('Products', 'OfferEndDate') IS NULL
+                            ALTER TABLE Products ADD OfferEndDate DATETIME NULL;
+                    END
+                ");
+                _offerColsChecked = true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureOfferColumnsExist", ex);
+            }
+        }
+
+        /// <summary>
+        /// فحص ومزامنة عروض الأوكازيون:
+        /// 1) إعادة الأصناف التي انتهت فترة الأوكازيون الخاصة بها إلى سعرها الأصلي تلقائياً.
+        /// 2) تفعيل أسعار الأوكازيون للأصناف المجدولة عند حلول تاريخ بداية العرض.
+        /// </summary>
+        public static int SyncOfferPrices(bool force = false)
+        {
+            if (!force && (DateTime.Now - _lastOfferSyncTime).TotalSeconds < 30)
+                return 0;
+
+            _lastOfferSyncTime = DateTime.Now;
+            int expiredCount = 0;
+            try
+            {
+                EnsureOfferColumnsExist();
+
+                // 1. استعادة السعر الأصلي للأصناف التي انتهى تاريخ الأوكازيون الخاص بها
+                expiredCount = Execute(@"
+                    UPDATE Products
+                    SET SalePrice = COALESCE(NULLIF(OriginalPrice, 0), SalePrice),
+                        OfferPrice = NULL,
+                        DiscountPct = 0,
+                        IsOffer = 0,
+                        OfferStartDate = NULL,
+                        OfferEndDate = NULL
+                    WHERE IsOffer = 1
+                      AND OfferEndDate IS NOT NULL
+                      AND CAST(OfferEndDate AS DATE) < CAST(GETDATE() AS DATE)");
+
+                // 2. تفعيل سعر الأوكازيون للأصناف التي بدأ تاريخ الأوكازيون الخاص بها ولم ينتهِ بعد
+                int activatedCount = Execute(@"
+                    UPDATE Products
+                    SET OriginalPrice = CASE WHEN OriginalPrice IS NULL OR OriginalPrice <= 0 THEN SalePrice ELSE OriginalPrice END,
+                        SalePrice = OfferPrice
+                    WHERE IsOffer = 1
+                      AND OfferPrice IS NOT NULL AND OfferPrice > 0
+                      AND SalePrice <> OfferPrice
+                      AND (OfferStartDate IS NULL OR CAST(OfferStartDate AS DATE) <= CAST(GETDATE() AS DATE))
+                      AND (OfferEndDate IS NULL OR CAST(OfferEndDate AS DATE) >= CAST(GETDATE() AS DATE))");
+
+                if (expiredCount > 0 || activatedCount > 0)
+                {
+                    ProductCache.Invalidate();
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.SyncOfferPrices", ex);
+            }
+            return expiredCount;
         }
     }
 }

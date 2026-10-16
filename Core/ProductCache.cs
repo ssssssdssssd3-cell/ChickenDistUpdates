@@ -21,6 +21,7 @@ namespace ChickenDist.Core
         /// </summary>
         public static DataTable GetActive()
         {
+            DbHelper.SyncOfferPrices();
             if (_activeProducts != null) return _activeProducts;
             lock (_lock)
             {
@@ -35,6 +36,7 @@ namespace ChickenDist.Core
         /// </summary>
         public static DataTable GetAll()
         {
+            DbHelper.SyncOfferPrices();
             if (_allProducts != null) return _allProducts;
             lock (_lock)
             {

@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.90";
-$CHANGELOG = "v3.9.90 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Remove new row buttons in purchase invoice and swap search and quick add product button sizes"
+$VERSION = "3.9.91";
+$CHANGELOG = "v3.9.91 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add clearance offer period with start and end dates and automatic restoration of original price upon expiration"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

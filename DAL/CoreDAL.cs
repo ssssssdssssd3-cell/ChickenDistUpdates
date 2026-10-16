@@ -435,6 +435,7 @@ namespace ChickenDist.DAL
 
         public static DataTable GetAll(bool activeOnly = false)
         {
+            DbHelper.SyncOfferPrices();
             DbHelper.EnsureProductImagesColumnsExist();
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.EnglishName, p.Unit, p.SalePrice, p.PurchasePrice, 
@@ -481,6 +482,7 @@ namespace ChickenDist.DAL
 
         public static DataRow GetByID(int id)
         {
+            DbHelper.SyncOfferPrices();
             var dt = DbHelper.Query(
                 @"SELECT p.*, c.CategoryName 
                   FROM Products p 
@@ -491,6 +493,7 @@ namespace ChickenDist.DAL
 
         public static DataRow GetByBarcodeOrScaleCode(string scannedCode, out decimal parsedWeight)
         {
+            DbHelper.SyncOfferPrices();
             parsedWeight = 1m;
             if (string.IsNullOrWhiteSpace(scannedCode)) return null;
 
