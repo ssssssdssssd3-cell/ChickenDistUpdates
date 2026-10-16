@@ -200,7 +200,7 @@ namespace ChickenDist.Core
                     }
                 }
 
-                float quietZoneModules = isWide ? 12f : 8f;
+                float quietZoneModules = isWide ? 12f : 10f;
                 float availableWidth = width;
                 float moduleWidth = availableWidth / (totalModules + (quietZoneModules * 2f));
 
@@ -223,11 +223,15 @@ namespace ChickenDist.Core
                         {
                             bool isBar = (i % 2 == 0);
                             float elementWidth = (pattern[i] - '0') * moduleWidth;
+                            float nextX = curX + elementWidth;
                             if (isBar)
                             {
-                                g.FillRectangle(brush, curX, y, elementWidth, height);
+                                int rectX = (int)Math.Round(curX);
+                                int rectW = (int)Math.Round(nextX) - rectX;
+                                if (rectW < 1) rectW = 1;
+                                g.FillRectangle(brush, rectX, (int)Math.Round(y), rectW, (int)Math.Round(height));
                             }
-                            curX += elementWidth;
+                            curX = nextX;
                         }
                     }
                 }

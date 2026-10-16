@@ -895,13 +895,13 @@ namespace ChickenDist.DAL
         public static string SanitizeIMEIString(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return "";
-            string s = raw.Trim();
+            string s = raw.Trim().Trim('\r', '\n', '\t');
             // تحويل الأرقام العربية المشرقية إلى غربية
             s = s.Replace("٠", "0").Replace("١", "1").Replace("٢", "2").Replace("٣", "3").Replace("٤", "4")
                  .Replace("٥", "5").Replace("٦", "6").Replace("٧", "7").Replace("٨", "8").Replace("٩", "9");
 
-            // إزالة بوادئ الباركود الشائعة
-            string[] prefixes = { "IMEI1:", "IMEI 1:", "IMEI-1:", "IMEI1", "IMEI 1", "IMEI:", "IMEI 2:", "IMEI2:", "IMEI-2:", "IMEI2", "IMEI 2", "MEID:", "MEID", "S/N:", "SN:" };
+            // إزالة بوادئ الباركود الشائعة الخاصة بالـ IMEI حصراً (مع استبعاد S/N)
+            string[] prefixes = { "IMEI1:", "IMEI 1:", "IMEI-1:", "IMEI1", "IMEI 1", "IMEI:", "IMEI 2:", "IMEI2:", "IMEI-2:", "IMEI2", "IMEI 2", "MEID:", "MEID" };
             foreach (var p in prefixes)
             {
                 if (s.StartsWith(p, StringComparison.OrdinalIgnoreCase))
@@ -911,6 +911,42 @@ namespace ChickenDist.DAL
                 }
             }
             return s.Replace(" ", "").Replace("-", "").Replace("/", "").Replace("\\", "");
+        }
+
+        /// <summary>
+        /// فحص هل الكود المقروء هو باركود رقم تسلسلي للمصنع S/N وليس IMEI
+        /// </summary>
+        public static bool IsSerialNumberBarcode(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            string s = raw.Trim().Trim('\r', '\n', '\t');
+            return s.StartsWith("S/N", StringComparison.OrdinalIgnoreCase) ||
+                   s.StartsWith("S\\N", StringComparison.OrdinalIgnoreCase) ||
+                   s.StartsWith("SN:", StringComparison.OrdinalIgnoreCase) ||
+                   s.StartsWith("SN-", StringComparison.OrdinalIgnoreCase) ||
+                   s.StartsWith("SN ", StringComparison.OrdinalIgnoreCase) ||
+                   s.StartsWith("S/N:", StringComparison.OrdinalIgnoreCase) ||
+                   s.StartsWith("S\\N:", StringComparison.OrdinalIgnoreCase) ||
+                   (s.Length > 2 && s.StartsWith("SN", StringComparison.OrdinalIgnoreCase) && !s.All(char.IsDigit));
+        }
+
+        /// <summary>
+        /// التحقق هل الصنف مسجل ومتبع كجهاز موبايل برقم تسلسلي/سيريال IMEI
+        /// </summary>
+        public static bool IsProductTrackedByIMEI(int productID)
+        {
+            if (productID <= 0) return false;
+            string sqlPurch = @"
+                SELECT TOP 1 1 FROM PurchaseItems 
+                WHERE ProductID = @pid AND IMEI IS NOT NULL AND LTRIM(RTRIM(IMEI)) <> ''";
+            var valPurch = DbHelper.Scalar(sqlPurch, DbHelper.P("@pid", productID));
+            if (valPurch != null && valPurch != DBNull.Value) return true;
+
+            string sqlSale = @"
+                SELECT TOP 1 1 FROM SaleItems 
+                WHERE ProductID = @pid AND IMEI IS NOT NULL AND LTRIM(RTRIM(IMEI)) <> ''";
+            var valSale = DbHelper.Scalar(sqlSale, DbHelper.P("@pid", productID));
+            return valSale != null && valSale != DBNull.Value;
         }
 
         public static int CalculateLuhnCheckDigit(string digits14)

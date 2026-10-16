@@ -320,7 +320,7 @@ namespace ChickenDist.Forms
             };
             chkPrintPrice.CheckedChanged += (s, e) =>
             {
-                AppConfig.BarcodePrintPrice = chkPrintPrice.Checked;
+                _printPriceFlag = chkPrintPrice.Checked;
             };
             pnlContent.Controls.Add(chkPrintPrice);
 

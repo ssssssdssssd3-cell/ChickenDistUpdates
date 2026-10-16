@@ -1585,15 +1585,38 @@ namespace ChickenDist.Forms
             }
 
             // في نشاط الموبايلات: الأولوية الأولى هي فحص هل الكود الممسوح هو سيريال IMEI لجهاز متاح
-            if (AppConfig.BusinessType == "Mobiles" && (code.Length >= 14 && code.Length <= 16))
+            if (AppConfig.BusinessType == "Mobiles")
             {
-                var directImei = PurchaseDAL.FindProductByAvailableIMEI(code);
-                if (directImei.HasValue)
+                // 1. إذا كان الباركود S/N (يبدأ بـ SN أو S/N أو S\N): نتجاهله فوراً دون تعطيل الكاشير برسائل خطأ
+                if (PurchaseDAL.IsSerialNumberBarcode(code))
                 {
-                    var pRow = ProductDAL.GetByID(directImei.Value.ProductID);
-                    if (pRow != null)
+                    txtBarcode?.Clear();
+                    txtBarcode?.Focus();
+                    return;
+                }
+
+                // 2. التحقق من كود الـ IMEI (مع التنظيف التلقائي من أي بوادئ مثل IMEI:)
+                string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
+                if (cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit))
+                {
+                    var directImei = PurchaseDAL.FindProductByAvailableIMEI(cleanImei);
+                    if (directImei.HasValue)
                     {
-                        AddItemFromRow(pRow, 1m, null, 1m, 0, null, null, 0m, false, directImei.Value.IMEI);
+                        var pRow = ProductDAL.GetByID(directImei.Value.ProductID);
+                        if (pRow != null)
+                        {
+                            AddItemFromRow(pRow, 1m, null, 1m, 0, null, null, 0m, false, directImei.Value.IMEI);
+                            txtBarcode?.Clear();
+                            txtBarcode?.Focus();
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // تم مسح IMEI صريح لكنه غير متوفر بالمخزن الحالي
+                        txtBarcode?.Clear();
+                        txtBarcode?.Focus();
+                        MessageBox.Show($"❌ تنبيه: جهاز الموبايل برقم IMEI ({cleanImei}) غير متوفر في هذا المخزن أو تم بيعه مسبقاً!", "تنبيه جهاز غير متاح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                 }
@@ -1747,6 +1770,15 @@ namespace ChickenDist.Forms
 
             var row = dt.Rows[0];
             int productID = Convert.ToInt32(row["ProductID"]);
+
+            // في نشاط الموبايلات: إذا كان الصنف جهاز موبايل مسجل بسيريالات IMEI، لا نقبل إضافته بالكود الدولي عبر السكنر
+            // ويتم مسح حقل الباركود بهدوء لتمكين الليزر من التقاط باركود الـ IMEI
+            if (AppConfig.BusinessType == "Mobiles" && PurchaseDAL.IsProductTrackedByIMEI(productID))
+            {
+                txtBarcode?.Clear();
+                txtBarcode?.Focus();
+                return;
+            }
             // Check if barcode matches a sub-unit
             string unitName = null;
             decimal factor = 1m;

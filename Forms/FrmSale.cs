@@ -1762,36 +1762,64 @@ namespace ChickenDist.Forms
 			try
 			{
 				// في نشاط الموبايلات: الأولوية الأولى هي فحص هل الكود الممسوح هو سيريال IMEI لجهاز متاح بالمخزن
-				if (AppConfig.BusinessType == "Mobiles" && (code.Length >= 14 && code.Length <= 16))
+				if (AppConfig.BusinessType == "Mobiles")
 				{
-					var imeiDirect = PurchaseDAL.FindProductByAvailableIMEI(code);
-					if (imeiDirect.HasValue)
+					// 1. إذا كان الباركود S/N (يبدأ بـ SN أو S/N أو S\N): نتجاهله فوراً دون تعطيل المستخدم
+					if (PurchaseDAL.IsSerialNumberBarcode(code))
 					{
-						int productID = imeiDirect.Value.ProductID;
-						string scannedImei = imeiDirect.Value.IMEI;
-
-						// إزالة السطر المعلق إن وجد
-						if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
-						{
-							dgItems.Rows.RemoveAt(_pendingRowIdx);
-							_pendingRowIdx = -1;
-						}
-
-						AddProductWithSpecificIMEI(productID, scannedImei);
-						try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
-
 						if (txtBarcode != null)
 						{
 							txtBarcode.Clear();
 							this.ActiveControl = txtBarcode;
 							txtBarcode.Focus();
-							txtBarcode.SelectAll();
+						}
+						return;
+					}
+
+					// 2. فحص كود الـ IMEI (مع التنظيف التلقائي من أي بوادئ مثل IMEI:)
+					string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
+					if (cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit))
+					{
+						var imeiDirect = PurchaseDAL.FindProductByAvailableIMEI(cleanImei);
+						if (imeiDirect.HasValue)
+						{
+							int productID = imeiDirect.Value.ProductID;
+							string scannedImei = imeiDirect.Value.IMEI;
+
+							// إزالة السطر المعلق إن وجد
+							if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+							{
+								dgItems.Rows.RemoveAt(_pendingRowIdx);
+								_pendingRowIdx = -1;
+							}
+
+							AddProductWithSpecificIMEI(productID, scannedImei);
+							try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+
+							if (txtBarcode != null)
+							{
+								txtBarcode.Clear();
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+								txtBarcode.SelectAll();
+							}
+							else
+							{
+								AddNewCodeRow();
+							}
+							return;
 						}
 						else
 						{
-							AddNewCodeRow();
+							if (txtBarcode != null)
+							{
+								txtBarcode.Clear();
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+							}
+							MessageBox.Show($"❌ تنبيه: جهاز الموبايل برقم IMEI ({cleanImei}) غير متوفر في هذا المخزن أو تم بيعه مسبقاً!", "تنبيه جهاز غير متاح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							return;
 						}
-						return;
 					}
 				}
 
@@ -1799,6 +1827,17 @@ namespace ChickenDist.Forms
 				if (dt != null && dt.Rows.Count > 0)
 				{
 					int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+					if (AppConfig.BusinessType == "Mobiles" && PurchaseDAL.IsProductTrackedByIMEI(productID))
+					{
+						// تجاهل الكود الدولي بهدوء للسماح للسكنر بالتقاط الـ IMEI فوراً
+						if (txtBarcode != null)
+						{
+							txtBarcode.Clear();
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
+						}
+						return;
+					}
 					int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
 
 					decimal price = 0m;
@@ -3872,29 +3911,55 @@ namespace ChickenDist.Forms
 					var (code, multiQty) = ParseBarcodeMultiplier(rawCode);
 
 					// في نشاط الموبايلات: الأولوية الأولى هي فحص هل الكود الممسوح هو سيريال IMEI لجهاز متاح بالمخزن
-					if (AppConfig.BusinessType == "Mobiles" && (code.Length >= 14 && code.Length <= 16))
+					if (AppConfig.BusinessType == "Mobiles")
 					{
-						var imeiDirect = PurchaseDAL.FindProductByAvailableIMEI(code);
-						if (imeiDirect.HasValue)
+						if (PurchaseDAL.IsSerialNumberBarcode(code))
 						{
-							if (capturedPending >= 0 && capturedPending == _pendingRowIdx && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
-							{
-								dgItems.Rows.RemoveAt(_pendingRowIdx);
-								_pendingRowIdx = -1;
-							}
-							AddProductWithSpecificIMEI(imeiDirect.Value.ProductID, imeiDirect.Value.IMEI);
-							try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
 							if (txtBarcode != null)
 							{
 								txtBarcode.Clear();
 								this.ActiveControl = txtBarcode;
 								txtBarcode.Focus();
 							}
+							return;
+						}
+
+						string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
+						if (cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit))
+						{
+							var imeiDirect = PurchaseDAL.FindProductByAvailableIMEI(cleanImei);
+							if (imeiDirect.HasValue)
+							{
+								if (capturedPending >= 0 && capturedPending == _pendingRowIdx && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+								{
+									dgItems.Rows.RemoveAt(_pendingRowIdx);
+									_pendingRowIdx = -1;
+								}
+								AddProductWithSpecificIMEI(imeiDirect.Value.ProductID, imeiDirect.Value.IMEI);
+								try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+								if (txtBarcode != null)
+								{
+									txtBarcode.Clear();
+									this.ActiveControl = txtBarcode;
+									txtBarcode.Focus();
+								}
+								else
+								{
+									AddNewCodeRow();
+								}
+								return;
+							}
 							else
 							{
-								AddNewCodeRow();
+								if (txtBarcode != null)
+								{
+									txtBarcode.Clear();
+									this.ActiveControl = txtBarcode;
+									txtBarcode.Focus();
+								}
+								MessageBox.Show($"❌ تنبيه: جهاز الموبايل برقم IMEI ({cleanImei}) غير متوفر في هذا المخزن أو تم بيعه مسبقاً!", "تنبيه جهاز غير متاح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+								return;
 							}
-							return;
 						}
 					}
 
@@ -3902,6 +3967,17 @@ namespace ChickenDist.Forms
 					if (dt != null && dt.Rows.Count > 0)
 					{
 						int productID = Convert.ToInt32(dt.Rows[0]["ProductID"]);
+						if (AppConfig.BusinessType == "Mobiles" && PurchaseDAL.IsProductTrackedByIMEI(productID))
+						{
+							// تجاهل الكود الدولي بهدوء للسماح للسكنر بالتقاط الـ IMEI فوراً
+							if (txtBarcode != null)
+							{
+								txtBarcode.Clear();
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+							}
+							return;
+						}
 						int matchedUnit = Convert.ToInt32(dt.Rows[0]["MatchedUnit"]);
 
 						decimal price = 0m;

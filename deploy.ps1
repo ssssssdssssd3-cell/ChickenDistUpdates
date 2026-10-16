@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.0.3";
-$CHANGELOG = "v4.0.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show party name in CashBox movement, fix barcode label text truncation with auto-fitting, and add PartNumber field to ProductCard"
+$VERSION = "4.0.4";
+$CHANGELOG = "v4.0.4 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Mobile scanner IMEI optimization (ignore S/N and international barcode for phones to scan IMEI instantly), and decouple barcode price print toggle"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
