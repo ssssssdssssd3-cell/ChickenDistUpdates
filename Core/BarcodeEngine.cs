@@ -52,6 +52,34 @@ namespace ChickenDist.Core
             };
         }
 
+        public static string GetBarcodeTitleText(int productId, string productName, string categoryName = null, bool? printCategoryInstead = null)
+        {
+            bool useCategory = printCategoryInstead ?? AppConfig.BarcodePrintCategoryInsteadOfName;
+            if (!useCategory)
+                return productName ?? "";
+
+            if (!string.IsNullOrWhiteSpace(categoryName))
+                return categoryName.Trim();
+
+            if (productId > 0)
+            {
+                try
+                {
+                    object obj = DbHelper.Scalar(
+                        @"SELECT c.CategoryName 
+                          FROM Products p 
+                          LEFT JOIN Categories c ON p.CategoryID = c.CategoryID 
+                          WHERE p.ProductID = @id",
+                        DbHelper.P("@id", productId));
+                    if (obj != null && obj != DBNull.Value && !string.IsNullOrWhiteSpace(obj.ToString()))
+                        return obj.ToString().Trim();
+                }
+                catch { }
+            }
+
+            return productName ?? "";
+        }
+
         public static void DrawBarcode(Graphics g, string code, string encoding, float x, float y, float width, float height)
         {
             if (string.IsNullOrWhiteSpace(code)) return;

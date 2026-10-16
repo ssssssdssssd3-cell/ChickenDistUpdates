@@ -16,17 +16,21 @@ namespace ChickenDist.Forms
         private DataGridView dgvVouchers;
 
         // ── Edit Panel ──
+        private Label lblPanelTitle;
         private TextBox txtCode;
         private TextBox txtDescription;
         private ComboBox cboDiscountType;
         private NumericUpDown nudDiscountValue;
         private NumericUpDown nudMaxUses;
         private CheckBox chkUnlimitedUses;
+        private NumericUpDown nudUsedCount;
+        private Button btnResetUsedCount;
         private DateTimePicker dtpExpiryDate;
         private CheckBox chkNoExpiry;
         private CheckBox chkIsActive;
         private Button btnSave;
         private Button btnNew;
+        private Button btnEdit;
         private Button btnDelete;
         private Button btnClose;
         private Label lblStatus;
@@ -49,6 +53,7 @@ namespace ChickenDist.Forms
                 return;
             }
             btnNew.Enabled = Session.CanAdd("DiscountVouchers");
+            if (btnEdit != null) btnEdit.Enabled = Session.CanEdit("DiscountVouchers");
             btnDelete.Enabled = Session.CanDelete("DiscountVouchers");
             btnSave.Enabled = Session.CanAdd("DiscountVouchers") || Session.CanEdit("DiscountVouchers");
         }
@@ -56,8 +61,8 @@ namespace ChickenDist.Forms
         private void BuildUI()
         {
             this.Text = "🎟️ إدارة بونات الخصم";
-            this.Size = new Size(1000, 600);
-            this.MinimumSize = new Size(860, 500);
+            this.Size = new Size(1020, 620);
+            this.MinimumSize = new Size(880, 520);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
@@ -73,7 +78,7 @@ namespace ChickenDist.Forms
             };
             var lblTitle = new Label
             {
-                Text = "🎟️ إدارة بونات الخصم — Discount Vouchers",
+                Text = "🎟️ إدارة بونات الخصم — إنشاء وتعديل وحذف البونات",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Fill,
@@ -110,6 +115,9 @@ namespace ChickenDist.Forms
             dgvVouchers.DefaultCellStyle.SelectionBackColor = Color.FromArgb(196, 181, 253);
             dgvVouchers.DefaultCellStyle.SelectionForeColor = Color.FromArgb(30, 20, 60);
             dgvVouchers.SelectionChanged += DgvVouchers_SelectionChanged;
+            dgvVouchers.CellClick += (s, e) => { if (e.RowIndex >= 0) LoadSelectedVoucher(); };
+            dgvVouchers.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) { LoadSelectedVoucher(); txtCode.Focus(); txtCode.SelectAll(); } };
+            dgvVouchers.CellFormatting += DgvVouchers_CellFormatting;
 
             // أزرار تحت الجدول
             var pnlGridButtons = new FlowLayoutPanel
@@ -123,15 +131,29 @@ namespace ChickenDist.Forms
             btnNew = CreateButton("➕ بون جديد", Color.FromArgb(109, 40, 217));
             btnNew.Click += (s, e) => ClearForm();
 
+            btnEdit = CreateButton("✏️ تعديل المحدد", Color.FromArgb(37, 99, 235));
+            btnEdit.Click += (s, e) =>
+            {
+                if (dgvVouchers.SelectedRows.Count == 0 && dgvVouchers.CurrentRow == null)
+                {
+                    MessageBox.Show("يرجى اختيار بون من الجدول لتعديله.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                LoadSelectedVoucher();
+                txtCode.Focus();
+                txtCode.SelectAll();
+            };
+
             btnDelete = CreateButton("🗑️ حذف", Color.FromArgb(239, 68, 68));
             btnDelete.Click += BtnDelete_Click;
 
             btnClose = CreateButton("✖ إغلاق", Color.FromArgb(71, 85, 105));
             btnClose.Click += (s, e) => this.Close();
 
-            pnlGridButtons.Controls.Add(btnClose);
-            pnlGridButtons.Controls.Add(btnDelete);
             pnlGridButtons.Controls.Add(btnNew);
+            pnlGridButtons.Controls.Add(btnEdit);
+            pnlGridButtons.Controls.Add(btnDelete);
+            pnlGridButtons.Controls.Add(btnClose);
 
             pnlLeft.Controls.Add(dgvVouchers);
             pnlLeft.Controls.Add(pnlGridButtons);
@@ -145,7 +167,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(14, 12, 14, 12)
             };
 
-            int y = 16;
+            int y = 14;
             int labelW = 130;
             int controlX = 14 + labelW + 8;
             int controlW = 200;
@@ -168,7 +190,7 @@ namespace ChickenDist.Forms
             }
 
             // كود البون
-            txtCode = new TextBox { Size = new Size(controlW, 26), CharacterCasing = CharacterCasing.Upper, Font = new Font("Consolas", 10f) };
+            txtCode = new TextBox { Size = new Size(controlW, 26), CharacterCasing = CharacterCasing.Upper, Font = new Font("Consolas", 10f, FontStyle.Bold) };
             AddRow("كود البون:", txtCode);
 
             // الوصف
@@ -182,11 +204,21 @@ namespace ChickenDist.Forms
             AddRow("نوع الخصم:", cboDiscountType);
 
             // قيمة الخصم
-            nudDiscountValue = new NumericUpDown { Size = new Size(controlW, 26), Minimum = 0, Maximum = 100000, DecimalPlaces = 2, Value = 10 };
+            nudDiscountValue = new NumericUpDown { Size = new Size(controlW, 26), Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Value = 10 };
             cboDiscountType.SelectedIndexChanged += (s, e) =>
             {
-                nudDiscountValue.Maximum = cboDiscountType.SelectedIndex == 0 ? 100 : 999999;
-                nudDiscountValue.Increment = cboDiscountType.SelectedIndex == 0 ? 1 : 5;
+                if (cboDiscountType.SelectedIndex == 0)
+                {
+                    if (nudDiscountValue.Value > 100)
+                        nudDiscountValue.Value = 100;
+                    nudDiscountValue.Maximum = 100;
+                    nudDiscountValue.Increment = 1;
+                }
+                else
+                {
+                    nudDiscountValue.Maximum = 999999;
+                    nudDiscountValue.Increment = 5;
+                }
             };
             AddRow("قيمة الخصم:", nudDiscountValue);
 
@@ -199,6 +231,26 @@ namespace ChickenDist.Forms
             pnlUses.Controls.Add(chkUnlimitedUses);
             AddRow("حد الاستخدام:", pnlUses);
 
+            // عدد مرات الاستخدام الفعلي
+            var pnlUsedCount = new Panel { Size = new Size(controlW, 26) };
+            nudUsedCount = new NumericUpDown { Location = new Point(0, 0), Size = new Size(120, 26), Minimum = 0, Maximum = 999999, Value = 0 };
+            btnResetUsedCount = new Button
+            {
+                Text = "تصفير",
+                Location = new Point(126, 0),
+                Size = new Size(68, 25),
+                BackColor = Color.FromArgb(241, 245, 249),
+                ForeColor = Color.FromArgb(51, 65, 85),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnResetUsedCount.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+            btnResetUsedCount.Click += (s, e) => nudUsedCount.Value = 0;
+            pnlUsedCount.Controls.Add(nudUsedCount);
+            pnlUsedCount.Controls.Add(btnResetUsedCount);
+            AddRow("المُستخدم حالياً:", pnlUsedCount);
+
             // تاريخ الانتهاء
             var pnlExpiry = new Panel { Size = new Size(controlW, 26) };
             dtpExpiryDate = new DateTimePicker { Location = new Point(0, 0), Size = new Size(120, 26), Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddMonths(1) };
@@ -209,32 +261,32 @@ namespace ChickenDist.Forms
             AddRow("تاريخ الانتهاء:", pnlExpiry);
 
             // مفعّل
-            chkIsActive = new CheckBox { Text = "مفعّل", Checked = true, AutoSize = true };
+            chkIsActive = new CheckBox { Text = "مفعّل وصالح للاستخدام", Checked = true, AutoSize = true };
             AddRow("الحالة:", chkIsActive);
 
-            y += 8;
+            y += 6;
 
             // رسالة الحالة
             lblStatus = new Label
             {
                 Location = new Point(14, y),
-                Size = new Size(320, 22),
+                Size = new Size(340, 22),
                 ForeColor = Color.FromArgb(22, 163, 74),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
             pnlEdit.Controls.Add(lblStatus);
-            y += 30;
+            y += 28;
 
             // زر الحفظ
             btnSave = new Button
             {
                 Text = "💾 حفظ البون",
                 Location = new Point(14, y),
-                Size = new Size(160, 36),
+                Size = new Size(200, 38),
                 BackColor = Color.FromArgb(109, 40, 217),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnSave.FlatAppearance.BorderSize = 0;
@@ -242,15 +294,16 @@ namespace ChickenDist.Forms
             pnlEdit.Controls.Add(btnSave);
 
             // عنوان الـ Panel
-            var lblPanelTitle = new Label
+            lblPanelTitle = new Label
             {
-                Text = "✏️ تفاصيل البون",
+                Text = "➕ إضافة بون جديد",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(109, 40, 217),
+                BackColor = Color.FromArgb(245, 243, 255),
                 Dock = DockStyle.Top,
-                Height = 36,
+                Height = 38,
                 TextAlign = ContentAlignment.MiddleRight,
-                Padding = new Padding(0, 0, 8, 0)
+                Padding = new Padding(0, 0, 12, 0)
             };
 
             var pnlRightContainer = new Panel
@@ -287,11 +340,38 @@ namespace ChickenDist.Forms
             return btn;
         }
 
-        private void LoadGrid()
+        private void DgvVouchers_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= dgvVouchers.Rows.Count) return;
+            var row = dgvVouchers.Rows[e.RowIndex];
+
+            if (row.Cells["IsActive"]?.Value is bool active && !active)
+            {
+                row.DefaultCellStyle.ForeColor = Color.FromArgb(156, 163, 175);
+            }
+
+            if (dgvVouchers.Columns[e.ColumnIndex].Name == "DiscountType" && e.Value != null)
+            {
+                string val = e.Value.ToString();
+                if (val == "Percent")
+                {
+                    e.Value = "نسبة %";
+                    e.FormattingApplied = true;
+                }
+                else if (val == "Amount")
+                {
+                    e.Value = "قيمة ج";
+                    e.FormattingApplied = true;
+                }
+            }
+        }
+
+        private void LoadGrid(int? selectVoucherID = null)
         {
             try
             {
                 var dt = DiscountVouchersDAL.GetAll();
+                dgvVouchers.SelectionChanged -= DgvVouchers_SelectionChanged;
                 dgvVouchers.DataSource = null;
                 dgvVouchers.Columns.Clear();
                 dgvVouchers.DataSource = dt;
@@ -323,21 +403,26 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                // تلوين الصفوف حسب الحالة
-                foreach (DataGridViewRow row in dgvVouchers.Rows)
+                dgvVouchers.SelectionChanged += DgvVouchers_SelectionChanged;
+
+                if (selectVoucherID.HasValue && selectVoucherID.Value > 0)
                 {
-                    bool active = row.Cells["IsActive"]?.Value as bool? ?? false;
-                    if (!active)
+                    foreach (DataGridViewRow r in dgvVouchers.Rows)
                     {
-                        row.DefaultCellStyle.ForeColor = Color.FromArgb(156, 163, 175);
+                        if (r.Cells["VoucherID"]?.Value != null && Convert.ToInt32(r.Cells["VoucherID"].Value) == selectVoucherID.Value)
+                        {
+                            r.Selected = true;
+                            if (r.Cells["Code"] != null)
+                                dgvVouchers.CurrentCell = r.Cells["Code"];
+                            LoadSelectedVoucher();
+                            break;
+                        }
                     }
-                    // تلوين الخانة DiscountType
-                    if (row.Cells["DiscountType"] != null)
-                    {
-                        row.Cells["DiscountType"].Value = row.Cells["DiscountType"].Value?.ToString() == "Percent"
-                            ? "نسبة %"
-                            : "قيمة ج";
-                    }
+                }
+                else if (dgvVouchers.Rows.Count > 0)
+                {
+                    dgvVouchers.Rows[0].Selected = true;
+                    LoadSelectedVoucher();
                 }
             }
             catch (Exception ex)
@@ -348,8 +433,18 @@ namespace ChickenDist.Forms
 
         private void DgvVouchers_SelectionChanged(object sender, EventArgs e)
         {
-            if (dgvVouchers.SelectedRows.Count == 0) return;
-            var row = dgvVouchers.SelectedRows[0];
+            LoadSelectedVoucher();
+        }
+
+        private void LoadSelectedVoucher()
+        {
+            DataGridViewRow row = null;
+            if (dgvVouchers.SelectedRows.Count > 0)
+                row = dgvVouchers.SelectedRows[0];
+            else if (dgvVouchers.CurrentRow != null)
+                row = dgvVouchers.CurrentRow;
+
+            if (row == null) return;
             if (row.DataBoundItem == null && row.Cells["VoucherID"]?.Value == null) return;
 
             if (!int.TryParse(row.Cells["VoucherID"]?.Value?.ToString(), out int vid)) return;
@@ -360,20 +455,32 @@ namespace ChickenDist.Forms
             _editingVoucherID = dto.VoucherID;
             txtCode.Text = dto.Code;
             txtDescription.Text = dto.Description;
-            cboDiscountType.SelectedIndex = dto.DiscountType == "Percent" ? 0 : 1;
-            nudDiscountValue.Value = dto.DiscountValue;
 
-            if (dto.MaxUses.HasValue)
+            // توسيع الحد الأقصى مؤقتاً قبل تغيير النوع والقيمة لتجنب ArgumentOutOfRangeException
+            nudDiscountValue.Maximum = 999999;
+            bool isPercent = string.Equals(dto.DiscountType, "Percent", StringComparison.OrdinalIgnoreCase);
+            decimal safeVal = Math.Max(nudDiscountValue.Minimum, Math.Min(isPercent ? 100m : 999999m, dto.DiscountValue));
+            nudDiscountValue.Value = safeVal;
+            cboDiscountType.SelectedIndex = isPercent ? 0 : 1;
+            nudDiscountValue.Maximum = isPercent ? 100 : 999999;
+            nudDiscountValue.Value = safeVal;
+
+            if (dto.MaxUses.HasValue && dto.MaxUses.Value > 0)
             {
                 chkUnlimitedUses.Checked = false;
-                nudMaxUses.Value = dto.MaxUses.Value;
+                nudMaxUses.Value = Math.Max(nudMaxUses.Minimum, Math.Min(nudMaxUses.Maximum, dto.MaxUses.Value));
             }
             else
             {
                 chkUnlimitedUses.Checked = true;
             }
 
-            if (dto.ExpiryDate.HasValue)
+            if (nudUsedCount != null)
+            {
+                nudUsedCount.Value = Math.Max(nudUsedCount.Minimum, Math.Min(nudUsedCount.Maximum, dto.UsedCount));
+            }
+
+            if (dto.ExpiryDate.HasValue && dto.ExpiryDate.Value >= dtpExpiryDate.MinDate && dto.ExpiryDate.Value <= dtpExpiryDate.MaxDate)
             {
                 chkNoExpiry.Checked = false;
                 dtpExpiryDate.Value = dto.ExpiryDate.Value;
@@ -384,12 +491,24 @@ namespace ChickenDist.Forms
             }
 
             chkIsActive.Checked = dto.IsActive;
+            if (lblPanelTitle != null)
+            {
+                lblPanelTitle.Text = $"✏️ تعديل البون: {dto.Code}";
+                lblPanelTitle.ForeColor = Color.FromArgb(37, 99, 235);
+                lblPanelTitle.BackColor = Color.FromArgb(239, 246, 255);
+            }
+            if (btnSave != null)
+            {
+                btnSave.Text = "💾 حفظ التعديلات";
+                btnSave.BackColor = Color.FromArgb(37, 99, 235);
+            }
             lblStatus.Text = "";
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (_editingVoucherID == 0)
+            bool isEdit = _editingVoucherID > 0;
+            if (!isEdit)
             {
                 if (!Session.CanAdd("DiscountVouchers"))
                 {
@@ -429,17 +548,17 @@ namespace ChickenDist.Forms
                 DiscountType  = cboDiscountType.SelectedIndex == 0 ? "Percent" : "Amount",
                 DiscountValue = nudDiscountValue.Value,
                 MaxUses       = chkUnlimitedUses.Checked ? (int?)null : (int)nudMaxUses.Value,
+                UsedCount     = nudUsedCount != null ? (int)nudUsedCount.Value : 0,
                 ExpiryDate    = chkNoExpiry.Checked ? (DateTime?)null : dtpExpiryDate.Value.Date,
                 IsActive      = chkIsActive.Checked
             };
 
             try
             {
-                DiscountVouchersDAL.Save(dto);
-                lblStatus.Text = "✅ تم الحفظ بنجاح";
+                int savedId = DiscountVouchersDAL.Save(dto);
+                LoadGrid(savedId);
+                lblStatus.Text = isEdit ? $"✅ تم حفظ تعديلات البون [{code}] بنجاح" : $"✅ تم إضافة البون [{code}] بنجاح";
                 lblStatus.ForeColor = Color.FromArgb(22, 163, 74);
-                LoadGrid();
-                ClearForm();
 
                 // مزامنة فورية مع السحاب للمتجر الإلكتروني
                 System.Threading.Tasks.Task.Run(async () =>
@@ -499,15 +618,30 @@ namespace ChickenDist.Forms
             txtCode.Text = "";
             txtDescription.Text = "";
             cboDiscountType.SelectedIndex = 0;
+            nudDiscountValue.Maximum = 100;
             nudDiscountValue.Value = 10;
             chkUnlimitedUses.Checked = false;
             nudMaxUses.Value = 1;
+            if (nudUsedCount != null) nudUsedCount.Value = 0;
             chkNoExpiry.Checked = false;
             dtpExpiryDate.Value = DateTime.Today.AddMonths(1);
             chkIsActive.Checked = true;
+            if (lblPanelTitle != null)
+            {
+                lblPanelTitle.Text = "➕ إضافة بون جديد";
+                lblPanelTitle.ForeColor = Color.FromArgb(109, 40, 217);
+                lblPanelTitle.BackColor = Color.FromArgb(245, 243, 255);
+            }
+            if (btnSave != null)
+            {
+                btnSave.Text = "💾 حفظ البون الجديد";
+                btnSave.BackColor = Color.FromArgb(109, 40, 217);
+            }
             lblStatus.Text = "";
-            txtCode.Focus();
+            dgvVouchers.SelectionChanged -= DgvVouchers_SelectionChanged;
             dgvVouchers.ClearSelection();
+            dgvVouchers.SelectionChanged += DgvVouchers_SelectionChanged;
+            txtCode.Focus();
         }
     }
 }

@@ -13,6 +13,7 @@ namespace ChickenDist.DAL
         public int ProductID { get; set; }
         public string ProductCode { get; set; } = "";
         public string ProductName { get; set; }
+        public string CategoryName { get; set; } = "";
         public decimal Quantity { get; set; }
         /// <summary>كمية البونص المجانية الإضافية الممنوحة من المورد</summary>
         public decimal BonusQuantity { get; set; } = 0m;
@@ -204,7 +205,9 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int purchaseID)
         {
              return DbHelper.Query(
-                 @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName, pi.Quantity, 
+                 @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName,
+                          ISNULL(c.CategoryName, N'') AS CategoryName,
+                          pi.Quantity, 
                           ISNULL(pi.BonusQuantity, 0) AS BonusQuantity,
                           pi.UnitPrice, pi.TotalPrice,
                           COALESCE(pi.DiscountPct, 0) AS DiscountPct,
@@ -220,6 +223,7 @@ namespace ChickenDist.DAL
                           ), 0) AS ReturnedQty
                     FROM PurchaseItems pi
                     JOIN Products pr ON pi.ProductID = pr.ProductID
+                    LEFT JOIN Categories c ON pr.CategoryID = c.CategoryID
                     WHERE pi.PurchaseID = @id",
                 DbHelper.P("@id", purchaseID));
         }

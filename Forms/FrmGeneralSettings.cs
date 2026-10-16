@@ -19,6 +19,7 @@ namespace ChickenDist.Forms
         private ComboBox cboWhatsAppInvoiceTemplate;
         private CheckBox chkKioskShowAlternatives;
         private CheckBox chkLockPurchaseToMajorUnit;
+        private CheckBox chkBarcodePrintCategory;
 
         public FrmGeneralSettings()
         {
@@ -122,6 +123,18 @@ namespace ChickenDist.Forms
                 Checked = AppConfig.LockPurchaseToMajorUnit
             };
             pnlBody.Controls.Add(chkLockPurchaseToMajorUnit);
+            y += 30;
+
+            chkBarcodePrintCategory = new CheckBox
+            {
+                Text = "🏷️ طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود",
+                Location = new Point(15, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.BarcodePrintCategoryInsteadOfName
+            };
+            pnlBody.Controls.Add(chkBarcodePrintCategory);
             y += 40;
 
             var sep1 = new Panel { Location = new Point(15, y), Size = new Size(560, 2), BackColor = Theme.BorderColor };
@@ -368,6 +381,8 @@ namespace ChickenDist.Forms
             AppConfig.EnableCratesTracking = chkEnableCrates.Checked;
             AppConfig.KioskShowAlternatives = chkKioskShowAlternatives.Checked;
             AppConfig.LockPurchaseToMajorUnit = chkLockPurchaseToMajorUnit.Checked;
+            if (chkBarcodePrintCategory != null)
+                AppConfig.BarcodePrintCategoryInsteadOfName = chkBarcodePrintCategory.Checked;
             AppConfig.ShiftRequired = chkShiftRequired.Checked;
             AppConfig.AllowSellExpired = chkAllowSellExpired.Checked;
 

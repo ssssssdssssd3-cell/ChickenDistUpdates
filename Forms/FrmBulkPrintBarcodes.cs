@@ -22,6 +22,7 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodeEncoding;
         private CheckBox chkPrintPrice;
         private CheckBox chkPrintCompanyName;
+        private CheckBox chkPrintCategoryInsteadOfName;
 
         private Button btnPrint;
         private Button btnPreview;
@@ -57,6 +58,7 @@ namespace ChickenDist.Forms
         private string _printEncoding = "Code128";
         private bool _printPriceFlag = true;
         private bool _printCompanyNameFlag = true;
+        private bool _printCategoryFlag = false;
         private string _printCompanyNameText = "";
         private string _printBarcodeStickerSize = "50x30";
 
@@ -476,6 +478,15 @@ namespace ChickenDist.Forms
                 Checked = true
             };
 
+            chkPrintCategoryInsteadOfName = new CheckBox
+            {
+                Text = "طباعة التصنيف بدلاً من اسم الصنف",
+                AutoSize = true,
+                ForeColor = Theme.Accent,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Checked = AppConfig.BarcodePrintCategoryInsteadOfName
+            };
+
             // Action Buttons
             btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة (Ctrl+P)", Theme.Success);
             btnPrint.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
@@ -494,7 +505,7 @@ namespace ChickenDist.Forms
 
             pnlBottom.Controls.AddRange(new Control[] {
                 lblPrinter, cboPrinters, lblTemplate, cboBarcodeTemplate, lblEncoding, cboBarcodeEncoding,
-                chkPrintPrice, chkPrintCompanyName,
+                chkPrintPrice, chkPrintCompanyName, chkPrintCategoryInsteadOfName,
                 btnPrint, btnPreview, btnCancel
             });
 
@@ -632,6 +643,12 @@ namespace ChickenDist.Forms
             curX -= chkPrintPrice.PreferredSize.Width + 16;
 
             chkPrintCompanyName.Location = new Point(curX - chkPrintCompanyName.PreferredSize.Width, 34);
+            curX -= chkPrintCompanyName.PreferredSize.Width + 16;
+
+            if (chkPrintCategoryInsteadOfName != null)
+            {
+                chkPrintCategoryInsteadOfName.Location = new Point(curX - chkPrintCategoryInsteadOfName.PreferredSize.Width, 34);
+            }
         }
 
         private void FrmBulkPrintBarcodes_KeyDown(object sender, KeyEventArgs e)
@@ -957,11 +974,13 @@ namespace ChickenDist.Forms
 
                 if (pQty > 0)
                 {
+                    int.TryParse(row.Cells["ProductID"].Value?.ToString(), out int pid);
                     decimal.TryParse(row.Cells["Price"].Value?.ToString(), out decimal prc);
                     _printList.Add(new BarcodePrintItem
                     {
-                        ProductName = row.Cells["ProductName"].Value.ToString(),
-                        ProductCode = row.Cells["ProductCode"].Value.ToString(),
+                        ProductID   = pid,
+                        ProductName = row.Cells["ProductName"].Value?.ToString() ?? "",
+                        ProductCode = row.Cells["ProductCode"].Value?.ToString() ?? "",
                         Price       = prc,
                         PrintQty    = pQty,
                         ShelfLocation = row.Cells["ShelfLocation"].Value?.ToString() ?? ""
@@ -997,6 +1016,8 @@ namespace ChickenDist.Forms
             }
             _printPriceFlag = chkPrintPrice.Checked;
             _printCompanyNameFlag = chkPrintCompanyName.Checked;
+            _printCategoryFlag = chkPrintCategoryInsteadOfName != null && chkPrintCategoryInsteadOfName.Checked;
+            AppConfig.BarcodePrintCategoryInsteadOfName = _printCategoryFlag;
             _printCompanyNameText = AppConfig.CompanyName;
             _printBarcodeStickerSize = AppConfig.BarcodeStickerSize;
 
@@ -1090,6 +1111,7 @@ namespace ChickenDist.Forms
                     break;
 
                 var item = _printList[_currentItemIndex];
+                string titleToPrint = BarcodeEngine.GetBarcodeTitleText(item.ProductID, item.ProductName, item.CategoryName, _printCategoryFlag);
 
                 int currentColumn = itemIndex % labelsPerRow;
                 int currentRow = itemIndex / labelsPerRow;
@@ -1108,7 +1130,7 @@ namespace ChickenDist.Forms
                         g.DrawString(_printCompanyNameText, fCompany, Brushes.Gray, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                         y += isSmallSticker ? 11 : 14;
                     }
-                    g.DrawString(item.ProductName, fNameLarge, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 22 : 30), center);
+                    g.DrawString(titleToPrint, fNameLarge, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 22 : 30), center);
                     y += isSmallSticker ? 24 : 32;
                     if (_printPriceFlag)
                     {
@@ -1122,7 +1144,7 @@ namespace ChickenDist.Forms
                 }
                 else if (template == "Small")
                 {
-                    g.DrawString(item.ProductName, new Font("Arial", isSmallSticker ? 6f : 6.5f, FontStyle.Bold), Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 12 : 16), center);
+                    g.DrawString(titleToPrint, new Font("Arial", isSmallSticker ? 6f : 6.5f, FontStyle.Bold), Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 12 : 16), center);
                     y += isSmallSticker ? 12 : 16;
 
                     float barcodeHeight = isSmallSticker ? 22 : 32;
@@ -1145,7 +1167,7 @@ namespace ChickenDist.Forms
                         g.DrawString($"{item.Price:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(x + 5, y, w - 10, isSmallSticker ? 18 : 22), center);
                         y += isSmallSticker ? 20 : 24;
                     }
-                    g.DrawString(item.ProductName, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 14 : 18), center);
+                    g.DrawString(titleToPrint, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 14 : 18), center);
                     y += isSmallSticker ? 14 : 18;
 
                     float barcodeHeight = isSmallSticker ? 20 : 30;
@@ -1168,7 +1190,7 @@ namespace ChickenDist.Forms
                     }
 
                     // اسم الصنف بخط كبير وبارز
-                    g.DrawString(item.ProductName, fNameLarge, Brushes.Black, new RectangleF(x + 1, y, w - 2, isSmallSticker ? 20 : 28), center);
+                    g.DrawString(titleToPrint, fNameLarge, Brushes.Black, new RectangleF(x + 1, y, w - 2, isSmallSticker ? 20 : 28), center);
                     y += isSmallSticker ? 20 : 28;
 
                     // رسم الباركود بدون سعر
@@ -1195,7 +1217,7 @@ namespace ChickenDist.Forms
                         g.DrawString(_printCompanyNameText, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                         y += isSmallSticker ? 10 : 12;
                     }
-                    g.DrawString(item.ProductName, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 16 : 24), center);
+                    g.DrawString(titleToPrint, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 16 : 24), center);
                     y += isSmallSticker ? 16 : 24;
 
                     float barcodeHeight = isSmallSticker ? 24 : 36;

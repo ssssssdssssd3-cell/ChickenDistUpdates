@@ -161,18 +161,28 @@ namespace ChickenDist.DAL
             EnsureSchema();
             string code = dto.Code.Trim().ToUpper();
 
+            var dupObj = DbHelper.Scalar(
+                "SELECT COUNT(*) FROM DiscountVouchers WHERE Code = @code AND VoucherID <> @id",
+                DbHelper.P("@code", code),
+                DbHelper.P("@id", dto.VoucherID));
+            if (dupObj != null && Convert.ToInt32(dupObj) > 0)
+            {
+                throw new InvalidOperationException($"كود البون [{code}] مستخدم بالفعل لبون آخر.");
+            }
+
             if (dto.VoucherID <= 0)
             {
                 // جديد
                 var result = DbHelper.Scalar(
-                    @"INSERT INTO DiscountVouchers (Code, Description, DiscountType, DiscountValue, MaxUses, ExpiryDate, IsActive)
-                      VALUES (@code, @desc, @type, @val, @max, @exp, @active);
+                    @"INSERT INTO DiscountVouchers (Code, Description, DiscountType, DiscountValue, MaxUses, UsedCount, ExpiryDate, IsActive)
+                      VALUES (@code, @desc, @type, @val, @max, @used, @exp, @active);
                       SELECT SCOPE_IDENTITY();",
                     DbHelper.P("@code",   code),
                     DbHelper.P("@desc",   dto.Description ?? ""),
                     DbHelper.P("@type",   dto.DiscountType),
                     DbHelper.P("@val",    dto.DiscountValue),
                     DbHelper.P("@max",    dto.MaxUses.HasValue ? (object)dto.MaxUses.Value : DBNull.Value),
+                    DbHelper.P("@used",   Math.Max(0, dto.UsedCount)),
                     DbHelper.P("@exp",    dto.ExpiryDate.HasValue ? (object)dto.ExpiryDate.Value.Date : DBNull.Value),
                     DbHelper.P("@active", dto.IsActive ? 1 : 0));
                 return result != null ? Convert.ToInt32(result) : 0;
@@ -183,13 +193,14 @@ namespace ChickenDist.DAL
                 DbHelper.Execute(
                     @"UPDATE DiscountVouchers SET
                         Code=@code, Description=@desc, DiscountType=@type, DiscountValue=@val,
-                        MaxUses=@max, ExpiryDate=@exp, IsActive=@active
+                        MaxUses=@max, UsedCount=@used, ExpiryDate=@exp, IsActive=@active
                       WHERE VoucherID=@id",
                     DbHelper.P("@code",   code),
                     DbHelper.P("@desc",   dto.Description ?? ""),
                     DbHelper.P("@type",   dto.DiscountType),
                     DbHelper.P("@val",    dto.DiscountValue),
                     DbHelper.P("@max",    dto.MaxUses.HasValue ? (object)dto.MaxUses.Value : DBNull.Value),
+                    DbHelper.P("@used",   Math.Max(0, dto.UsedCount)),
                     DbHelper.P("@exp",    dto.ExpiryDate.HasValue ? (object)dto.ExpiryDate.Value.Date : DBNull.Value),
                     DbHelper.P("@active", dto.IsActive ? 1 : 0),
                     DbHelper.P("@id",     dto.VoucherID));

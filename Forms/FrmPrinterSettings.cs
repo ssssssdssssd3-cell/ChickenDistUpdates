@@ -47,6 +47,7 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodeTemplate;
         private ComboBox cboBarcodeEncoding;
         private ComboBox cboBarcodeStickerSize;
+        private CheckBox chkBarcodePrintCategory;
 
         public FrmPrinterSettings()
         {
@@ -913,6 +914,18 @@ namespace ChickenDist.Forms
             int defEncIdx = encList.FindIndex(x => x.Item1 == AppConfig.BarcodeEncoding);
             cboBarcodeEncoding.SelectedIndex = defEncIdx >= 0 ? defEncIdx : 0;
             page.Controls.Add(cboBarcodeEncoding);
+            y += 38;
+
+            chkBarcodePrintCategory = new CheckBox
+            {
+                Text = "📂 طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.Accent,
+                Checked = AppConfig.BarcodePrintCategoryInsteadOfName
+            };
+            page.Controls.Add(chkBarcodePrintCategory);
         }
 
         private void AddLabel(Control parent, string text, int x, int y)
@@ -1155,6 +1168,9 @@ namespace ChickenDist.Forms
                 1 => "38x26",
                 _ => "50x30"
             };
+
+            if (chkBarcodePrintCategory != null)
+                AppConfig.BarcodePrintCategoryInsteadOfName = chkBarcodePrintCategory.Checked;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)

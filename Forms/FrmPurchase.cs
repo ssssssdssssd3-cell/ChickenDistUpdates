@@ -746,6 +746,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID",   Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode",  HeaderText = "كود الصنف", ReadOnly = false, FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",  HeaderText = "الصنف",       ReadOnly = true, FillWeight = 120 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CategoryName", HeaderText = "التصنيف",     ReadOnly = true, FillWeight = 65 });
             dgItems.Columns.Add(new DataGridViewComboBoxColumn { Name = "UnitName", HeaderText = "الوحدة", ReadOnly = false, FillWeight = 40f });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",     HeaderText = "الكمية",      FillWeight = 55 });
             var colBonus = new DataGridViewTextBoxColumn
@@ -1889,6 +1890,8 @@ namespace ChickenDist.Forms
                     ci.ProductCode = r["ProductCode"]?.ToString() ?? "";
                     ci.InternationalCode = r["InternationalCode"]?.ToString() ?? "";
                     ci.PartNumber = r["PartNumber"]?.ToString() ?? "";
+                    ci.CategoryID = r.Table.Columns.Contains("CategoryID") && r["CategoryID"] != DBNull.Value ? Convert.ToInt32(r["CategoryID"]) : (int?)null;
+                    ci.CategoryName = r.Table.Columns.Contains("CategoryName") && r["CategoryName"] != DBNull.Value ? r["CategoryName"].ToString() : "";
 
                     // وحدات متعددة
                     ci.BaseUnitName = r["Unit"]?.ToString() ?? "";
@@ -2222,12 +2225,13 @@ namespace ChickenDist.Forms
 
             _items.Add(new PurchaseItemDTO
             {
-                ProductID   = prodId,
-                ProductCode = prodCode,
-                ProductName = prodName,
-                Quantity    = qty,
-                UnitPrice   = defaultPrice,
-                DiscountPct = disc,
+                ProductID    = prodId,
+                ProductCode  = prodCode,
+                ProductName  = prodName,
+                CategoryName = product?.CategoryName ?? "",
+                Quantity     = qty,
+                UnitPrice    = defaultPrice,
+                DiscountPct  = disc,
                 SuggestedSalePrice = defaultSalePrice,
                 UnitName = defaultUnit,
                 Factor = defaultFactor,
@@ -2714,11 +2718,15 @@ namespace ChickenDist.Forms
                 decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
                 decimal sell = item.SuggestedSalePrice ?? 0m;
                 decimal margin = netBuy > 0 ? (sell - netBuy) / netBuy * 100m : 0m;
+                string catName = !string.IsNullOrWhiteSpace(item.CategoryName)
+                    ? item.CategoryName
+                    : (GetProductComboItem(item.ProductID)?.CategoryName ?? "");
 
                 int rIdx = dgItems.Rows.Add(
                     item.ProductID,
                     item.ProductCode,
                     item.ProductName,
+                    catName,
                     null, // UnitName
                     item.Quantity.ToString("F3"),
                     item.BonusQuantity.ToString("F3"),
@@ -3179,6 +3187,7 @@ namespace ChickenDist.Forms
                             ProductID = baseItem.ProductID,
                             ProductCode = baseItem.ProductCode,
                             ProductName = baseItem.ProductName,
+                            CategoryName = baseItem.CategoryName,
                             Quantity = 1.00m,
                             BonusQuantity = 0m,
                             UnitPrice = baseItem.UnitPrice,
@@ -3198,6 +3207,7 @@ namespace ChickenDist.Forms
                             ProductID = baseItem.ProductID,
                             ProductCode = baseItem.ProductCode,
                             ProductName = baseItem.ProductName,
+                            CategoryName = baseItem.CategoryName,
                             Quantity = (decimal)(targetQty - serials.Count),
                             BonusQuantity = baseItem.BonusQuantity,
                             UnitPrice = baseItem.UnitPrice,
@@ -4566,13 +4576,21 @@ namespace ChickenDist.Forms
                     string.IsNullOrEmpty(hiddenVal) ? new string[0]
                     : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
 
-                // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها في النهاية
+                // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها
                 foreach (System.Windows.Forms.DataGridViewColumn col in dgItems.Columns)
                 {
                     if (col.Name == "Delete") continue;
                     if (!ordered.Contains(col.Name))
                     {
-                        ordered.Add(col.Name);
+                        if (col.Name == "CategoryName" && ordered.Contains("ProductName"))
+                        {
+                            int pIdx = ordered.IndexOf("ProductName");
+                            ordered.Insert(pIdx + 1, "CategoryName");
+                        }
+                        else
+                        {
+                            ordered.Add(col.Name);
+                        }
                     }
                 }
 
@@ -4724,6 +4742,7 @@ namespace ChickenDist.Forms
                     ProductID   = Convert.ToInt32(iRow["ProductID"]),
                     ProductCode = iRow["ProductCode"].ToString(),
                     ProductName = iRow["ProductName"].ToString(),
+                    CategoryName = iRow.Table.Columns.Contains("CategoryName") && iRow["CategoryName"] != DBNull.Value ? iRow["CategoryName"].ToString() : "",
                     Quantity    = Convert.ToDecimal(iRow["Quantity"]),
                     BonusQuantity = iRow.Table.Columns.Contains("BonusQuantity") && iRow["BonusQuantity"] != DBNull.Value ? Convert.ToDecimal(iRow["BonusQuantity"]) : 0m,
                     UnitPrice   = itemUnitPrice,

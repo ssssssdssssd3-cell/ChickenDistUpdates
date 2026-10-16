@@ -188,6 +188,15 @@ namespace ChickenDist.Core
             set => Set("BarcodeStickerSize", value);
         }
 
+        /// <summary>
+        /// طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود
+        /// </summary>
+        public static bool BarcodePrintCategoryInsteadOfName
+        {
+            get => Get("BarcodePrintCategoryInsteadOfName", "0") == "1" || Get("BarcodePrintCategoryInsteadOfName", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
+            set => Set("BarcodePrintCategoryInsteadOfName", value ? "1" : "0");
+        }
+
         public static string DefaultInvoiceFormat
         {
             get => Get("DefaultInvoiceFormat", "Receipt");

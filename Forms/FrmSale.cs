@@ -8773,6 +8773,8 @@ namespace ChickenDist.Forms
 		public decimal PendingQtyThreshold { get; set; } = 0m;
 		public string ProductCode { get; set; } = "";
 		public string InternationalCode { get; set; } = "";
+		public int? CategoryID { get; set; } = null;
+		public string CategoryName { get; set; } = "";
 		public string ScalePLU { get; set; } = "";
 		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
 		public bool IsService { get; set; } = false;

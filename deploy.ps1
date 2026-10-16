@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.88";
-$CHANGELOG = "v3.9.88 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Auto insert new product into purchase invoice on quick add with quantity field and instant focus"
+$VERSION = "3.9.89";
+$CHANGELOG = "v3.9.89 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Print category instead of product name on barcode stickers, category column in purchase invoice, and enhanced discount voucher editing"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
