@@ -197,6 +197,16 @@ namespace ChickenDist.Core
             set => Set("BarcodePrintCategoryInsteadOfName", value ? "1" : "0");
         }
 
+        /// <summary>
+        /// خيار طباعة السعر على ملصقات الباركود بشكل دائم
+        /// true = طباعة السعر | false = عدم طباعة السعر
+        /// </summary>
+        public static bool BarcodePrintPrice
+        {
+            get => Get("BarcodePrintPrice", "true") == "true";
+            set => Set("BarcodePrintPrice", value ? "true" : "false");
+        }
+
         public static string DefaultInvoiceFormat
         {
             get => Get("DefaultInvoiceFormat", "Receipt");

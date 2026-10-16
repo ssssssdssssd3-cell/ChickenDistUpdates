@@ -48,6 +48,7 @@ namespace ChickenDist.Forms
         private ComboBox cboBarcodeEncoding;
         private ComboBox cboBarcodeStickerSize;
         private CheckBox chkBarcodePrintCategory;
+        private CheckBox chkBarcodePrintPrice;
 
         public FrmPrinterSettings()
         {
@@ -918,6 +919,18 @@ namespace ChickenDist.Forms
             page.Controls.Add(cboBarcodeEncoding);
             y += 38;
 
+            chkBarcodePrintPrice = new CheckBox
+            {
+                Text = "🏷️ طباعة سعر البيع على ملصقات الباركود بشكل دائم",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Theme.TextMain,
+                Checked = AppConfig.BarcodePrintPrice
+            };
+            page.Controls.Add(chkBarcodePrintPrice);
+            y += 30;
+
             chkBarcodePrintCategory = new CheckBox
             {
                 Text = "📂 طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود",
@@ -1172,6 +1185,9 @@ namespace ChickenDist.Forms
 
             if (chkBarcodePrintCategory != null)
                 AppConfig.BarcodePrintCategoryInsteadOfName = chkBarcodePrintCategory.Checked;
+
+            if (chkBarcodePrintPrice != null)
+                AppConfig.BarcodePrintPrice = chkBarcodePrintPrice.Checked;
         }
 
         private void BtnSave_Click(object sender, EventArgs e)

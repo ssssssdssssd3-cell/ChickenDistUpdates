@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.99";
-$CHANGELOG = "v3.9.99 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fixed text clipping for company name and price in barcode sticker printing by enabling NoClip and increasing line heights"
+$VERSION = "4.0.0";
+$CHANGELOG = "v4.0.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fixed Arabic letter shaping (Raa) in barcode label printing with Arial font, and added permanent setting to toggle price printing on barcodes"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
