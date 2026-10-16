@@ -460,24 +460,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(2, 3, 2, 3)
             };
-            
-            var btnManualAdd = new Button
-            {
-                Text = "➕",
-                Width = 30,
-                Height = 24,
-                BackColor = Color.FromArgb(40, 167, 69),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand,
-                Dock = DockStyle.Left,
-                Margin = new Padding(2, 3, 2, 3)
-            };
-            btnManualAdd.FlatAppearance.BorderSize = 0;
-            btnManualAdd.Click += BtnManualAdd_Click;
-
             pnlProduct.Controls.Add(cboProduct);
-            pnlProduct.Controls.Add(btnManualAdd);
 
             // إضافة — صف 1
             tbl.Controls.Add(lblSupplierInv,       0, 1);
@@ -655,10 +638,8 @@ namespace ChickenDist.Forms
             // إضافة — صف 2
             tbl.Controls.Add(lblWarehouse, 0, 2);
             tbl.Controls.Add(cboWarehouse, 1, 2);
-            tbl.Controls.Add(btnSearchProduct, 2, 2);
-            // لم نعد نمد بحث الأصناف لعمودين - أفردنا عمود 3 لزر الإضافة السريعة
 
-            // زر إضافة صنف جديد سريعاً من شاشة الشراء مباشرة
+            // زر إضافة صنف جديد سريعاً من شاشة الشراء مباشرة (بحجم زر البحث السابق)
             var btnQuickAddProduct = new Button
             {
                 Text = "⚡ صنف جديد [F9]",
@@ -672,7 +653,23 @@ namespace ChickenDist.Forms
             };
             btnQuickAddProduct.FlatAppearance.BorderSize = 0;
             btnQuickAddProduct.Click += (s, e) => OpenQuickAddProduct();
-            tbl.Controls.Add(btnQuickAddProduct, 3, 2);
+
+            var pnlProdBtns = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 1,
+                ColumnCount = 2,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+            pnlProdBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            pnlProdBtns.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 125f));
+            pnlProdBtns.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            pnlProdBtns.Controls.Add(btnSearchProduct, 0, 0);
+            pnlProdBtns.Controls.Add(btnQuickAddProduct, 1, 0);
+
+            tbl.Controls.Add(pnlProdBtns, 2, 2);
+            tbl.SetColumnSpan(pnlProdBtns, 2);
 
             var lblBarcode = MakeLabel("📷 باركود الصنف (الاسكنر):", 0, 0);
             lblBarcode.Dock = DockStyle.Fill;
@@ -691,20 +688,10 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(lblBarcode, 4, 2);
             tbl.Controls.Add(txtBarcode, 5, 2);
 
-            // ── صف 3: الصنف (كومبو) | زر إضافة سطر فارغ ────────────────────────────
-            // إضافة صف الصنف — الصف 3
+            // ── صف 3: الصنف (كومبو) ────────────────────────────────────────────────
             tbl.Controls.Add(lblProd,       0, 3);
             tbl.Controls.Add(pnlProduct,    1, 3);
             tbl.SetColumnSpan(pnlProduct, 3);
-
-            // زر إضافة سطر فارغ في الصف الثالث (عمود 4-5)
-            var btnAddEmptyRow = Theme.MakeButton("➕ سطر جديد [Ins]", 0, 0, 0, 0, Theme.Success);
-            btnAddEmptyRow.Dock = DockStyle.Fill;
-            btnAddEmptyRow.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            btnAddEmptyRow.Margin = new Padding(3, 3, 3, 3);
-            btnAddEmptyRow.Click += (s, e) => AddNewCodeRow();
-            tbl.Controls.Add(btnAddEmptyRow, 4, 3);
-            tbl.SetColumnSpan(btnAddEmptyRow, 2);
 
             pnlHeader.Controls.Add(tbl);
 

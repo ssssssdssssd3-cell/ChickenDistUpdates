@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.89";
-$CHANGELOG = "v3.9.89 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Print category instead of product name on barcode stickers, category column in purchase invoice, and enhanced discount voucher editing"
+$VERSION = "3.9.90";
+$CHANGELOG = "v3.9.90 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Remove new row buttons in purchase invoice and swap search and quick add product button sizes"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
