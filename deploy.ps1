@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.0.1";
-$CHANGELOG = "v4.0.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Auto-clean leading zeros from ProductCode across database for all clients, prevent zero padding on save, and add stagnant item cleanup tool"
+$VERSION = "4.0.2";
+$CHANGELOG = "v4.0.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Auto-clean leading zeros from ProductCode across database for all clients and keep buttons original"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
