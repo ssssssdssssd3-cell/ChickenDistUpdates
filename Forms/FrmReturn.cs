@@ -896,6 +896,24 @@ namespace ChickenDist.Forms
                 DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(20, 25, 35) }
             });
 
+            // 3.5. السيريال (IMEI) لنشاط الموبايلات
+            var colImei = new DataGridViewTextBoxColumn
+            {
+                Name = "IMEI",
+                HeaderText = "السيريال (IMEI)",
+                ReadOnly = false,
+                FillWeight = 55f,
+                MinimumWidth = 130,
+                Visible = AppConfig.BusinessType == "Mobiles",
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    ForeColor = Color.FromArgb(30, 58, 138),
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                }
+            };
+            dgItems.Columns.Add(colImei);
+
             // 4. الكمية الأصلية
             dgItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
@@ -1338,7 +1356,7 @@ namespace ChickenDist.Forms
             if (_pnlTo != null) _pnlTo.Visible = isInvoice;
             if (_pnlEmp != null) _pnlEmp.Visible = isInvoice;
             if (_pnlSearch != null) _pnlSearch.Visible = isInvoice;
-            if (_pnlBarcode != null) _pnlBarcode.Visible = isInvoice;
+            if (_pnlBarcode != null) _pnlBarcode.Visible = true;
             if (btnSearch != null) btnSearch.Visible = isInvoice;
 
             lblExchangeSummary.Visible = isExchange;
@@ -1349,6 +1367,7 @@ namespace ChickenDist.Forms
             if (dgItems.Columns.Contains("Discount")) dgItems.Columns["Discount"].Visible = isInvoice;
             if (dgItems.Columns.Contains("Color")) dgItems.Columns["Color"].Visible = AppConfig.IsClothing;
             if (dgItems.Columns.Contains("ProductSize")) dgItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
+            if (dgItems.Columns.Contains("IMEI")) dgItems.Columns["IMEI"].Visible = AppConfig.BusinessType == "Mobiles";
             if (dgExchangeNewItems.Columns.Contains("Color")) dgExchangeNewItems.Columns["Color"].Visible = AppConfig.IsClothing;
             if (dgExchangeNewItems.Columns.Contains("ProductSize")) dgExchangeNewItems.Columns["ProductSize"].Visible = AppConfig.IsClothing;
             RecalcTotals();
@@ -1860,6 +1879,14 @@ namespace ChickenDist.Forms
                     if (!string.IsNullOrEmpty(pSize)) dgItems.Columns["ProductSize"].Visible = true;
                 }
 
+                string pImei = dtItems.Columns.Contains("IMEI") && row["IMEI"] != DBNull.Value ? row["IMEI"].ToString().Trim() : "";
+                if (dgItems.Columns.Contains("IMEI"))
+                {
+                    dgRow.Cells["IMEI"].Value = pImei;
+                    dgRow.Cells["IMEI"].ReadOnly = true;
+                    if (!string.IsNullOrEmpty(pImei)) dgItems.Columns["IMEI"].Visible = true;
+                }
+
                 decimal soldQty = dtItems.Columns.Contains("SoldQty") ? Convert.ToDecimal(row["SoldQty"]) : (dtItems.Columns.Contains("Quantity") ? Convert.ToDecimal(row["Quantity"]) : 0m);
                 decimal prevRetQty = dtItems.Columns.Contains("PrevReturnedQty") ? Convert.ToDecimal(row["PrevReturnedQty"]) : 0m;
                 decimal origUnitPrice = dtItems.Columns.Contains("UnitPrice") ? Convert.ToDecimal(row["UnitPrice"]) : 0m;
@@ -2270,7 +2297,8 @@ namespace ChickenDist.Forms
                             UnitName = selectedUnit,
                             Factor = itemFactor,
                             Color = row.Cells["Color"]?.Value?.ToString() ?? "",
-                            ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? ""
+                            ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? "",
+                            IMEI = row.Cells["IMEI"]?.Value?.ToString() ?? ""
                         });
                         totalReturnAmount += rowTotal;
                     }
@@ -2352,7 +2380,8 @@ namespace ChickenDist.Forms
                             UnitName = selectedUnit,
                             Factor = factor,
                             Color = row.Cells["Color"]?.Value?.ToString() ?? "",
-                            ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? ""
+                            ProductSize = row.Cells["ProductSize"]?.Value?.ToString() ?? "",
+                            IMEI = row.Cells["IMEI"]?.Value?.ToString() ?? ""
                         });
                         totalReturnAmount += (newQty * price);
                     }
@@ -2421,7 +2450,8 @@ namespace ChickenDist.Forms
                             UnitName = selectedUnit,
                             Factor = factor,
                             Color = r.Cells["Color"]?.Value?.ToString() ?? "",
-                            ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? ""
+                            ProductSize = r.Cells["ProductSize"]?.Value?.ToString() ?? "",
+                            IMEI = r.Cells["IMEI"]?.Value?.ToString() ?? ""
                         });
                     }
                 }
@@ -2496,6 +2526,93 @@ namespace ChickenDist.Forms
             }
         }
 
+        private static (int SaleID, DateTime SaleDate, int ProductID, string IMEI)? FindSaleByIMEI(string imei)
+        {
+            string sql = @"
+                SELECT TOP 1 s.SaleID, s.SaleDate, si.ProductID, LTRIM(RTRIM(si.IMEI)) AS IMEI
+                FROM SaleItems si
+                JOIN Sales s ON si.SaleID = s.SaleID
+                WHERE LTRIM(RTRIM(si.IMEI)) = @imei
+                ORDER BY s.SaleDate DESC, s.SaleID DESC";
+            var dt = DbHelper.Query(sql, DbHelper.P("@imei", imei));
+            if (dt.Rows.Count > 0)
+            {
+                return (Convert.ToInt32(dt.Rows[0]["SaleID"]), Convert.ToDateTime(dt.Rows[0]["SaleDate"]), Convert.ToInt32(dt.Rows[0]["ProductID"]), dt.Rows[0]["IMEI"]?.ToString() ?? imei);
+            }
+
+            if (imei.Length == 15 && imei.All(char.IsDigit))
+            {
+                var candidates = PurchaseDAL.GetCandidatePairedIMEIs(imei);
+                foreach (var c in candidates)
+                {
+                    var dtC = DbHelper.Query(sql, DbHelper.P("@imei", c));
+                    if (dtC.Rows.Count > 0)
+                    {
+                        return (Convert.ToInt32(dtC.Rows[0]["SaleID"]), Convert.ToDateTime(dtC.Rows[0]["SaleDate"]), Convert.ToInt32(dtC.Rows[0]["ProductID"]), dtC.Rows[0]["IMEI"]?.ToString() ?? c);
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static bool IsPairedImeiMatch(string a, string b)
+        {
+            if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase)) return true;
+            if (a.Length == 15 && b.Length == 15)
+            {
+                var candidates = PurchaseDAL.GetCandidatePairedIMEIs(a);
+                return candidates.Contains(b);
+            }
+            return false;
+        }
+
+        private void AddGeneralReturnItemWithIMEI(int productID, string imei)
+        {
+            foreach (DataGridViewRow r in dgItems.Rows)
+            {
+                string curImei = r.Cells["IMEI"]?.Value?.ToString()?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(curImei) && (curImei == imei || IsPairedImeiMatch(curImei, imei)))
+                {
+                    r.Cells["NewReturnedQty"].Value = 1m;
+                    dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                    RecalcTotals();
+                    return;
+                }
+            }
+
+            var pRow = ProductDAL.GetByID(productID);
+            if (pRow == null) return;
+
+            string pname = pRow["ProductName"].ToString();
+            decimal price = pRow["SalePrice"] != DBNull.Value ? Convert.ToDecimal(pRow["SalePrice"]) : 0m;
+
+            int idx = dgItems.Rows.Add();
+            var row = dgItems.Rows[idx];
+            int? selectedWh = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw2 && cw2.ID > 0) ? (int?)cw2.ID : null;
+            decimal actStock = GetProductActualStock(productID, selectedWh);
+            row.Cells["ActualStockInSmallest"].Value = actStock;
+
+            PopulateItemUnitData(row, productID, null);
+
+            row.Cells["ProductID"].Value       = productID;
+            row.Cells["ProductName"].Value     = pname;
+            row.Cells["IMEI"].Value            = imei;
+            row.Cells["SoldQty"].Value         = "عام";
+            row.Cells["PrevReturnedQty"].Value = "0";
+
+            string selectedUnit = row.Cells["UnitName"].Value?.ToString();
+            decimal factor = GetRowUnitFactor(row, selectedUnit);
+            row.Cells["CurrentStock"].Value    = (factor > 0 ? (actStock / factor) : actStock).ToString("G29");
+            row.Cells["NewReturnedQty"].Value  = 1m;
+            if (row.Cells["OriginalUnitPrice"] != null) row.Cells["OriginalUnitPrice"].Value = price.ToString("N2");
+            if (row.Cells["Discount"] != null) row.Cells["Discount"].Value = "-";
+            row.Cells["UnitPrice"].Value       = price.ToString("N2");
+            row.Cells["TotalPrice"].Value      = price.ToString("N2");
+
+            dgItems.Columns["IMEI"].Visible = true;
+            RecalcTotals();
+        }
+
         private void DoBarcodeSearch(string code)
         {
             if (string.IsNullOrWhiteSpace(code)) return;
@@ -2506,6 +2623,129 @@ namespace ChickenDist.Forms
 
             try
             {
+                // 0. فحص ما إذا كان الكود المدخل هو سيريال جهاز (IMEI)
+                string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
+                bool isPotentialImei = cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit);
+                if (isPotentialImei)
+                {
+                    // أ) إذا كنا بالفعل في وضع اختيار فاتورة ومحددة فاتورة حالياً:
+                    if (cboMode != null && cboMode.SelectedIndex == 0 && dgSales.CurrentRow != null)
+                    {
+                        bool foundInGrid = false;
+                        foreach (DataGridViewRow r in dgItems.Rows)
+                        {
+                            string rowImei = r.Cells["IMEI"]?.Value?.ToString()?.Trim() ?? "";
+                            if (!string.IsNullOrEmpty(rowImei) && (rowImei == cleanImei || IsPairedImeiMatch(rowImei, cleanImei)))
+                            {
+                                dgItems.Focus();
+                                dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                                r.Cells["NewReturnedQty"].Value = 1m;
+                                r.Selected = true;
+                                foundInGrid = true;
+                                RecalcTotals();
+                                SoundAlertHelper.PlayBeep();
+                                break;
+                            }
+                        }
+                        if (foundInGrid)
+                        {
+                            if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                            return;
+                        }
+                    }
+
+                    // ب) البحث في فواتير المبيعات السابقة عن الفاتورة التي تم بيع هذا الجهاز (IMEI) بها
+                    var saleMatch = FindSaleByIMEI(cleanImei);
+                    if (saleMatch != null)
+                    {
+                        int targetSaleID = saleMatch.Value.SaleID;
+                        DateTime saleDate = saleMatch.Value.SaleDate;
+
+                        if (cboMode != null && cboMode.SelectedIndex != 0)
+                            cboMode.SelectedIndex = 0;
+
+                        if (saleDate < dtpFrom.Value) dtpFrom.Value = saleDate.Date.AddDays(-1);
+                        if (saleDate > dtpTo.Value) dtpTo.Value = saleDate.Date.AddDays(1);
+                        if (txtSearch != null) txtSearch.Text = "";
+
+                        LoadSales();
+
+                        bool foundSale = false;
+                        dgSales.SelectionChanged -= DgSales_SelectionChanged;
+                        foreach (DataGridViewRow row in dgSales.Rows)
+                        {
+                            if (row.Cells["SaleID"].Value != null && Convert.ToInt32(row.Cells["SaleID"].Value) == targetSaleID)
+                            {
+                                dgSales.CurrentCell = row.Cells["SaleCode"];
+                                row.Selected = true;
+                                foundSale = true;
+                                break;
+                            }
+                        }
+                        dgSales.SelectionChanged += DgSales_SelectionChanged;
+
+                        if (foundSale)
+                        {
+                            DgSales_SelectionChanged(dgSales, EventArgs.Empty);
+
+                            foreach (DataGridViewRow r in dgItems.Rows)
+                            {
+                                string rowImei = r.Cells["IMEI"]?.Value?.ToString()?.Trim() ?? "";
+                                if (!string.IsNullOrEmpty(rowImei) && (rowImei == cleanImei || IsPairedImeiMatch(rowImei, cleanImei)))
+                                {
+                                    dgItems.Focus();
+                                    dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                                    r.Cells["NewReturnedQty"].Value = 1m;
+                                    r.Selected = true;
+                                    RecalcTotals();
+                                    break;
+                                }
+                            }
+                            SoundAlertHelper.PlayBeep();
+                        }
+                        if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                        return;
+                    }
+
+                    // ج) إذا كنا في وضع مرتجع عام أو استبدال
+                    if (cboMode != null && cboMode.SelectedIndex == 1)
+                    {
+                        var prodMatch = PurchaseDAL.FindProductByAvailableIMEI(cleanImei);
+                        int targetPid = 0;
+                        string matchedImei = cleanImei;
+                        if (prodMatch.HasValue)
+                        {
+                            targetPid = prodMatch.Value.ProductID;
+                            matchedImei = prodMatch.Value.IMEI;
+                        }
+                        else
+                        {
+                            var dtPI = DbHelper.Query("SELECT TOP 1 ProductID, IMEI FROM PurchaseItems WHERE LTRIM(RTRIM(IMEI)) = @imei ORDER BY ItemID DESC", DbHelper.P("@imei", cleanImei));
+                            if (dtPI.Rows.Count > 0)
+                            {
+                                targetPid = Convert.ToInt32(dtPI.Rows[0]["ProductID"]);
+                                matchedImei = dtPI.Rows[0]["IMEI"]?.ToString()?.Trim() ?? cleanImei;
+                            }
+                        }
+
+                        if (targetPid > 0)
+                        {
+                            AddGeneralReturnItemWithIMEI(targetPid, matchedImei);
+                            SoundAlertHelper.PlayBeep();
+                            if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                            return;
+                        }
+                    }
+
+                    // د) إذا كان كود IMEI ولم يتم العثور عليه في فواتير البيع
+                    if (cboMode != null && cboMode.SelectedIndex == 0)
+                    {
+                        MessageBox.Show($"لم يتم العثور على فاتورة مبيعات تحتوي على الجهاز ذو السيريال [{cleanImei}].\nيمكنك إرجاعه كـ (مرتجع عام بدون فاتورة).", "تنبيه السيريال", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        if (txtInvoiceBarcode != null) txtInvoiceBarcode.Text = "";
+                        return;
+                    }
+                }
+
                 // 1. أولاً: التحقق مما إذا كان الكود هو رقم أو باركود فاتورة مبيعات
                 var dt = DbHelper.Query(@"
                     SELECT s.SaleID, s.SaleCode, s.SaleDate 

@@ -78,7 +78,8 @@ namespace ChickenDist.Forms
                        ISNULL(ri.UnitName, ISNULL(p.Unit, N'')) AS UnitName,
                        ri.Quantity, ri.UnitPrice, 
                        ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice,
-                       ri.ProductID
+                       ri.ProductID,
+                       ISNULL(ri.IMEI, N'') AS IMEI
                 FROM ReturnItems ri
                 LEFT JOIN Products p ON ri.ProductID = p.ProductID
                 WHERE ri.ReturnID = @id", DbHelper.P("@id", _returnID));
@@ -256,6 +257,11 @@ namespace ChickenDist.Forms
                         {
                             var r = _items.Rows[_printItemIndex];
                             string pName = r["ProductName"]?.ToString() ?? "صنف";
+                            string imei = r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value ? r["IMEI"].ToString().Trim() : "";
+                            if (!string.IsNullOrEmpty(imei))
+                            {
+                                pName = $"{pName} (سيريال: {imei})";
+                            }
                             string unit = r["UnitName"]?.ToString() ?? "";
                             decimal q = r["Quantity"] != DBNull.Value ? Convert.ToDecimal(r["Quantity"]) : 0m;
                             decimal p = r["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(r["UnitPrice"]) : 0m;

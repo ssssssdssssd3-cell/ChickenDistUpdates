@@ -220,6 +220,11 @@ namespace ChickenDist.DAL
                               JOIN PurchaseReturns prt ON pri.ReturnID = prt.ReturnID
                               WHERE (prt.PurchaseID = @id OR (prt.PurchaseID IS NULL AND prt.Notes LIKE N'%' + (SELECT PurchaseCode FROM Purchases WHERE PurchaseID = @id) + N'%'))
                                 AND pri.ProductID = pi.ProductID
+                                AND (
+                                    (NULLIF(LTRIM(RTRIM(pi.IMEI)), N'') IS NULL AND NULLIF(LTRIM(RTRIM(pri.IMEI)), N'') IS NULL)
+                                    OR (NULLIF(LTRIM(RTRIM(pi.IMEI)), N'') IS NOT NULL AND NULLIF(LTRIM(RTRIM(pri.IMEI)), N'') IS NOT NULL AND LTRIM(RTRIM(pi.IMEI)) = LTRIM(RTRIM(pri.IMEI)))
+                                    OR (NULLIF(LTRIM(RTRIM(pi.IMEI)), N'') IS NOT NULL AND NULLIF(LTRIM(RTRIM(pri.IMEI)), N'') IS NULL)
+                                )
                           ), 0) AS ReturnedQty
                     FROM PurchaseItems pi
                     JOIN Products pr ON pi.ProductID = pr.ProductID
@@ -806,6 +811,11 @@ namespace ChickenDist.DAL
                   AND LTRIM(RTRIM(pItem.IMEI)) <> '' 
                   AND p.IsPosted = 1
                   AND LTRIM(RTRIM(pItem.IMEI)) NOT IN (
+                      SELECT LTRIM(RTRIM(pri.IMEI))
+                      FROM PurchaseReturnItems pri
+                      WHERE pri.IMEI IS NOT NULL AND LTRIM(RTRIM(pri.IMEI)) <> ''
+                  )
+                  AND LTRIM(RTRIM(pItem.IMEI)) NOT IN (
                       SELECT LTRIM(RTRIM(sItem.IMEI))
                       FROM SaleItems sItem
                       JOIN Sales s ON sItem.SaleID = s.SaleID
@@ -813,6 +823,11 @@ namespace ChickenDist.DAL
                         AND sItem.IMEI IS NOT NULL 
                         AND LTRIM(RTRIM(sItem.IMEI)) <> '' 
                         AND s.IsPosted = 1
+                        AND LTRIM(RTRIM(sItem.IMEI)) NOT IN (
+                            SELECT LTRIM(RTRIM(ri.IMEI))
+                            FROM ReturnItems ri
+                            WHERE ri.IMEI IS NOT NULL AND LTRIM(RTRIM(ri.IMEI)) <> ''
+                        )
                   )
                 ORDER BY IMEI ASC";
 
@@ -873,12 +888,22 @@ namespace ChickenDist.DAL
                   AND LTRIM(RTRIM(pItem.IMEI)) <> ''
                   AND p.IsPosted = 1
                   AND LTRIM(RTRIM(pItem.IMEI)) NOT IN (
+                      SELECT LTRIM(RTRIM(pri.IMEI))
+                      FROM PurchaseReturnItems pri
+                      WHERE pri.IMEI IS NOT NULL AND LTRIM(RTRIM(pri.IMEI)) = @imei
+                  )
+                  AND LTRIM(RTRIM(pItem.IMEI)) NOT IN (
                       SELECT LTRIM(RTRIM(sItem.IMEI))
                       FROM SaleItems sItem
                       JOIN Sales s ON sItem.SaleID = s.SaleID
                       WHERE sItem.IMEI IS NOT NULL
                         AND LTRIM(RTRIM(sItem.IMEI)) = @imei
                         AND s.IsPosted = 1
+                        AND LTRIM(RTRIM(sItem.IMEI)) NOT IN (
+                            SELECT LTRIM(RTRIM(ri.IMEI))
+                            FROM ReturnItems ri
+                            WHERE ri.IMEI IS NOT NULL AND LTRIM(RTRIM(ri.IMEI)) = @imei
+                        )
                   )
                 ORDER BY pItem.ItemID DESC";
 
@@ -1218,6 +1243,7 @@ namespace ChickenDist.DAL
                     COALESCE(pri.UnitName, prod.Unit, N'---') AS UnitName,
                     ISNULL(pri.UnitPrice, 0) AS UnitPrice,
                     COALESCE(pri.TotalPrice, pr.TotalAmount, 0) AS TotalReturnAmount,
+                    ISNULL(pri.IMEI, N'') AS IMEI,
                     CASE 
                         WHEN pr.PaymentType = 'Cash' OR pr.PaymentType LIKE '%نقدي%' THEN N'نقدي'
                         WHEN pr.PaymentType = 'Visa' OR pr.PaymentType LIKE '%فيزا%' OR pr.PaymentType LIKE '%Bank%' THEN N'فيزا / بنك'
@@ -1888,7 +1914,8 @@ namespace ChickenDist.DAL
                 @"SELECT pri.ProductID, p.ProductName, pri.Quantity, 
                          ISNULL(pri.BonusQuantity, 0) AS BonusQuantity,
                          pri.UnitPrice, pri.TotalPrice,
-                         pri.UnitName, COALESCE(pri.Factor, 1.0) AS Factor
+                         pri.UnitName, COALESCE(pri.Factor, 1.0) AS Factor,
+                         ISNULL(pri.IMEI, N'') AS IMEI
                   FROM PurchaseReturnItems pri
                   JOIN Products p ON pri.ProductID = p.ProductID
                   WHERE pri.ReturnID = @id",
@@ -1965,8 +1992,8 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,BonusQuantity,UnitPrice,TotalPrice,UnitName,Factor)" +
-                        " VALUES(@rid,@pid,@qty,@bqty,@up,@tp,@un,@fac)",
+                        "INSERT INTO PurchaseReturnItems(ReturnID,ProductID,Quantity,BonusQuantity,UnitPrice,TotalPrice,UnitName,Factor,IMEI)" +
+                        " VALUES(@rid,@pid,@qty,@bqty,@up,@tp,@un,@fac,@imei)",
                         DbHelper.P("@rid",  retID),
                         DbHelper.P("@pid",  item.ProductID),
                         DbHelper.P("@qty",  item.Quantity),
@@ -1974,7 +2001,8 @@ namespace ChickenDist.DAL
                         DbHelper.P("@up",   item.UnitPrice),
                         DbHelper.P("@tp",   item.TotalPrice),
                         DbHelper.P("@un",   item.UnitName),
-                        DbHelper.P("@fac",  item.Factor));
+                        DbHelper.P("@fac",  item.Factor),
+                        DbHelper.P("@imei", string.IsNullOrWhiteSpace(item.IMEI) ? (object)DBNull.Value : item.IMEI.Trim()));
 
                     decimal baseQty = (item.Quantity + item.BonusQuantity) * (item.Factor > 0 ? item.Factor : 1m);
                     var targetBatchObj = DbHelper.ScalarTrans(trans,

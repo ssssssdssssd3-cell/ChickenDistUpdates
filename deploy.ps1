@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.0.5";
-$CHANGELOG = "v4.0.5 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show IMEI on each line in all WhatsApp templates (text and image cards) for mobiles business"
+$VERSION = "4.0.6";
+$CHANGELOG = "v4.0.6 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show IMEI serial in sales and purchase returns and enable barcode/IMEI scanner search"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

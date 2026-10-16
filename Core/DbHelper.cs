@@ -4258,6 +4258,34 @@ namespace ChickenDist.Core
                     ALTER TABLE CashBox ADD PartyName NVARCHAR(200) NULL;
                 END");
 
+                SafeMigrate("ReturnItems.IMEIColumn", @"
+                IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('ReturnItems', 'IMEI') IS NULL
+                        ALTER TABLE ReturnItems ADD IMEI NVARCHAR(255) NULL;
+                END");
+
+                SafeMigrate("PurchaseReturnItems.IMEIColumn", @"
+                IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('PurchaseReturnItems', 'IMEI') IS NULL
+                        ALTER TABLE PurchaseReturnItems ADD IMEI NVARCHAR(255) NULL;
+                END");
+
+                SafeMigrate("IX_ReturnItems_IMEI", @"
+                IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL AND COL_LENGTH('ReturnItems', 'IMEI') IS NOT NULL
+                BEGIN
+                    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ReturnItems_IMEI' AND object_id = OBJECT_ID('ReturnItems'))
+                        CREATE NONCLUSTERED INDEX IX_ReturnItems_IMEI ON ReturnItems(IMEI) WHERE IMEI IS NOT NULL;
+                END");
+
+                SafeMigrate("IX_PurchaseReturnItems_IMEI", @"
+                IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL AND COL_LENGTH('PurchaseReturnItems', 'IMEI') IS NOT NULL
+                BEGIN
+                    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseReturnItems_IMEI' AND object_id = OBJECT_ID('PurchaseReturnItems'))
+                        CREATE NONCLUSTERED INDEX IX_PurchaseReturnItems_IMEI ON PurchaseReturnItems(IMEI) WHERE IMEI IS NOT NULL;
+                END");
+
                 // Save schema version to cache so subsequent launches skip inspection
                 try
                 {

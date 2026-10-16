@@ -609,7 +609,8 @@ namespace ChickenDist.Core
                     SELECT ISNULL(p.ProductName, N'صنف عام') AS ProductName, 
                            ISNULL(ri.UnitName, ISNULL(p.Unit, N'')) AS UnitName,
                            ri.Quantity, ri.UnitPrice, 
-                           ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice
+                           ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice,
+                           ISNULL(ri.IMEI, N'') AS IMEI
                     FROM ReturnItems ri
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
                     WHERE ri.ReturnID = @id", DbHelper.P("@id", returnID));
@@ -620,12 +621,14 @@ namespace ChickenDist.Core
                     foreach (DataRow ir in dtItems.Rows)
                     {
                         string pName = ir["ProductName"]?.ToString();
+                        string imei = ir.Table.Columns.Contains("IMEI") && ir["IMEI"] != DBNull.Value ? ir["IMEI"].ToString().Trim() : "";
+                        string imeiStr = !string.IsNullOrEmpty(imei) ? $" (سيريال: {imei})" : "";
                         string u = ir["UnitName"]?.ToString();
                         decimal q = Convert.ToDecimal(ir["Quantity"]);
                         decimal p = Convert.ToDecimal(ir["UnitPrice"]);
                         decimal t = Convert.ToDecimal(ir["TotalPrice"]);
                         string uStr = !string.IsNullOrEmpty(u) ? $" {u}" : "";
-                        sb.AppendLine($"▫️ {pName}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*");
+                        sb.AppendLine($"▫️ {pName}{imeiStr}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*");
                     }
                     sb.AppendLine("───────────────────");
                 }

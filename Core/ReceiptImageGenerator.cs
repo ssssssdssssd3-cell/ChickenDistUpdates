@@ -1918,7 +1918,8 @@ namespace ChickenDist.Core
                            ISNULL(ri.UnitName, ISNULL(p.Unit, N'')) AS UnitName,
                            ri.Quantity, ri.UnitPrice, 
                            ISNULL(ri.TotalPrice, ri.Quantity * ri.UnitPrice) AS TotalPrice,
-                           ri.ProductID
+                           ri.ProductID,
+                           ISNULL(ri.IMEI, N'') AS IMEI
                     FROM ReturnItems ri
                     LEFT JOIN Products p ON ri.ProductID = p.ProductID
                     WHERE ri.ReturnID = @id", DbHelper.P("@id", returnID));
@@ -2058,6 +2059,11 @@ namespace ChickenDist.Core
                             foreach (DataRow ir in dtItems.Rows)
                             {
                                 string pName = ir["ProductName"]?.ToString() ?? "صنف";
+                                string imei = ir.Table.Columns.Contains("IMEI") && ir["IMEI"] != DBNull.Value ? ir["IMEI"].ToString().Trim() : "";
+                                if (!string.IsNullOrEmpty(imei))
+                                {
+                                    pName = $"{pName} ({imei})";
+                                }
                                 string pCode = ir["ProductCode"]?.ToString() ?? "";
                                 string pUnit = ir["UnitName"]?.ToString() ?? "";
                                 decimal q = ir["Quantity"] != DBNull.Value ? Convert.ToDecimal(ir["Quantity"]) : 0m;

@@ -229,12 +229,17 @@ namespace ChickenDist.DAL
                   FROM SaleItems si 
                   JOIN Products p ON si.ProductID = p.ProductID
                   LEFT JOIN (
-                      SELECT ri.ProductID, ISNULL(SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)), 0.0) AS PrevReturnedQtyInSmallest
+                      SELECT ri.ProductID, LTRIM(RTRIM(ri.IMEI)) AS IMEI, ISNULL(SUM(ri.Quantity * COALESCE(ri.Factor, 1.0)), 0.0) AS PrevReturnedQtyInSmallest
                       FROM SalesReturns sr
                       JOIN ReturnItems ri ON sr.ReturnID = ri.ReturnID
                       WHERE sr.SaleID = @id
-                      GROUP BY ri.ProductID
-                  ) ret ON ret.ProductID = si.ProductID
+                      GROUP BY ri.ProductID, LTRIM(RTRIM(ri.IMEI))
+                  ) ret ON ret.ProductID = si.ProductID 
+                       AND (
+                           (NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NULL AND NULLIF(ret.IMEI, N'') IS NULL)
+                           OR (NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL AND NULLIF(ret.IMEI, N'') IS NOT NULL AND LTRIM(RTRIM(si.IMEI)) = ret.IMEI)
+                           OR (NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL AND NULLIF(ret.IMEI, N'') IS NULL)
+                       )
                   WHERE si.SaleID = @id",
                 DbHelper.P("@id", saleID));
         }
@@ -2509,12 +2514,13 @@ namespace ChickenDist.DAL
                 foreach (var item in items)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor) VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac)",
+                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor,IMEI) VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac,@imei)",
                         DbHelper.P("@rid", retID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice),
                         DbHelper.P("@un", item.UnitName),
-                        DbHelper.P("@fac", item.Factor));
+                        DbHelper.P("@fac", item.Factor),
+                        DbHelper.P("@imei", string.IsNullOrWhiteSpace(item.IMEI) ? (object)DBNull.Value : item.IMEI.Trim()));
 
                     decimal baseQty = item.Quantity * (item.Factor > 0 ? item.Factor : 1m);
                     if (item.BatchID.HasValue && item.BatchID.Value > 0)
@@ -3369,6 +3375,7 @@ namespace ChickenDist.DAL
                     COALESCE(ri.UnitName, p.Unit, N'قطعة') AS UnitName,
                     ri.UnitPrice AS UnitPrice,
                     ri.TotalPrice AS TotalReturnAmount,
+                    ISNULL(ri.IMEI, N'') AS IMEI,
                     ISNULL(e.EmpName, N'---') AS CreatedByName,
                     ISNULL(sr.Notes, N'---') AS Notes
                 FROM ReturnItems ri

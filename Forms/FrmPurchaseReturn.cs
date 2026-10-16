@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
@@ -12,7 +13,7 @@ namespace ChickenDist.Forms
     public class FrmPurchaseReturn : Form
     {
         private ComboBox cboMode, cboSupplier, cboWarehouse, cboReturnType, cboAllProducts;
-        private TextBox txtNotes, txtSearch, txtGenQty, txtGenPrice;
+        private TextBox txtNotes, txtSearch, txtBarcode, txtGenQty, txtGenPrice;
         private DataGridView dgPurchases, dgItems;
         private Button btnSave, btnAddGenItem, btnSearch;
         private Label lblTotal, lblPurchaseInfo;
@@ -156,16 +157,51 @@ namespace ChickenDist.Forms
             var lblSearch = new Label { Text = "بحث الفواتير:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
             txtSearch = new TextBox
             {
-                Width = 150, Height = 26,
+                Width = 140, Height = 26,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
                 RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle
             };
-            txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { LoadPurchasesGrid(); e.Handled = true; e.SuppressKeyPress = true; } };
+            txtSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    string t = txtSearch.Text.Trim();
+                    string clean = PurchaseDAL.SanitizeIMEIString(t);
+                    if (clean.Length >= 14 && clean.Length <= 16 && clean.All(char.IsDigit))
+                    {
+                        DoBarcodeSearch(t);
+                    }
+                    else
+                    {
+                        LoadPurchasesGrid();
+                    }
+                }
+            };
 
             btnSearch = Theme.MakeButton("🔍 جلب الفواتير", Theme.Accent);
             btnSearch.Size = new Size(110, 28);
             btnSearch.Margin = new Padding(10, 2, 0, 0);
             btnSearch.Click += (s, e) => LoadPurchasesGrid();
+
+            // مسح بالاسكانر / السيريال (IMEI)
+            var lblBarcode = new Label { Text = "📷 مسح بالاسكانر / IMEI:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            txtBarcode = new TextBox
+            {
+                Width = 140, Height = 26,
+                BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
+                RightToLeft = RightToLeft.No, BorderStyle = BorderStyle.FixedSingle
+            };
+            txtBarcode.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    DoBarcodeSearch(txtBarcode.Text.Trim());
+                }
+            };
 
             pnlInfo.Controls.AddRange(new Control[] {
                 lblMode, cboMode,
@@ -173,7 +209,8 @@ namespace ChickenDist.Forms
                 lblRetType, cboReturnType,
                 lblFrom, dtpFrom, lblTo, dtpTo,
                 lblSupplierLbl, cboSupplier,
-                lblSearch, txtSearch, btnSearch
+                lblSearch, txtSearch, btnSearch,
+                lblBarcode, txtBarcode
             });
 
             // ===== SplitContainer للتخطيط المقسم (فواتير فوق / أصناف تحت) =====
@@ -317,6 +354,20 @@ namespace ChickenDist.Forms
 
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true, FillWeight = 110 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
+                Name = "IMEI", 
+                HeaderText = "السيريال (IMEI)", 
+                ReadOnly = false, 
+                FillWeight = 65, 
+                Visible = AppConfig.BusinessType == "Mobiles",
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter, 
+                    ForeColor = Color.Yellow, 
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) 
+                } 
+            });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasedQty", HeaderText = "الكمية بالفاتورة", ReadOnly = true, FillWeight = 55 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PrevReturnedQty", HeaderText = "المرتجع السابق", ReadOnly = true, FillWeight = 50 });
 
@@ -440,6 +491,12 @@ namespace ChickenDist.Forms
                 dgItems.Columns["GrossUnitPrice"].DefaultCellStyle.BackColor = isGeneral ? Color.FromArgb(40, 60, 45) : Theme.BgCard;
                 dgItems.Columns["GrossUnitPrice"].DefaultCellStyle.ForeColor = isGeneral ? Color.LightGreen : Theme.TextMain;
                 dgItems.Columns["GrossUnitPrice"].DefaultCellStyle.Font = isGeneral ? new Font("Segoe UI", 10f, FontStyle.Bold) : Theme.FontMain;
+            }
+
+            if (dgItems.Columns.Contains("IMEI"))
+            {
+                dgItems.Columns["IMEI"].Visible = AppConfig.BusinessType == "Mobiles";
+                dgItems.Columns["IMEI"].ReadOnly = !isGeneral;
             }
 
             dgItems.Rows.Clear();
@@ -653,6 +710,15 @@ namespace ChickenDist.Forms
                 var row = dgItems.Rows[rowIdx];
                 row.Cells["ProductID"].Value           = pid;
                 row.Cells["ProductName"].Value         = r["ProductName"].ToString();
+
+                string pImei = r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value ? r["IMEI"].ToString().Trim() : "";
+                if (dgItems.Columns.Contains("IMEI"))
+                {
+                    row.Cells["IMEI"].Value = pImei;
+                    row.Cells["IMEI"].ReadOnly = true;
+                    if (!string.IsNullOrEmpty(pImei)) dgItems.Columns["IMEI"].Visible = true;
+                }
+
                 row.Cells["PurchasedQty"].Value        = purQty.ToString("N3");
                 row.Cells["PrevReturnedQty"].Value     = prevRet.ToString("N3");
                 row.Cells["NewReturnedQty"].Value      = 0;
@@ -755,6 +821,339 @@ namespace ChickenDist.Forms
             {
                 dgItems.CurrentCell = newRow.Cells["NewReturnedQty"];
                 dgItems.FirstDisplayedScrollingRowIndex = rowIdx;
+            }
+        }
+
+        private void AddGeneralProductWithIMEI(int productID, string imei)
+        {
+            foreach (DataGridViewRow r in dgItems.Rows)
+            {
+                string curImei = r.Cells["IMEI"]?.Value?.ToString()?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(curImei) && (curImei == imei || IsPairedImeiMatch(curImei, imei)))
+                {
+                    r.Cells["NewReturnedQty"].Value = 1m;
+                    dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                    RecalcTotal();
+                    return;
+                }
+            }
+
+            var dtP = DbHelper.Query(@"
+                SELECT ProductID, ProductName, 
+                       COALESCE(PurchasePrice, Unit1PurchasePrice, 0) AS PurchasePrice, 
+                       COALESCE(Unit, Unit1Name, DefaultPurchaseUnit, '') AS UnitName 
+                FROM Products 
+                WHERE ProductID=@id", DbHelper.P("@id", productID));
+            if (dtP == null || dtP.Rows.Count == 0) return;
+
+            var rP = dtP.Rows[0];
+            string name = rP["ProductName"].ToString();
+            string unitName = rP["UnitName"]?.ToString() ?? "";
+            decimal price = rP["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(rP["PurchasePrice"]) : 0m;
+
+            int rowIdx = dgItems.Rows.Add();
+            var row = dgItems.Rows[rowIdx];
+            row.Cells["ProductID"].Value           = productID;
+            row.Cells["ProductName"].Value         = name;
+            row.Cells["IMEI"].Value                = imei;
+            row.Cells["PurchasedQty"].Value        = "عام";
+            row.Cells["PrevReturnedQty"].Value     = "0.000";
+            row.Cells["NewReturnedQty"].Value      = 1m;
+            row.Cells["PurchasedBonusQty"].Value   = "0.000";
+            row.Cells["PrevReturnedBonusQty"].Value = "0.000";
+            row.Cells["NewReturnedBonusQty"].Value  = 0;
+            row.Cells["GrossUnitPrice"].Value      = price.ToString("N2");
+            row.Cells["DiscountPct"].Value         = "0%";
+            row.Cells["NetUnitPrice"].Value        = price.ToString("N2");
+            row.Cells["TotalPrice"].Value          = price.ToString("N2");
+            row.Cells["UnitName"].Value            = unitName;
+            row.Cells["Factor"].Value              = 1.0m;
+
+            dgItems.Columns["IMEI"].Visible = true;
+            RecalcTotal();
+
+            if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+            {
+                dgItems.CurrentCell = row.Cells["NewReturnedQty"];
+                dgItems.FirstDisplayedScrollingRowIndex = rowIdx;
+            }
+        }
+
+        private static (int PurchaseID, DateTime PurchaseDate, int ProductID, string IMEI)? FindPurchaseByIMEI(string imei)
+        {
+            string sql = @"
+                SELECT TOP 1 p.PurchaseID, p.PurchaseDate, pi.ProductID, LTRIM(RTRIM(pi.IMEI)) AS IMEI
+                FROM PurchaseItems pi
+                JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                WHERE LTRIM(RTRIM(pi.IMEI)) = @imei
+                ORDER BY p.PurchaseDate DESC, p.PurchaseID DESC";
+            var dt = DbHelper.Query(sql, DbHelper.P("@imei", imei));
+            if (dt.Rows.Count > 0)
+            {
+                return (Convert.ToInt32(dt.Rows[0]["PurchaseID"]), Convert.ToDateTime(dt.Rows[0]["PurchaseDate"]), Convert.ToInt32(dt.Rows[0]["ProductID"]), dt.Rows[0]["IMEI"]?.ToString() ?? imei);
+            }
+
+            if (imei.Length == 15 && imei.All(char.IsDigit))
+            {
+                var candidates = PurchaseDAL.GetCandidatePairedIMEIs(imei);
+                foreach (var c in candidates)
+                {
+                    var dtC = DbHelper.Query(sql, DbHelper.P("@imei", c));
+                    if (dtC.Rows.Count > 0)
+                    {
+                        return (Convert.ToInt32(dtC.Rows[0]["PurchaseID"]), Convert.ToDateTime(dtC.Rows[0]["PurchaseDate"]), Convert.ToInt32(dtC.Rows[0]["ProductID"]), dtC.Rows[0]["IMEI"]?.ToString() ?? c);
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static bool IsPairedImeiMatch(string a, string b)
+        {
+            if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase)) return true;
+            if (a.Length == 15 && b.Length == 15)
+            {
+                var candidates = PurchaseDAL.GetCandidatePairedIMEIs(a);
+                return candidates.Contains(b);
+            }
+            return false;
+        }
+
+        private void DoBarcodeSearch(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return;
+            code = code.Trim();
+            if (code.StartsWith("*") && code.EndsWith("*") && code.Length > 2)
+                code = code.Substring(1, code.Length - 2).Trim();
+
+            try
+            {
+                // 1. فحص هل الكود يمثل سيريال جهاز (IMEI)
+                string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
+                bool isPotentialImei = cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit);
+                if (isPotentialImei)
+                {
+                    // أ) إذا كنا في وضع فاتورة ومحددة فاتورة حالياً:
+                    if (cboMode.SelectedIndex == 0 && dgPurchases.SelectedRows.Count > 0)
+                    {
+                        bool foundInGrid = false;
+                        foreach (DataGridViewRow r in dgItems.Rows)
+                        {
+                            string rowImei = r.Cells["IMEI"]?.Value?.ToString()?.Trim() ?? "";
+                            if (!string.IsNullOrEmpty(rowImei) && (rowImei == cleanImei || IsPairedImeiMatch(rowImei, cleanImei)))
+                            {
+                                dgItems.Focus();
+                                dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                                r.Cells["NewReturnedQty"].Value = 1m;
+                                r.Selected = true;
+                                foundInGrid = true;
+                                RecalcTotal();
+                                SoundAlertHelper.PlayBeep();
+                                break;
+                            }
+                        }
+                        if (foundInGrid)
+                        {
+                            if (txtBarcode != null) txtBarcode.Text = "";
+                            return;
+                        }
+                    }
+
+                    // ب) البحث في فواتير الشراء السابقة عن فاتورة الشراء الأصلية للجهاز
+                    var purMatch = FindPurchaseByIMEI(cleanImei);
+                    if (purMatch != null)
+                    {
+                        int targetPurchaseID = purMatch.Value.PurchaseID;
+                        DateTime purDate = purMatch.Value.PurchaseDate;
+
+                        if (cboMode.SelectedIndex != 0)
+                            cboMode.SelectedIndex = 0;
+
+                        if (purDate < dtpFrom.Value) dtpFrom.Value = purDate.Date.AddDays(-1);
+                        if (purDate > dtpTo.Value) dtpTo.Value = purDate.Date.AddDays(1);
+                        if (txtSearch != null) txtSearch.Text = "";
+
+                        LoadPurchasesGrid();
+
+                        bool foundPur = false;
+                        dgPurchases.SelectionChanged -= DgPurchases_SelectionChanged;
+                        foreach (DataGridViewRow row in dgPurchases.Rows)
+                        {
+                            if (row.Cells["PurchaseID"].Value != null && Convert.ToInt32(row.Cells["PurchaseID"].Value) == targetPurchaseID)
+                            {
+                                dgPurchases.CurrentCell = row.Cells["PurchaseCode"];
+                                row.Selected = true;
+                                foundPur = true;
+                                break;
+                            }
+                        }
+                        dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
+
+                        if (foundPur)
+                        {
+                            DgPurchases_SelectionChanged(dgPurchases, EventArgs.Empty);
+
+                            foreach (DataGridViewRow r in dgItems.Rows)
+                            {
+                                string rowImei = r.Cells["IMEI"]?.Value?.ToString()?.Trim() ?? "";
+                                if (!string.IsNullOrEmpty(rowImei) && (rowImei == cleanImei || IsPairedImeiMatch(rowImei, cleanImei)))
+                                {
+                                    dgItems.Focus();
+                                    dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                                    r.Cells["NewReturnedQty"].Value = 1m;
+                                    r.Selected = true;
+                                    RecalcTotal();
+                                    break;
+                                }
+                            }
+                            SoundAlertHelper.PlayBeep();
+                        }
+                        if (txtBarcode != null) txtBarcode.Text = "";
+                        return;
+                    }
+
+                    // ج) إذا كنا في وضع مرتجع عام أو جهاز مسجل
+                    if (cboMode.SelectedIndex == 1)
+                    {
+                        var prodMatch = PurchaseDAL.FindProductByAvailableIMEI(cleanImei);
+                        int targetPid = 0;
+                        string matchedImei = cleanImei;
+                        if (prodMatch.HasValue)
+                        {
+                            targetPid = prodMatch.Value.ProductID;
+                            matchedImei = prodMatch.Value.IMEI;
+                        }
+                        else
+                        {
+                            var dtPI = DbHelper.Query("SELECT TOP 1 ProductID, IMEI FROM PurchaseItems WHERE LTRIM(RTRIM(IMEI)) = @imei ORDER BY ItemID DESC", DbHelper.P("@imei", cleanImei));
+                            if (dtPI.Rows.Count > 0)
+                            {
+                                targetPid = Convert.ToInt32(dtPI.Rows[0]["ProductID"]);
+                                matchedImei = dtPI.Rows[0]["IMEI"]?.ToString()?.Trim() ?? cleanImei;
+                            }
+                        }
+
+                        if (targetPid > 0)
+                        {
+                            AddGeneralProductWithIMEI(targetPid, matchedImei);
+                            SoundAlertHelper.PlayBeep();
+                            if (txtBarcode != null) txtBarcode.Text = "";
+                            return;
+                        }
+                    }
+
+                    if (cboMode.SelectedIndex == 0)
+                    {
+                        MessageBox.Show($"لم يتم العثور على فاتورة شراء تحتوي على الجهاز ذو السيريال [{cleanImei}].\nيمكنك إرجاعه للمورد عبر وضع (مرتجع عام بدون فاتورة).", "تنبيه السيريال", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        if (txtBarcode != null) txtBarcode.Text = "";
+                        return;
+                    }
+                }
+
+                // 2. فحص هل الكود يمثل رقم فاتورة شراء
+                var dt = DbHelper.Query(@"
+                    SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate
+                    FROM Purchases p
+                    WHERE p.PurchaseCode = @code OR CAST(p.PurchaseID AS NVARCHAR(50)) = @code OR p.SupplierInvoiceNo = @code",
+                    DbHelper.P("@code", code));
+
+                if (dt.Rows.Count > 0)
+                {
+                    int targetPurchaseID = Convert.ToInt32(dt.Rows[0]["PurchaseID"]);
+                    DateTime purDate = Convert.ToDateTime(dt.Rows[0]["PurchaseDate"]);
+
+                    if (cboMode.SelectedIndex != 0) cboMode.SelectedIndex = 0;
+                    if (purDate < dtpFrom.Value) dtpFrom.Value = purDate.Date.AddDays(-1);
+                    if (purDate > dtpTo.Value) dtpTo.Value = purDate.Date.AddDays(1);
+                    if (txtSearch != null) txtSearch.Text = "";
+
+                    LoadPurchasesGrid();
+
+                    bool found = false;
+                    dgPurchases.SelectionChanged -= DgPurchases_SelectionChanged;
+                    foreach (DataGridViewRow row in dgPurchases.Rows)
+                    {
+                        if (row.Cells["PurchaseID"].Value != null && Convert.ToInt32(row.Cells["PurchaseID"].Value) == targetPurchaseID)
+                        {
+                            dgPurchases.CurrentCell = row.Cells["PurchaseCode"];
+                            row.Selected = true;
+                            found = true;
+                            break;
+                        }
+                    }
+                    dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
+
+                    if (found)
+                    {
+                        DgPurchases_SelectionChanged(dgPurchases, EventArgs.Empty);
+                        if (dgItems.Rows.Count > 0)
+                        {
+                            dgItems.Focus();
+                            dgItems.CurrentCell = dgItems.Rows[0].Cells["NewReturnedQty"];
+                        }
+                        SoundAlertHelper.PlayBeep();
+                    }
+                    if (txtBarcode != null) txtBarcode.Text = "";
+                    return;
+                }
+
+                // 3. فحص هل الكود يمثل صنفاً (باركود منتج)
+                DataRow pRow = ProductDAL.GetByBarcodeOrScaleCode(code, out decimal scanQty);
+                if (pRow == null)
+                {
+                    var dtProd = DbHelper.Query(@"
+                        SELECT TOP 1 * FROM Products 
+                        WHERE ProductCode = @code OR Barcode = @code OR CAST(ProductID AS NVARCHAR(50)) = @code",
+                        DbHelper.P("@code", code));
+                    if (dtProd.Rows.Count > 0)
+                    {
+                        pRow = dtProd.Rows[0];
+                        scanQty = 1m;
+                    }
+                }
+
+                if (pRow != null)
+                {
+                    int pid = Convert.ToInt32(pRow["ProductID"]);
+                    string pname = pRow["ProductName"].ToString();
+
+                    if (cboMode.SelectedIndex == 0 && dgPurchases.SelectedRows.Count > 0)
+                    {
+                        bool itemFound = false;
+                        foreach (DataGridViewRow r in dgItems.Rows)
+                        {
+                            if (r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == pid)
+                            {
+                                dgItems.Focus();
+                                dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                                r.Selected = true;
+                                itemFound = true;
+                                SoundAlertHelper.PlayBeep();
+                                break;
+                            }
+                        }
+                        if (!itemFound)
+                        {
+                            MessageBox.Show($"الصنف [{pname}] غير موجود ضمن بنود الفاتورة المحددة حالياً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        if (txtBarcode != null) txtBarcode.Text = "";
+                        return;
+                    }
+                    else if (cboMode.SelectedIndex == 1)
+                    {
+                        AddGeneralProductByID(pid, scanQty > 0 ? scanQty : 1m);
+                        SoundAlertHelper.PlayBeep();
+                        if (txtBarcode != null) txtBarcode.Text = "";
+                        return;
+                    }
+                }
+
+                MessageBox.Show($"عذراً، لم يتم العثور على أي فاتورة شراء أو جهاز أو صنف يطابق الكود [{code}].", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("خطأ أثناء البحث بالباركود في مرتجع المشتريات", ex, "FrmPurchaseReturn.DoBarcodeSearch");
+                MessageBox.Show($"حدث خطأ أثناء البحث:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -901,7 +1300,8 @@ namespace ChickenDist.Forms
                     BonusQuantity = newBonusQty,
                     UnitPrice = netPrice,
                     UnitName = unitName,
-                    Factor = fac
+                    Factor = fac,
+                    IMEI = row.Cells["IMEI"]?.Value?.ToString() ?? ""
                 });
                 totalReturnAmount += newQty * netPrice;
             }
