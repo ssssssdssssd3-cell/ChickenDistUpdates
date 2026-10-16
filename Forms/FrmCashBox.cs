@@ -203,13 +203,14 @@ namespace ChickenDist.Forms
             pnlF.Controls.Add(btnPrintVoucher);
 
             dgCash = MakeGrid();
-            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ", FillWeight = 50 });
-            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "النوع" });
-            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountIn", HeaderText = "وارد", FillWeight = 45 });
-            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountOut", HeaderText = "صادر", FillWeight = 45 });
-            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "Net", HeaderText = "صافي", FillWeight = 45 });
-            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "RunningBalance", HeaderText = "الرصيد بعد الحركة", FillWeight = 55 });
-            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان" });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ", FillWeight = 48 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "النوع", FillWeight = 42 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartyName", HeaderText = "الجهة (العميل / المورد)", FillWeight = 65 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountIn", HeaderText = "وارد", FillWeight = 38 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountOut", HeaderText = "صادر", FillWeight = 38 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "Net", HeaderText = "صافي", FillWeight = 38 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "RunningBalance", HeaderText = "الرصيد بعد الحركة", FillWeight = 50 });
+            dgCash.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان", FillWeight = 95 });
 
             var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
             pnlGrid.Controls.Add(dgCash);
@@ -661,9 +662,16 @@ namespace ChickenDist.Forms
                 string accName = r.Table.Columns.Contains("AccountName") && r["AccountName"] != DBNull.Value ? $" [{r["AccountName"]}]" : "";
                 string runningBalanceText = canViewBalance ? runningBalance.ToString("N2") : "*** 🔒";
 
+                string partyName = r.Table.Columns.Contains("PartyName") && r["PartyName"] != DBNull.Value ? r["PartyName"].ToString().Trim() : "";
+                if (string.IsNullOrWhiteSpace(partyName))
+                {
+                    partyName = ExtractPartyFromNotes(notes);
+                }
+
                 var ri = dgCash.Rows.Add(
                     Convert.ToDateTime(r["TransDate"]).ToString("dd/MM/yyyy HH:mm"),
                     transTypeArabic, 
+                    partyName,
                     inAmt > 0 ? inAmt.ToString("N2") : "",
                     outAmt > 0 ? outAmt.ToString("N2") : "",
                     net.ToString("N2"), 
@@ -687,6 +695,45 @@ namespace ChickenDist.Forms
                 lblCashOut.Text = "إجمالي صادر: *** 🔒";
                 lblCashBalance.Text = "رصيد الخزنة/الدرج: *** 🔒 (محجوب)";
             }
+        }
+
+        private static string ExtractPartyFromNotes(string notes)
+        {
+            if (string.IsNullOrWhiteSpace(notes)) return "";
+            try
+            {
+                int startIdx = notes.IndexOf('[');
+                if (startIdx >= 0)
+                {
+                    int endIdx = notes.IndexOf(']', startIdx);
+                    if (endIdx > startIdx)
+                    {
+                        string tag = notes.Substring(startIdx + 1, endIdx - startIdx - 1);
+                        int colonIdx = tag.IndexOf(':');
+                        if (colonIdx >= 0)
+                        {
+                            return tag.Substring(colonIdx + 1).Trim();
+                        }
+                        return tag.Trim();
+                    }
+                }
+                string[] prefixes = new[] { "تحصيل من عميل:", "تحصيل من عميل -", "صرف للمورد:", "صرف للمورد -", "توريد من:", "صرف إلى:" };
+                foreach (var p in prefixes)
+                {
+                    int pIdx = notes.IndexOf(p);
+                    if (pIdx >= 0)
+                    {
+                        string rest = notes.Substring(pIdx + p.Length).Trim();
+                        int dashIdx = rest.IndexOf(" - ");
+                        if (dashIdx > 0) rest = rest.Substring(0, dashIdx).Trim();
+                        int parenIdx = rest.IndexOf(" (");
+                        if (parenIdx > 0) rest = rest.Substring(0, parenIdx).Trim();
+                        return rest;
+                    }
+                }
+            }
+            catch { }
+            return "";
         }
 
         private void BtnDeposit_Click(object sender, EventArgs e)
@@ -1095,6 +1142,51 @@ namespace ChickenDist.Forms
                 
                 currentY += 55;
             }
+
+            Label lblParty = null;
+            ComboBox cboParty = null;
+            if (type == "Deposit" || type == "Withdraw")
+            {
+                lblParty = new Label 
+                { 
+                    Text = type == "Deposit" ? "الجهة / العميل المستلم منه (اختياري):" : "الجهة / المورد المصروف إليه (اختياري):", 
+                    Location = new Point(25, currentY), 
+                    AutoSize = true, 
+                    ForeColor = Theme.TextMain 
+                };
+                cboParty = new ComboBox
+                {
+                    Location = new Point(25, currentY + 22),
+                    Width = 355,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = Theme.BgInput,
+                    ForeColor = Theme.TextMain,
+                    FlatStyle = FlatStyle.Flat
+                };
+                cboParty.Items.Add(new ComboItem(0, "-- بدون تحديد جهة / حركة داخلية --"));
+                try
+                {
+                    if (type == "Deposit")
+                    {
+                        var clients = ClientDAL.GetAll(true);
+                        foreach (DataRow cr in clients.Rows)
+                            cboParty.Items.Add(new ComboItem(Convert.ToInt32(cr["ClientID"]), "[عميل] " + cr["ClientName"].ToString()));
+                    }
+                    else
+                    {
+                        var suppliers = SupplierDAL.GetAll(true);
+                        foreach (DataRow sr in suppliers.Rows)
+                            cboParty.Items.Add(new ComboItem(Convert.ToInt32(sr["SupplierID"]), "[مورد] " + sr["SupplierName"].ToString()));
+                    }
+                }
+                catch { }
+                cboParty.DisplayMember = "Text";
+                cboParty.SelectedIndex = 0;
+
+                dlg.Controls.Add(lblParty);
+                dlg.Controls.Add(cboParty);
+                currentY += 55;
+            }
             
             var lblAmt = new Label { 
                 Text = type == "Reconcile" ? "الرصيد الفعلي الحالي في الحساب:" : "المبلغ (ج):", 
@@ -1166,7 +1258,15 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                // Format Notes to include classification
+                string partyName = null;
+                int? partyRefID = null;
+                if (cboParty != null && cboParty.SelectedItem is ComboItem pItem && pItem.ID > 0)
+                {
+                    partyRefID = pItem.ID;
+                    partyName = pItem.Text.Replace("[عميل] ", "").Replace("[مورد] ", "").Trim();
+                }
+
+                // Format Notes to include classification and party
                 string formattedNotes = notes;
                 if (!string.IsNullOrEmpty(classificationName))
                 {
@@ -1174,13 +1274,24 @@ namespace ChickenDist.Forms
                     string cleanClassName = parenIdx > 0 ? classificationName.Substring(0, parenIdx) : classificationName;
                     formattedNotes = $"[{cleanClassName}] {notes}";
                 }
+                if (!string.IsNullOrEmpty(partyName))
+                {
+                    string partyTag = type == "Deposit" ? $"[عميل: {partyName}] " : $"[مورد: {partyName}] ";
+                    formattedNotes = partyTag + formattedNotes;
+                }
 
                 int? currentShiftID = Session.CurrentShiftID > 0 ? (int?)Session.CurrentShiftID : null;
 
                 if (type == "Deposit")
                 {
-                    DbHelper.Execute("INSERT INTO CashBox(TransDate, TransType, AmountIn, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Deposit', @amt, @n, @by, @accId, @sid)",
-                        DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID), DbHelper.P("@sid", currentShiftID));
+                    DbHelper.Execute("INSERT INTO CashBox(TransDate, TransType, AmountIn, RefID, PartyName, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Deposit', @amt, @ref, @party, @n, @by, @accId, @sid)",
+                        DbHelper.P("@amt", amount),
+                        DbHelper.P("@ref", partyRefID.HasValue ? (object)partyRefID.Value : DBNull.Value),
+                        DbHelper.P("@party", !string.IsNullOrEmpty(partyName) ? (object)partyName : DBNull.Value),
+                        DbHelper.P("@n", formattedNotes),
+                        DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@accId", targetSafeID),
+                        DbHelper.P("@sid", currentShiftID));
 
                     if (!string.IsNullOrEmpty(classificationKey))
                     {
@@ -1200,8 +1311,14 @@ namespace ChickenDist.Forms
                     {
                         AccountDAL.EnsureSufficientCashTrans(trans, targetSafeID, amount, "صرف نقدي من الحساب");
 
-                        DbHelper.ExecuteTrans(trans, "INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Withdraw', @amt, @n, @by, @accId, @sid)",
-                            DbHelper.P("@amt", amount), DbHelper.P("@n", formattedNotes), DbHelper.P("@by", Session.EmpID), DbHelper.P("@accId", targetSafeID), DbHelper.P("@sid", currentShiftID));
+                        DbHelper.ExecuteTrans(trans, "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, PartyName, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Withdraw', @amt, @ref, @party, @n, @by, @accId, @sid)",
+                            DbHelper.P("@amt", amount),
+                            DbHelper.P("@ref", partyRefID.HasValue ? (object)partyRefID.Value : DBNull.Value),
+                            DbHelper.P("@party", !string.IsNullOrEmpty(partyName) ? (object)partyName : DBNull.Value),
+                            DbHelper.P("@n", formattedNotes),
+                            DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", targetSafeID),
+                            DbHelper.P("@sid", currentShiftID));
 
                         if (!string.IsNullOrEmpty(classificationKey))
                         {

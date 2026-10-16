@@ -4252,6 +4252,12 @@ namespace ChickenDist.Core
                     END
                 END");
 
+                SafeMigrate("CashBox.PartyName", @"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('CashBox') AND name = 'PartyName')
+                BEGIN
+                    ALTER TABLE CashBox ADD PartyName NVARCHAR(200) NULL;
+                END");
+
                 // Save schema version to cache so subsequent launches skip inspection
                 try
                 {

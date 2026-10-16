@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.0.2";
-$CHANGELOG = "v4.0.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Auto-clean leading zeros from ProductCode across database for all clients and keep buttons original"
+$VERSION = "4.0.3";
+$CHANGELOG = "v4.0.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show party name in CashBox movement, fix barcode label text truncation with auto-fitting, and add PartNumber field to ProductCard"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -529,9 +529,9 @@ namespace ChickenDist.Forms
             var fNameLarge     = new Font("Arial", isSmallSticker ? 8.5f : 10f, FontStyle.Bold);
             var fLocationLarge = new Font("Arial", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
 
-            var center = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoClip };
-            var leftFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoClip };
-            var rightFormat = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoClip };
+            var center = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip };
+            var leftFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip };
+            var rightFormat = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.NoClip };
 
             // Print labels on the current page row
             for (int itemIndex = 0; itemIndex < labelsPerRow; itemIndex++)
@@ -567,17 +567,17 @@ namespace ChickenDist.Forms
                     string compName = !string.IsNullOrWhiteSpace(_printCompanyNameText) ? _printCompanyNameText : AppConfig.CompanyName;
                     if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(compName))
                     {
-                        // 1. اسم المكان كبير وواضح وبارز في أعلى الملصق بخط Arial المعياري
+                        // 1. اسم المكان كبير وواضح وبارز في أعلى الملصق بخط متناسق مع الحواف ومحمي من القص
                         var fCompanyHuge = new Font("Arial", isSmallSticker ? 8.5f : 10f, FontStyle.Bold);
                         float compH = isSmallSticker ? 18f : 22f;
-                        g.DrawString(compName, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, compH), center);
+                        DrawFittedText(g, compName, fCompanyHuge, Brushes.Black, new RectangleF(x + 2, y, w - 4, compH), center, 5.5f);
                         y += compH + 1f;
                     }
 
                     // 2. اسم الجهاز والموديل
                     var fDeviceTitle = new Font("Arial", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
                     float titleH = isSmallSticker ? 16f : 19f;
-                    g.DrawString(titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x, y, w, titleH), center);
+                    DrawFittedText(g, titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x + 2, y, w - 4, titleH), center, 5.5f);
                     y += titleH + 2f;
 
                     // 3. رسم باركود الـ IMEI بدقة عالية ومسافات حواف مريحة (Code 128)
@@ -595,30 +595,30 @@ namespace ChickenDist.Forms
 
                     if (_printPriceFlag && _printedPrice > 0)
                     {
-                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, imeiH), center);
+                        DrawFittedText(g, imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x + 2, y, w - 4, imeiH), center, 6f);
                         y += imeiH + 1f;
                         var fPriceSmall = new Font("Arial", isSmallSticker ? 8f : 9.5f, FontStyle.Bold);
                         float priceH = isSmallSticker ? 16f : 20f;
-                        g.DrawString($"السعر: {_printedPrice:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x, y, w, priceH), center);
+                        DrawFittedText(g, $"السعر: {_printedPrice:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x + 2, y, w - 4, priceH), center, 6f);
                     }
                     else
                     {
                         float imeiAloneH = isSmallSticker ? 16f : 19f;
-                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, imeiAloneH), center);
+                        DrawFittedText(g, imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x + 2, y, w - 4, imeiAloneH), center, 6f);
                     }
                 }
                 else if (template == "Shelf")
                 {
                     if (_printCompanyNameFlag)
                     {
-                        g.DrawString(_printCompanyNameText, fCompany, Brushes.Gray, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        DrawFittedText(g, _printCompanyNameText, fCompany, Brushes.Gray, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 10 : 12), center, 5f);
                         y += isSmallSticker ? 11 : 14;
                     }
-                    g.DrawString(titleToPrint, fNameLarge, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 22 : 30), center);
+                    DrawFittedText(g, titleToPrint, fNameLarge, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 22 : 30), center, 5.5f);
                     y += isSmallSticker ? 24 : 32;
                     if (_printPriceFlag)
                     {
-                        g.DrawString($"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(x, y, w, isSmallSticker ? 18 : 24), center);
+                        DrawFittedText(g, $"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 18 : 24), center, 6f);
                         y += isSmallSticker ? 20 : 26;
                     }
                     if (!string.IsNullOrWhiteSpace(_shelfLocation))
@@ -648,10 +648,10 @@ namespace ChickenDist.Forms
                 {
                     if (_printPriceFlag)
                     {
-                        g.DrawString($"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(x + 5, y, w - 10, isSmallSticker ? 18 : 22), center);
+                        DrawFittedText(g, $"{_printedPrice:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 18 : 22), center, 6f);
                         y += isSmallSticker ? 20 : 24;
                     }
-                    g.DrawString(titleToPrint, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 14 : 18), center);
+                    DrawFittedText(g, titleToPrint, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 14 : 18), center, 5.5f);
                     y += isSmallSticker ? 14 : 18;
 
                     float barcodeHeight = isSmallSticker ? 20 : 30;
@@ -669,12 +669,12 @@ namespace ChickenDist.Forms
                 {
                     if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(_printCompanyNameText))
                     {
-                        g.DrawString(_printCompanyNameText, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        DrawFittedText(g, _printCompanyNameText, fCompany, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 10 : 12), center, 5f);
                         y += isSmallSticker ? 10 : 12;
                     }
 
-                    // اسم الصنف بخط كبير وبارز
-                    g.DrawString(titleToPrint, fNameLarge, Brushes.Black, new RectangleF(x + 1, y, w - 2, isSmallSticker ? 20 : 28), center);
+                    // اسم الصنف بخط كبير وبارز ومحمي من القص
+                    DrawFittedText(g, titleToPrint, fNameLarge, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 20 : 28), center, 5.5f);
                     y += isSmallSticker ? 20 : 28;
 
                     // رسم الباركود بدون سعر
@@ -696,12 +696,12 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    if (_printCompanyNameFlag)
+                    if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(_printCompanyNameText))
                     {
-                        g.DrawString(_printCompanyNameText, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        DrawFittedText(g, _printCompanyNameText, fCompany, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 10 : 12), center, 5f);
                         y += isSmallSticker ? 10 : 12;
                     }
-                    g.DrawString(titleToPrint, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 16 : 24), center);
+                    DrawFittedText(g, titleToPrint, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 16 : 24), center, 5.5f);
                     y += isSmallSticker ? 16 : 24;
 
                     float barcodeHeight = isSmallSticker ? 24 : 36;
@@ -715,7 +715,7 @@ namespace ChickenDist.Forms
                     float bottomY = y;
                     if (_printPriceFlag)
                     {
-                        g.DrawString($"السعر: {_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(x + 5, bottomY, w / 2 - 5, isSmallSticker ? 11 : 14), leftFormat);
+                        DrawFittedText(g, $"السعر: {_printedPrice:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(x + 2, bottomY, w / 2 - 2, isSmallSticker ? 11 : 14), leftFormat, 5.5f);
                     }
                     if (!string.IsNullOrWhiteSpace(_shelfLocation))
                     {
@@ -727,6 +727,33 @@ namespace ChickenDist.Forms
             }
 
             e.HasMorePages = (_printedLabelsCount < _totalLabelsToPrint);
+        }
+
+        private static void DrawFittedText(Graphics g, string text, Font baseFont, Brush brush, RectangleF rect, StringFormat format, float minFontSize = 5f)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            float currentSize = baseFont.Size;
+            Font fontToUse = baseFont;
+            bool createdNew = false;
+            try
+            {
+                while (currentSize > minFontSize)
+                {
+                    SizeF size = g.MeasureString(text, fontToUse, (int)rect.Width, format);
+                    if (size.Width <= rect.Width && size.Height <= rect.Height + 2f)
+                        break;
+                    currentSize -= 0.5f;
+                    Font nextFont = new Font(baseFont.FontFamily, currentSize, baseFont.Style);
+                    if (createdNew) fontToUse.Dispose();
+                    fontToUse = nextFont;
+                    createdNew = true;
+                }
+                g.DrawString(text, fontToUse, brush, rect, format);
+            }
+            finally
+            {
+                if (createdNew && fontToUse != null) fontToUse.Dispose();
+            }
         }
 
         private static readonly string[] Code128Patterns = new string[]

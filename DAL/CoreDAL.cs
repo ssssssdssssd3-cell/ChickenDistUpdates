@@ -1520,6 +1520,9 @@ namespace ChickenDist.DAL
                 // التحقق من رصيد الخزنة قبل الصرف ومنع السحب على المكشوف
                 AccountDAL.EnsureSufficientCashTrans(trans, accId, amount, "سداد دفعة المورد");
 
+                string supplierName = Convert.ToString(DbHelper.ScalarTrans(trans,
+                    "SELECT SupplierName FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", supplierID))) ?? "";
+
                 // تسجيل في حساب المورد: Debit يقلل المديونية (دفعنا له)
                 DbHelper.ExecuteTrans(trans,
                     "INSERT INTO SupplierTransactions(SupplierID,TransType,Debit,Notes,CreatedBy) " +
@@ -1529,12 +1532,16 @@ namespace ChickenDist.DAL
                     DbHelper.P("@n", payCode + " - " + notes),
                     DbHelper.P("@by", Session.EmpID));
 
+                string cbNotes = string.IsNullOrWhiteSpace(notes) ? $"{payCode} - صرف للمورد: {supplierName}" : $"[مورد: {supplierName}] {payCode} - صرف للمورد - {notes}";
+
                 // خصم من الخزنة
                 DbHelper.ExecuteTrans(trans,
-                    "INSERT INTO CashBox(TransDate,TransType,AmountOut,Notes,CreatedBy,AccountID) " +
-                    "VALUES(GETDATE(),'SupplierPayment',@amt,@n,@by,@accId)",
+                    "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,PartyName,Notes,CreatedBy,AccountID) " +
+                    "VALUES(GETDATE(),'SupplierPayment',@amt,@ref,@party,@n,@by,@accId)",
                     DbHelper.P("@amt", amount),
-                    DbHelper.P("@n", payCode + " - صرف للمورد - " + notes),
+                    DbHelper.P("@ref", supplierID),
+                    DbHelper.P("@party", supplierName),
+                    DbHelper.P("@n", cbNotes),
                     DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@accId", accId));
             });
@@ -2065,15 +2072,22 @@ namespace ChickenDist.DAL
             // إذا فشل أي منهما يتم التراجع عن الآخر لمنع الفجوة المالية الصامتة
             DbHelper.RunInTransaction((con, trans) =>
             {
+                string clientName = Convert.ToString(DbHelper.ScalarTrans(trans,
+                    "SELECT ClientName FROM Clients WHERE ClientID=@id", DbHelper.P("@id", clientID))) ?? "";
+
                 DbHelper.ExecuteTrans(trans,
                     "INSERT INTO ClientTransactions(ClientID,TransType,Credit,Notes,CreatedBy) VALUES(@id,'Payment',@amt,@n,@by)",
                     DbHelper.P("@id", clientID), DbHelper.P("@amt", amount),
                     DbHelper.P("@n", notes), DbHelper.P("@by", Session.EmpID));
 
+                string cbNotes = string.IsNullOrWhiteSpace(notes) ? $"تحصيل من عميل: {clientName}" : $"[عميل: {clientName}] تحصيل - {notes}";
+
                 DbHelper.ExecuteTrans(trans,
-                    "INSERT INTO CashBox(TransType,AmountIn,Notes,CreatedBy,AccountID) VALUES('ClientPayment',@amt,@n,@by,@accId)",
+                    "INSERT INTO CashBox(TransType,AmountIn,RefID,PartyName,Notes,CreatedBy,AccountID) VALUES('ClientPayment',@amt,@ref,@party,@n,@by,@accId)",
                     DbHelper.P("@amt", amount),
-                    DbHelper.P("@n", "تحصيل من عميل - " + notes),
+                    DbHelper.P("@ref", clientID),
+                    DbHelper.P("@party", clientName),
+                    DbHelper.P("@n", cbNotes),
                     DbHelper.P("@by", Session.EmpID),
                     DbHelper.P("@accId", safeAccountID.HasValue ? (object)safeAccountID.Value : DBNull.Value));
             });
@@ -2480,7 +2494,18 @@ namespace ChickenDist.DAL
         public static DataTable GetCashBox(DateTime from, DateTime to, int? accountID = null)
         {
             string sql = @"SELECT cb.CashID, cb.TransDate, cb.TransType, cb.AmountIn, cb.AmountOut,
-                          (cb.AmountIn - cb.AmountOut) AS Net, cb.Notes, sa.AccountName
+                          (cb.AmountIn - cb.AmountOut) AS Net, cb.Notes, sa.AccountName, cb.RefID,
+                          COALESCE(
+                              NULLIF(cb.PartyName, ''),
+                              (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID AND cb.TransType IN ('ClientPayment')),
+                              (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID AND cb.TransType IN ('SaleIncome', 'Sale', 'ClientPayment')),
+                              (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID AND cb.TransType IN ('SupplierPayment')),
+                              (SELECT TOP 1 s.SupplierName FROM Purchases p JOIN Suppliers s ON p.SupplierID = s.SupplierID WHERE p.PurchaseID = cb.RefID AND cb.TransType IN ('ClientPurchaseCash', 'PurchaseExpense')),
+                              (SELECT TOP 1 c.ClientName FROM Returns r JOIN Clients c ON r.ClientID = c.ClientID WHERE r.ReturnID = cb.RefID AND cb.TransType IN ('ReturnOutcome', 'VisaReturn')),
+                              (SELECT TOP 1 s.SupplierName FROM PurchaseReturns pr JOIN Suppliers s ON pr.SupplierID = s.SupplierID WHERE pr.ReturnID = cb.RefID AND cb.TransType IN ('PurchaseReturn')),
+                              (SELECT TOP 1 ISNULL(s.SupplierName, e.ExpenseType) FROM Expenses e LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID WHERE e.ExpenseID = cb.RefID AND cb.TransType = 'Expense'),
+                              ''
+                          ) AS PartyName
                           FROM CashBox cb
                           LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
                           WHERE CAST(cb.TransDate AS DATE) BETWEEN @f AND @t";

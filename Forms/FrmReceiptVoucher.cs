@@ -919,8 +919,10 @@ namespace ChickenDist.Forms
                                     DbHelper.P("@n", "سند صرف - " + userNotes), DbHelper.P("@by", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO CashBox(TransDate,TransType,AmountOut,Notes,CreatedBy,AccountID) VALUES(GETDATE(),'Withdraw',@amt,@n,@by,@accId)",
+                                    "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,PartyName,Notes,CreatedBy,AccountID) VALUES(GETDATE(),'Withdraw',@amt,@ref,@party,@n,@by,@accId)",
                                     DbHelper.P("@amt", amount),
+                                    DbHelper.P("@ref", selectedClientID),
+                                    DbHelper.P("@party", clientName),
                                     DbHelper.P("@n", $"[عميل: {clientName}] {userNotes} (رصيد العميل قبل: {Math.Abs(curBal):N2} ج {curState})"),
                                     DbHelper.P("@by", Session.EmpID),
                                     DbHelper.P("@accId", safeID));
@@ -950,8 +952,10 @@ namespace ChickenDist.Forms
                                     DbHelper.P("@n", "سند توريد - " + userNotes), DbHelper.P("@by", Session.EmpID));
 
                                 DbHelper.ExecuteTrans(trans,
-                                    "INSERT INTO CashBox(TransDate,TransType,AmountIn,Notes,CreatedBy,AccountID) VALUES(GETDATE(),'Deposit',@amt,@n,@by,@accId)",
+                                    "INSERT INTO CashBox(TransDate,TransType,AmountIn,RefID,PartyName,Notes,CreatedBy,AccountID) VALUES(GETDATE(),'Deposit',@amt,@ref,@party,@n,@by,@accId)",
                                     DbHelper.P("@amt", amount),
+                                    DbHelper.P("@ref", selectedSupplierID),
+                                    DbHelper.P("@party", supplierName),
                                     DbHelper.P("@n", $"[مورد: {supplierName}] {userNotes} (رصيد المورد قبل: {Math.Abs(curBal):N2} ج {curState})"),
                                     DbHelper.P("@by", Session.EmpID),
                                     DbHelper.P("@accId", safeID));
@@ -989,10 +993,11 @@ namespace ChickenDist.Forms
                         if (isDeposit)
                         {
                             newTransID = DbHelper.ExecuteInsert(@"
-                                INSERT INTO CashBox(TransDate, TransType, AmountIn, Notes, CreatedBy, AccountID)
-                                VALUES(@d, 'Deposit', @amt, @n, @by, @accId)",
+                                INSERT INTO CashBox(TransDate, TransType, AmountIn, PartyName, Notes, CreatedBy, AccountID)
+                                VALUES(@d, 'Deposit', @amt, @party, @n, @by, @accId)",
                                 DbHelper.P("@d", dtpVoucherDate.Value),
                                 DbHelper.P("@amt", amount),
+                                DbHelper.P("@party", beneficiary),
                                 DbHelper.P("@n", formattedNotes),
                                 DbHelper.P("@by", Session.EmpID),
                                 DbHelper.P("@accId", safeID));
@@ -1004,10 +1009,11 @@ namespace ChickenDist.Forms
                                 AccountDAL.EnsureSufficientCashTrans(trans, safeID, amount, "صرف نقدية لجهة عامة");
 
                                 newTransID = DbHelper.ExecuteInsertTrans(trans, @"
-                                    INSERT INTO CashBox(TransDate, TransType, AmountOut, Notes, CreatedBy, AccountID)
-                                    VALUES(@d, 'Withdraw', @amt, @n, @by, @accId)",
+                                    INSERT INTO CashBox(TransDate, TransType, AmountOut, PartyName, Notes, CreatedBy, AccountID)
+                                    VALUES(@d, 'Withdraw', @amt, @party, @n, @by, @accId)",
                                     DbHelper.P("@d", dtpVoucherDate.Value),
                                     DbHelper.P("@amt", amount),
+                                    DbHelper.P("@party", beneficiary),
                                     DbHelper.P("@n", formattedNotes),
                                     DbHelper.P("@by", Session.EmpID),
                                     DbHelper.P("@accId", safeID));

@@ -137,6 +137,9 @@ namespace ChickenDist.Forms
             AddField(grpBasic, "الاسم الأجنبي:", 10, ry, out txtEnglishName);
             ry += 32;
 
+            AddField(grpBasic, "رقم القطعة / الموديل:", 10, ry, out txtPartNumber);
+            ry += 32;
+
             AddLookupComboField(grpBasic, "التصنيف:", 10, ry, out cboCategory, out btnAddCat);
             cboCategory.DropDownStyle = ComboBoxStyle.DropDownList;
             btnAddCat.Click += (s, e) => { new FrmCategories().ShowDialog(); LoadCategoriesCombo(); };
