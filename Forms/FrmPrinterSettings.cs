@@ -851,6 +851,7 @@ namespace ChickenDist.Forms
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
                 "الافتراضي (اسم صنف + سعر + باركود)",
+                "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
                 "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
@@ -858,11 +859,12 @@ namespace ChickenDist.Forms
             });
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate switch
             {
+                "MobileIMEI" => "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "PriceHeavy" => "سعر بارز (سعر كبير + باركود)",
                 "Small" => "ملصق صغير (سعر وباركود فقط)",
                 "Shelf" => "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
                 "NoPrice" or "NoPriceBigName" => "اسم صنف كبير + باركود (بدون سعر)",
-                _ => "الافتراضي (اسم صنف + سعر + باركود)"
+                _ => (AppConfig.BusinessType == "Mobiles" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)")
             };
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
             page.Controls.Add(cboBarcodeTemplate);
@@ -1143,14 +1145,13 @@ namespace ChickenDist.Forms
                 }
             }
 
-            AppConfig.BarcodeTemplate = cboBarcodeTemplate.SelectedIndex switch
-            {
-                1 => "PriceHeavy",
-                2 => "Small",
-                3 => "Shelf",
-                4 => "NoPrice",
-                _ => "Standard"
-            };
+            string bTmpl = cboBarcodeTemplate.SelectedItem?.ToString() ?? "";
+            AppConfig.BarcodeTemplate = (bTmpl.Contains("MobileIMEI") || bTmpl.Contains("الموبايل") || bTmpl.Contains("IMEI")) ? "MobileIMEI"
+                                      : bTmpl.Contains("سعر بارز") ? "PriceHeavy"
+                                      : bTmpl.Contains("ملصق صغير") ? "Small"
+                                      : bTmpl.Contains("ملصق الرف") ? "Shelf"
+                                      : bTmpl.Contains("بدون سعر") ? "NoPrice"
+                                      : "Standard";
 
             if (cboBarcodeEncoding.SelectedIndex >= 0)
             {

@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Linq;
 using ChickenDist.Core;
 using ChickenDist.DAL;
 
@@ -430,17 +431,19 @@ namespace ChickenDist.Forms
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
+                "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
                 "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
                 "اسم صنف كبير + باركود (بدون سعر)"
             });
-            cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
+            cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "MobileIMEI" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
+                                            : AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
                                             : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
                                             : (AppConfig.BarcodeTemplate == "NoPrice" || AppConfig.BarcodeTemplate == "NoPriceBigName") ? "اسم صنف كبير + باركود (بدون سعر)"
-                                            : "الافتراضي (اسم صنف + سعر + باركود)";
+                                            : (AppConfig.BusinessType == "Mobiles" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)");
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
 
             lblEncoding = new Label { Text = "🔒 التشفير:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
@@ -999,11 +1002,19 @@ namespace ChickenDist.Forms
 
             if (cboBarcodeTemplate.SelectedItem != null)
             {
-                _printTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
-                               : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
-                               : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
-                               : cboBarcodeTemplate.SelectedIndex == 4 ? "NoPrice"
-                               : "Standard";
+                string tmplText = cboBarcodeTemplate.SelectedItem.ToString();
+                if (tmplText.Contains("MobileIMEI") || tmplText.Contains("الموبايل") || tmplText.Contains("IMEI"))
+                    _printTemplate = "MobileIMEI";
+                else if (tmplText.Contains("سعر بارز"))
+                    _printTemplate = "PriceHeavy";
+                else if (tmplText.Contains("ملصق صغير"))
+                    _printTemplate = "Small";
+                else if (tmplText.Contains("ملصق الرف"))
+                    _printTemplate = "Shelf";
+                else if (tmplText.Contains("بدون سعر"))
+                    _printTemplate = "NoPrice";
+                else
+                    _printTemplate = "Standard";
             }
             if (cboBarcodeEncoding.SelectedIndex >= 0)
             {
@@ -1123,7 +1134,42 @@ namespace ChickenDist.Forms
                 float y = startY;
                 float w = labelWidth - (leftMargin * 2);
 
-                if (template == "Shelf")
+                if (template == "MobileIMEI")
+                {
+                    if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(_printCompanyNameText))
+                    {
+                        var fCompanyHuge = new Font("Segoe UI", isSmallSticker ? 8.5f : 10.5f, FontStyle.Bold);
+                        g.DrawString(_printCompanyNameText, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 12 : 16), center);
+                        y += isSmallSticker ? 12 : 16;
+                    }
+
+                    var fDeviceTitle = new Font("Segoe UI", isSmallSticker ? 6.5f : 8f, FontStyle.Bold);
+                    g.DrawString(titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x + 1, y, w - 2, isSmallSticker ? 13 : 16), center);
+                    y += isSmallSticker ? 13 : 16;
+
+                    float barcodeHeight = isSmallSticker ? 22 : 30;
+                    float barcodeMargin = isSmallSticker ? 8 : 12;
+                    float barcodeX = x + barcodeMargin;
+                    float barcodeW = w - (barcodeMargin * 2);
+                    BarcodeEngine.DrawBarcode(g, item.ProductCode, "Code128", barcodeX, y, barcodeW, barcodeHeight);
+                    y += barcodeHeight + 2;
+
+                    var fIMEIText = new Font("Consolas", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
+                    string imeiDisplay = (item.ProductCode.Length == 15 && item.ProductCode.All(char.IsDigit)) ? $"IMEI: {item.ProductCode}" : $"S/N: {item.ProductCode}";
+
+                    if (_printPriceFlag && item.Price > 0)
+                    {
+                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 9 : 12), center);
+                        y += isSmallSticker ? 9 : 12;
+                        var fPriceSmall = new Font("Segoe UI", isSmallSticker ? 7f : 8.5f, FontStyle.Bold);
+                        g.DrawString($"السعر: {item.Price:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x, y, w, isSmallSticker ? 10 : 13), center);
+                    }
+                    else
+                    {
+                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 11 : 14), center);
+                    }
+                }
+                else if (template == "Shelf")
                 {
                     if (_printCompanyNameFlag)
                     {

@@ -790,6 +790,8 @@ namespace ChickenDist.DAL
             }
         }
 
+        public static List<string> GetAvailableIMEIsForProduct(int productID) => GetAvailableSerialsForProduct(productID);
+
         public static List<string> GetAvailableSerialsForProduct(int productID)
         {
             var list = new List<string>();

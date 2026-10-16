@@ -55,7 +55,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "📱 مسح وإدخال سيريالات الأجهزة (IMEI)";
-            this.Size = new Size(600, 590);
+            this.Size = new Size(670, 590);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -179,21 +179,54 @@ namespace ChickenDist.Forms
             {
                 Text = "✅ تطبيق واعتماد السيريالات",
                 Dock = DockStyle.Right,
-                Width = 200,
+                Width = 190,
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnApply.FlatAppearance.BorderSize = 0;
             btnApply.Click += BtnApply_Click;
 
+            var btnPrint = new Button
+            {
+                Text = "🖨️ طباعة ملصقات الـ IMEI",
+                Dock = DockStyle.Left,
+                Width = 185,
+                BackColor = Color.FromArgb(14, 165, 233),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnPrint.FlatAppearance.BorderSize = 0;
+            btnPrint.Click += (s, e) =>
+            {
+                if (ResultSerials.Count == 0)
+                {
+                    MessageBox.Show("يرجى إدخال أو مسح سيريال واحد على الأقل للطباعة.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                try
+                {
+                    using (var dlg = new FrmPrintProductBarcode(_productID, _productName, ResultSerials))
+                    {
+                        dlg.ShowDialog(this);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("حدث خطأ أثناء فتح شاشة طباعة الباركود:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+
             btnClear = new Button
             {
                 Text = "🗑️ مسح الكل",
                 Dock = DockStyle.Left,
-                Width = 100,
+                Width = 90,
                 BackColor = Color.FromArgb(241, 245, 249),
                 ForeColor = Color.FromArgb(220, 38, 38),
                 FlatStyle = FlatStyle.Flat,
@@ -216,7 +249,7 @@ namespace ChickenDist.Forms
             {
                 Text = "إلغاء",
                 Dock = DockStyle.Right,
-                Width = 90,
+                Width = 80,
                 BackColor = Color.FromArgb(241, 245, 249),
                 ForeColor = Color.FromArgb(71, 85, 105),
                 FlatStyle = FlatStyle.Flat,
@@ -226,6 +259,7 @@ namespace ChickenDist.Forms
             btnCancel.FlatAppearance.BorderSize = 0;
             btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
 
+            pnlBottom.Controls.Add(btnPrint);
             pnlBottom.Controls.Add(btnClear);
             pnlBottom.Controls.Add(btnCancel);
             pnlBottom.Controls.Add(btnApply);

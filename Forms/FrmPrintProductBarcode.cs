@@ -3,7 +3,9 @@ using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Linq;
 using ChickenDist.Core;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
@@ -13,6 +15,10 @@ namespace ChickenDist.Forms
         private string _productName;
         private string _productCode;
         private string _internationalCode;
+        private List<string> _imeiList = new List<string>();
+        private List<string> _availableStockIMEIs = new List<string>();
+        private List<string> _activeBatchSerials = null;
+        private int _totalLabelsToPrint = 0;
         
         private ComboBox cboBarcodeType;
         private NumericUpDown nudPrintQty;
@@ -50,6 +56,37 @@ namespace ChickenDist.Forms
             _productCode = productCode;
             _internationalCode = internationalCode;
             _shelfLocation = shelfLocation;
+
+            InitializeComponent(salePrice);
+        }
+
+        public FrmPrintProductBarcode(int productID, string productName, List<string> imeis, decimal salePrice = 0m, string shelfLocation = "")
+        {
+            _productID = productID;
+            _productName = productName;
+            _imeiList = imeis != null ? new List<string>(imeis.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim())) : new List<string>();
+            _shelfLocation = shelfLocation;
+
+            if (salePrice <= 0m && productID > 0)
+            {
+                try
+                {
+                    object sp = DbHelper.Scalar("SELECT SalePrice FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+                    if (sp != null && sp != DBNull.Value) salePrice = Convert.ToDecimal(sp);
+                }
+                catch { }
+            }
+
+            try
+            {
+                var dtCode = DbHelper.Query("SELECT ProductCode, InternationalBarcode FROM Products WHERE ProductID = @id", DbHelper.P("@id", productID));
+                if (dtCode.Rows.Count > 0)
+                {
+                    _productCode = dtCode.Rows[0]["ProductCode"]?.ToString() ?? "";
+                    _internationalCode = dtCode.Rows[0]["InternationalBarcode"]?.ToString() ?? "";
+                }
+            }
+            catch { }
 
             InitializeComponent(salePrice);
         }
@@ -96,15 +133,58 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            cboBarcodeType.Items.Add($"كود الصنف الافتراضي ({_productCode})");
-            if (!string.IsNullOrWhiteSpace(_internationalCode))
+
+            if (_imeiList.Count > 0)
             {
-                cboBarcodeType.Items.Add($"الكود الدولي / باركود المصنع ({_internationalCode})");
-                cboBarcodeType.SelectedIndex = 1; // Default to international if available
+                cboBarcodeType.Items.Add($"📱 طباعة مخصصة لكل سيريال ({_imeiList.Count} جهاز)");
+                foreach (var imei in _imeiList)
+                {
+                    cboBarcodeType.Items.Add($"سيريال: {imei}");
+                }
+                if (!string.IsNullOrWhiteSpace(_productCode))
+                    cboBarcodeType.Items.Add($"كود الصنف الافتراضي ({_productCode})");
+                if (!string.IsNullOrWhiteSpace(_internationalCode))
+                    cboBarcodeType.Items.Add($"الكود الدولي ({_internationalCode})");
+                cboBarcodeType.SelectedIndex = 0;
             }
             else
             {
-                cboBarcodeType.SelectedIndex = 0;
+                cboBarcodeType.Items.Add($"كود الصنف الافتراضي ({_productCode})");
+                if (!string.IsNullOrWhiteSpace(_internationalCode))
+                {
+                    cboBarcodeType.Items.Add($"الكود الدولي / باركود المصنع ({_internationalCode})");
+                }
+                if (_productID > 0)
+                {
+                    try
+                    {
+                        var stockSerials = PurchaseDAL.GetAvailableIMEIsForProduct(_productID);
+                        if (stockSerials != null && stockSerials.Count > 0)
+                        {
+                            _availableStockIMEIs = stockSerials;
+                            cboBarcodeType.Items.Add($"📱 طباعة جميع سيريالات المخزون المتاحة ({_availableStockIMEIs.Count} جهاز)");
+                            foreach (var imei in _availableStockIMEIs)
+                            {
+                                cboBarcodeType.Items.Add($"سيريال متاح: {imei}");
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                if (AppConfig.BusinessType == "Mobiles" && _availableStockIMEIs.Count > 0)
+                {
+                    int bIdx = cboBarcodeType.FindString("📱 طباعة جميع سيريالات");
+                    cboBarcodeType.SelectedIndex = bIdx >= 0 ? bIdx : 0;
+                }
+                else if (!string.IsNullOrWhiteSpace(_internationalCode))
+                {
+                    cboBarcodeType.SelectedIndex = 1;
+                }
+                else
+                {
+                    cboBarcodeType.SelectedIndex = 0;
+                }
             }
             pnlContent.Controls.Add(cboBarcodeType);
             y += 42;
@@ -185,13 +265,19 @@ namespace ChickenDist.Forms
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
+                "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
                 "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
                 "اسم صنف كبير + باركود (بدون سعر)"
             });
-            cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
+
+            bool isMobileMode = _imeiList.Count > 0 || _availableStockIMEIs.Count > 0 || AppConfig.BusinessType == "Mobiles" || AppConfig.BarcodeTemplate == "MobileIMEI";
+            cboBarcodeTemplate.SelectedItem = (isMobileMode && (AppConfig.BarcodeTemplate == "MobileIMEI" || AppConfig.BarcodeTemplate == "Standard" || string.IsNullOrEmpty(AppConfig.BarcodeTemplate)))
+                                            ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
+                                            : AppConfig.BarcodeTemplate == "MobileIMEI" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
+                                            : AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
                                             : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
                                             : (AppConfig.BarcodeTemplate == "NoPrice" || AppConfig.BarcodeTemplate == "NoPriceBigName") ? "اسم صنف كبير + باركود (بدون سعر)"
@@ -278,19 +364,48 @@ namespace ChickenDist.Forms
 
         private void StartPrintJob(bool isPreview)
         {
-            // Determine code to print
-            if (cboBarcodeType.SelectedIndex == 1 && !string.IsNullOrWhiteSpace(_internationalCode))
+            string selectedType = cboBarcodeType.SelectedItem?.ToString() ?? "";
+            _activeBatchSerials = null;
+
+            if (selectedType.StartsWith("📱 طباعة مخصصة لكل سيريال") && _imeiList.Count > 0)
+            {
+                _activeBatchSerials = _imeiList;
+                _selectedBarcode = _imeiList[0];
+            }
+            else if (selectedType.StartsWith("📱 طباعة جميع سيريالات") && _availableStockIMEIs.Count > 0)
+            {
+                _activeBatchSerials = _availableStockIMEIs;
+                _selectedBarcode = _availableStockIMEIs[0];
+            }
+            else if (selectedType.StartsWith("سيريال: "))
+            {
+                _selectedBarcode = selectedType.Substring("سيريال: ".Length).Trim();
+            }
+            else if (selectedType.StartsWith("سيريال متاح: "))
+            {
+                _selectedBarcode = selectedType.Substring("سيريال متاح: ".Length).Trim();
+            }
+            else if (selectedType.Contains("الكود الدولي") && !string.IsNullOrWhiteSpace(_internationalCode))
             {
                 _selectedBarcode = _internationalCode.Trim();
             }
             else
             {
-                _selectedBarcode = _productCode.Trim();
+                _selectedBarcode = !string.IsNullOrWhiteSpace(_productCode) ? _productCode.Trim() : (_imeiList.Count > 0 ? _imeiList[0] : "");
             }
 
             _printQty = (int)nudPrintQty.Value;
             _printedPrice = nudPrice.Value;
             _printedLabelsCount = 0;
+
+            if (_activeBatchSerials != null && _activeBatchSerials.Count > 0)
+            {
+                _totalLabelsToPrint = _activeBatchSerials.Count * _printQty;
+            }
+            else
+            {
+                _totalLabelsToPrint = _printQty;
+            }
 
             if (string.IsNullOrEmpty(_selectedBarcode))
             {
@@ -298,14 +413,20 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            if (cboBarcodeTemplate.SelectedItem != null)
-            {
-                _printTemplate = cboBarcodeTemplate.SelectedIndex == 1 ? "PriceHeavy"
-                               : cboBarcodeTemplate.SelectedIndex == 2 ? "Small"
-                               : cboBarcodeTemplate.SelectedIndex == 3 ? "Shelf"
-                               : cboBarcodeTemplate.SelectedIndex == 4 ? "NoPrice"
-                               : "Standard";
-            }
+            string selectedTmpl = cboBarcodeTemplate.SelectedItem?.ToString() ?? "";
+            if (selectedTmpl.Contains("MobileIMEI") || selectedTmpl.Contains("الموبايل") || selectedTmpl.Contains("IMEI"))
+                _printTemplate = "MobileIMEI";
+            else if (selectedTmpl.Contains("سعر بارز"))
+                _printTemplate = "PriceHeavy";
+            else if (selectedTmpl.Contains("ملصق صغير"))
+                _printTemplate = "Small";
+            else if (selectedTmpl.Contains("ملصق الرف"))
+                _printTemplate = "Shelf";
+            else if (selectedTmpl.Contains("بدون سعر"))
+                _printTemplate = "NoPrice";
+            else
+                _printTemplate = "Standard";
+
             if (cboBarcodeEncoding.SelectedIndex >= 0)
             {
                 var encList = BarcodeEngine.GetAvailableEncodings();
@@ -370,7 +491,7 @@ namespace ChickenDist.Forms
 
         private void Pd_PrintPage(object sender, PrintPageEventArgs e)
         {
-            if (_printedLabelsCount >= _printQty)
+            if (_printedLabelsCount >= _totalLabelsToPrint)
             {
                 e.HasMorePages = false;
                 return;
@@ -411,8 +532,20 @@ namespace ChickenDist.Forms
             // Print labels on the current page row
             for (int itemIndex = 0; itemIndex < labelsPerRow; itemIndex++)
             {
-                if (_printedLabelsCount >= _printQty)
+                if (_printedLabelsCount >= _totalLabelsToPrint)
                     break;
+
+                string currentBarcode;
+                if (_activeBatchSerials != null && _activeBatchSerials.Count > 0)
+                {
+                    int serialIndex = _printedLabelsCount / _printQty;
+                    if (serialIndex >= _activeBatchSerials.Count) break;
+                    currentBarcode = _activeBatchSerials[serialIndex];
+                }
+                else
+                {
+                    currentBarcode = _selectedBarcode;
+                }
 
                 int currentColumn = itemIndex % labelsPerRow;
                 int currentRow = itemIndex / labelsPerRow;
@@ -425,7 +558,47 @@ namespace ChickenDist.Forms
                 float y = startY;
                 float w = labelWidth - (leftMargin * 2);
 
-                if (template == "Shelf")
+                if (template == "MobileIMEI")
+                {
+                    string compName = !string.IsNullOrWhiteSpace(_printCompanyNameText) ? _printCompanyNameText : AppConfig.CompanyName;
+                    if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(compName))
+                    {
+                        // 1. اسم المكان كبير وواضح وبارز في أعلى الملصق (طلب العميل: يطبع اسم المكان كبير)
+                        var fCompanyHuge = new Font("Segoe UI", isSmallSticker ? 8.5f : 10.5f, FontStyle.Bold);
+                        g.DrawString(compName, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 12 : 16), center);
+                        y += isSmallSticker ? 12 : 16;
+                    }
+
+                    // 2. اسم الجهاز والموديل
+                    var fDeviceTitle = new Font("Segoe UI", isSmallSticker ? 6.5f : 8f, FontStyle.Bold);
+                    g.DrawString(titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x + 1, y, w - 2, isSmallSticker ? 13 : 16), center);
+                    y += isSmallSticker ? 13 : 16;
+
+                    // 3. رسم باركود الـ IMEI بدقة عالية ومسافات حواف مريحة (Code 128)
+                    float barcodeHeight = isSmallSticker ? 22 : 30;
+                    float barcodeMargin = isSmallSticker ? 8 : 12;
+                    float barcodeX = x + barcodeMargin;
+                    float barcodeW = w - (barcodeMargin * 2);
+                    BarcodeEngine.DrawBarcode(g, currentBarcode, "Code128", barcodeX, y, barcodeW, barcodeHeight);
+                    y += barcodeHeight + 2;
+
+                    // 4. كتابة كود الـ IMEI بوضوح + السعر إن وجد
+                    var fIMEIText = new Font("Consolas", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
+                    string imeiDisplay = (currentBarcode.Length == 15 && currentBarcode.All(char.IsDigit)) ? $"IMEI: {currentBarcode}" : $"S/N: {currentBarcode}";
+
+                    if (_printPriceFlag && _printedPrice > 0)
+                    {
+                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 9 : 12), center);
+                        y += isSmallSticker ? 9 : 12;
+                        var fPriceSmall = new Font("Segoe UI", isSmallSticker ? 7f : 8.5f, FontStyle.Bold);
+                        g.DrawString($"السعر: {_printedPrice:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x, y, w, isSmallSticker ? 10 : 13), center);
+                    }
+                    else
+                    {
+                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 11 : 14), center);
+                    }
+                }
+                else if (template == "Shelf")
                 {
                     if (_printCompanyNameFlag)
                     {
@@ -451,10 +624,10 @@ namespace ChickenDist.Forms
 
                     float barcodeHeight = isSmallSticker ? 22 : 32;
                     float barcodeX = x + (w - (w - 20)) / 2;
-                    BarcodeEngine.DrawBarcode(g, _selectedBarcode, _printEncoding, barcodeX, y, w - 20, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, currentBarcode, _printEncoding, barcodeX, y, w - 20, barcodeHeight);
                     y += barcodeHeight + 2;
 
-                    g.DrawString(_selectedBarcode, new Font("Courier New", isSmallSticker ? 6f : 6.5f), Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 8 : 10), center);
+                    g.DrawString(currentBarcode, new Font("Courier New", isSmallSticker ? 6f : 6.5f), Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 8 : 10), center);
                     y += isSmallSticker ? 8 : 10;
 
                     if (_printPriceFlag)
@@ -474,10 +647,10 @@ namespace ChickenDist.Forms
 
                     float barcodeHeight = isSmallSticker ? 20 : 30;
                     float barcodeX = x + (w - (w - 20)) / 2;
-                    BarcodeEngine.DrawBarcode(g, _selectedBarcode, _printEncoding, barcodeX, y, w - 20, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, currentBarcode, _printEncoding, barcodeX, y, w - 20, barcodeHeight);
                     y += barcodeHeight + 2;
 
-                    g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(x + 5, y, w / 2 - 5, isSmallSticker ? 10 : 12), leftFormat);
+                    g.DrawString(currentBarcode, fCode, Brushes.Black, new RectangleF(x + 5, y, w / 2 - 5, isSmallSticker ? 10 : 12), leftFormat);
                     if (!string.IsNullOrWhiteSpace(_shelfLocation))
                     {
                         g.DrawString($"الرف: {_shelfLocation}", fLocation, Brushes.Black, new RectangleF(x + w / 2, y, w / 2 - 5, isSmallSticker ? 10 : 12), rightFormat);
@@ -498,18 +671,18 @@ namespace ChickenDist.Forms
                     // رسم الباركود بدون سعر
                     float barcodeHeight = isSmallSticker ? 26 : 38;
                     float barcodeX = x + (w - (w - 16)) / 2;
-                    BarcodeEngine.DrawBarcode(g, _selectedBarcode, _printEncoding, barcodeX, y, w - 16, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, currentBarcode, _printEncoding, barcodeX, y, w - 16, barcodeHeight);
                     y += barcodeHeight + 2;
 
                     // كود الباركود ورقم الرف إن وجد
                     if (!string.IsNullOrWhiteSpace(_shelfLocation))
                     {
-                        g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(x + 2, y, w / 2 - 2, isSmallSticker ? 10 : 12), leftFormat);
+                        g.DrawString(currentBarcode, fCode, Brushes.Black, new RectangleF(x + 2, y, w / 2 - 2, isSmallSticker ? 10 : 12), leftFormat);
                         g.DrawString($"الرف: {_shelfLocation}", fLocation, Brushes.Black, new RectangleF(x + w / 2, y, w / 2 - 2, isSmallSticker ? 10 : 12), rightFormat);
                     }
                     else
                     {
-                        g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        g.DrawString(currentBarcode, fCode, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                     }
                 }
                 else
@@ -524,10 +697,10 @@ namespace ChickenDist.Forms
 
                     float barcodeHeight = isSmallSticker ? 24 : 36;
                     float barcodeX = x + (w - (w - 20)) / 2;
-                    BarcodeEngine.DrawBarcode(g, _selectedBarcode, _printEncoding, barcodeX, y, w - 20, barcodeHeight);
+                    BarcodeEngine.DrawBarcode(g, currentBarcode, _printEncoding, barcodeX, y, w - 20, barcodeHeight);
                     y += barcodeHeight + 2;
 
-                    g.DrawString(_selectedBarcode, fCode, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                    g.DrawString(currentBarcode, fCode, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                     y += isSmallSticker ? 10 : 12;
 
                     float bottomY = y;
@@ -544,7 +717,7 @@ namespace ChickenDist.Forms
                 _printedLabelsCount++;
             }
 
-            e.HasMorePages = (_printedLabelsCount < _printQty);
+            e.HasMorePages = (_printedLabelsCount < _totalLabelsToPrint);
         }
 
         private static readonly string[] Code128Patterns = new string[]

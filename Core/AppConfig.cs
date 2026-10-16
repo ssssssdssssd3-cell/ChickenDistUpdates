@@ -328,7 +328,11 @@ namespace ChickenDist.Core
 
         public static string BarcodeTemplate
         {
-            get => Get("BarcodeTemplate", "Standard");
+            get
+            {
+                string def = BusinessType == "Mobiles" ? "MobileIMEI" : "Standard";
+                return Get("BarcodeTemplate", def);
+            }
             set => Set("BarcodeTemplate", value);
         }
 

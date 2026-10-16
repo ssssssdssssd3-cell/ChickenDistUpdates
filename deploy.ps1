@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.94";
-$CHANGELOG = "v3.9.94 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Silence non-IMEI barcode popups in mobiles business to streamline scanning directly to IMEI"
+$VERSION = "3.9.95";
+$CHANGELOG = "v3.9.95 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add dedicated mobile IMEI barcode label template with large store name and multi-device batch printing support"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
