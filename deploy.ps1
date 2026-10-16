@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.0.0";
-$CHANGELOG = "v4.0.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fixed Arabic letter shaping (Raa) in barcode label printing with Arial font, and added permanent setting to toggle price printing on barcodes"
+$VERSION = "4.0.1";
+$CHANGELOG = "v4.0.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Auto-clean leading zeros from ProductCode across database for all clients, prevent zero padding on save, and add stagnant item cleanup tool"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

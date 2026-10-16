@@ -689,6 +689,68 @@ namespace ChickenDist.Core
             }
         }
 
+        public static void EnsureProductCodesCleaned()
+        {
+            try
+            {
+                SafeMigrate("Products.CleanLeadingZeros", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    -- تنظيف الأصفار البادئة في أكواد الأصناف للأرقام (مثل 00001057 تصبح 1057) لجميع العملاء
+                    ;WITH CTE AS (
+                        SELECT ProductID, ProductCode,
+                               CASE 
+                                   WHEN CAST(ProductCode AS BIGINT) = 0 THEN '0' 
+                                   ELSE CAST(CAST(ProductCode AS BIGINT) AS NVARCHAR(50)) 
+                               END AS CleanCode,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY CASE 
+                                       WHEN CAST(ProductCode AS BIGINT) = 0 THEN '0' 
+                                       ELSE CAST(CAST(ProductCode AS BIGINT) AS NVARCHAR(50)) 
+                                   END 
+                                   ORDER BY ProductID
+                               ) AS rn
+                        FROM Products
+                        WHERE ProductCode LIKE '0%'
+                          AND ProductCode NOT LIKE '%[^0-9]%'
+                          AND LEN(ProductCode) > 1
+                          AND LEN(ProductCode) <= 18
+                    )
+                    UPDATE c
+                    SET c.ProductCode = c.CleanCode
+                    FROM CTE c
+                    WHERE c.rn = 1
+                      AND NOT EXISTS (
+                          SELECT 1 FROM Products p2 
+                          WHERE p2.ProductID <> c.ProductID 
+                            AND p2.ProductCode = c.CleanCode
+                      );
+
+                    IF OBJECT_ID('CustomerReservations', 'U') IS NOT NULL
+                    BEGIN
+                        UPDATE r
+                        SET r.ProductCode = p.ProductCode
+                        FROM CustomerReservations r
+                        JOIN Products p ON r.ProductID = p.ProductID
+                        WHERE r.ProductCode <> p.ProductCode;
+                    END
+
+                    IF OBJECT_ID('CustomerReservationItems', 'U') IS NOT NULL
+                    BEGIN
+                        UPDATE ri
+                        SET ri.ProductCode = p.ProductCode
+                        FROM CustomerReservationItems ri
+                        JOIN Products p ON ri.ProductID = p.ProductID
+                        WHERE ri.ProductCode <> p.ProductCode;
+                    END
+                END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureProductCodesCleaned", ex);
+            }
+        }
+
         public static void EnsurePurchaseColumnsExist()
         {
             EnsurePendingSaleColExists();
@@ -1424,6 +1486,7 @@ namespace ChickenDist.Core
             EnsureProductImagesColumnsExist();
             EnsureRestaurantBlendsSchema();
             EnsureProductUnitsSafety();
+            EnsureProductCodesCleaned();
 
             try
             {

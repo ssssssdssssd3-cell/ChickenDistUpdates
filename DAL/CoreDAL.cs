@@ -902,6 +902,124 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>
+        /// حذف نهائي لصنف راكد لا توجد عليه أي حركات سابقة ولا رصيد
+        /// </summary>
+        public static bool PermanentDelete(int id)
+        {
+            try
+            {
+                DbHelper.RunInTransaction((con, trans) =>
+                {
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM ProductStock WHERE ProductID = @id", DbHelper.P("@id", id));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM ProductBatches WHERE ProductID = @id", DbHelper.P("@id", id));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM ClientProductPrices WHERE ProductID = @id", DbHelper.P("@id", id));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM PriceChangesLog WHERE ProductID = @id", DbHelper.P("@id", id));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM CustomerReservationItems WHERE ProductID = @id", DbHelper.P("@id", id));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM CustomerReservations WHERE ProductID = @id", DbHelper.P("@id", id));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM Products WHERE ProductID = @id", DbHelper.P("@id", id));
+                });
+                ProductCache.Invalidate();
+                Services.CloudSyncService.TriggerStoreCatalogSyncDebounced();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ProductDAL.PermanentDelete", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// عد الأصناف الراكدة التي لم تسجل عليها أي حركة بيع أو شراء أو رصيد نهائياً
+        /// </summary>
+        public static int CountUnusedProducts()
+        {
+            try
+            {
+                var res = DbHelper.Scalar(@"
+                    SELECT COUNT(1) 
+                    FROM Products p
+                    WHERE NOT EXISTS (SELECT 1 FROM SaleItems si WHERE si.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM ReturnItems ri WHERE ri.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM PurchaseReturnItems pri WHERE pri.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM StockAdjustments sa WHERE sa.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM WastageLossItems wli WHERE wli.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM WarehouseTransferItems wti WHERE wti.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM DriverLoadItems dli WHERE dli.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM HandoverItems hi WHERE hi.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM ProductBatches pb WHERE pb.ProductID = p.ProductID AND pb.Quantity > 0)
+                      AND NOT EXISTS (SELECT 1 FROM ProductStock ps WHERE ps.ProductID = p.ProductID AND ps.Quantity > 0)");
+                return res != null && res != DBNull.Value ? Convert.ToInt32(res) : 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// تنظيف وحذف كافة الأصناف الراكدة الفارغة نهائياً من قاعدة البيانات
+        /// </summary>
+        public static int CleanUnusedProducts()
+        {
+            int deleted = 0;
+            try
+            {
+                var dt = DbHelper.Query(@"
+                    SELECT p.ProductID 
+                    FROM Products p
+                    WHERE NOT EXISTS (SELECT 1 FROM SaleItems si WHERE si.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM PurchaseItems pi WHERE pi.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM ReturnItems ri WHERE ri.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM PurchaseReturnItems pri WHERE pri.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM StockAdjustments sa WHERE sa.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM WastageLossItems wli WHERE wli.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM WarehouseTransferItems wti WHERE wti.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM DriverLoadItems dli WHERE dli.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM HandoverItems hi WHERE hi.ProductID = p.ProductID)
+                      AND NOT EXISTS (SELECT 1 FROM ProductBatches pb WHERE pb.ProductID = p.ProductID AND pb.Quantity > 0)
+                      AND NOT EXISTS (SELECT 1 FROM ProductStock ps WHERE ps.ProductID = p.ProductID AND ps.Quantity > 0)");
+
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    var idList = new List<int>();
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        idList.Add(Convert.ToInt32(r["ProductID"]));
+                    }
+
+                    DbHelper.RunInTransaction((con, trans) =>
+                    {
+                        foreach (int pid in idList)
+                        {
+                            try
+                            {
+                                DbHelper.ExecuteTrans(trans, "DELETE FROM ProductStock WHERE ProductID = @id", DbHelper.P("@id", pid));
+                                DbHelper.ExecuteTrans(trans, "DELETE FROM ProductBatches WHERE ProductID = @id", DbHelper.P("@id", pid));
+                                DbHelper.ExecuteTrans(trans, "DELETE FROM ClientProductPrices WHERE ProductID = @id", DbHelper.P("@id", pid));
+                                DbHelper.ExecuteTrans(trans, "DELETE FROM PriceChangesLog WHERE ProductID = @id", DbHelper.P("@id", pid));
+                                DbHelper.ExecuteTrans(trans, "DELETE FROM CustomerReservationItems WHERE ProductID = @id", DbHelper.P("@id", pid));
+                                DbHelper.ExecuteTrans(trans, "DELETE FROM CustomerReservations WHERE ProductID = @id", DbHelper.P("@id", pid));
+                                DbHelper.ExecuteTrans(trans, "DELETE FROM Products WHERE ProductID = @id", DbHelper.P("@id", pid));
+                                deleted++;
+                            }
+                            catch { }
+                        }
+                    });
+
+                    ProductCache.Invalidate();
+                    Services.CloudSyncService.TriggerStoreCatalogSyncDebounced();
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ProductDAL.CleanUnusedProducts", ex);
+            }
+            return deleted;
+        }
+
+        /// <summary>
         /// فحص مطابقة الباركود الممسوح مع قائمة الباركودات المسجلة للصنف أو الوحدة
         /// يدعم الباركودات المتعددة المفصولة بفواصل أو مسافات، ويتعامل بمرونة مع الأصفار البادئة
         /// </summary>

@@ -374,7 +374,8 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 10, 10, 10),
                 FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false
+                WrapContents = false,
+                AutoScroll = true
             };
 
             btnNew = Theme.MakeButton("➕ إضافة صنف جديد", Theme.Success);
@@ -400,9 +401,13 @@ namespace ChickenDist.Forms
             btnMovement.Width = 130;
             btnMovement.Click += (s, e) => OpenSelectedProductMovement();
 
-            btnDelete = Theme.MakeButton("🗑 إيقاف الصنف", Theme.Danger);
-            btnDelete.Width = 115;
+            btnDelete = Theme.MakeButton("🗑 إيقاف / حذف", Theme.Danger);
+            btnDelete.Width = 120;
             btnDelete.Click += BtnDelete_Click;
+
+            var btnCleanUnused = Theme.MakeButton("🧹 تنظيف الراكد", Color.FromArgb(180, 50, 50));
+            btnCleanUnused.Width = 125;
+            btnCleanUnused.Click += BtnCleanUnused_Click;
 
             var btnQuickAdd = Theme.MakeButton("⚡ إدخال سريع", Color.FromArgb(60, 100, 60));
             btnQuickAdd.Width = 120;
@@ -450,6 +455,7 @@ namespace ChickenDist.Forms
                 btnEdit, 
                 btnMovement, 
                 btnDelete, 
+                btnCleanUnused,
                 btnQuickAdd, 
                 btnAddToShortages,
                 btnMinStock, 
@@ -1150,14 +1156,95 @@ namespace ChickenDist.Forms
             }
             if (_selectedID == 0)
             {
-                MessageBox.Show("يرجى اختيار صنف أولاً لإيقافه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى اختيار صنف أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            if (MessageBox.Show("هل أنت متأكد من إيقاف هذا الصنف؟", "تأكيد الإيقاف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+
+            var dr = ProductDAL.GetByID(_selectedID);
+            string prodName = dr != null ? dr["ProductName"]?.ToString() : "الصنف المحدد";
+            bool isTransacted = _transactedProductIDs.Contains(_selectedID);
+            decimal stock = _stockTotals.ContainsKey(_selectedID) ? _stockTotals[_selectedID] : 0m;
+
+            if (isTransacted || stock > 0)
             {
-                ProductDAL.Delete(_selectedID);
+                var res = MessageBox.Show(
+                    $"⚠️ الصنف [{prodName}] مسجل عليه حركات أو فواتير سابقة ورصيد مخزني.\n\n" +
+                    "لحماية دقة الحسابات والأرباح والتقارير المالية السابقة، لا يمكن حذفه نهائياً من قاعدة البيانات.\n\n" +
+                    "هل تريد إيقاف (تعطيل) هذا الصنف حتى لا يظهر في شاشات البيع؟",
+                    "إيقاف الصنف",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (res == DialogResult.Yes)
+                {
+                    ProductDAL.Delete(_selectedID);
+                    ProductCache.Refresh();
+                    LoadProducts();
+                    MessageBox.Show("✅ تم إيقاف الصنف بنجاح.", "تم الإيقاف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            else
+            {
+                var res = MessageBox.Show(
+                    $"❓ الصنف [{prodName}] صنف راكد لم تسجل عليه أي حركات بيع أو شراء أو تحويل ورصيده صفر.\n\n" +
+                    "• اضغط [نعم (Yes)] لحذفه نهائياً ومسحه تماماً من قاعدة البيانات.\n" +
+                    "• اضغط [لا (No)] لإيقافه فقط دون مسحه نهائياً.",
+                    "خيارات الحذف والإيقاف",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (res == DialogResult.Yes)
+                {
+                    if (ProductDAL.PermanentDelete(_selectedID))
+                    {
+                        ProductCache.Refresh();
+                        LoadProducts();
+                        MessageBox.Show("✅ تم حذف الصنف نهائياً ومسحه من قاعدة البيانات.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("تعذر حذف الصنف لوجود ارتباطات في قاعدة البيانات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                else if (res == DialogResult.No)
+                {
+                    ProductDAL.Delete(_selectedID);
+                    ProductCache.Refresh();
+                    LoadProducts();
+                    MessageBox.Show("✅ تم إيقاف الصنف بنجاح.", "تم الإيقاف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void BtnCleanUnused_Click(object sender, EventArgs e)
+        {
+            if (!Session.CanDelete("Products"))
+            {
+                MessageBox.Show("❌ عفوًا: لا تملك صلاحية حذف الأصناف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int count = ProductDAL.CountUnusedProducts();
+            if (count == 0)
+            {
+                MessageBox.Show("✅ قاعدة البيانات نظيفة تماماً! لا توجد أصناف راكدة فارغة بدون حركات ورصيد صفر.", "تنظيف الأصناف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var res = MessageBox.Show(
+                $"🧹 تم العثور على ({count}) صنف راكد/فارغ في قاعدة البيانات!\n" +
+                "(أصناف أضيفت بالخطأ أو تجريبياً بدون أي فواتير بيع أو شراء أو تحويل ورصيدها الحالي صفر).\n\n" +
+                "هل تريد حذف هذه الأصناف الزائدة نهائياً لتنظيف قاعدة البيانات وتسريع النظام؟",
+                "تأكيد تنظيف الأصناف الراكدة",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (res == DialogResult.Yes)
+            {
+                int deleted = ProductDAL.CleanUnusedProducts();
                 ProductCache.Refresh();
                 LoadProducts();
+                MessageBox.Show($"✅ تم تنظيف وحذف ({deleted}) صنف زائد بنجاح من قاعدة البيانات!", "اكتمل التنظيف", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
