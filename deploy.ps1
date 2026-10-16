@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.97";
-$CHANGELOG = "v3.9.97 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Mobile barcode scan optimization - silent auto-skip for EAN-13 and S/N, instant 15-digit IMEI capture, sales IMEI priority matching, and built-in interactive scanner hardware programming guide (FrmScannerConfigGuide)"
+$VERSION = "3.9.98";
+$CHANGELOG = "v3.9.98 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Removed commissions button and renamed sales rep field to sales in sales screen"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

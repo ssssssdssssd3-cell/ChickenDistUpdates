@@ -525,7 +525,7 @@ namespace ChickenDist.Forms
 			pnlAddressAndPhone.Controls.Add(pnlPhoneBox);
 			txtClientAddress.BringToFront();
 
-			lblDriver = MakeLabel("البائع / المندوب:", 0, 0);
+			lblDriver = MakeLabel("البائع \\ السيلز:", 0, 0);
 			cboDriver = new ComboBox
 			{
 				Dock = DockStyle.Fill,
@@ -539,32 +539,7 @@ namespace ChickenDist.Forms
 			SetupSearchableCombo(cboDriver);
 
 			var pnlDriverBox = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Margin = new Padding(0) };
-			var btnOpenSalesComm = new Button
-			{
-				Text = "💼 عمولات",
-				Width = 68,
-				Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
-				FlatStyle = FlatStyle.Flat,
-				BackColor = Color.FromArgb(16, 149, 193),
-				ForeColor = Color.White,
-				Cursor = Cursors.Hand,
-				Dock = DockStyle.Left,
-				Margin = new Padding(1)
-			};
-			btnOpenSalesComm.FlatAppearance.BorderSize = 0;
-			btnOpenSalesComm.Click += (s, e) =>
-			{
-				if (!Session.CanAccess("EmployeeCommissions") && !Session.CanAccess("Employees"))
-				{
-					MessageBox.Show("ليس لديك صلاحية فتح شاشة العمولات.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-					return;
-				}
-				int selectedEmpId = (cboDriver.SelectedItem is ComboItem ci && ci.ID > 0) ? ci.ID : 0;
-				new FrmEmployeeCommissions(selectedEmpId).ShowDialog(this);
-			};
 			pnlDriverBox.Controls.Add(cboDriver);
-			pnlDriverBox.Controls.Add(btnOpenSalesComm);
-			cboDriver.BringToFront();
 
 			var lblWarehouse = MakeLabel("المخزن :", 0, 0);
 			lblWarehouse.Dock = DockStyle.Fill;
@@ -2602,7 +2577,7 @@ namespace ChickenDist.Forms
 			cboDriver.BeginUpdate();
 			cboDriver.Items.Clear();
 			List<ComboItem> driverItems = new List<ComboItem>();
-			driverItems.Add(new ComboItem(0, "-- اختر البائع / المندوب --"));
+			driverItems.Add(new ComboItem(0, "-- اختر البائع \\ السيلز --"));
 			foreach (DataRow row2 in drivers.Rows)
 			{
 				string empName = row2["EmpName"].ToString();
