@@ -530,23 +530,23 @@ namespace ChickenDist.Forms
                 }),
 
                 ("🛒", "المبيعات", Color.FromArgb(5, 122, 85), new[] {
-                    (AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني (أونلاين)" : "🌐 طلبات المتجر الإلكتروني (أونلاين)", "OnlineOrders", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
-                    (AppConfig.IsRestaurant ? "⚙️ إعدادات المنيو الإلكتروني للزبائن" : "⚙️ إعدادات المتجر الإلكتروني للعملاء", "OnlineStoreSettings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
-                    ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
                     ("🛒 فاتورة بيع",    "Sales",      (Action)(() => NavigateTo(new FrmSale()))),
+                    ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
+                    ("🛒 نقطة البيع POS", "POS",       (Action)(() => { var f = new FrmPOS(); f.ShowDialog(); })),
+                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
                     ("📊 سجل وتقارير الورديات", "ShiftsHistory", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📋 بيان تسعير / عرض سعر", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuote()))),
                     ("📋 سجل عروض الأسعار وبيان التسعير", "PriceQuote", (Action)(() => NavigateTo(new FrmPriceQuotesList()))),
-                    ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),
-                    ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
                     ("🏷️ الأوكازيون والعروض", "ClearanceOffers", (Action)(() => NavigateTo(new FrmClearanceOffers()))),
                     ("🎟️ إدارة بونات الخصم", "DiscountVouchers", (Action)(() => { if (Session.CanAccess("DiscountVouchers")) new FrmDiscountVouchers().ShowDialog(); else MessageBox.Show("عذراً، ليس لديك صلاحية للوصول إلى شاشة بونات الخصم.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning); })),
-                    ("↩ مرتجع بيع",     "Returns",    (Action)(() => NavigateTo(new FrmReturn()))),
                     ("💳 عقود التقسيط", "Installments", (Action)(() => NavigateTo(new FrmInstallments()))),
                     ("📝 تقسيط وجدولة مديونية عميل", "Installments", (Action)(() => new FrmScheduleClientDebt().ShowDialog())),
                     ("⏳ الفواتير غير المكتملة", "IncompleteInvoices", (Action)(() => { if (Session.CanAccess("IncompleteInvoices")) new FrmIncompleteInvoices().ShowDialog(); else MessageBox.Show("عذراً، ليس لديك صلاحية للوصول إلى شاشة الفواتير غير المكتملة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning); })),
-                    ("📋 سجل المبيعات", "SalesList",   (Action)(() => NavigateTo(new FrmSalesList()))),
+                    ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),
+                    ("📋 حجوزات العملاء", "Reservations", (Action)(() => NavigateTo(new FrmReservations()))),
+                    (AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني (أونلاين)" : "🌐 طلبات المتجر الإلكتروني (أونلاين)", "OnlineOrders", (Action)(() => NavigateTo(new FrmOnlineOrders()))),
+                    (AppConfig.IsRestaurant ? "⚙️ إعدادات المنيو الإلكتروني للزبائن" : "⚙️ إعدادات المتجر الإلكتروني للعملاء", "OnlineStoreSettings", (Action)(() => new FrmOnlineStoreSettings().ShowDialog())),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
                     ("📅 تقرير المبيعات اليومية", "RepDailySales", (Action)(() => NavigateTo(new FrmReports("Sales", defaultTabTag: "DailySalesSummary")))),
@@ -857,8 +857,8 @@ namespace ChickenDist.Forms
                 Enabled = false,
                 BackColor = groupColor,
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                Padding = new Padding(10, 8, 10, 8)
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Padding = new Padding(8, 4, 8, 4)
             };
             menu.Items.Add(headerItem);
 
@@ -880,8 +880,8 @@ namespace ChickenDist.Forms
                 {
                     ForeColor = (isOnlineOrders && newOrdersCount > 0) ? Color.FromArgb(254, 240, 138) : Color.FromArgb(241, 245, 249),
                     BackColor = (isOnlineOrders && newOrdersCount > 0) ? Color.FromArgb(153, 27, 27) : Color.FromArgb(28, 33, 44),
-                    Font = new Font("Segoe UI", 9.8f, FontStyle.Bold),
-                    Padding = new Padding(12, 8, 12, 8)
+                    Font = new Font("Segoe UI", 9.0f, FontStyle.Bold),
+                    Padding = new Padding(10, 2, 10, 2)
                 };
                 var act = item.action;
                 menuItem.Click += (s, e) => act();

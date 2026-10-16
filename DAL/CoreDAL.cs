@@ -435,6 +435,7 @@ namespace ChickenDist.DAL
 
         public static DataTable GetAll(bool activeOnly = false)
         {
+            DbHelper.EnsureOfferColumnsExist();
             DbHelper.SyncOfferPrices();
             DbHelper.EnsureProductImagesColumnsExist();
             string sql = activeOnly
@@ -442,6 +443,7 @@ namespace ChickenDist.DAL
                            p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.InternationalCode, p.ProductSize, p.Color,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
                            COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem,
+                           COALESCE(p.IsOffer, 0) AS IsOffer, COALESCE(p.OriginalPrice, 0) AS OriginalPrice, COALESCE(p.DiscountPct, 0) AS OfferDiscountPct,
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
                            p.Unit3Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.DefaultSaleUnit,
@@ -453,6 +455,7 @@ namespace ChickenDist.DAL
                            p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.IsActive, p.InternationalCode, p.ProductSize, p.Color,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
                            COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem,
+                           COALESCE(p.IsOffer, 0) AS IsOffer, COALESCE(p.OriginalPrice, 0) AS OriginalPrice, COALESCE(p.DiscountPct, 0) AS OfferDiscountPct,
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
                            p.Unit3Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.DefaultSaleUnit,
@@ -466,6 +469,7 @@ namespace ChickenDist.DAL
             }
             catch
             {
+                DbHelper.EnsureOfferColumnsExist();
                 DbHelper.EnsureProductImagesColumnsExist();
                 try
                 {

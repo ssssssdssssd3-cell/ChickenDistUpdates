@@ -591,6 +591,13 @@ namespace ChickenDist.Forms
                             dispTotalStockStr
                         );
                         ColorStockCell(rowIdx, dispTotalStock);
+
+                        if (row.Table.Columns.Contains("IsOffer") && row["IsOffer"] != DBNull.Value && Convert.ToBoolean(row["IsOffer"]))
+                        {
+                            dgProducts.Rows[rowIdx].DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+                            dgProducts.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.FromArgb(146, 64, 14);
+                            dgProducts.Rows[rowIdx].Cells["ProductName"].Value = "🏷️ " + dgProducts.Rows[rowIdx].Cells["ProductName"].Value;
+                        }
                     }
                 }
             }

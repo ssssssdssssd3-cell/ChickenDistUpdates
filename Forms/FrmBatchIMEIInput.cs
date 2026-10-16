@@ -23,6 +23,7 @@ namespace ChickenDist.Forms
         private Label lblHeaderTitle;
         private Label lblCounterBadge;
         private TextBox txtScan;
+        private Label lblScanStatus;
         private DataGridView dgSerials;
         private Button btnPaste;
         private Button btnClear;
@@ -54,7 +55,7 @@ namespace ChickenDist.Forms
         private void InitializeComponent()
         {
             this.Text = "📱 مسح وإدخال سيريالات الأجهزة (IMEI)";
-            this.Size = new Size(580, 560);
+            this.Size = new Size(600, 590);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -98,7 +99,7 @@ namespace ChickenDist.Forms
             var pnlInput = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 80,
+                Height = 105,
                 Padding = new Padding(15, 10, 15, 10),
                 BackColor = Color.White
             };
@@ -150,10 +151,20 @@ namespace ChickenDist.Forms
             btnPaste.FlatAppearance.BorderSize = 0;
             btnPaste.Click += BtnPaste_Click;
 
+            lblScanStatus = new Label
+            {
+                Text = "💡 فلترة ذكية نشطة: يقبل كود IMEI 1 (15 رقم) ويتجاهل الباركود الدولي والرموز تلقائياً.",
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(71, 85, 105),
+                Location = new Point(15, 75),
+                AutoSize = true
+            };
+
             pnlInput.Controls.Add(lblPrompt);
             pnlInput.Controls.Add(txtScan);
             pnlInput.Controls.Add(btnAddManual);
             pnlInput.Controls.Add(btnPaste);
+            pnlInput.Controls.Add(lblScanStatus);
 
             // ── لوحة الأزرار السفلية ───────────────────────────────────────────────
             var pnlBottom = new Panel
@@ -284,8 +295,20 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            if (AddSingleSerial(raw))
+            if (!CleanAndExtractIMEI(raw, out string imei, out string statusMessage, out Color statusColor))
             {
+                lblScanStatus.Text = statusMessage;
+                lblScanStatus.ForeColor = statusColor;
+                try { SystemSounds.Beep.Play(); } catch { }
+                txtScan.Clear();
+                txtScan.Focus();
+                return;
+            }
+
+            if (AddSingleSerial(imei))
+            {
+                lblScanStatus.Text = $"✅ تم تسجيل IMEI 1: [{imei}] بنجاح";
+                lblScanStatus.ForeColor = Color.FromArgb(16, 185, 129); // Green
                 try { SystemSounds.Asterisk.Play(); } catch { }
                 txtScan.Clear();
                 txtScan.Focus();
@@ -298,20 +321,103 @@ namespace ChickenDist.Forms
             }
         }
 
+        private bool CleanAndExtractIMEI(string raw, out string validIMEI, out string statusMessage, out Color statusColor)
+        {
+            validIMEI = null;
+            statusMessage = null;
+            statusColor = Color.FromArgb(239, 68, 68);
+
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+
+            string s = PurchaseDAL.SanitizeIMEIString(raw);
+
+            // 1. فحص هل يحتوي على حروف غير رقمية أو رموز (مثل لوحة مفاتيح عربية أو باركود SN)
+            if (string.IsNullOrEmpty(s) || !s.All(char.IsDigit))
+            {
+                statusMessage = $"⚠️ تم تجاهل رمز غير صالح [{raw}] (مطلوب كود IMEI المكون من 15 رقم)";
+                statusColor = Color.FromArgb(239, 68, 68);
+                return false;
+            }
+
+            // 2. فحص الباركود الدولي EAN-13 (12 أو 13 رقماً مثل 6936520877331)
+            if (s.Length == 12 || s.Length == 13)
+            {
+                statusMessage = $"⚠️ تم تجاهل الباركود الدولي ({s}) - يرجى توجيه الاسكانر إلى باركود IMEI 1";
+                statusColor = Color.FromArgb(234, 88, 12); // Orange
+                return false;
+            }
+
+            // 3. فحص الطول
+            if (s.Length < 14 || s.Length > 16)
+            {
+                statusMessage = $"⚠️ تم تجاهل كود بطول {s.Length} رقم (سيريال IMEI يجب أن يكون 15 رقم)";
+                statusColor = Color.FromArgb(239, 68, 68);
+                return false;
+            }
+
+            if (s.Length == 14)
+            {
+                int chk = PurchaseDAL.CalculateLuhnCheckDigit(s);
+                if (chk >= 0) s += chk.ToString();
+            }
+            else if (s.Length == 16)
+            {
+                s = s.Substring(0, 15);
+            }
+
+            // 4. فحص ما إذا كان هذا الكود هو IMEI 2 لجهاز مسجل مسبقاً في القائمة (نفس الهاتف):
+            if (ResultSerials.Any(existing => PurchaseDAL.GetCandidatePairedIMEIs(existing).Contains(s)))
+            {
+                statusMessage = $"⚠️ تم تجاهل IMEI 2 لنفس الهاتف الممسوح مسبقاً";
+                statusColor = Color.FromArgb(202, 138, 4); // Yellow/Gold
+                return false;
+            }
+
+            // إذا كان هذا كود IMEI 2 (الرقم الـ 14 زوجي)، نحاول تحويله تلقائياً إلى IMEI 1 المطابق
+            // في هواتف شاومي/ريدمي وغيرها IMEI 1 يكون فردياً و IMEI 2 زوجياً
+            int digit14 = s[13] - '0';
+            if (digit14 % 2 == 0) // زوجي -> على الأرجح IMEI 2
+            {
+                string base13 = s.Substring(0, 13);
+                int target14 = digit14 + 1;
+                if (target14 <= 9)
+                {
+                    string cand14 = base13 + target14.ToString();
+                    int chk = PurchaseDAL.CalculateLuhnCheckDigit(cand14);
+                    if (chk >= 0)
+                    {
+                        string candidateIMEI1 = cand14 + chk.ToString();
+                        // إذا كان IMEI 1 المقابل موجود بالفعل نتجاهل
+                        if (ResultSerials.Contains(candidateIMEI1))
+                        {
+                            statusMessage = $"⚠️ تم تجاهل IMEI 2 لنفس الهاتف المسجل بالفعل ({candidateIMEI1})";
+                            statusColor = Color.FromArgb(202, 138, 4);
+                            return false;
+                        }
+                        // تحويل تلقائي إلى IMEI 1
+                        s = candidateIMEI1;
+                    }
+                }
+            }
+
+            // 5. فحص التكرار المباشر في القائمة
+            if (ResultSerials.Any(existing => string.Equals(existing, s, StringComparison.OrdinalIgnoreCase)))
+            {
+                statusMessage = $"⚠️ السيريال [{s}] مسجل بالفعل في هذه القائمة";
+                statusColor = Color.FromArgb(202, 138, 4);
+                return false;
+            }
+
+            validIMEI = s;
+            return true;
+        }
+
         private bool AddSingleSerial(string imei)
         {
             imei = imei.Trim();
             if (string.IsNullOrWhiteSpace(imei)) return false;
 
-            // 1. فحص التكرار في القائمة الحالية
-            if (ResultSerials.Any(s => string.Equals(s, imei, StringComparison.OrdinalIgnoreCase)))
-            {
-                MessageBox.Show($"⚠️ السيريال [{imei}] موجود بالفعل في القائمة المدخلة!", "تكرار سيريال", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtScan.SelectAll();
-                return false;
-            }
-
-            // 2. فحص هل هو مسجل مسبقاً في قاعدة البيانات
+            // فحص هل هو مسجل مسبقاً في قاعدة البيانات
             if (PurchaseDAL.IsIMEIAlreadyExists(imei, _currentPurchaseID))
             {
                 var choice = MessageBox.Show($"⚠️ تنبيه: السيريال [{imei}] مسجل بالفعل في فاتورة مشتريات سابقة بالنظام!\nهل أنت متأكد من تكرار إدخاله؟", "سيريال مسجل مسبقاً", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -331,27 +437,24 @@ namespace ChickenDist.Forms
         {
             var parts = raw.Split(new[] { '\r', '\n', ',', ';', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             int addedCount = 0;
-            int dupCount = 0;
+            int ignoredCount = 0;
 
             foreach (var p in parts)
             {
-                string s = p.Trim();
-                if (string.IsNullOrWhiteSpace(s)) continue;
-
-                if (ResultSerials.Any(x => string.Equals(x, s, StringComparison.OrdinalIgnoreCase)))
+                if (CleanAndExtractIMEI(p, out string imei, out _, out _))
                 {
-                    dupCount++;
-                    continue;
+                    ResultSerials.Add(imei);
+                    addedCount++;
                 }
-
-                ResultSerials.Add(s);
-                addedCount++;
+                else
+                {
+                    ignoredCount++;
+                }
             }
 
             RefreshGrid();
             string msg = $"تمت إضافة {addedCount} سيريال بنجاح.";
-            if (dupCount > 0) msg += $"\nتم تجاهل {dupCount} سيريال مكرر.";
-            MessageBox.Show(msg, "نتيجة اللصق", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (ignoredCount > 0) msg += $"\nتم تجاهل {ignoredCount} كود غير صالح أو مكرر أو باركود دولي.";
         }
 
         private void BtnPaste_Click(object sender, EventArgs e)

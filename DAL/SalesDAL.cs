@@ -211,12 +211,14 @@ namespace ChickenDist.DAL
 
         public static DataTable GetItems(int saleID)
         {
+            DbHelper.EnsureOfferColumnsExist();
             return DbHelper.Query(
                 @"SELECT si.ItemID, si.ProductID, COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR(50))) AS ProductCode,
                           p.ProductName, si.Quantity, si.Quantity AS SoldQty, si.UnitPrice, si.TotalPrice,
                           COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt,
                           COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,
                           COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
+                          COALESCE(p.IsOffer, 0) AS IsOffer, COALESCE(p.OriginalPrice, 0) AS OriginalPrice,
                           p.PartNumber, p.CarModel, p.Brand, p.ShelfLocation, p.Color, p.ProductSize,
                           p.Unit AS BaseUnitName, p.Unit1Name, p.Unit1SalePrice, p.Unit2Name, p.Unit2Factor, p.Unit2SalePrice, p.Unit3Factor,
                           COALESCE(NULLIF(si.UnitName, N''), NULLIF(p.Unit, N''), N'قطعة') AS UnitName, COALESCE(si.Factor, 1.0) AS Factor, si.IMEI,
@@ -1572,6 +1574,9 @@ namespace ChickenDist.DAL
         public string ProductCode { get; set; } = "";
         /// <summary>صنف خدمة — يُباع بالسالب بدون فحص المخزون</summary>
         public bool IsService { get; set; } = false;
+        /// <summary>صنف أوكازيون / تصفيات</summary>
+        public bool IsOffer { get; set; } = false;
+        public decimal OriginalPrice { get; set; } = 0m;
         public string UnitName { get; set; } = null;
         public decimal Factor { get; set; } = 1.0m;
         /// <summary>نسبة الخصم % على الصنف</summary>
@@ -3075,6 +3080,7 @@ namespace ChickenDist.DAL
         /// <summary>3. تقرير تفاصيل المبيعات وسطور الفواتير (Line-by-line Items)</summary>
         public static DataTable GetDetailedSaleItems(DateTime from, DateTime to, int? warehouseID = null, string keyword = null)
         {
+            DbHelper.EnsureOfferColumnsExist();
             DateTime f = from;
             DateTime t = to;
             if (t.TimeOfDay == TimeSpan.Zero) t = t.Date.AddDays(1).AddTicks(-1);
@@ -3092,6 +3098,7 @@ namespace ChickenDist.DAL
                     si.UnitPrice AS UnitPrice,
                     (si.Quantity * si.UnitPrice) AS TotalBeforeDiscount,
                     ISNULL(si.DiscountAmt, 0) AS DiscountAmt,
+                    COALESCE(p.IsOffer, 0) AS IsOffer,
                     si.TotalPrice AS TotalPrice,
                     ISNULL(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)), 0) AS ItemCost,
                     (si.TotalPrice - ISNULL(si.Quantity * ISNULL(si.Factor, 1.0) * COALESCE(NULLIF(si.CostPrice, 0), NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), ISNULL(p.PurchasePrice, 0.0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0)), 0)) AS ItemProfit,
@@ -3711,6 +3718,7 @@ namespace ChickenDist.DAL
                     p.ProductCode,
                     p.ProductName,
                     p.Unit,
+                    COALESCE(p.IsOffer, 0) AS IsOffer,
                     ISNULL(stk.CurrentStock, 0.0) AS CurrentStock,
                     ISNULL(st.AvgPrice, 0.0) AS AvgPrice,
                     ISNULL(st.TotalQty, 0.0) AS TotalQty,
@@ -3759,11 +3767,13 @@ namespace ChickenDist.DAL
 
         public static DataTable GetInventoryValuation(int? warehouseID = null)
         {
+            DbHelper.EnsureOfferColumnsExist();
             return DbHelper.Query(@"
                 SELECT 
                     v.ProductCode,
                     v.ProductName,
                     v.Unit,
+                    MAX(CAST(ISNULL(p.IsOffer, 0) AS INT)) AS IsOffer,
                     p.PurchasePrice,
                     v.SalePrice,
                     SUM(v.CurrentQty) AS CurrentStock,
@@ -4011,6 +4021,7 @@ namespace ChickenDist.DAL
         /// <summary>تقرير كميات الأصناف التفصيلي للفترة المحددة</summary>
         public static DataTable GetProductQtyDetail(DateTime from, DateTime to, int? warehouseID = null)
         {
+            DbHelper.EnsureOfferColumnsExist();
             return DbHelper.Query(@"
                 ;WITH
                 SalesPeriod AS (
@@ -4057,6 +4068,7 @@ namespace ChickenDist.DAL
                     p.ProductCode,
                     p.ProductName,
                     p.Unit,
+                    COALESCE(p.IsOffer, 0) AS IsOffer,
                     p.SalePrice,
 
                     ISNULL((
@@ -4148,12 +4160,14 @@ namespace ChickenDist.DAL
 
         public static DataTable GetClientProductSalesReport(DateTime from, DateTime to, int? clientID, int? productID, string saleType, int? warehouseID = null)
         {
+            DbHelper.EnsureOfferColumnsExist();
             string query = @"
                 SELECT 
                     s.SaleCode AS [رقم الفاتورة],
                     s.SaleDate AS [تاريخ الفاتورة],
                     c.ClientName AS [العميل],
                     p.ProductName AS [الصنف],
+                    COALESCE(p.IsOffer, 0) AS [IsOffer],
                     ISNULL(si.IMEI, N'-') AS [السيريال],
                     si.Quantity AS [الكمية],
                     si.UnitPrice AS [سعر الوحدة],

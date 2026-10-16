@@ -829,12 +829,39 @@ namespace ChickenDist.DAL
         /// <summary>
         /// البحث عن الصنف المرتبط برقم سيريال (IMEI) معين من بين الأجهزة المشتراة وغير المباعة.
         /// يُستخدم كمسار بديل ذكي (Smart Fallback) في شاشات البيع والـ POS إذا مسح الكاشير باركود السيريال مباشرة.
+        /// يدعم التعرف التلقائي على IMEI 1 حتى لو مسح الكاشير كود IMEI 2 على نفس العلبة.
         /// </summary>
         public static (int ProductID, string IMEI)? FindProductByAvailableIMEI(string imei)
         {
             if (string.IsNullOrWhiteSpace(imei)) return null;
-            imei = imei.Trim();
+            imei = SanitizeIMEIString(imei);
+            if (string.IsNullOrWhiteSpace(imei)) return null;
 
+            // 1. محاولة المطابقة المباشرة الدقيقة
+            var match = LookupAvailableIMEI(imei);
+            if (match.HasValue) return match;
+
+            // 2. إذا لم يتم العثور على مطابقة دقيقة وكان الكود 15 رقماً:
+            // فحص ما إذا كان الكود الممسوح هو IMEI 2 لجهاز مسجل في المخزون بـ IMEI 1 (أو العكس)
+            if (imei.Length == 15 && imei.All(char.IsDigit))
+            {
+                var candidates = GetCandidatePairedIMEIs(imei);
+                foreach (var candidate in candidates)
+                {
+                    var candMatch = LookupAvailableIMEI(candidate);
+                    if (candMatch.HasValue)
+                    {
+                        // تم التعرف على الجهاز عبر السيريال المزدوج (IMEI 1 / IMEI 2)
+                        return candMatch;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static (int ProductID, string IMEI)? LookupAvailableIMEI(string testImei)
+        {
             string sql = @"
                 SELECT TOP 1 pItem.ProductID, LTRIM(RTRIM(pItem.IMEI)) AS IMEI
                 FROM PurchaseItems pItem
@@ -853,14 +880,79 @@ namespace ChickenDist.DAL
                   )
                 ORDER BY pItem.ItemID DESC";
 
-            DataTable dt = DbHelper.Query(sql, DbHelper.P("@imei", imei));
+            DataTable dt = DbHelper.Query(sql, DbHelper.P("@imei", testImei));
             if (dt != null && dt.Rows.Count > 0)
             {
                 int pid = Convert.ToInt32(dt.Rows[0]["ProductID"]);
-                string foundImei = dt.Rows[0]["IMEI"]?.ToString()?.Trim() ?? imei;
+                string foundImei = dt.Rows[0]["IMEI"]?.ToString()?.Trim() ?? testImei;
                 return (pid, foundImei);
             }
             return null;
+        }
+
+        public static string SanitizeIMEIString(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "";
+            string s = raw.Trim();
+            // تحويل الأرقام العربية المشرقية إلى غربية
+            s = s.Replace("٠", "0").Replace("١", "1").Replace("٢", "2").Replace("٣", "3").Replace("٤", "4")
+                 .Replace("٥", "5").Replace("٦", "6").Replace("٧", "7").Replace("٨", "8").Replace("٩", "9");
+
+            // إزالة بوادئ الباركود الشائعة
+            string[] prefixes = { "IMEI1:", "IMEI 1:", "IMEI-1:", "IMEI1", "IMEI 1", "IMEI:", "IMEI 2:", "IMEI2:", "IMEI-2:", "IMEI2", "IMEI 2", "MEID:", "MEID", "S/N:", "SN:" };
+            foreach (var p in prefixes)
+            {
+                if (s.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                {
+                    s = s.Substring(p.Length).Trim();
+                    break;
+                }
+            }
+            return s.Replace(" ", "").Replace("-", "").Replace("/", "").Replace("\\", "");
+        }
+
+        public static int CalculateLuhnCheckDigit(string digits14)
+        {
+            if (string.IsNullOrEmpty(digits14) || digits14.Length < 14) return -1;
+            int sum = 0;
+            for (int i = 0; i < 14; i++)
+            {
+                int d = digits14[i] - '0';
+                if (d < 0 || d > 9) return -1;
+                if (i % 2 == 1) // الأرقام في المواقع الزوجية (1-based: 2, 4, 6...) تضاعف
+                {
+                    d *= 2;
+                    if (d > 9) d = (d / 10) + (d % 10);
+                }
+                sum += d;
+            }
+            return (10 - (sum % 10)) % 10;
+        }
+
+        public static List<string> GetCandidatePairedIMEIs(string imei)
+        {
+            var list = new List<string>();
+            if (string.IsNullOrEmpty(imei) || imei.Length != 15) return list;
+            string base13 = imei.Substring(0, 13);
+            int digit14 = imei[13] - '0';
+
+            // المرشح +1 (مثلاً إذا كان الممسوح IMEI 2 رقم 4، يكون IMEI 1 هو 5)
+            if (digit14 + 1 <= 9)
+            {
+                string c14 = base13 + (digit14 + 1).ToString();
+                int chk = CalculateLuhnCheckDigit(c14);
+                if (chk >= 0) list.Add(c14 + chk.ToString());
+            }
+
+            // المرشح -1 (مثلاً إذا كان الممسوح IMEI 2 هو الرقم الأعلى)
+            if (digit14 - 1 >= 0)
+            {
+                string c14 = base13 + (digit14 - 1).ToString();
+                int chk = CalculateLuhnCheckDigit(c14);
+                if (chk >= 0) list.Add(c14 + chk.ToString());
+            }
+
+            return list;
         }
 
         /// <summary>

@@ -2811,6 +2811,8 @@ namespace ChickenDist.Forms
 					decimal unit2PP    = row3.Table.Columns.Contains("Unit2PurchasePrice") && row3["Unit2PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row3["Unit2PurchasePrice"]) : 0m;
 					decimal unit3Factor = row3.Table.Columns.Contains("Unit3Factor") && row3["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row3["Unit3Factor"]) : 1m;
 					string baseUnit    = row3.Table.Columns.Contains("Unit")         && row3["Unit"]         != DBNull.Value ? row3["Unit"].ToString()         : "";
+					bool isOffer       = row3.Table.Columns.Contains("IsOffer")      && row3["IsOffer"]      != DBNull.Value && Convert.ToBoolean(row3["IsOffer"]);
+					decimal origPrice  = row3.Table.Columns.Contains("OriginalPrice") && row3["OriginalPrice"] != DBNull.Value ? Convert.ToDecimal(row3["OriginalPrice"]) : price;
 
 					if (pendingPrice > 0m && pendingQtyThreshold > 0m)
 					{
@@ -2823,6 +2825,8 @@ namespace ChickenDist.Forms
 							row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
 							purchasePrice
 						);
+						itemOld.IsOffer = isOffer;
+						itemOld.OriginalPrice = origPrice;
 						itemOld.PendingSalePrice = 0m;
 						itemOld.PendingQtyThreshold = 0m;
 						itemOld.ProductSize = row3.Table.Columns.Contains("ProductSize") && row3["ProductSize"] != DBNull.Value ? row3["ProductSize"].ToString().Trim() : "";
@@ -2856,6 +2860,8 @@ namespace ChickenDist.Forms
 						);
 						itemPending.PendingSalePrice = 0m;
 						itemPending.PendingQtyThreshold = 0m;
+						itemPending.IsOffer = isOffer;
+						itemPending.OriginalPrice = origPrice;
 						itemPending.PartNumber = row3["PartNumber"]?.ToString().Trim() ?? "";
 						itemPending.CarModel = row3["CarModel"]?.ToString().Trim() ?? "";
 						itemPending.Brand = row3["Brand"]?.ToString().Trim() ?? "";
@@ -2884,6 +2890,8 @@ namespace ChickenDist.Forms
 							row3["MinStockLimit"] != DBNull.Value ? Convert.ToDecimal(row3["MinStockLimit"]) : 0m,
 							purchasePrice
 						);
+						comboItem.IsOffer = isOffer;
+						comboItem.OriginalPrice = origPrice;
 						comboItem.PendingSalePrice = pendingPrice;
 						comboItem.PendingQtyThreshold = pendingQtyThreshold;
 						comboItem.PartNumber = row3["PartNumber"]?.ToString() ?? "";
@@ -4236,6 +4244,30 @@ namespace ChickenDist.Forms
 				// عمود الكود للسطور المضافة للقراءة فقط (ليس للتعديل)
 				dgItems.Rows[rIndex].Cells["CodeEntry"].ReadOnly = true;
 
+				// تمييز أصناف الأوكازيون والخصومات بألوان خاصة واضحة
+				bool hasItemDiscount = item.DiscountAmt > 0 || item.DiscountPct > 0;
+				if (item.IsOffer && hasItemDiscount)
+				{
+					dgItems.Rows[rIndex].DefaultCellStyle.BackColor = Color.FromArgb(254, 235, 200); // مشمشي/برتقالي فاتح
+					dgItems.Rows[rIndex].DefaultCellStyle.ForeColor = Color.FromArgb(154, 52, 18);
+					dgItems.Rows[rIndex].DefaultCellStyle.SelectionBackColor = Color.FromArgb(249, 115, 22);
+					dgItems.Rows[rIndex].DefaultCellStyle.SelectionForeColor = Color.White;
+				}
+				else if (item.IsOffer)
+				{
+					dgItems.Rows[rIndex].DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199); // كهرماني/أصفر هادئ
+					dgItems.Rows[rIndex].DefaultCellStyle.ForeColor = Color.FromArgb(146, 64, 14);
+					dgItems.Rows[rIndex].DefaultCellStyle.SelectionBackColor = Color.FromArgb(245, 158, 11);
+					dgItems.Rows[rIndex].DefaultCellStyle.SelectionForeColor = Color.White;
+				}
+				else if (hasItemDiscount)
+				{
+					dgItems.Rows[rIndex].DefaultCellStyle.BackColor = Color.FromArgb(236, 253, 245); // زمردي/أخضر فاتح هادئ
+					dgItems.Rows[rIndex].DefaultCellStyle.ForeColor = Color.FromArgb(6, 95, 70);
+					dgItems.Rows[rIndex].DefaultCellStyle.SelectionBackColor = Color.FromArgb(16, 185, 129);
+					dgItems.Rows[rIndex].DefaultCellStyle.SelectionForeColor = Color.White;
+				}
+
 				if (dgItems.Columns.Contains("KitchenNotes"))
 				{
 					dgItems.Rows[rIndex].Cells["KitchenNotes"].Value = item.KitchenNotes ?? "";
@@ -4957,6 +4989,8 @@ namespace ChickenDist.Forms
 				ShelfLocation = product.ShelfLocation,
 				ProductCode = product.ProductCode,
 				IsService = product.IsService,
+				IsOffer = product.IsOffer,
+				OriginalPrice = product.OriginalPrice,
 				UnitName = selectedUnit,
 				Factor = factor,
 				BatchID = batchID,
@@ -8778,6 +8812,9 @@ namespace ChickenDist.Forms
 		public string ScalePLU { get; set; } = "";
 		/// <summary>صنف خدمة — يُباع بالسالب دون فحص المخزون</summary>
 		public bool IsService { get; set; } = false;
+		/// <summary>صنف أوكازيون / عروض</summary>
+		public bool IsOffer { get; set; } = false;
+		public decimal OriginalPrice { get; set; } = 0m;
 		public bool HasExpiry { get; set; } = false;
 		public int? DefaultExpiryDays { get; set; } = null;
 		public string DefaultSaleUnit { get; set; } = "";

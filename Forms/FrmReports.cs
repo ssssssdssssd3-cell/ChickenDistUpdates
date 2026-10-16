@@ -870,15 +870,38 @@ namespace ChickenDist.Forms
 								string total = Convert.ToDecimal(r["TotalPrice"]).ToString("N2") + " ج";
 								
 								int itemIdx = dgDetailedSaleItems.Rows.Add(pName, uName, qty, retQtyStr, price, imeiVal, disc, total);
+								var itemRow = dgDetailedSaleItems.Rows[itemIdx];
 								if (retQty > 0)
 								{
-									var itemRow = dgDetailedSaleItems.Rows[itemIdx];
 									itemRow.Cells["ReturnedQty"].Style.ForeColor = Color.FromArgb(220, 38, 38);
 									itemRow.Cells["ReturnedQty"].Style.BackColor = Color.FromArgb(254, 242, 242);
 									itemRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 242, 242);
 									itemRow.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
 									itemRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
 									itemRow.DefaultCellStyle.SelectionForeColor = Color.White;
+								}
+								else
+								{
+									bool isOffer = r.Table.Columns.Contains("IsOffer") && r["IsOffer"] != DBNull.Value && Convert.ToBoolean(r["IsOffer"]);
+									decimal discVal = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value ? Convert.ToDecimal(r["DiscountAmt"]) : 0m;
+									if (discVal <= 0 && r.Table.Columns.Contains("DiscountPct") && r["DiscountPct"] != DBNull.Value) discVal = Convert.ToDecimal(r["DiscountPct"]);
+									bool hasDisc = discVal > 0;
+
+									if (isOffer && hasDisc)
+									{
+										itemRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 235, 200);
+										itemRow.DefaultCellStyle.ForeColor = Color.FromArgb(154, 52, 18);
+									}
+									else if (isOffer)
+									{
+										itemRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+										itemRow.DefaultCellStyle.ForeColor = Color.FromArgb(146, 64, 14);
+									}
+									else if (hasDisc)
+									{
+										itemRow.DefaultCellStyle.BackColor = Color.FromArgb(236, 253, 245);
+										itemRow.DefaultCellStyle.ForeColor = Color.FromArgb(6, 95, 70);
+									}
 								}
 							}
 							string qtyDisplay = (totalQtySum % 1 == 0) ? totalQtySum.ToString("N0") : totalQtySum.ToString("N2");
@@ -3197,6 +3220,32 @@ namespace ChickenDist.Forms
 					}
 				}
 				int addedIdx = dg.Rows.Add(array2);
+
+				bool isRowOffer = _currentDt.Columns.Contains("IsOffer") && row["IsOffer"] != DBNull.Value && Convert.ToBoolean(row["IsOffer"]);
+				decimal rowDiscount = 0m;
+				if (_currentDt.Columns.Contains("DiscountAmt") && row["DiscountAmt"] != DBNull.Value) decimal.TryParse(row["DiscountAmt"].ToString(), out rowDiscount);
+				else if (_currentDt.Columns.Contains("DiscountAmount") && row["DiscountAmount"] != DBNull.Value) decimal.TryParse(row["DiscountAmount"].ToString(), out rowDiscount);
+				else if (_currentDt.Columns.Contains("TotalDiscounts") && row["TotalDiscounts"] != DBNull.Value) decimal.TryParse(row["TotalDiscounts"].ToString(), out rowDiscount);
+				else if (_currentDt.Columns.Contains("DiscountPct") && row["DiscountPct"] != DBNull.Value) decimal.TryParse(row["DiscountPct"].ToString(), out rowDiscount);
+				else if (_currentDt.Columns.Contains("الخصم") && row["الخصم"] != DBNull.Value) decimal.TryParse(row["الخصم"].ToString(), out rowDiscount);
+
+				bool hasRowDiscount = rowDiscount > 0;
+				if (isRowOffer && hasRowDiscount)
+				{
+					dg.Rows[addedIdx].DefaultCellStyle.BackColor = Color.FromArgb(254, 235, 200);
+					dg.Rows[addedIdx].DefaultCellStyle.ForeColor = Color.FromArgb(154, 52, 18);
+				}
+				else if (isRowOffer)
+				{
+					dg.Rows[addedIdx].DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
+					dg.Rows[addedIdx].DefaultCellStyle.ForeColor = Color.FromArgb(146, 64, 14);
+				}
+				else if (hasRowDiscount && (text == "DetailedSaleItems" || text == "SalesByProduct" || text == "SalesDiscounts" || text == "ClientProductSales"))
+				{
+					dg.Rows[addedIdx].DefaultCellStyle.BackColor = Color.FromArgb(236, 253, 245);
+					dg.Rows[addedIdx].DefaultCellStyle.ForeColor = Color.FromArgb(6, 95, 70);
+				}
+
 				if (text == "DetailedSales")
 				{
 					var addedRow = dg.Rows[addedIdx];

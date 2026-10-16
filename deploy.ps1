@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.92";
-$CHANGELOG = "v3.9.92 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Keep quick add product dialog open in purchase invoice to accept consecutive new products"
+$VERSION = "3.9.93";
+$CHANGELOG = "v3.9.93 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Smart IMEI scanner filtering, auto IMEI1/IMEI2 pairing, compact and reorganized sales menu, and distinctive highlighting for clearance and discount items in sales and reports"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
