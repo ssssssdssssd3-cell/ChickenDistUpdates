@@ -1719,6 +1719,14 @@ namespace ChickenDist.Forms
                     }
                 }
 
+                if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit)))
+                {
+                    try { System.Media.SystemSounds.Beep.Play(); } catch { }
+                    txtBarcode?.Clear();
+                    txtBarcode?.Focus();
+                    return;
+                }
+
                 MessageBox.Show("لم يتم العثور على صنف بهذا الكود.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }

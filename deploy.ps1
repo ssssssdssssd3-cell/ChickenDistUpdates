@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.93";
-$CHANGELOG = "v3.9.93 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Smart IMEI scanner filtering, auto IMEI1/IMEI2 pairing, compact and reorganized sales menu, and distinctive highlighting for clearance and discount items in sales and reports"
+$VERSION = "3.9.94";
+$CHANGELOG = "v3.9.94 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Silence non-IMEI barcode popups in mobiles business to streamline scanning directly to IMEI"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

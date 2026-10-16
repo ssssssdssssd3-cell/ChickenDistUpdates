@@ -1143,7 +1143,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f, MinimumWidth = 105 });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 55f, Visible = true });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 85f, MinimumWidth = 140, Visible = true });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
 			if (AppConfig.IsRestaurant)
@@ -1871,12 +1871,27 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-						if (txtBarcode != null)
+						if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit)))
 						{
-							txtBarcode.SelectAll();
-							this.ActiveControl = txtBarcode;
-							txtBarcode.Focus();
+							// في نشاط الموبايل: تم مسح الباركود الدولي (EAN-13) للعلبة وليس السيريال (IMEI)
+							// نتجاهله برفق وبدون نافذة منبثقة تعطل الشاشة ليتمكن الاسكنر من مسح السيريال فوراً
+							try { System.Media.SystemSounds.Beep.Play(); } catch { }
+							if (txtBarcode != null)
+							{
+								txtBarcode.Clear();
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+							}
+						}
+						else
+						{
+							MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							if (txtBarcode != null)
+							{
+								txtBarcode.SelectAll();
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+							}
 						}
 					}
 				}
@@ -3920,12 +3935,31 @@ namespace ChickenDist.Forms
 						}
 						else
 						{
-							MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-							// إعادة التركيز على خلية الكود
-							if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+							if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit)))
 							{
-								dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
-								dgItems.BeginEdit(true);
+								try { System.Media.SystemSounds.Beep.Play(); } catch { }
+								if (txtBarcode != null)
+								{
+									txtBarcode.Clear();
+									this.ActiveControl = txtBarcode;
+									txtBarcode.Focus();
+								}
+								else if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+								{
+									dgItems.Rows[rowIdx].Cells["CodeEntry"].Value = "";
+									dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
+									dgItems.BeginEdit(true);
+								}
+							}
+							else
+							{
+								MessageBox.Show($"عفواً، لم يتم العثور على أي صنف مسجل بالكود أو الباركود:\n[{code}]", "صنف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+								// إعادة التركيز على خلية الكود
+								if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
+								{
+									dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["CodeEntry"];
+									dgItems.BeginEdit(true);
+								}
 							}
 						}
 					}
