@@ -14,20 +14,32 @@ namespace ChickenDist.Forms
     {
         private TextBox txtName, txtCode;
         private ComboBox cboCategory, cboUnit;
-        private NumericUpDown nudPurchasePrice, nudPrice;
+        private NumericUpDown nudPurchasePrice, nudPrice, nudQuantity;
         private CheckBox chkIsService, chkIsQuickItem;
         private Button btnSave, btnClose;
         private Label lblStatus;
         private Timer statusTimer;
 
+        // خصائص لإرجاع بيانات الصنف المحفوظ لشاشة الشراء
+        public int LastCreatedProductID { get; private set; } = 0;
+        public string LastCreatedProductCode { get; private set; } = "";
+        public string LastCreatedProductName { get; private set; } = "";
+        public decimal LastCreatedPurchasePrice { get; private set; } = 0m;
+        public decimal LastCreatedSalePrice { get; private set; } = 0m;
+        public decimal LastCreatedQuantity { get; private set; } = 1m;
+
+        // إغلاق تلقائي عند الحفظ (مفيد لشاشة المشتريات لإنزال الصنف مباشرة)
+        public bool AutoCloseOnSave { get; set; } = false;
+
         // اسم/كود أولي اختياري (لاستخدامه عند الفتح من شاشة الشراء لصنف غير موجود)
         private readonly string _initialName;
         private readonly string _initialCode;
 
-        public FrmQuickAdd(string initialName = null, string initialCode = null)
+        public FrmQuickAdd(string initialName = null, string initialCode = null, bool autoCloseOnSave = false)
         {
             _initialName = initialName;
             _initialCode = initialCode;
+            AutoCloseOnSave = autoCloseOnSave;
             InitUI();
             
             // مؤقت لمسح حالة الحفظ بعد ثانيتين
@@ -41,7 +53,7 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = "⚡ الإدخال السريع للأصناف";
-            this.Size = new Size(500, 565);
+            this.Size = new Size(500, 610);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -57,7 +69,7 @@ namespace ChickenDist.Forms
             var pnlForm = new Panel
             {
                 Location = new Point(20, 80),
-                Size = new Size(445, 355),
+                Size = new Size(445, 395),
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15)
             };
@@ -119,13 +131,19 @@ namespace ChickenDist.Forms
             pnlForm.Controls.Add(nudPrice);
             y += 40;
 
+            // كمية الفاتورة
+            pnlForm.Controls.Add(new Label { Text = "الكمية المشتراة:", Location = new Point(15, y + 4), Width = 140, Height = 26, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            nudQuantity = new NumericUpDown { Location = new Point(165, y), Width = 260, Minimum = 0.01m, Maximum = 999999, DecimalPlaces = 2, Value = 1.00m, Font = new Font("Segoe UI", 11f, FontStyle.Bold), BackColor = Color.FromArgb(240, 253, 244), ForeColor = Color.FromArgb(21, 128, 61), BorderStyle = BorderStyle.FixedSingle };
+            pnlForm.Controls.Add(nudQuantity);
+            y += 40;
+
             // صنف بيع سريع
             chkIsQuickItem = new CheckBox
             {
                 Text = "📌 صنف بيع سريع (شاشة POS)",
                 Location = new Point(20, y),
                 Width = 280,
-                Height = 26,
+                Height = 24,
                 ForeColor = Color.FromArgb(0, 120, 180),
                 Checked = false,
                 AutoSize = false,
@@ -134,7 +152,7 @@ namespace ChickenDist.Forms
                 Font = new Font(Theme.FontMain, FontStyle.Bold)
             };
             pnlForm.Controls.Add(chkIsQuickItem);
-            y += 32;
+            y += 28;
 
             // صنف يباع بالسالب
             chkIsService = new CheckBox
@@ -142,7 +160,7 @@ namespace ChickenDist.Forms
                 Text = "⚡ صنف يباع بالسالب (خدمات / مصروفات)",
                 Location = new Point(20, y),
                 Width = 280,
-                Height = 26,
+                Height = 24,
                 ForeColor = Color.FromArgb(180, 120, 0),
                 Checked = false,
                 AutoSize = false,
@@ -158,7 +176,7 @@ namespace ChickenDist.Forms
             lblStatus = new Label
             {
                 Text = "",
-                Location = new Point(20, 445),
+                Location = new Point(20, 485),
                 Size = new Size(445, 25),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -167,12 +185,12 @@ namespace ChickenDist.Forms
             this.Controls.Add(lblStatus);
 
             // الأزرار
-            btnSave = Theme.MakeButton("💾 حفظ الصنف (Ctrl+S)", 250, 475, 215, 36, Theme.Success);
+            btnSave = Theme.MakeButton("💾 حفظ الصنف (Ctrl+S)", 250, 515, 215, 38, Theme.Success);
             btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            btnClose = Theme.MakeButton("إغلاق ↩", 20, 475, 220, 36, Color.FromArgb(70, 80, 95));
+            btnClose = Theme.MakeButton("إغلاق ↩", 20, 515, 220, 38, Color.FromArgb(70, 80, 95));
             btnClose.Click += (s, e) => {
                 this.DialogResult = DialogResult.OK;
                 this.Close();
@@ -183,8 +201,48 @@ namespace ChickenDist.Forms
             this.KeyPreview = true;
             this.KeyDown += FrmQuickAdd_KeyDown;
 
-            // عند الضغط على Enter في سعر البيع يتم الحفظ مباشرة
+            // عند الضغط على Enter في اسم الصنف ينتقل لسعر الشراء أو سعر البيع
+            txtName.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    if (canSeeCost && nudPurchasePrice.Visible)
+                    {
+                        nudPurchasePrice.Focus();
+                        nudPurchasePrice.Select(0, nudPurchasePrice.Text.Length);
+                    }
+                    else
+                    {
+                        nudPrice.Focus();
+                        nudPrice.Select(0, nudPrice.Text.Length);
+                    }
+                }
+            };
+
+            // عند الضغط على Enter في سعر الشراء ينتقل لسعر البيع
+            nudPurchasePrice.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    nudPrice.Focus();
+                    nudPrice.Select(0, nudPrice.Text.Length);
+                }
+            };
+
+            // عند الضغط على Enter في سعر البيع ينتقل للكمية، وعند Enter في الكمية يتم الحفظ
             nudPrice.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    nudQuantity.Focus();
+                    nudQuantity.Select(0, nudQuantity.Text.Length);
+                }
+            };
+
+            nudQuantity.KeyDown += (s, e) => {
                 if (e.KeyCode == Keys.Enter)
                 {
                     e.Handled = true;
@@ -197,6 +255,12 @@ namespace ChickenDist.Forms
             this.Load += (s, e) => {
                 LoadCombos();
                 ResetForm();
+            };
+
+            // التركيز الفوري على اسم الصنف بمجرد ظهور النافذة
+            this.Shown += (s, e) => {
+                txtName.Focus();
+                txtName.SelectAll();
             };
 
             Theme.ApplyFormRTL(this);
@@ -259,15 +323,16 @@ namespace ChickenDist.Forms
             txtName.Clear();
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
+            if (nudQuantity != null) nudQuantity.Value = 1.00m;
             chkIsQuickItem.Checked = false;
             chkIsService.Checked = false;
             if (string.IsNullOrEmpty(cboUnit.Text)) cboUnit.Text = "قطعة";
 
             // تعبئة الاسم والكود الأولي إن وُجدا (عند الفتح من شاشة الشراء)
-            if (!string.IsNullOrWhiteSpace(_initialName))
-                txtName.Text = _initialName;
             if (!string.IsNullOrWhiteSpace(_initialCode))
                 txtCode.Text = _initialCode;
+            if (!string.IsNullOrWhiteSpace(_initialName))
+                txtName.Text = _initialName;
 
             txtName.Focus();
             txtName.SelectAll();
@@ -317,6 +382,12 @@ namespace ChickenDist.Forms
                 return;
             }
 
+            if (string.IsNullOrEmpty(code))
+            {
+                code = ProductDAL.GetNextProductCode();
+                txtCode.Text = code;
+            }
+
             if (nudPrice.Value < 0 || nudPurchasePrice.Value < 0)
             {
                 ShowStatus("❌ لا يمكن إدخال أسعار سالبة", Theme.Danger);
@@ -356,9 +427,24 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
+                    LastCreatedProductID = id;
+                    LastCreatedProductCode = code;
+                    LastCreatedProductName = name;
+                    LastCreatedPurchasePrice = nudPurchasePrice.Value;
+                    LastCreatedSalePrice = nudPrice.Value;
+                    LastCreatedQuantity = nudQuantity.Value;
+
                     ProductCache.Refresh();
                     ShowStatus($"✅ تم حفظ '{name}' بنجاح!", Theme.Success);
                     RaiseProductSaved();
+
+                    if (AutoCloseOnSave)
+                    {
+                        this.DialogResult = DialogResult.OK;
+                        this.Close();
+                        return;
+                    }
+
                     ResetForm();
                 }
                 else

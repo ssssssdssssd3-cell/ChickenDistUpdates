@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.87";
-$CHANGELOG = "v3.9.87 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add salesperson role in sales screen with commission calculation and direct report shortcut"
+$VERSION = "3.9.88";
+$CHANGELOG = "v3.9.88 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Auto insert new product into purchase invoice on quick add with quantity field and instant focus"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -78,8 +78,13 @@ if (Test-Path $obfuscatedSource) {
     Remove-Item $obfuscatedSource -Force -ErrorAction SilentlyContinue
 }
 if (Test-Path $obfuscarExe) {
-    & $obfuscarExe -s "$PROJECT_DIR\obfuscar.xml"
-    Write-OK "Obfuscar completed successfully"
+    Push-Location $PROJECT_DIR
+    try {
+        & $obfuscarExe -s "$PROJECT_DIR\obfuscar.xml"
+        Write-OK "Obfuscar completed successfully"
+    } finally {
+        Pop-Location
+    }
 }
 
 # Step 3: Verify Output
