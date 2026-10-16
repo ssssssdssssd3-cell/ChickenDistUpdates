@@ -34,7 +34,12 @@ namespace ChickenDist.DAL
                     p.Unit1Barcode = @trimmedTerm OR 
                     p.Unit2Barcode LIKE @term OR 
                     p.Unit2Barcode = @exactTerm OR 
-                    p.Unit2Barcode = @trimmedTerm";
+                    p.Unit2Barcode = @trimmedTerm OR
+                    EXISTS (
+                        SELECT 1 FROM PurchaseItems pi_imei 
+                        WHERE pi_imei.ProductID = p.ProductID 
+                          AND (pi_imei.IMEI = @exactTerm OR pi_imei.IMEI = @trimmedTerm OR pi_imei.IMEI LIKE @term)
+                    )";
 
                 if (parseRes != null && parseRes.IsScaleBarcode && !string.IsNullOrEmpty(parseRes.ItemCode))
                 {
@@ -132,6 +137,79 @@ namespace ChickenDist.DAL
             }
 
             return result;
+        }
+
+        public class ProductIMEIInventoryItem
+        {
+            public int PurchaseItemID { get; set; }
+            public int ProductID { get; set; }
+            public string IMEI { get; set; }
+            public decimal PurchasePrice { get; set; }
+            public decimal SuggestedSalePrice { get; set; }
+            public int WarehouseID { get; set; }
+        }
+
+        /// <summary>
+        /// جلب جميع أجهزة وسيريلات (IMEI) المتاحة وغير المباعة في المخزن للأصناف المعروضة في شاشة الجرد
+        /// </summary>
+        public static Dictionary<int, List<ProductIMEIInventoryItem>> GetAvailableIMEIsByProduct(IEnumerable<int> productIDs, int? warehouseID = null, SqlTransaction trans = null)
+        {
+            var dict = new Dictionary<int, List<ProductIMEIInventoryItem>>();
+            var pidList = productIDs != null ? new List<int>(productIDs) : new List<int>();
+            if (pidList.Count == 0) return dict;
+
+            string pidInClause = string.Join(",", pidList);
+            List<SqlParameter> prms = new List<SqlParameter>();
+            if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
+
+            string sql = $@"
+                SELECT 
+                    pItem.ItemID AS PurchaseItemID,
+                    pItem.ProductID,
+                    LTRIM(RTRIM(pItem.IMEI)) AS IMEI,
+                    pItem.UnitPrice AS PurchasePrice,
+                    COALESCE(NULLIF(pItem.SuggestedSalePrice, 0), NULLIF(prod.SalePrice, 0), pItem.UnitPrice) AS SuggestedSalePrice,
+                    p.WarehouseID
+                FROM PurchaseItems pItem
+                JOIN Purchases p ON pItem.PurchaseID = p.PurchaseID
+                JOIN Products prod ON pItem.ProductID = prod.ProductID
+                WHERE p.IsPosted = 1 
+                  AND pItem.IMEI IS NOT NULL 
+                  AND LTRIM(RTRIM(pItem.IMEI)) <> ''
+                  {(warehouseID.HasValue ? "AND p.WarehouseID = @wid" : "")}
+                  AND pItem.ProductID IN ({pidInClause})
+                  AND NOT EXISTS (
+                      SELECT 1 
+                      FROM SaleItems si
+                      JOIN Sales s ON si.SaleID = s.SaleID
+                      WHERE si.ProductID = pItem.ProductID
+                        AND s.IsPosted = 1
+                        AND si.IMEI IS NOT NULL
+                        AND LTRIM(RTRIM(si.IMEI)) = LTRIM(RTRIM(pItem.IMEI))
+                  )
+                ORDER BY pItem.ProductID, pItem.ItemID ASC";
+
+            DataTable dt = (trans != null) ? DbHelper.QueryTrans(trans, sql, prms.ToArray()) : DbHelper.Query(sql, prms.ToArray());
+            foreach (DataRow r in dt.Rows)
+            {
+                int pid = Convert.ToInt32(r["ProductID"]);
+                if (!dict.TryGetValue(pid, out var list))
+                {
+                    list = new List<ProductIMEIInventoryItem>();
+                    dict[pid] = list;
+                }
+                list.Add(new ProductIMEIInventoryItem
+                {
+                    PurchaseItemID = Convert.ToInt32(r["PurchaseItemID"]),
+                    ProductID = pid,
+                    IMEI = r["IMEI"]?.ToString()?.Trim() ?? "",
+                    PurchasePrice = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m,
+                    SuggestedSalePrice = r["SuggestedSalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SuggestedSalePrice"]) : 0m,
+                    WarehouseID = r["WarehouseID"] != DBNull.Value ? Convert.ToInt32(r["WarehouseID"]) : 1
+                });
+            }
+
+            return dict;
         }
 
 

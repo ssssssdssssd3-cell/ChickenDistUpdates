@@ -36,7 +36,12 @@ namespace ChickenDist.Forms
         private readonly System.Collections.Generic.Dictionary<string, decimal> _enteredActualQty
             = new System.Collections.Generic.Dictionary<string, decimal>();
 
-        private static string GetRowKey(int pid, bool isPending) => isPending ? $"{pid}_p" : $"{pid}";
+        private static string GetRowKey(int pid, bool isPending, string imei = null)
+        {
+            if (!string.IsNullOrEmpty(imei))
+                return $"{pid}_imei_{imei.Trim()}";
+            return isPending ? $"{pid}_p" : $"{pid}";
+        }
 
         // قائمة الأصناف التي تم إخفاؤها مؤقتاً بالزر الأيمن لربطها بالجرد لاحقاً
         private readonly System.Collections.Generic.HashSet<int> _hiddenProductIDs
@@ -506,6 +511,8 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "IsPendingPriceRow",    Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PendingSalePrice",     Visible = false });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PendingQtyThreshold",  Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",                 Visible = false });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchaseItemID",        Visible = false });
             Theme.AdjustGridHeaders(dgStock);
 
             // ── قائمة القائمة اليمنى التفاعلية ─────────────────────────────
@@ -802,6 +809,13 @@ namespace ChickenDist.Forms
             decimal totalCost = 0m;
             decimal totalSale = 0m;
 
+            var displayedPids = new List<int>();
+            foreach (DataRow r in dt.Rows)
+            {
+                displayedPids.Add(Convert.ToInt32(r["ProductID"]));
+            }
+            var imeiDict = InventoryDAL.GetAvailableIMEIsByProduct(displayedPids, wid);
+
             foreach (DataRow r in dt.Rows)
             {
                 if (displayedCount >= maxDisplay) break;
@@ -865,9 +879,6 @@ namespace ChickenDist.Forms
                 decimal pieceCost = majorFactor > 0 ? (basePP / majorFactor) : basePP;
                 decimal pieceSale = majorFactor > 0 ? (selectedBaseSP / majorFactor) : selectedBaseSP;
 
-                totalCost += (baseBookQty * pieceCost);
-                totalSale += (baseBookQty * pieceSale);
-
                 string displayUnit;
                 decimal curFactor;
 
@@ -928,10 +939,77 @@ namespace ChickenDist.Forms
                 string u1Bar = r.Table.Columns.Contains("Unit1Barcode") && r["Unit1Barcode"] != DBNull.Value ? r["Unit1Barcode"].ToString() : "";
                 string u2Bar = r.Table.Columns.Contains("Unit2Barcode") && r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
 
+                bool hasIMEIs = imeiDict.TryGetValue(pid, out var imeiList) && imeiList != null && imeiList.Count > 0;
                 bool hasDualPrices = pendingSP > 0 && Math.Abs(pendingSP - baseSP) > 0.005m;
 
-                if (hasDualPrices)
+                if (hasIMEIs)
                 {
+                    // أجهزة وموبيلات مسجلة بأرقام سيريال (IMEI): يتم عرض كل سيريال/جهاز في سطر مستقل بالكمية (1) وسعر الشراء والبيع الخاص به
+                    decimal allocatedImeiUnits = 0m;
+                    foreach (var imeiItem in imeiList)
+                    {
+                        allocatedImeiUnits += 1m;
+                        decimal imeiBookQty = 1.000m;
+                        decimal imeiPP = imeiItem.PurchasePrice > 0 ? imeiItem.PurchasePrice : displayedPP;
+                        decimal imeiSP = imeiItem.SuggestedSalePrice > 0 ? imeiItem.SuggestedSalePrice : displayedSP;
+
+                        totalCost += imeiPP;
+                        totalSale += imeiSP;
+
+                        string rowKeyIMEI = GetRowKey(pid, false, imeiItem.IMEI);
+                        string actualValIMEI = "";
+                        string diffValIMEI = "";
+                        decimal savedActualIMEI = 0m;
+                        if (_enteredActualQty.TryGetValue(rowKeyIMEI, out decimal savedBaseActualIMEI))
+                        {
+                            savedActualIMEI = savedBaseActualIMEI;
+                            actualValIMEI = savedActualIMEI.ToString("N3");
+                            decimal diff = savedActualIMEI - imeiBookQty;
+                            diffValIMEI = (diff > 0 ? "+" : "") + diff.ToString("N3");
+                        }
+
+                        string nameWithIMEI = $"{r["ProductName"]} [IMEI: {imeiItem.IMEI}]";
+                        AddStockRow(pid, batchIdVal, imeiItem.IMEI, scalePlu, nameWithIMEI, shelfLoc, expiryVal,
+                            unitCellText, imeiPP, imeiSP, imeiBookQty, actualValIMEI, diffValIMEI,
+                            baseUnit, unit1, unit2, u2Factor, u3Factor, 1.0m, 1.0m, 1.0m, imeiPP, imeiSP, baseWP, baseSWP,
+                            unit1PP, unit1SP, unit2PP, unit2SP,
+                            r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, false, 0m, 0m, rowKeyIMEI, savedActualIMEI,
+                            imei: imeiItem.IMEI, purchaseItemId: imeiItem.PurchaseItemID);
+                    }
+
+                    // إذا كان الرصيد الدفتري بالمخزن يزيد عن عدد الأجهزة المسجلة بسيريلات
+                    if (baseBookQty > allocatedImeiUnits)
+                    {
+                        decimal extraQty = baseBookQty - allocatedImeiUnits;
+                        decimal displayedExtraQty = extraQty / (curFactor > 0 ? curFactor : 1m);
+                        totalCost += (extraQty * pieceCost);
+                        totalSale += (extraQty * pieceSale);
+
+                        string rowKeyExtra = GetRowKey(pid, false);
+                        string actualValExtra = "";
+                        string diffValExtra = "";
+                        decimal savedActualExtra = 0m;
+                        if (_enteredActualQty.TryGetValue(rowKeyExtra, out decimal savedBaseExtra))
+                        {
+                            savedActualExtra = savedBaseExtra / (curFactor > 0 ? curFactor : 1m);
+                            actualValExtra = savedActualExtra.ToString("N3");
+                            decimal diff = savedActualExtra - displayedExtraQty;
+                            diffValExtra = (diff > 0 ? "+" : "") + diff.ToString("N3");
+                        }
+
+                        string nameExtra = $"{r["ProductName"]} (رصيد إضافي بدون سيريال)";
+                        AddStockRow(pid, batchIdVal, r["ProductCode"]?.ToString(), scalePlu, nameExtra, shelfLoc, expiryVal,
+                            unitCellText, displayedPP, displayedSP, displayedExtraQty, actualValExtra, diffValExtra,
+                            baseUnit, unit1, unit2, u2Factor, u3Factor, curFactor, majorFactor, extraQty, basePP, baseSP, baseWP, baseSWP,
+                            unit1PP, unit1SP, unit2PP, unit2SP,
+                            r["HasExpiry"], r["DefaultExpiryDays"], u1Bar, u2Bar, false, 0m, 0m, rowKeyExtra, savedActualExtra);
+                    }
+                }
+                else if (hasDualPrices)
+                {
+                    totalCost += (baseBookQty * pieceCost);
+                    totalSale += (baseBookQty * pieceSale);
+
                     // صنف له سعران بيع: يتم تقسيمه إلى سطرين مستقلين
                     // السطر الأول: السعر الحالي / القديم
                     decimal baseBookQtyOld = pendingThreshold > 0 ? Math.Min(baseBookQty, pendingThreshold) : (baseBookQty > 0 ? baseBookQty : 0m);
@@ -993,6 +1071,9 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
+                    totalCost += (baseBookQty * pieceCost);
+                    totalSale += (baseBookQty * pieceSale);
+
                     // صنف عادي بسعر بيع واحد
                     decimal displayedBookQty = baseBookQty / (curFactor > 0 ? curFactor : 1m);
                     string rowKey = GetRowKey(pid, false);
@@ -1062,7 +1143,9 @@ namespace ChickenDist.Forms
             decimal pendingSP,
             decimal pendingThreshold,
             string rowKey,
-            decimal savedActual)
+            decimal savedActual,
+            string imei = null,
+            int? purchaseItemId = null)
         {
             int ri = dgStock.Rows.Add(
                 pid,
@@ -1122,6 +1205,8 @@ namespace ChickenDist.Forms
             dgStock.Rows[ri].Cells["IsPendingPriceRow"].Value       = isPendingPriceRow;
             dgStock.Rows[ri].Cells["PendingSalePrice"].Value        = pendingSP;
             dgStock.Rows[ri].Cells["PendingQtyThreshold"].Value     = pendingThreshold;
+            dgStock.Rows[ri].Cells["IMEI"].Value                    = imei ?? "";
+            dgStock.Rows[ri].Cells["PurchaseItemID"].Value           = purchaseItemId.HasValue ? (object)purchaseItemId.Value : DBNull.Value;
 
             bool isInventoried = _enteredActualQty.ContainsKey(rowKey) || _inventoriedProductIDs.Contains(pid);
             if (isInventoried)
@@ -1236,7 +1321,8 @@ namespace ChickenDist.Forms
                 string cellText = row.Cells["ActualQty"].Value?.ToString();
                 int rowPid = Convert.ToInt32(row.Cells["ProductID"].Value);
                 bool isPending = row.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(row.Cells["IsPendingPriceRow"].Value);
-                string rowKey = GetRowKey(rowPid, isPending);
+                string imei = row.Cells["IMEI"]?.Value?.ToString();
+                string rowKey = GetRowKey(rowPid, isPending, imei);
 
                 if (!string.IsNullOrWhiteSpace(cellText) &&
                     decimal.TryParse(cellText, numStyles, inv, out decimal actualQty))
@@ -1304,6 +1390,22 @@ namespace ChickenDist.Forms
             string u1Bar    = r.Cells["Unit1Barcode"] != null ? (r.Cells["Unit1Barcode"].Value?.ToString() ?? "") : "";
             string u2Bar    = r.Cells["Unit2Barcode"] != null ? (r.Cells["Unit2Barcode"].Value?.ToString() ?? "") : "";
             string pName    = r.Cells["ProductName"].Value?.ToString() ?? "";
+            string imei     = r.Cells["IMEI"] != null ? (r.Cells["IMEI"].Value?.ToString() ?? "") : "";
+
+            // 0) مطابقة رقم السيريال (IMEI) مباشرة أو عبر IMEI 2 المرتبط بالجهاز
+            if (!string.IsNullOrEmpty(imei))
+            {
+                if (imei.Equals(c, StringComparison.OrdinalIgnoreCase) ||
+                    imei.TrimStart('0').Equals(cTrimmed, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                if (c.Length == 15 && imei.Length == 15 && char.IsDigit(c[0]))
+                {
+                    var candidates = PurchaseDAL.GetCandidatePairedIMEIs(c);
+                    if (candidates.Contains(imei)) return true;
+                }
+            }
 
             // 1) مطابقة مباشرة تامة
             if (pCode.Equals(c, StringComparison.OrdinalIgnoreCase) ||
@@ -1400,7 +1502,8 @@ namespace ChickenDist.Forms
 
                 int pid = Convert.ToInt32(targetRow.Cells["ProductID"].Value);
                 bool isPending = targetRow.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(targetRow.Cells["IsPendingPriceRow"].Value);
-                string rowKey = GetRowKey(pid, isPending);
+                string imei = targetRow.Cells["IMEI"]?.Value?.ToString();
+                string rowKey = GetRowKey(pid, isPending, imei);
 
                 var numStyles = System.Globalization.NumberStyles.Any;
                 var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -1420,7 +1523,14 @@ namespace ChickenDist.Forms
                         currentActual = bookQty;
                     }
 
-                    currentActual += 1m;
+                    if (!string.IsNullOrEmpty(imei))
+                    {
+                        currentActual = 1.0m;
+                    }
+                    else
+                    {
+                        currentActual += 1m;
+                    }
                     targetRow.Cells["ActualQty"].Value = currentActual.ToString("N3");
 
                     decimal diff = currentActual - bookQty;
@@ -1601,7 +1711,8 @@ namespace ChickenDist.Forms
 
             int rowPid = row.Cells["ProductID"].Value != DBNull.Value ? Convert.ToInt32(row.Cells["ProductID"].Value) : 0;
             bool isPending = row.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(row.Cells["IsPendingPriceRow"].Value);
-            string rowKey = GetRowKey(rowPid, isPending);
+            string imei = row.Cells["IMEI"]?.Value?.ToString();
+            string rowKey = GetRowKey(rowPid, isPending, imei);
 
             // 1. التقاط المعامل القديم أولاً قبل أي تعديل على الخلية
             decimal oldFactor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
@@ -1788,7 +1899,8 @@ namespace ChickenDist.Forms
                         if (r.Cells["ProductID"].Value == null) continue;
                         int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
                         bool isPending = r.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(r.Cells["IsPendingPriceRow"].Value);
-                        string rowKey = GetRowKey(pid, isPending);
+                        string imei = r.Cells["IMEI"]?.Value?.ToString();
+                        string rowKey = GetRowKey(pid, isPending, imei);
 
                         if (_enteredActualQty.ContainsKey(rowKey))
                         {
@@ -1855,7 +1967,11 @@ namespace ChickenDist.Forms
                 bool isPending = row.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(row.Cells["IsPendingPriceRow"].Value);
                 decimal pendingSP = row.Cells["PendingSalePrice"].Value != null ? Convert.ToDecimal(row.Cells["PendingSalePrice"].Value) : 0m;
                 decimal pendingThreshold = row.Cells["PendingQtyThreshold"].Value != null ? Convert.ToDecimal(row.Cells["PendingQtyThreshold"].Value) : 0m;
-                string rowKey = GetRowKey(pid, isPending);
+                string imei = row.Cells["IMEI"]?.Value?.ToString();
+                int? purchaseItemId = row.Cells["PurchaseItemID"]?.Value != null && row.Cells["PurchaseItemID"].Value != DBNull.Value 
+                    ? Convert.ToInt32(row.Cells["PurchaseItemID"].Value) 
+                    : (int?)null;
+                string rowKey = GetRowKey(pid, isPending, imei);
 
                 decimal factor = row.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["CurrentFactor"].Value) : 1.0m;
                 if (factor <= 0) factor = 1.0m;
@@ -1916,7 +2032,9 @@ namespace ChickenDist.Forms
                         IsPendingPriceRow = isPending,
                         PendingSalePrice = pendingSP,
                         PendingQtyThreshold = pendingThreshold,
-                        RowKey = rowKey
+                        RowKey = rowKey,
+                        IMEI = imei ?? "",
+                        PurchaseItemID = purchaseItemId
                     });
                 }
             }
@@ -1973,8 +2091,45 @@ namespace ChickenDist.Forms
                                 var mainItem = grp.FirstOrDefault(x => !x.IsPendingPriceRow);
                                 var pendingItem = grp.FirstOrDefault(x => x.IsPendingPriceRow);
 
+                                bool hasGroupIMEIs = grp.Any(x => !string.IsNullOrEmpty(x.IMEI));
+
                                 // 1. حفظ تعديلات الأسعار
-                                if (mainItem != null && mainItem.IsPriceModified)
+                                if (hasGroupIMEIs)
+                                {
+                                    foreach (var itm in grp.Where(x => x.IsPriceModified))
+                                    {
+                                        if (!string.IsNullOrEmpty(itm.IMEI))
+                                        {
+                                            // تحديث سعر الشراء وسعر البيع المقترح للجهاز في PurchaseItems
+                                            DbHelper.ExecuteTrans(trans,
+                                                @"UPDATE PurchaseItems 
+                                                  SET UnitPrice = @pur, SuggestedSalePrice = @sale 
+                                                  WHERE (ItemID = @itemId OR (ProductID = @pid AND LTRIM(RTRIM(IMEI)) = @imei))",
+                                                DbHelper.P("@pur", itm.NewPurchasePrice),
+                                                DbHelper.P("@sale", itm.NewSalePrice),
+                                                DbHelper.P("@itemId", itm.PurchaseItemID ?? 0),
+                                                DbHelper.P("@pid", pid),
+                                                DbHelper.P("@imei", itm.IMEI));
+
+                                            // تحديث السعر العام في جدول Products
+                                            DbHelper.ExecuteTrans(trans,
+                                                "UPDATE Products SET SalePrice = @sale, PurchasePrice = @pur WHERE ProductID = @pid",
+                                                DbHelper.P("@sale", itm.NewSalePrice),
+                                                DbHelper.P("@pur", itm.NewPurchasePrice),
+                                                DbHelper.P("@pid", pid));
+
+                                            DbHelper.ExecuteTrans(trans,
+                                                @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                                  VALUES (@pid, @old, @new, 'InventoryAdjust', NULL, @uid, @notes)",
+                                                DbHelper.P("@pid", pid),
+                                                DbHelper.P("@old", itm.OriginalSalePrice),
+                                                DbHelper.P("@new", itm.NewSalePrice),
+                                                DbHelper.P("@uid", Session.EmpID),
+                                                DbHelper.P("@notes", $"تعديل سعر جهاز IMEI: {itm.IMEI} من شاشة الجرد"));
+                                        }
+                                    }
+                                }
+                                else if (mainItem != null && mainItem.IsPriceModified)
                                 {
                                     if (Math.Round(mainItem.NewPurchasePrice, 2) != Math.Round(mainItem.OriginalPurchasePrice, 2))
                                     {
@@ -2005,7 +2160,51 @@ namespace ChickenDist.Forms
                                 bool anyQtyModified = grp.Any(x => x.IsQtyModified);
                                 if (anyQtyModified)
                                 {
-                                    if (pendingItem != null || (mainItem != null && mainItem.PendingSalePrice > 0))
+                                    if (hasGroupIMEIs)
+                                    {
+                                        // حساب الرصيد الفعلي الإجمالي للصنف عبر جميع أسطره في شبكة الجرد
+                                        decimal totalActual = 0m;
+                                        foreach (DataGridViewRow r in dgStock.Rows)
+                                        {
+                                            if (r.Cells["ProductID"].Value == null) continue;
+                                            if (Convert.ToInt32(r.Cells["ProductID"].Value) != pid) continue;
+                                            string rImei = r.Cells["IMEI"]?.Value?.ToString();
+                                            string rKey = GetRowKey(pid, false, rImei);
+                                            if (_enteredActualQty.TryGetValue(rKey, out decimal enteredVal))
+                                            {
+                                                totalActual += enteredVal;
+                                            }
+                                            else
+                                            {
+                                                decimal.TryParse(r.Cells["BookQty"].Value?.ToString(), numStyles, inv, out decimal bVal);
+                                                totalActual += bVal;
+                                            }
+                                        }
+
+                                        // تحديث رصيد المخزن في ProductStock
+                                        DbHelper.ExecuteTrans(trans,
+                                            @"IF EXISTS (SELECT 1 FROM ProductStock WHERE ProductID=@pid AND WarehouseID=@wid)
+                                                UPDATE ProductStock SET Quantity = @aq WHERE ProductID=@pid AND WarehouseID=@wid
+                                              ELSE
+                                                INSERT INTO ProductStock (ProductID, WarehouseID, Quantity) VALUES (@pid, @wid, @aq)",
+                                            DbHelper.P("@pid", pid), DbHelper.P("@wid", wid), DbHelper.P("@aq", totalActual));
+
+                                        // تسجيل حركة التسوية لكل سيريال تم تعديله في StockAdjustments
+                                        foreach (var itm in grp.Where(x => x.IsQtyModified))
+                                        {
+                                            decimal dispActual = itm.ActualEntered ?? itm.DisplayedBookQty;
+                                            string notes = $"[جرد جهاز IMEI: {itm.IMEI}] " + (itm.Notes ?? "").Trim();
+                                            DbHelper.ExecuteTrans(trans,
+                                                @"INSERT INTO StockAdjustments (ProductID, WarehouseID, BookQty, ActualQty, Notes, CreatedBy, UnitName, Factor, BatchCode)
+                                                  VALUES (@pid, @wid, @bq, @aq, @notes, @by, @un, 1.0, @bcode)",
+                                                DbHelper.P("@pid", pid), DbHelper.P("@wid", wid),
+                                                DbHelper.P("@bq", itm.DisplayedBookQty), DbHelper.P("@aq", dispActual),
+                                                DbHelper.P("@notes", notes), DbHelper.P("@by", Session.EmpID),
+                                                DbHelper.P("@un", "جهاز"),
+                                                DbHelper.P("@bcode", sessionBatchCode));
+                                        }
+                                    }
+                                    else if (pendingItem != null || (mainItem != null && mainItem.PendingSalePrice > 0))
                                     {
                                         // صنف له سعران: احتساب الرصيد الفعلي الإجمالي وضبط السعر المعلق
                                         decimal actual1 = mainItem != null ? (mainItem.ActualEntered.HasValue ? mainItem.BaseActual : mainItem.BaseBookQty) : 0m;
@@ -2224,6 +2423,8 @@ namespace ChickenDist.Forms
             public decimal PendingSalePrice { get; set; }
             public decimal PendingQtyThreshold { get; set; }
             public string RowKey { get; set; }
+            public string IMEI { get; set; } = "";
+            public int? PurchaseItemID { get; set; }
         }
 
         private void BtnPrintIncreaseBarcodes_Click(object sender, EventArgs e)
@@ -2246,6 +2447,8 @@ namespace ChickenDist.Forms
                         string name = row.Cells["ProductName"].Value?.ToString() ?? "";
                         string code = row.Cells["ProductCode"].Value?.ToString() ?? "";
                         string shelf = row.Cells["ShelfLocation"].Value?.ToString() ?? "";
+                        string imei = row.Cells["IMEI"]?.Value?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(imei)) code = imei;
                         string salePriceStr = row.Cells["SalePrice"].Value?.ToString();
                         decimal salePrice = 0;
                         if (decimal.TryParse(salePriceStr, numStyles, inv, out decimal sp)) salePrice = sp;
@@ -2260,7 +2463,8 @@ namespace ChickenDist.Forms
                             ProductCode = code,
                             Price = salePrice,
                             PrintQty = printCount,
-                            ShelfLocation = shelf
+                            ShelfLocation = shelf,
+                            IMEI = imei
                         });
                     }
                 }
@@ -2522,7 +2726,8 @@ namespace ChickenDist.Forms
 
             int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
             bool isPending = r.Cells["IsPendingPriceRow"].Value != null && Convert.ToBoolean(r.Cells["IsPendingPriceRow"].Value);
-            string rowKey = GetRowKey(pid, isPending);
+            string imei = r.Cells["IMEI"]?.Value?.ToString();
+            string rowKey = GetRowKey(pid, isPending, imei);
 
             string bookQtyStr = r.Cells["BookQty"].Value?.ToString() ?? "0";
             decimal curFactor = r.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["CurrentFactor"].Value) : 1.0m;

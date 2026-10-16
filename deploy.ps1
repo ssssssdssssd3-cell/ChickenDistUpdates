@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.95";
-$CHANGELOG = "v3.9.95 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add dedicated mobile IMEI barcode label template with large store name and multi-device batch printing support"
+$VERSION = "3.9.96";
+$CHANGELOG = "v3.9.96 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show each mobile serial (IMEI) as an independent row with its own qty and price in inventory and price adjustment screen"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
