@@ -1786,6 +1786,40 @@ namespace ChickenDist.Forms
 			_isProcessingScan = true;
 			try
 			{
+				// في نشاط الموبايلات: الأولوية الأولى هي فحص هل الكود الممسوح هو سيريال IMEI لجهاز متاح بالمخزن
+				if (AppConfig.BusinessType == "Mobiles" && (code.Length >= 14 && code.Length <= 16))
+				{
+					var imeiDirect = PurchaseDAL.FindProductByAvailableIMEI(code);
+					if (imeiDirect.HasValue)
+					{
+						int productID = imeiDirect.Value.ProductID;
+						string scannedImei = imeiDirect.Value.IMEI;
+
+						// إزالة السطر المعلق إن وجد
+						if (_pendingRowIdx >= 0 && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+						{
+							dgItems.Rows.RemoveAt(_pendingRowIdx);
+							_pendingRowIdx = -1;
+						}
+
+						AddProductWithSpecificIMEI(productID, scannedImei);
+						try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+
+						if (txtBarcode != null)
+						{
+							txtBarcode.Clear();
+							this.ActiveControl = txtBarcode;
+							txtBarcode.Focus();
+							txtBarcode.SelectAll();
+						}
+						else
+						{
+							AddNewCodeRow();
+						}
+						return;
+					}
+				}
+
 				var dt = ProductDAL.FindByCode(code);
 				if (dt != null && dt.Rows.Count > 0)
 				{
@@ -1871,11 +1905,10 @@ namespace ChickenDist.Forms
 					}
 					else
 					{
-						if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit)))
+						if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit) || code.Length < 14))
 						{
-							// في نشاط الموبايل: تم مسح الباركود الدولي (EAN-13) للعلبة وليس السيريال (IMEI)
-							// نتجاهله برفق وبدون نافذة منبثقة تعطل الشاشة ليتمكن الاسكنر من مسح السيريال فوراً
-							try { System.Media.SystemSounds.Beep.Play(); } catch { }
+							// في نشاط الموبايل: تم مسح الباركود الدولي (EAN-13) للعلبة أو كود سيريال غير مسجل
+							// نتجاهله برفق وبصمت تام ليتمكن الاسكنر من مسح السيريال IMEI فوراً
 							if (txtBarcode != null)
 							{
 								txtBarcode.Clear();
@@ -3862,6 +3895,34 @@ namespace ChickenDist.Forms
 						return;
 					}
 					var (code, multiQty) = ParseBarcodeMultiplier(rawCode);
+
+					// في نشاط الموبايلات: الأولوية الأولى هي فحص هل الكود الممسوح هو سيريال IMEI لجهاز متاح بالمخزن
+					if (AppConfig.BusinessType == "Mobiles" && (code.Length >= 14 && code.Length <= 16))
+					{
+						var imeiDirect = PurchaseDAL.FindProductByAvailableIMEI(code);
+						if (imeiDirect.HasValue)
+						{
+							if (capturedPending >= 0 && capturedPending == _pendingRowIdx && _pendingRowIdx < dgItems.Rows.Count && _pendingRowIdx >= _items.Count)
+							{
+								dgItems.Rows.RemoveAt(_pendingRowIdx);
+								_pendingRowIdx = -1;
+							}
+							AddProductWithSpecificIMEI(imeiDirect.Value.ProductID, imeiDirect.Value.IMEI);
+							try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+							if (txtBarcode != null)
+							{
+								txtBarcode.Clear();
+								this.ActiveControl = txtBarcode;
+								txtBarcode.Focus();
+							}
+							else
+							{
+								AddNewCodeRow();
+							}
+							return;
+						}
+					}
+
 					var dt = ProductDAL.FindByCode(code);
 					if (dt != null && dt.Rows.Count > 0)
 					{
@@ -3935,9 +3996,8 @@ namespace ChickenDist.Forms
 						}
 						else
 						{
-							if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit)))
+							if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit) || code.Length < 14))
 							{
-								try { System.Media.SystemSounds.Beep.Play(); } catch { }
 								if (txtBarcode != null)
 								{
 									txtBarcode.Clear();

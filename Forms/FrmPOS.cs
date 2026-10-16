@@ -1584,6 +1584,21 @@ namespace ChickenDist.Forms
                 paddedC = cVal.ToString("D8");
             }
 
+            // في نشاط الموبايلات: الأولوية الأولى هي فحص هل الكود الممسوح هو سيريال IMEI لجهاز متاح
+            if (AppConfig.BusinessType == "Mobiles" && (code.Length >= 14 && code.Length <= 16))
+            {
+                var directImei = PurchaseDAL.FindProductByAvailableIMEI(code);
+                if (directImei.HasValue)
+                {
+                    var pRow = ProductDAL.GetByID(directImei.Value.ProductID);
+                    if (pRow != null)
+                    {
+                        AddItemFromRow(pRow, 1m, null, 1m, 0, null, null, 0m, false, directImei.Value.IMEI);
+                        return;
+                    }
+                }
+            }
+
             var dt = DbHelper.Query(@"
                 SELECT p.ProductID, p.ProductCode, p.ProductName, p.Unit, p.SalePrice, p.PurchasePrice,
                        p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
@@ -1719,9 +1734,8 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit)))
+                if (AppConfig.BusinessType == "Mobiles" && (code.Length == 12 || code.Length == 13 || !code.All(char.IsDigit) || code.Length < 14))
                 {
-                    try { System.Media.SystemSounds.Beep.Play(); } catch { }
                     txtBarcode?.Clear();
                     txtBarcode?.Focus();
                     return;
