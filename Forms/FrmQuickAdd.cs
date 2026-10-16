@@ -31,9 +31,13 @@ namespace ChickenDist.Forms
         // إغلاق تلقائي عند الحفظ (مفيد لشاشة المشتريات لإنزال الصنف مباشرة)
         public bool AutoCloseOnSave { get; set; } = false;
 
+        // دالة رد نداء لإضافة الصنف مباشرة لجدول فاتورة المشتريات مع بقاء النافذة مفتوحة للصنف التالي
+        public Action<int, string, string, decimal, decimal, decimal> OnProductSavedToInvoice { get; set; }
+
         // اسم/كود أولي اختياري (لاستخدامه عند الفتح من شاشة الشراء لصنف غير موجود)
         private readonly string _initialName;
         private readonly string _initialCode;
+        private bool _initialApplied = false;
 
         public FrmQuickAdd(string initialName = null, string initialCode = null, bool autoCloseOnSave = false)
         {
@@ -328,11 +332,15 @@ namespace ChickenDist.Forms
             chkIsService.Checked = false;
             if (string.IsNullOrEmpty(cboUnit.Text)) cboUnit.Text = "قطعة";
 
-            // تعبئة الاسم والكود الأولي إن وُجدا (عند الفتح من شاشة الشراء)
-            if (!string.IsNullOrWhiteSpace(_initialCode))
-                txtCode.Text = _initialCode;
-            if (!string.IsNullOrWhiteSpace(_initialName))
-                txtName.Text = _initialName;
+            // تعبئة الاسم والكود الأولي إن وُجدا مرة واحدة فقط عند أول فتح للشاشة
+            if (!_initialApplied)
+            {
+                _initialApplied = true;
+                if (!string.IsNullOrWhiteSpace(_initialCode))
+                    txtCode.Text = _initialCode;
+                if (!string.IsNullOrWhiteSpace(_initialName))
+                    txtName.Text = _initialName;
+            }
 
             txtName.Focus();
             txtName.SelectAll();
@@ -435,8 +443,21 @@ namespace ChickenDist.Forms
                     LastCreatedQuantity = nudQuantity.Value;
 
                     ProductCache.Refresh();
-                    ShowStatus($"✅ تم حفظ '{name}' بنجاح!", Theme.Success);
                     RaiseProductSaved();
+
+                    if (OnProductSavedToInvoice != null)
+                    {
+                        try
+                        {
+                            OnProductSavedToInvoice.Invoke(id, code, name, nudQuantity.Value, nudPurchasePrice.Value, nudPrice.Value);
+                        }
+                        catch { }
+                        ShowStatus($"✅ تم حفظ '{name}' وإدراجه بالفاتورة! جاهز للصنف التالي", Theme.Success);
+                    }
+                    else
+                    {
+                        ShowStatus($"✅ تم حفظ '{name}' بنجاح!", Theme.Success);
+                    }
 
                     if (AutoCloseOnSave)
                     {

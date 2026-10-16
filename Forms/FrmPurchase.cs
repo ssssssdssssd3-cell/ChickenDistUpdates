@@ -2253,24 +2253,20 @@ namespace ChickenDist.Forms
         }
 
         /// <summary>
-        /// فتح شاشة الإدخال السريع لصنف جديد وإنزاله مباشرة في جدول الفاتورة مع الكمية المحددة
+        /// فتح شاشة الإدخال السريع لصنف جديد وإنزاله مباشرة في جدول الفاتورة مع بقاء الشاشة مفتوحة لاستقبال صنف آخر
         /// </summary>
         public void OpenQuickAddProduct(string initialName = null, string initialCode = null)
         {
             if (!ValidateSupplierAndInvoiceBeforeAddingItem(false)) return;
-            using (var frmQ = new FrmQuickAdd(initialName: initialName, initialCode: initialCode, autoCloseOnSave: true))
+            using (var frmQ = new FrmQuickAdd(initialName: initialName, initialCode: initialCode, autoCloseOnSave: false))
             {
-                if (frmQ.ShowDialog(this) == DialogResult.OK && frmQ.LastCreatedProductID > 0)
+                frmQ.OnProductSavedToInvoice = (id, code, name, qty, pp, sp) =>
                 {
                     LoadCombos(reloadParties: false, reloadProducts: true);
-                    AddProductToGrid(frmQ.LastCreatedProductID, frmQ.LastCreatedProductCode, frmQ.LastCreatedProductName,
-                        frmQ.LastCreatedQuantity, frmQ.LastCreatedPurchasePrice, 0m, frmQ.LastCreatedSalePrice);
-                    AddNewCodeRow();
-                }
-                else
-                {
-                    LoadCombos(reloadParties: false, reloadProducts: true);
-                }
+                    AddProductToGrid(id, code, name, qty, pp, 0m, sp);
+                };
+                frmQ.ShowDialog(this);
+                LoadCombos(reloadParties: false, reloadProducts: true);
             }
             if (txtBarcode != null) { txtBarcode.Focus(); txtBarcode.SelectAll(); }
         }

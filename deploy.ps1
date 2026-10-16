@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "3.9.91";
-$CHANGELOG = "v3.9.91 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add clearance offer period with start and end dates and automatic restoration of original price upon expiration"
+$VERSION = "3.9.92";
+$CHANGELOG = "v3.9.92 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Keep quick add product dialog open in purchase invoice to accept consecutive new products"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
