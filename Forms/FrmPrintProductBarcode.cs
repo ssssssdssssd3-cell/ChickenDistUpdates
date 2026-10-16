@@ -525,9 +525,9 @@ namespace ChickenDist.Forms
             var fNameLarge     = new Font("Arial", isSmallSticker ? 8.5f : 10f, FontStyle.Bold);
             var fLocationLarge = new Font("Arial", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
 
-            var center = new StringFormat { Alignment = StringAlignment.Center };
-            var leftFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
-            var rightFormat = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+            var center = new StringFormat { Alignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoClip };
+            var leftFormat = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoClip };
+            var rightFormat = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoClip };
 
             // Print labels on the current page row
             for (int itemIndex = 0; itemIndex < labelsPerRow; itemIndex++)
@@ -563,39 +563,44 @@ namespace ChickenDist.Forms
                     string compName = !string.IsNullOrWhiteSpace(_printCompanyNameText) ? _printCompanyNameText : AppConfig.CompanyName;
                     if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(compName))
                     {
-                        // 1. اسم المكان كبير وواضح وبارز في أعلى الملصق (طلب العميل: يطبع اسم المكان كبير)
-                        var fCompanyHuge = new Font("Segoe UI", isSmallSticker ? 8.5f : 10.5f, FontStyle.Bold);
-                        g.DrawString(compName, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 12 : 16), center);
-                        y += isSmallSticker ? 12 : 16;
+                        // 1. اسم المكان كبير وواضح وبارز في أعلى الملصق بدون أي قص
+                        var fCompanyHuge = new Font("Segoe UI", isSmallSticker ? 8f : 10f, FontStyle.Bold);
+                        float compH = isSmallSticker ? 16f : 20f;
+                        g.DrawString(compName, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, compH), center);
+                        y += compH + 1f;
                     }
 
                     // 2. اسم الجهاز والموديل
-                    var fDeviceTitle = new Font("Segoe UI", isSmallSticker ? 6.5f : 8f, FontStyle.Bold);
-                    g.DrawString(titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x + 1, y, w - 2, isSmallSticker ? 13 : 16), center);
-                    y += isSmallSticker ? 13 : 16;
+                    var fDeviceTitle = new Font("Segoe UI", isSmallSticker ? 7f : 8.5f, FontStyle.Bold);
+                    float titleH = isSmallSticker ? 15f : 18f;
+                    g.DrawString(titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x, y, w, titleH), center);
+                    y += titleH + 2f;
 
                     // 3. رسم باركود الـ IMEI بدقة عالية ومسافات حواف مريحة (Code 128)
-                    float barcodeHeight = isSmallSticker ? 22 : 30;
-                    float barcodeMargin = isSmallSticker ? 8 : 12;
+                    float barcodeHeight = isSmallSticker ? 20f : 26f;
+                    float barcodeMargin = isSmallSticker ? 8f : 12f;
                     float barcodeX = x + barcodeMargin;
                     float barcodeW = w - (barcodeMargin * 2);
                     BarcodeEngine.DrawBarcode(g, currentBarcode, "Code128", barcodeX, y, barcodeW, barcodeHeight);
-                    y += barcodeHeight + 2;
+                    y += barcodeHeight + 2f;
 
                     // 4. كتابة كود الـ IMEI بوضوح + السعر إن وجد
-                    var fIMEIText = new Font("Consolas", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
+                    var fIMEIText = new Font("Consolas", isSmallSticker ? 7.5f : 8.5f, FontStyle.Bold);
                     string imeiDisplay = (currentBarcode.Length == 15 && currentBarcode.All(char.IsDigit)) ? $"IMEI: {currentBarcode}" : $"S/N: {currentBarcode}";
+                    float imeiH = isSmallSticker ? 13f : 15f;
 
                     if (_printPriceFlag && _printedPrice > 0)
                     {
-                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 9 : 12), center);
-                        y += isSmallSticker ? 9 : 12;
-                        var fPriceSmall = new Font("Segoe UI", isSmallSticker ? 7f : 8.5f, FontStyle.Bold);
-                        g.DrawString($"السعر: {_printedPrice:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x, y, w, isSmallSticker ? 10 : 13), center);
+                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, imeiH), center);
+                        y += imeiH + 1f;
+                        var fPriceSmall = new Font("Segoe UI", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
+                        float priceH = isSmallSticker ? 15f : 19f;
+                        g.DrawString($"السعر: {_printedPrice:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x, y, w, priceH), center);
                     }
                     else
                     {
-                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 11 : 14), center);
+                        float imeiAloneH = isSmallSticker ? 15f : 18f;
+                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, imeiAloneH), center);
                     }
                 }
                 else if (template == "Shelf")
