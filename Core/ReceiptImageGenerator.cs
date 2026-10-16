@@ -176,6 +176,18 @@ namespace ChickenDist.Core
                 // default is Royal Navy
                 bool isNavy       = !isCommercial && !isModern && !isEmerald && !isGold && !isAlTarek;
 
+                if (AppConfig.BusinessType == "Mobiles" && dtItems != null && dtItems.Columns.Contains("IMEI"))
+                {
+                    foreach (DataRow r in dtItems.Rows)
+                    {
+                        string imei = r["IMEI"]?.ToString()?.Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(imei) && !r["ProductName"].ToString().Contains(imei))
+                        {
+                            r["ProductName"] = r["ProductName"].ToString() + " (IMEI: " + imei + ")";
+                        }
+                    }
+                }
+
                 int itemCount = dtItems != null ? dtItems.Rows.Count : 0;
                 bool showFinancial = row.Table.Columns.Contains("ClientID") && row["ClientID"] != DBNull.Value;
                 decimal netVal = Convert.ToDecimal(row["TotalAmount"]);

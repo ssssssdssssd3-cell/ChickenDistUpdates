@@ -7495,6 +7495,17 @@ namespace ChickenDist.Forms
 
 			// جلب أصناف الفاتورة
 			var items = SaleDAL.GetItems(saleID);
+			if (AppConfig.BusinessType == "Mobiles" && items != null && items.Columns.Contains("IMEI"))
+			{
+				foreach (DataRow r in items.Rows)
+				{
+					string imei = r["IMEI"]?.ToString()?.Trim() ?? "";
+					if (!string.IsNullOrWhiteSpace(imei) && !r["ProductName"].ToString().Contains(imei))
+					{
+						r["ProductName"] = r["ProductName"].ToString() + " (IMEI: " + imei + ")";
+					}
+				}
+			}
 
 			// جلب البيانات المالية للعميل
 			decimal prevBalance = 0m;
@@ -7588,10 +7599,19 @@ namespace ChickenDist.Forms
 				foreach (DataRow r in items.Rows)
 				{
 					string name  = r["ProductName"].ToString();
+					string imei  = r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value ? r["IMEI"].ToString().Trim() : "";
+					if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei) && !name.Contains(imei))
+					{
+						name += $" (IMEI: {imei})";
+					}
 					decimal qty   = Convert.ToDecimal(r["Quantity"]);
 					decimal price = Convert.ToDecimal(r["UnitPrice"]);
 					decimal tot   = Convert.ToDecimal(r["TotalPrice"]);
-					sb.AppendLine($"🐥 {name}");
+					sb.AppendLine(AppConfig.BusinessType == "Mobiles" ? $"📱 {name}" : $"🐥 {name}");
+					if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
+					{
+						sb.AppendLine($"▪ السيريال (IMEI) : {imei}");
+					}
 					sb.AppendLine($"▪ الكمية : {qty:0.##}");
 					sb.AppendLine($"▪ السعر : {price:N2} ج.م");
 					sb.AppendLine($"▪ الإجمالي : {tot:N2} ج.م");
@@ -7786,11 +7806,20 @@ namespace ChickenDist.Forms
 				foreach (DataRow itm in items.Rows)
 				{
 					string pName = itm["ProductName"]?.ToString() ?? "";
+					string imei  = itm.Table.Columns.Contains("IMEI") && itm["IMEI"] != DBNull.Value ? itm["IMEI"].ToString().Trim() : "";
+					if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei) && !pName.Contains(imei))
+					{
+						pName += $" (IMEI: {imei})";
+					}
 					string uName = itm.Table.Columns.Contains("UnitName") && !string.IsNullOrWhiteSpace(itm["UnitName"]?.ToString()) ? itm["UnitName"].ToString() : "قطعة";
 					decimal qty = Convert.ToDecimal(itm["Quantity"]);
 					decimal price = Convert.ToDecimal(itm["UnitPrice"]);
 					decimal total = Convert.ToDecimal(itm["TotalPrice"]);
 					sb.AppendLine($"{idx}. {pName} ({qty:0.##} {uName} × {price:N2}) = *{total:N2} ج.م*");
+					if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
+					{
+						sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+					}
 					idx++;
 				}
 			}
@@ -8205,10 +8234,19 @@ namespace ChickenDist.Forms
 				foreach (DataRow item in items.Rows)
 				{
 					string pName = item["ProductName"]?.ToString() ?? "";
+					string imei  = item.Table.Columns.Contains("IMEI") && item["IMEI"] != DBNull.Value ? item["IMEI"].ToString().Trim() : "";
+					if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei) && !pName.Contains(imei))
+					{
+						pName += $" (IMEI: {imei})";
+					}
 					decimal qty = Convert.ToDecimal(item["Quantity"]);
 					decimal price = Convert.ToDecimal(item["UnitPrice"]);
 					decimal total = Convert.ToDecimal(item["TotalPrice"]);
 					sb.AppendLine($"• {pName} × {qty:0.##} = {total:N2} ج.م");
+					if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
+					{
+						sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+					}
 				}
 
 				sb.AppendLine("━━━━━━━━━━━━━━━━");

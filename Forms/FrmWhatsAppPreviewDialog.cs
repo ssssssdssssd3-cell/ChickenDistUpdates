@@ -236,6 +236,17 @@ namespace ChickenDist.Forms
                     {
                         saleRow = dt.Rows[0];
                         saleItems = SaleDAL.GetItems(saleID.Value);
+                        if (AppConfig.BusinessType == "Mobiles" && saleItems != null && saleItems.Columns.Contains("IMEI"))
+                        {
+                            foreach (DataRow itemRow in saleItems.Rows)
+                            {
+                                string imei = itemRow["IMEI"]?.ToString()?.Trim() ?? "";
+                                if (!string.IsNullOrWhiteSpace(imei) && !itemRow["ProductName"].ToString().Contains(imei))
+                                {
+                                    itemRow["ProductName"] = itemRow["ProductName"].ToString() + " (IMEI: " + imei + ")";
+                                }
+                            }
+                        }
                         int clientID = saleRow["ClientID"] != DBNull.Value ? Convert.ToInt32(saleRow["ClientID"]) : 0;
                         if (clientID > 0)
                         {
@@ -257,6 +268,17 @@ namespace ChickenDist.Forms
                         saleRow = dtLast.Rows[0];
                         int lastId = Convert.ToInt32(saleRow["SaleID"]);
                         saleItems = SaleDAL.GetItems(lastId);
+                        if (AppConfig.BusinessType == "Mobiles" && saleItems != null && saleItems.Columns.Contains("IMEI"))
+                        {
+                            foreach (DataRow itemRow in saleItems.Rows)
+                            {
+                                string imei = itemRow["IMEI"]?.ToString()?.Trim() ?? "";
+                                if (!string.IsNullOrWhiteSpace(imei) && !itemRow["ProductName"].ToString().Contains(imei))
+                                {
+                                    itemRow["ProductName"] = itemRow["ProductName"].ToString() + " (IMEI: " + imei + ")";
+                                }
+                            }
+                        }
                         int clientID = saleRow["ClientID"] != DBNull.Value ? Convert.ToInt32(saleRow["ClientID"]) : 0;
                         if (clientID > 0)
                         {
@@ -415,6 +437,11 @@ namespace ChickenDist.Forms
                     string pCode = r.Table.Columns.Contains("ProductCode") && r["ProductCode"] != DBNull.Value ? r["ProductCode"].ToString() : "";
                     string codePart = !string.IsNullOrWhiteSpace(pCode) ? $" [{pCode}]" : "";
                     string pName = r["ProductName"]?.ToString() ?? "";
+                    string imei = r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value ? r["IMEI"].ToString().Trim() : "";
+                    if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei) && !pName.Contains(imei))
+                    {
+                        pName += $" (IMEI: {imei})";
+                    }
                     decimal qty = Convert.ToDecimal(r["Quantity"]);
                     decimal price = Convert.ToDecimal(r["UnitPrice"]);
                     decimal tot = Convert.ToDecimal(r["TotalPrice"]);
@@ -422,6 +449,10 @@ namespace ChickenDist.Forms
                     string discStr = discPct > 0 ? $" (خصم {discPct:0.##}%)" : "";
 
                     sb.AppendLine($"*{idx}. {pName}{codePart}*");
+                    if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
+                    {
+                        sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+                    }
                     sb.AppendLine($"   ▫️ {qty:0.##} × {price:N2} = {tot:N2} ج.م{discStr}");
                     idx++;
                 }
@@ -473,7 +504,17 @@ namespace ChickenDist.Forms
             {
                 foreach (DataRow r in saleItems.Rows)
                 {
-                    sb.AppendLine($"• {r["ProductName"]} × {Convert.ToDecimal(r["Quantity"]):0.##} = {Convert.ToDecimal(r["TotalPrice"]):N2} ج.م");
+                    string pName = r["ProductName"]?.ToString() ?? "";
+                    string imei = r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value ? r["IMEI"].ToString().Trim() : "";
+                    if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei) && !pName.Contains(imei))
+                    {
+                        pName += $" (IMEI: {imei})";
+                    }
+                    sb.AppendLine($"• {pName} × {Convert.ToDecimal(r["Quantity"]):0.##} = {Convert.ToDecimal(r["TotalPrice"]):N2} ج.م");
+                    if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
+                    {
+                        sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+                    }
                 }
             }
             sb.AppendLine("━━━━━━━━━━━━━━━━");

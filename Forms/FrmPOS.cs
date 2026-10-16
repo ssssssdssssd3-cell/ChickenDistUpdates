@@ -4529,7 +4529,7 @@ namespace ChickenDist.Forms
 
                 // Query sale items
                 var dtItems = DbHelper.Query(@"
-                    SELECT p.ProductName, si.Quantity, si.UnitName, si.UnitPrice, si.TotalPrice
+                    SELECT p.ProductName, si.Quantity, si.UnitName, si.UnitPrice, si.TotalPrice, si.IMEI
                     FROM SaleItems si
                     JOIN Products p ON si.ProductID = p.ProductID
                     WHERE si.SaleID = @id", DbHelper.P("@id", saleID));
@@ -4575,11 +4575,20 @@ namespace ChickenDist.Forms
                 foreach (DataRow item in dtItems.Rows)
                 {
                     string prodName = item["ProductName"].ToString();
+                    string imei = item.Table.Columns.Contains("IMEI") && item["IMEI"] != DBNull.Value ? item["IMEI"].ToString().Trim() : "";
+                    if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei) && !prodName.Contains(imei))
+                    {
+                        prodName += $" (IMEI: {imei})";
+                    }
                     decimal qty = Convert.ToDecimal(item["Quantity"]);
                     string unit = item["UnitName"] != DBNull.Value ? item["UnitName"].ToString() : "";
                     decimal price = Convert.ToDecimal(item["UnitPrice"]);
                     decimal itemTotal = Convert.ToDecimal(item["TotalPrice"]);
                     sb.AppendLine($"- {prodName} ({qty} {unit} × {price:N2}) = {itemTotal:N2} ج");
+                    if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
+                    {
+                        sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+                    }
                 }
 
                 sb.AppendLine();
