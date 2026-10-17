@@ -1205,7 +1205,8 @@ namespace ChickenDist.DAL
                     p.PurchaseDate AS PurchaseDate,
                     ISNULL(s.SupplierName, ISNULL(c.ClientName, N'مورد عام')) AS SupplierName,
                     COALESCE(pr.ProductCode, pr.PartNumber, CAST(pr.ProductID AS NVARCHAR)) AS ProductCode,
-                    pr.ProductName AS ProductName,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(pi.IMEI)), N'') IS NOT NULL THEN pr.ProductName + N' (' + LTRIM(RTRIM(pi.IMEI)) + N')' ELSE pr.ProductName END AS ProductName,
+                    ISNULL(pi.IMEI, N'') AS IMEI,
                     ISNULL(cat.CategoryName, N'عام') AS CategoryName,
                     pi.Quantity AS Quantity,
                     COALESCE(pi.UnitName, pr.Unit, N'قطعة') AS UnitName,
@@ -1231,7 +1232,7 @@ namespace ChickenDist.DAL
                 WHERE p.IsPosted = 1
                   AND p.PurchaseDate BETWEEN @f AND @t
                   AND (@supID IS NULL OR p.SupplierID = @supID OR p.ClientID = @supID)
-                  AND (@kw IS NULL OR pr.ProductName LIKE N'%' + @kw + N'%' OR pr.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%' OR p.SupplierInvoiceNo LIKE N'%' + @kw + N'%')
+                  AND (@kw IS NULL OR pr.ProductName LIKE N'%' + @kw + N'%' OR pr.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%' OR p.SupplierInvoiceNo LIKE N'%' + @kw + N'%' OR pi.IMEI LIKE N'%' + @kw + N'%')
                 ORDER BY p.PurchaseDate DESC, p.PurchaseID DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@supID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
@@ -1331,7 +1332,7 @@ namespace ChickenDist.DAL
                     ISNULL(p.PurchaseCode, N'مرتجع شراء عام (مباشر)') AS OriginalPurchaseCode,
                     ISNULL(s.SupplierName, CASE WHEN p.PurchaseSource = 'Client' AND c.ClientName IS NOT NULL THEN c.ClientName ELSE N'مورد نقدي / عام' END) AS SupplierName,
                     COALESCE(prod.ProductCode, prod.PartNumber, CAST(prod.ProductID AS NVARCHAR), N'---') AS ProductCode,
-                    ISNULL(prod.ProductName, N'---') AS ProductName,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(pri.IMEI)), N'') IS NOT NULL THEN ISNULL(prod.ProductName, N'---') + N' (' + LTRIM(RTRIM(pri.IMEI)) + N')' ELSE ISNULL(prod.ProductName, N'---') END AS ProductName,
                     ISNULL(pri.Quantity, 0) AS ReturnedQty,
                     COALESCE(pri.UnitName, prod.Unit, N'---') AS UnitName,
                     ISNULL(pri.UnitPrice, 0) AS UnitPrice,
@@ -1356,7 +1357,7 @@ namespace ChickenDist.DAL
                 WHERE CAST(pr.ReturnDate AS DATE) BETWEEN @f AND @t
                   AND (@wid IS NULL OR pr.WarehouseID = @wid)
                   AND (@supID IS NULL OR pr.SupplierID = @supID)
-                  AND (@kw IS NULL OR prod.ProductName LIKE N'%' + @kw + N'%' OR prod.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%' OR CAST(pr.ReturnID AS NVARCHAR) LIKE N'%' + @kw + N'%')
+                  AND (@kw IS NULL OR prod.ProductName LIKE N'%' + @kw + N'%' OR prod.ProductCode LIKE N'%' + @kw + N'%' OR s.SupplierName LIKE N'%' + @kw + N'%' OR p.PurchaseCode LIKE N'%' + @kw + N'%' OR CAST(pr.ReturnID AS NVARCHAR) LIKE N'%' + @kw + N'%' OR pri.IMEI LIKE N'%' + @kw + N'%')
                 ORDER BY pr.ReturnDate DESC, pr.ReturnID DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@wid", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),

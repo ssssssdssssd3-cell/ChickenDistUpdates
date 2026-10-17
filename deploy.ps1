@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.0.8";
-$CHANGELOG = "v4.0.8 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add IMEI / Serial product option in Product Card and Quick Add, enforce IMEI entry on purchase for mobile shops"
+$VERSION = "4.0.9";
+$CHANGELOG = "v4.0.9 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Display IMEI / Serial numbers across all reports, statements, sales and purchase item breakdowns, and returns"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

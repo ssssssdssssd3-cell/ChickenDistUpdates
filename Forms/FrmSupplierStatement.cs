@@ -504,7 +504,7 @@ namespace ChickenDist.Forms
                 {
                     _totalPurchases += cred;
                     var dtItems = DbHelper.Query(@"
-                        SELECT p.ProductName, pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit
+                        SELECT p.ProductName, pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit, ISNULL(pi.IMEI, N'') AS IMEI
                         FROM PurchaseItems pi
                         JOIN Products p ON pi.ProductID = p.ProductID
                         WHERE pi.PurchaseID = @id", DbHelper.P("@id", refID));
@@ -514,7 +514,9 @@ namespace ChickenDist.Forms
                         var itemsList = new List<string>();
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
-                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
+                            string imei = itemRow["IMEI"]?.ToString()?.Trim();
+                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
                     }
@@ -523,7 +525,7 @@ namespace ChickenDist.Forms
                 {
                     _totalReturns += deb;
                     var dtItems = DbHelper.Query(@"
-                        SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit
+                        SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit, ISNULL(pri.IMEI, N'') AS IMEI
                         FROM PurchaseReturnItems pri
                         JOIN Products p ON pri.ProductID = p.ProductID
                         WHERE pri.ReturnID = @id", DbHelper.P("@id", refID));
@@ -533,7 +535,9 @@ namespace ChickenDist.Forms
                         var itemsList = new List<string>();
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
-                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
+                            string imei = itemRow["IMEI"]?.ToString()?.Trim();
+                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
                     }

@@ -568,7 +568,7 @@ namespace ChickenDist.Forms
                     _totalInvoiceDiscounts += invDisc;
 
                     var dtItems = DbHelper.Query(@"
-                        SELECT p.ProductName, si.Quantity, p.Unit
+                        SELECT p.ProductName, si.Quantity, p.Unit, ISNULL(si.IMEI, N'') AS IMEI
                         FROM SaleItems si
                         JOIN Products p ON si.ProductID = p.ProductID
                         WHERE si.SaleID = @id", DbHelper.P("@id", refID));
@@ -578,7 +578,9 @@ namespace ChickenDist.Forms
                         var itemsList = new List<string>();
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
-                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
+                            string imei = itemRow["IMEI"]?.ToString()?.Trim();
+                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
                     }
@@ -587,7 +589,7 @@ namespace ChickenDist.Forms
                 {
                     _totalReturns += cred;
                     var dtItems = DbHelper.Query(@"
-                        SELECT p.ProductName, ri.Quantity, p.Unit
+                        SELECT p.ProductName, ri.Quantity, p.Unit, ISNULL(ri.IMEI, N'') AS IMEI
                         FROM ReturnItems ri
                         JOIN Products p ON ri.ProductID = p.ProductID
                         WHERE ri.ReturnID = @id", DbHelper.P("@id", refID));
@@ -597,7 +599,9 @@ namespace ChickenDist.Forms
                         var itemsList = new List<string>();
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
-                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
+                            string imei = itemRow["IMEI"]?.ToString()?.Trim();
+                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
                     }
@@ -610,7 +614,7 @@ namespace ChickenDist.Forms
                 {
                     _totalClientPurchases += cred;
                     var dtItems = DbHelper.Query(@"
-                        SELECT p.ProductName, pi2.Quantity, pi2.UnitName
+                        SELECT p.ProductName, pi2.Quantity, pi2.UnitName, ISNULL(pi2.IMEI, N'') AS IMEI
                         FROM PurchaseItems pi2
                         JOIN Products p ON pi2.ProductID = p.ProductID
                         WHERE pi2.PurchaseID = @id", DbHelper.P("@id", refID));
@@ -618,7 +622,11 @@ namespace ChickenDist.Forms
                     {
                         var itemsList = new List<string>();
                         foreach (DataRow itemRow in dtItems.Rows)
-                            itemsList.Add($"{itemRow["ProductName"]} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["UnitName"]})");
+                        {
+                            string imei = itemRow["IMEI"]?.ToString()?.Trim();
+                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["UnitName"]})");
+                        }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
                     }
                 }
@@ -1282,7 +1290,8 @@ namespace ChickenDist.Forms
                                                WHEN ISNULL(si.DiscountPct, 0) > 0 THEN (si.Quantity * si.UnitPrice * si.DiscountPct / 100.0)
                                                ELSE 0 
                                            END
-                                       ) AS Total
+                                       ) AS Total,
+                                       ISNULL(si.IMEI, N'') AS IMEI
                                 FROM SaleItems si
                                 JOIN Products p ON si.ProductID = p.ProductID
                                 WHERE si.SaleID = @id", DbHelper.P("@id", refID));
@@ -1290,7 +1299,7 @@ namespace ChickenDist.Forms
                         else if (typeRaw == "Return")
                         {
                             dtItems = DbHelper.Query(@"
-                                SELECT p.ProductName, ri.Quantity, ISNULL(NULLIF(ri.UnitName, ''), p.Unit) AS Unit, ri.UnitPrice, 0.00 AS ItemDiscount, (ri.Quantity * ri.UnitPrice) AS Total
+                                SELECT p.ProductName, ri.Quantity, ISNULL(NULLIF(ri.UnitName, ''), p.Unit) AS Unit, ri.UnitPrice, 0.00 AS ItemDiscount, (ri.Quantity * ri.UnitPrice) AS Total, ISNULL(ri.IMEI, N'') AS IMEI
                                 FROM ReturnItems ri
                                 JOIN Products p ON ri.ProductID = p.ProductID
                                 WHERE ri.ReturnID = @id", DbHelper.P("@id", refID));
@@ -1304,7 +1313,8 @@ namespace ChickenDist.Forms
                                            WHEN ISNULL(pi2.DiscountPct, 0) > 0 THEN (pi2.Quantity * pi2.UnitPrice * pi2.DiscountPct / 100.0)
                                            ELSE 0 
                                        END AS ItemDiscount,
-                                       (pi2.Quantity * pi2.UnitPrice) AS Total
+                                       (pi2.Quantity * pi2.UnitPrice) AS Total,
+                                       ISNULL(pi2.IMEI, N'') AS IMEI
                                 FROM PurchaseItems pi2
                                 JOIN Products p ON pi2.ProductID = p.ProductID
                                 WHERE pi2.PurchaseID = @id", DbHelper.P("@id", refID));
@@ -1367,6 +1377,14 @@ namespace ChickenDist.Forms
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
                             string pName  = itemRow["ProductName"].ToString();
+                            if (itemRow.Table.Columns.Contains("IMEI"))
+                            {
+                                string pImei = itemRow["IMEI"]?.ToString()?.Trim();
+                                if (!string.IsNullOrEmpty(pImei) && !pName.Contains(pImei))
+                                {
+                                    pName += $" (سيريال: {pImei})";
+                                }
+                            }
                             string pQty   = Convert.ToDecimal(itemRow["Quantity"]).ToString("N2");
                             string pUnit  = itemRow["Unit"].ToString();
                             string pPrice = Convert.ToDecimal(itemRow["UnitPrice"]).ToString("N2");
@@ -1564,7 +1582,8 @@ namespace ChickenDist.Forms
                 }
 
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, si.Quantity, ISNULL(NULLIF(si.UnitName, ''), p.Unit) AS Unit,
+                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(si.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                           si.Quantity, ISNULL(NULLIF(si.UnitName, ''), p.Unit) AS Unit,
                            si.UnitPrice,
                            (si.Quantity * si.UnitPrice) AS GrossTotal,
                            CASE 
@@ -1596,7 +1615,8 @@ namespace ChickenDist.Forms
                 }
 
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, ri.Quantity, ISNULL(NULLIF(ri.UnitName, ''), p.Unit) AS Unit,
+                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(ri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(ri.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                           ri.Quantity, ISNULL(NULLIF(ri.UnitName, ''), p.Unit) AS Unit,
                            ri.UnitPrice, (ri.Quantity * ri.UnitPrice) AS GrossTotal,
                            0.00 AS ItemDiscount,
                            ISNULL(ri.TotalPrice, (ri.Quantity * ri.UnitPrice)) AS NetTotal,
@@ -1619,7 +1639,8 @@ namespace ChickenDist.Forms
                 }
 
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit,
+                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(pi.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(pi.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                           pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit,
                            pi.UnitPrice,
                            (pi.Quantity * pi.UnitPrice) AS GrossTotal,
                            CASE 
@@ -1651,7 +1672,8 @@ namespace ChickenDist.Forms
                 }
 
                 dt = DbHelper.Query(@"
-                    SELECT p.ProductName, pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit,
+                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(pri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(pri.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                           pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit,
                            pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS GrossTotal,
                            0.00 AS ItemDiscount,
                            ISNULL(pri.TotalPrice, (pri.Quantity * pri.UnitPrice)) AS NetTotal,

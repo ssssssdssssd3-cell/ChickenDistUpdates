@@ -865,7 +865,11 @@ namespace ChickenDist.Forms
 								decimal retQty = (r.Table.Columns.Contains("PrevReturnedQty") && r["PrevReturnedQty"] != DBNull.Value) ? Convert.ToDecimal(r["PrevReturnedQty"]) : 0m;
 								string retQtyStr = retQty > 0 ? (retQty % 1 == 0 ? retQty.ToString("N0") : retQty.ToString("N2")) : "-";
 								string price = Convert.ToDecimal(r["UnitPrice"]).ToString("N2") + " ج";
-								string imeiVal = (r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["IMEI"].ToString())) ? r["IMEI"].ToString() : "-";
+								string imeiVal = (r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["IMEI"].ToString())) ? r["IMEI"].ToString().Trim() : "-";
+								if (imeiVal != "-" && !pName.Contains(imeiVal))
+								{
+									pName = $"{pName} (سيريال: {imeiVal})";
+								}
 								string disc = r.Table.Columns.Contains("DiscountAmt") && r["DiscountAmt"] != DBNull.Value && Convert.ToDecimal(r["DiscountAmt"]) > 0 ? Convert.ToDecimal(r["DiscountAmt"]).ToString("N2") + " ج" : "-";
 								string total = Convert.ToDecimal(r["TotalPrice"]).ToString("N2") + " ج";
 								
@@ -1663,6 +1667,41 @@ namespace ChickenDist.Forms
 					break;
 				case "DetailedReturns":
 					_currentDt = ReturnDAL.GetAll(dtpFrom.Value, dtpTo.Value, warehouseID);
+					if (_currentDt != null && _currentDt.Rows.Count > 0)
+					{
+						try
+						{
+							var returnIDs = _currentDt.Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r["ReturnID"])).ToList();
+							string rList = string.Join(",", returnIDs);
+							var dtAllItems = DbHelper.Query($@"
+								SELECT ri.ReturnID, p.ProductName, ri.Quantity, ISNULL(ri.IMEI, N'') AS IMEI
+								FROM ReturnItems ri
+								JOIN Products p ON ri.ProductID = p.ProductID
+								WHERE ri.ReturnID IN ({rList})");
+
+							var itemsByReturn = new Dictionary<int, List<string>>();
+							foreach (DataRow ir in dtAllItems.Rows)
+							{
+								int rid = Convert.ToInt32(ir["ReturnID"]);
+								if (!itemsByReturn.ContainsKey(rid)) itemsByReturn[rid] = new List<string>();
+								string imei = ir["IMEI"]?.ToString()?.Trim();
+								string sfx = !string.IsNullOrEmpty(imei) ? $" (سيريال: {imei})" : "";
+								itemsByReturn[rid].Add($"{ir["ProductName"]}{sfx} ({Convert.ToDecimal(ir["Quantity"]):N0})");
+							}
+
+							foreach (DataRow r in _currentDt.Rows)
+							{
+								int rid = Convert.ToInt32(r["ReturnID"]);
+								if (itemsByReturn.ContainsKey(rid) && itemsByReturn[rid].Count > 0)
+								{
+									string baseN = r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
+									string itemsStr = "[" + string.Join("، ", itemsByReturn[rid]) + "]";
+									r["Notes"] = string.IsNullOrWhiteSpace(baseN) ? itemsStr : $"{baseN} - {itemsStr}";
+								}
+							}
+						}
+						catch { }
+					}
 					SetupGrid(new(string, string)[]
 					{
 						("ReturnDate", "التاريخ والوقت"),
@@ -1689,6 +1728,7 @@ namespace ChickenDist.Forms
 						("SupplierName", "المورد / الجهة"),
 						("ProductCode", "كود الصنف"),
 						("ProductName", "اسم الصنف المرتجع"),
+						("IMEI", "السيريال / IMEI 📱"),
 						("ReturnedQty", "الكمية المرتجعة"),
 						("UnitName", "الوحدة"),
 						("UnitPrice", "سعر الوحدة"),
@@ -1743,6 +1783,7 @@ namespace ChickenDist.Forms
 						("ClientName", "العميل"),
 						("ProductCode", "كود الصنف"),
 						("ProductName", "اسم الصنف"),
+						("IMEI", "السيريال / IMEI 📱"),
 						("CategoryName", "القسم / المجموعة"),
 						("Quantity", "الكمية"),
 						("UnitName", "الوحدة"),
@@ -1945,6 +1986,7 @@ namespace ChickenDist.Forms
 						("SupplierName", "المورد"),
 						("ProductCode", "كود الصنف"),
 						("ProductName", "اسم الصنف"),
+						("IMEI", "السيريال / IMEI 📱"),
 						("CategoryName", "القسم / التصنيف"),
 						("Quantity", "الكمية"),
 						("UnitName", "الوحدة"),
@@ -2419,6 +2461,7 @@ namespace ChickenDist.Forms
 							("تاريخ الفاتورة", "التاريخ والوقت"),
 							("العميل", "العميل"),
 							("الصنف", "الصنف"),
+							("السيريال", "السيريال / IMEI 📱"),
 							("الكمية", "الكمية"),
 							("سعر الوحدة", "سعر الوحدة"),
 							("قبل الخصم", "قبل الخصم"),
@@ -3027,11 +3070,12 @@ namespace ChickenDist.Forms
 					Resizable = DataGridViewTriState.True
 				};
 
-				if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "ReturnedQty" || name == "ReturnAmount" || name == "BonusQty" || name == "PurchasedQty")
+				if (name == "ClientCode" || name == "ItemsCount" || name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "ReturnedQty" || name == "ReturnAmount" || name == "BonusQty" || name == "PurchasedQty" || name == "IMEI" || name == "السيريال")
 				{
 					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 					col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 					if (name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "PurchasedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
+					else if (name == "IMEI" || name == "السيريال") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
 					else if (name == "BonusQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(16, 185, 129);
 					else if (name == "ReturnAmount" || name == "ReturnedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
 				}
@@ -3072,6 +3116,11 @@ namespace ChickenDist.Forms
 				{
 					col.MinimumWidth = 80;
 					col.Width = 95;
+				}
+				else if (name == "IMEI" || name == "السيريال" || headerText.Contains("IMEI") || headerText.Contains("السيريال"))
+				{
+					col.MinimumWidth = 140;
+					col.Width = 160;
 				}
 				else if (name == "SaleType" || name == "WarehouseName" || name == "DiscountAmount" || name == "ReturnAmount" || name == "ShippingCharge")
 				{
@@ -3207,7 +3256,28 @@ namespace ChickenDist.Forms
 							}
 							else
 							{
-								array2[i] = obj;
+								if ((name == "ProductName" || name == "الصنف" || name == "اسم الصنف" || name == "اسم الصنف المرتجع") && _currentDt.Columns.Contains("IMEI"))
+								{
+									string imeiStr = row["IMEI"]?.ToString()?.Trim();
+									string pStr = obj?.ToString() ?? "";
+									if (!string.IsNullOrEmpty(imeiStr) && !pStr.Contains(imeiStr))
+									{
+										array2[i] = $"{pStr} (سيريال: {imeiStr})";
+									}
+									else
+									{
+										array2[i] = obj;
+									}
+								}
+								else if (name == "IMEI" || name == "السيريال")
+								{
+									string imeiStr = obj?.ToString()?.Trim();
+									array2[i] = !string.IsNullOrEmpty(imeiStr) ? imeiStr : "-";
+								}
+								else
+								{
+									array2[i] = obj;
+								}
 							}
 						}
 					}

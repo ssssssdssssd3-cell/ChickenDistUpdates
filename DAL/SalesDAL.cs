@@ -2697,12 +2697,13 @@ namespace ChickenDist.DAL
                 foreach (var item in returnedItems)
                 {
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor) VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac)",
+                        "INSERT INTO ReturnItems(ReturnID,ProductID,Quantity,UnitPrice,TotalPrice,UnitName,Factor,IMEI) VALUES(@rid,@pid,@qty,@up,@tp,@un,@fac,@imei)",
                         DbHelper.P("@rid", retID), DbHelper.P("@pid", item.ProductID),
                         DbHelper.P("@qty", item.Quantity), DbHelper.P("@up", item.UnitPrice),
                         DbHelper.P("@tp", item.TotalPrice),
                         DbHelper.P("@un", item.UnitName),
-                        DbHelper.P("@fac", item.Factor));
+                        DbHelper.P("@fac", item.Factor),
+                        DbHelper.P("@imei", string.IsNullOrWhiteSpace(item.IMEI) ? (object)DBNull.Value : item.IMEI.Trim()));
 
                     decimal baseQty = item.Quantity * (item.Factor > 0 ? item.Factor : 1m);
                     var targetBatchObj = DbHelper.ScalarTrans(trans,
@@ -3097,7 +3098,8 @@ namespace ChickenDist.DAL
                     s.SaleDate AS SaleDate,
                     ISNULL(c.ClientName, N'عميل نقدي / عام') AS ClientName,
                     COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR)) AS ProductCode,
-                    p.ProductName AS ProductName,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(si.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                    ISNULL(si.IMEI, N'') AS IMEI,
                     ISNULL(cat.CategoryName, N'عام') AS CategoryName,
                     si.Quantity AS Quantity,
                     COALESCE(si.UnitName, p.Unit, N'قطعة') AS UnitName,
@@ -3129,7 +3131,7 @@ namespace ChickenDist.DAL
                 WHERE s.IsPosted = 1
                   AND s.SaleDate BETWEEN @f AND @t
                   AND (@warehouseID IS NULL OR s.WarehouseID = @warehouseID)
-                  AND (@kw IS NULL OR p.ProductName LIKE N'%' + @kw + N'%' OR p.ProductCode LIKE N'%' + @kw + N'%' OR c.ClientName LIKE N'%' + @kw + N'%' OR s.SaleCode LIKE N'%' + @kw + N'%')
+                  AND (@kw IS NULL OR p.ProductName LIKE N'%' + @kw + N'%' OR p.ProductCode LIKE N'%' + @kw + N'%' OR c.ClientName LIKE N'%' + @kw + N'%' OR s.SaleCode LIKE N'%' + @kw + N'%' OR si.IMEI LIKE N'%' + @kw + N'%')
                 ORDER BY s.SaleDate DESC, s.SaleID DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
@@ -3370,7 +3372,7 @@ namespace ChickenDist.DAL
                         ELSE N'💵 نقدي'
                     END AS PaymentType,
                     COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR)) AS ProductCode,
-                    p.ProductName AS ProductName,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(ri.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
                     ri.Quantity AS ReturnedQty,
                     COALESCE(ri.UnitName, p.Unit, N'قطعة') AS UnitName,
                     ri.UnitPrice AS UnitPrice,
@@ -3386,7 +3388,7 @@ namespace ChickenDist.DAL
                 LEFT JOIN Employees e ON sr.CreatedBy = e.EmpID
                 WHERE sr.ReturnDate BETWEEN @f AND @t
                   AND (@warehouseID IS NULL OR sr.WarehouseID = @warehouseID)
-                  AND (@kw IS NULL OR p.ProductName LIKE N'%' + @kw + N'%' OR c.ClientName LIKE N'%' + @kw + N'%' OR s.SaleCode LIKE N'%' + @kw + N'%')
+                  AND (@kw IS NULL OR p.ProductName LIKE N'%' + @kw + N'%' OR c.ClientName LIKE N'%' + @kw + N'%' OR s.SaleCode LIKE N'%' + @kw + N'%' OR ri.IMEI LIKE N'%' + @kw + N'%')
                 ORDER BY sr.ReturnDate DESC",
                 DbHelper.P("@f", f), DbHelper.P("@t", t),
                 DbHelper.P("@warehouseID", warehouseID.HasValue ? (object)warehouseID.Value : DBNull.Value),
@@ -4173,7 +4175,7 @@ namespace ChickenDist.DAL
                     s.SaleCode AS [رقم الفاتورة],
                     s.SaleDate AS [تاريخ الفاتورة],
                     c.ClientName AS [العميل],
-                    p.ProductName AS [الصنف],
+                    CASE WHEN NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(si.IMEI)) + N')' ELSE p.ProductName END AS [الصنف],
                     COALESCE(p.IsOffer, 0) AS [IsOffer],
                     ISNULL(si.IMEI, N'-') AS [السيريال],
                     si.Quantity AS [الكمية],
