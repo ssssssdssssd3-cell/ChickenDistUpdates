@@ -756,7 +756,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش",      ReadOnly = true, FillWeight = 50 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 60 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 60, Visible = AppConfig.BusinessType == "Mobiles" });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
                 Text = "❌", UseColumnTextForButtonValue = true, FillWeight = 30 });
             Theme.AdjustGridHeaders(dgItems);
@@ -4516,6 +4516,7 @@ namespace ChickenDist.Forms
             {
                 if (col.Name == "Delete") continue;
                 if (isClothingMode && (col.Name == "CarModel" || col.Name == "Brand")) continue;
+                if (AppConfig.BusinessType != "Mobiles" && col.Name == "IMEI") continue;
                 clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
             }
 
@@ -4652,6 +4653,9 @@ namespace ChickenDist.Forms
                 var hidden  = new System.Collections.Generic.List<string>(
                     string.IsNullOrEmpty(hiddenVal) ? new string[0]
                     : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                if (AppConfig.BusinessType != "Mobiles" && !hidden.Contains("IMEI"))
+                    hidden.Add("IMEI");
 
                 // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها
                 foreach (System.Windows.Forms.DataGridViewColumn col in dgItems.Columns)

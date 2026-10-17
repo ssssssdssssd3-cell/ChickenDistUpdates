@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.0";
-$CHANGELOG = "v4.1.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix purchase return browsing across all suppliers without locking, fix single invoice items display in reports/returns, fix IMEI serial color from yellow to readable blue in purchase returns"
+$VERSION = "4.1.1";
+$CHANGELOG = "v4.1.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show IMEI/Serial only in Mobiles activity across all screens, prints, and reports; restore UnitName column in Purchase Return for non-Mobiles activities"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

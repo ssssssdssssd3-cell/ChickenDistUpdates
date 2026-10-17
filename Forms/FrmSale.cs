@@ -1118,7 +1118,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f, MinimumWidth = 105 });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 85f, MinimumWidth = 140, Visible = true });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 85f, MinimumWidth = 140, Visible = AppConfig.BusinessType == "Mobiles" });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
 			if (AppConfig.IsRestaurant)
@@ -8725,6 +8725,7 @@ namespace ChickenDist.Forms
             {
                 if (col.Name == "Delete") continue;
                 if (isClothingMode && (col.Name == "CarModel" || col.Name == "Brand")) continue;
+                if (AppConfig.BusinessType != "Mobiles" && col.Name == "IMEI") continue;
                 clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
             }
 
@@ -8841,6 +8842,9 @@ namespace ChickenDist.Forms
                 var hidden  = new System.Collections.Generic.List<string>(
                     string.IsNullOrEmpty(hiddenVal) ? new string[0]
                     : hiddenVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
+
+                if (AppConfig.BusinessType != "Mobiles" && !hidden.Contains("IMEI"))
+                    hidden.Add("IMEI");
 
                 // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها في النهاية
                 foreach (System.Windows.Forms.DataGridViewColumn col in dgItems.Columns)

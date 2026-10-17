@@ -432,20 +432,17 @@ namespace ChickenDist.Forms
             AppConfig.ShopLogoPath = txtShopLogoPath.Text.Trim();
             AppConfig.PrintShopLogo = chkPrintShopLogo.Checked;
 
-            if (cboBusinessType.Enabled)
+            AppConfig.BusinessType = cboBusinessType.SelectedIndex switch
             {
-                AppConfig.BusinessType = cboBusinessType.SelectedIndex switch
-                {
-                    1 => "SpareParts",
-                    2 => "Mobiles",
-                    3 => "Clothing",
-                    4 => "General",
-                    5 => "CarService",
-                    6 => "Restaurant",
-                    7 => "Factories",
-                    _ => "Supermarket"
-                };
-            }
+                1 => "SpareParts",
+                2 => "Mobiles",
+                3 => "Clothing",
+                4 => "General",
+                5 => "CarService",
+                6 => "Restaurant",
+                7 => "Factories",
+                _ => "Supermarket"
+            };
 
             AppConfig.AppTheme = cboAppTheme.SelectedIndex switch
             {

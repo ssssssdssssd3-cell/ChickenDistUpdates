@@ -515,7 +515,7 @@ namespace ChickenDist.Forms
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
                             string imei = itemRow["IMEI"]?.ToString()?.Trim();
-                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            string imeiSuffix = (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei)) ? $" - سيريال: {imei}" : "";
                             itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
@@ -536,7 +536,7 @@ namespace ChickenDist.Forms
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
                             string imei = itemRow["IMEI"]?.ToString()?.Trim();
-                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            string imeiSuffix = (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei)) ? $" - سيريال: {imei}" : "";
                             itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
@@ -1135,7 +1135,7 @@ namespace ChickenDist.Forms
                         {
                             string pName = ir["ProductName"].ToString();
                             string pImei = ir.Table.Columns.Contains("IMEI") && ir["IMEI"] != DBNull.Value ? ir["IMEI"].ToString().Trim() : "";
-                            if (!string.IsNullOrEmpty(pImei))
+                            if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(pImei))
                             {
                                 pName = $"{pName} (سيريال: {pImei})";
                             }

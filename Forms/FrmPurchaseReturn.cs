@@ -170,7 +170,7 @@ namespace ChickenDist.Forms
                     e.SuppressKeyPress = true;
                     string t = txtSearch.Text.Trim();
                     string clean = PurchaseDAL.SanitizeIMEIString(t);
-                    if (clean.Length >= 14 && clean.Length <= 16 && clean.All(char.IsDigit))
+                    if (AppConfig.BusinessType == "Mobiles" && clean.Length >= 14 && clean.Length <= 16 && clean.All(char.IsDigit))
                     {
                         DoBarcodeSearch(t);
                     }
@@ -187,7 +187,7 @@ namespace ChickenDist.Forms
             btnSearch.Click += (s, e) => LoadPurchasesGrid();
 
             // مسح بالاسكانر / السيريال (IMEI)
-            var lblBarcode = new Label { Text = "📷 مسح بالاسكانر / IMEI:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
+            var lblBarcode = new Label { Text = AppConfig.BusinessType == "Mobiles" ? "📷 مسح بالاسكانر / IMEI:" : "📷 مسح بالاسكانر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold };
             txtBarcode = new TextBox
             {
                 Width = 140, Height = 26,
@@ -358,6 +358,18 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", ReadOnly = true, FillWeight = 110 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn 
             { 
+                Name = "UnitName", 
+                HeaderText = "الوحدة", 
+                ReadOnly = true, 
+                FillWeight = 45,
+                DefaultCellStyle = new DataGridViewCellStyle 
+                { 
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                } 
+            });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn 
+            { 
                 Name = "IMEI", 
                 HeaderText = "السيريال (IMEI)", 
                 ReadOnly = false, 
@@ -419,7 +431,6 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetUnitPrice", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "إجمالي المرتجع", ReadOnly = true, FillWeight = 60 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Factor", Visible = false });
 
             dgItems.CellValidating += DgItems_CellValidating;
@@ -746,7 +757,7 @@ namespace ChickenDist.Forms
                 {
                     row.Cells["IMEI"].Value = pImei;
                     row.Cells["IMEI"].ReadOnly = true;
-                    if (!string.IsNullOrEmpty(pImei)) dgItems.Columns["IMEI"].Visible = true;
+                    dgItems.Columns["IMEI"].Visible = (AppConfig.BusinessType == "Mobiles");
                 }
 
                 row.Cells["PurchasedQty"].Value        = purQty.ToString("N3");
@@ -914,7 +925,7 @@ namespace ChickenDist.Forms
             row.Cells["UnitName"].Value            = unitName;
             row.Cells["Factor"].Value              = 1.0m;
 
-            dgItems.Columns["IMEI"].Visible = true;
+            dgItems.Columns["IMEI"].Visible = (AppConfig.BusinessType == "Mobiles");
             RecalcTotal();
 
             if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
@@ -975,7 +986,7 @@ namespace ChickenDist.Forms
             {
                 // 1. فحص هل الكود يمثل سيريال جهاز (IMEI)
                 string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
-                bool isPotentialImei = cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit);
+                bool isPotentialImei = AppConfig.BusinessType == "Mobiles" && cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit);
                 if (isPotentialImei)
                 {
                     // أ) إذا كنا في وضع فاتورة ومحددة فاتورة حالياً:

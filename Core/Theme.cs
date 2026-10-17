@@ -851,6 +851,8 @@ namespace ChickenDist.Core
                 grid.Columns["ProductSize"].Visible = isClothing;
             if (grid.Columns.Contains("Color"))
                 grid.Columns["Color"].Visible = isClothing;
+            if (grid.Columns.Contains("IMEI"))
+                grid.Columns["IMEI"].Visible = (AppConfig.BusinessType == "Mobiles");
         }
 
         /// <summary>تطبيق النمط البارز والملون وعالي التباين للتبويبات والشاشات الفرعية</summary>

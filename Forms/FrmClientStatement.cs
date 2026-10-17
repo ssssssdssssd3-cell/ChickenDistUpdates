@@ -579,7 +579,7 @@ namespace ChickenDist.Forms
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
                             string imei = itemRow["IMEI"]?.ToString()?.Trim();
-                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            string imeiSuffix = (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei)) ? $" - سيريال: {imei}" : "";
                             itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
@@ -600,7 +600,7 @@ namespace ChickenDist.Forms
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
                             string imei = itemRow["IMEI"]?.ToString()?.Trim();
-                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            string imeiSuffix = (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei)) ? $" - سيريال: {imei}" : "";
                             itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["Unit"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
@@ -624,7 +624,7 @@ namespace ChickenDist.Forms
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
                             string imei = itemRow["IMEI"]?.ToString()?.Trim();
-                            string imeiSuffix = !string.IsNullOrEmpty(imei) ? $" - سيريال: {imei}" : "";
+                            string imeiSuffix = (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei)) ? $" - سيريال: {imei}" : "";
                             itemsList.Add($"{itemRow["ProductName"]}{imeiSuffix} ({Convert.ToDecimal(itemRow["Quantity"]):N0} {itemRow["UnitName"]})");
                         }
                         detailedNotes += " [" + string.Join("، ", itemsList) + "]";
@@ -1377,7 +1377,7 @@ namespace ChickenDist.Forms
                         foreach (DataRow itemRow in dtItems.Rows)
                         {
                             string pName  = itemRow["ProductName"].ToString();
-                            if (itemRow.Table.Columns.Contains("IMEI"))
+                            if (AppConfig.BusinessType == "Mobiles" && itemRow.Table.Columns.Contains("IMEI"))
                             {
                                 string pImei = itemRow["IMEI"]?.ToString()?.Trim();
                                 if (!string.IsNullOrEmpty(pImei) && !pName.Contains(pImei))
@@ -1567,6 +1567,7 @@ namespace ChickenDist.Forms
             decimal shippingCharge = 0;
             string codeStr = "";
             DateTime? transDate = null;
+            bool isMobiles = AppConfig.BusinessType == "Mobiles";
 
             if (transType == "Sale")
             {
@@ -1581,8 +1582,9 @@ namespace ChickenDist.Forms
                     shippingCharge = hRow["ShippingCharge"] != DBNull.Value ? Convert.ToDecimal(hRow["ShippingCharge"]) : 0;
                 }
 
-                dt = DbHelper.Query(@"
-                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(si.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                string pNameExpr = isMobiles ? "CASE WHEN NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(si.IMEI)) + N')' ELSE p.ProductName END" : "p.ProductName";
+                dt = DbHelper.Query($@"
+                    SELECT {pNameExpr} AS ProductName,
                            si.Quantity, ISNULL(NULLIF(si.UnitName, ''), p.Unit) AS Unit,
                            si.UnitPrice,
                            (si.Quantity * si.UnitPrice) AS GrossTotal,
@@ -1614,8 +1616,9 @@ namespace ChickenDist.Forms
                     finalNet = hRow["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["TotalAmount"]) : 0;
                 }
 
-                dt = DbHelper.Query(@"
-                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(ri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(ri.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                string pNameExpr = isMobiles ? "CASE WHEN NULLIF(LTRIM(RTRIM(ri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(ri.IMEI)) + N')' ELSE p.ProductName END" : "p.ProductName";
+                dt = DbHelper.Query($@"
+                    SELECT {pNameExpr} AS ProductName,
                            ri.Quantity, ISNULL(NULLIF(ri.UnitName, ''), p.Unit) AS Unit,
                            ri.UnitPrice, (ri.Quantity * ri.UnitPrice) AS GrossTotal,
                            0.00 AS ItemDiscount,
@@ -1638,8 +1641,9 @@ namespace ChickenDist.Forms
                     shippingCharge = hRow["ShippingCharge"] != DBNull.Value ? Convert.ToDecimal(hRow["ShippingCharge"]) : 0;
                 }
 
-                dt = DbHelper.Query(@"
-                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(pi.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(pi.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                string pNameExpr = isMobiles ? "CASE WHEN NULLIF(LTRIM(RTRIM(pi.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(pi.IMEI)) + N')' ELSE p.ProductName END" : "p.ProductName";
+                dt = DbHelper.Query($@"
+                    SELECT {pNameExpr} AS ProductName,
                            pi.Quantity, ISNULL(NULLIF(pi.UnitName, ''), p.Unit) AS Unit,
                            pi.UnitPrice,
                            (pi.Quantity * pi.UnitPrice) AS GrossTotal,
@@ -1671,8 +1675,9 @@ namespace ChickenDist.Forms
                     finalNet = hRow["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(hRow["TotalAmount"]) : 0;
                 }
 
-                dt = DbHelper.Query(@"
-                    SELECT CASE WHEN NULLIF(LTRIM(RTRIM(pri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(pri.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                string pNameExpr = isMobiles ? "CASE WHEN NULLIF(LTRIM(RTRIM(pri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(pri.IMEI)) + N')' ELSE p.ProductName END" : "p.ProductName";
+                dt = DbHelper.Query($@"
+                    SELECT {pNameExpr} AS ProductName,
                            pri.Quantity, ISNULL(NULLIF(pri.UnitName, ''), p.Unit) AS Unit,
                            pri.UnitPrice, (pri.Quantity * pri.UnitPrice) AS GrossTotal,
                            0.00 AS ItemDiscount,

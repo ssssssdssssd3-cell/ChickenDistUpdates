@@ -73,7 +73,7 @@ namespace ChickenDist.Forms
                 _printItemIndex = 0;
                 _runningTotal = 0;
 
-                if (_items != null && _items.Columns.Contains("IMEI"))
+                if (AppConfig.BusinessType == "Mobiles" && _items != null && _items.Columns.Contains("IMEI"))
                 {
                     foreach (DataRow r in _items.Rows)
                     {

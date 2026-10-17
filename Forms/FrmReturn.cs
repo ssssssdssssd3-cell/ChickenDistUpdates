@@ -1889,7 +1889,7 @@ namespace ChickenDist.Forms
                 {
                     dgRow.Cells["IMEI"].Value = pImei;
                     dgRow.Cells["IMEI"].ReadOnly = true;
-                    if (!string.IsNullOrEmpty(pImei)) dgItems.Columns["IMEI"].Visible = true;
+                    dgItems.Columns["IMEI"].Visible = (AppConfig.BusinessType == "Mobiles");
                 }
 
                 decimal soldQty = dtItems.Columns.Contains("SoldQty") ? Convert.ToDecimal(row["SoldQty"]) : (dtItems.Columns.Contains("Quantity") ? Convert.ToDecimal(row["Quantity"]) : 0m);
@@ -2614,7 +2614,7 @@ namespace ChickenDist.Forms
             row.Cells["UnitPrice"].Value       = price.ToString("N2");
             row.Cells["TotalPrice"].Value      = price.ToString("N2");
 
-            dgItems.Columns["IMEI"].Visible = true;
+            dgItems.Columns["IMEI"].Visible = (AppConfig.BusinessType == "Mobiles");
             RecalcTotals();
         }
 
@@ -2630,7 +2630,7 @@ namespace ChickenDist.Forms
             {
                 // 0. فحص ما إذا كان الكود المدخل هو سيريال جهاز (IMEI)
                 string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
-                bool isPotentialImei = cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit);
+                bool isPotentialImei = AppConfig.BusinessType == "Mobiles" && cleanImei.Length >= 14 && cleanImei.Length <= 16 && cleanImei.All(char.IsDigit);
                 if (isPotentialImei)
                 {
                     // أ) إذا كنا بالفعل في وضع اختيار فاتورة ومحددة فاتورة حالياً:

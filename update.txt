@@ -1,5 +1,5 @@
-version=4.1.0
+version=4.1.1
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.0&t=1792246684
-sha256=659EC673A4137D622CB33C23B76D70F597739BF42A0A886D2A61CF9B5D74428C
-changelog=v4.1.0 - 2026-10-17: Add category and unit selectors to Quick Add Products screen
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.1&t=1792264021
+sha256=436884FA9E1913B99B9A7A0E1693344E73DA9277BCF3BB56255561EF364EDF82
+changelog=v4.1.1 - 2026-10-17: Add category and unit selectors to Quick Add Products screen

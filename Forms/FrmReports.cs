@@ -828,7 +828,7 @@ namespace ChickenDist.Forms
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المباعة", FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnedQty", HeaderText = "كمية المرتجع ↩", FillWeight = 42f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(239, 68, 68), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر الوحدة", FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال / IMEI 📱", FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(14, 165, 233), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال / IMEI 📱", FillWeight = 55f, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(14, 165, 233), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount", HeaderText = "الخصم", FillWeight = 35f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(249, 115, 22) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", FillWeight = 48f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 
@@ -1690,7 +1690,7 @@ namespace ChickenDist.Forms
 								int rid = Convert.ToInt32(ir["ReturnID"]);
 								if (!itemsByReturn.ContainsKey(rid)) itemsByReturn[rid] = new List<string>();
 								string imei = ir["IMEI"]?.ToString()?.Trim();
-								string sfx = !string.IsNullOrEmpty(imei) ? $" (سيريال: {imei})" : "";
+								string sfx = (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei)) ? $" (سيريال: {imei})" : "";
 								itemsByReturn[rid].Add($"{ir["ProductName"]}{sfx} ({Convert.ToDecimal(ir["Quantity"]):N0})");
 							}
 
@@ -3083,12 +3083,13 @@ namespace ChickenDist.Forms
 				                  name == "ShortageCostLoss" || name == "SurplusCostGain" ||
 				                  headerText.Contains("سعر الشراء") || headerText.Contains("سعر التكلفة") || headerText.Contains("التكلفة") ||
 				                  headerText.Contains("الربح") || headerText.Contains("الأرباح") || headerText.Contains("هامش"));
+				bool isImeiCol = (name == "IMEI" || name == "السيريال" || headerText.Contains("IMEI") || headerText.Contains("السيريال"));
 
 				var col = new DataGridViewTextBoxColumn
 				{
 					Name = name,
 					HeaderText = headerText,
-					Visible = !isCostCol || canSeeCost,
+					Visible = (!isCostCol || canSeeCost) && (!isImeiCol || AppConfig.BusinessType == "Mobiles"),
 					Resizable = DataGridViewTriState.True
 				};
 

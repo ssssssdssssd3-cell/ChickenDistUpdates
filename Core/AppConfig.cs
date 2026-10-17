@@ -25,10 +25,39 @@ namespace ChickenDist.Core
             set => Set("CompanyName", value);
         }
 
+        private static string _inferredBusinessType;
+
         public static string BusinessType
         {
-            get => Get("BusinessType", "Mobiles");
-            set => Set("BusinessType", value);
+            get
+            {
+                EnsureLoaded();
+                if (_cache != null && _cache.TryGetValue("BusinessType", out string val) && !string.IsNullOrWhiteSpace(val))
+                    return val;
+                if (!string.IsNullOrEmpty(_inferredBusinessType))
+                    return _inferredBusinessType;
+                try
+                {
+                    var hasImei = DbHelper.Scalar(@"
+                        SELECT CASE 
+                            WHEN EXISTS (SELECT 1 FROM Products WHERE ISNULL(IsIMEI, 0) = 1) THEN 1
+                            WHEN EXISTS (SELECT 1 FROM PurchaseItems WHERE LEN(LTRIM(RTRIM(ISNULL(IMEI, '')))) > 0) THEN 1
+                            WHEN EXISTS (SELECT 1 FROM SaleItems WHERE LEN(LTRIM(RTRIM(ISNULL(IMEI, '')))) > 0) THEN 1
+                            ELSE 0 
+                        END");
+                    _inferredBusinessType = (hasImei != null && Convert.ToInt32(hasImei) == 1) ? "Mobiles" : "General";
+                }
+                catch
+                {
+                    _inferredBusinessType = "General";
+                }
+                return _inferredBusinessType;
+            }
+            set
+            {
+                _inferredBusinessType = value;
+                Set("BusinessType", value);
+            }
         }
 
         public static bool IsMobile

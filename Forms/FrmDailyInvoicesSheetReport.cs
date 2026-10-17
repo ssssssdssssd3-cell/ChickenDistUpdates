@@ -459,10 +459,13 @@ namespace ChickenDist.Forms
                 var saleIDs = sortedRows.Select(r => Convert.ToInt32(r["SaleID"])).ToList();
 
                 string idList = string.Join(",", saleIDs);
+                string prodNameSql = AppConfig.BusinessType == "Mobiles"
+                    ? "CASE WHEN NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(si.IMEI)) + N')' ELSE p.ProductName END"
+                    : "p.ProductName";
                 DataTable dtItems = DbHelper.Query($@"
                     SELECT si.SaleID, si.ProductID,
                            COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR(50))) AS ProductCode,
-                           CASE WHEN NULLIF(LTRIM(RTRIM(si.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(si.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
+                           {prodNameSql} AS ProductName,
                            ISNULL(si.IMEI, N'') AS IMEI,
                            COALESCE(si.UnitName, p.Unit, N'قطعة') AS UnitName,
                            si.Quantity,

@@ -229,7 +229,7 @@ namespace ChickenDist.Forms
 
                 int headerH = isReceipt ? 20 : (isA4Page ? 28 : 22);
                 g.FillRectangle(new SolidBrush(Color.FromArgb(140, 40, 40)), lMargin, y, printableW, headerH);
-                g.DrawString("الصنف والسيريال", bold, Brushes.White, new RectangleF(xProd, y, colProdW, headerH), sfRight);
+                g.DrawString(AppConfig.BusinessType == "Mobiles" ? "الصنف والسيريال" : "الصنف", bold, Brushes.White, new RectangleF(xProd, y, colProdW, headerH), sfRight);
                 g.DrawString("الكمية", bold, Brushes.White, new RectangleF(xQty, y, colQtyW, headerH), sfCenter);
                 g.DrawString("السعر", bold, Brushes.White, new RectangleF(xPrice, y, colPriceW, headerH), sfCenter);
                 g.DrawString("الإجمالي", bold, Brushes.White, new RectangleF(xTot, y, colTotW, headerH), sfLeft);
@@ -244,7 +244,7 @@ namespace ChickenDist.Forms
                         var r = _items.Rows[_printItemIndex];
                         string pName = r["ProductName"]?.ToString() ?? "صنف";
                         string imei = r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value ? r["IMEI"].ToString().Trim() : "";
-                        if (!string.IsNullOrEmpty(imei))
+                        if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei))
                         {
                             pName = $"{pName} (سيريال: {imei})";
                         }

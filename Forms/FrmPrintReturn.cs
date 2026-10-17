@@ -258,7 +258,7 @@ namespace ChickenDist.Forms
                             var r = _items.Rows[_printItemIndex];
                             string pName = r["ProductName"]?.ToString() ?? "صنف";
                             string imei = r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value ? r["IMEI"].ToString().Trim() : "";
-                            if (!string.IsNullOrEmpty(imei))
+                            if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrEmpty(imei))
                             {
                                 pName = $"{pName} (سيريال: {imei})";
                             }
