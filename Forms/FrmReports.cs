@@ -836,18 +836,19 @@ namespace ChickenDist.Forms
 					tblBottom.Controls.Add(dgDetailedSaleItems, 1, 0);
 					layout.Controls.Add(tblBottom, 0, 1);
 
-					dgDetailedSales.SelectionChanged += (s, e) =>
+					Action loadSelectedSaleItems = () =>
 					{
 						dgDetailedSaleItems.Rows.Clear();
-						if (dgDetailedSales.SelectedRows.Count == 0)
+						if (dgDetailedSales.SelectedRows.Count == 0 && dgDetailedSales.CurrentRow == null)
 						{
 							lblItemsHeader.Text = "📦 الأصناف المسحوبة بالفاتورة:";
 							return;
 						}
+						var selectedRow = dgDetailedSales.SelectedRows.Count > 0 ? dgDetailedSales.SelectedRows[0] : dgDetailedSales.CurrentRow;
 						int saleID = 0;
-						if (dgDetailedSales.Columns.Contains("SaleID") && dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value != null)
+						if (dgDetailedSales.Columns.Contains("SaleID") && selectedRow != null && selectedRow.Cells["SaleID"].Value != null)
 						{
-							int.TryParse(dgDetailedSales.SelectedRows[0].Cells["SaleID"].Value.ToString(), out saleID);
+							int.TryParse(selectedRow.Cells["SaleID"].Value.ToString(), out saleID);
 						}
 						if (saleID > 0)
 						{
@@ -916,6 +917,10 @@ namespace ChickenDist.Forms
 							lblItemsHeader.Text = "📦 الأصناف المسحوبة بالفاتورة:";
 						}
 					};
+
+					dgDetailedSales.SelectionChanged += (s, e) => loadSelectedSaleItems();
+					dgDetailedSales.CellClick += (s, e) => loadSelectedSaleItems();
+					dgDetailedSales.Tag = loadSelectedSaleItems;
 
 					btnEditSale.Click += (s, e) =>
 					{
@@ -2595,6 +2600,23 @@ namespace ChickenDist.Forms
 				}
 				FillGrid(dataGridView);
 				ApplyAllFilters();
+
+				string curReportTag = tabReports.SelectedTab?.Tag?.ToString();
+				if (curReportTag == "DetailedSales")
+				{
+					var targetDgSales = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgDetailedSales");
+					if (targetDgSales != null && targetDgSales.Rows.Count > 0)
+					{
+						if (targetDgSales.SelectedRows.Count == 0)
+						{
+							targetDgSales.ClearSelection();
+							targetDgSales.Rows[0].Selected = true;
+							if (targetDgSales.Columns.Count > 0)
+								targetDgSales.CurrentCell = targetDgSales.Rows[0].Cells[0];
+						}
+						(targetDgSales.Tag as Action)?.Invoke();
+					}
+				}
 			}
 		}
 

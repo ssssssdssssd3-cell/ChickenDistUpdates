@@ -21,6 +21,7 @@ namespace ChickenDist.Forms
         private SplitContainer _mainSplit;
         private FlowLayoutPanel pnlGeneralItemBar;
         private int _selectedPurchaseID = 0;
+        private int? _selectedSupplierID = null;
 
         public FrmPurchaseReturn()
         {
@@ -273,6 +274,7 @@ namespace ChickenDist.Forms
             dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "الملاحظات", FillWeight = 100 });
 
             dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
+            dgPurchases.CellClick += (s, e) => { if (e.RowIndex >= 0) DgPurchases_SelectionChanged(dgPurchases, EventArgs.Empty); };
             pnlTop.Controls.Add(dgPurchases);
             pnlTop.Controls.Add(lblTopTitle);
             _mainSplit.Panel1.Controls.Add(pnlTop);
@@ -364,7 +366,7 @@ namespace ChickenDist.Forms
                 DefaultCellStyle = new DataGridViewCellStyle 
                 { 
                     Alignment = DataGridViewContentAlignment.MiddleCenter, 
-                    ForeColor = Color.Yellow, 
+                    ForeColor = Color.FromArgb(14, 165, 233), 
                     Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) 
                 } 
             });
@@ -628,8 +630,11 @@ namespace ChickenDist.Forms
             dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
             if (dgPurchases.Rows.Count > 0)
             {
-                // تحديد الصف الأول يُطلق SelectionChanged تلقائياً — لا نستدعيه يدوياً لتفادي تكرار LoadPurchaseItems
+                dgPurchases.ClearSelection();
                 dgPurchases.Rows[0].Selected = true;
+                if (dgPurchases.Columns.Contains("PurchaseCode"))
+                    dgPurchases.CurrentCell = dgPurchases.Rows[0].Cells["PurchaseCode"];
+                DgPurchases_SelectionChanged(dgPurchases, EventArgs.Empty);
             }
         }
 
@@ -665,7 +670,8 @@ namespace ChickenDist.Forms
 
             string purTypeStr = purRow.Cells["PurchaseTypeStr"].Value?.ToString() ?? "";
             decimal netPurTotal = Convert.ToDecimal(purRow.Cells["TotalAmount"].Value ?? 0);
-            lblPurchaseInfo.Text = $"الفاتورة رقم ({purRow.Cells["PurchaseCode"].Value}) | الصافي المسدد: {netPurTotal:N2} ج | النوع: {purTypeStr}";
+            string supName = purRow.Cells["SupplierName"].Value?.ToString() ?? "";
+            lblPurchaseInfo.Text = $"الفاتورة رقم ({purRow.Cells["PurchaseCode"].Value}) | المورد: {supName} | الصافي المسدد: {netPurTotal:N2} ج | النوع: {purTypeStr}";
 
             // ضبط طريقة التسوية التلقائية للمرتجع
             if (purTypeStr.Contains("نقدي") || purTypeStr.Contains("Cash"))
@@ -675,21 +681,17 @@ namespace ChickenDist.Forms
             else
                 cboReturnType.SelectedIndex = 0; // آجل
 
-            // تلقائياً حدد المورد من الفاتورة المختارة
+            // حفظ معرف المورد للفاتورة المحددة دون تغيير فلتر الفواتير المعروضة
             var dtPur = DbHelper.Query(
                 "SELECT SupplierID, ClientID, PurchaseSource FROM Purchases WHERE PurchaseID=@pid",
                 DbHelper.P("@pid", purchaseID));
             if (dtPur.Rows.Count > 0 && dtPur.Rows[0]["SupplierID"] != DBNull.Value)
             {
-                int sid = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
-                for (int i = 0; i < cboSupplier.Items.Count; i++)
-                {
-                    if (cboSupplier.Items[i] is ComboItem ci && ci.ID == sid)
-                    {
-                        cboSupplier.SelectedIndex = i;
-                        break;
-                    }
-                }
+                _selectedSupplierID = Convert.ToInt32(dtPur.Rows[0]["SupplierID"]);
+            }
+            else
+            {
+                _selectedSupplierID = null;
             }
 
             // تحميل أصناف الفاتورة مع المرتجع السابق
@@ -1357,7 +1359,9 @@ namespace ChickenDist.Forms
             }
 
             int purchaseID = isGeneral ? 0 : _selectedPurchaseID;
-            int? supplierID = (cboSupplier.SelectedItem is ComboItem cs && cs.ID > 0) ? (int?)cs.ID : null;
+            int? supplierID = isGeneral 
+                ? ((cboSupplier.SelectedItem is ComboItem cs && cs.ID > 0) ? (int?)cs.ID : null)
+                : (_selectedSupplierID ?? ((cboSupplier.SelectedItem is ComboItem cs2 && cs2.ID > 0) ? (int?)cs2.ID : null));
             int? warehouseID = (cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : Session.GetDefaultWarehouseID();
             int effWhId = warehouseID ?? 1;
 

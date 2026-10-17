@@ -848,6 +848,7 @@ namespace ChickenDist.Forms
             dgSales.ContextMenuStrip = ctxSales;
 
             dgSales.SelectionChanged += DgSales_SelectionChanged;
+            dgSales.CellClick += (s, e) => { if (e.RowIndex >= 0) DgSales_SelectionChanged(dgSales, EventArgs.Empty); };
             _mainSplit.Panel1.Controls.Add(dgSales);
 
             // Bottom Grid: Selected Sale Items / Return Items
@@ -1759,6 +1760,10 @@ namespace ChickenDist.Forms
 
                 _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType, empID);
                 dgSales.DataSource = _salesDt;
+                if (dgSales.Rows.Count > 0)
+                {
+                    DgSales_SelectionChanged(dgSales, EventArgs.Empty);
+                }
             }
             catch (Exception ex)
             {
