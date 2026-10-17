@@ -70,7 +70,7 @@ namespace ChickenDist.DAL
             return GetAll(from, to, null, null, warehouseID);
         }
 
-        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null, string saleType = null, int? empID = null, IEnumerable<int> allowedWarehouseIDs = null)
+        public static DataTable GetAll(DateTime from, DateTime to, int? clientID, string productSearch, int? warehouseID = null, string saleType = null, int? empID = null, IEnumerable<int> allowedWarehouseIDs = null, int? productID = null)
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
             string saleTypeFilter = string.IsNullOrWhiteSpace(saleType) || saleType == "الكل" ? null : saleType.Trim();
@@ -95,7 +95,8 @@ namespace ChickenDist.DAL
                 DbHelper.P("@clientID", clientID.HasValue ? (object)clientID.Value : DBNull.Value),
                 DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
                 DbHelper.P("@saleType", (object)saleTypeFilter ?? DBNull.Value),
-                DbHelper.P("@empID", empID.HasValue ? (object)empID.Value : DBNull.Value)
+                DbHelper.P("@empID", empID.HasValue ? (object)empID.Value : DBNull.Value),
+                DbHelper.P("@productID", productID.HasValue && productID.Value > 0 ? (object)productID.Value : DBNull.Value)
             };
 
             if (warehouseID.HasValue && warehouseID.Value > 0)
@@ -189,20 +190,33 @@ namespace ChickenDist.DAL
                       GROUP BY si.SaleID
                   ) costs ON costs.SaleID = s.SaleID
                   WHERE s.SaleDate BETWEEN @f AND @t
-                    AND (@clientID IS NULL OR s.ClientID = @clientID)
+                    AND (@clientID IS NULL OR (@clientID = -1 AND (s.ClientID IS NULL OR s.ClientID = 0)) OR s.ClientID = @clientID)
                     AND (@saleType IS NULL OR s.SaleType = @saleType)
                     AND (@empID IS NULL OR s.CreatedBy = @empID OR s.DriverID = @empID)
+                    AND (@productID IS NULL OR EXISTS (
+                        SELECT 1 FROM SaleItems si_prod WHERE si_prod.SaleID = s.SaleID AND si_prod.ProductID = @productID
+                    ))
                     AND (@product IS NULL OR (
                         s.SaleCode LIKE N'%' + @product + N'%'
                         OR CAST(s.SaleID AS NVARCHAR(50)) = @product
                         OR s.Notes LIKE N'%' + @product + N'%'
+                        OR s.CustomClientName LIKE N'%' + @product + N'%'
+                        OR c.ClientName LIKE N'%' + @product + N'%'
+                        OR c.ClientCode LIKE N'%' + @product + N'%'
+                        OR c.Phone LIKE N'%' + @product + N'%'
+                        OR CAST(CAST(s.TotalAmount AS DECIMAL(18,2)) AS NVARCHAR(50)) LIKE N'%' + @product + N'%'
                         OR EXISTS (
                             SELECT 1 FROM SaleItems si2
                             JOIN Products pr ON si2.ProductID = pr.ProductID
                             WHERE si2.SaleID = s.SaleID
                             AND (pr.ProductName LIKE N'%' + @product + N'%'
                               OR pr.ProductCode LIKE N'%' + @product + N'%'
-                              OR (pr.Barcode IS NOT NULL AND pr.Barcode LIKE N'%' + @product + N'%'))
+                              OR (pr.Barcode IS NOT NULL AND pr.Barcode LIKE N'%' + @product + N'%')
+                              OR (pr.Unit1Barcode IS NOT NULL AND pr.Unit1Barcode LIKE N'%' + @product + N'%')
+                              OR (pr.Unit2Barcode IS NOT NULL AND pr.Unit2Barcode LIKE N'%' + @product + N'%')
+                              OR (pr.PartNumber IS NOT NULL AND pr.PartNumber LIKE N'%' + @product + N'%')
+                              OR (pr.CarModel IS NOT NULL AND pr.CarModel LIKE N'%' + @product + N'%')
+                              OR (si2.IMEI IS NOT NULL AND si2.IMEI LIKE N'%' + @product + N'%'))
                         )
                     ))" + whCondition + @"
                   ORDER BY s.SaleDate DESC",
@@ -214,6 +228,7 @@ namespace ChickenDist.DAL
             DbHelper.EnsureOfferColumnsExist();
             return DbHelper.Query(
                 @"SELECT si.ItemID, si.ProductID, COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR(50))) AS ProductCode,
+                          ISNULL(p.Barcode, N'') AS Barcode,
                           p.ProductName, si.Quantity, si.Quantity AS SoldQty, si.UnitPrice, si.TotalPrice,
                           COALESCE(si.DiscountPct, 0) AS DiscountPct, COALESCE(si.DiscountAmt, 0) AS DiscountAmt,
                           COALESCE(si.PriceTier, N'قطاعي') AS PriceTier,

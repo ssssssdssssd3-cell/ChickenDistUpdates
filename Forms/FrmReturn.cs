@@ -13,19 +13,20 @@ namespace ChickenDist.Forms
     public class FrmReturn : Form
     {
         private DataGridView dgSales, dgItems, dgExchangeNewItems;
-        private TextBox txtSearch, txtInvoiceBarcode, txtNotes, txtGenQty, txtGenPrice, txtNewGenQty, txtNewGenPrice;
-        private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts, cboSaleTypeFilter, cboProductFilter, cboEmployeeFilter;
+        private TextBox txtSearch, txtInvoiceBarcode, txtNotes, txtGenQty, txtGenPrice, txtNewGenQty, txtNewGenPrice, txtItemFilter;
+        private ComboBox cboClient, cboMode, cboWarehouse, cboReturnType, cboAllProducts, cboNewExchangeProducts, cboSaleTypeFilter, cboProductFilter, cboEmployeeFilter, cboReturnStatusFilter, cboDatePreset;
         private DateTimePicker dtpFrom, dtpTo;
-        private Button btnSearch, btnSave, btnAddGenItem, btnAddNewGenItem;
-        private Label lblTotal, lblExchangeSummary;
+        private Button btnSearch, btnClearFilters, btnSave, btnAddGenItem, btnAddNewGenItem;
+        private Label lblTotal, lblExchangeSummary, lblItemsCountInfo;
         private SplitContainer _mainSplit;
         private TableLayoutPanel _pnlGridsContainer;
-        private FlowLayoutPanel pnlFilter, _pnlGenItemBar, _pnlNewItemBar;
-        private Control _pnlFrom, _pnlTo, _pnlSearch, _pnlBarcode, _pnlEmp;
+        private FlowLayoutPanel pnlFilter, _pnlGenItemBar, _pnlNewItemBar, _pnlInvoiceItemFilter;
+        private Control _pnlFrom, _pnlTo, _pnlSearch, _pnlBarcode, _pnlEmp, _pnlSaleType, _pnlProduct, _pnlRetStatus, _pnlDatePreset;
         private DataTable _salesDt;
         private bool _isFilteringCombo = false;
         private bool _isLoadingSales = false;
         private bool _isLoadingSaleItems = false;
+        private bool _isApplyingDatePreset = false;
         private System.Windows.Forms.Timer _searchDebounceTimer;
         private decimal _selectedSaleTotalAmount = 0m;
         private decimal _selectedSaleShippingCharge = 0m;
@@ -84,8 +85,13 @@ namespace ChickenDist.Forms
             // المخازن
             if (cboWarehouse != null)
             {
+                cboWarehouse.SelectedIndexChanged -= CboWarehouse_SelectedIndexChanged;
                 var dtWh = Session.GetAllowedWarehouses(true);
                 cboWarehouse.Items.Clear();
+                if (Session.IsAdmin || dtWh.Rows.Count > 1)
+                {
+                    cboWarehouse.Items.Add(new ComboItem(0, "الكل (جميع المخازن)"));
+                }
                 int defWhId = Session.GetDefaultWarehouseID();
                 int selIdx = 0;
                 for (int i = 0; i < dtWh.Rows.Count; i++)
@@ -93,11 +99,12 @@ namespace ChickenDist.Forms
                     int wid = Convert.ToInt32(dtWh.Rows[i]["WarehouseID"]);
                     string wname = dtWh.Rows[i]["WarehouseName"].ToString();
                     cboWarehouse.Items.Add(new ComboItem(wid, wname));
-                    if (wid == defWhId) selIdx = i;
+                    if (cboWarehouse.Items.Count == 1 && wid == defWhId) selIdx = 0;
                 }
                 cboWarehouse.DisplayMember = "Text";
                 if (cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = selIdx;
                 cboWarehouse.Enabled = Session.IsAdmin || dtWh.Rows.Count > 1;
+                cboWarehouse.SelectedIndexChanged += CboWarehouse_SelectedIndexChanged;
             }
 
             // تحميل أصناف الكتالوج للمرتجع العام والبديل وتصفية الفواتير بالصنف
@@ -120,6 +127,7 @@ namespace ChickenDist.Forms
             if (cboAllProducts != null)
             {
                 cboAllProducts.SelectedIndexChanged -= CboAllProducts_SelectedIndexChanged;
+                cboAllProducts.Tag = null;
                 cboAllProducts.Items.Clear();
                 cboAllProducts.Items.Add(new ComboItem(0, "-- اختر / ابحث عن الصنف المرتجع --"));
                 foreach (DataRow r in dtProducts.Rows)
@@ -136,6 +144,7 @@ namespace ChickenDist.Forms
             if (cboNewExchangeProducts != null)
             {
                 cboNewExchangeProducts.SelectedIndexChanged -= CboNewExchangeProducts_SelectedIndexChanged;
+                cboNewExchangeProducts.Tag = null;
                 cboNewExchangeProducts.Items.Clear();
                 cboNewExchangeProducts.Items.Add(new ComboItem(0, "-- اختر الصنف البديل الجديد --"));
                 foreach (DataRow r in dtProducts.Rows)
@@ -198,6 +207,12 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void CboWarehouse_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboMode != null && cboMode.SelectedIndex == 0)
+                LoadSales();
+        }
+
         private void CboAllProducts_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cboAllProducts.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -240,8 +255,10 @@ namespace ChickenDist.Forms
         {
             if (cboClient == null) return;
             cboClient.SelectedIndexChanged -= CboClient_SelectedIndexChanged;
+            cboClient.Tag = null;
             cboClient.Items.Clear();
-            cboClient.Items.Add(new ComboItem(0, "👤 عميل نقدي / عام (بدون عميل مسجل)"));
+            cboClient.Items.Add(new ComboItem(0, "الكل (جميع العملاء)"));
+            cboClient.Items.Add(new ComboItem(-1, "👤 عميل نقدي / عام (بدون عميل مسجل)"));
             try
             {
                 var dtC = ClientDAL.GetAll(true);
@@ -488,14 +505,25 @@ namespace ChickenDist.Forms
 
             cboSaleTypeFilter = new ComboBox
             {
-                Width = 125, Height = 26,
+                Width = 115, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cboSaleTypeFilter.Items.AddRange(new object[] { "الكل", "💵 نقدي", "💳 فيزا", "📋 آجل", "📅 تقسيط", "🚚 حمولة مندوب" });
             cboSaleTypeFilter.SelectedIndex = 0;
             cboSaleTypeFilter.SelectedIndexChanged += CboSaleTypeFilter_SelectedIndexChanged;
             StyleSearchInput(cboSaleTypeFilter);
-            var pnlSaleType = MakeFilterPanel("نوع الفاتورة:", cboSaleTypeFilter, 125);
+            _pnlSaleType = MakeFilterPanel("نوع الفاتورة:", cboSaleTypeFilter, 115);
+
+            cboReturnStatusFilter = new ComboBox
+            {
+                Width = 135, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboReturnStatusFilter.Items.AddRange(new object[] { "الكل", "✅ بدون مرتجع سابق", "↩ عليها مرتجع سابق" });
+            cboReturnStatusFilter.SelectedIndex = 0;
+            cboReturnStatusFilter.SelectedIndexChanged += (s, e) => { if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
+            StyleSearchInput(cboReturnStatusFilter);
+            _pnlRetStatus = MakeFilterPanel("حالة المرتجع:", cboReturnStatusFilter, 135);
 
             cboProductFilter = new ComboBox
             {
@@ -506,17 +534,67 @@ namespace ChickenDist.Forms
             };
             StyleSearchInput(cboProductFilter);
             SetupSearchableCombo(cboProductFilter);
-            var pnlProduct = MakeFilterPanel("بحث بالصنف:", cboProductFilter, 150);
+            cboProductFilter.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales();
+                }
+            };
+
+            var btnProductFilterSearch = new Button
+            {
+                Text = "🔍",
+                Width = 32,
+                Height = 26,
+                Font = Theme.FontBold,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 0, 0, 0)
+            };
+            btnProductFilterSearch.FlatAppearance.BorderSize = 0;
+            btnProductFilterSearch.Click += (s, e) =>
+            {
+                int? whId = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : null;
+                using (var dlg = new FrmProductSearch(whId, false, defaultShowZeroStock: true))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                    {
+                        int pid = dlg.SelectedProductID;
+                        if (cboProductFilter.Tag is List<ComboItem> allItems)
+                        {
+                            cboProductFilter.BeginUpdate();
+                            cboProductFilter.Items.Clear();
+                            cboProductFilter.Items.AddRange(allItems.ToArray());
+                            cboProductFilter.EndUpdate();
+                        }
+                        for (int i = 0; i < cboProductFilter.Items.Count; i++)
+                        {
+                            if (cboProductFilter.Items[i] is ComboItem ci && ci.ID == pid)
+                            {
+                                cboProductFilter.SelectedIndex = i;
+                                break;
+                            }
+                        }
+                        if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales();
+                    }
+                }
+            };
+            _pnlProduct = MakeFilterPanel("بحث بالصنف:", cboProductFilter, 150, btnProductFilterSearch);
 
             cboEmployeeFilter = new ComboBox
             {
-                Width = 140, Height = 26,
+                Width = 135, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular)
             };
             StyleSearchInput(cboEmployeeFilter);
-            _pnlEmp = MakeFilterPanel("الموظف:", cboEmployeeFilter, 140);
+            _pnlEmp = MakeFilterPanel("الموظف:", cboEmployeeFilter, 135);
 
             cboReturnType = new ComboBox
             {
@@ -533,22 +611,42 @@ namespace ChickenDist.Forms
 
             cboWarehouse = new ComboBox
             {
-                Width = 120, Height = 26,
+                Width = 130, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 120);
+            var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 130);
 
-            dtpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
-            dtpFrom.ValueChanged += (s, e) => { if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
-            _pnlFrom = MakeFilterPanel("من:", dtpFrom, 180);
+            cboDatePreset = new ComboBox
+            {
+                Width = 115, Height = 26,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboDatePreset.Items.AddRange(new object[] {
+                "📅 آخر شهر",
+                "اليوم",
+                "أمس",
+                "آخر 7 أيام",
+                "هذا الشهر",
+                "الشهر الماضي",
+                "هذه السنة",
+                "🌐 كل الفترات"
+            });
+            cboDatePreset.SelectedIndex = 0;
+            StyleSearchInput(cboDatePreset);
+            cboDatePreset.SelectedIndexChanged += (s, e) => ApplyDatePreset();
+            _pnlDatePreset = MakeFilterPanel("الفترة:", cboDatePreset, 115);
 
-            dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
-            dtpTo.ValueChanged += (s, e) => { if (cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
-            _pnlTo = MakeFilterPanel("إلى:", dtpTo, 180);
+            dtpFrom = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
+            dtpFrom.ValueChanged += (s, e) => { if (!_isApplyingDatePreset && cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
+            _pnlFrom = MakeFilterPanel("من:", dtpFrom, 175);
 
-            txtSearch = new TextBox { Width = 230, RightToLeft = RightToLeft.Yes };
+            dtpTo = new DateTimePicker { Width = 175, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+            dtpTo.ValueChanged += (s, e) => { if (!_isApplyingDatePreset && cboMode != null && cboMode.SelectedIndex == 0) LoadSales(); };
+            _pnlTo = MakeFilterPanel("إلى:", dtpTo, 175);
+
+            txtSearch = new TextBox { Width = 220, RightToLeft = RightToLeft.Yes };
             StyleSearchInput(txtSearch);
             _searchDebounceTimer = new System.Windows.Forms.Timer { Interval = 350 };
             _searchDebounceTimer.Tick += (s, e) =>
@@ -571,9 +669,9 @@ namespace ChickenDist.Forms
                     DoBarcodeSearch(txtSearch.Text.Trim());
                 }
             };
-            _pnlSearch = MakeFilterPanel("بحث (صنف/كود/رقم/باركود فاتورة):", txtSearch, 230);
+            _pnlSearch = MakeFilterPanel("بحث شامل (فاتورة/عميل/صنف/كود/ملاحظات):", txtSearch, 220);
 
-            txtInvoiceBarcode = new TextBox { Width = 140, RightToLeft = RightToLeft.No };
+            txtInvoiceBarcode = new TextBox { Width = 135, RightToLeft = RightToLeft.No };
             StyleSearchInput(txtInvoiceBarcode);
             txtInvoiceBarcode.KeyDown += (s, e) =>
             {
@@ -584,26 +682,34 @@ namespace ChickenDist.Forms
                     DoBarcodeSearch(txtInvoiceBarcode.Text.Trim());
                 }
             };
-            _pnlBarcode = MakeFilterPanel("📷 مسح بالاسكانر:", txtInvoiceBarcode, 140);
+            _pnlBarcode = MakeFilterPanel(AppConfig.BusinessType == "Mobiles" ? "📷 اسكانر / IMEI:" : "📷 مسح بالاسكانر:", txtInvoiceBarcode, 135);
 
             btnSearch = Theme.MakeButton("🔍 تحديث", Theme.Accent);
             btnSearch.Size = new Size(85, 28);
-            btnSearch.Margin = new Padding(6, 4, 6, 2);
+            btnSearch.Margin = new Padding(4, 4, 4, 2);
             btnSearch.Click += (s, e) => LoadSales();
+
+            btnClearFilters = Theme.MakeButton("🔄 مسح الفلاتر", Color.FromArgb(100, 116, 139));
+            btnClearFilters.Size = new Size(105, 28);
+            btnClearFilters.Margin = new Padding(4, 4, 4, 2);
+            btnClearFilters.Click += (s, e) => ResetAllFilters();
 
             pnlFilter.Controls.AddRange(new Control[] { 
                 pnlMode, 
                 pnlClient, 
-                pnlSaleType, 
-                pnlProduct, 
+                _pnlSaleType, 
+                _pnlRetStatus,
+                _pnlProduct, 
                 _pnlEmp,
                 pnlRetType, 
                 pnlWh, 
+                _pnlDatePreset,
                 _pnlFrom, 
                 _pnlTo, 
                 _pnlSearch, 
                 _pnlBarcode, 
-                btnSearch 
+                btnSearch,
+                btnClearFilters
             });
 
             // ===== شريط إضافة صنف مرتجع عام / بديل =====
@@ -627,6 +733,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
                 Font = Theme.FontBold
             };
+            SetupSearchableCombo(cboAllProducts);
             var lblGenQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold };
             var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
@@ -668,6 +775,7 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextInput,
                 Font = Theme.FontBold
             };
+            SetupSearchableCombo(cboNewExchangeProducts);
             var lblNewQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
             txtNewGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold };
             var lblNewPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
@@ -677,7 +785,12 @@ namespace ChickenDist.Forms
             btnAddNewGenItem.Margin = new Padding(10, 0, 0, 0);
             btnAddNewGenItem.Click += BtnAddNewGenItem_Click;
 
-            _pnlNewItemBar.Controls.AddRange(new Control[] { lblNewTitle, cboNewExchangeProducts, lblNewQtyL, txtNewGenQty, lblNewPriceL, txtNewGenPrice, btnAddNewGenItem });
+            var btnSearchNewExItem = Theme.MakeButton("🔍 بحث بديل", Color.FromArgb(40, 110, 160));
+            btnSearchNewExItem.Size = new Size(105, 26);
+            btnSearchNewExItem.Margin = new Padding(8, 0, 0, 0);
+            btnSearchNewExItem.Click += (s, e) => OpenExchangeProductSearchDialog();
+
+            _pnlNewItemBar.Controls.AddRange(new Control[] { lblNewTitle, cboNewExchangeProducts, lblNewQtyL, txtNewGenQty, lblNewPriceL, txtNewGenPrice, btnAddNewGenItem, btnSearchNewExItem });
 
             // ===== 2. SplitContainer =====
             _mainSplit = new SplitContainer
@@ -1062,6 +1175,8 @@ namespace ChickenDist.Forms
             });
 
             // Hidden helper columns
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", Visible = false });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Barcode", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "OriginalFactor", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetLineTotal", Visible = false });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetUnitPrice", Visible = false });
@@ -1242,6 +1357,58 @@ namespace ChickenDist.Forms
             ctxExchange.Items.Add(miDelEx);
             dgExchangeNewItems.ContextMenuStrip = ctxExchange;
 
+            // شريط تصفية أصناف الفاتورة المحددة بالأسفل
+            _pnlInvoiceItemFilter = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 34,
+                FlowDirection = FlowDirection.LeftToRight,
+                BackColor = Theme.BgCard,
+                Padding = new Padding(4, 3, 4, 3),
+                WrapContents = false
+            };
+            var lblItemFilter = new Label
+            {
+                Text = "🔎 بحث سريع داخل أصناف الفاتورة المحددة (اسم / كود / باركود):",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(20, 80, 160),
+                Font = Theme.FontBold,
+                Margin = new Padding(2, 4, 4, 0)
+            };
+            txtItemFilter = new TextBox
+            {
+                Width = 220,
+                Height = 24,
+                RightToLeft = RightToLeft.Yes,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextInput,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            txtItemFilter.TextChanged += (s, e) => FilterInvoiceItems();
+            var btnClearItemFilter = new Button
+            {
+                Text = "✖",
+                Width = 28,
+                Height = 24,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(148, 163, 184),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 0, 8, 0)
+            };
+            btnClearItemFilter.FlatAppearance.BorderSize = 0;
+            btnClearItemFilter.Click += (s, e) => { txtItemFilter.Text = ""; };
+
+            lblItemsCountInfo = new Label
+            {
+                Text = "",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(71, 85, 105),
+                Font = Theme.FontBold,
+                Margin = new Padding(10, 4, 0, 0)
+            };
+            _pnlInvoiceItemFilter.Controls.AddRange(new Control[] { lblItemFilter, txtItemFilter, btnClearItemFilter, lblItemsCountInfo });
+
             _pnlGridsContainer = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -1253,6 +1420,7 @@ namespace ChickenDist.Forms
             _pnlGridsContainer.Controls.Add(dgItems, 0, 0);
 
             _mainSplit.Panel2.Controls.Add(_pnlGridsContainer);
+            _mainSplit.Panel2.Controls.Add(_pnlInvoiceItemFilter);
 
             // ===== 3. Footer panel =====
             var pnlFoot = new FlowLayoutPanel 
@@ -1341,6 +1509,153 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private void ApplyDatePreset()
+        {
+            if (cboDatePreset == null) return;
+            _isApplyingDatePreset = true;
+            try
+            {
+                DateTime today = DateTime.Today;
+                switch (cboDatePreset.SelectedIndex)
+                {
+                    case 0: // آخر شهر
+                        dtpFrom.Value = today.AddMonths(-1);
+                        dtpTo.Value = DateTime.Now;
+                        break;
+                    case 1: // اليوم
+                        dtpFrom.Value = today;
+                        dtpTo.Value = today.AddDays(1).AddSeconds(-1);
+                        break;
+                    case 2: // أمس
+                        dtpFrom.Value = today.AddDays(-1);
+                        dtpTo.Value = today.AddSeconds(-1);
+                        break;
+                    case 3: // آخر 7 أيام
+                        dtpFrom.Value = today.AddDays(-7);
+                        dtpTo.Value = DateTime.Now;
+                        break;
+                    case 4: // هذا الشهر
+                        dtpFrom.Value = new DateTime(today.Year, today.Month, 1);
+                        dtpTo.Value = DateTime.Now;
+                        break;
+                    case 5: // الشهر الماضي
+                        var firstThisMonth = new DateTime(today.Year, today.Month, 1);
+                        dtpFrom.Value = firstThisMonth.AddMonths(-1);
+                        dtpTo.Value = firstThisMonth.AddSeconds(-1);
+                        break;
+                    case 6: // هذه السنة
+                        dtpFrom.Value = new DateTime(today.Year, 1, 1);
+                        dtpTo.Value = DateTime.Now;
+                        break;
+                    case 7: // كل الفترات
+                        dtpFrom.Value = new DateTime(2020, 1, 1);
+                        dtpTo.Value = DateTime.Now;
+                        break;
+                }
+            }
+            finally
+            {
+                _isApplyingDatePreset = false;
+            }
+            if (cboMode != null && cboMode.SelectedIndex == 0)
+                LoadSales();
+        }
+
+        private void ResetAllFilters()
+        {
+            _isLoadingSales = true;
+            try
+            {
+                if (cboClient != null)
+                {
+                    if (cboClient.Tag is List<ComboItem> allClients)
+                    {
+                        cboClient.BeginUpdate();
+                        cboClient.Items.Clear();
+                        cboClient.Items.AddRange(allClients.ToArray());
+                        cboClient.EndUpdate();
+                    }
+                    if (cboClient.Items.Count > 0) cboClient.SelectedIndex = 0;
+                }
+                if (cboSaleTypeFilter != null && cboSaleTypeFilter.Items.Count > 0)
+                    cboSaleTypeFilter.SelectedIndex = 0;
+                if (cboReturnStatusFilter != null && cboReturnStatusFilter.Items.Count > 0)
+                    cboReturnStatusFilter.SelectedIndex = 0;
+                if (cboProductFilter != null)
+                {
+                    if (cboProductFilter.Tag is List<ComboItem> allProds)
+                    {
+                        cboProductFilter.BeginUpdate();
+                        cboProductFilter.Items.Clear();
+                        cboProductFilter.Items.AddRange(allProds.ToArray());
+                        cboProductFilter.EndUpdate();
+                    }
+                    if (cboProductFilter.Items.Count > 0) cboProductFilter.SelectedIndex = 0;
+                }
+                if (cboEmployeeFilter != null && cboEmployeeFilter.Enabled && cboEmployeeFilter.Items.Count > 0)
+                    cboEmployeeFilter.SelectedIndex = 0;
+                if (cboWarehouse != null && cboWarehouse.Enabled && cboWarehouse.Items.Count > 0)
+                    cboWarehouse.SelectedIndex = 0;
+                if (txtSearch != null)
+                {
+                    _searchDebounceTimer?.Stop();
+                    txtSearch.Text = "";
+                }
+                if (txtInvoiceBarcode != null)
+                    txtInvoiceBarcode.Text = "";
+                if (txtItemFilter != null)
+                    txtItemFilter.Text = "";
+
+                _isApplyingDatePreset = true;
+                if (cboDatePreset != null && cboDatePreset.Items.Count > 0)
+                    cboDatePreset.SelectedIndex = 0;
+                dtpFrom.Value = DateTime.Today.AddMonths(-1);
+                dtpTo.Value = DateTime.Now;
+                _isApplyingDatePreset = false;
+            }
+            finally
+            {
+                _isLoadingSales = false;
+            }
+            LoadSales();
+        }
+
+        private void FilterInvoiceItems()
+        {
+            if (dgItems == null) return;
+            string q = txtItemFilter != null ? txtItemFilter.Text.Trim() : "";
+            int visibleCount = 0;
+            foreach (DataGridViewRow row in dgItems.Rows)
+            {
+                if (row.IsNewRow) continue;
+                decimal.TryParse(row.Cells["NewReturnedQty"]?.Value?.ToString(), out decimal retQty);
+                if (string.IsNullOrEmpty(q) || retQty > 0)
+                {
+                    row.Visible = true;
+                    visibleCount++;
+                    continue;
+                }
+
+                string pName = row.Cells["ProductName"]?.Value?.ToString() ?? "";
+                string pCode = dgItems.Columns.Contains("ProductCode") ? (row.Cells["ProductCode"]?.Value?.ToString() ?? "") : "";
+                string pBar = dgItems.Columns.Contains("Barcode") ? (row.Cells["Barcode"]?.Value?.ToString() ?? "") : "";
+                string pImei = dgItems.Columns.Contains("IMEI") ? (row.Cells["IMEI"]?.Value?.ToString() ?? "") : "";
+
+                bool match = pName.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0
+                          || pCode.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0
+                          || pBar.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0
+                          || pImei.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+                row.Visible = match;
+                if (match) visibleCount++;
+            }
+            if (lblItemsCountInfo != null)
+            {
+                lblItemsCountInfo.Text = string.IsNullOrEmpty(q)
+                    ? $"إجمالي الأصناف: {dgItems.Rows.Count}"
+                    : $"المطابق: {visibleCount} من {dgItems.Rows.Count}";
+            }
+        }
+
         private void ToggleReturnMode()
         {
             int mode = cboMode.SelectedIndex;
@@ -1351,14 +1666,20 @@ namespace ChickenDist.Forms
             _mainSplit.Panel1Collapsed = !isInvoice;
             _pnlGenItemBar.Visible = !isInvoice;
             _pnlNewItemBar.Visible = isExchange;
+            if (_pnlInvoiceItemFilter != null) _pnlInvoiceItemFilter.Visible = isInvoice;
             UpdateGridsLayout(isExchange);
 
+            if (_pnlDatePreset != null) _pnlDatePreset.Visible = isInvoice;
             if (_pnlFrom != null) _pnlFrom.Visible = isInvoice;
             if (_pnlTo != null) _pnlTo.Visible = isInvoice;
+            if (_pnlSaleType != null) _pnlSaleType.Visible = isInvoice;
+            if (_pnlRetStatus != null) _pnlRetStatus.Visible = isInvoice;
+            if (_pnlProduct != null) _pnlProduct.Visible = isInvoice;
             if (_pnlEmp != null) _pnlEmp.Visible = isInvoice;
             if (_pnlSearch != null) _pnlSearch.Visible = isInvoice;
             if (_pnlBarcode != null) _pnlBarcode.Visible = true;
             if (btnSearch != null) btnSearch.Visible = isInvoice;
+            if (btnClearFilters != null) btnClearFilters.Visible = isInvoice;
 
             lblExchangeSummary.Visible = isExchange;
 
@@ -1722,17 +2043,19 @@ namespace ChickenDist.Forms
             {
                 _isLoadingSales = true;
                 int? clientID = null;
-                if (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID > 0)
+                if (cboClient != null && cboClient.SelectedItem is ComboItem ci && ci.ID != 0)
                     clientID = ci.ID;
 
                 int? warehouseID = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : null;
 
+                int? productID = null;
+                if (cboProductFilter != null && cboProductFilter.SelectedItem is ComboItem pci && pci.ID > 0)
+                    productID = pci.ID;
+
                 string productSearch = null;
                 if (txtSearch != null && !string.IsNullOrWhiteSpace(txtSearch.Text))
                     productSearch = txtSearch.Text.Trim();
-                else if (cboProductFilter != null && cboProductFilter.SelectedItem is ComboItem pci && pci.ID > 0)
-                    productSearch = pci.Text;
-                else if (cboProductFilter != null && !string.IsNullOrWhiteSpace(cboProductFilter.Text) && cboProductFilter.Text.Trim() != "الكل" && cboProductFilter.Text.Trim() != "الكل (جميع الأصناف)")
+                else if (!productID.HasValue && cboProductFilter != null && !string.IsNullOrWhiteSpace(cboProductFilter.Text) && cboProductFilter.Text.Trim() != "الكل" && cboProductFilter.Text.Trim() != "الكل (جميع الأصناف)")
                     productSearch = cboProductFilter.Text.Trim();
 
                 string saleType = null;
@@ -1758,11 +2081,32 @@ namespace ChickenDist.Forms
                         empID = cei.ID;
                 }
 
-                _salesDt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType, empID);
+                var dt = SaleDAL.GetAll(dtpFrom.Value, dtpTo.Value, clientID, productSearch, warehouseID, saleType, empID, null, productID);
+                if (cboReturnStatusFilter != null && cboReturnStatusFilter.SelectedIndex > 0 && dt != null && dt.Columns.Contains("ReturnAmount"))
+                {
+                    bool wantHasReturn = cboReturnStatusFilter.SelectedIndex == 2;
+                    var filteredDt = dt.Clone();
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        decimal retAmt = r["ReturnAmount"] != DBNull.Value ? Convert.ToDecimal(r["ReturnAmount"]) : 0m;
+                        if (wantHasReturn && retAmt > 0.001m)
+                            filteredDt.ImportRow(r);
+                        else if (!wantHasReturn && retAmt <= 0.001m)
+                            filteredDt.ImportRow(r);
+                    }
+                    dt = filteredDt;
+                }
+
+                _salesDt = dt;
                 dgSales.DataSource = _salesDt;
                 if (dgSales.Rows.Count > 0)
                 {
                     DgSales_SelectionChanged(dgSales, EventArgs.Empty);
+                }
+                else
+                {
+                    dgItems.Rows.Clear();
+                    if (lblItemsCountInfo != null) lblItemsCountInfo.Text = "إجمالي الأصناف: 0";
                 }
             }
             catch (Exception ex)
@@ -1869,6 +2213,10 @@ namespace ChickenDist.Forms
 
                 dgRow.Cells["ProductID"].Value = row["ProductID"];
                 dgRow.Cells["ProductName"].Value = row["ProductName"];
+                if (dgItems.Columns.Contains("ProductCode") && dtItems.Columns.Contains("ProductCode"))
+                    dgRow.Cells["ProductCode"].Value = row["ProductCode"]?.ToString() ?? "";
+                if (dgItems.Columns.Contains("Barcode") && dtItems.Columns.Contains("Barcode"))
+                    dgRow.Cells["Barcode"].Value = row["Barcode"]?.ToString() ?? "";
 
                 string pColor = row.Table.Columns.Contains("Color") && row["Color"] != DBNull.Value ? row["Color"].ToString().Trim() : "";
                 string pSize = row.Table.Columns.Contains("ProductSize") && row["ProductSize"] != DBNull.Value ? row["ProductSize"].ToString().Trim() : "";
@@ -2028,6 +2376,22 @@ namespace ChickenDist.Forms
                     dgRow.DefaultCellStyle.ForeColor = Color.FromArgb(153, 27, 27);
                     dgRow.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 38, 38);
                     dgRow.DefaultCellStyle.SelectionForeColor = Color.White;
+                }
+            }
+
+            FilterInvoiceItems();
+
+            // إذا كان هناك فلتر بالصنف محدد، ننتقل تلقائياً إلى سطر هذا الصنف في الجدول بالأسفل
+            if (cboProductFilter != null && cboProductFilter.SelectedItem is ComboItem filterProd && filterProd.ID > 0)
+            {
+                foreach (DataGridViewRow r in dgItems.Rows)
+                {
+                    if (r.Visible && r.Cells["ProductID"].Value != null && Convert.ToInt32(r.Cells["ProductID"].Value) == filterProd.ID)
+                    {
+                        dgItems.CurrentCell = r.Cells["NewReturnedQty"];
+                        r.Selected = true;
+                        break;
+                    }
                 }
             }
             }
@@ -3020,6 +3384,35 @@ namespace ChickenDist.Forms
             }
         }
     }
+
+        private void OpenExchangeProductSearchDialog()
+        {
+            int? whId = (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem cw && cw.ID > 0) ? (int?)cw.ID : null;
+            using (var dlg = new FrmProductSearch(whId, false))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                {
+                    if (cboNewExchangeProducts.Tag is List<ComboItem> allProds)
+                    {
+                        cboNewExchangeProducts.BeginUpdate();
+                        cboNewExchangeProducts.Items.Clear();
+                        cboNewExchangeProducts.Items.AddRange(allProds.ToArray());
+                        cboNewExchangeProducts.EndUpdate();
+                    }
+                    for (int i = 0; i < cboNewExchangeProducts.Items.Count; i++)
+                    {
+                        if (cboNewExchangeProducts.Items[i] is ComboItem ci && ci.ID == dlg.SelectedProductID)
+                        {
+                            cboNewExchangeProducts.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                    if (dlg.SelectedQuantity > 0) txtNewGenQty.Text = dlg.SelectedQuantity.ToString("0.###");
+                    if (dlg.SelectedSalePrice > 0) txtNewGenPrice.Text = dlg.SelectedSalePrice.ToString("0.##");
+                    BtnAddNewGenItem_Click(this, EventArgs.Empty);
+                }
+            }
+        }
 
         private void SetupSearchableCombo(ComboBox cbo)
         {

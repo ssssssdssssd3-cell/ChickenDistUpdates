@@ -106,9 +106,10 @@ namespace ChickenDist.DAL
             return GetAll(from, to, supplierID, productSearch, null, null);
         }
 
-        public static DataTable GetAll(DateTime from, DateTime to, int? supplierID, string productSearch, int? warehouseID, IEnumerable<int> allowedWarehouseIDs = null)
+        public static DataTable GetAll(DateTime from, DateTime to, int? supplierID, string productSearch, int? warehouseID, IEnumerable<int> allowedWarehouseIDs = null, string purchaseType = null, int? productID = null)
         {
             string productFilter = string.IsNullOrWhiteSpace(productSearch) ? null : productSearch.Trim();
+            string typeFilter = string.IsNullOrWhiteSpace(purchaseType) || purchaseType == "الكل" ? null : purchaseType.Trim();
 
             // إذا لم يتم تحديد مخزن محدد أو قائمة صريحة، وكان المستخدم الحالي موظفاً غير مدير، نطبق مخازنه المصرح بها تلقائياً
             if (!warehouseID.HasValue && allowedWarehouseIDs == null && !Session.IsAdmin)
@@ -122,7 +123,9 @@ namespace ChickenDist.DAL
                 DbHelper.P("@f", from.Date),
                 DbHelper.P("@t", to.Date),
                 DbHelper.P("@supplierID", supplierID.HasValue ? (object)supplierID.Value : DBNull.Value),
-                DbHelper.P("@product", (object)productFilter ?? DBNull.Value)
+                DbHelper.P("@product", (object)productFilter ?? DBNull.Value),
+                DbHelper.P("@purchaseType", (object)typeFilter ?? DBNull.Value),
+                DbHelper.P("@productID", productID.HasValue && productID.Value > 0 ? (object)productID.Value : DBNull.Value)
             };
 
             if (warehouseID.HasValue && warehouseID.Value > 0)
@@ -186,15 +189,29 @@ namespace ChickenDist.DAL
                   WHERE CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
                     AND p.IsPosted = 1
                     AND (@supplierID IS NULL OR p.SupplierID = @supplierID OR p.ClientID = @supplierID)
+                    AND (@purchaseType IS NULL OR p.PurchaseType = @purchaseType)
+                    AND (@productID IS NULL OR EXISTS (
+                        SELECT 1 FROM PurchaseItems pi_prod WHERE pi_prod.PurchaseID = p.PurchaseID AND pi_prod.ProductID = @productID
+                    ))
                     AND (@product IS NULL OR (
                         p.PurchaseCode LIKE N'%' + @product + N'%' OR
+                        CAST(p.PurchaseID AS NVARCHAR(50)) = @product OR
                         p.SupplierInvoiceNo LIKE N'%' + @product + N'%' OR
+                        p.Notes LIKE N'%' + @product + N'%' OR
+                        s.SupplierName LIKE N'%' + @product + N'%' OR
+                        s.SupplierCode LIKE N'%' + @product + N'%' OR
+                        c.ClientName LIKE N'%' + @product + N'%' OR
+                        CAST(CAST(p.TotalAmount AS DECIMAL(18,2)) AS NVARCHAR(50)) LIKE N'%' + @product + N'%' OR
                         EXISTS (
                             SELECT 1 FROM PurchaseItems pi2
                             JOIN Products pr ON pi2.ProductID = pr.ProductID
                             WHERE pi2.PurchaseID = p.PurchaseID
                               AND (pr.ProductName LIKE N'%' + @product + N'%'
-                                OR pr.ProductCode LIKE N'%' + @product + N'%')
+                                OR pr.ProductCode LIKE N'%' + @product + N'%'
+                                OR (pr.Barcode IS NOT NULL AND pr.Barcode LIKE N'%' + @product + N'%')
+                                OR (pr.Unit1Barcode IS NOT NULL AND pr.Unit1Barcode LIKE N'%' + @product + N'%')
+                                OR (pr.Unit2Barcode IS NOT NULL AND pr.Unit2Barcode LIKE N'%' + @product + N'%')
+                                OR (pi2.IMEI IS NOT NULL AND pi2.IMEI LIKE N'%' + @product + N'%'))
                         )
                     ))" + whCondition + @"
                   ORDER BY p.PurchaseDate DESC",
@@ -205,7 +222,7 @@ namespace ChickenDist.DAL
         public static DataTable GetItems(int purchaseID)
         {
              return DbHelper.Query(
-                 @"SELECT pi.ProductID, pr.ProductCode, pr.ProductName,
+                 @"SELECT pi.ProductID, pr.ProductCode, ISNULL(pr.Barcode, N'') AS Barcode, pr.ProductName,
                           ISNULL(c.CategoryName, N'') AS CategoryName,
                           pi.Quantity, 
                           ISNULL(pi.BonusQuantity, 0) AS BonusQuantity,

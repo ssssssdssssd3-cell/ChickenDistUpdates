@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.1";
-$CHANGELOG = "v4.1.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Show IMEI/Serial only in Mobiles activity across all screens, prints, and reports; restore UnitName column in Purchase Return for non-Mobiles activities"
+$VERSION = "4.1.2";
+$CHANGELOG = "v4.1.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add comprehensive detailed search filters, date presets, product/client/supplier dialogs, return status filters, and in-invoice item filter bar in Sales Return and Purchase Return"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
