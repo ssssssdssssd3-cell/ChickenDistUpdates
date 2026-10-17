@@ -15,7 +15,7 @@ namespace ChickenDist.Forms
         private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize, btnAddColor, btnAddCat;
         private Button btnMultiBarcode, btnResetU1, btnResetU2, btnRecalcAll;
         private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
-        private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem, chkHasExpiry;
+        private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem, chkHasExpiry, chkIsIMEI;
         private NumericUpDown nudDefaultExpiryDays;
         private Button btnSave, btnCancel;
         private Button btnProductImages;
@@ -161,20 +161,18 @@ namespace ChickenDist.Forms
             btnAddUnit.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             ry += 32;
 
-            chkActive = new CheckBox { Text = "☑ صنف نشط بالبرنامج", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
-            grpBasic.Controls.Add(chkActive);
+            chkActive = new CheckBox { Text = "☑ نشط بالبرنامج", Location = new Point(145, ry), Width = 145, Height = 22, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ باركود محلي", Location = new Point(5, ry), Width = 135, Height = 22, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            grpBasic.Controls.AddRange(new Control[] { chkActive, chkPrintLocalBarcode });
             ry += 24;
 
-            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ طباعة باركود محلي", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
-            grpBasic.Controls.Add(chkPrintLocalBarcode);
+            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (سالب)", Location = new Point(145, ry), Width = 145, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsQuickItem = new CheckBox { Text = "⚡ بيع سريع (POS)", Location = new Point(5, ry), Width = 135, Height = 22, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            grpBasic.Controls.AddRange(new Control[] { chkIsService, chkIsQuickItem });
             ry += 24;
 
-            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (يُباع بالسالب)", Location = new Point(5, ry), Width = 285, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            grpBasic.Controls.Add(chkIsService);
-            ry += 24;
-
-            chkIsQuickItem = new CheckBox { Text = "⚡ صنف بيع سريع (شاشة POS)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            grpBasic.Controls.Add(chkIsQuickItem);
+            chkIsIMEI = new CheckBox { Text = "📱 صنف ذو سيريال / IMEI (إلزامي بالشراء)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(234, 88, 12), Checked = (AppConfig.BusinessType == "Mobiles"), AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            grpBasic.Controls.Add(chkIsIMEI);
             ry += 28;
 
             var lblDesc = new Label { Text = "الوصف:", Location = new Point(195, ry + 3), Width = 95, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
@@ -529,6 +527,7 @@ namespace ChickenDist.Forms
                     DisableControl(chkIsService);
                     DisableControl(chkIsQuickItem);
                     DisableControl(chkHasExpiry);
+                    DisableControl(chkIsIMEI);
 
                     // قفل الأسعار والأرقام
                     MakeReadOnly(nudPrice);
@@ -804,6 +803,7 @@ namespace ChickenDist.Forms
                 chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : false;
                 chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
                 chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
+                chkIsIMEI.Checked = dr.Table.Columns.Contains("IsIMEI") && dr["IsIMEI"] != DBNull.Value ? Convert.ToBoolean(dr["IsIMEI"]) : (AppConfig.BusinessType == "Mobiles");
                 _originalHasExpiry = dr.Table.Columns.Contains("HasExpiry") && dr["HasExpiry"] != DBNull.Value ? Convert.ToBoolean(dr["HasExpiry"]) : false;
                 if (chkHasExpiry != null) chkHasExpiry.Checked = _originalHasExpiry;
                 if (nudDefaultExpiryDays != null)
@@ -915,6 +915,7 @@ namespace ChickenDist.Forms
             chkPrintLocalBarcode.Checked = false;
             chkIsService.Checked = false;
             chkIsQuickItem.Checked = false;
+            if (chkIsIMEI != null) chkIsIMEI.Checked = (AppConfig.BusinessType == "Mobiles");
             if (chkHasExpiry != null) chkHasExpiry.Checked = false;
             if (nudDefaultExpiryDays != null) { nudDefaultExpiryDays.Value = 0; nudDefaultExpiryDays.Enabled = false; }
             _imageUrl1 = null;
@@ -1176,7 +1177,7 @@ namespace ChickenDist.Forms
                     cboUnit2Name.Text.Trim(), newU2Factor, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                     newU3Factor, chkIsQuickItem.Checked, producerVal,
                     chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal,
-                    _imageUrl1, _imageUrl2, _imageUrl3);
+                    _imageUrl1, _imageUrl2, _imageUrl3, chkIsIMEI != null && chkIsIMEI.Checked);
 
                 if (id > 0)
                 {

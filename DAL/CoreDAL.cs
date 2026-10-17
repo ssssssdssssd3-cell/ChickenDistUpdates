@@ -438,11 +438,12 @@ namespace ChickenDist.DAL
             DbHelper.EnsureOfferColumnsExist();
             DbHelper.SyncOfferPrices();
             DbHelper.EnsureProductImagesColumnsExist();
+            DbHelper.EnsureIsIMEIColumnExists();
             string sql = activeOnly
                 ? @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.EnglishName, p.Unit, p.SalePrice, p.PurchasePrice, 
                            p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.InternationalCode, p.ProductSize, p.Color,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
-                           COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem,
+                           COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem, COALESCE(p.IsIMEI, 0) AS IsIMEI,
                            COALESCE(p.IsOffer, 0) AS IsOffer, COALESCE(p.OriginalPrice, 0) AS OriginalPrice, COALESCE(p.DiscountPct, 0) AS OfferDiscountPct,
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
@@ -454,7 +455,7 @@ namespace ChickenDist.DAL
                 : @"SELECT p.ProductID, p.ProductCode, p.PartNumber, p.ProductName, p.EnglishName, p.Unit, p.SalePrice, p.PurchasePrice, 
                            p.MinStockLimit, p.Description, p.PendingSalePrice, p.PendingQtyThreshold, p.CategoryID, c.CategoryName, p.CarModel, p.Brand, p.ProducerCompany, p.ShelfLocation, p.IsActive, p.InternationalCode, p.ProductSize, p.Color,
                            COALESCE(p.WholesalePrice, 0) AS WholesalePrice, COALESCE(p.SemiWholesalePrice, 0) AS SemiWholesalePrice, p.PrintLocalBarcode,
-                           COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem,
+                           COALESCE(p.IsService, 0) AS IsService, COALESCE(p.IsQuickItem, 0) AS IsQuickItem, COALESCE(p.IsIMEI, 0) AS IsIMEI,
                            COALESCE(p.IsOffer, 0) AS IsOffer, COALESCE(p.OriginalPrice, 0) AS OriginalPrice, COALESCE(p.DiscountPct, 0) AS OfferDiscountPct,
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
@@ -710,10 +711,11 @@ namespace ChickenDist.DAL
             string unit1Name = null, string unit1Barcode = null, decimal? unit1SalePrice = null, decimal? unit1PurchasePrice = null,
             string unit2Name = null, decimal? unit2Factor = null, string unit2Barcode = null, decimal? unit2SalePrice = null, decimal? unit2PurchasePrice = null,
             decimal? unit3Factor = null, bool isQuickItem = false, string producerCompany = null, bool hasExpiry = false, int? defaultExpiryDays = null, string defaultSaleUnit = null, string productSize = null, string color = null, string englishName = null, string scalePLU = null,
-            string imageUrl1 = null, string imageUrl2 = null, string imageUrl3 = null)
+            string imageUrl1 = null, string imageUrl2 = null, string imageUrl3 = null, bool isIMEI = false)
         {
             DbHelper.EnsureProductImagesColumnsExist();
             DbHelper.EnsureScalePLUColumnExists();
+            DbHelper.EnsureIsIMEIColumnExists();
 
             if (!string.IsNullOrWhiteSpace(scalePLU))
             {
@@ -756,10 +758,10 @@ namespace ChickenDist.DAL
                 int newId = DbHelper.ExecuteInsert(
                     @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode,IsService,IsQuickItem,
                                            Unit1Name,Unit1Barcode,Unit1SalePrice,Unit1PurchasePrice,Unit2Name,Unit2Factor,Unit2Barcode,Unit2SalePrice,Unit2PurchasePrice,Unit3Factor,ProducerCompany,HasExpiry,DefaultExpiryDays,DefaultSaleUnit,ProductSize,Color,EnglishName,ScalePLU,
-                                           ImageUrl1,ImageUrl2,ImageUrl3) 
+                                           ImageUrl1,ImageUrl2,ImageUrl3,IsIMEI) 
                       VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic,@plb,@srv,@qi,
                              @u1n,@u1b,@u1sp,@u1pp,@u2n,@u2f,@u2b,@u2sp,@u2pp,@u3f,@comp,@hexp,@expd,@dsu,@psize,@clr,@enName,@splu,
-                             @img1,@img2,@img3)",
+                             @img1,@img2,@img3,@isIMEI)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
@@ -781,7 +783,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@splu", string.IsNullOrWhiteSpace(scalePLU) ? (object)DBNull.Value : scalePLU.Trim()),
                     DbHelper.P("@img1", string.IsNullOrWhiteSpace(imageUrl1) ? (object)DBNull.Value : imageUrl1.Trim()),
                     DbHelper.P("@img2", string.IsNullOrWhiteSpace(imageUrl2) ? (object)DBNull.Value : imageUrl2.Trim()),
-                    DbHelper.P("@img3", string.IsNullOrWhiteSpace(imageUrl3) ? (object)DBNull.Value : imageUrl3.Trim()));
+                    DbHelper.P("@img3", string.IsNullOrWhiteSpace(imageUrl3) ? (object)DBNull.Value : imageUrl3.Trim()),
+                    DbHelper.P("@isIMEI", isIMEI));
 
                 ProductCache.Invalidate();
                 return newId;
@@ -802,7 +805,7 @@ namespace ChickenDist.DAL
                           Unit1Name=@u1n,Unit1Barcode=@u1b,Unit1SalePrice=@u1sp,Unit1PurchasePrice=@u1pp,
                           Unit2Name=@u2n,Unit2Factor=@u2f,Unit2Barcode=@u2b,Unit2SalePrice=@u2sp,Unit2PurchasePrice=@u2pp,
                           Unit3Factor=@u3f,ProducerCompany=@comp,HasExpiry=@hexp,DefaultExpiryDays=@expd,DefaultSaleUnit=@dsu,ProductSize=@psize,Color=@clr,EnglishName=@enName,ScalePLU=@splu,
-                          ImageUrl1=@img1, ImageUrl2=@img2, ImageUrl3=@img3,
+                          ImageUrl1=@img1, ImageUrl2=@img2, ImageUrl3=@img3, IsIMEI=@isIMEI,
                           PendingSalePrice=NULL, PendingQtyThreshold=NULL, PendingPriceSourceRefID=NULL
                       WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
@@ -827,6 +830,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@img1", string.IsNullOrWhiteSpace(imageUrl1) ? (object)DBNull.Value : imageUrl1.Trim()),
                     DbHelper.P("@img2", string.IsNullOrWhiteSpace(imageUrl2) ? (object)DBNull.Value : imageUrl2.Trim()),
                     DbHelper.P("@img3", string.IsNullOrWhiteSpace(imageUrl3) ? (object)DBNull.Value : imageUrl3.Trim()),
+                    DbHelper.P("@isIMEI", isIMEI),
                     DbHelper.P("@id", id));
 
                 if (Math.Abs(price - oldPrice) > 0.005m)

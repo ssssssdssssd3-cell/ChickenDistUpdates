@@ -2904,6 +2904,7 @@ namespace ChickenDist.Forms
 						itemOld.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 						itemOld.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 						itemOld.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
+						itemOld.IsIMEI = row3.Table.Columns.Contains("IsIMEI") && row3["IsIMEI"] != DBNull.Value && Convert.ToBoolean(row3["IsIMEI"]);
 						// وحدات متعددة
 						itemOld.BaseUnitName = baseUnit;
 						itemOld.Unit1Name = unit1Name; itemOld.Unit1Barcode = unit1Barcode; itemOld.Unit1SalePrice = unit1SP; itemOld.Unit1PurchasePrice = unit1PP; itemOld.Unit1Factor = 1m;
@@ -2935,6 +2936,7 @@ namespace ChickenDist.Forms
 						itemPending.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 						itemPending.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 						itemPending.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
+						itemPending.IsIMEI = row3.Table.Columns.Contains("IsIMEI") && row3["IsIMEI"] != DBNull.Value && Convert.ToBoolean(row3["IsIMEI"]);
 						// وحدات متعددة
 						itemPending.BaseUnitName = baseUnit;
 						itemPending.Unit1Name = unit1Name; itemPending.Unit1Barcode = unit1Barcode; itemPending.Unit1SalePrice = unit1SP; itemPending.Unit1PurchasePrice = unit1PP; itemPending.Unit1Factor = 1m;
@@ -2969,6 +2971,7 @@ namespace ChickenDist.Forms
 						comboItem.HasExpiry = row3.Table.Columns.Contains("HasExpiry") && row3["HasExpiry"] != DBNull.Value && Convert.ToBoolean(row3["HasExpiry"]);
 						comboItem.DefaultExpiryDays = row3.Table.Columns.Contains("DefaultExpiryDays") && row3["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(row3["DefaultExpiryDays"]) : (int?)null;
 						comboItem.DefaultSaleUnit = row3.Table.Columns.Contains("DefaultSaleUnit") && row3["DefaultSaleUnit"] != DBNull.Value ? row3["DefaultSaleUnit"].ToString() : "";
+						comboItem.IsIMEI = row3.Table.Columns.Contains("IsIMEI") && row3["IsIMEI"] != DBNull.Value && Convert.ToBoolean(row3["IsIMEI"]);
 						// وحدات متعددة
 						comboItem.BaseUnitName = baseUnit;
 						comboItem.Unit1Name = unit1Name; comboItem.Unit1Barcode = unit1Barcode; comboItem.Unit1SalePrice = unit1SP; comboItem.Unit1PurchasePrice = unit1PP; comboItem.Unit1Factor = 1m;
@@ -9001,6 +9004,7 @@ namespace ChickenDist.Forms
 		public bool HasExpiry { get; set; } = false;
 		public int? DefaultExpiryDays { get; set; } = null;
 		public string DefaultSaleUnit { get; set; } = "";
+		public bool IsIMEI { get; set; } = false;
 
 		// ─── بيانات الوحدات المتعددة ───────────────────────────────────────────
 		/// <summary>اسم الوحدة الأساسية (Unit) — الوحدة الكبرى المستخدمة عند الإضافة</summary>

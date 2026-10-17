@@ -589,6 +589,23 @@ namespace ChickenDist.Core
             }
         }
 
+        public static void EnsureIsIMEIColumnExists()
+        {
+            try
+            {
+                Execute(@"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'IsIMEI') IS NULL
+                        ALTER TABLE Products ADD IsIMEI BIT NOT NULL CONSTRAINT DF_Products_IsIMEI DEFAULT 0;
+                END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureIsIMEIColumnExists", ex);
+            }
+        }
+
         public static void EnsureRestaurantBlendsSchema()
         {
             try
@@ -4284,6 +4301,13 @@ namespace ChickenDist.Core
                 BEGIN
                     IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PurchaseReturnItems_IMEI' AND object_id = OBJECT_ID('PurchaseReturnItems'))
                         CREATE NONCLUSTERED INDEX IX_PurchaseReturnItems_IMEI ON PurchaseReturnItems(IMEI) WHERE IMEI IS NOT NULL;
+                END");
+
+                SafeMigrate("Products.IsIMEI", @"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'IsIMEI') IS NULL
+                        ALTER TABLE Products ADD IsIMEI BIT NOT NULL CONSTRAINT DF_Products_IsIMEI DEFAULT 0;
                 END");
 
                 // Save schema version to cache so subsequent launches skip inspection

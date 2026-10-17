@@ -15,7 +15,7 @@ namespace ChickenDist.Forms
         private TextBox txtName, txtCode;
         private ComboBox cboCategory, cboUnit;
         private NumericUpDown nudPurchasePrice, nudPrice, nudQuantity;
-        private CheckBox chkIsService, chkIsQuickItem;
+        private CheckBox chkIsService, chkIsQuickItem, chkIsIMEI;
         private Button btnSave, btnClose;
         private Label lblStatus;
         private Timer statusTimer;
@@ -173,6 +173,22 @@ namespace ChickenDist.Forms
                 Font = new Font(Theme.FontMain, FontStyle.Bold)
             };
             pnlForm.Controls.Add(chkIsService);
+            y += 28;
+
+            chkIsIMEI = new CheckBox
+            {
+                Text = "📱 صنف ذو سيريال / IMEI (إلزامي بالشراء)",
+                Location = new Point(20, y),
+                Width = 320,
+                Height = 24,
+                ForeColor = Color.FromArgb(234, 88, 12),
+                Checked = (AppConfig.BusinessType == "Mobiles"),
+                AutoSize = false,
+                CheckAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleRight,
+                Font = new Font(Theme.FontMain, FontStyle.Bold)
+            };
+            pnlForm.Controls.Add(chkIsIMEI);
 
             this.Controls.Add(pnlForm);
 
@@ -330,6 +346,7 @@ namespace ChickenDist.Forms
             if (nudQuantity != null) nudQuantity.Value = 1.00m;
             chkIsQuickItem.Checked = false;
             chkIsService.Checked = false;
+            if (chkIsIMEI != null) chkIsIMEI.Checked = (AppConfig.BusinessType == "Mobiles");
             if (string.IsNullOrEmpty(cboUnit.Text)) cboUnit.Text = "قطعة";
 
             // تعبئة الاسم والكود الأولي إن وُجدا مرة واحدة فقط عند أول فتح للشاشة
@@ -430,7 +447,8 @@ namespace ChickenDist.Forms
                     chkIsService.Checked,
                     null, null, null, null,
                     null, null, null, null, null,
-                    null, chkIsQuickItem.Checked
+                    null, chkIsQuickItem.Checked,
+                    isIMEI: chkIsIMEI != null && chkIsIMEI.Checked
                 );
 
                 if (id > 0)

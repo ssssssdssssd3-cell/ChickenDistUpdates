@@ -1895,6 +1895,7 @@ namespace ChickenDist.Forms
                     ci.Unit2Barcode = r["Unit2Barcode"] != DBNull.Value ? r["Unit2Barcode"].ToString() : "";
                     ci.HasExpiry = r.Table.Columns.Contains("HasExpiry") && r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
                     ci.DefaultExpiryDays = r.Table.Columns.Contains("DefaultExpiryDays") && r["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(r["DefaultExpiryDays"]) : (int?)null;
+                    ci.IsIMEI = r.Table.Columns.Contains("IsIMEI") && r["IsIMEI"] != DBNull.Value && Convert.ToBoolean(r["IsIMEI"]);
 
                     productItems.Add(ci);
                 }
@@ -2170,8 +2171,8 @@ namespace ChickenDist.Forms
                 disc = Math.Round((defaultSalePrice - defaultPrice) / defaultSalePrice * 100m, 2);
             }
 
-            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم (لا يدمج إذا كان نشاط محمول أو يوجد سيريال محدد للصنف)
-            bool allowMerge = (AppConfig.BusinessType != "Mobiles");
+            // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم (لا يدمج إذا كان نشاط محمول أو يوجد سيريال محدد للصنف أو صنف IMEI)
+            bool allowMerge = (AppConfig.BusinessType != "Mobiles") && (product == null || !product.IsIMEI);
             if (allowMerge)
             {
                 foreach (var item in _items)
@@ -2226,7 +2227,11 @@ namespace ChickenDist.Forms
             });
 
             RefreshGrid();
-            if (_isScanningBarcode || (txtBarcode != null && txtBarcode.Focused))
+            if (product != null && product.IsIMEI)
+            {
+                SelectImeiCell(prodId);
+            }
+            else if (_isScanningBarcode || (txtBarcode != null && txtBarcode.Focused))
             {
                 if (txtBarcode != null)
                 {
@@ -2679,6 +2684,30 @@ namespace ChickenDist.Forms
                             dgItems.Focus();
                             dgItems.CurrentCell = row.Cells["Quantity"];
                             dgItems.BeginEdit(true);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        private void SelectImeiCell(int prodId)
+        {
+            this.BeginInvoke((MethodInvoker)delegate
+            {
+                if (dgItems.Rows.Count > 0)
+                {
+                    for (int i = dgItems.Rows.Count - 1; i >= 0; i--)
+                    {
+                        var row = dgItems.Rows[i];
+                        if (row.Cells["ProductID"].Value != null && Convert.ToInt32(row.Cells["ProductID"].Value) == prodId)
+                        {
+                            dgItems.Focus();
+                            if (dgItems.Columns.Contains("IMEI"))
+                            {
+                                dgItems.CurrentCell = row.Cells["IMEI"];
+                                dgItems.BeginEdit(true);
+                            }
                             break;
                         }
                     }
@@ -3681,6 +3710,71 @@ namespace ChickenDist.Forms
                         if (!item.ExpiryDate.HasValue)
                         {
                             MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" له تاريخ صلاحية ويجب تسجيل تاريخ الصلاحية له قبل الحفظ!", "تنبيه تاريخ الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // تحقق من أصناف الـ IMEI / السيريال (إلزامية تسجيل السيريال في الشراء)
+            if (_items.Count > 0)
+            {
+                DbHelper.EnsureIsIMEIColumnExists();
+                var pids = string.Join(",", _items.Select(i => i.ProductID).Distinct());
+                var dtIMEI = DbHelper.Query($"SELECT ProductID, ISNULL(IsIMEI, 0) AS IsIMEI FROM Products WHERE ProductID IN ({pids})");
+                var imeiMap = new Dictionary<int, bool>();
+                foreach (DataRow r in dtIMEI.Rows)
+                {
+                    imeiMap[Convert.ToInt32(r["ProductID"])] = r["IsIMEI"] != DBNull.Value && Convert.ToBoolean(r["IsIMEI"]);
+                }
+
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    var item = _items[i];
+                    bool isImeiProduct = false;
+                    if (imeiMap.TryGetValue(item.ProductID, out bool val))
+                    {
+                        isImeiProduct = val;
+                    }
+                    else
+                    {
+                        var prodItem = GetProductComboItem(item.ProductID);
+                        if (prodItem != null) isImeiProduct = prodItem.IsIMEI;
+                    }
+
+                    if (isImeiProduct)
+                    {
+                        if (string.IsNullOrWhiteSpace(item.IMEI))
+                        {
+                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" تم تعريفه كـ (صنف IMEI / سيريال) ويشترط إدخال سيريال الجهاز قبل حفظ فاتورة الشراء!", "تنبيه سيريال الجهاز (IMEI)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            try
+                            {
+                                dgItems.ClearSelection();
+                                if (i < dgItems.Rows.Count && dgItems.Columns.Contains("IMEI"))
+                                {
+                                    dgItems.Rows[i].Selected = true;
+                                    dgItems.CurrentCell = dgItems.Rows[i].Cells["IMEI"];
+                                    dgItems.Focus();
+                                }
+                            }
+                            catch { }
+                            return;
+                        }
+
+                        if (item.Quantity > 1)
+                        {
+                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" صنف ذو سيريال/IMEI بكمية ({item.Quantity})، ويجب إدخال سيريال مستقل لكل جهاز عبر شاشة تفقيط السيريالات (الضغط على خانة السيريال) أو تقسيم الكمية!", "تنبيه كمية أجهزة IMEI", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            try
+                            {
+                                dgItems.ClearSelection();
+                                if (i < dgItems.Rows.Count && dgItems.Columns.Contains("IMEI"))
+                                {
+                                    dgItems.Rows[i].Selected = true;
+                                    dgItems.CurrentCell = dgItems.Rows[i].Cells["IMEI"];
+                                    dgItems.Focus();
+                                }
+                            }
+                            catch { }
                             return;
                         }
                     }
