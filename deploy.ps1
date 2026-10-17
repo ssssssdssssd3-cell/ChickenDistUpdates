@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.2";
-$CHANGELOG = "v4.1.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add comprehensive detailed search filters, date presets, product/client/supplier dialogs, return status filters, and in-invoice item filter bar in Sales Return and Purchase Return"
+$VERSION = "4.1.3";
+$CHANGELOG = "v4.1.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Invalid column name PartyName error when issuing receipt/payment vouchers by ensuring CashBox.PartyName column migration runs before fast schema exit"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

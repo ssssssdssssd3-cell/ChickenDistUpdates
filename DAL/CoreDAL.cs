@@ -1510,6 +1510,7 @@ namespace ChickenDist.DAL
         /// </summary>
         public static string AddSupplierPayment(int supplierID, decimal amount, string notes, int? safeAccountID = null)
         {
+            DbHelper.EnsureCashBoxColumnsExist();
             string payCode = "";
             DbHelper.RunInTransaction((con, trans) =>
             {
@@ -2072,6 +2073,7 @@ namespace ChickenDist.DAL
 
         public static void AddPayment(int clientID, decimal amount, string notes, int? safeAccountID = null)
         {
+            DbHelper.EnsureCashBoxColumnsExist();
             // FIX: القيدان (حساب العميل + الخزنة) داخل Transaction واحد
             // إذا فشل أي منهما يتم التراجع عن الآخر لمنع الفجوة المالية الصامتة
             DbHelper.RunInTransaction((con, trans) =>
@@ -2497,6 +2499,7 @@ namespace ChickenDist.DAL
 
         public static DataTable GetCashBox(DateTime from, DateTime to, int? accountID = null)
         {
+            DbHelper.EnsureCashBoxColumnsExist();
             string sql = @"SELECT cb.CashID, cb.TransDate, cb.TransType, cb.AmountIn, cb.AmountOut,
                           (cb.AmountIn - cb.AmountOut) AS Net, cb.Notes, sa.AccountName, cb.RefID,
                           COALESCE(
@@ -2505,7 +2508,7 @@ namespace ChickenDist.DAL
                               (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID AND cb.TransType IN ('SaleIncome', 'Sale', 'ClientPayment')),
                               (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID AND cb.TransType IN ('SupplierPayment')),
                               (SELECT TOP 1 s.SupplierName FROM Purchases p JOIN Suppliers s ON p.SupplierID = s.SupplierID WHERE p.PurchaseID = cb.RefID AND cb.TransType IN ('ClientPurchaseCash', 'PurchaseExpense')),
-                              (SELECT TOP 1 c.ClientName FROM Returns r JOIN Clients c ON r.ClientID = c.ClientID WHERE r.ReturnID = cb.RefID AND cb.TransType IN ('ReturnOutcome', 'VisaReturn')),
+                              (SELECT TOP 1 c.ClientName FROM SalesReturns r JOIN Clients c ON r.ClientID = c.ClientID WHERE r.ReturnID = cb.RefID AND cb.TransType IN ('ReturnOutcome', 'VisaReturn')),
                               (SELECT TOP 1 s.SupplierName FROM PurchaseReturns pr JOIN Suppliers s ON pr.SupplierID = s.SupplierID WHERE pr.ReturnID = cb.RefID AND cb.TransType IN ('PurchaseReturn')),
                               (SELECT TOP 1 ISNULL(s.SupplierName, e.ExpenseType) FROM Expenses e LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID WHERE e.ExpenseID = cb.RefID AND cb.TransType = 'Expense'),
                               ''

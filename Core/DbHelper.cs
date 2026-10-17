@@ -589,6 +589,30 @@ namespace ChickenDist.Core
             }
         }
 
+        private static bool _cashBoxColumnsEnsured = false;
+        public static void EnsureCashBoxColumnsExist()
+        {
+            if (_cashBoxColumnsEnsured) return;
+            try
+            {
+                Execute(@"
+                IF OBJECT_ID('CashBox', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('CashBox', 'PartyName') IS NULL
+                        ALTER TABLE CashBox ADD PartyName NVARCHAR(200) NULL;
+                    IF COL_LENGTH('CashBox', 'AccountID') IS NULL
+                        ALTER TABLE CashBox ADD AccountID INT NULL;
+                    IF COL_LENGTH('CashBox', 'ShiftID') IS NULL
+                        ALTER TABLE CashBox ADD ShiftID INT NULL;
+                END");
+                _cashBoxColumnsEnsured = true;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureCashBoxColumnsExist", ex);
+            }
+        }
+
         public static void EnsureIsIMEIColumnExists()
         {
             try
@@ -598,6 +622,26 @@ namespace ChickenDist.Core
                 BEGIN
                     IF COL_LENGTH('Products', 'IsIMEI') IS NULL
                         ALTER TABLE Products ADD IsIMEI BIT NOT NULL CONSTRAINT DF_Products_IsIMEI DEFAULT 0;
+                END
+                IF OBJECT_ID('SaleItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('SaleItems', 'IMEI') IS NULL
+                        ALTER TABLE SaleItems ADD IMEI NVARCHAR(255) NULL;
+                END
+                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('PurchaseItems', 'IMEI') IS NULL
+                        ALTER TABLE PurchaseItems ADD IMEI NVARCHAR(255) NULL;
+                END
+                IF OBJECT_ID('ReturnItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('ReturnItems', 'IMEI') IS NULL
+                        ALTER TABLE ReturnItems ADD IMEI NVARCHAR(255) NULL;
+                END
+                IF OBJECT_ID('PurchaseReturnItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('PurchaseReturnItems', 'IMEI') IS NULL
+                        ALTER TABLE PurchaseReturnItems ADD IMEI NVARCHAR(255) NULL;
                 END");
             }
             catch (Exception ex)
@@ -1500,6 +1544,8 @@ namespace ChickenDist.Core
 
         public static void EnsureDatabaseSchema()
         {
+            EnsureCashBoxColumnsExist();
+            EnsureIsIMEIColumnExists();
             EnsureProductImagesColumnsExist();
             EnsureRestaurantBlendsSchema();
             EnsureProductUnitsSafety();
@@ -1510,6 +1556,10 @@ namespace ChickenDist.Core
                 // فحص فوري ومباشر للجداول والأعمدة الأساسية (أقل من 5 ميلي ثانية)
                 var checkResult = Scalar(@"
                     SELECT CASE WHEN 
+                        COL_LENGTH('CashBox', 'PartyName') IS NOT NULL AND
+                        COL_LENGTH('Products', 'IsIMEI') IS NOT NULL AND
+                        COL_LENGTH('ReturnItems', 'IMEI') IS NOT NULL AND
+                        COL_LENGTH('PurchaseReturnItems', 'IMEI') IS NOT NULL AND
                         COL_LENGTH('Products', 'DefaultSaleUnit') IS NOT NULL AND
                         COL_LENGTH('Products', 'ImageUrl1') IS NOT NULL AND
                         COL_LENGTH('Products', 'ImageUrl2') IS NOT NULL AND

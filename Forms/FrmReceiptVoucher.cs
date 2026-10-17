@@ -27,6 +27,7 @@ namespace ChickenDist.Forms
 
         public FrmReceiptVoucher()
         {
+            DbHelper.EnsureCashBoxColumnsExist();
             InitUI();
             LoadVouchers();
         }

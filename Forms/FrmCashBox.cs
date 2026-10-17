@@ -40,6 +40,7 @@ namespace ChickenDist.Forms
 
         public FrmCashBox()
         {
+            DbHelper.EnsureCashBoxColumnsExist();
             InitUI();
             LoadCashBox();
             LoadExpenses();
