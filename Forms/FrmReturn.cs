@@ -383,7 +383,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "مرتجع مبيعات واستبدال أصناف";
+            this.Text = "مرتجع مبيعات";
             this.Size = new Size(1180, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -452,8 +452,7 @@ namespace ChickenDist.Forms
             };
             cboMode.Items.AddRange(new object[] { 
                 "🔁 مرتجع مبيعات من فاتورة", 
-                "↩ مرتجع مبيعات عام (بدون فاتورة)", 
-                "🔄 استبدال فوري (مرتجع + أصناف بديلة)" 
+                "↩ مرتجع مبيعات عام (بدون فاتورة)"
             });
             cboMode.SelectedIndex = 0;
             StyleSearchInput(cboMode);

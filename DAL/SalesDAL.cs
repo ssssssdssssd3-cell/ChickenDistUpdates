@@ -136,7 +136,7 @@ namespace ChickenDist.DAL
                          ISNULL(creator.EmpName, N'---') AS CreatedByName,
                          ISNULL(s.ShippingCharge, 0.0) AS ShippingCharge,
                          ISNULL(ret.ReturnAmount, 0) AS ReturnAmount,
-                         (s.TotalAmount + ISNULL(s.ShippingCharge, 0.0) - ISNULL(ret.ReturnAmount, 0)) AS NetAmount,
+                         (s.TotalAmount - ISNULL(ret.ReturnAmount, 0)) AS NetAmount,
                          ISNULL(costs.ItemsCount, 0) AS ItemsCount,
                          ISNULL(costs.TotalQty, 0.0) AS TotalQty,
                          ISNULL(costs.TotalCost, 0) AS TotalCost,
@@ -368,7 +368,7 @@ namespace ChickenDist.DAL
                     else
                     {
                         var costObj = DbHelper.ScalarTrans(trans,
-                            "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                            "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), ISNULL(PurchasePrice, 0.0) / COALESCE(NULLIF(Unit3Factor * Unit2Factor, 0), NULLIF(Unit3Factor, 0), NULLIF(Unit2Factor, 0), 1.0), 0) FROM Products WHERE ProductID = @pid",
                             DbHelper.P("@pid", item.ProductID));
                         costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
                     }
@@ -874,13 +874,23 @@ namespace ChickenDist.DAL
 
                 if (auditID <= 0) throw new Exception("فشل في إنشاء سجل أرشفة الحذف.");
 
-                // 3. نسخ البنود المحذوفة إلى SaleItemsHistory
-                var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                // 3. نسخ البنود المحذوفة إلى SaleItemsHistory واسترجاع رصيد التشغيلات (ProductBatches)
+                var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier, ISNULL(Factor, 1.0) AS Factor, BatchID FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
                 foreach (DataRow r in dtOldItems.Rows)
                 {
                     int pid = Convert.ToInt32(r["ProductID"]);
                     decimal qty = Convert.ToDecimal(r["Quantity"]);
                     decimal up = Convert.ToDecimal(r["UnitPrice"]);
+                    decimal fac = Convert.ToDecimal(r["Factor"]);
+                    if (fac <= 0m) fac = 1.0m;
+
+                    if (r["BatchID"] != DBNull.Value && Convert.ToInt32(r["BatchID"]) > 0)
+                    {
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE ProductBatches SET Quantity = Quantity + @q WHERE BatchID = @bid",
+                            DbHelper.P("@q", qty * fac),
+                            DbHelper.P("@bid", Convert.ToInt32(r["BatchID"])));
+                    }
 
                     DbHelper.ExecuteTrans(trans,
                         @"UPDATE Products
@@ -907,13 +917,14 @@ namespace ChickenDist.DAL
                          DbHelper.P("@pt", r["PriceTier"] == DBNull.Value ? "قطاعي" : r["PriceTier"]));
                  }
 
-                // 4. عكس حركات حساب العميل إذا كان بيع آجل أو تقسيط
-                if (typeStr == "Credit" || typeStr == "Installment")
-                {
-                    DbHelper.ExecuteTrans(trans,
-                        "DELETE FROM ClientTransactions WHERE RefID=@id",
-                        DbHelper.P("@id", saleID));
-                }
+                // 4. عكس حركات حساب العميل والفوارغ المرتبطة بالفاتورة (لجميع أنواع البيع)
+                DbHelper.ExecuteTrans(trans,
+                    "DELETE FROM ClientCratesTransactions WHERE RefSaleID=@id",
+                    DbHelper.P("@id", saleID));
+
+                DbHelper.ExecuteTrans(trans,
+                    "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType IN ('Sale', 'Payment', 'InstallmentSale', 'InstallmentDownPayment')",
+                    DbHelper.P("@id", saleID));
 
                 // 4a. حذف عقد التقسيط المرتبط بالفاتورة والجدولة والدفعات بالكامل
                 if (typeStr == "Installment")
@@ -926,20 +937,12 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentPayments WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
                         DbHelper.ExecuteTrans(trans, "DELETE FROM InstallmentContracts WHERE ContractID=@cid", DbHelper.P("@cid", contractID));
                     }
-
-                    // عكس حركة الخزينة للدفعة المقدمة
-                    DbHelper.ExecuteTrans(trans,
-                        "DELETE FROM CashBox WHERE RefID=@id",
-                        DbHelper.P("@id", saleID));
                 }
 
-                // 5. عكس حركات الخزينة إذا كان بيع نقدي
-                if (typeStr == "Cash")
-                {
-                    DbHelper.ExecuteTrans(trans,
-                        "DELETE FROM CashBox WHERE TransType='SaleIncome' AND RefID=@id",
-                        DbHelper.P("@id", saleID));
-                }
+                // 5. عكس حركات الخزينة لجميع طرق الدفع (نقدي، فيزا، مختلط، دفعة مقدمة تقسيط)
+                DbHelper.ExecuteTrans(trans,
+                    "DELETE FROM CashBox WHERE RefID=@id AND TransType IN ('SaleIncome', 'Sale', 'DownPayment', 'ClientPayment')",
+                    DbHelper.P("@id", saleID));
 
                 // 6. حذف حمولات المناديب غير المغلقة المرتبطة بالفاتورة
                 if (typeStr == "DriverLoad")
@@ -1060,16 +1063,26 @@ namespace ChickenDist.DAL
 
                 if (auditID <= 0) throw new Exception("فشل في إنشاء سجل أرشفة التعديل.");
 
-                // 3. نسخ البنود القديمة إلى SaleItemsHistory
-                var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
+                // 3. نسخ البنود القديمة إلى SaleItemsHistory واسترجاع رصيد التشغيلات (ProductBatches)
+                var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, PriceTier, ISNULL(Factor, 1.0) AS Factor, BatchID FROM SaleItems WHERE SaleID=@id", DbHelper.P("@id", saleID));
                 foreach (DataRow r in dtOldItems.Rows)
                 {
                     int pid = Convert.ToInt32(r["ProductID"]);
                     decimal qty = Convert.ToDecimal(r["Quantity"]);
                     decimal up = Convert.ToDecimal(r["UnitPrice"]);
+                    decimal fac = Convert.ToDecimal(r["Factor"]);
+                    if (fac <= 0m) fac = 1.0m;
 
                     if (!isDraft)
                     {
+                        if (r["BatchID"] != DBNull.Value && Convert.ToInt32(r["BatchID"]) > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "UPDATE ProductBatches SET Quantity = Quantity + @q WHERE BatchID = @bid",
+                                DbHelper.P("@q", qty * fac),
+                                DbHelper.P("@bid", Convert.ToInt32(r["BatchID"])));
+                        }
+
                         DbHelper.ExecuteTrans(trans,
                             @"UPDATE Products
                               SET PendingQtyThreshold = PendingQtyThreshold + @qty
@@ -1102,10 +1115,10 @@ namespace ChickenDist.DAL
                     "DELETE FROM ClientCratesTransactions WHERE RefSaleID=@id",
                     DbHelper.P("@id", saleID));
                 DbHelper.ExecuteTrans(trans,
-                    "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType IN ('Sale', 'Payment')",
+                    "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType IN ('Sale', 'Payment', 'InstallmentSale', 'InstallmentDownPayment')",
                     DbHelper.P("@id", saleID));
                 DbHelper.ExecuteTrans(trans,
-                    "DELETE FROM CashBox WHERE RefID=@id AND TransType IN ('Sale', 'SaleIncome', 'ClientPayment')",
+                    "DELETE FROM CashBox WHERE RefID=@id AND TransType IN ('Sale', 'SaleIncome', 'ClientPayment', 'DownPayment')",
                     DbHelper.P("@id", saleID));
                 if (oldTypeStr == "DriverLoad")
                 {
@@ -1126,7 +1139,7 @@ namespace ChickenDist.DAL
                 if (dtCode.Rows.Count > 0) code = dtCode.Rows[0]["SaleCode"].ToString();
 
                 // 6. تحديث رأس الفاتورة
-                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 4 ? "Visa" : "Cash";
+                string typeStr = saleType == 0 ? "Credit" : saleType == 1 ? "DriverLoad" : saleType == 3 ? "Installment" : saleType == 4 ? "Visa" : saleType == 5 ? "Mixed" : "Cash";
                 int targetWarehouse = warehouseID ?? 1;
                 decimal vPaidVal = visaPaid.HasValue ? visaPaid.Value : (typeStr == "Visa" ? total : 0m);
                 decimal? finalCashPaid = (typeStr == "Credit" || typeStr == "DriverLoad") ? 0m : cashPaid;
@@ -1183,7 +1196,7 @@ namespace ChickenDist.DAL
                     else
                     {
                         var costObj = DbHelper.ScalarTrans(trans,
-                            "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), PurchasePrice, 0) FROM Products WHERE ProductID = @pid",
+                            "SELECT COALESCE(NULLIF(CostPrice, 0), NULLIF(Unit1PurchasePrice, 0), ISNULL(PurchasePrice, 0.0) / COALESCE(NULLIF(Unit3Factor * Unit2Factor, 0), NULLIF(Unit3Factor, 0), NULLIF(Unit2Factor, 0), 1.0), 0) FROM Products WHERE ProductID = @pid",
                             DbHelper.P("@pid", item.ProductID));
                         costToSave = (costObj != null && costObj != DBNull.Value) ? Convert.ToDecimal(costObj) : 0m;
                     }
@@ -1215,6 +1228,14 @@ namespace ChickenDist.DAL
                         DbHelper.P("@imei", string.IsNullOrEmpty(item.IMEI) ? DBNull.Value : (object)item.IMEI),
                         DbHelper.P("@kn", string.IsNullOrEmpty(item.KitchenNotes) ? DBNull.Value : (object)item.KitchenNotes),
                         DbHelper.P("@cp", costToSave));
+
+                    if (!isDraft && item.BatchID.HasValue && item.BatchID.Value > 0)
+                    {
+                        decimal baseQty = item.Quantity * (item.Factor > 0m ? item.Factor : 1.0m);
+                        DbHelper.ExecuteTrans(trans,
+                            "UPDATE ProductBatches SET Quantity = Quantity - @q WHERE BatchID = @bid",
+                            DbHelper.P("@q", baseQty), DbHelper.P("@bid", item.BatchID.Value));
+                    }
 
                     // check if price is different from product base price to log it in PriceChangesLog
                     if (!isDraft)

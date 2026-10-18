@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.3";
-$CHANGELOG = "v4.1.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Invalid column name PartyName error when issuing receipt/payment vouchers by ensuring CashBox.PartyName column migration runs before fast schema exit"
+$VERSION = "4.1.4";
+$CHANGELOG = "v4.1.4 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Comprehensive accounting fixes across Sales, Purchases, Returns, Shifts, and Inventory + remove item exchange mode"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -187,7 +187,7 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
 }
 
 # Step 6: Update update.txt
-$changelogText = "v$VERSION - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add category and unit selectors to Quick Add Products screen"
+$changelogText = $CHANGELOG
 # Add a cache-busting timestamp to the download URL so GitHub CDN always serves fresh content
 $cbTimestamp = [System.DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $cacheBustedDlUrl = "${UPDATE_URL}?v=${VERSION}&t=${cbTimestamp}"

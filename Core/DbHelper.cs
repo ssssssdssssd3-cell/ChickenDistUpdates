@@ -482,7 +482,7 @@ namespace ChickenDist.Core
         }
 
         private const string SchemaVersionKey = "SchemaVersion";
-        private const int CurrentSchemaVersion = 38;
+        private const int CurrentSchemaVersion = 39;
 
         public static void EnsureAppSettingsTable()
         {
@@ -2909,9 +2909,9 @@ namespace ChickenDist.Core
                 END");
 
                 // ===== عرض الكميات الفعلية الحالية لكل صنف في كل مخزن =====
-                SafeMigrate("vw_CurrentStockByWarehouse.Drop_v3",
+                SafeMigrate("vw_CurrentStockByWarehouse.Drop_v4",
                     "IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_CurrentStockByWarehouse') DROP VIEW vw_CurrentStockByWarehouse;");
-                SafeMigrate("vw_CurrentStockByWarehouse.Create_MultiUnits_v3", @"
+                SafeMigrate("vw_CurrentStockByWarehouse.Create_MultiUnits_v4", @"
                 EXEC('CREATE VIEW vw_CurrentStockByWarehouse AS
                 SELECT
                     p.ProductID,
@@ -2934,8 +2934,8 @@ namespace ChickenDist.Core
                     + COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti.Quantity) FROM WarehouseTransferItems ti JOIN WarehouseTransfers t ON ti.TransferID = t.TransferID WHERE ti.ProductID = p.ProductID AND ti.Factor IS NULL AND t.IsPosted = 1 AND t.ToWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t.TransferDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * ISNULL(pri.Factor, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(pri.Quantity + ISNULL(pri.BonusQuantity, 0)) FROM PurchaseReturnItems pri JOIN PurchaseReturns pr ON pri.ReturnID = pr.ReturnID WHERE pri.ProductID = p.ProductID AND pri.Factor IS NULL AND pr.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR pr.ReturnDate > adj.AdjDate)), 0)
-                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted IN (0, 1) AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
-                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted IN (0, 1) AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType IN (''Cash'', ''Credit'', ''Installment'') AND s.DriverID IS NULL)) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
+                    - ISNULL((SELECT SUM(si.Quantity * ISNULL(si.Factor, 0)) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND s.IsPosted = 1 AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType <> ''DriverLoad'' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
+                    - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(si.Quantity) FROM SaleItems si JOIN Sales s ON si.SaleID = s.SaleID WHERE si.ProductID = p.ProductID AND si.Factor IS NULL AND s.IsPosted = 1 AND s.WarehouseID = w.WarehouseID AND (s.SaleType = ''DriverLoad'' OR (s.SaleType <> ''DriverLoad'' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WHERE dl.SaleID = s.SaleID)))) AND (adj.AdjDate IS NULL OR s.SaleDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(ti2.Quantity * ISNULL(ti2.Factor, 0)) FROM WarehouseTransferItems ti2 JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID WHERE ti2.ProductID = p.ProductID AND t2.IsPosted = 1 AND t2.FromWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
                     - COALESCE(p.Unit3Factor * p.Unit2Factor, p.Unit3Factor, p.Unit2Factor, 1.0) * ISNULL((SELECT SUM(ti2.Quantity) FROM WarehouseTransferItems ti2 JOIN WarehouseTransfers t2 ON ti2.TransferID = t2.TransferID WHERE ti2.ProductID = p.ProductID AND ti2.Factor IS NULL AND t2.IsPosted = 1 AND t2.FromWarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR t2.TransferDate > adj.AdjDate)), 0)
                     - ISNULL((SELECT SUM(wli.Quantity * ISNULL(wli.Factor, 0)) FROM WastageLossItems wli JOIN WastageLoss wl ON wli.WastageID = wl.WastageID WHERE wli.ProductID = p.ProductID AND wl.WarehouseID = w.WarehouseID AND (adj.AdjDate IS NULL OR wl.WastageDate > adj.AdjDate)), 0)
@@ -2949,7 +2949,7 @@ namespace ChickenDist.Core
                     FROM StockAdjustments sa
                     WHERE sa.ProductID = p.ProductID
                       AND sa.WarehouseID = w.WarehouseID
-                    ORDER BY sa.AdjDate DESC
+                    ORDER BY sa.AdjID DESC
                 ) adj
                 WHERE p.IsActive = 1 AND w.IsActive = 1');");
 

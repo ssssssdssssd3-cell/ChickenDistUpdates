@@ -232,6 +232,27 @@ namespace ChickenDist.DAL
             List<SqlParameter> prms = new List<SqlParameter>();
             if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
 
+            bool hasProduction = DbHelper.TableExists("ProductionOrders") && DbHelper.TableExists("ProductionOrderItems");
+            string prodUnionForPids = !hasProduction ? "" : $@"
+                    UNION ALL
+
+                    SELECT po.FinishedProductID AS ProductID, SUM(po.ProducedQty) AS NetQty
+                    FROM ProductionOrders po WITH (NOLOCK)
+                    LEFT JOIN LatestAdjVal l ON po.FinishedProductID = l.ProductID AND l.WarehouseID = ISNULL(po.WarehouseID, 1)
+                    WHERE po.FinishedProductID IN ({pidInClause}) AND po.Status = 'Completed' AND po.StockAdded = 1 {(warehouseID.HasValue ? "AND ISNULL(po.WarehouseID, 1) = @wid" : "")}
+                      AND (l.AdjDate IS NULL OR ISNULL(po.CompletedDate, po.CreatedDate) > l.AdjDate)
+                    GROUP BY po.FinishedProductID
+
+                    UNION ALL
+
+                    SELECT poi.RawProductID AS ProductID, -SUM(poi.Quantity * COALESCE(NULLIF(poi.Factor, 0), 1.0)) AS NetQty
+                    FROM ProductionOrderItems poi WITH (NOLOCK)
+                    JOIN ProductionOrders po WITH (NOLOCK) ON poi.ProductionID = po.ProductionID
+                    LEFT JOIN LatestAdjVal l ON poi.RawProductID = l.ProductID AND l.WarehouseID = ISNULL(po.WarehouseID, 1)
+                    WHERE poi.RawProductID IN ({pidInClause}) AND po.StockDeducted = 1 AND po.Status <> 'Cancelled' {(warehouseID.HasValue ? "AND ISNULL(po.WarehouseID, 1) = @wid" : "")}
+                      AND (l.AdjDate IS NULL OR po.CreatedDate > l.AdjDate)
+                    GROUP BY poi.RawProductID";
+
             string sql = $@"
                 WITH LatestAdj AS (
                     SELECT ProductID, ISNULL(WarehouseID, 1) AS WarehouseID, MAX(AdjID) AS MaxAdjID
@@ -330,6 +351,7 @@ namespace ChickenDist.DAL
                     WHERE wli.ProductID IN ({pidInClause}) {(warehouseID.HasValue ? "AND ISNULL(wl.WarehouseID, 1) = @wid" : "")}
                       AND (l.AdjDate IS NULL OR wl.WastageDate > l.AdjDate)
                     GROUP BY wli.ProductID
+                    {prodUnionForPids}
                 ) StockUnion
                 GROUP BY ProductID";
 
@@ -347,6 +369,27 @@ namespace ChickenDist.DAL
             var dict = new Dictionary<int, decimal>();
             List<SqlParameter> prms = new List<SqlParameter>();
             if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
+
+            bool hasProduction = DbHelper.TableExists("ProductionOrders") && DbHelper.TableExists("ProductionOrderItems");
+            string prodUnionAll = !hasProduction ? "" : $@"
+                    UNION ALL
+
+                    SELECT po.FinishedProductID AS ProductID, SUM(po.ProducedQty) AS NetQty
+                    FROM ProductionOrders po WITH (NOLOCK)
+                    LEFT JOIN LatestAdjVal l ON po.FinishedProductID = l.ProductID AND l.WarehouseID = ISNULL(po.WarehouseID, 1)
+                    WHERE po.Status = 'Completed' AND po.StockAdded = 1 {(warehouseID.HasValue ? "AND ISNULL(po.WarehouseID, 1) = @wid" : "")}
+                      AND (l.AdjDate IS NULL OR ISNULL(po.CompletedDate, po.CreatedDate) > l.AdjDate)
+                    GROUP BY po.FinishedProductID
+
+                    UNION ALL
+
+                    SELECT poi.RawProductID AS ProductID, -SUM(poi.Quantity * COALESCE(NULLIF(poi.Factor, 0), 1.0)) AS NetQty
+                    FROM ProductionOrderItems poi WITH (NOLOCK)
+                    JOIN ProductionOrders po WITH (NOLOCK) ON poi.ProductionID = po.ProductionID
+                    LEFT JOIN LatestAdjVal l ON poi.RawProductID = l.ProductID AND l.WarehouseID = ISNULL(po.WarehouseID, 1)
+                    WHERE po.StockDeducted = 1 AND po.Status <> 'Cancelled' {(warehouseID.HasValue ? "AND ISNULL(po.WarehouseID, 1) = @wid" : "")}
+                      AND (l.AdjDate IS NULL OR po.CreatedDate > l.AdjDate)
+                    GROUP BY poi.RawProductID";
 
             string sql = $@"
                 WITH LatestAdj AS (
@@ -446,6 +489,7 @@ namespace ChickenDist.DAL
                     WHERE 1 = 1 {(warehouseID.HasValue ? "AND ISNULL(wl.WarehouseID, 1) = @wid" : "")}
                       AND (l.AdjDate IS NULL OR wl.WastageDate > l.AdjDate)
                     GROUP BY wli.ProductID
+                    {prodUnionAll}
                 ) StockUnion
                 GROUP BY ProductID";
 
@@ -572,12 +616,12 @@ namespace ChickenDist.DAL
                     sa.BookQty,
                     sa.ActualQty,
                     (sa.ActualQty - sa.BookQty) AS DiffQty,
-                    COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
-                    COALESCE(p.SalePrice, 0) AS SalePrice,
-                    CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ABS(sa.ActualQty - sa.BookQty) * COALESCE(p.PurchasePrice, 0) ELSE 0 END AS ShortageCostLoss,
-                    CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ABS(sa.ActualQty - sa.BookQty) * COALESCE(p.SalePrice, 0) ELSE 0 END AS ShortageSaleLoss,
-                    CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN (sa.ActualQty - sa.BookQty) * COALESCE(p.PurchasePrice, 0) ELSE 0 END AS SurplusCostGain,
-                    CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN (sa.ActualQty - sa.BookQty) * COALESCE(p.SalePrice, 0) ELSE 0 END AS SurplusSaleGain,
+                    ROUND(COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), COALESCE(p.PurchasePrice, 0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0), 0) * COALESCE(NULLIF(sa.Factor, 0), 1.0), 2) AS PurchasePrice,
+                    ROUND(COALESCE(NULLIF(p.Unit1SalePrice, 0), COALESCE(p.SalePrice, 0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0), 0) * COALESCE(NULLIF(sa.Factor, 0), 1.0), 2) AS SalePrice,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ROUND(ABS(sa.ActualQty - sa.BookQty) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), COALESCE(p.PurchasePrice, 0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0), 0) * COALESCE(NULLIF(sa.Factor, 0), 1.0), 2) ELSE 0 END AS ShortageCostLoss,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) < 0 THEN ROUND(ABS(sa.ActualQty - sa.BookQty) * COALESCE(NULLIF(p.Unit1SalePrice, 0), COALESCE(p.SalePrice, 0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0), 0) * COALESCE(NULLIF(sa.Factor, 0), 1.0), 2) ELSE 0 END AS ShortageSaleLoss,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN ROUND((sa.ActualQty - sa.BookQty) * COALESCE(NULLIF(p.CostPrice, 0), NULLIF(p.Unit1PurchasePrice, 0), COALESCE(p.PurchasePrice, 0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0), 0) * COALESCE(NULLIF(sa.Factor, 0), 1.0), 2) ELSE 0 END AS SurplusCostGain,
+                    CASE WHEN (sa.ActualQty - sa.BookQty) > 0 THEN ROUND((sa.ActualQty - sa.BookQty) * COALESCE(NULLIF(p.Unit1SalePrice, 0), COALESCE(p.SalePrice, 0) / COALESCE(NULLIF(p.Unit3Factor * p.Unit2Factor, 0), NULLIF(p.Unit3Factor, 0), NULLIF(p.Unit2Factor, 0), 1.0), 0) * COALESCE(NULLIF(sa.Factor, 0), 1.0), 2) ELSE 0 END AS SurplusSaleGain,
                     sa.Notes,
                     e.EmpName AS CreatedBy
                 FROM StockAdjustments sa
@@ -1105,84 +1149,13 @@ namespace ChickenDist.DAL
         }
 
         /// <summary>
-        /// حساب صافي رصيد الصنف الفعلي من واقع إجمالي كافة الحركات المرحلة تاريخياً (وارد - صادر)
+        /// حساب صافي رصيد الصنف الفعلي من واقع إجمالي كافة الحركات المرحلة تاريخياً (مع نقطة ارتكاز آخر تسوية جرد)
         /// </summary>
         public static decimal CalculateNetStockFromMovements(int productID, int? warehouseID = null)
         {
             try
             {
-                decimal defaultFactor = 1m;
-                var dtProd = DbHelper.Query("SELECT ISNULL(Unit2Factor, 1.0) AS Unit2Factor, ISNULL(Unit3Factor, 1.0) AS Unit3Factor FROM Products WITH (NOLOCK) WHERE ProductID = @pid", DbHelper.P("@pid", productID));
-                if (dtProd != null && dtProd.Rows.Count > 0)
-                {
-                    decimal u2 = Convert.ToDecimal(dtProd.Rows[0]["Unit2Factor"]);
-                    decimal u3 = Convert.ToDecimal(dtProd.Rows[0]["Unit3Factor"]);
-                    if (u2 <= 0) u2 = 1m;
-                    if (u3 <= 0) u3 = 1m;
-                    defaultFactor = (u3 > 1 && u2 > 1) ? (u3 * u2) : (u3 > 1 ? u3 : u2);
-                }
-
-                var prms = new List<SqlParameter> 
-                { 
-                    DbHelper.P("@pid", productID),
-                    DbHelper.P("@defFactor", defaultFactor)
-                };
-                if (warehouseID.HasValue) prms.Add(DbHelper.P("@wid", warehouseID.Value));
-
-                string sql = $@"
-                    SELECT 
-                        -- Incoming / Outgoing: Stock Adjustments (تسويات الجرد الفعلية باستثناء حركات المطابقة الآلية)
-                        ISNULL((SELECT SUM((sa.ActualQty - sa.BookQty) * COALESCE(sa.Factor, @defFactor))
-                                FROM StockAdjustments sa WITH (NOLOCK)
-                                WHERE sa.ProductID = @pid 
-                                  AND (sa.Notes IS NULL OR sa.Notes NOT LIKE N'مطابقة آلية%')
-                                  {(warehouseID.HasValue ? "AND sa.WarehouseID = @wid" : "")}), 0) +
-                        -- Incoming: Purchases
-                        ISNULL((SELECT SUM((pi.Quantity + ISNULL(pi.BonusQuantity, 0)) * COALESCE(pi.Factor, @defFactor))
-                                FROM PurchaseItems pi WITH (NOLOCK) 
-                                JOIN Purchases pu WITH (NOLOCK) ON pi.PurchaseID = pu.PurchaseID
-                                WHERE pi.ProductID = @pid AND pu.IsPosted = 1 {(warehouseID.HasValue ? "AND pu.WarehouseID = @wid" : "")}), 0) +
-                        -- Incoming: Sales Returns
-                        ISNULL((SELECT SUM(ri.Quantity * COALESCE(ri.Factor, @defFactor))
-                                FROM ReturnItems ri WITH (NOLOCK) 
-                                JOIN SalesReturns sr WITH (NOLOCK) ON ri.ReturnID = sr.ReturnID
-                                WHERE ri.ProductID = @pid {(warehouseID.HasValue ? "AND sr.WarehouseID = @wid" : "")}), 0) +
-                        -- Incoming: Driver Handover Returns
-                        ISNULL((SELECT SUM(hi.ReturnedQty * COALESCE(hi.Factor, @defFactor))
-                                FROM HandoverItems hi WITH (NOLOCK) 
-                                JOIN DriverHandovers dh WITH (NOLOCK) ON hi.HandoverID = dh.HandoverID 
-                                JOIN DriverLoads dl WITH (NOLOCK) ON dh.LoadID = dl.LoadID
-                                WHERE hi.ProductID = @pid {(warehouseID.HasValue ? "AND dl.WarehouseID = @wid" : "")}), 0) +
-                        -- Incoming: Warehouse Transfers
-                        ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, @defFactor))
-                                FROM WarehouseTransferItems ti WITH (NOLOCK) 
-                                JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID
-                                WHERE ti.ProductID = @pid AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.ToWarehouseID = @wid" : "")}), 0)
-                        -- Outgoing: Sales
-                        - ISNULL((SELECT SUM(si.Quantity * COALESCE(si.Factor, @defFactor))
-                                  FROM SaleItems si WITH (NOLOCK) 
-                                  JOIN Sales s WITH (NOLOCK) ON si.SaleID = s.SaleID
-                                  WHERE si.ProductID = @pid AND s.IsPosted = 1 
-                                    AND (s.SaleType = 'DriverLoad' OR (s.SaleType <> 'DriverLoad' AND (s.DriverID IS NULL OR NOT EXISTS (SELECT 1 FROM DriverLoads dl WITH (NOLOCK) WHERE dl.SaleID = s.SaleID))))
-                                    {(warehouseID.HasValue ? "AND s.WarehouseID = @wid" : "")}), 0)
-                        -- Outgoing: Purchase Returns
-                        - ISNULL((SELECT SUM((pri.Quantity + ISNULL(pri.BonusQuantity, 0)) * COALESCE(pri.Factor, @defFactor))
-                                  FROM PurchaseReturnItems pri WITH (NOLOCK) 
-                                  JOIN PurchaseReturns pr WITH (NOLOCK) ON pri.ReturnID = pr.ReturnID
-                                  WHERE pri.ProductID = @pid {(warehouseID.HasValue ? "AND pr.WarehouseID = @wid" : "")}), 0)
-                        -- Outgoing: Transfers Out
-                        - ISNULL((SELECT SUM(ti.Quantity * COALESCE(ti.Factor, @defFactor))
-                                  FROM WarehouseTransferItems ti WITH (NOLOCK) 
-                                  JOIN WarehouseTransfers t WITH (NOLOCK) ON ti.TransferID = t.TransferID
-                                  WHERE ti.ProductID = @pid AND t.IsPosted = 1 {(warehouseID.HasValue ? "AND t.FromWarehouseID = @wid" : "")}), 0)
-                        -- Outgoing: Wastage & Loss
-                        - ISNULL((SELECT SUM(wli.Quantity * COALESCE(wli.Factor, @defFactor))
-                                  FROM WastageLossItems wli WITH (NOLOCK) 
-                                  JOIN WastageLoss wl WITH (NOLOCK) ON wli.WastageID = wl.WastageID
-                                  WHERE wli.ProductID = @pid {(warehouseID.HasValue ? "AND wl.WarehouseID = @wid" : "")}), 0) AS NetStock";
-
-                var val = DbHelper.Scalar(sql, prms.ToArray());
-                return val == null || val == DBNull.Value ? 0m : Convert.ToDecimal(val);
+                return GetProductStock(productID, warehouseID);
             }
             catch
             {
@@ -1196,7 +1169,7 @@ namespace ChickenDist.DAL
         public static decimal ReconcileProductStockWithMovements(int productID, int? warehouseID = null, int? empID = null)
         {
             int targetWid = warehouseID.HasValue && warehouseID.Value > 0 ? warehouseID.Value : 1;
-            decimal exactMovementStock = CalculateNetStockFromMovements(productID, targetWid);
+            decimal exactMovementStock = 0m;
 
             DbHelper.RunInTransaction((con, trans) =>
             {
@@ -1207,6 +1180,8 @@ namespace ChickenDist.DAL
                       AND Notes LIKE N'مطابقة آلية%'",
                     DbHelper.P("@pid", productID),
                     DbHelper.P("@wid", targetWid));
+
+                exactMovementStock = GetProductStock(productID, targetWid, trans);
 
                 // 2. تحديث جدول ProductStock
                 DbHelper.ExecuteTrans(trans, @"

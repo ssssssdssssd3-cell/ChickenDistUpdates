@@ -1994,9 +1994,9 @@ namespace ChickenDist.DAL
             else
             {
                 DbHelper.Execute(
-                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes,DefaultPriceTier=@dpt,OpeningCrates=@oc,DefaultPaymentType=@dptype WHERE ClientID=@id",
+                    "UPDATE Clients SET ClientCode=@c,ClientName=@n,Phone=@ph,Phone2=@ph2,Address=@a,OpeningBalance=@ob,IsActive=@act,DriverID=@dr,MaxCreditLimit=@mcl,Notes=@notes,DefaultPriceTier=@dpt,OpeningCrates=@oc,DefaultPaymentType=@dptype,CurrentDebt=@ob + ISNULL((SELECT SUM(ISNULL(Debit,0) - ISNULL(Credit,0)) FROM ClientTransactions WHERE ClientID=@id), 0) WHERE ClientID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@ph", phone), DbHelper.P("@ph2", phone2),
-                    DbHelper.P("@a", address), DbHelper.P("@act", active),
+                    DbHelper.P("@a", address), DbHelper.P("@ob", opening), DbHelper.P("@act", active),
                     DbHelper.P("@dr", driverID.HasValue ? (object)driverID.Value : DBNull.Value),
                     DbHelper.P("@mcl", maxCreditLimit), DbHelper.P("@notes", notes), DbHelper.P("@dpt", defaultPriceTier),
                     DbHelper.P("@oc", openingCrates), DbHelper.P("@dptype", string.IsNullOrEmpty(defaultPaymentType) ? "Any" : defaultPaymentType),
@@ -2152,9 +2152,9 @@ namespace ChickenDist.DAL
                         WHEN s.Status = 'Closed' THEN s.ExpectedCash 
                         ELSE (s.OpeningCash + 
                               ISNULL((SELECT SUM(CASE WHEN SaleType = 'Cash' THEN ISNULL(CashPaid, TotalAmount) WHEN SaleType = 'Mixed' THEN ISNULL(CashPaid, 0) ELSE 0 END) FROM Sales WHERE (ShiftID = s.ShiftID OR (ShiftID IS NULL AND SaleDate >= s.OpenTime)) AND IsPosted = 1), 0) -
-                              ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr JOIN Sales sl ON sr.SaleID = sl.SaleID WHERE (sl.ShiftID = s.ShiftID OR (sl.ShiftID IS NULL AND sl.SaleDate >= s.OpenTime))), 0) -
-                              ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0) +
-                              ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0)
+                              ISNULL((SELECT SUM(sr.TotalAmount) FROM SalesReturns sr LEFT JOIN Sales sl ON sr.SaleID = sl.SaleID WHERE ISNULL(sr.PaymentType, ISNULL(sl.SaleType, 'Cash')) = 'Cash' AND (sr.ShiftID = s.ShiftID OR (sr.ShiftID IS NULL AND sr.ReturnDate >= s.OpenTime))), 0) -
+                              ISNULL((SELECT SUM(AmountOut) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ReturnOutcome', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0) +
+                              ISNULL((SELECT SUM(AmountIn) FROM CashBox WHERE TransDate >= s.OpenTime AND (AccountID = s.SafeAccountID OR AccountID = 1 OR AccountID IS NULL) AND TransType NOT IN ('Sale', 'SaleIncome', 'SaleReturn', 'Return', 'ReturnOutcome', 'ShiftCloseOut', 'ShiftClose', 'ShiftDeficit', 'ShiftSurplus', 'ShiftOpen')), 0)
                              )
                     END AS ExpectedCash,
                     s.ActualCash,

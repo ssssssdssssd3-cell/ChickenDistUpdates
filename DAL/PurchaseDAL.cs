@@ -576,13 +576,16 @@ namespace ChickenDist.DAL
 
                     if (isPosted)
                     {
-                        var dtItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                        var dtItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, ISNULL(BonusQuantity, 0) AS BonusQuantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                        var affectedProducts = new HashSet<int>();
                         foreach (DataRow iRow in dtItems.Rows)
                         {
                             int productID = Convert.ToInt32(iRow["ProductID"]);
+                            affectedProducts.Add(productID);
                             decimal qty = Convert.ToDecimal(iRow["Quantity"]);
+                            decimal bonusQty = Convert.ToDecimal(iRow["BonusQuantity"]);
                             decimal factor = Convert.ToDecimal(iRow["Factor"]);
-                            decimal baseQty = qty * factor;
+                            decimal baseQty = (qty + bonusQty) * factor;
                             DateTime? expDate = iRow["ExpiryDate"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(iRow["ExpiryDate"]);
 
                             if (expDate.HasValue)
@@ -596,9 +599,39 @@ namespace ChickenDist.DAL
                         DbHelper.ExecuteTrans(trans, "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType='ClientPurchase'", DbHelper.P("@id", purchaseID));
                         DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND (TransType='PurchaseExpense' OR TransType='ClientPurchaseCash')", DbHelper.P("@id", purchaseID));
                         JournalDAL.DeleteEntryTrans(trans, "Purchase", purchaseID);
+
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+
+                        // إعادة احتساب التكلفة من آخر فاتورة شراء متبقية للأصناف المتأثرة
+                        foreach (int pid in affectedProducts)
+                        {
+                            var lastCostObj = DbHelper.ScalarTrans(trans,
+                                @"SELECT TOP 1 (pi.UnitPrice / NULLIF(ISNULL(pi.Factor, 1.0), 0))
+                                  FROM PurchaseItems pi
+                                  JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                                  WHERE pi.ProductID = @pid AND p.IsPosted = 1 AND pi.UnitPrice > 0
+                                  ORDER BY p.PurchaseDate DESC, pi.ItemID DESC",
+                                DbHelper.P("@pid", pid));
+                            if (lastCostObj != null && lastCostObj != DBNull.Value)
+                            {
+                                decimal unit1Cost = Math.Round(Convert.ToDecimal(lastCostObj), 4);
+                                DbHelper.ExecuteTrans(trans,
+                                    @"UPDATE Products 
+                                      SET CostPrice = @c1,
+                                          Unit1PurchasePrice = @c1,
+                                          Unit2PurchasePrice = CASE WHEN ISNULL(Unit2Factor, 0) > 0 THEN ROUND(@c1 * Unit2Factor, 2) ELSE Unit2PurchasePrice END,
+                                          PurchasePrice = ROUND(@c1 * COALESCE(NULLIF(Unit3Factor * Unit2Factor, 0), NULLIF(Unit3Factor, 0), NULLIF(Unit2Factor, 0), 1.0), 2)
+                                      WHERE ProductID = @pid",
+                                    DbHelper.P("@c1", unit1Cost), DbHelper.P("@pid", pid));
+                            }
+                        }
                     }
-                    DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
-                    DbHelper.ExecuteTrans(trans, "DELETE FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    else
+                    {
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                        DbHelper.ExecuteTrans(trans, "DELETE FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    }
                 });
 
                 try
@@ -630,6 +663,11 @@ namespace ChickenDist.DAL
                     int accId = safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID());
                     decimal totalDeductions = marketCommission + freightCost + porterageFee;
 
+                    var dtOldPur = DbHelper.QueryTrans(trans, "SELECT PurchaseCode, PurchaseSource, ClientID FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
+                    string code = dtOldPur.Rows.Count > 0 ? (dtOldPur.Rows[0]["PurchaseCode"]?.ToString() ?? purchaseID.ToString()) : purchaseID.ToString();
+                    string purchaseSource = dtOldPur.Rows.Count > 0 ? (dtOldPur.Rows[0]["PurchaseSource"]?.ToString() ?? "Supplier") : "Supplier";
+                    int? clientID = (dtOldPur.Rows.Count > 0 && dtOldPur.Rows[0]["ClientID"] != DBNull.Value) ? Convert.ToInt32(dtOldPur.Rows[0]["ClientID"]) : (int?)null;
+
                     var dtOldItems = DbHelper.QueryTrans(trans, "SELECT ProductID, Quantity, ISNULL(BonusQuantity, 0) AS BonusQuantity, Factor, ExpiryDate FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     int wid = warehouseID ?? 1;
                     foreach (DataRow iRow in dtOldItems.Rows)
@@ -651,6 +689,7 @@ namespace ChickenDist.DAL
 
                     DbHelper.ExecuteTrans(trans, "DELETE FROM PurchaseItems WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM SupplierTransactions WHERE RefID=@id AND TransType='Purchase'", DbHelper.P("@id", purchaseID));
+                    DbHelper.ExecuteTrans(trans, "DELETE FROM ClientTransactions WHERE RefID=@id AND TransType='ClientPurchase'", DbHelper.P("@id", purchaseID));
                     DbHelper.ExecuteTrans(trans, "DELETE FROM CashBox WHERE RefID=@id AND (TransType='PurchaseExpense' OR TransType='ClientPurchaseCash')", DbHelper.P("@id", purchaseID));
                     JournalDAL.DeleteEntryTrans(trans, "Purchase", purchaseID);
 
@@ -738,55 +777,82 @@ namespace ChickenDist.DAL
                     // ── تحديث متوسط تكلفة الشراء المرجح للأصناف المعدلة ───────────
                     UpdateMovingWeightedAverageCostsTrans(trans, items, discountAmount, shippingCost, shippingOn);
 
-                    var pCodeObj = DbHelper.ScalarTrans(trans, "SELECT PurchaseCode FROM Purchases WHERE PurchaseID=@id", DbHelper.P("@id", purchaseID));
-                    string code = pCodeObj?.ToString() ?? purchaseID.ToString();
-
-                    if (purchaseType == "Credit" && supplierID.HasValue)
+                    if (purchaseSource == "Client" || clientID.HasValue)
                     {
-                        string suppNote = "تعديل فاتورة مشتريات " + code;
-                        if (totalDeductions > 0)
+                        if (purchaseType == "Credit" && clientID.HasValue)
                         {
-                            suppNote += string.Format(" (خصم استقطاعات: {0:N2})", totalDeductions);
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID, TransType, Credit, RefID, Notes, CreatedBy)" +
+                                " VALUES(@cid, 'ClientPurchase', @amt, @ref, @n, @by)",
+                                DbHelper.P("@cid", clientID.Value),
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   "تعديل فاتورة شراء من عميل آجل " + code),
+                                DbHelper.P("@by",  Session.EmpID));
                         }
-                        DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,RefID,Notes,CreatedBy)" +
-                            " VALUES(@sid,'Purchase',@amt,@ref,@n,@by)",
-                            DbHelper.P("@sid", supplierID.Value),
-                            DbHelper.P("@amt", total),
-                            DbHelper.P("@ref", purchaseID),
-                            DbHelper.P("@n",   suppNote),
-                            DbHelper.P("@by",  Session.EmpID));
-                    }
-
-                    if (purchaseType == "Cash")
-                    {
-                        AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "تعديل فاتورة مشتريات نقدية");
-
-                        DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID)" +
-                            " VALUES(GETDATE(),'PurchaseExpense',@amt,@ref,@n,@by,@accId)",
-                            DbHelper.P("@amt", total),
-                            DbHelper.P("@ref", purchaseID),
-                            DbHelper.P("@n",   "تعديل مشتريات نقدية " + code),
-                            DbHelper.P("@by",  Session.EmpID),
-                            DbHelper.P("@accId", accId));
-                    }
-
-                    // ترحيل قيد اليومية العامة المزدوج اللحظي بعد التعديل
-                    try
-                    {
-                        string sName = null;
-                        if (supplierID.HasValue)
+                        else if (purchaseType == "Cash")
                         {
-                            var sObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID = @sid", DbHelper.P("@sid", supplierID.Value));
-                            sName = sObj?.ToString();
+                            AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "تعديل فاتورة شراء نقدي من عميل");
+
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, Notes, CreatedBy, AccountID)" +
+                                " VALUES(GETDATE(), 'ClientPurchaseCash', @amt, @ref, @n, @by, @accId)",
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   "تعديل فاتورة شراء من عميل نقدي " + code),
+                                DbHelper.P("@by",  Session.EmpID),
+                                DbHelper.P("@accId", accId));
+                        }
+                    }
+                    else
+                    {
+                        if (purchaseType == "Credit" && supplierID.HasValue)
+                        {
+                            string suppNote = "تعديل فاتورة مشتريات " + code;
+                            if (totalDeductions > 0)
+                            {
+                                suppNote += string.Format(" (خصم استقطاعات: {0:N2})", totalDeductions);
+                            }
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO SupplierTransactions(SupplierID,TransType,Credit,RefID,Notes,CreatedBy)" +
+                                " VALUES(@sid,'Purchase',@amt,@ref,@n,@by)",
+                                DbHelper.P("@sid", supplierID.Value),
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   suppNote),
+                                DbHelper.P("@by",  Session.EmpID));
                         }
 
-                        JournalDAL.PostPurchaseJournalTrans(trans, purchaseID, code, DateTime.Now, purchaseType, total, supplierID, sName, safeAccountID, Session.EmpID);
-                    }
-                    catch (Exception exJour)
-                    {
-                        AppLogger.Error("JournalDAL.PostPurchaseJournalTrans failed in UpdatePurchase", exJour);
+                        if (purchaseType == "Cash")
+                        {
+                            AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "تعديل فاتورة مشتريات نقدية");
+
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID)" +
+                                " VALUES(GETDATE(),'PurchaseExpense',@amt,@ref,@n,@by,@accId)",
+                                DbHelper.P("@amt", total),
+                                DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@n",   "تعديل مشتريات نقدية " + code),
+                                DbHelper.P("@by",  Session.EmpID),
+                                DbHelper.P("@accId", accId));
+                        }
+
+                        // ترحيل قيد اليومية العامة المزدوج اللحظي بعد التعديل
+                        try
+                        {
+                            string sName = null;
+                            if (supplierID.HasValue)
+                            {
+                                var sObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID = @sid", DbHelper.P("@sid", supplierID.Value));
+                                sName = sObj?.ToString();
+                            }
+
+                            JournalDAL.PostPurchaseJournalTrans(trans, purchaseID, code, DateTime.Now, purchaseType, total, supplierID, sName, safeAccountID, Session.EmpID);
+                        }
+                        catch (Exception exJour)
+                        {
+                            AppLogger.Error("JournalDAL.PostPurchaseJournalTrans failed in UpdatePurchase", exJour);
+                        }
                     }
                 });
 
@@ -1510,12 +1576,13 @@ namespace ChickenDist.DAL
                     ISNULL(s.SupplierName, N'مورد عام') AS SupplierName,
                     ISNULL(s.Phone, N'---') AS Phone,
                     p.TotalAmount AS TotalInvoiceAmount,
-                    ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.RefID = p.PurchaseID AND st.TransType = 'Payment'), 0) AS PaidAmount,
-                    (p.TotalAmount - ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.RefID = p.PurchaseID AND st.TransType = 'Payment'), 0)) AS RemainingAmount,
-                    (s.OpeningBalance + 
+                    (ISNULL(p.PaidAmount, 0) + ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.RefID = p.PurchaseID AND st.TransType = 'Payment'), 0)) AS PaidAmount,
+                    (p.TotalAmount - (ISNULL(p.PaidAmount, 0) + ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.RefID = p.PurchaseID AND st.TransType = 'Payment'), 0))) AS RemainingAmount,
+                    (ISNULL(s.OpeningBalance, 0) + 
                      ISNULL((SELECT SUM(st.Credit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0) - 
                      ISNULL((SELECT SUM(st.Debit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0)) AS CurrentSupplierBalance
                 FROM Purchases p
+                LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
                 WHERE p.IsPosted = 1
                   AND p.PurchaseType = 'Credit'
                   AND CAST(p.PurchaseDate AS DATE) BETWEEN @f AND @t
@@ -2058,7 +2125,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@pid", purchaseID));
                     if (dtPur.Rows.Count > 0)
                     {
-                        if (string.IsNullOrEmpty(returnType) || returnType == "Credit")
+                        if (string.IsNullOrEmpty(returnType))
                             purType = dtPur.Rows[0]["PurchaseType"].ToString();
                         string pSrc = dtPur.Rows[0]["PurchaseSource"]?.ToString() ?? "";
                         if (pSrc == "Client") isClientPurchase = true;

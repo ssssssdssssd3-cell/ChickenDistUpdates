@@ -1,5 +1,5 @@
-version=4.1.3
+version=4.1.4
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.3&t=1792270585
-sha256=1EAD457E15EF67CB50FD4F173DD8E56BB40AEEFE694615913252F5E962CE245F
-changelog=v4.1.3 - 2026-10-17: Add category and unit selectors to Quick Add Products screen
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.4&t=1792314582
+sha256=B930E9F8FD8D59EA9FAD174DA2B9596F956B74364BDF2BA3CDBF5468491873D1
+changelog=v4.1.4 - 2026-10-18: Comprehensive accounting fixes across Sales, Purchases, Returns, Shifts, and Inventory + remove item exchange mode
