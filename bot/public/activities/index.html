@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>منصة المتاجر الإلكترونية لجميع الأنشطة التجارية | معاينة ونشر المتاجر</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary-dark: #0d1117;
+      --card-bg: #161b22;
+      --accent-gold: #c9a84c;
+      --accent-gold-hover: #e6cb7e;
+      --border-dark: #30363d;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --success: #238636;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #090d13;
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ── HEADER & HERO ── */
+    header {
+      text-align: center;
+      padding: 50px 20px 30px;
+      background: radial-gradient(circle at 50% 0%, rgba(201, 168, 76, 0.15) 0%, rgba(13, 17, 23, 0) 70%),
+                  linear-gradient(180deg, #131922 0%, #090d13 100%);
+      border-bottom: 1px solid var(--border-dark);
+      position: relative;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(201, 168, 76, 0.12);
+      border: 1px solid rgba(201, 168, 76, 0.4);
+      color: var(--accent-gold);
+      padding: 6px 18px;
+      border-radius: 50px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+    header h1 span {
+      background: linear-gradient(135deg, #c9a84c, #ffd700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      max-width: 800px;
+      margin: 0 auto 24px;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    .features-highlights {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .highlight-item {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      color: #d1d5db;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .highlight-item i { color: var(--accent-gold); }
+
+    /* ── LIVE INTERACTIVE SIMULATOR SECTION ── */
+    .simulator-section {
+      max-width: 1300px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .section-headline {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .section-headline h2 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .section-headline p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    /* Activities Tabs Bar */
+    .activity-selector-tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+    .activity-tab-btn {
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: all 0.25s ease;
+    }
+    .activity-tab-btn:hover {
+      border-color: var(--accent-gold);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    .activity-tab-btn.active {
+      background: linear-gradient(135deg, #c9a84c, #9e7a2b);
+      border-color: #c9a84c;
+      color: #0d1117;
+      box-shadow: 0 4px 18px rgba(201, 168, 76, 0.35);
+    }
+
+    /* Simulator Workspace Layout */
+    .simulator-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 430px 1fr;
+      align-items: center;
+      gap: 30px;
+    }
+
+    @media (max-width: 1050px) {
+      .simulator-wrapper {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+    }
+
+    /* Device Mockup */
+    .phone-mockup {
+      width: 410px;
+      height: 780px;
+      max-width: 100%;
+      background: #1a1e24;
+      border-radius: 46px;
+      border: 10px solid #282f3a;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8),
+                  0 0 40px rgba(201, 168, 76, 0.15),
+                  inset 0 0 6px rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .phone-speaker-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 130px;
+      height: 22px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .phone-lens {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #111;
+      border: 2px solid #222;
+    }
+    .phone-earpiece {
+      width: 45px;
+      height: 4px;
+      background: #222;
+      border-radius: 4px;
+    }
+    .phone-screen-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    /* Side Panels Info */
+    .side-info-card {
+      background: #161b22;
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .side-info-card h3 {
+      font-size: 1.25rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+    .side-info-card h3 i { color: var(--accent-gold); }
+    .side-info-card p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      margin-bottom: 16px;
+    }
+    .specs-list {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+    .specs-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: #e6edf3;
+      margin-bottom: 11px;
+    }
+    .specs-list li i {
+      color: #3fb950;
+      margin-top: 4px;
+    }
+
+    .btn-action-primary {
+      width: 100%;
+      padding: 13px 20px;
+      background: linear-gradient(135deg, #c9a84c, #b38b2f);
+      border: none;
+      border-radius: 12px;
+      color: #0d1117;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      box-shadow: 0 4px 15px rgba(201, 168, 76, 0.25);
+      transition: all 0.2s;
+    }
+    .btn-action-primary:hover {
+      background: linear-gradient(135deg, #dfbc5e, #c9a84c);
+      transform: translateY(-2px);
+    }
+    .btn-action-outline {
+      width: 100%;
+      padding: 12px 20px;
+      background: transparent;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      color: #c9d1d9;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      margin-top: 10px;
+      transition: all 0.2s;
+    }
+    .btn-action-outline:hover {
+      border-color: #8b949e;
+      color: #fff;
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* ── ALL ACTIVITIES SHOWCASE CARDS ── */
+    .showcase-section {
+      max-width: 1300px;
+      margin: 80px auto;
+      padding: 0 20px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 28px;
+      margin-top: 35px;
+    }
+
+    .activity-card {
+      background: #161b22;
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      transition: transform 0.25s, border-color 0.25s;
+      position: relative;
+    }
+    .activity-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(201, 168, 76, 0.5);
+    }
+    .card-banner {
+      height: 130px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+    }
+    .card-banner .activity-icon-big {
+      font-size: 3.2rem;
+      opacity: 0.9;
+    }
+    .card-banner .badge-pill-light {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .card-content {
+      padding: 22px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .tag-chip {
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #c9d1d9;
+    }
+    .card-actions-row {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .card-btn-view {
+      padding: 10px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #fff;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .card-btn-view:hover { background: #30363d; }
+    .card-btn-select {
+      padding: 10px;
+      background: var(--accent-gold);
+      border: 1px solid var(--accent-gold);
+      color: #0d1117;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .card-btn-select:hover { background: #dfbc5e; }
+
+    /* Activity Specific Banners */
+    .banner-coffee { background: linear-gradient(135deg, #2b1810 0%, #4a2818 100%); }
+    .banner-restaurant { background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%); }
+    .banner-supermarket { background: linear-gradient(135deg, #064e3b 0%, #047857 100%); }
+    .banner-fashion { background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%); }
+    .banner-mobiles { background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 100%); }
+    .banner-butchery { background: linear-gradient(135deg, #78350f 0%, #b45309 100%); }
+    .banner-autoparts { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+
+    /* ── OWNER SETTINGS GUIDE ── */
+    .guide-section {
+      max-width: 1200px;
+      margin: 60px auto 100px;
+      padding: 35px 30px;
+      background: linear-gradient(135deg, #131922, #0d1117);
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin-top: 25px;
+    }
+    .guide-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .guide-box .icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(201, 168, 76, 0.15);
+      color: var(--accent-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+    }
+    .guide-box h4 {
+      font-size: 1.1rem;
+      color: #fff;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .guide-box p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border-dark);
+      padding: 35px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      background: #090d13;
+    }
+
+    /* ── MODALS ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal-dialog {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      animation: popIn 0.25s ease-out;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .modal-text {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+    .copy-url-box {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      direction: ltr;
+      text-align: left;
+    }
+    .copy-url-box span {
+      font-family: monospace;
+      color: #58a6ff;
+      font-size: 0.88rem;
+      word-break: break-all;
+    }
+    .btn-copy {
+      background: #238636;
+      border: none;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="badge-pill">
+      <i class="fa-solid fa-sparkles"></i>
+      <span>الجيل الجديد من منصة المتاجر الإلكترونية للأنشطة التجارية</span>
+    </div>
+    <h1>تصميم متجر مخصص واحترافي <span>لكل نشاط تجاري</span></h1>
+    <p>
+      واجهات ذكية متوافقة كلياً مع الجوال، مبنية وفق أحدث معايير تجربة المستخدم مع ميزة شرح فوائد ومميزات الأصناف وربط مباشر بالواتساب وسلة تسوق سريعة.
+    </p>
+    
+    <div class="features-highlights">
+      <div class="highlight-item"><i class="fa-brands fa-whatsapp"></i> طلب مباشر ومؤكد عبر واتساب</div>
+      <div class="highlight-item"><i class="fa-solid fa-lightbulb"></i> زر شرح فوائد ومميزات كل صنف</div>
+      <div class="highlight-item"><i class="fa-solid fa-mobile-screen"></i> واجهة هاتف فائقة السرعة</div>
+      <div class="highlight-item"><i class="fa-solid fa-layer-group"></i> تصنيفات أفقية ذكية مع شارات</div>
+      <div class="highlight-item"><i class="fa-solid fa-cart-shopping"></i> سلة طلبات منبثقة تفاعلية</div>
+    </div>
+  </header>
+
+  <!-- LIVE SIMULATOR SECTION -->
+  <section class="simulator-section">
+    <div class="section-headline">
+      <h2>📱 المعاينة التفاعلية المباشرة للهاتف</h2>
+      <p>اضغط على أي نشاط لتجربة وتصفح الموقع مباشرة من داخل محاكي شاشة الجوال</p>
+    </div>
+
+    <!-- Activity Switcher Tabs -->
+    <div class="activity-selector-tabs" id="activityTabs">
+      <button class="activity-tab-btn active" onclick="switchActivity('coffee', this)">
+        <span>☕</span> محامص وكافيهات البن
+      </button>
+      <button class="activity-tab-btn" onclick="switchActivity('restaurant', this)">
+        <span>🍔</span> المطاعم والمشاوي والوجبات
+      </button>
+      <button class="activity-tab-btn" onclick="switchActivity('supermarket', this)">
+        <span>🛒</span> السوبرماركت والمواد الغذائية
+      </button>
+      <button class="activity-tab-btn" onclick="switchActivity('fashion', this)">
+        <span>👗</span> الأزياء والملابس والأحذية
+      </button>
+      <button class="activity-tab-btn" onclick="switchActivity('mobiles', this)">
+        <span>📱</span> الموبايلات والإلكترونيات
+      </button>
+      <button class="activity-tab-btn" onclick="switchActivity('butchery', this)">
+        <span>🍗</span> الدواجن واللحوم والأسماك
+      </button>
+      <button class="activity-tab-btn" onclick="switchActivity('autoparts', this)">
+        <span>⚙️</span> قطع الغيار وزيوت السيارات
+      </button>
+    </div>
+
+    <!-- Simulator Layout -->
+    <div class="simulator-wrapper">
+      <!-- Right Info Card -->
+      <div class="side-info-card">
+        <h3><i class="fa-solid fa-store"></i> <span id="infoStoreName">بن الأكابر</span></h3>
+        <p id="infoStoreDesc">واجهة متخصصة لمحامص وكافيهات القهوة الفاخرة والعطارة مع اختيار درجات التحويجة وأوزان الطحن الدقيقة.</p>
+        
+        <ul class="specs-list" id="infoSpecsList">
+          <li><i class="fa-solid fa-circle-check"></i> مطابقة دقيقة 100% لتصميم الصورة المرفقة</li>
+          <li><i class="fa-solid fa-circle-check"></i> زر شرح فوائد كل توليفة ونوع قهوة</li>
+          <li><i class="fa-solid fa-circle-check"></i> 4 مربعات ثقة (شحن سريع، أصلي، دفع أمان)</li>
+          <li><i class="fa-solid fa-circle-check"></i> بنر إعلاني متحرك وتصنيفات دائرية بأزرار تحويل</li>
+        </ul>
+
+        <a id="btnOpenFullscreen" href="activity-coffee.html" target="_blank" class="btn-action-primary">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> فتح المتجر بملء الشاشة
+        </a>
+        <button class="btn-action-outline" onclick="openPublishModal()">
+          <i class="fa-solid fa-rocket"></i> نشر هذا المتجر لعملائك
+        </button>
+      </div>
+
+      <!-- Center Phone Mockup -->
+      <div class="phone-mockup">
+        <div class="phone-speaker-notch">
+          <div class="phone-earpiece"></div>
+          <div class="phone-lens"></div>
+        </div>
+        <iframe id="phoneIframe" class="phone-screen-iframe" src="activity-coffee.html" title="معاينة المتجر"></iframe>
+      </div>
+
+      <!-- Left Info Card (Settings & Controls) -->
+      <div class="side-info-card">
+        <h3><i class="fa-solid fa-sliders"></i> لوحة تحكم المتجر</h3>
+        <p>يمكن للمالك ضبط وتعديل كافة محتويات هذا المتجر من خلال إعدادات لوحة التحكم:</p>
+
+        <ul class="specs-list">
+          <li><i class="fa-solid fa-pen-to-square"></i> <strong>كتابة فوائد الصنف:</strong> شرح القيمة والمكونات لكل منتج تظهر للزبون عند النقر.</li>
+          <li><i class="fa-solid fa-palette"></i> <strong>تخصيص الهوية:</strong> إمكانية تغيير الألوان الأساسية والشعار وأرقام التواصل.</li>
+          <li><i class="fa-solid fa-bullhorn"></i> <strong>البنرات الإعلانية:</strong> رفع عروض وتخفيضات اليوم وبانرات الصفحة الرئيسية.</li>
+          <li><i class="fa-solid fa-bolt"></i> <strong>الربط بنظام الكاشير POS:</strong> تحديث الأسعار والمخزون لحظياً مع قاعدة البيانات.</li>
+        </ul>
+
+        <button class="btn-action-primary" style="background: linear-gradient(135deg, #238636, #2ea043); color: #fff;" onclick="testWhatsAppLink()">
+          <i class="fa-brands fa-whatsapp"></i> تجربة إرسال طلب واتساب
+        </button>
+        <button class="btn-action-outline" onclick="refreshIframe()">
+          <i class="fa-solid fa-rotate-right"></i> إعادة تحميل المعاينة
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALL ACTIVITIES SHOWCASE CARDS -->
+  <section class="showcase-section">
+    <div class="section-headline">
+      <h2>✨ تصفح جميع قوالب الأنشطة التجارية المكتملة</h2>
+      <p>تم إعداد 7 تصاميم متخصصة متكاملة جاهزة للنشر الفوري وتستوعب كافة متطلبات كل نشاط</p>
+    </div>
+
+    <div class="cards-grid">
+      <!-- 1. Coffee -->
+      <div class="activity-card">
+        <div class="card-banner banner-coffee">
+          <div>
+            <div class="badge-pill-light">النشاط الأكثر طلباً 🔥</div>
+            <h3 style="color:#fff; font-size:1.3rem; margin-top:8px;">بن الأكابر</h3>
+          </div>
+          <div class="activity-icon-big">☕</div>
+        </div>
+        <div class="card-content">
+          <div class="card-title">محامص وكافيهات البن والعطارة</div>
+          <div class="card-desc">نسخة مطابقة تماماً للموديل المطلوب: أوزان 250ج و 500ج، توليفات يمني وحبشي وبرازيلي، وزر فوائد الصنف الصحي.</div>
+          <div class="tags-container">
+            <span class="tag-chip">تحويجة خاصة</span>
+            <span class="tag-chip">أوزان مخصصة</span>
+            <span class="tag-chip">واتساب مباشر</span>
+          </div>
+          <div class="card-actions-row">
+            <a href="activity-coffee.html" target="_blank" class="card-btn-view"><i class="fa-solid fa-eye"></i> فتح كامل</a>
+            <button class="card-btn-select" onclick="loadActivityFromCard('coffee')"><i class="fa-solid fa-play"></i> تجربة في المحاكي</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Restaurant -->
+      <div class="activity-card">
+        <div class="card-banner banner-restaurant">
+          <div>
+            <div class="badge-pill-light">ثيم داكن شهي 🍔</div>
+            <h3 style="color:#fff; font-size:1.3rem; margin-top:8px;">شيف الأكابر</h3>
+          </div>
+          <div class="activity-icon-big">🍗</div>
+        </div>
+        <div class="card-content">
+          <div class="card-title">المطاعم والمشاوي والوجبات السريعة</div>
+          <div class="card-desc">تصميم دافئ وشهي للبرجر، الشاورما، المشاوي، والبيتزا مع تفاصيل المكونات والسعرات الحرارية وإضافات الوجبة.</div>
+          <div class="tags-container">
+            <span class="tag-chip">وجبات كومبو</span>
+            <span class="tag-chip">سعرات حرارية</span>
+            <span class="tag-chip">دليفري سريع</span>
+          </div>
+          <div class="card-actions-row">
+            <a href="activity-restaurant.html" target="_blank" class="card-btn-view"><i class="fa-solid fa-eye"></i> فتح كامل</a>
+            <button class="card-btn-select" onclick="loadActivityFromCard('restaurant')"><i class="fa-solid fa-play"></i> تجربة في المحاكي</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Supermarket -->
+      <div class="activity-card">
+        <div class="card-banner banner-supermarket">
+          <div>
+            <div class="badge-pill-light">سريع وخفيف 🛒</div>
+            <h3 style="color:#fff; font-size:1.3rem; margin-top:8px;">سوبر الأكابر</h3>
+          </div>
+          <div class="activity-icon-big">🧀</div>
+        </div>
+        <div class="card-content">
+          <div class="card-title">السوبرماركت والمواد الغذائية</div>
+          <div class="card-desc">واجهة خضراء منعشة مخصصة لمنتجات الألبان، الزيوت، الأرز، والمنظفات مع عروض التوفير الأسبوعية وطلب طلبات البيت بضغطة واحدة.</div>
+          <div class="tags-container">
+            <span class="tag-chip">عروض التوفير</span>
+            <span class="tag-chip">أقسام متعددة</span>
+            <span class="tag-chip">توصيل منزلي</span>
+          </div>
+          <div class="card-actions-row">
+            <a href="activity-supermarket.html" target="_blank" class="card-btn-view"><i class="fa-solid fa-eye"></i> فتح كامل</a>
+            <button class="card-btn-select" onclick="loadActivityFromCard('supermarket')"><i class="fa-solid fa-play"></i> تجربة في المحاكي</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Fashion -->
+      <div class="activity-card">
+        <div class="card-banner banner-fashion">
+          <div>
+            <div class="badge-pill-light">عصري وأنيق 👗</div>
+            <h3 style="color:#fff; font-size:1.3rem; margin-top:8px;">أكابر فاشون</h3>
+          </div>
+          <div class="activity-icon-big">👔</div>
+        </div>
+        <div class="card-content">
+          <div class="card-title">الأزياء والملابس والأحذية</div>
+          <div class="card-desc">تصميم فندقي أنيق بلمسات بنفسجية للملابس الراقية، مع زر تفاصيل نوع القماش ودليل المقاسات ومواصفات الصناعة.</div>
+          <div class="tags-container">
+            <span class="tag-chip">دليل المقاسات</span>
+            <span class="tag-chip">خامة قطنية</span>
+            <span class="tag-chip">معاينة قبل الدفع</span>
+          </div>
+          <div class="card-actions-row">
+            <a href="activity-fashion.html" target="_blank" class="card-btn-view"><i class="fa-solid fa-eye"></i> فتح كامل</a>
+            <button class="card-btn-select" onclick="loadActivityFromCard('fashion')"><i class="fa-solid fa-play"></i> تجربة في المحاكي</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Mobiles -->
+      <div class="activity-card">
+        <div class="card-banner banner-mobiles">
+          <div>
+            <div class="badge-pill-light">تكنولوجي حديث 📱</div>
+            <h3 style="color:#fff; font-size:1.3rem; margin-top:8px;">أكابر فون</h3>
+          </div>
+          <div class="activity-icon-big">⚡</div>
+        </div>
+        <div class="card-content">
+          <div class="card-title">الموبايلات والإلكترونيات</div>
+          <div class="card-desc">ثيم إلكتروني حديث للموبايلات، شواحن GaN، سماعات بلوتوث مع توضيح مدة الضمان والذاكرة والشحن السريع.</div>
+          <div class="tags-container">
+            <span class="tag-chip">ضمان محلي</span>
+            <span class="tag-chip">مواصفات المعالج</span>
+            <span class="tag-chip">شواحن أصلية</span>
+          </div>
+          <div class="card-actions-row">
+            <a href="activity-mobiles.html" target="_blank" class="card-btn-view"><i class="fa-solid fa-eye"></i> فتح كامل</a>
+            <button class="card-btn-select" onclick="loadActivityFromCard('mobiles')"><i class="fa-solid fa-play"></i> تجربة في المحاكي</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Butchery -->
+      <div class="activity-card">
+        <div class="card-banner banner-butchery">
+          <div>
+            <div class="badge-pill-light">طازج يومياً 🥩</div>
+            <h3 style="color:#fff; font-size:1.3rem; margin-top:8px;">مزارع الأكابر</h3>
+          </div>
+          <div class="activity-icon-big">🍖</div>
+        </div>
+        <div class="card-content">
+          <div class="card-title">الدواجن واللحوم الطازجة والأسماك</div>
+          <div class="card-desc">مزارع الدواجن واللحوم البلدي مع خيارات التقطيع (مفروم، مكعبات، شيش طاووق) والتعبئة المفرغة من الهواء.</div>
+          <div class="tags-container">
+            <span class="tag-chip">ذبح يومي حلال</span>
+            <span class="tag-chip">تغليف معقم</span>
+            <span class="tag-chip">توصيل مبرد</span>
+          </div>
+          <div class="card-actions-row">
+            <a href="activity-butchery.html" target="_blank" class="card-btn-view"><i class="fa-solid fa-eye"></i> فتح كامل</a>
+            <button class="card-btn-select" onclick="loadActivityFromCard('butchery')"><i class="fa-solid fa-play"></i> تجربة في المحاكي</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Auto Parts -->
+      <div class="activity-card">
+        <div class="card-banner banner-autoparts">
+          <div>
+            <div class="badge-pill-light">صناعي قوي ⚙️</div>
+            <h3 style="color:#fff; font-size:1.3rem; margin-top:8px;">أكابر سبيرز</h3>
+          </div>
+          <div class="activity-icon-big">🔧</div>
+        </div>
+        <div class="card-content">
+          <div class="card-title">قطع الغيار وزيوت السيارات والعدد</div>
+          <div class="card-desc">متجر تقني لعرض الزيوت التخليقية، تيل الفرامل، بوجيهات إيريديوم، والفلاتر مع كود القطعة الأصلي OEM وسنة الموديل.</div>
+          <div class="tags-container">
+            <span class="tag-chip">أكواد OEM</span>
+            <span class="tag-chip">زيوت معتمدة</span>
+            <span class="tag-chip">توافق الموديلات</span>
+          </div>
+          <div class="card-actions-row">
+            <a href="activity-autoparts.html" target="_blank" class="card-btn-view"><i class="fa-solid fa-eye"></i> فتح كامل</a>
+            <button class="card-btn-select" onclick="loadActivityFromCard('autoparts')"><i class="fa-solid fa-play"></i> تجربة في المحاكي</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OWNER SETTINGS GUIDE -->
+  <section class="guide-section">
+    <div style="text-align: center; margin-bottom: 25px;">
+      <h3 style="font-size: 1.6rem; color: #fff; font-weight: 800;">⚙️ كيفية تحكّم المالك في ثيم ومحتوى الويب سايت من الإعدادات</h3>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">
+        تمت هيكلة جميع المتاجر لترتبط مباشرة بلوحة تحكم التطبيق ونظام الإدارة:
+      </p>
+    </div>
+
+    <div class="guide-grid">
+      <div class="guide-box">
+        <div class="icon-wrap"><i class="fa-solid fa-pen-nib"></i></div>
+        <h4>1. شرح فوائد الصنف</h4>
+        <p>في كارت كل صنف في النظام، يتوفر حقل <code>ProductBenefits</code> يكتب فيه المالك الفوائد والقيمة الغذائية أو الفنية، وتظهر تلقائياً للعميل عند ضغط زر «مميزات وفوائد الصنف».</p>
+      </div>
+
+      <div class="guide-box">
+        <div class="icon-wrap"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <h4>2. اختيار ثيم النشاط التجاري</h4>
+        <p>من شاشة إعدادات النظام، يحدد المالك نشاطه (كافيه، مطعم، سوبرماركت، ملابس، هواتف، دواجن، قطع غيار) ليتم تفعيل القالب المناسب ذو الألوان والخطوط المتوافقة تلقائياً.</p>
+      </div>
+
+      <div class="guide-box">
+        <div class="icon-wrap"><i class="fa-brands fa-whatsapp"></i></div>
+        <h4>3. رقم الواتساب ورسالة الطلب</h4>
+        <p>يحدد المالك رقم الهاتف الذي يستقبل عليه الطلبات، وسيقوم النظام بتنسيق رسالة واتساب أنيقة تحتوي الأصناف، الأسعار، الإجمالي، والاسم والعنوان فوراً.</p>
+      </div>
+
+      <div class="guide-box">
+        <div class="icon-wrap"><i class="fa-solid fa-images"></i></div>
+        <h4>4. صور وبنرات العروض</h4>
+        <p>يمكن استبدال صور البنرات الإعلانية الدائرية والمستطيلة بسهولة وإضافة روابط للعروض الخاصة أو التخفيضات الأسبوعية.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PUBLISH MODAL -->
+  <div class="modal-backdrop" id="publishModal">
+    <div class="modal-dialog">
+      <div class="modal-icon">🚀</div>
+      <div class="modal-title">نشر وتفعيل المتجر</div>
+      <div class="modal-text">رابط المتجر الإلكتروني الخاص بك جاهز للمشاركة مع الزبائن والترويج على السوشيال ميديا:</div>
+      
+      <div class="copy-url-box">
+        <span id="storeGeneratedUrl">https://store.akaber.com/coffee</span>
+        <button class="btn-copy" onclick="copyStoreUrl()">نسخ الرابط</button>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn-action-primary" style="flex:1;" onclick="openStoreDirect()">
+          <i class="fa-solid fa-external-link"></i> فتح المتجر الآن
+        </button>
+        <button class="btn-action-outline" style="flex:1; margin-top:0;" onclick="closePublishModal()">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>منصة المتاجر الإلكترونية للأنشطة التجارية © 2026 – متوافقة تماماً مع نظام الكاشير وإدارة الحسابات</p>
+  </footer>
+
+  <script>
+    const activities = {
+      coffee: {
+        name: 'بن الأكابر',
+        desc: 'واجهة متخصصة لمحامص وكافيهات القهوة الفاخرة والعطارة مع اختيار درجات التحويجة وأوزان الطحن الدقيقة.',
+        file: 'activity-coffee.html',
+        specs: [
+          'مطابقة دقيقة 100% لتصميم الصورة المرفقة (بن الأكابر)',
+          'زر شرح فوائد كل توليفة ونوع قهوة من كتابة المالك',
+          '4 مربعات ثقة (شحن سريع، أصلي 100%، دفع آمن، تحويجة فورية)',
+          'تصنيفات أفقية دائرية مع أسهم تحويل وبانر إعلاني متحرك',
+          'طلب مباشر عبر واتساب وسلة سفلية متحركة'
+        ]
+      },
+      restaurant: {
+        name: 'شيف الأكابر',
+        desc: 'تصميم شهي وجذاب للمطاعم والمشاوي والوجبات السريعة مع إبراز المكونات وإضافات الكومبو.',
+        file: 'activity-restaurant.html',
+        specs: [
+          'ثيم داكن باللون الأحمر والبرتقالي يحفز الشهية',
+          'شرح مكونات كل وجبة والقيمة الغذائية والسعرات',
+          'تصنيفات: برجر، مشاوي، شاورما، مقبلات، مشروبات',
+          'طلب سريع وتوصيل ساخن مع زر واتساب عائم'
+        ]
+      },
+      supermarket: {
+        name: 'سوبر الأكابر',
+        desc: 'واجهة خفيفة وسريعة التصفح للسوبرماركت والبقالة والمواد الغذائية مع عروض التوفير.',
+        file: 'activity-supermarket.html',
+        specs: [
+          'ألوان خضراء وزرقاء منعشة تناسب السلع الاستهلاكية',
+          'عرض تاريخ الصلاحية ومصدر وتغليف المنتجات الغذائية',
+          'تصنيفات: ألبان وأجبان، زيوت وسمن، أرز وبقوليات، مجمدات',
+          'تحديث كميات السلة بضغطة زر واحدة للتسوق السريع'
+        ]
+      },
+      fashion: {
+        name: 'أكابر فاشون',
+        desc: 'تصميم فخم وأنيق للملابس والأزياء والأحذية مع تفاصيل المقاسات ونوع الأقمشة.',
+        file: 'activity-fashion.html',
+        specs: [
+          'ثيم راقٍ باللون البنفسجي الفاخر مع خطوط دقيقة',
+          'زر شرح مواصفات القماش: نوع النسيج، بلد المنشأ، إرشادات الغسيل',
+          'تصنيفات: قمصان كاجوال، بناطيل جينز، أحذية سنيكرز، إكسسوارات',
+          'معاينة المقاسات والألوان وتأكيد الطلب عبر واتساب'
+        ]
+      },
+      mobiles: {
+        name: 'أكابر فون',
+        desc: 'واجهة تكنولوجية حديثة للهواتف الذكية والإلكترونيات والإكسسوارات والشواحن السريعة.',
+        file: 'activity-mobiles.html',
+        specs: [
+          'ثيم عصري مستقبلي مع لمسات السيان والأزرق الفضائي',
+          'زر مواصفات تقنية: المعالج، البطارية، الشحن السريع، شهادة الضمان',
+          'تصنيفات: هواتف ذكية، ساعات وسماعات، شواحن GaN، كابلات معتمدة',
+          'شحن مباشر وضمان ضد عيوب الصناعة'
+        ]
+      },
+      butchery: {
+        name: 'مزارع الأكابر',
+        desc: 'متجر متخصص للدواجن واللحوم والأسماك الطازجة مع خيارات الذبح والتنظيف والتقطيع.',
+        file: 'activity-butchery.html',
+        specs: [
+          'ثيم ريفي نظيف يبرز النظافة والجودة العالية',
+          'زر تفاصيل الصنف: الذبح الحلال اليومي، نوع التربية، طريقة الحفظ',
+          'تصنيفات: دواجن طازجة، لحوم بلدي، شيش ومتبلات، أسماك بحرية',
+          'توصيل مبرد ومعقم لضمان أعلى مستويات الأمان الغذائي'
+        ]
+      },
+      autoparts: {
+        name: 'أكابر سبيرز',
+        desc: 'كتالوج تقني لقطع غيار السيارات والزيوت التخليقية والعدد مع أكواد التوافق الأصلية.',
+        file: 'activity-autoparts.html',
+        specs: [
+          'ثيم صناعي قوي بألوان الكربون والكهرمان',
+          'زر مواصفات: كود OEM الأصلي، سنة الصنع، نوع الموتور المتوافق',
+          'تصنيفات: زيوت محركات، تيل فرامل، بوجيهات وفلاتر، عدد يدوية',
+          'طلب فوري ببيانات قطعة الغيار عبر واتساب'
+        ]
+      }
+    };
+
+    let currentActivityKey = 'coffee';
+
+    function switchActivity(key, btnElement) {
+      currentActivityKey = key;
+      const data = activities[key];
+      if (!data) return;
+
+      // Update Active Tab Button
+      document.querySelectorAll('.activity-tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnElement) {
+        btnElement.classList.add('active');
+      }
+
+      // Update Phone Iframe
+      const iframe = document.getElementById('phoneIframe');
+      iframe.style.opacity = '0';
+      setTimeout(() => {
+        iframe.src = data.file;
+        iframe.onload = () => { iframe.style.opacity = '1'; };
+      }, 150);
+
+      // Update Side Info
+      document.getElementById('infoStoreName').textContent = data.name;
+      document.getElementById('infoStoreDesc').textContent = data.desc;
+      document.getElementById('btnOpenFullscreen').href = data.file;
+
+      // Update Specs List
+      const specsList = document.getElementById('infoSpecsList');
+      specsList.innerHTML = '';
+      data.specs.forEach(spec => {
+        const li = document.createElement('li');
+        li.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${spec}`;
+        specsList.appendChild(li);
+      });
+    }
+
+    function loadActivityFromCard(key) {
+      window.scrollTo({ top: 400, behavior: 'smooth' });
+      const buttons = document.querySelectorAll('.activity-tab-btn');
+      const keys = Object.keys(activities);
+      const index = keys.indexOf(key);
+      if (index !== -1 && buttons[index]) {
+        switchActivity(key, buttons[index]);
+      }
+    }
+
+    function refreshIframe() {
+      const iframe = document.getElementById('phoneIframe');
+      iframe.src = iframe.src;
+    }
+
+    function testWhatsAppLink() {
+      const data = activities[currentActivityKey];
+      alert(`💬 سيتم فتح محادثة واتساب موجهة للمتجر (${data.name}) ببيانات الطلب والسلة المحددة.`);
+    }
+
+    function openPublishModal() {
+      const data = activities[currentActivityKey];
+      const url = `https://store.akaber.com/${currentActivityKey}`;
+      document.getElementById('storeGeneratedUrl').textContent = url;
+      document.getElementById('publishModal').classList.add('active');
+    }
+
+    function closePublishModal() {
+      document.getElementById('publishModal').classList.remove('active');
+    }
+
+    function copyStoreUrl() {
+      const url = document.getElementById('storeGeneratedUrl').textContent;
+      navigator.clipboard.writeText(url).then(() => {
+        alert('✅ تم نسخ رابط المتجر بنجاح!');
+      });
+    }
+
+    function openStoreDirect() {
+      const data = activities[currentActivityKey];
+      window.open(data.file, '_blank');
+      closePublishModal();
+    }
+
+    // Close modal on click outside
+    document.getElementById('publishModal').addEventListener('click', function(e) {
+      if (e.target === this) closePublishModal();
+    });
+  </script>
+</body>
+</html>

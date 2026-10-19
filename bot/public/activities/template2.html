@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>فاير كيتشن – وجبات سريعة ولذيذة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --red: #e74c3c; --dark: #0d0d0d; --dark2: #161616; --gray: #1e1e1e; --text: #fff; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--text); }
+
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--dark);
+      border-bottom: 1px solid #2a2a2a;
+      padding: 0 28px;
+      height: 68px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { color: var(--red); font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; display: flex; align-items: center; gap: 8px; }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { color: #888; text-decoration: none; font-size: .9rem; font-weight: 600; transition: color .2s; }
+    .nav-links a:hover { color: #fff; }
+    .nav-order {
+      background: var(--red); color: #fff; border: none;
+      padding: 10px 24px; border-radius: 8px;
+      font-family: 'Cairo', sans-serif; font-size: .9rem; font-weight: 900; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; transition: opacity .2s;
+    }
+    .nav-order:hover { opacity: .88; }
+
+    .hero {
+      display: grid; grid-template-columns: 1fr 1fr; min-height: 88vh;
+    }
+    .hero-text {
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 60px 60px 60px 40px;
+      background: var(--dark);
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(231,76,60,.12); border: 1px solid rgba(231,76,60,.3);
+      color: var(--red); font-size: .78rem; font-weight: 700;
+      padding: 5px 14px; border-radius: 50px; margin-bottom: 24px; width: fit-content;
+    }
+    .hero-text h1 { font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; line-height: 1.2; margin-bottom: 18px; }
+    .hero-text h1 span { color: var(--red); }
+    .hero-text p { color: #666; font-size: 1rem; line-height: 1.8; margin-bottom: 36px; }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn-red {
+      background: var(--red); color: #fff; border: none;
+      padding: 14px 32px; border-radius: 8px;
+      font-family: 'Cairo', sans-serif; font-size: .95rem; font-weight: 900; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      transition: transform .2s;
+    }
+    .btn-red:hover { transform: translateY(-2px); }
+    .btn-ghost {
+      background: transparent; color: #666; border: 1px solid #333;
+      padding: 14px 32px; border-radius: 8px;
+      font-family: 'Cairo', sans-serif; font-size: .95rem; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      transition: border-color .2s, color .2s;
+    }
+    .btn-ghost:hover { border-color: #555; color: #fff; }
+    .hero-stats { display: flex; gap: 32px; margin-top: 40px; }
+    .stat .num { font-size: 1.8rem; font-weight: 900; color: var(--red); }
+    .stat .lbl { font-size: .75rem; color: #555; margin-top: 2px; }
+
+    .hero-visual {
+      background: linear-gradient(160deg, #1a0000 0%, #2d0000 50%, #1a0808 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 40px;
+      position: relative; overflow: hidden;
+    }
+    .hero-visual::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at center, rgba(231,76,60,.15) 0%, transparent 70%);
+    }
+    .big-emoji { font-size: 8rem; animation: float 3s ease-in-out infinite; position: relative; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+    .menu-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; position: relative; }
+    .chip {
+      background: rgba(231,76,60,.15); border: 1px solid rgba(231,76,60,.3);
+      color: var(--red); font-size: .8rem; font-weight: 700;
+      padding: 6px 16px; border-radius: 50px; cursor: pointer; transition: background .2s;
+    }
+    .chip:hover { background: rgba(231,76,60,.3); }
+    .chip.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* MENU */
+    .menu-section { padding: 80px 40px; max-width: 1200px; margin: 0 auto; }
+    .menu-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; flex-wrap: wrap; gap: 16px; }
+    .menu-header h2 { font-size: 2rem; font-weight: 900; }
+    .menu-header h2 span { color: var(--red); }
+    .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      background: var(--gray); color: #666; border: none;
+      padding: 8px 20px; border-radius: 6px;
+      font-family: 'Cairo', sans-serif; font-size: .8rem; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .tab.active { background: var(--red); color: #fff; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+    .menu-item {
+      background: var(--dark2); border: 1px solid #222; border-radius: 16px; overflow: hidden;
+      transition: border-color .3s, transform .3s;
+    }
+    .menu-item:hover { border-color: var(--red); transform: translateY(-4px); }
+    .item-img { height: 160px; display: flex; align-items: center; justify-content: center; font-size: 4rem; }
+    .bg1 { background: linear-gradient(135deg, #1a0a0a, #3d1010); }
+    .bg2 { background: linear-gradient(135deg, #0a0a1a, #10103d); }
+    .bg3 { background: linear-gradient(135deg, #0a1a0a, #103d10); }
+    .bg4 { background: linear-gradient(135deg, #1a1a0a, #3d3d10); }
+    .bg5 { background: linear-gradient(135deg, #1a0a1a, #3d103d); }
+    .bg6 { background: linear-gradient(135deg, #0a1a1a, #10383d); }
+    .item-body { padding: 16px; }
+    .item-name { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+    .item-desc { font-size: .78rem; color: #555; line-height: 1.5; margin-bottom: 12px; }
+    .item-meta { display: flex; align-items: center; justify-content: space-between; }
+    .item-price { font-size: 1.1rem; font-weight: 900; color: var(--red); }
+    .item-time { font-size: .7rem; color: #444; }
+    .order-btn {
+      background: var(--red); color: #fff; border: none;
+      width: 36px; height: 36px; border-radius: 8px;
+      font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: transform .2s;
+    }
+    .order-btn:hover { transform: scale(1.1); }
+
+    /* DELIVERY */
+    .delivery-section {
+      background: var(--gray); border-top: 1px solid #222; border-bottom: 1px solid #222;
+      padding: 60px 40px;
+    }
+    .delivery-inner { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; text-align: center; }
+    .del-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .del-title { font-size: 1rem; font-weight: 800; margin-bottom: 6px; }
+    .del-desc { font-size: .8rem; color: #555; line-height: 1.5; }
+
+    /* OFFER */
+    .offer {
+      padding: 100px 40px; background: var(--red);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    }
+    .offer h2 { font-size: clamp(1.6rem, 4vw, 2.8rem); font-weight: 900; margin-bottom: 14px; }
+    .offer p { font-size: 1rem; opacity: .85; margin-bottom: 30px; max-width: 500px; }
+    .btn-white {
+      background: #fff; color: var(--red); border: none;
+      padding: 16px 40px; border-radius: 8px;
+      font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      transition: transform .2s;
+    }
+    .btn-white:hover { transform: scale(1.04); }
+
+    footer {
+      background: #0a0a0a; padding: 60px 40px 30px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .footer-top { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+    .f-logo { color: var(--red); font-size: 1.3rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 12px; }
+    .f-desc { color: #444; font-size: .83rem; line-height: 1.7; }
+    .f-col h4 { color: #fff; font-size: .88rem; font-weight: 700; margin-bottom: 14px; }
+    .f-col ul { list-style: none; }
+    .f-col ul li { margin-bottom: 8px; }
+    .f-col ul li a { color: #444; text-decoration: none; font-size: .82rem; transition: color .2s; }
+    .f-col ul li a:hover { color: var(--red); }
+    .footer-bottom { max-width: 1200px; margin: 0 auto; padding-top: 24px; border-top: 1px solid #1a1a1a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .footer-bottom p { color: #333; font-size: .78rem; }
+
+    .back-btn {
+      position: fixed; top: 80px; right: 20px;
+      background: rgba(13,13,13,.9); color: var(--red);
+      border: 1px solid rgba(231,76,60,.3);
+      padding: 8px 16px; border-radius: 8px;
+      font-family: 'Cairo', sans-serif; font-size: .8rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; z-index: 99; backdrop-filter: blur(8px);
+    }
+
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: var(--red); color: #fff;
+      padding: 14px 28px; border-radius: 8px;
+      font-size: .88rem; font-weight: 700; z-index: 999;
+      transition: transform .4s ease;
+      box-shadow: 0 8px 30px rgba(231,76,60,.4);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-visual { min-height: 300px; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn">← القوالب</a>
+
+  <nav>
+    <div class="nav-logo">🍕 FIRE KITCHEN</div>
+    <ul class="nav-links">
+      <li><a href="#menu">القائمة</a></li>
+      <li><a href="#delivery">التوصيل</a></li>
+      <li><a href="#offer">عروض</a></li>
+    </ul>
+    <button class="nav-order" onclick="showToast('سيتم تحويلك لصفحة الطلب...')">🛒 اطلب الآن</button>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-text">
+      <div class="hero-tag">🔥 يوصل خلال 30 دقيقة</div>
+      <h1>طعم لا يُنسى<br/><span>في كل لقمة</span></h1>
+      <p>أشهى الوجبات السريعة مطبوخة بخامات طازجة يومياً.. من مطبخنا لباب بيتك مباشرة</p>
+      <div class="hero-btns">
+        <a href="#menu" class="btn-red">🍕 شوف القائمة</a>
+        <button class="btn-ghost" onclick="showToast('جاري التتبع...')">📍 تتبع طلبك</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><div class="num">+5K</div><div class="lbl">عميل سعيد</div></div>
+        <div class="stat"><div class="num">4.9 ⭐</div><div class="lbl">تقييم متوسط</div></div>
+        <div class="stat"><div class="num">30 د</div><div class="lbl">توصيل سريع</div></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="big-emoji">🍕</div>
+      <div class="menu-chips">
+        <div class="chip active">برجر</div>
+        <div class="chip">بيتزا</div>
+        <div class="chip">شاورما</div>
+        <div class="chip">دجاج</div>
+        <div class="chip">سلطات</div>
+        <div class="chip">مشروبات</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="menu-section" id="menu">
+    <div class="menu-header">
+      <h2>قائمة <span>الأكل</span></h2>
+      <div class="filter-tabs">
+        <button class="tab active">الكل</button>
+        <button class="tab" onclick="switchTab(this)">برجر</button>
+        <button class="tab" onclick="switchTab(this)">بيتزا</button>
+        <button class="tab" onclick="switchTab(this)">دجاج</button>
+      </div>
+    </div>
+    <div class="menu-grid">
+      <div class="menu-item">
+        <div class="item-img bg1">🍔</div>
+        <div class="item-body">
+          <div class="item-name">برجر اللهب الكبير</div>
+          <div class="item-desc">برجر لحم بقري ضيق مع جبنة مزدوجة وصوص خاص</div>
+          <div class="item-meta">
+            <div>
+              <div class="item-price">89 جنيه</div>
+              <div class="item-time">⏱️ 15–20 دقيقة</div>
+            </div>
+            <button class="order-btn" onclick="addItem(this)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="item-img bg2">🍕</div>
+        <div class="item-body">
+          <div class="item-name">بيتزا فاير سبيشيال</div>
+          <div class="item-desc">بيتزا بصوص الطماطم الحار والجبن المثلث ومكسبات اللحم</div>
+          <div class="item-meta">
+            <div>
+              <div class="item-price">129 جنيه</div>
+              <div class="item-time">⏱️ 20–25 دقيقة</div>
+            </div>
+            <button class="order-btn" onclick="addItem(this)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="item-img bg3">🥙</div>
+        <div class="item-body">
+          <div class="item-name">شاورما اللحم</div>
+          <div class="item-desc">شاورما لحم مشكل مع خضار طازج وصوص الثوم والطحينة</div>
+          <div class="item-meta">
+            <div>
+              <div class="item-price">59 جنيه</div>
+              <div class="item-time">⏱️ 10–15 دقيقة</div>
+            </div>
+            <button class="order-btn" onclick="addItem(this)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="item-img bg4">🍗</div>
+        <div class="item-body">
+          <div class="item-name">قطع دجاج مقرمشة</div>
+          <div class="item-desc">8 قطع دجاج مقرمشة مع صوص الباربيكيو وبطاطس</div>
+          <div class="item-meta">
+            <div>
+              <div class="item-price">75 جنيه</div>
+              <div class="item-time">⏱️ 15–20 دقيقة</div>
+            </div>
+            <button class="order-btn" onclick="addItem(this)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="item-img bg5">🌮</div>
+        <div class="item-body">
+          <div class="item-name">تاكو فاير</div>
+          <div class="item-desc">تاكو بلحم مشكل وجبنة وخضار وصوص المكسيكي</div>
+          <div class="item-meta">
+            <div>
+              <div class="item-price">65 جنيه</div>
+              <div class="item-time">⏱️ 12–18 دقيقة</div>
+            </div>
+            <button class="order-btn" onclick="addItem(this)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="item-img bg6">🥤</div>
+        <div class="item-body">
+          <div class="item-name">ميلك شيك شوكولاتة</div>
+          <div class="item-desc">ميلك شيك كريمي بالشوكولاتة مع كريمة مخفوقة وأوريو</div>
+          <div class="item-meta">
+            <div>
+              <div class="item-price">45 جنيه</div>
+              <div class="item-time">⏱️ 5 دقائق</div>
+            </div>
+            <button class="order-btn" onclick="addItem(this)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="delivery-section" id="delivery">
+    <div class="delivery-inner">
+      <div><div class="del-icon">🚀</div><div class="del-title">توصيل في 30 دقيقة</div><div class="del-desc">نلتزم بالوقت أو الطلب على حسابنا</div></div>
+      <div><div class="del-icon">📍</div><div class="del-title">تتبع فوري</div><div class="del-desc">تتبع طلبك لحظة بلحظة على الخريطة</div></div>
+      <div><div class="del-icon">💳</div><div class="del-title">دفع آمن</div><div class="del-desc">كاش أو كارت أو محافظ إلكترونية</div></div>
+      <div><div class="del-icon">♾️</div><div class="del-title">يوميًا 24/7</div><div class="del-desc">مفتوحين طول اليوم لخدمتك</div></div>
+    </div>
+  </section>
+
+  <section class="offer" id="offer">
+    <h2>🎉 اطلب 2 وجبة واحصل على الثالثة مجاناً</h2>
+    <p>عرض محدود – الجمعة والسبت فقط – لا تفوّته!</p>
+    <button class="btn-white" onclick="showToast('تم تفعيل العرض! 🎉')">🛒 اطلب العرض الآن</button>
+  </section>
+
+  <footer>
+    <div class="footer-top">
+      <div>
+        <div class="f-logo">🍕 FIRE KITCHEN</div>
+        <div class="f-desc">أشهى الوجبات السريعة في القاهرة.. من مطبخنا لبيتك مباشرة</div>
+      </div>
+      <div class="f-col"><h4>القائمة</h4><ul><li><a href="#">برجر</a></li><li><a href="#">بيتزا</a></li><li><a href="#">شاورما</a></li><li><a href="#">دجاج</a></li></ul></div>
+      <div class="f-col"><h4>خدماتنا</h4><ul><li><a href="#">التوصيل</a></li><li><a href="#">الطلب الجماعي</a></li><li><a href="#">تتبع الطلب</a></li></ul></div>
+      <div class="f-col"><h4>تواصل</h4><ul><li><a href="#">📱 01111111111</a></li><li><a href="#">💬 واتساب</a></li><li><a href="#">📍 القاهرة</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 FIRE KITCHEN – جميع الحقوق محفوظة</p>
+      <p style="color:#333">Made with 🔥 in Cairo</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast">✅ تمت الإضافة!</div>
+
+  <script>
+    let count = 0;
+    function addItem(btn) { count++; showToast('✅ تمت الإضافة للسلة! (' + count + ')'); }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+    function switchTab(el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+    }
+  </script>
+</body>
+</html>

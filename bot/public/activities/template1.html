@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>بن الأكابر – متجر القهوة الفاخرة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brown-dark: #2c1a0e;
+      --brown-mid: #5c3317;
+      --brown-light: #8b5e3c;
+      --gold: #c9a84c;
+      --gold-light: #e8c87a;
+      --cream: #fdf6ec;
+      --text: #3a2010;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Cairo', sans-serif; background: var(--cream); color: var(--text); }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      background: rgba(44,26,14,.97);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+      box-shadow: 0 2px 20px rgba(0,0,0,.4);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo .logo-circle {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+    .nav-logo .brand { color: var(--gold); font-size: 1.1rem; font-weight: 900; }
+    .nav-logo .sub { color: rgba(255,255,255,.5); font-size: .65rem; }
+
+    .nav-links { display: flex; gap: 24px; list-style: none; }
+    .nav-links a { color: rgba(255,255,255,.75); text-decoration: none; font-size: .9rem; font-weight: 600; transition: color .2s; }
+    .nav-links a:hover { color: var(--gold); }
+
+    .nav-cart {
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--brown-dark);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-family: 'Cairo', sans-serif;
+      font-size: .85rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cart-badge {
+      background: var(--brown-dark);
+      color: var(--gold);
+      border-radius: 50%;
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem;
+      font-weight: 900;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 92vh;
+      background: linear-gradient(160deg, var(--brown-dark) 0%, #3d2210 40%, #6b3d20 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a84c' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-content { position: relative; max-width: 700px; }
+    .hero-eyebrow {
+      color: var(--gold);
+      font-size: .85rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      color: #fff;
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero p {
+      color: rgba(255,255,255,.7);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      margin-bottom: 36px;
+    }
+    .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--brown-dark);
+      border: none;
+      padding: 16px 36px;
+      border-radius: 50px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,168,76,.4); }
+    .btn-outline {
+      background: transparent;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,.4);
+      padding: 16px 36px;
+      border-radius: 50px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color .2s, background .2s;
+    }
+    .btn-outline:hover { border-color: var(--gold); background: rgba(201,168,76,.1); }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,.4);
+      font-size: .8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .scroll-hint::after {
+      content: '↓';
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── FEATURES ── */
+    .features {
+      background: #fff;
+      padding: 60px 24px;
+    }
+    .features-grid {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+    }
+    .feature-item { text-align: center; }
+    .feature-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      margin: 0 auto 14px;
+    }
+    .feature-item h3 { font-size: 1rem; font-weight: 700; color: var(--brown-dark); margin-bottom: 6px; }
+    .feature-item p { font-size: .82rem; color: #888; line-height: 1.6; }
+
+    /* ── CATEGORIES ── */
+    .categories { padding: 80px 24px; max-width: 1200px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-eyebrow { color: var(--gold); font-size: .8rem; font-weight: 700; letter-spacing: 3px; margin-bottom: 8px; }
+    .section-header h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 900; color: var(--brown-dark); }
+    .section-header p { color: #888; margin-top: 10px; font-size: .9rem; }
+
+    .cats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .cat-card {
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      transition: transform .3s;
+    }
+    .cat-card:hover { transform: scale(1.03); }
+    .cat-bg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 5rem; }
+    .cat-bg.c1 { background: linear-gradient(135deg, #3d1f0a, #6b3d1a); }
+    .cat-bg.c2 { background: linear-gradient(135deg, #1a3d0a, #3d6b1a); }
+    .cat-bg.c3 { background: linear-gradient(135deg, #0a1a3d, #1a3d6b); }
+    .cat-bg.c4 { background: linear-gradient(135deg, #3d0a1a, #6b1a3d); }
+    .cat-overlay {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(transparent, rgba(0,0,0,.8));
+    }
+    .cat-name { color: #fff; font-size: 1.1rem; font-weight: 900; }
+    .cat-count { color: rgba(255,255,255,.6); font-size: .75rem; margin-top: 2px; }
+    .cat-arrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      background: var(--gold);
+      color: var(--brown-dark);
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    /* ── PRODUCTS ── */
+    .products-section { background: var(--cream); padding: 80px 24px; }
+    .products-inner { max-width: 1200px; margin: 0 auto; }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .product-card {
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,.06);
+      transition: transform .3s, box-shadow .3s;
+    }
+    .product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(0,0,0,.12); }
+    .product-img {
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+    }
+    .product-img.p1 { background: linear-gradient(135deg, #3d2210, #6b3d20); }
+    .product-img.p2 { background: linear-gradient(135deg, #2a1a06, #5c3d1a); }
+    .product-img.p3 { background: linear-gradient(135deg, #0d1a0d, #1a3d1a); }
+    .product-img.p4 { background: linear-gradient(135deg, #1a0d0d, #3d1a1a); }
+    .product-img.p5 { background: linear-gradient(135deg, #1a1209, #3d2d18); }
+    .product-img.p6 { background: linear-gradient(135deg, #0d0d1a, #1a1a3d); }
+    .product-body { padding: 18px; }
+    .product-name { font-size: 1rem; font-weight: 800; color: var(--brown-dark); margin-bottom: 4px; }
+    .product-desc { font-size: .78rem; color: #999; line-height: 1.5; margin-bottom: 12px; }
+    .product-weight { font-size: .73rem; color: #bbb; margin-bottom: 12px; }
+    .product-footer { display: flex; align-items: center; justify-content: space-between; }
+    .product-price { font-size: 1.1rem; font-weight: 900; color: var(--brown-mid); }
+    .add-btn {
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--brown-dark);
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-family: 'Cairo', sans-serif;
+      font-size: .8rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform .2s;
+    }
+    .add-btn:hover { transform: scale(1.05); }
+
+    /* ── TESTIMONIALS ── */
+    .testimonials { background: var(--brown-dark); padding: 80px 24px; }
+    .test-inner { max-width: 1000px; margin: 0 auto; }
+    .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 48px; }
+    .test-card {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(201,168,76,.15);
+      border-radius: 18px;
+      padding: 28px;
+    }
+    .stars { color: var(--gold); font-size: 1rem; margin-bottom: 12px; }
+    .test-text { color: rgba(255,255,255,.75); font-size: .88rem; line-height: 1.7; margin-bottom: 18px; font-style: italic; }
+    .test-author { display: flex; align-items: center; gap: 10px; }
+    .author-avatar {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+    .author-name { color: #fff; font-weight: 700; font-size: .88rem; }
+    .author-loc { color: rgba(255,255,255,.4); font-size: .75rem; }
+
+    /* ── OFFER BANNER ── */
+    .offer-banner {
+      background: linear-gradient(135deg, var(--gold) 0%, #e8c87a 100%);
+      padding: 60px 24px;
+      text-align: center;
+    }
+    .offer-banner h2 { font-size: clamp(1.4rem, 4vw, 2.2rem); font-weight: 900; color: var(--brown-dark); margin-bottom: 12px; }
+    .offer-banner p { color: var(--brown-mid); font-size: .95rem; margin-bottom: 28px; }
+    .btn-dark {
+      background: var(--brown-dark);
+      color: var(--gold);
+      border: none;
+      padding: 16px 40px;
+      border-radius: 50px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: transform .2s;
+    }
+    .btn-dark:hover { transform: scale(1.04); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #1a0e06;
+      padding: 60px 24px 30px;
+    }
+    .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; }
+    .footer-brand .logo { color: var(--gold); font-size: 1.3rem; font-weight: 900; margin-bottom: 12px; }
+    .footer-brand p { color: rgba(255,255,255,.5); font-size: .83rem; line-height: 1.7; }
+    .footer-col h4 { color: var(--gold); font-size: .9rem; font-weight: 700; margin-bottom: 14px; }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 8px; }
+    .footer-col ul li a { color: rgba(255,255,255,.5); text-decoration: none; font-size: .83rem; transition: color .2s; }
+    .footer-col ul li a:hover { color: var(--gold); }
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 40px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .footer-bottom p { color: rgba(255,255,255,.3); font-size: .78rem; }
+    .social-icons { display: flex; gap: 12px; }
+    .social-icon {
+      width: 36px; height: 36px;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.4);
+      font-size: .9rem;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+    }
+    .social-icon:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* CART TOAST */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: linear-gradient(135deg, var(--brown-dark), var(--brown-mid));
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-size: .88rem;
+      font-weight: 700;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform .4s ease;
+      box-shadow: 0 8px 30px rgba(0,0,0,.4);
+      border: 1px solid rgba(201,168,76,.3);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* BACK BUTTON */
+    .back-btn {
+      position: fixed;
+      top: 85px;
+      right: 20px;
+      background: rgba(44,26,14,.9);
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,.3);
+      padding: 8px 16px;
+      border-radius: 50px;
+      font-family: 'Cairo', sans-serif;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      z-index: 99;
+      backdrop-filter: blur(8px);
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="index.html" class="back-btn">← القوالب</a>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">
+      <div class="logo-circle">☕</div>
+      <div>
+        <div class="brand">بن الأكابر</div>
+        <div class="sub">لأن الجودة حكمة والأصالة تميز</div>
+      </div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#products">الأصناف</a></li>
+      <li><a href="#categories">الفئات</a></li>
+      <li><a href="#reviews">آراء العملاء</a></li>
+      <li><a href="#contact">تواصل</a></li>
+    </ul>
+    <button class="nav-cart" onclick="showToast('🛒 السلة فارغة')">
+      🛒 السلة
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-eyebrow">☕ منذ عام 1998</div>
+      <h1>من قلب <span>الطبيعة</span><br/>أفضل أنواع البن</h1>
+      <p>بن مختار بعناية من أجود المزارع العالمية<br/>بطعم أصيل يرضي ذوقك ويُرضي من تُحب</p>
+      <div class="hero-btns">
+        <a href="#products" class="btn-primary">🛒 تسوق الآن</a>
+        <a href="#categories" class="btn-outline">📋 قائمة الأصناف</a>
+      </div>
+    </div>
+    <div class="scroll-hint">تصفح للأسفل</div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon">🌿</div>
+        <h3>جودة عالية</h3>
+        <p>نختار أجود أنواع البن من أفضل المزارع العالمية</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🚚</div>
+        <h3>توصيل سريع</h3>
+        <p>نوصل لجميع المناطق خلال 24–48 ساعة</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">💰</div>
+        <h3>أسعار مناسبة</h3>
+        <p>أفضل قيمة مقابل السعر مع ضمان الجودة</p>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔒</div>
+        <h3>دفع آمن</h3>
+        <p>طرق دفع متعددة وآمنة 100%</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORIES -->
+  <section class="categories" id="categories">
+    <div class="section-header">
+      <div class="section-eyebrow">CATEGORIES</div>
+      <h2>أصناف البن</h2>
+      <p>اختر من مجموعتنا المتنوعة من أجود أنواع البن</p>
+    </div>
+    <div class="cats-grid">
+      <div class="cat-card">
+        <div class="cat-bg c1">☕</div>
+        <div class="cat-overlay">
+          <div class="cat-name">بن ناعم</div>
+          <div class="cat-count">12 منتج متاح</div>
+          <div class="cat-arrow">تصفح ←</div>
+        </div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-bg c2">🫘</div>
+        <div class="cat-overlay">
+          <div class="cat-name">بن محوج</div>
+          <div class="cat-count">8 منتجات متاحة</div>
+          <div class="cat-arrow">تصفح ←</div>
+        </div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-bg c3">🌿</div>
+        <div class="cat-overlay">
+          <div class="cat-name">بن سادة</div>
+          <div class="cat-count">6 منتجات متاحة</div>
+          <div class="cat-arrow">تصفح ←</div>
+        </div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-bg c4">✨</div>
+        <div class="cat-overlay">
+          <div class="cat-name">خلطات خاصة</div>
+          <div class="cat-count">10 منتجات متاحة</div>
+          <div class="cat-arrow">تصفح ←</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="products-section" id="products">
+    <div class="products-inner">
+      <div class="section-header">
+        <div class="section-eyebrow">FEATURED PRODUCTS</div>
+        <h2>منتجاتنا المميزة</h2>
+        <p>أفضل ما لدينا من أجود أنواع البن</p>
+      </div>
+      <div class="products-grid">
+        <div class="product-card">
+          <div class="product-img p1">☕</div>
+          <div class="product-body">
+            <div class="product-name">بن محوج فاخر</div>
+            <div class="product-desc">بن محوج بخلطة سرية من أجود الأعشاب العربية</div>
+            <div class="product-weight">⚖️ وزن 250 جرام</div>
+            <div class="product-footer">
+              <div class="product-price">200 جنيه</div>
+              <button class="add-btn" onclick="addToCart(this)">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-img p2">🫘</div>
+          <div class="product-body">
+            <div class="product-name">بن سادة أصيل</div>
+            <div class="product-desc">بن عربي أصيل بنكهة هادئة ومميزة</div>
+            <div class="product-weight">⚖️ وزن 250 جرام</div>
+            <div class="product-footer">
+              <div class="product-price">180 جنيه</div>
+              <button class="add-btn" onclick="addToCart(this)">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-img p3">🌿</div>
+          <div class="product-body">
+            <div class="product-name">بن نكهة مشكلة</div>
+            <div class="product-desc">خلطة مميزة من أجود أنواع البن بنكهات متعددة</div>
+            <div class="product-weight">⚖️ وزن 250 جرام</div>
+            <div class="product-footer">
+              <div class="product-price">220 جنيه</div>
+              <button class="add-btn" onclick="addToCart(this)">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-img p4">☕</div>
+          <div class="product-body">
+            <div class="product-name">بن ناعم ممتاز</div>
+            <div class="product-desc">بن ناعم من أفضل المزارع اليمنية</div>
+            <div class="product-weight">⚖️ وزن 500 جرام</div>
+            <div class="product-footer">
+              <div class="product-price">350 جنيه</div>
+              <button class="add-btn" onclick="addToCart(this)">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-img p5">✨</div>
+          <div class="product-body">
+            <div class="product-name">خلطة الأكابر الخاصة</div>
+            <div class="product-desc">الخلطة السرية التي أسست بها المحل – نكهة لا تُنسى</div>
+            <div class="product-weight">⚖️ وزن 250 جرام</div>
+            <div class="product-footer">
+              <div class="product-price">280 جنيه</div>
+              <button class="add-btn" onclick="addToCart(this)">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-img p6">🎁</div>
+          <div class="product-body">
+            <div class="product-name">باقة الهدية الفاخرة</div>
+            <div class="product-desc">هدية مثالية تحتوي على 3 أنواع مختارة من البن مع كوب فاخر</div>
+            <div class="product-weight">⚖️ وزن 750 جرام</div>
+            <div class="product-footer">
+              <div class="product-price">550 جنيه</div>
+              <button class="add-btn" onclick="addToCart(this)">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="testimonials" id="reviews">
+    <div class="test-inner">
+      <div class="section-header" style="color:#fff">
+        <div class="section-eyebrow">REVIEWS</div>
+        <h2 style="color:#fff">آراء عملائنا</h2>
+        <p style="color:rgba(255,255,255,.5)">ماذا يقول عملاؤنا عن تجربتهم معنا</p>
+      </div>
+      <div class="test-grid">
+        <div class="test-card">
+          <div class="stars">★★★★★</div>
+          <div class="test-text">"والله من زمان مش لاقي بن بنكهة زي كده.. بن الأكابر بجد غير عن أي حاجة تانية. هجيب منهم دايماً"</div>
+          <div class="test-author">
+            <div class="author-avatar">😊</div>
+            <div>
+              <div class="author-name">أحمد محمود</div>
+              <div class="author-loc">📍 القاهرة</div>
+            </div>
+          </div>
+        </div>
+        <div class="test-card">
+          <div class="stars">★★★★★</div>
+          <div class="test-text">"توصيل سريع ومنتج ممتاز.. البن وصل تاني يوم وكان مضبوط التعبئة ومش فيه أي حاجة ناقصة. شكراً جداً"</div>
+          <div class="test-author">
+            <div class="author-avatar">🙂</div>
+            <div>
+              <div class="author-name">سارة علي</div>
+              <div class="author-loc">📍 الإسكندرية</div>
+            </div>
+          </div>
+        </div>
+        <div class="test-card">
+          <div class="stars">★★★★☆</div>
+          <div class="test-text">"خلطة الأكابر الخاصة ده شيء تاني.. بجد مش هعمل قهوتي بأي حاجة غيرها تاني. التغليف جميل كمان"</div>
+          <div class="test-author">
+            <div class="author-avatar">😄</div>
+            <div>
+              <div class="author-name">محمد عبدالله</div>
+              <div class="author-loc">📍 الجيزة</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OFFER BANNER -->
+  <section class="offer-banner">
+    <h2>☕ قهوة بطعم مختلف لأنك تستحق الأفضل</h2>
+    <p>تواصل معنا على واتساب للحصول على عروض خاصة وخصومات للطلبات الكبيرة</p>
+    <a href="#contact" class="btn-dark">💬 تواصل معنا الآن</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer id="contact">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">☕ بن الأكابر</div>
+        <p>لأن الجودة حكمة والأصالة تميز.. نقدم لك أجود أنواع البن منذ عام 1998</p>
+      </div>
+      <div class="footer-col">
+        <h4>روابط سريعة</h4>
+        <ul>
+          <li><a href="#products">منتجاتنا</a></li>
+          <li><a href="#categories">الأصناف</a></li>
+          <li><a href="#reviews">آراء العملاء</a></li>
+          <li><a href="#">سياسة الإرجاع</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>خدمة العملاء</h4>
+        <ul>
+          <li><a href="#">واتساب</a></li>
+          <li><a href="#">اتصل بنا</a></li>
+          <li><a href="#">تتبع طلبك</a></li>
+          <li><a href="#">الأسئلة الشائعة</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>تواصل معنا</h4>
+        <ul>
+          <li><a href="#">📱 01000000000</a></li>
+          <li><a href="#">📧 info@coffee.com</a></li>
+          <li><a href="#">📍 القاهرة، مصر</a></li>
+          <li><a href="#">🕐 9 ص – 11 م</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 بن الأكابر – جميع الحقوق محفوظة</p>
+      <div class="social-icons">
+        <div class="social-icon">f</div>
+        <div class="social-icon">in</div>
+        <div class="social-icon">tw</div>
+        <div class="social-icon">yt</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">✅ تمت الإضافة للسلة!</div>
+
+  <script>
+    let cartCount = 0;
+    function addToCart(btn) {
+      cartCount++;
+      document.getElementById('cartBadge').textContent = cartCount;
+      showToast('✅ تمت الإضافة للسلة!');
+    }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+  </script>
+</body>
+</html>

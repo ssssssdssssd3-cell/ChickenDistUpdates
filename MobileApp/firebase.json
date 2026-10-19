@@ -43,7 +43,15 @@
       { "source": "/store", "destination": "/store.html" },
       { "source": "/store/**", "destination": "/store.html" },
       { "source": "/upload", "destination": "/upload.html" },
-      { "source": "/upload/**", "destination": "/upload.html" }
+      { "source": "/upload/**", "destination": "/upload.html" },
+      { "source": "/activities", "destination": "/activities/index.html" },
+      { "source": "/coffee", "destination": "/activities/activity-coffee.html" },
+      { "source": "/restaurant", "destination": "/activities/activity-restaurant.html" },
+      { "source": "/supermarket", "destination": "/activities/activity-supermarket.html" },
+      { "source": "/fashion", "destination": "/activities/activity-fashion.html" },
+      { "source": "/mobiles", "destination": "/activities/activity-mobiles.html" },
+      { "source": "/butchery", "destination": "/activities/activity-butchery.html" },
+      { "source": "/autoparts", "destination": "/activities/activity-autoparts.html" }
     ]
   },
   "database": {

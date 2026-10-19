@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MONO – مطعم عصري بسيط</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --black: #000; --white: #fff; --gray-light: #f5f5f5; --gray: #888; --gray-dark: #222; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Cairo', sans-serif; background: var(--white); color: var(--black); }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--white); border-bottom: 2px solid var(--black);
+      padding: 0 40px; height: 70px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-size: 1.4rem; font-weight: 900; letter-spacing: 6px; color: var(--black); }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--gray); text-decoration: none; font-size: .85rem; font-weight: 700; letter-spacing: 1px; transition: color .2s; }
+    .nav-links a:hover { color: var(--black); }
+    .nav-order {
+      background: var(--black); color: var(--white); border: none;
+      padding: 10px 28px; font-family: 'Cairo', sans-serif; font-size: .85rem;
+      font-weight: 900; cursor: pointer; letter-spacing: 1px; transition: opacity .2s;
+    }
+    .nav-order:hover { opacity: .8; }
+
+    /* HERO */
+    .hero {
+      display: grid; grid-template-columns: 1fr 1fr;
+      min-height: 88vh;
+    }
+    .hero-left {
+      background: var(--black);
+      padding: 60px 60px 60px 40px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .hero-tag { color: var(--gray); font-size: .75rem; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 24px; }
+    .hero-left h1 { color: var(--white); font-size: clamp(2.2rem, 4vw, 3.8rem); font-weight: 900; line-height: 1.2; margin-bottom: 20px; }
+    .hero-left p { color: var(--gray); font-size: .95rem; line-height: 1.9; margin-bottom: 36px; max-width: 380px; }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn-white {
+      background: var(--white); color: var(--black); border: none;
+      padding: 14px 36px; font-family: 'Cairo', sans-serif;
+      font-size: .9rem; font-weight: 900; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      transition: opacity .2s;
+    }
+    .btn-white:hover { opacity: .85; }
+    .btn-outline-w {
+      background: transparent; color: var(--white); border: 2px solid rgba(255,255,255,.3);
+      padding: 14px 36px; font-family: 'Cairo', sans-serif;
+      font-size: .9rem; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      transition: border-color .2s;
+    }
+    .btn-outline-w:hover { border-color: rgba(255,255,255,.7); }
+
+    .hero-right {
+      background: var(--gray-light);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+    }
+    .hero-cell {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 30px; background: var(--white); gap: 10px;
+      border: 1px solid #eee;
+      transition: background .2s;
+    }
+    .hero-cell:hover { background: var(--black); }
+    .hero-cell:hover .cell-emoji { filter: grayscale(0); }
+    .hero-cell:hover .cell-name { color: var(--white); }
+    .cell-emoji { font-size: 3rem; }
+    .cell-name { font-size: .9rem; font-weight: 700; color: var(--black); }
+
+    /* STRIP */
+    .strip {
+      background: var(--black); padding: 30px 40px;
+      display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;
+    }
+    .strip-item { text-align: center; }
+    .strip-item .num { color: var(--white); font-size: 1.8rem; font-weight: 900; }
+    .strip-item .lbl { color: var(--gray); font-size: .75rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+
+    /* MENU */
+    .menu { padding: 80px 40px; background: var(--white); }
+    .menu-inner { max-width: 1200px; margin: 0 auto; }
+    .sec-head { margin-bottom: 50px; }
+    .sec-head .eyebrow { font-size: .72rem; letter-spacing: 4px; color: var(--gray); text-transform: uppercase; margin-bottom: 8px; }
+    .sec-head h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 900; }
+    .sec-head .line { width: 40px; height: 3px; background: var(--black); margin-top: 12px; }
+
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2px; }
+    .m-item {
+      border: 1px solid #eee; padding: 28px;
+      transition: background .2s, border-color .2s;
+      cursor: pointer;
+    }
+    .m-item:hover { background: var(--black); border-color: var(--black); }
+    .m-item:hover .m-name { color: var(--white); }
+    .m-item:hover .m-desc { color: rgba(255,255,255,.5); }
+    .m-item:hover .m-price { color: var(--white); }
+    .m-item:hover .m-time { color: rgba(255,255,255,.3); }
+    .m-item:hover .m-order { background: var(--white); color: var(--black); }
+    .m-emoji { font-size: 2.8rem; margin-bottom: 14px; }
+    .m-name { font-size: 1rem; font-weight: 800; color: var(--black); margin-bottom: 6px; transition: color .2s; }
+    .m-desc { font-size: .78rem; color: var(--gray); line-height: 1.5; margin-bottom: 18px; transition: color .2s; }
+    .m-footer { display: flex; align-items: center; justify-content: space-between; }
+    .m-price-wrap {}
+    .m-price { font-size: 1.1rem; font-weight: 900; color: var(--black); transition: color .2s; }
+    .m-time { font-size: .7rem; color: #bbb; margin-top: 2px; transition: color .2s; }
+    .m-order {
+      background: var(--black); color: var(--white); border: none;
+      padding: 10px 20px; font-family: 'Cairo', sans-serif;
+      font-size: .78rem; font-weight: 900; cursor: pointer; transition: all .2s;
+    }
+
+    /* PROCESS */
+    .process { background: var(--gray-light); padding: 80px 40px; }
+    .process-inner { max-width: 1000px; margin: 0 auto; }
+    .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 40px; margin-top: 50px; }
+    .step { text-align: center; }
+    .step-num {
+      width: 60px; height: 60px;
+      border: 2px solid var(--black);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 900;
+      margin: 0 auto 16px;
+    }
+    .step h4 { font-size: .9rem; font-weight: 800; margin-bottom: 6px; }
+    .step p { font-size: .78rem; color: var(--gray); line-height: 1.5; }
+
+    /* CTA */
+    .cta { background: var(--black); padding: 100px 40px; text-align: center; }
+    .cta h2 { color: var(--white); font-size: clamp(1.6rem, 4vw, 3rem); font-weight: 900; margin-bottom: 16px; }
+    .cta p { color: var(--gray); font-size: .95rem; margin-bottom: 36px; }
+    .btn-cta {
+      background: var(--white); color: var(--black); border: none;
+      padding: 18px 50px; font-family: 'Cairo', sans-serif;
+      font-size: 1rem; font-weight: 900; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      transition: opacity .2s;
+    }
+    .btn-cta:hover { opacity: .88; }
+
+    /* FOOTER */
+    footer {
+      background: var(--white); border-top: 2px solid var(--black); padding: 60px 40px 30px;
+    }
+    .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+    .f-logo { font-size: 1.4rem; font-weight: 900; letter-spacing: 6px; margin-bottom: 12px; }
+    .f-desc { color: var(--gray); font-size: .82rem; line-height: 1.7; }
+    .f-col h4 { font-size: .78rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+    .f-col ul { list-style: none; }
+    .f-col li { margin-bottom: 8px; }
+    .f-col a { color: var(--gray); text-decoration: none; font-size: .82rem; transition: color .2s; }
+    .f-col a:hover { color: var(--black); }
+    .footer-bottom { max-width: 1200px; margin: 0 auto; padding-top: 24px; border-top: 1px solid #eee; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .footer-bottom p { color: #bbb; font-size: .78rem; }
+
+    .back-btn {
+      position: fixed; top: 82px; right: 20px;
+      background: var(--black); color: var(--white);
+      border: none; padding: 8px 16px;
+      font-family: 'Cairo', sans-serif; font-size: .8rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; z-index: 99;
+    }
+
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: var(--black); color: var(--white);
+      padding: 14px 28px; font-size: .88rem; font-weight: 700;
+      z-index: 999; transition: transform .4s ease;
+      border-bottom: 3px solid var(--white);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn">← القوالب</a>
+
+  <nav>
+    <div class="nav-logo">MONO</div>
+    <ul class="nav-links">
+      <li><a href="#menu">MENU</a></li>
+      <li><a href="#process">HOW IT WORKS</a></li>
+      <li><a href="#contact">CONTACT</a></li>
+    </ul>
+    <button class="nav-order" onclick="showToast('جاري فتح صفحة الطلب...')">ORDER NOW →</button>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-tag">EST. 2020 · CAIRO, EGYPT</div>
+      <h1>Simple.<br/>Fresh.<br/>Perfect.</h1>
+      <p>بساطة في التصميم.. أصالة في الطعم.. كل وجبة مصنوعة بعناية لتجربة لا تُنسى</p>
+      <div class="hero-btns">
+        <a href="#menu" class="btn-white">← اطلب الآن</a>
+        <a href="#process" class="btn-outline-w">كيف نعمل؟</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-cell"><div class="cell-emoji">🍔</div><div class="cell-name">برجر</div></div>
+      <div class="hero-cell"><div class="cell-emoji">🍟</div><div class="cell-name">بطاطس</div></div>
+      <div class="hero-cell"><div class="cell-emoji">🥤</div><div class="cell-name">مشروبات</div></div>
+      <div class="hero-cell"><div class="cell-emoji">🥗</div><div class="cell-name">سلطات</div></div>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="strip-item"><div class="num">+10K</div><div class="lbl">Happy Customers</div></div>
+    <div class="strip-item"><div class="num">4.9 ⭐</div><div class="lbl">Average Rating</div></div>
+    <div class="strip-item"><div class="num">30 MIN</div><div class="lbl">Delivery Time</div></div>
+    <div class="strip-item"><div class="num">24/7</div><div class="lbl">Always Open</div></div>
+  </div>
+
+  <section class="menu" id="menu">
+    <div class="menu-inner">
+      <div class="sec-head">
+        <div class="eyebrow">OUR MENU</div>
+        <h2>قائمة الأكل</h2>
+        <div class="line"></div>
+      </div>
+      <div class="menu-grid">
+        <div class="m-item">
+          <div class="m-emoji">🍔</div>
+          <div class="m-name">البرجر الكلاسيك</div>
+          <div class="m-desc">لحم بقري طازج مع جبنة شيدر وخس وطماطم وصوص بيت</div>
+          <div class="m-footer">
+            <div class="m-price-wrap"><div class="m-price">85 جنيه</div><div class="m-time">⏱️ 15 دقيقة</div></div>
+            <button class="m-order" onclick="addOrder()">+ أضف</button>
+          </div>
+        </div>
+        <div class="m-item">
+          <div class="m-emoji">🍟</div>
+          <div class="m-name">بطاطس مقرمشة</div>
+          <div class="m-desc">بطاطس مقلية ذهبية بتوابل سرية مع صوص الثوم والكيتشاب</div>
+          <div class="m-footer">
+            <div class="m-price-wrap"><div class="m-price">35 جنيه</div><div class="m-time">⏱️ 8 دقائق</div></div>
+            <button class="m-order" onclick="addOrder()">+ أضف</button>
+          </div>
+        </div>
+        <div class="m-item">
+          <div class="m-emoji">🥗</div>
+          <div class="m-name">سلطة فريش</div>
+          <div class="m-desc">خضار طازجة موسمية مع صلصة الليمون والزيت والأعشاب</div>
+          <div class="m-footer">
+            <div class="m-price-wrap"><div class="m-price">42 جنيه</div><div class="m-time">⏱️ 5 دقائق</div></div>
+            <button class="m-order" onclick="addOrder()">+ أضف</button>
+          </div>
+        </div>
+        <div class="m-item">
+          <div class="m-emoji">🥤</div>
+          <div class="m-name">عصير مانجو طازج</div>
+          <div class="m-desc">مانجو طازجة 100% بدون إضافات وبدون سكر زيادة</div>
+          <div class="m-footer">
+            <div class="m-price-wrap"><div class="m-price">38 جنيه</div><div class="m-time">⏱️ 3 دقائق</div></div>
+            <button class="m-order" onclick="addOrder()">+ أضف</button>
+          </div>
+        </div>
+        <div class="m-item">
+          <div class="m-emoji">🍕</div>
+          <div class="m-name">بيتزا مارجريتا</div>
+          <div class="m-desc">بيتزا إيطالية بصوص الطماطم الطازجة وجبنة موزاريلا</div>
+          <div class="m-footer">
+            <div class="m-price-wrap"><div class="m-price">120 جنيه</div><div class="m-time">⏱️ 20 دقيقة</div></div>
+            <button class="m-order" onclick="addOrder()">+ أضف</button>
+          </div>
+        </div>
+        <div class="m-item">
+          <div class="m-emoji">🍰</div>
+          <div class="m-name">تشيز كيك نيويورك</div>
+          <div class="m-desc">تشيز كيك كريمي بقاعدة البسكويت مع صوص التوت الأحمر</div>
+          <div class="m-footer">
+            <div class="m-price-wrap"><div class="m-price">65 جنيه</div><div class="m-time">⏱️ جاهز فوراً</div></div>
+            <button class="m-order" onclick="addOrder()">+ أضف</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="process" id="process">
+    <div class="process-inner">
+      <div class="sec-head">
+        <div class="eyebrow">HOW IT WORKS</div>
+        <h2>كيف تطلب؟</h2>
+        <div class="line"></div>
+      </div>
+      <div class="process-steps">
+        <div class="step"><div class="step-num">01</div><h4>اختر وجبتك</h4><p>تصفح القائمة واختر ما يناسب ذوقك من تشكيلتنا المتنوعة</p></div>
+        <div class="step"><div class="step-num">02</div><h4>أضف للسلة</h4><p>أضف الوجبات للسلة وحدد الكميات وأي إضافات تريدها</p></div>
+        <div class="step"><div class="step-num">03</div><h4>ادفع بأمان</h4><p>اختر طريقة الدفع المناسبة لك – كاش أو كارت أو فودافون</p></div>
+        <div class="step"><div class="step-num">04</div><h4>استلم طلبك</h4><p>نوصل الطلب لبابك خلال 30 دقيقة ساخن وطازج</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>جاهز تطلب؟</h2>
+    <p>اطلب الآن واستمتع بأشهى الوجبات في راحة بيتك</p>
+    <button class="btn-cta" onclick="showToast('جاري فتح صفحة الطلب...')">🛒 اطلب الآن ←</button>
+  </section>
+
+  <footer id="contact">
+    <div class="footer-grid">
+      <div><div class="f-logo">MONO</div><div class="f-desc">بساطة في التصميم.. أصالة في الطعم.. منذ 2020 من قلب القاهرة</div></div>
+      <div class="f-col"><h4>MENU</h4><ul><li><a href="#">برجر</a></li><li><a href="#">بطاطس</a></li><li><a href="#">سلطات</a></li><li><a href="#">مشروبات</a></li></ul></div>
+      <div class="f-col"><h4>SERVICES</h4><ul><li><a href="#">التوصيل</a></li><li><a href="#">تتبع الطلب</a></li><li><a href="#">العروض</a></li></ul></div>
+      <div class="f-col"><h4>CONTACT</h4><ul><li><a href="#">📱 01000000000</a></li><li><a href="#">📧 hello@mono.eg</a></li><li><a href="#">📍 القاهرة</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 MONO Restaurant. All rights reserved.</p>
+      <p>Made in Cairo 🇪🇬</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast">✓ تمت الإضافة للسلة</div>
+
+  <script>
+    let cnt = 0;
+    function addOrder() { cnt++; showToast('✓ تمت الإضافة (' + cnt + ')'); }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+  </script>
+</body>
+</html>

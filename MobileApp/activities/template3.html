@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>المطبخ الصحي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #2d5016;
+      --light-green: #4a7c22;
+      --cream: #fdf8f0;
+      --white: #fff;
+      --gray: #666;
+      --light-gray: #f5f5f5;
+      --shadow: 0 4px 20px rgba(45,80,22,0.12);
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Cairo', sans-serif; background: var(--cream); color: #333; direction: rtl; }
+
+    /* ── Back Button ── */
+    .back-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 9999;
+      background: var(--white);
+      color: var(--green);
+      border: 2px solid var(--green);
+      padding: 8px 18px;
+      border-radius: 25px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .25s;
+      box-shadow: var(--shadow);
+    }
+    .back-btn:hover { background: var(--green); color: var(--white); }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 70px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    .navbar-logo {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .navbar-logo span { font-size: 28px; }
+    .navbar-links { display: flex; gap: 30px; list-style: none; align-items: center; }
+    .navbar-links a { color: rgba(255,255,255,0.88); text-decoration: none; font-size: 15px; font-weight: 600; transition: color .2s; }
+    .navbar-links a:hover { color: var(--white); }
+    .navbar-order {
+      background: var(--white);
+      color: var(--green);
+      border: none;
+      padding: 10px 26px;
+      border-radius: 25px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all .25s;
+    }
+    .navbar-order:hover { background: var(--cream); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+    .hamburger span { width: 25px; height: 3px; background: var(--white); border-radius: 3px; transition: all .3s; }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, var(--green) 0%, var(--light-green) 60%, #6aa32e 100%);
+      min-height: 88vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 780px; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.35);
+      padding: 7px 22px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      backdrop-filter: blur(6px);
+    }
+    .hero h1 {
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 22px;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.25);
+    }
+    .hero-desc {
+      font-size: 18px;
+      color: rgba(255,255,255,0.88);
+      line-height: 1.8;
+      margin-bottom: 38px;
+      max-width: 520px;
+      margin-inline: auto;
+    }
+    .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--white);
+      color: var(--green);
+      padding: 15px 36px;
+      border-radius: 30px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .25s;
+      display: inline-block;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.25); }
+    .btn-outline {
+      background: transparent;
+      color: var(--white);
+      padding: 15px 36px;
+      border-radius: 30px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      border: 2px solid rgba(255,255,255,0.7);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .25s;
+      display: inline-block;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.12); border-color: var(--white); }
+    .hero-emojis {
+      margin-top: 50px;
+      display: flex;
+      gap: 18px;
+      justify-content: center;
+      font-size: 42px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+    /* ── Features Bar ── */
+    .features-bar {
+      background: var(--white);
+      padding: 40px 40px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+    .feature-item {
+      text-align: center;
+      padding: 24px 16px;
+      border-radius: 12px;
+      transition: background .25s;
+    }
+    .feature-item:hover { background: var(--light-gray); }
+    .feature-icon { font-size: 36px; margin-bottom: 10px; }
+    .feature-title { font-size: 16px; font-weight: 800; color: var(--green); margin-bottom: 4px; }
+    .feature-desc { font-size: 13px; color: var(--gray); }
+
+    /* ── Section Header ── */
+    .section { padding: 80px 40px; }
+    .section-header { text-align: center; margin-bottom: 50px; }
+    .section-eyebrow { font-size: 13px; font-weight: 700; color: var(--light-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+    .section-title { font-size: clamp(28px, 4vw, 42px); font-weight: 900; color: var(--green); margin-bottom: 14px; }
+    .section-line { width: 60px; height: 4px; background: linear-gradient(90deg, var(--green), var(--light-green)); border-radius: 2px; margin: 0 auto; }
+
+    /* ── Products Grid ── */
+    .products-section { background: var(--cream); }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .product-card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 30px 24px 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: transform .3s, box-shadow .3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .product-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--green), var(--light-green));
+    }
+    .product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 35px rgba(45,80,22,0.18); }
+    .product-emoji { font-size: 72px; line-height: 1; margin-bottom: 16px; display: block; }
+    .product-name { font-size: 19px; font-weight: 800; color: #222; margin-bottom: 6px; }
+    .product-weight { font-size: 13px; color: var(--gray); margin-bottom: 14px; }
+    .product-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+    .product-price { font-size: 22px; font-weight: 900; color: var(--green); }
+    .product-price sup { font-size: 13px; }
+    .add-btn {
+      background: var(--green);
+      color: var(--white);
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .25s;
+      box-shadow: 0 4px 12px rgba(45,80,22,0.3);
+    }
+    .add-btn:hover { background: var(--light-green); transform: scale(1.12); }
+
+    /* ── Testimonials ── */
+    .testimonials-section {
+      background: linear-gradient(135deg, var(--green), var(--light-green));
+      padding: 80px 40px;
+    }
+    .testimonials-section .section-title,
+    .testimonials-section .section-eyebrow { color: var(--white); }
+    .testimonials-section .section-line { background: rgba(255,255,255,0.5); }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .testimonial-card {
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 28px 24px;
+      color: var(--white);
+    }
+    .testimonial-stars { font-size: 18px; margin-bottom: 12px; letter-spacing: 2px; }
+    .testimonial-text { font-size: 15px; line-height: 1.75; margin-bottom: 18px; color: rgba(255,255,255,0.9); font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .testimonial-name { font-size: 15px; font-weight: 700; }
+    .testimonial-role { font-size: 12px; color: rgba(255,255,255,0.65); }
+
+    /* ── CTA Banner ── */
+    .cta-section {
+      background: var(--cream);
+      padding: 80px 40px;
+      text-align: center;
+    }
+    .cta-box {
+      background: linear-gradient(135deg, var(--green), var(--light-green));
+      border-radius: 24px;
+      padding: 60px 40px;
+      max-width: 760px;
+      margin: 0 auto;
+      color: var(--white);
+    }
+    .cta-box h2 { font-size: 34px; font-weight: 900; margin-bottom: 14px; }
+    .cta-box p { font-size: 17px; color: rgba(255,255,255,0.85); margin-bottom: 32px; }
+    .whatsapp-btn {
+      background: #25d366;
+      color: var(--white);
+      padding: 16px 40px;
+      border-radius: 30px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      transition: all .25s;
+      box-shadow: 0 6px 20px rgba(37,211,102,0.4);
+    }
+    .whatsapp-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(37,211,102,0.5); background: #1fb858; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--green);
+      color: rgba(255,255,255,0.82);
+      padding: 60px 40px 30px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 36px;
+      max-width: 1100px;
+      margin: 0 auto 40px;
+    }
+    .footer-col h4 { color: var(--white); font-size: 16px; font-weight: 800; margin-bottom: 16px; }
+    .footer-logo-text { font-size: 22px; font-weight: 900; color: var(--white); margin-bottom: 10px; }
+    .footer-col p, .footer-col li { font-size: 14px; line-height: 2; }
+    .footer-col ul { list-style: none; }
+    .footer-col a { color: rgba(255,255,255,0.75); text-decoration: none; transition: color .2s; }
+    .footer-col a:hover { color: var(--white); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.15);
+      padding-top: 22px;
+      text-align: center;
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .social-icons { display: flex; gap: 10px; margin-top: 12px; }
+    .social-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: background .2s;
+      text-decoration: none;
+    }
+    .social-icon:hover { background: rgba(255,255,255,0.25); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--green);
+      color: var(--white);
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: 0 8px 30px rgba(45,80,22,0.35);
+      z-index: 9999;
+      transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .products-grid { grid-template-columns: repeat(2, 1fr); }
+      .features-bar { grid-template-columns: repeat(2, 1fr); padding: 30px 20px; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .navbar { padding: 0 20px; }
+      .navbar-links { display: none; }
+      .navbar-links.open { display: flex; flex-direction: column; position: absolute; top: 70px; right: 0; left: 0; background: var(--green); padding: 20px; gap: 16px; }
+      .hamburger { display: flex; }
+      .products-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .section { padding: 50px 20px; }
+      .features-bar { grid-template-columns: repeat(2, 1fr); padding: 20px 15px; }
+      .cta-box { padding: 40px 24px; }
+      footer { padding: 40px 20px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Back Button -->
+  <a href="index.html" class="back-btn">&#8592; رجوع</a>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">🛒 تمت الإضافة إلى السلة!</div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="#" class="navbar-logo"><span>🥗</span> المطبخ الصحي</a>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+    <ul class="navbar-links" id="nav-links">
+      <li><a href="#">الرئيسية</a></li>
+      <li><a href="#">قائمتنا</a></li>
+      <li><a href="#">عروض</a></li>
+      <li><a href="#">تواصل معنا</a></li>
+    </ul>
+    <button class="navbar-order" onclick="showToast('جاري تحضير طلبك! 🥗')">اطلب الآن</button>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">🌿 أكل صحي حقيقي</div>
+      <h1>طازج.. صحي.. لذيذ</h1>
+      <p class="hero-desc">نقدم لك أشهى الأطباق الصحية المحضّرة يومياً من أجود المكونات الطبيعية الطازجة، بدون مواد حافظة أو إضافات اصطناعية</p>
+      <div class="hero-btns">
+        <a href="#menu" class="btn-primary">تصفح القائمة</a>
+        <a href="#" class="btn-outline" onclick="showToast('جاري تحضير طلبك! 🥗')">اطلب الآن</a>
+      </div>
+      <div class="hero-emojis">🥗🥙🥤🫐🥑</div>
+    </div>
+  </section>
+
+  <!-- Features Bar -->
+  <div class="features-bar">
+    <div class="feature-item">
+      <div class="feature-icon">🌿</div>
+      <div class="feature-title">طازج يومياً</div>
+      <div class="feature-desc">نحضّر أطباقنا يومياً من مكونات طازجة</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">✅</div>
+      <div class="feature-title">خالي من المواد الحافظة</div>
+      <div class="feature-desc">بدون إضافات اصطناعية أو مواد حافظة</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">توصيل 30 دقيقة</div>
+      <div class="feature-desc">نوصل طلبك ساخناً وطازجاً في 30 دقيقة</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">💰</div>
+      <div class="feature-title">أسعار مناسبة</div>
+      <div class="feature-desc">جودة عالية بأسعار تناسب الجميع</div>
+    </div>
+  </div>
+
+  <!-- Products -->
+  <section class="section products-section" id="menu">
+    <div class="section-header">
+      <div class="section-eyebrow">قائمة الطعام</div>
+      <h2 class="section-title">أشهى الأطباق الصحية</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="products-grid">
+
+      <div class="product-card">
+        <span class="product-emoji">🥗</span>
+        <div class="product-name">سلطة خضراء</div>
+        <div class="product-weight">خس، خيار، طماطم، زيتون • 350 جم</div>
+        <div class="product-footer">
+          <div class="product-price">45<sup>ج</sup></div>
+          <button class="add-btn" onclick="showToast('✅ تمت إضافة السلطة الخضراء!')">+</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <span class="product-emoji">🫘</span>
+        <div class="product-name">بول صحي</div>
+        <div class="product-weight">فول، زيت زيتون، ليمون، ثوم • 400 جم</div>
+        <div class="product-footer">
+          <div class="product-price">65<sup>ج</sup></div>
+          <button class="add-btn" onclick="showToast('✅ تمت إضافة البول الصحي!')">+</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <span class="product-emoji">🥤</span>
+        <div class="product-name">عصير طازج</div>
+        <div class="product-weight">برتقال، ليمون، جزر طازج • 400 مل</div>
+        <div class="product-footer">
+          <div class="product-price">25<sup>ج</sup></div>
+          <button class="add-btn" onclick="showToast('✅ تمت إضافة العصير الطازج!')">+</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <span class="product-emoji">🌯</span>
+        <div class="product-name">رول دجاج</div>
+        <div class="product-weight">دجاج مشوي، خضار، صوص لايت • 300 جم</div>
+        <div class="product-footer">
+          <div class="product-price">55<sup>ج</sup></div>
+          <button class="add-btn" onclick="showToast('✅ تمت إضافة رول الدجاج!')">+</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <span class="product-emoji">🥬</span>
+        <div class="product-name">سموذي خضار</div>
+        <div class="product-weight">سبانخ، أفوكادو، موز، حليب لوز • 350 مل</div>
+        <div class="product-footer">
+          <div class="product-price">35<sup>ج</sup></div>
+          <button class="add-btn" onclick="showToast('✅ تمت إضافة سموذي الخضار!')">+</button>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <span class="product-emoji">🍗</span>
+        <div class="product-name">طبق بروتين</div>
+        <div class="product-weight">صدر دجاج، بيضة، كينوا، خضار • 500 جم</div>
+        <div class="product-footer">
+          <div class="product-price">75<sup>ج</sup></div>
+          <button class="add-btn" onclick="showToast('✅ تمت إضافة طبق البروتين!')">+</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="testimonials-section">
+    <div class="section-header">
+      <div class="section-eyebrow" style="color:rgba(255,255,255,0.7)">آراء عملائنا</div>
+      <h2 class="section-title" style="color:var(--white)">ماذا يقولون عنا</h2>
+      <div class="section-line" style="background:rgba(255,255,255,0.4)"></div>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testimonial-text">"أفضل مطعم صحي جربته! الأكل طازج جداً والتوصيل سريع. أنصح الكل بتجربته."</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">👩</div>
+          <div>
+            <div class="testimonial-name">نور محمد</div>
+            <div class="testimonial-role">عميلة منذ 2023</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testimonial-text">"بدأت رحلتي الصحية معهم منذ 6 أشهر، وفعلاً الفرق واضح. الأكل لذيذ وصحي في نفس الوقت!"</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">👨</div>
+          <div>
+            <div class="testimonial-name">أحمد خالد</div>
+            <div class="testimonial-role">عميل منذ 2022</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testimonial-text">"السموذي والسلطة هنا لا مثيل لهم. كل مرة أطلب منهم يصلني الطلب ساخناً وفي الوقت المحدد."</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">👩</div>
+          <div>
+            <div class="testimonial-name">سارة علي</div>
+            <div class="testimonial-role">عميلة منذ 2024</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-box">
+      <h2>ابدأ رحلتك الصحية اليوم! 🌿</h2>
+      <p>تواصل معنا عبر واتساب واطلب وجبتك الصحية الآن — توصيل سريع لباب بيتك</p>
+      <a href="https://wa.me/201000000000" class="whatsapp-btn" target="_blank">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.117 1.528 5.847L0 24l6.335-1.508A11.956 11.956 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.369l-.36-.213-3.76.895.939-3.671-.234-.376A9.818 9.818 0 012.182 12C2.182 6.565 6.565 2.182 12 2.182S21.818 6.565 21.818 12 17.435 21.818 12 21.818z"/></svg>
+        اطلب عبر واتساب
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="footer-logo-text">🥗 المطبخ الصحي</div>
+        <p>نحن نؤمن أن الطعام الصحي يجب أن يكون لذيذاً وميسور التكلفة للجميع.</p>
+        <div class="social-icons" style="margin-top:16px">
+          <a href="#" class="social-icon">📘</a>
+          <a href="#" class="social-icon">📸</a>
+          <a href="#" class="social-icon">🐦</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>روابط سريعة</h4>
+        <ul>
+          <li><a href="#">الرئيسية</a></li>
+          <li><a href="#">قائمة الطعام</a></li>
+          <li><a href="#">عروض اليوم</a></li>
+          <li><a href="#">من نحن</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>خدمة العملاء</h4>
+        <ul>
+          <li><a href="#">تتبع طلبك</a></li>
+          <li><a href="#">سياسة الإرجاع</a></li>
+          <li><a href="#">الأسئلة الشائعة</a></li>
+          <li><a href="#">تواصل معنا</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>تواصل معنا</h4>
+        <ul>
+          <li>📞 19900</li>
+          <li>📧 hello@healthykitchen.eg</li>
+          <li>📍 القاهرة، مصر</li>
+          <li>🕐 يومياً 8ص - 12م</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 المطبخ الصحي. جميع الحقوق محفوظة.</p>
+    </div>
+  </footer>
+
+  <script>
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg || '🛒 تمت الإضافة إلى السلة!';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

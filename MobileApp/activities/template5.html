@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ستريت بايتس – أكل الشارع الحقيقي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #ff4500; --orange-dark: #cc3700; --yellow: #ffd700;
+      --white: #fff; --light: #fff8f0; --text: #1a0a00;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Cairo', sans-serif; background: var(--light); color: var(--text); }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--orange-dark);
+      padding: 0 24px; height: 66px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(204,55,0,.4);
+    }
+    .nav-logo { color: var(--white); font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+    .nav-links { display: flex; gap: 20px; list-style: none; }
+    .nav-links a { color: rgba(255,255,255,.8); text-decoration: none; font-size: .88rem; font-weight: 700; transition: color .2s; }
+    .nav-links a:hover { color: var(--yellow); }
+    .nav-order {
+      background: var(--yellow); color: var(--orange-dark); border: none;
+      padding: 10px 22px; border-radius: 50px;
+      font-family: 'Cairo', sans-serif; font-size: .88rem; font-weight: 900; cursor: pointer;
+      transition: transform .2s;
+    }
+    .nav-order:hover { transform: scale(1.06); }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(160deg, var(--orange) 0%, var(--orange-dark) 100%);
+      padding: 80px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      min-height: 80vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-emoji { font-size: 5rem; margin-bottom: 20px; animation: bounce2 1.5s ease-in-out infinite; position: relative; }
+    @keyframes bounce2 { 0%,100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-12px) rotate(5deg); } }
+    .hero h1 { font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 900; color: #fff; margin-bottom: 16px; position: relative; }
+    .hero h1 span { color: var(--yellow); text-shadow: 0 2px 8px rgba(0,0,0,.3); }
+    .hero p { color: rgba(255,255,255,.88); font-size: 1.05rem; line-height: 1.8; margin-bottom: 36px; max-width: 600px; position: relative; }
+    .hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; }
+    .btn-yellow {
+      background: var(--yellow); color: var(--orange-dark); border: none;
+      padding: 16px 40px; border-radius: 50px;
+      font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      box-shadow: 0 6px 20px rgba(0,0,0,.2); transition: transform .2s;
+    }
+    .btn-yellow:hover { transform: scale(1.05); }
+    .btn-wh {
+      background: rgba(255,255,255,.15); color: #fff; border: 2px solid rgba(255,255,255,.5);
+      padding: 16px 36px; border-radius: 50px;
+      font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+      transition: background .2s;
+    }
+    .btn-wh:hover { background: rgba(255,255,255,.25); }
+
+    /* TICKER */
+    .ticker {
+      background: var(--yellow); padding: 12px 0; overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker-inner {
+      display: inline-flex; gap: 60px;
+      animation: ticker 20s linear infinite;
+    }
+    @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .ticker-item { font-size: .85rem; font-weight: 900; color: var(--orange-dark); }
+
+    /* CATEGORIES */
+    .cats { padding: 60px 24px; background: #fff; }
+    .cats-inner { max-width: 1000px; margin: 0 auto; }
+    .sec-title { text-align: center; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 900; color: var(--text); margin-bottom: 32px; }
+    .sec-title span { color: var(--orange); }
+    .cat-chips { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .cat-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--light); border: 2px solid #eee;
+      padding: 12px 24px; border-radius: 50px;
+      font-size: .9rem; font-weight: 700; cursor: pointer;
+      transition: all .2s;
+    }
+    .cat-chip:hover, .cat-chip.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+    .cat-chip .emoji { font-size: 1.3rem; }
+
+    /* MENU */
+    .menu { padding: 60px 24px; background: var(--light); }
+    .menu-inner { max-width: 1200px; margin: 0 auto; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+    .menu-card {
+      background: #fff; border-radius: 20px; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,.06);
+      transition: transform .3s, box-shadow .3s;
+    }
+    .menu-card:hover { transform: translateY(-6px); box-shadow: 0 12px 36px rgba(255,69,0,.12); }
+    .card-header {
+      height: 170px; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .card-emoji { font-size: 4rem; }
+    .bg-o1 { background: linear-gradient(135deg, #ff6633, #ff4500); }
+    .bg-o2 { background: linear-gradient(135deg, #ff8c00, #ff6000); }
+    .bg-o3 { background: linear-gradient(135deg, #cc0033, #990022); }
+    .bg-o4 { background: linear-gradient(135deg, #006633, #004d26); }
+    .bg-o5 { background: linear-gradient(135deg, #ff4500, #cc2200); }
+    .bg-o6 { background: linear-gradient(135deg, #cc6600, #994d00); }
+    .hot-badge {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--yellow); color: var(--orange-dark);
+      font-size: .65rem; font-weight: 900;
+      padding: 3px 10px; border-radius: 50px;
+    }
+    .card-body { padding: 18px; }
+    .card-name { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+    .card-desc { font-size: .78rem; color: #888; line-height: 1.5; margin-bottom: 14px; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-price { font-size: 1.15rem; font-weight: 900; color: var(--orange); }
+    .card-time { font-size: .72rem; color: #bbb; }
+    .add-btn {
+      background: var(--orange); color: #fff; border: none;
+      padding: 10px 18px; border-radius: 10px;
+      font-family: 'Cairo', sans-serif; font-size: .8rem; font-weight: 900; cursor: pointer;
+      transition: transform .2s;
+    }
+    .add-btn:hover { transform: scale(1.08); }
+
+    /* DELIVERY STRIP */
+    .delivery-strip {
+      background: var(--orange); padding: 50px 24px;
+      display: flex; align-items: center; justify-content: space-around;
+      flex-wrap: wrap; gap: 30px; text-align: center;
+    }
+    .d-item .icon { font-size: 2.2rem; margin-bottom: 6px; }
+    .d-item .d-title { color: #fff; font-size: .95rem; font-weight: 900; }
+    .d-item .d-sub { color: rgba(255,255,255,.7); font-size: .78rem; margin-top: 2px; }
+
+    /* SOCIAL PROOF */
+    .proof { background: #fff; padding: 60px 24px; }
+    .proof-inner { max-width: 900px; margin: 0 auto; }
+    .proof-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center; }
+    .proof-num { font-size: 2.5rem; font-weight: 900; color: var(--orange); }
+    .proof-lbl { font-size: .85rem; color: #888; font-weight: 600; margin-top: 4px; }
+
+    /* BANNER */
+    .banner {
+      background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+      padding: 70px 24px; text-align: center;
+    }
+    .banner h2 { font-size: clamp(1.4rem, 4vw, 2.4rem); font-weight: 900; color: #fff; margin-bottom: 14px; }
+    .banner p { color: rgba(255,255,255,.85); font-size: .95rem; margin-bottom: 28px; }
+
+    footer {
+      background: var(--orange-dark); padding: 50px 24px 24px;
+    }
+    .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 32px; }
+    .f-logo { color: var(--yellow); font-size: 1.1rem; font-weight: 900; margin-bottom: 10px; }
+    .f-desc { color: rgba(255,255,255,.5); font-size: .8rem; line-height: 1.6; }
+    .f-col h4 { color: var(--yellow); font-size: .85rem; font-weight: 700; margin-bottom: 12px; }
+    .f-col ul { list-style: none; }
+    .f-col ul li { margin-bottom: 7px; }
+    .f-col ul li a { color: rgba(255,255,255,.5); text-decoration: none; font-size: .8rem; transition: color .2s; }
+    .f-col ul li a:hover { color: var(--yellow); }
+    .footer-bottom { max-width: 1200px; margin: 30px auto 0; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.1); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .footer-bottom p { color: rgba(255,255,255,.3); font-size: .78rem; }
+
+    .back-btn {
+      position: fixed; top: 78px; right: 20px;
+      background: rgba(204,55,0,.9); color: var(--yellow);
+      border: 1px solid var(--yellow); padding: 8px 16px; border-radius: 50px;
+      font-family: 'Cairo', sans-serif; font-size: .8rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; z-index: 99; backdrop-filter: blur(6px);
+    }
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: var(--orange-dark); color: var(--yellow);
+      border: 2px solid var(--yellow); padding: 14px 28px; border-radius: 50px;
+      font-size: .88rem; font-weight: 900; z-index: 999; transition: transform .4s ease;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 700px) { .nav-links { display: none; } }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn">← القوالب</a>
+
+  <nav>
+    <div class="nav-logo">🌮 ستريت بايتس</div>
+    <ul class="nav-links">
+      <li><a href="#menu">القائمة</a></li>
+      <li><a href="#delivery">التوصيل</a></li>
+      <li><a href="#offers">عروض</a></li>
+    </ul>
+    <button class="nav-order" onclick="showToast('🚀 جاري فتح صفحة الطلب...')">🛒 اطلب دلوقتي!</button>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-emoji">🌮</div>
+    <h1>أكل الشارع<br/><span>🔥 الحقيقي!</span></h1>
+    <p>شاورما.. فلافل.. كشري.. برجر.. كل اللي بتحبه في مكان واحد بأسعار تسعدك!</p>
+    <div class="hero-btns">
+      <a href="#menu" class="btn-yellow">🛒 اطلب الآن</a>
+      <a href="#offers" class="btn-wh">🎁 شوف العروض</a>
+    </div>
+  </section>
+
+  <div class="ticker">
+    <div class="ticker-inner">
+      <span class="ticker-item">🥙 شاورما</span><span class="ticker-item">🧆 فلافل</span><span class="ticker-item">🍔 برجر</span><span class="ticker-item">🍕 بيتزا</span><span class="ticker-item">🌮 تاكو</span><span class="ticker-item">🍜 كشري</span><span class="ticker-item">🥤 مشروبات</span><span class="ticker-item">🍟 بطاطس</span>
+      <span class="ticker-item">🥙 شاورما</span><span class="ticker-item">🧆 فلافل</span><span class="ticker-item">🍔 برجر</span><span class="ticker-item">🍕 بيتزا</span><span class="ticker-item">🌮 تاكو</span><span class="ticker-item">🍜 كشري</span><span class="ticker-item">🥤 مشروبات</span><span class="ticker-item">🍟 بطاطس</span>
+    </div>
+  </div>
+
+  <section class="cats">
+    <div class="cats-inner">
+      <h2 class="sec-title">اختار <span>أكلتك</span> المفضلة</h2>
+      <div class="cat-chips">
+        <div class="cat-chip active"><span class="emoji">🍔</span> برجر</div>
+        <div class="cat-chip"><span class="emoji">🥙</span> شاورما</div>
+        <div class="cat-chip"><span class="emoji">🧆</span> فلافل</div>
+        <div class="cat-chip"><span class="emoji">🍕</span> بيتزا</div>
+        <div class="cat-chip"><span class="emoji">🍜</span> كشري</div>
+        <div class="cat-chip"><span class="emoji">🥤</span> مشروبات</div>
+        <div class="cat-chip"><span class="emoji">🍟</span> بطاطس</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="menu" id="menu">
+    <div class="menu-inner">
+      <h2 class="sec-title">الأكثر <span>طلباً</span> عندنا</h2>
+      <div class="menu-grid">
+        <div class="menu-card">
+          <div class="card-header bg-o1"><div class="card-emoji">🥙</div><div class="hot-badge">🔥 الأكثر طلباً</div></div>
+          <div class="card-body">
+            <div class="card-name">شاورما لحم</div>
+            <div class="card-desc">لحم مشكل مشوي على الحطب مع خضار وصوص الثوم والطحينة</div>
+            <div class="card-footer">
+              <div><div class="card-price">59 جنيه</div><div class="card-time">⏱️ 10 د</div></div>
+              <button class="add-btn" onclick="addToCart()">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="card-header bg-o2"><div class="card-emoji">🧆</div></div>
+          <div class="card-body">
+            <div class="card-name">فلافل مقرمش</div>
+            <div class="card-desc">فلافل طازجة مقرمشة مع طحينة وسلطة وخضار مشكل</div>
+            <div class="card-footer">
+              <div><div class="card-price">35 جنيه</div><div class="card-time">⏱️ 8 د</div></div>
+              <button class="add-btn" onclick="addToCart()">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="card-header bg-o3"><div class="card-emoji">🍔</div><div class="hot-badge">جديد ✨</div></div>
+          <div class="card-body">
+            <div class="card-name">برجر الشارع الضيق</div>
+            <div class="card-desc">برجر بلحم بلدي ضيق مع جبنة وصوص بيت وبطاطس</div>
+            <div class="card-footer">
+              <div><div class="card-price">79 جنيه</div><div class="card-time">⏱️ 15 د</div></div>
+              <button class="add-btn" onclick="addToCart()">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="card-header bg-o4"><div class="card-emoji">🍜</div></div>
+          <div class="card-body">
+            <div class="card-name">كشري إسكندراني</div>
+            <div class="card-desc">كشري أصيل بالصلصة الحارة والبصل المقلي والخل</div>
+            <div class="card-footer">
+              <div><div class="card-price">29 جنيه</div><div class="card-time">⏱️ 5 د</div></div>
+              <button class="add-btn" onclick="addToCart()">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="card-header bg-o5"><div class="card-emoji">🌮</div></div>
+          <div class="card-body">
+            <div class="card-name">تاكو مكسيكي</div>
+            <div class="card-desc">تاكو مقرمش بلحم مشكل وجبنة وجواكامولي</div>
+            <div class="card-footer">
+              <div><div class="card-price">65 جنيه</div><div class="card-time">⏱️ 12 د</div></div>
+              <button class="add-btn" onclick="addToCart()">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-card">
+          <div class="card-header bg-o6"><div class="card-emoji">🥤</div><div class="hot-badge">🧃 طازج</div></div>
+          <div class="card-body">
+            <div class="card-name">عصير مانجو طازج</div>
+            <div class="card-desc">مانجو طازج 100% بدون إضافات بدون سكر زيادة</div>
+            <div class="card-footer">
+              <div><div class="card-price">32 جنيه</div><div class="card-time">⏱️ 5 د</div></div>
+              <button class="add-btn" onclick="addToCart()">🛒 أضف</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="delivery-strip" id="delivery">
+    <div class="d-item"><div class="icon">🚀</div><div class="d-title">توصيل 30 دقيقة</div><div class="d-sub">أو الطلب على حسابنا!</div></div>
+    <div class="d-item"><div class="icon">📍</div><div class="d-title">تتبع فوري</div><div class="d-sub">عارف طلبك فين دايماً</div></div>
+    <div class="d-item"><div class="icon">💳</div><div class="d-title">دفع سهل</div><div class="d-sub">كاش أو كارت أو فودافون كاش</div></div>
+    <div class="d-item"><div class="icon">⭐</div><div class="d-title">4.9 تقييم</div><div class="d-sub">أكتر من 5000 عميل سعيد</div></div>
+  </section>
+
+  <section class="proof">
+    <div class="proof-inner">
+      <h2 class="sec-title" style="margin-bottom:40px">أرقام <span>تتكلم</span></h2>
+      <div class="proof-grid">
+        <div><div class="proof-num">5,000+</div><div class="proof-lbl">عميل سعيد</div></div>
+        <div><div class="proof-num">50,000+</div><div class="proof-lbl">وجبة موصلة</div></div>
+        <div><div class="proof-num">4.9 ⭐</div><div class="proof-lbl">متوسط التقييم</div></div>
+        <div><div class="proof-num">30 د</div><div class="proof-lbl">متوسط وقت التوصيل</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="banner" id="offers">
+    <h2>🎉 اطلب وجبتين واحصل على الثالثة مجاناً!</h2>
+    <p>عرض الجمعة والسبت فقط – العرض لمدة محدودة لا تفوّته!</p>
+    <button class="btn-yellow" style="border:none" onclick="showToast('🎉 تم تفعيل العرض! اطلب الآن')">🛒 اطلب العرض الآن</button>
+  </section>
+
+  <footer>
+    <div class="footer-grid">
+      <div><div class="f-logo">🌮 ستريت بايتس</div><div class="f-desc">أكل الشارع الحقيقي – من قلب القاهرة لبيتك مباشرة</div></div>
+      <div class="f-col"><h4>القائمة</h4><ul><li><a href="#">شاورما</a></li><li><a href="#">فلافل</a></li><li><a href="#">برجر</a></li><li><a href="#">كشري</a></li></ul></div>
+      <div class="f-col"><h4>خدماتنا</h4><ul><li><a href="#">التوصيل</a></li><li><a href="#">تتبع الطلب</a></li><li><a href="#">العروض</a></li></ul></div>
+      <div class="f-col"><h4>تواصل</h4><ul><li><a href="#">📱 01234567890</a></li><li><a href="#">💬 واتساب</a></li><li><a href="#">📍 القاهرة</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 ستريت بايتس – جميع الحقوق محفوظة</p>
+      <p style="color:rgba(255,255,255,.2)">بيحبك ❤️ فريق ستريت بايتس</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast">✅ تمت الإضافة!</div>
+
+  <script>
+    let c = 0;
+    function addToCart() { c++; showToast('✅ تمت الإضافة! (' + c + ')'); }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+    document.querySelectorAll('.cat-chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

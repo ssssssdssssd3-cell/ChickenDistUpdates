@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لاكشري جولد | LA MAISON</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #e8c87a;
+      --gold-dim: rgba(201,168,76,0.18);
+      --black: #0a0a0a;
+      --dark: #111;
+      --dark2: #161616;
+      --dark3: #1c1c1c;
+      --white: #ffffff;
+      --text-muted: rgba(255,255,255,0.55);
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Cairo', sans-serif; background: var(--black); color: var(--white); direction: rtl; }
+
+    /* ── Back Button ── */
+    .back-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 9999;
+      background: transparent;
+      color: var(--gold);
+      border: 1.5px solid var(--gold);
+      padding: 8px 18px;
+      border-radius: 4px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .25s;
+      letter-spacing: 0.5px;
+    }
+    .back-btn:hover { background: var(--gold); color: var(--black); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: var(--dark3);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+      padding: 14px 32px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      z-index: 9999;
+      transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 72px;
+    }
+    .navbar-logo {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 4px;
+      text-decoration: none;
+      font-style: italic;
+    }
+    .navbar-links { display: flex; gap: 36px; list-style: none; align-items: center; }
+    .navbar-links a {
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: color .2s;
+      opacity: 0.8;
+    }
+    .navbar-links a:hover { opacity: 1; }
+    .navbar-reserve {
+      background: transparent;
+      color: var(--gold);
+      border: 1.5px solid var(--gold);
+      padding: 9px 24px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .25s;
+    }
+    .navbar-reserve:hover { background: var(--gold); color: var(--black); }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+    .hamburger span { width: 24px; height: 2px; background: var(--gold); transition: all .3s; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      background: var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before, .hero::after {
+      content: '';
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .hero::before { top: 60px; }
+    .hero::after { bottom: 60px; }
+    .hero-inner { position: relative; z-index: 1; max-width: 800px; }
+    .hero-eyebrow {
+      font-size: 11px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 28px;
+      font-weight: 600;
+    }
+    .hero h1 {
+      font-size: clamp(44px, 7vw, 84px);
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1.1;
+      margin-bottom: 28px;
+    }
+    .hero-divider {
+      width: 80px;
+      height: 1px;
+      background: var(--gold);
+      margin: 0 auto 28px;
+    }
+    .hero-subtitle {
+      font-size: 17px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.85;
+      margin-bottom: 44px;
+      max-width: 500px;
+      margin-inline: auto;
+      margin-bottom: 44px;
+    }
+    .hero-btns { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+    .btn-gold {
+      background: var(--gold);
+      color: var(--black);
+      padding: 15px 38px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all .25s;
+    }
+    .btn-gold:hover { background: var(--gold-light); transform: translateY(-2px); }
+    .btn-gold-outline {
+      background: transparent;
+      color: var(--gold);
+      padding: 15px 38px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      border: 1.5px solid var(--gold);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all .25s;
+    }
+    .btn-gold-outline:hover { background: var(--gold-dim); }
+
+    /* ── Experience Numbers ── */
+    .experience-section {
+      background: var(--dark);
+      padding: 80px 40px;
+      border-top: 1px solid rgba(201,168,76,0.12);
+      border-bottom: 1px solid rgba(201,168,76,0.12);
+    }
+    .experience-header { text-align: center; margin-bottom: 60px; }
+    .section-eyebrow { font-size: 11px; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; font-weight: 600; margin-bottom: 14px; }
+    .section-title { font-size: clamp(26px, 3.5vw, 38px); font-weight: 900; color: var(--white); }
+    .section-line { width: 50px; height: 1px; background: var(--gold); margin: 18px auto 0; }
+    .experience-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(201,168,76,0.12);
+    }
+    .experience-item {
+      background: var(--dark);
+      text-align: center;
+      padding: 48px 32px;
+      transition: background .3s;
+    }
+    .experience-item:hover { background: var(--dark2); }
+    .experience-number {
+      font-size: 58px;
+      font-weight: 900;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .experience-label { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .experience-desc { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+
+    /* ── Menu Section ── */
+    .menu-section {
+      background: var(--black);
+      padding: 90px 40px;
+    }
+    .menu-header { text-align: center; margin-bottom: 60px; }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .menu-card {
+      background: var(--dark);
+      border: 1px solid rgba(201,168,76,0.15);
+      padding: 36px 30px;
+      transition: border-color .3s, transform .3s;
+    }
+    .menu-card:hover { border-color: rgba(201,168,76,0.5); transform: translateY(-4px); }
+    .menu-category-icon { font-size: 32px; margin-bottom: 14px; }
+    .menu-category-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--gold);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .menu-category-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .menu-divider { border: none; border-top: 1px solid rgba(201,168,76,0.15); margin-bottom: 20px; }
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+      gap: 8px;
+    }
+    .menu-item-name { font-size: 14px; color: rgba(255,255,255,0.82); font-weight: 600; flex: 1; }
+    .menu-item-dots {
+      flex: 1;
+      border-bottom: 1px dotted rgba(201,168,76,0.3);
+      margin: 0 8px;
+      height: 1px;
+      align-self: center;
+    }
+    .menu-item-price { font-size: 14px; color: var(--gold); font-weight: 700; white-space: nowrap; }
+
+    /* ── Reservation ── */
+    .reservation-section {
+      background: var(--dark2);
+      padding: 90px 40px;
+      border-top: 1px solid rgba(201,168,76,0.1);
+    }
+    .reservation-header { text-align: center; margin-bottom: 50px; }
+    .reservation-form {
+      max-width: 700px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label {
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .form-group input,
+    .form-group select {
+      background: var(--black);
+      border: 1px solid rgba(201,168,76,0.35);
+      color: var(--white);
+      padding: 13px 16px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .25s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .form-group select { cursor: pointer; }
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--gold); }
+    .form-group input::placeholder { color: rgba(255,255,255,0.25); }
+    .form-group input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) hue-rotate(10deg); cursor: pointer; }
+    .form-group option { background: var(--dark); }
+    .reservation-submit {
+      grid-column: 1 / -1;
+      background: var(--gold);
+      color: var(--black);
+      border: none;
+      padding: 16px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all .25s;
+      margin-top: 6px;
+    }
+    .reservation-submit:hover { background: var(--gold-light); }
+
+    /* ── Testimonials ── */
+    .testimonials-section {
+      background: var(--black);
+      padding: 90px 40px;
+      border-top: 1px solid rgba(201,168,76,0.1);
+    }
+    .testimonials-header { text-align: center; margin-bottom: 60px; }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 36px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .testimonial-card {
+      padding: 44px 36px;
+      border: 1px solid rgba(201,168,76,0.15);
+      position: relative;
+    }
+    .quote-mark {
+      font-size: 80px;
+      line-height: 1;
+      color: var(--gold);
+      opacity: 0.25;
+      position: absolute;
+      top: 16px;
+      right: 28px;
+      font-family: Georgia, serif;
+    }
+    .testimonial-text {
+      font-size: 17px;
+      font-style: italic;
+      color: var(--gold-light);
+      line-height: 1.9;
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+    }
+    .testimonial-author-name { font-size: 14px; font-weight: 700; color: var(--white); letter-spacing: 1px; }
+    .testimonial-author-title { font-size: 12px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; }
+    .testimonial-stars { color: var(--gold); font-size: 14px; margin-bottom: 18px; letter-spacing: 3px; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--black);
+      border-top: 1px solid rgba(201,168,76,0.2);
+      padding: 44px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-logo { font-size: 18px; font-weight: 900; color: var(--gold); letter-spacing: 4px; font-style: italic; }
+    .footer-copy { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; }
+    .footer-socials { display: flex; gap: 16px; align-items: center; }
+    .footer-social {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(201,168,76,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      color: rgba(255,255,255,0.45);
+      text-decoration: none;
+      transition: all .25s;
+    }
+    .footer-social:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .menu-grid { grid-template-columns: 1fr; max-width: 480px; }
+      .experience-grid { grid-template-columns: 1fr; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .reservation-form { grid-template-columns: 1fr; }
+      .reservation-submit { grid-column: 1; }
+    }
+    @media (max-width: 600px) {
+      .navbar { padding: 0 20px; }
+      .navbar-links { display: none; }
+      .navbar-links.open {
+        display: flex; flex-direction: column;
+        position: absolute; top: 72px; right: 0; left: 0;
+        background: rgba(10,10,10,0.97);
+        border-top: 1px solid rgba(201,168,76,0.15);
+        padding: 24px 20px; gap: 18px;
+      }
+      .hamburger { display: flex; }
+      .menu-section, .experience-section, .reservation-section, .testimonials-section { padding: 60px 20px; }
+      footer { padding: 32px 20px; flex-direction: column; text-align: center; }
+      .hero::before { top: 30px; }
+      .hero::after { bottom: 30px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Back Button -->
+  <a href="index.html" class="back-btn">&#8592; رجوع</a>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">✦ تم تأكيد طلب الحجز</div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="#" class="navbar-logo">LA MAISON</a>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </div>
+    <ul class="navbar-links" id="nav-links">
+      <li><a href="#">HOME</a></li>
+      <li><a href="#">MENU</a></li>
+      <li><a href="#">ABOUT</a></li>
+      <li><a href="#">EVENTS</a></li>
+    </ul>
+    <button class="navbar-reserve" onclick="showToast('✦ يسعدنا حجز طاولتك!')">احجز طاولة</button>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <p class="hero-eyebrow">✦ &nbsp; FINE DINING EXPERIENCE &nbsp; ✦</p>
+      <h1>فن الطهي الراقي</h1>
+      <div class="hero-divider"></div>
+      <p class="hero-subtitle">تجربة طعام استثنائية تجمع بين الأصالة العربية والإبداع العالمي في أجواء تعكس الفخامة الحقيقية</p>
+      <div class="hero-btns">
+        <button class="btn-gold" onclick="showToast('✦ سيتواصل معك فريقنا قريباً')">احجز طاولتك</button>
+        <a href="#menu" class="btn-gold-outline">شاهد القائمة</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Experience Numbers -->
+  <section class="experience-section">
+    <div class="experience-header">
+      <p class="section-eyebrow">✦ &nbsp; OUR LEGACY &nbsp; ✦</p>
+      <h2 class="section-title">إرثنا يتحدث</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="experience-grid">
+      <div class="experience-item">
+        <div class="experience-number">15+</div>
+        <div class="experience-label">سنة من الخبرة</div>
+        <div class="experience-desc">أكثر من خمس عشرة سنة في عالم الطهي الفاخر والضيافة الراقية</div>
+      </div>
+      <div class="experience-item">
+        <div class="experience-number">500+</div>
+        <div class="experience-label">ضيف سعيد شهرياً</div>
+        <div class="experience-desc">نستضيف يومياً نخبة من الضيوف الباحثين عن تجربة لا تُنسى</div>
+      </div>
+      <div class="experience-item">
+        <div class="experience-number">4.9 ★</div>
+        <div class="experience-label">تقييم استثنائي</div>
+        <div class="experience-desc">أعلى تقييم في المنطقة وفق أبرز منصات التقييم العالمية</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Menu -->
+  <section class="menu-section" id="menu">
+    <div class="menu-header">
+      <p class="section-eyebrow">✦ &nbsp; OUR MENU &nbsp; ✦</p>
+      <h2 class="section-title">قائمة الطعام</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="menu-grid">
+
+      <!-- Appetizers -->
+      <div class="menu-card">
+        <div class="menu-category-icon">🫒</div>
+        <div class="menu-category-title">مقبلات</div>
+        <div class="menu-category-sub">Appetizers</div>
+        <hr class="menu-divider" />
+        <div class="menu-item">
+          <span class="menu-item-name">سلطة سيزر الكلاسيكية</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">85 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">كاربتشيو لحم واغيو</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">165 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">بسيل وجبن بارميزان</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">75 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">شوربة فطر الكريمة</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">95 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">روبيان مشوي بالثوم</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">185 ج</span>
+        </div>
+      </div>
+
+      <!-- Main Courses -->
+      <div class="menu-card">
+        <div class="menu-category-icon">🥩</div>
+        <div class="menu-category-title">أطباق رئيسية</div>
+        <div class="menu-category-sub">Main Courses</div>
+        <hr class="menu-divider" />
+        <div class="menu-item">
+          <span class="menu-item-name">ريب آي ستيك واغيو</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">395 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">صدر دجاج بروفنسال</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">225 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">سمك القاروص المشوي</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">275 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">لوبستر بزبدة الليمون</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">480 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">ريزوتو الفطر الكريمي</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">195 ج</span>
+        </div>
+      </div>
+
+      <!-- Desserts -->
+      <div class="menu-card">
+        <div class="menu-category-icon">🍫</div>
+        <div class="menu-category-title">حلويات</div>
+        <div class="menu-category-sub">Desserts</div>
+        <hr class="menu-divider" />
+        <div class="menu-item">
+          <span class="menu-item-name">كراميل بروليه الكلاسيك</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">95 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">تشيز كيك المانجو</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">110 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">لافا كيك الشوكولاتة</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">120 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">تيراميسو الإيطالي</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">130 ج</span>
+        </div>
+        <div class="menu-item">
+          <span class="menu-item-name">مهلبية الماستيكا والعسل</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">85 ج</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Reservation Form -->
+  <section class="reservation-section" id="reservation">
+    <div class="reservation-header">
+      <p class="section-eyebrow">✦ &nbsp; BOOK A TABLE &nbsp; ✦</p>
+      <h2 class="section-title">احجز طاولتك</h2>
+      <div class="section-line"></div>
+    </div>
+    <form class="reservation-form" onsubmit="handleReservation(event)">
+      <div class="form-group">
+        <label>التاريخ</label>
+        <input type="date" id="res-date" required />
+      </div>
+      <div class="form-group">
+        <label>الوقت</label>
+        <select id="res-time" required>
+          <option value="" disabled selected>اختر الوقت</option>
+          <option value="12:00">12:00 ظهراً</option>
+          <option value="13:00">1:00 مساءً</option>
+          <option value="14:00">2:00 مساءً</option>
+          <option value="19:00">7:00 مساءً</option>
+          <option value="20:00">8:00 مساءً</option>
+          <option value="21:00">9:00 مساءً</option>
+          <option value="22:00">10:00 مساءً</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>عدد الضيوف</label>
+        <select id="res-guests" required>
+          <option value="" disabled selected>عدد الأشخاص</option>
+          <option value="1">1 شخص</option>
+          <option value="2">2 أشخاص</option>
+          <option value="3">3 أشخاص</option>
+          <option value="4">4 أشخاص</option>
+          <option value="5">5 أشخاص</option>
+          <option value="6">6 أشخاص</option>
+          <option value="7+">7+ أشخاص</option>
+        </select>
+      </div>
+      <button type="submit" class="reservation-submit">تأكيد الحجز ✦</button>
+    </form>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="testimonials-section">
+    <div class="testimonials-header">
+      <p class="section-eyebrow">✦ &nbsp; TESTIMONIALS &nbsp; ✦</p>
+      <h2 class="section-title">أصداء الضيوف</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="quote-mark">"</div>
+        <div class="testimonial-stars">★ ★ ★ ★ ★</div>
+        <p class="testimonial-text">"تجربة لا تُضاهى في كل التفاصيل — من لحظة الترحيب حتى آخر ملعقة من الحلوى. LA MAISON ليست مجرد مطعم، هي عالم من الرقي الذي يشعرك أنك في أرقى مطاعم باريس."</p>
+        <div class="testimonial-author-name">م. كريم المنصوري</div>
+        <div class="testimonial-author-title">رجل أعمال — دبي</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="quote-mark">"</div>
+        <div class="testimonial-stars">★ ★ ★ ★ ★</div>
+        <p class="testimonial-text">"احتفلت بذكرى زواجنا العاشرة هنا، وكان كل شيء مثالياً فوق التوقعات. الطعام والأجواء والخدمة — كل شيء يعكس مستوى استثنائياً نادراً ما تجده في المنطقة."</p>
+        <div class="testimonial-author-name">د. ليلى الحسيني</div>
+        <div class="testimonial-author-title">طبيبة — القاهرة</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-logo">LA MAISON</div>
+    <div class="footer-copy">© 2025 لاكشري جولد. جميع الحقوق محفوظة.</div>
+    <div class="footer-socials">
+      <a href="#" class="footer-social">f</a>
+      <a href="#" class="footer-social">in</a>
+      <a href="#" class="footer-social">ig</a>
+      <a href="#" class="footer-social">tw</a>
+    </div>
+  </footer>
+
+  <script>
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg || '✦ تم تأكيد طلب الحجز';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function handleReservation(e) {
+      e.preventDefault();
+      const date = document.getElementById('res-date').value;
+      const time = document.getElementById('res-time').value;
+      const guests = document.getElementById('res-guests').value;
+      if (date && time && guests) {
+        showToast(`✦ تم الحجز بنجاح — ${guests} ضيوف • ${time}`);
+        e.target.reset();
+      }
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

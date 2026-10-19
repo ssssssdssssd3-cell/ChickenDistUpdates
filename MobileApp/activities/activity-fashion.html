@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>أكابر فاشون | ملابس وأزياء وأحذية راقية</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-body: #faf5ff;
+      --bg-card: #ffffff;
+      --primary-dark: #2e1065;
+      --primary-purple: #7e22ce;
+      --primary-pink: #ec4899;
+      --accent-gold: #c084fc;
+      --text-dark: #1e1b4b;
+      --text-muted: #64748b;
+      --border-light: #e9d5ff;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(126,34,206,0.1);
+    }
+    body { font-family: 'Cairo', sans-serif; background-color: #f3e8ff; color: var(--text-dark); min-height: 100vh; display: flex; justify-content: center; padding: 0; }
+    .app-viewport { width: 100%; max-width: 480px; background: var(--bg-body); min-height: 100vh; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.15); display: flex; flex-direction: column; padding-bottom: 75px; }
+    .top-notch-bar { height: 14px; background: transparent; width: 100%; }
+    .header-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px 8px; background: var(--bg-body); position: sticky; top: 0; z-index: 50; }
+    .header-icon-btn { width: 42px; height: 42px; border-radius: 50%; background: #fff; border: 1px solid #d8b4fe; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; color: var(--primary-dark); font-size: 1.15rem; }
+    .cart-badge-count { position: absolute; top: -3px; right: -3px; background: var(--primary-pink); color: #fff; font-size: 0.7rem; font-weight: 800; width: 19px; height: 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+    .brand-logo-container { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+    .brand-logo-circle { width: 64px; height: 64px; border-radius: 50%; background: #ffffff; border: 2.5px solid var(--primary-purple); box-shadow: 0 4px 15px rgba(126,34,206,0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; text-align: center; }
+    .brand-logo-circle i { color: var(--primary-purple); font-size: 1.2rem; }
+    .brand-logo-title { font-size: 0.72rem; font-weight: 900; color: var(--primary-dark); }
+    .brand-logo-slogan { font-size: 0.42rem; color: var(--primary-pink); font-weight: 700; }
+    .search-section { padding: 6px 18px 12px; }
+    .search-box { background: #ffffff; border: 1px solid #d8b4fe; border-radius: 50px; padding: 9px 18px; display: flex; align-items: center; gap: 12px; }
+    .search-box i { color: #a855f7; }
+    .search-input { border: none; outline: none; width: 100%; font-family: 'Cairo', sans-serif; font-size: 0.92rem; background: transparent; }
+    .hero-container { padding: 0 16px 14px; }
+    .hero-card { border-radius: 20px; overflow: hidden; position: relative; background: linear-gradient(rgba(46, 16, 101, 0.45), rgba(88, 28, 135, 0.8)), url('https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80') center/cover no-repeat; min-height: 205px; display: flex; flex-direction: column; justify-content: space-between; padding: 22px 20px 16px; color: #ffffff; }
+    .hero-eyebrow { font-size: 0.8rem; font-weight: 700; color: #f0abfc; display: flex; align-items: center; gap: 6px; }
+    .hero-headline { font-size: 1.65rem; font-weight: 900; margin: 4px 0 2px; }
+    .hero-subtext { font-size: 0.82rem; color: rgba(255,255,255,0.9); font-weight: 600; max-width: 250px; }
+    .hero-action-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+    .btn-shop-now { background: var(--primary-purple); color: #ffffff; border-radius: 50px; padding: 7px 20px; font-size: 0.88rem; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .features-bar { margin: 0 16px 16px; background: #ffffff; border-radius: 14px; padding: 12px 6px; display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border-light); }
+    .feature-item { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 4px; position: relative; }
+    .feature-item:not(:last-child)::after { content: ''; position: absolute; left: 0; top: 15%; height: 70%; width: 1px; background: var(--border-light); }
+    .feature-icon-wrapper { width: 32px; height: 32px; border-radius: 8px; background: #faf5ff; color: var(--primary-purple); display: flex; align-items: center; justify-content: center; font-size: 0.95rem; margin-bottom: 5px; }
+    .feature-title { font-size: 0.72rem; font-weight: 800; color: var(--primary-dark); }
+    .feature-subtitle { font-size: 0.55rem; color: var(--text-muted); }
+    .section-header { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 16px 14px; }
+    .section-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #c084fc, transparent); }
+    .section-title { font-size: 1.05rem; font-weight: 900; color: var(--primary-dark); }
+    .categories-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 0 16px 20px; }
+    .category-card { background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-light); cursor: pointer; display: flex; flex-direction: column; }
+    .category-card.active { border: 2px solid var(--primary-purple); }
+    .category-img-box { height: 82px; width: 100%; overflow: hidden; }
+    .category-img-box img { width: 100%; height: 100%; object-fit: cover; }
+    .category-btn-pill { background: var(--primary-purple); color: #ffffff; padding: 6px 4px; text-align: center; font-size: 0.68rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .products-container { padding: 0 16px 20px; }
+    .products-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .product-card { background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-light); display: flex; flex-direction: column; position: relative; }
+    .product-img-box { height: 125px; width: 100%; overflow: hidden; position: relative; }
+    .product-img-box img { width: 100%; height: 100%; object-fit: cover; }
+    .badge-benefit-btn { position: absolute; top: 6px; left: 6px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; color: var(--primary-purple); }
+    .product-info { padding: 10px 8px 12px; display: flex; flex-direction: column; flex: 1; text-align: center; }
+    .product-name { font-size: 0.82rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 2px; }
+    .product-weight { font-size: 0.65rem; color: var(--text-muted); margin-bottom: 6px; }
+    .product-price { font-size: 0.95rem; font-weight: 900; color: var(--primary-purple); margin-bottom: 8px; }
+    .btn-add-cart { background: var(--primary-purple); color: #ffffff; border: none; border-radius: 8px; padding: 7px 6px; font-size: 0.72rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; margin-top: auto; }
+    .promo-banner { margin: 0 16px 20px; border-radius: 16px; background: linear-gradient(to right, rgba(126, 34, 206, 0.9), rgba(236, 72, 153, 0.85)), url('https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=800&q=80') center/cover no-repeat; padding: 18px 20px; color: #ffffff; display: flex; align-items: center; justify-content: space-between; }
+    .btn-contact-us { background: #ffffff; color: var(--primary-purple); border-radius: 50px; padding: 6px 16px; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+    .floating-whatsapp { position: absolute; bottom: 88px; right: 18px; width: 50px; height: 50px; border-radius: 50%; background: #25d366; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.45); z-index: 90; text-decoration: none; }
+    .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 480px; background: #ffffff; border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-around; padding: 8px 0 6px; z-index: 100; }
+    .nav-tab { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-size: 0.65rem; font-weight: 700; text-decoration: none; cursor: pointer; position: relative; }
+    .nav-tab i { font-size: 1.15rem; margin-bottom: 3px; }
+    .nav-tab.active { color: var(--primary-purple); }
+    .nav-cart-badge { position: absolute; top: -3px; right: 4px; background: var(--primary-pink); color: #ffffff; font-size: 0.6rem; font-weight: 800; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: flex-end; justify-content: center; }
+    .modal-backdrop.active { display: flex; }
+    .bottom-sheet { background: #ffffff; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 22px 20px 30px; max-height: 85vh; overflow-y: auto; }
+    .sheet-handle { width: 40px; height: 4px; background: #cbd5e1; border-radius: 10px; margin: 0 auto 18px; }
+    .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .sheet-title { font-size: 1.15rem; font-weight: 900; color: var(--primary-dark); }
+    .btn-close-sheet { background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1rem; cursor: pointer; color: #64748b; }
+    .cart-item-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid var(--border-light); border-radius: 12px; background: #faf5ff; margin-bottom: 10px; }
+    .cart-item-img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; }
+    .btn-qty { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; font-weight: 800; cursor: pointer; }
+    .btn-checkout-whatsapp { background: #25d366; color: #ffffff; width: 100%; border: none; border-radius: 12px; padding: 12px; font-size: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+    .toast-msg { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #1e1b4b; color: #ffffff; padding: 10px 22px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; z-index: 999; transition: transform 0.3s; }
+    .toast-msg.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="app-viewport">
+    <div class="top-notch-bar"></div>
+    <header class="header-bar">
+      <button class="header-icon-btn" onclick="openCartModal()"><i class="fa-solid fa-bag-shopping"></i><span class="cart-badge-count" id="headerCartCount">0</span></button>
+      <div class="brand-logo-container" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <div class="brand-logo-circle">
+          <i class="fa-solid fa-shirt"></i>
+          <span class="brand-logo-title">أكابر فاشون</span>
+          <span class="brand-logo-slogan">أناقة وشياكة</span>
+        </div>
+      </div>
+      <button class="header-icon-btn" onclick="showToast('👗 مرحباً بك في أكابر فاشون')"><i class="fa-solid fa-bars"></i></button>
+    </header>
+
+    <section class="search-section">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن قمصان، بدل، كاجوال، أحذية ..." oninput="filterProducts()">
+      </div>
+    </section>
+
+    <section class="hero-container">
+      <div class="hero-card">
+        <div>
+          <span class="hero-eyebrow"><i class="fa-solid fa-crown"></i> كوليكشن الموسم الجديد 2026</span>
+          <h1 class="hero-headline">إطلالة تليق بمقامك</h1>
+          <p class="hero-subtext">أحدث صيحات الموضة العالمية بأرقى الخامات القطنية والجلدية</p>
+        </div>
+        <div class="hero-action-row">
+          <a href="#featuredSection" class="btn-shop-now"><span>تسوق الكوليكشن</span><i class="fa-solid fa-arrow-left"></i></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="features-bar">
+      <div class="feature-item"><div class="feature-icon-wrapper"><i class="fa-solid fa-repeat"></i></div><span class="feature-title">معاينة واستبدال</span><span class="feature-subtitle">14 يوم مجاناً</span></div>
+      <div class="feature-item"><div class="feature-icon-wrapper"><i class="fa-solid fa-feather"></i></div><span class="feature-title">أقطان 100%</span><span class="feature-subtitle">خامات ممتازة</span></div>
+      <div class="feature-item"><div class="feature-icon-wrapper"><i class="fa-solid fa-truck-ramp-box"></i></div><span class="feature-title">شحن سريع</span><span class="feature-subtitle">لباب بيتك</span></div>
+      <div class="feature-item"><div class="feature-icon-wrapper"><i class="fa-solid fa-gem"></i></div><span class="feature-title">ماركات أصلية</span><span class="feature-subtitle">ضمان الجودة</span></div>
+    </section>
+
+    <section>
+      <div class="section-header"><div class="section-line"></div><h2 class="section-title">أقسام الأزياء</h2><div class="section-line"></div></div>
+      <div class="categories-grid">
+        <div class="category-card" onclick="selectCategory('قمصان', this)"><div class="category-img-box"><img src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=300&q=80"></div><div class="category-btn-pill"><span>قمصان وبدل</span><i class="fa-solid fa-circle-arrow-left"></i></div></div>
+        <div class="category-card" onclick="selectCategory('كاجوال', this)"><div class="category-img-box"><img src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=300&q=80"></div><div class="category-btn-pill"><span>تيشيرت وجينز</span><i class="fa-solid fa-circle-arrow-left"></i></div></div>
+        <div class="category-card" onclick="selectCategory('أحذية', this)"><div class="category-img-box"><img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=300&q=80"></div><div class="category-btn-pill"><span>أحذية وسنيكرز</span><i class="fa-solid fa-circle-arrow-left"></i></div></div>
+        <div class="category-card" onclick="selectCategory('إكسسوارات', this)"><div class="category-img-box"><img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=300&q=80"></div><div class="category-btn-pill"><span>ساعات وأحزمة</span><i class="fa-solid fa-circle-arrow-left"></i></div></div>
+      </div>
+    </section>
+
+    <section id="featuredSection" class="products-container">
+      <div class="section-header"><div class="section-line"></div><h2 class="section-title">أحدث الموديلات</h2><div class="section-line"></div></div>
+      <div class="products-grid">
+        <div class="product-card" data-category="قمصان" data-name="قميص أكسفورد قطن كلاسيك">
+          <div class="product-img-box"><img src="https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=400&q=80"><button class="badge-benefit-btn" onclick="showBenefitsModal(0)"><i class="fa-solid fa-circle-info"></i></button></div>
+          <div class="product-info"><h3 class="product-name">قميص أكسفورد</h3><span class="product-weight">قطن مصري 100%</span><div class="product-price">390 جنيه</div><button class="btn-add-cart" onclick="addToCart(0)"><i class="fa-solid fa-bag-shopping"></i><span>أضف للحقيبة</span></button></div>
+        </div>
+        <div class="product-card" data-category="كاجوال" data-name="بنطلون جينز سليم فيت">
+          <div class="product-img-box"><img src="https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=400&q=80"><button class="badge-benefit-btn" onclick="showBenefitsModal(1)"><i class="fa-solid fa-circle-info"></i></button></div>
+          <div class="product-info"><h3 class="product-name">جينز سليم فيت</h3><span class="product-weight">خامة ليكرا مطاطة</span><div class="product-price">480 جنيه</div><button class="btn-add-cart" onclick="addToCart(1)"><i class="fa-solid fa-bag-shopping"></i><span>أضف للحقيبة</span></button></div>
+        </div>
+        <div class="product-card" data-category="أحذية" data-name="سنيكرز جلد طبيعي أبيض">
+          <div class="product-img-box"><img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=400&q=80"><button class="badge-benefit-btn" onclick="showBenefitsModal(2)"><i class="fa-solid fa-circle-info"></i></button></div>
+          <div class="product-info"><h3 class="product-name">سنيكرز إيطالي</h3><span class="product-weight">نعل طبي مريح</span><div class="product-price">650 جنيه</div><button class="btn-add-cart" onclick="addToCart(2)"><i class="fa-solid fa-bag-shopping"></i><span>أضف للحقيبة</span></button></div>
+        </div>
+      </div>
+    </section>
+
+    <a href="https://wa.me/201000000000" target="_blank" class="floating-whatsapp"><i class="fa-brands fa-whatsapp"></i></a>
+
+    <nav class="bottom-nav">
+      <a class="nav-tab active" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fa-solid fa-house"></i><span>الرئيسية</span></a>
+      <a class="nav-tab" onclick="document.querySelector('.categories-grid').scrollIntoView({behavior:'smooth'})"><i class="fa-solid fa-shirt"></i><span>الموديلات</span></a>
+      <a class="nav-tab" onclick="openCartModal()"><i class="fa-solid fa-bag-shopping"></i><span class="nav-cart-badge" id="navCartCount">0</span><span>الحقيبة</span></a>
+      <a class="nav-tab" onclick="showToast('جدول المقاسات')"><i class="fa-solid fa-ruler-combined"></i><span>المقاسات</span></a>
+      <a class="nav-tab" href="https://wa.me/201000000000" target="_blank"><i class="fa-solid fa-phone"></i><span>تواصل معنا</span></a>
+    </nav>
+  </div>
+
+  <div class="modal-backdrop" id="cartModal">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header"><h3 class="sheet-title"><i class="fa-solid fa-bag-shopping text-purple-600"></i> حقيبة مشترياتك</h3><button class="btn-close-sheet" onclick="closeCartModal()"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="cart-items-list" id="cartItemsList"></div>
+      <div style="border-top:1px solid var(--border-light); padding-top:14px; margin-bottom:16px; display:flex; justify-content:space-between; font-weight:900; font-size:1.1rem;"><span>الإجمالي:</span><span id="cartTotalPrice" style="color:var(--primary-purple);">0 جنيه</span></div>
+      <button class="btn-checkout-whatsapp" onclick="checkoutViaWhatsApp()"><i class="fa-brands fa-whatsapp text-xl"></i><span>إرسال طلب الملابس عبر واتساب</span></button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="benefitsModal">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header"><h3 class="sheet-title" id="benefitItemTitle"><i class="fa-solid fa-circle-check text-purple-500"></i> تفاصيل الخامة والمقاس</h3><button class="btn-close-sheet" onclick="closeBenefitsModal()"><i class="fa-solid fa-xmark"></i></button></div>
+      <div id="benefitItemContent" style="font-size:0.9rem; line-height:1.7; color:#475569; margin-bottom:20px;"></div>
+      <button class="btn-add-cart" id="benefitAddBtn" style="width:100%; padding:12px;"><i class="fa-solid fa-bag-shopping"></i><span>إضافة هذا الموديل للحقيبة</span></button>
+    </div>
+  </div>
+
+  <div class="toast-msg" id="toastMsg"><i class="fa-solid fa-circle-check text-purple-400"></i><span id="toastText">تمت الإضافة!</span></div>
+
+  <script>
+    const productsData = [
+      { id:0, name:"قميص أكسفورد قطن كلاسيك", category:"قمصان", weight:"قطن مصري 100%", price:390, img:"https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=400&q=80", benefits:"👔 قطن مصري طويل التيلة 100% فائق النعومة والراحة.\n• نسيج مقاوم للتجاعيد ومناسب للدوام والاجتماعات الرسمية.\n• أزرار صدفيّة خياطة مدبلة متينة.\n• ألوان ثابتة ومضمونة ضد الغسيل المتكرر." },
+      { id:1, name:"بنطلون جينز سليم فيت", category:"كاجوال", weight:"خامة ليكرا مطاطة", price:480, img:"https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=400&q=80", benefits:"👖 قصة عصرية تناسب كل الأجسام مع مرونة ممتازة للحركة.\n• قماش تركي متين مع معالجة حجرية كلاسيكية.\n• جيوب مدعمة وسوستة معدنية أصلية.\n• متوفر بجميع المقاسات من 30 إلى 42." },
+      { id:2, name:"سنيكرز جلد طبيعي أبيض", category:"أحذية", weight:"نعل طبي مريح", price:650, img:"https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=400&q=80", benefits:"👟 جلد طبيعي 100% ناعم وسهل التنظيف ومقاوم للماء.\n• نعل خفيف بتقنية امتصاص الصدمات للمشي الطويل.\n• بطانة داخلية مضادة للروائح والتعرق.\n• تصميم كلاسيكي أبيض يتماشى مع كل الإطلالات." }
+    ];
+    let cart = [];
+    function addToCart(i) {
+      const p = productsData[i]; const ex = cart.find(x => x.id === p.id);
+      if (ex) ex.qty += 1; else cart.push({ ...p, qty:1 });
+      updateCartUI(); showToast(`تم إضافة ${p.name} 🛍️`);
+    }
+    function updateCartUI() {
+      const count = cart.reduce((a,b)=>a+b.qty, 0);
+      document.getElementById('headerCartCount').textContent = count;
+      document.getElementById('navCartCount').textContent = count;
+      const list = document.getElementById('cartItemsList');
+      if (cart.length === 0) { list.innerHTML = `<p style="text-align:center; padding:30px; color:#94a3b8;">الحقيبة فارغة</p>`; document.getElementById('cartTotalPrice').textContent = '0 جنيه'; return; }
+      let s = 0, h = '';
+      cart.forEach(it => {
+        const tot = it.price * it.qty; s += tot;
+        h += `<div class="cart-item-row"><div style="display:flex; gap:10px; align-items:center;"><img src="${it.img}" class="cart-item-img"><div><h4 style="font-size:0.85rem; font-weight:800;">${it.name}</h4><span style="font-size:0.75rem; color:#64748b;">${it.price} ج × ${it.qty} = <b style="color:var(--primary-purple);">${tot} ج</b></span></div></div><div style="display:flex; gap:8px; align-items:center;"><button class="btn-qty" onclick="changeQty(${it.id}, -1)">-</button><b>${it.qty}</b><button class="btn-qty" onclick="changeQty(${it.id}, 1)">+</button></div></div>`;
+      });
+      list.innerHTML = h; document.getElementById('cartTotalPrice').textContent = s + ' جنيه';
+    }
+    function changeQty(id, d) {
+      const it = cart.find(x=>x.id===id); if (!it) return;
+      it.qty += d; if (it.qty<=0) cart = cart.filter(x=>x.id!==id);
+      updateCartUI();
+    }
+    function openCartModal() { updateCartUI(); document.getElementById('cartModal').classList.add('active'); }
+    function closeCartModal() { document.getElementById('cartModal').classList.remove('active'); }
+    function showBenefitsModal(i) {
+      const p = productsData[i];
+      document.getElementById('benefitItemTitle').innerHTML = `<i class="fa-solid fa-circle-check text-purple-500"></i> ${p.name}`;
+      document.getElementById('benefitItemContent').innerHTML = `<div style="display:flex; gap:12px; margin-bottom:14px; background:#faf5ff; padding:10px; border-radius:12px;"><img src="${p.img}" style="width:60px; height:60px; border-radius:8px; object-fit:cover;"><div><h4 style="font-weight:900;">${p.name}</h4><span style="color:var(--primary-purple); font-weight:800;">${p.price} جنيه</span> (${p.weight})</div></div><p style="white-space:pre-line;">${p.benefits}</p>`;
+      document.getElementById('benefitAddBtn').onclick = () => { addToCart(i); closeBenefitsModal(); };
+      document.getElementById('benefitsModal').classList.add('active');
+    }
+    function closeBenefitsModal() { document.getElementById('benefitsModal').classList.remove('active'); }
+    function selectCategory(cat, el) {
+      document.querySelectorAll('.category-card').forEach(c=>c.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.product-card').forEach(c => {
+        c.style.display = (cat === 'الكل' || c.getAttribute('data-category') === cat) ? 'flex' : 'none';
+      });
+      document.getElementById('featuredSection').scrollIntoView({behavior:'smooth'});
+    }
+    function filterProducts() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      document.querySelectorAll('.product-card').forEach(c => {
+        const n = (c.getAttribute('data-name')||'').toLowerCase();
+        c.style.display = n.includes(q) ? 'flex' : 'none';
+      });
+    }
+    function checkoutViaWhatsApp() {
+      if (cart.length === 0) return;
+      let txt = "مرحباً، أود حجز ملابس من أكابر فاشون:\n\n";
+      let tot = 0;
+      cart.forEach((it, i) => { const t = it.price * it.qty; tot += t; txt += `${i+1}. ${it.name} - ${it.qty} × ${it.price} ج = ${t} ج\n`; });
+      txt += `\n💰 الإجمالي: ${tot} جنيه\nيرجى التواصل لتحديد المقاسات والعنوان. شكراً!`;
+      window.open(`https://wa.me/201000000000?text=${encodeURIComponent(txt)}`, '_blank');
+      closeCartModal();
+    }
+    function showToast(m) {
+      const t = document.getElementById('toastMsg'); document.getElementById('toastText').textContent = m;
+      t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500);
+    }
+  </script>
+</body>
+</html>
