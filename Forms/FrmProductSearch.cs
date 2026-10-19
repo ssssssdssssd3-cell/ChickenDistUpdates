@@ -23,6 +23,7 @@ namespace ChickenDist.Forms
         private int? _warehouseID;
         private int? _clientID;
         private bool _isPurchaseMode = false;
+        private string _priceTier = "قطاعي";
         private readonly bool _allowZeroStockSelection = false;
         private Dictionary<int, decimal> _stockCache = new Dictionary<int, decimal>();
         private Dictionary<int, decimal> _globalStockCache = new Dictionary<int, decimal>();
@@ -60,7 +61,7 @@ namespace ChickenDist.Forms
 
         public string SearchText => txtSearch?.Text ?? "";
 
-        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool? defaultShowZeroStock = null, int? clientID = null, string initialSearchText = "", bool? allowZeroStockSelection = null)
+        public FrmProductSearch(int? warehouseID = null, bool isPurchaseMode = false, bool? defaultShowZeroStock = null, int? clientID = null, string initialSearchText = "", bool? allowZeroStockSelection = null, string priceTier = "قطاعي")
         {
             if (!Session.IsAdmin && !Session.CanAccess("ProductSearch") && !Session.CanAccess("Sales") && !Session.CanAccess("POS") && !Session.CanAccess("Purchases") && !Session.CanAccess("WarehouseTransfer"))
             {
@@ -76,6 +77,7 @@ namespace ChickenDist.Forms
             _warehouseID = warehouseID;
             _clientID = clientID;
             _isPurchaseMode = isPurchaseMode;
+            _priceTier = string.IsNullOrWhiteSpace(priceTier) ? "قطاعي" : priceTier.Trim();
             _allowZeroStockSelection = allowZeroStockSelection ?? (defaultShowZeroStock == true);
             _searchTimer = new Timer { Interval = 220 };
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); ApplyFilter(); };
@@ -249,7 +251,7 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
             { 
                 Name = "SalePrice", 
-                HeaderText = "سعر البيع", 
+                HeaderText = _priceTier == "جملة" ? "سعر البيع (جملة)" : (_priceTier == "نصف جملة" ? "سعر البيع (نصف جملة)" : "سعر البيع"), 
                 FillWeight = 32, 
                 MinimumWidth = 110,
                 DefaultCellStyle = new DataGridViewCellStyle 
@@ -494,6 +496,20 @@ namespace ChickenDist.Forms
                 decimal totalStock = _stockCache.TryGetValue(pid, out var cached) ? cached : 0m;
 
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
+                bool isTierPrice = false;
+                if (!_isPurchaseMode)
+                {
+                    if (_priceTier == "جملة" && row.Table.Columns.Contains("WholesalePrice") && row["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["WholesalePrice"]) > 0m)
+                    {
+                        price = Convert.ToDecimal(row["WholesalePrice"]);
+                        isTierPrice = true;
+                    }
+                    else if (_priceTier == "نصف جملة" && row.Table.Columns.Contains("SemiWholesalePrice") && row["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["SemiWholesalePrice"]) > 0m)
+                    {
+                        price = Convert.ToDecimal(row["SemiWholesalePrice"]);
+                        isTierPrice = true;
+                    }
+                }
                 decimal pendingPrice = row.Table.Columns.Contains("PendingSalePrice") && row["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(row["PendingSalePrice"]) : 0m;
                 decimal threshold = row.Table.Columns.Contains("PendingQtyThreshold") && row["PendingQtyThreshold"] != DBNull.Value ? Convert.ToDecimal(row["PendingQtyThreshold"]) : 0m;
                 string catName = row.Table.Columns.Contains("CategoryName") && row["CategoryName"] != DBNull.Value ? row["CategoryName"].ToString() : "";
@@ -519,14 +535,18 @@ namespace ChickenDist.Forms
                 {
                     rowUnit = u1Name;
                     rowFactor = 1m;
-                    if (row.Table.Columns.Contains("Unit1SalePrice") && row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0)
+                    if (isTierPrice)
+                        rowPrice = majorFactor > 1m ? Math.Round(price / majorFactor, 2) : price;
+                    else if (row.Table.Columns.Contains("Unit1SalePrice") && row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0)
                         rowPrice = Convert.ToDecimal(row["Unit1SalePrice"]);
                 }
                 else if (defUnit == "الوسطى" && !string.IsNullOrEmpty(u2Name))
                 {
                     rowUnit = u2Name;
                     rowFactor = u2f > 0 ? u2f : 1m;
-                    if (row.Table.Columns.Contains("Unit2SalePrice") && row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0)
+                    if (isTierPrice)
+                        rowPrice = (u3f > 1m) ? Math.Round(price / u3f, 2) : price;
+                    else if (row.Table.Columns.Contains("Unit2SalePrice") && row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0)
                         rowPrice = Convert.ToDecimal(row["Unit2SalePrice"]);
                 }
 
@@ -831,10 +851,21 @@ namespace ChickenDist.Forms
             decimal unit3FactorVal = unit3Factor > 0 ? unit3Factor : 1m;
             decimal baseFactor = unit2FactorVal * unit3FactorVal;
 
-            decimal basePrice = Convert.ToDecimal(prodRow["SalePrice"]);
+            decimal retailPrice = Convert.ToDecimal(prodRow["SalePrice"]);
+            decimal wholesalePrice = prodRow.Table.Columns.Contains("WholesalePrice") && prodRow["WholesalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["WholesalePrice"]) : 0m;
+            decimal semiWholesalePrice = prodRow.Table.Columns.Contains("SemiWholesalePrice") && prodRow["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["SemiWholesalePrice"]) : 0m;
+
+            decimal basePrice = retailPrice;
+            bool isCustomTier = false;
+            if (!_isPurchaseMode)
+            {
+                if (_priceTier == "جملة" && wholesalePrice > 0m) { basePrice = wholesalePrice; isCustomTier = true; }
+                else if (_priceTier == "نصف جملة" && semiWholesalePrice > 0m) { basePrice = semiWholesalePrice; isCustomTier = true; }
+            }
+
             decimal pendingPrice = prodRow.Table.Columns.Contains("PendingSalePrice") && prodRow["PendingSalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["PendingSalePrice"]) : 0m;
 
-            if (selectedRow.Cells["SalePrice"].Value != null && decimal.TryParse(selectedRow.Cells["SalePrice"].Value.ToString(), out decimal gridSp))
+            if (!isCustomTier && selectedRow.Cells["SalePrice"].Value != null && decimal.TryParse(selectedRow.Cells["SalePrice"].Value.ToString(), out decimal gridSp))
             {
                 if (pendingPrice > 0 && Math.Abs(gridSp - pendingPrice) < 0.01m)
                 {
@@ -845,7 +876,15 @@ namespace ChickenDist.Forms
             decimal unit1Price = prodRow.Table.Columns.Contains("Unit1SalePrice") && prodRow["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["Unit1SalePrice"]) : 0m;
             decimal unit2Price = prodRow.Table.Columns.Contains("Unit2SalePrice") && prodRow["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["Unit2SalePrice"]) : 0m;
 
-            if (unit1Price <= 0) unit1Price = basePrice;
+            if (isCustomTier)
+            {
+                unit1Price = baseFactor > 1m ? Math.Round(basePrice / baseFactor, 2) : basePrice;
+                unit2Price = unit3FactorVal > 1m ? Math.Round(basePrice / unit3FactorVal, 2) : basePrice;
+            }
+            else if (unit1Price <= 0)
+            {
+                unit1Price = basePrice;
+            }
 
             decimal basePP = Convert.ToDecimal(prodRow["PurchasePrice"]);
             decimal unit1PP = prodRow.Table.Columns.Contains("Unit1PurchasePrice") && prodRow["Unit1PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(prodRow["Unit1PurchasePrice"]) : 0m;

@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.5";
-$CHANGELOG = "v4.1.5 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Reorganize navigation menus with visual separators, sales reports submenu, unified client/supplier actions, and clean top bar"
+$VERSION = "4.1.6";
+$CHANGELOG = "v4.1.6 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Eye-friendly UI redesign for Sales, Purchases, and Reports screens, wholesale/half-wholesale price tier fix, and advanced instant report filters"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

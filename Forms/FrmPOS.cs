@@ -236,7 +236,9 @@ namespace ChickenDist.Forms
                     string newTier = cboPriceTier.SelectedItem.ToString();
                     foreach (var itm in _items)
                     {
-                        decimal p = GetProductPriceByTier(itm.ProductID, newTier);
+                        decimal majorP = GetProductPriceByTier(itm.ProductID, newTier);
+                        if (majorP > 0) itm.MajorPrice = majorP;
+                        decimal p = GetProductPriceByTier(itm.ProductID, newTier, itm.UnitName);
                         if (p > 0) itm.Price = p;
                     }
                     RefreshGrid();
@@ -1782,22 +1784,18 @@ namespace ChickenDist.Forms
             // Check if barcode matches a sub-unit
             string unitName = null;
             decimal factor = 1m;
-            decimal price = Convert.ToDecimal(row["SalePrice"]);
+            decimal price = 0m;
             string u1b = row["Unit1Barcode"] != DBNull.Value ? row["Unit1Barcode"].ToString() : "";
             string u2b = row["Unit2Barcode"] != DBNull.Value ? row["Unit2Barcode"].ToString() : "";
 
             if (!string.IsNullOrEmpty(u1b) && ProductDAL.BarcodeMatches(u1b, code))
             {
                 unitName = row["Unit1Name"]?.ToString();
-                if (row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0) 
-                    price = Convert.ToDecimal(row["Unit1SalePrice"]);
                 factor = 1m;
             }
             else if (!string.IsNullOrEmpty(u2b) && ProductDAL.BarcodeMatches(u2b, code))
             {
                 unitName = row["Unit2Name"]?.ToString();
-                if (row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0) 
-                    price = Convert.ToDecimal(row["Unit2SalePrice"]);
                 if (row["Unit2Factor"] != DBNull.Value && Convert.ToDecimal(row["Unit2Factor"]) > 0) 
                     factor = Convert.ToDecimal(row["Unit2Factor"]);
             }
@@ -1864,10 +1862,27 @@ namespace ChickenDist.Forms
             string name = row["ProductName"]?.ToString() ?? "";
             decimal tierMajorPrice = Convert.ToDecimal(row["SalePrice"]);
             string curTier = GetSelectedPriceTier();
+            bool isCustomTier = false;
             if (curTier == "جملة" && row.Table.Columns.Contains("WholesalePrice") && row["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["WholesalePrice"]) > 0)
+            {
                 tierMajorPrice = Convert.ToDecimal(row["WholesalePrice"]);
+                isCustomTier = true;
+            }
             else if (curTier == "نصف جملة" && row.Table.Columns.Contains("SemiWholesalePrice") && row["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["SemiWholesalePrice"]) > 0)
+            {
                 tierMajorPrice = Convert.ToDecimal(row["SemiWholesalePrice"]);
+                isCustomTier = true;
+            }
+
+            decimal u2fVal = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
+            decimal u3fVal = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
+            if (u2fVal <= 0) u2fVal = 1m;
+            if (u3fVal <= 0) u3fVal = 1m;
+            decimal totalFactorVal = u2fVal * u3fVal;
+
+            string u1Name = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString() : null;
+            string u2Name = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString() : null;
+            string baseUnit = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString() : null;
 
             decimal price = overridePrice > 0 ? overridePrice : tierMajorPrice;
             decimal majorCost = row["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(row["PurchasePrice"]) : 0;
@@ -1878,37 +1893,48 @@ namespace ChickenDist.Forms
                     ? row["DefaultSaleUnit"].ToString() : "";
                 if (string.IsNullOrEmpty(defUnit)) defUnit = "الكبرى";
 
-                string u1Name = row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value ? row["Unit1Name"].ToString() : null;
-                string u2Name = row.Table.Columns.Contains("Unit2Name") && row["Unit2Name"] != DBNull.Value ? row["Unit2Name"].ToString() : null;
-                string baseUnit = row.Table.Columns.Contains("Unit") && row["Unit"] != DBNull.Value ? row["Unit"].ToString() : null;
-
                 if (defUnit == "الوسطى" && !string.IsNullOrEmpty(u2Name))
                 {
                     unitName = u2Name;
-                    if (row["Unit2SalePrice"] != DBNull.Value) price = Convert.ToDecimal(row["Unit2SalePrice"]);
-                    if (row["Unit2Factor"] != DBNull.Value) factor = Convert.ToDecimal(row["Unit2Factor"]);
+                    factor = u2fVal;
                 }
                 else if (defUnit == "الصغرى" && !string.IsNullOrEmpty(u1Name))
                 {
                     unitName = u1Name;
-                    if (row["Unit1SalePrice"] != DBNull.Value) price = Convert.ToDecimal(row["Unit1SalePrice"]);
                     factor = 1m;
                 }
                 else // "الكبرى" or default
                 {
                     unitName = !string.IsNullOrEmpty(baseUnit) ? baseUnit : u1Name;
-                    decimal u2f = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
-                    decimal u3f = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
-                    factor = u2f * u3f;
-                    price = overridePrice > 0 ? overridePrice : tierMajorPrice;
+                    factor = totalFactorVal;
                 }
             }
 
-            decimal u2fVal = row.Table.Columns.Contains("Unit2Factor") && row["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit2Factor"]) : 1m;
-            decimal u3fVal = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
-            if (u2fVal <= 0) u2fVal = 1m;
-            if (u3fVal <= 0) u3fVal = 1m;
-            decimal totalFactorVal = u2fVal * u3fVal;
+            if (overridePrice <= 0)
+            {
+                if (!string.IsNullOrEmpty(u1Name) && string.Equals(unitName, u1Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (isCustomTier)
+                        price = totalFactorVal > 1m ? Math.Round(tierMajorPrice / totalFactorVal, 2) : tierMajorPrice;
+                    else if (row.Table.Columns.Contains("Unit1SalePrice") && row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0)
+                        price = Convert.ToDecimal(row["Unit1SalePrice"]);
+                    else
+                        price = tierMajorPrice;
+                }
+                else if (!string.IsNullOrEmpty(u2Name) && string.Equals(unitName, u2Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (isCustomTier)
+                        price = u3fVal > 1m ? Math.Round(tierMajorPrice / u3fVal, 2) : tierMajorPrice;
+                    else if (row.Table.Columns.Contains("Unit2SalePrice") && row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0)
+                        price = Convert.ToDecimal(row["Unit2SalePrice"]);
+                    else
+                        price = u3fVal > 1m ? Math.Round(tierMajorPrice / u3fVal, 2) : tierMajorPrice;
+                }
+                else
+                {
+                    price = tierMajorPrice;
+                }
+            }
 
             decimal cost = majorCost;
             if (row.Table.Columns.Contains("Unit1Name") && row["Unit1Name"] != DBNull.Value && string.Equals(unitName, row["Unit1Name"].ToString(), StringComparison.OrdinalIgnoreCase))
@@ -2335,12 +2361,18 @@ namespace ChickenDist.Forms
             decimal u2f = item.Unit2Factor > 0 ? item.Unit2Factor : 1m;
             decimal u3f = item.Unit3Factor > 0 ? item.Unit3Factor : 1m;
             decimal totalFactor = u2f * u3f;
+            string curTier = GetSelectedPriceTier();
+            decimal tierPriceForUnit = GetProductPriceByTier(item.ProductID, curTier, newUnit);
 
             if (!string.IsNullOrEmpty(item.Unit2Name) && string.Equals(newUnit, item.Unit2Name, StringComparison.OrdinalIgnoreCase))
             {
                 // 1. الوحدة الوسطى
                 item.Factor = u2f;
-                if (item.Unit2SalePrice > 0)
+                if (tierPriceForUnit > 0)
+                {
+                    item.Price = tierPriceForUnit;
+                }
+                else if (item.Unit2SalePrice > 0)
                 {
                     item.Price = item.Unit2SalePrice;
                 }
@@ -2370,7 +2402,11 @@ namespace ChickenDist.Forms
             {
                 // 2. الوحدة الصغرى (التجزئة)
                 item.Factor = 1m;
-                if (item.Unit1SalePrice > 0)
+                if (tierPriceForUnit > 0)
+                {
+                    item.Price = tierPriceForUnit;
+                }
+                else if (item.Unit1SalePrice > 0)
                 {
                     item.Price = item.Unit1SalePrice;
                 }
@@ -3788,7 +3824,7 @@ namespace ChickenDist.Forms
                 while (true)
                 {
                     int posClientID = (cboClient != null && cboClient.SelectedItem is ComboItem ciClient) ? ciClient.ID : 0;
-                    using var frm = new FrmProductSearch(warehouseID: GetSelectedWarehouseID(), isPurchaseMode: false, defaultShowZeroStock: false, clientID: posClientID > 0 ? posClientID : (int?)null, initialSearchText: lastSearchText);
+                    using var frm = new FrmProductSearch(warehouseID: GetSelectedWarehouseID(), isPurchaseMode: false, defaultShowZeroStock: false, clientID: posClientID > 0 ? posClientID : (int?)null, initialSearchText: lastSearchText, priceTier: GetSelectedPriceTier());
                     frm.ShowDialog();
 
                     if (frm.DialogResult == DialogResult.OK && frm.SelectedProductID > 0)
@@ -3919,28 +3955,40 @@ namespace ChickenDist.Forms
                 decimal u3f = row.Table.Columns.Contains("Unit3Factor") && row["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(row["Unit3Factor"]) : 1m;
                 if (u2f <= 0) u2f = 1m;
                 if (u3f <= 0) u3f = 1m;
+                decimal totalFactor = u2f * u3f;
 
                 decimal price = Convert.ToDecimal(row["SalePrice"]);
+                bool isCustomTier = false;
                 if (curTier == "جملة" && row.Table.Columns.Contains("WholesalePrice") && row["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["WholesalePrice"]) > 0)
+                {
                     price = Convert.ToDecimal(row["WholesalePrice"]);
+                    isCustomTier = true;
+                }
                 else if (curTier == "نصف جملة" && row.Table.Columns.Contains("SemiWholesalePrice") && row["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(row["SemiWholesalePrice"]) > 0)
+                {
                     price = Convert.ToDecimal(row["SemiWholesalePrice"]);
+                    isCustomTier = true;
+                }
 
                 if (defUnit == "الوسطى" && !string.IsNullOrEmpty(u2Name))
                 {
                     btnFactor = u2f;
-                    if (row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0)
+                    if (isCustomTier)
+                        price = u3f > 1m ? Math.Round(price / u3f, 2) : price;
+                    else if (row["Unit2SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit2SalePrice"]) > 0)
                         price = Convert.ToDecimal(row["Unit2SalePrice"]);
                 }
                 else if (defUnit == "الصغرى" && !string.IsNullOrEmpty(u1Name))
                 {
                     btnFactor = 1m;
-                    if (row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0)
+                    if (isCustomTier)
+                        price = totalFactor > 1m ? Math.Round(price / totalFactor, 2) : price;
+                    else if (row["Unit1SalePrice"] != DBNull.Value && Convert.ToDecimal(row["Unit1SalePrice"]) > 0)
                         price = Convert.ToDecimal(row["Unit1SalePrice"]);
                 }
                 else
                 {
-                    btnFactor = u2f * u3f;
+                    btnFactor = totalFactor;
                 }
                 if (btnFactor <= 0) btnFactor = 1m;
 
@@ -4275,8 +4323,13 @@ namespace ChickenDist.Forms
                     if (cr.Rows.Count > 0 && cr.Rows[0]["DefaultPriceTier"] != DBNull.Value && !string.IsNullOrWhiteSpace(cr.Rows[0]["DefaultPriceTier"].ToString()))
                     {
                         string clientTier = cr.Rows[0]["DefaultPriceTier"].ToString().Trim();
-                        if (cboPriceTier != null && (Session.IsAdmin || string.Equals(clientTier, Session.GetDefaultPriceTier(), StringComparison.OrdinalIgnoreCase)))
+                        if (cboPriceTier != null)
                             cboPriceTier.SelectedItem = clientTier;
+                    }
+                    else
+                    {
+                        if (cboPriceTier != null)
+                            cboPriceTier.SelectedItem = Session.GetDefaultPriceTier();
                     }
                 }
                 catch { }
@@ -4400,7 +4453,7 @@ namespace ChickenDist.Forms
                     "اختيار صنف التوليفة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (ans == DialogResult.Yes)
                 {
-                    using var search = new FrmProductSearch(warehouseID: GetSelectedWarehouseID(), isPurchaseMode: false, defaultShowZeroStock: false);
+                    using var search = new FrmProductSearch(warehouseID: GetSelectedWarehouseID(), isPurchaseMode: false, defaultShowZeroStock: false, priceTier: GetSelectedPriceTier());
                     if (search.ShowDialog() == DialogResult.OK && search.SelectedProductID > 0)
                     {
                         var pdt = DbHelper.Query("SELECT ProductID, ProductCode, ProductName, SalePrice, ISNULL(Quantity,0) AS Quantity, ISNULL(Unit,N'قطعة') AS Unit FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", search.SelectedProductID));
@@ -4438,20 +4491,44 @@ namespace ChickenDist.Forms
             return Session.GetDefaultPriceTier();
         }
 
-        private decimal GetProductPriceByTier(int productID, string tier)
+        private decimal GetProductPriceByTier(int productID, string tier, string unitName = null)
         {
             try
             {
-                var dt = DbHelper.Query("SELECT SalePrice, WholesalePrice, SemiWholesalePrice FROM Products WHERE ProductID=@id", DbHelper.P("@id", productID));
+                var dt = DbHelper.Query("SELECT SalePrice, WholesalePrice, SemiWholesalePrice, Unit, Unit1Name, Unit1SalePrice, Unit2Name, Unit2SalePrice, Unit2Factor, Unit3Factor FROM Products WHERE ProductID=@id", DbHelper.P("@id", productID));
                 if (dt.Rows.Count > 0)
                 {
                     var r = dt.Rows[0];
-                    if (tier == "جملة" && r["WholesalePrice"] != DBNull.Value && Convert.ToDecimal(r["WholesalePrice"]) > 0)
-                        return Convert.ToDecimal(r["WholesalePrice"]);
-                    if (tier == "نصف جملة" && r["SemiWholesalePrice"] != DBNull.Value && Convert.ToDecimal(r["SemiWholesalePrice"]) > 0)
-                        return Convert.ToDecimal(r["SemiWholesalePrice"]);
-                    if (r["SalePrice"] != DBNull.Value)
-                        return Convert.ToDecimal(r["SalePrice"]);
+                    decimal retailP = r["SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SalePrice"]) : 0m;
+                    decimal whP = r["WholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["WholesalePrice"]) : 0m;
+                    decimal semiP = r["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SemiWholesalePrice"]) : 0m;
+
+                    decimal majorPrice = retailP;
+                    bool isCustomTier = false;
+                    if (tier == "جملة" && whP > 0m) { majorPrice = whP; isCustomTier = true; }
+                    else if (tier == "نصف جملة" && semiP > 0m) { majorPrice = semiP; isCustomTier = true; }
+
+                    if (string.IsNullOrEmpty(unitName)) return majorPrice;
+
+                    decimal u2f = r["Unit2Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit2Factor"]) : 1m;
+                    decimal u3f = r["Unit3Factor"] != DBNull.Value ? Convert.ToDecimal(r["Unit3Factor"]) : 1m;
+                    if (u2f <= 0) u2f = 1m;
+                    if (u3f <= 0) u3f = 1m;
+                    decimal totalFactor = u2f * u3f;
+
+                    string u1Name = r["Unit1Name"] != DBNull.Value ? r["Unit1Name"].ToString() : "";
+                    string u2Name = r["Unit2Name"] != DBNull.Value ? r["Unit2Name"].ToString() : "";
+                    if (!string.IsNullOrEmpty(u1Name) && string.Equals(unitName, u1Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        decimal u1sp = r["Unit1SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit1SalePrice"]) : 0m;
+                        return isCustomTier ? (totalFactor > 1m ? Math.Round(majorPrice / totalFactor, 2) : majorPrice) : (u1sp > 0m ? u1sp : majorPrice);
+                    }
+                    if (!string.IsNullOrEmpty(u2Name) && string.Equals(unitName, u2Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        decimal u2sp = r["Unit2SalePrice"] != DBNull.Value ? Convert.ToDecimal(r["Unit2SalePrice"]) : 0m;
+                        return isCustomTier ? (u3f > 1m ? Math.Round(majorPrice / u3f, 2) : majorPrice) : (u2sp > 0m ? u2sp : majorPrice);
+                    }
+                    return majorPrice;
                 }
             }
             catch { }

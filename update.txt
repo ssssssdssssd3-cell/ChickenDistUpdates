@@ -1,5 +1,5 @@
-version=4.1.5
+version=4.1.6
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.5&t=1792318241
-sha256=2011FE87F33402DBBBC1C00F5A588F8D40F9036FA4281CBE3A7E23D76C96BD11
-changelog=v4.1.5 - 2026-10-18: Reorganize navigation menus with visual separators, sales reports submenu, unified client/supplier actions, and clean top bar
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.6&t=1792371214
+sha256=5C65F4C642C7C860129278BE70A05F3274ED7758E04297E192DA170CAA8C9B24
+changelog=v4.1.6 - 2026-10-19: Eye-friendly UI redesign for Sales, Purchases, and Reports screens, wholesale/half-wholesale price tier fix, and advanced instant report filters

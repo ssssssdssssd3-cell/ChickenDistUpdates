@@ -38,12 +38,18 @@ namespace ChickenDist.Forms
 
 		private TextBox txtSearchClient;
 		private ComboBox cboReportSearchType;
+		private ComboBox cboCategoryFilter;
+		private ComboBox cboPartyFilter;
+		private Button btnResetFilters;
+		private Label lblFilterMatchCount;
+		private Dictionary<string, string> _productCategoryMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 		private DataTable _currentDt;
 		private string _targetModule = null;
 		private int _preFilteredID = 0;
 		private string _defaultTabTag = null;
 		private bool _isInitialized = false;
+		private bool _isApplyingPreset = false;
 
 		private static readonly Dictionary<string, Color> ReportTabColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -183,7 +189,7 @@ namespace ChickenDist.Forms
 			InitUI();
 		}
 
-		private Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 140, Color? labelColor = null)
+		private Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 130, Color? labelColor = null)
 		{
 			inputCtrl.Width = inputWidth;
 			inputCtrl.Height = 26;
@@ -193,32 +199,32 @@ namespace ChickenDist.Forms
 			{
 				Text = labelText,
 				AutoSize = true,
-				ForeColor = labelColor ?? Color.FromArgb(255, 220, 110), // Gold/Amber for readability
+				ForeColor = labelColor ?? Color.FromArgb(226, 232, 240), // Calm soft silver-white for eye comfort
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				RightToLeft = RightToLeft.Yes
 			};
 
 			int lblW = lbl.PreferredWidth;
-			int totalW = lblW + inputWidth + 16;
+			int totalW = lblW + inputWidth + 14;
 
 			var pnl = new Panel
 			{
-				Size = new Size(totalW, 36),
+				Size = new Size(totalW, 34),
 				BackColor = Color.FromArgb(30, 41, 59),
-				Margin = new Padding(3, 2, 4, 2),
-				Padding = new Padding(4),
+				Margin = new Padding(2, 2, 3, 2),
+				Padding = new Padding(3),
 				RightToLeft = RightToLeft.Yes
 			};
 			pnl.Paint += (s, e) =>
 			{
-				using (var pen = new Pen(Color.FromArgb(51, 65, 85), 1.2f))
+				using (var pen = new Pen(Color.FromArgb(71, 85, 105), 1f))
 				{
 					e.Graphics.DrawRectangle(pen, 0, 0, pnl.Width - 1, pnl.Height - 1);
 				}
 			};
 
-			lbl.Location = new Point(totalW - lblW - 6, 8);
-			inputCtrl.Location = new Point(4, 5);
+			lbl.Location = new Point(totalW - lblW - 5, 7);
+			inputCtrl.Location = new Point(4, 4);
 
 			pnl.Controls.Add(lbl);
 			pnl.Controls.Add(inputCtrl);
@@ -245,45 +251,55 @@ namespace ChickenDist.Forms
 			{
 				if (cboDatePresets.SelectedIndex <= 0) return;
 
-				DateTime now = DateTime.Now;
 				DateTime today = DateTime.Today;
-
-				switch (cboDatePresets.SelectedIndex)
+				_isApplyingPreset = true;
+				try
 				{
-					case 1: // اليوم
-						dtpFrom.Value = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
-						dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
-						break;
-					case 2: // أمس
-						var yday = today.AddDays(-1);
-						dtpFrom.Value = new DateTime(yday.Year, yday.Month, yday.Day, 0, 0, 0);
-						dtpTo.Value = new DateTime(yday.Year, yday.Month, yday.Day, 23, 59, 59);
-						break;
-					case 3: // هذا الأسبوع
-						int diff = (7 + (int)today.DayOfWeek - (int)DayOfWeek.Saturday) % 7;
-						var weekStart = today.AddDays(-diff);
-						dtpFrom.Value = new DateTime(weekStart.Year, weekStart.Month, weekStart.Day, 0, 0, 0);
-						dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
-						break;
-					case 4: // هذا الشهر
-						dtpFrom.Value = new DateTime(today.Year, today.Month, 1, 0, 0, 0);
-						dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
-						break;
-					case 5: // الشهر السابق
-						var lastMonth = today.AddMonths(-1);
-						var lmStart = new DateTime(lastMonth.Year, lastMonth.Month, 1, 0, 0, 0);
-						var lmEnd = new DateTime(today.Year, today.Month, 1, 0, 0, 0).AddSeconds(-1);
-						dtpFrom.Value = lmStart;
-						dtpTo.Value = lmEnd;
-						break;
-					case 6: // العام الحالي
-						dtpFrom.Value = new DateTime(today.Year, 1, 1, 0, 0, 0);
-						dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
-						break;
-					case 7: // كل الفترات
-						dtpFrom.Value = new DateTime(2020, 1, 1, 0, 0, 0);
-						dtpTo.Value = new DateTime(2035, 12, 31, 23, 59, 59);
-						break;
+					switch (cboDatePresets.SelectedIndex)
+					{
+						case 1: // اليوم
+							dtpFrom.Value = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+							dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
+							break;
+						case 2: // أمس
+							var yday = today.AddDays(-1);
+							dtpFrom.Value = new DateTime(yday.Year, yday.Month, yday.Day, 0, 0, 0);
+							dtpTo.Value = new DateTime(yday.Year, yday.Month, yday.Day, 23, 59, 59);
+							break;
+						case 3: // هذا الأسبوع
+							int diff = (7 + (int)today.DayOfWeek - (int)DayOfWeek.Saturday) % 7;
+							var weekStart = today.AddDays(-diff);
+							dtpFrom.Value = new DateTime(weekStart.Year, weekStart.Month, weekStart.Day, 0, 0, 0);
+							dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
+							break;
+						case 4: // هذا الشهر
+							dtpFrom.Value = new DateTime(today.Year, today.Month, 1, 0, 0, 0);
+							dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
+							break;
+						case 5: // الشهر السابق
+							var lastMonth = today.AddMonths(-1);
+							var lmStart = new DateTime(lastMonth.Year, lastMonth.Month, 1, 0, 0, 0);
+							var lmEnd = new DateTime(today.Year, today.Month, 1, 0, 0, 0).AddSeconds(-1);
+							dtpFrom.Value = lmStart;
+							dtpTo.Value = lmEnd;
+							break;
+						case 6: // العام الحالي
+							dtpFrom.Value = new DateTime(today.Year, 1, 1, 0, 0, 0);
+							dtpTo.Value = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
+							break;
+						case 7: // كل الفترات
+							dtpFrom.Value = new DateTime(2020, 1, 1, 0, 0, 0);
+							dtpTo.Value = new DateTime(2035, 12, 31, 23, 59, 59);
+							break;
+					}
+				}
+				finally
+				{
+					_isApplyingPreset = false;
+				}
+				if (_isInitialized && _currentDt != null)
+				{
+					LoadCurrentTab();
 				}
 			};
 		}
@@ -297,6 +313,7 @@ namespace ChickenDist.Forms
 				"نقدي (Cash)",
 				"آجل (Credit)",
 				"فيزا / شبكة (Visa)",
+				"مختلط (كاش + فيزا)",
 				"تقسيط شرعي"
 			});
 			cboPayType.SelectedIndex = 0;
@@ -324,18 +341,127 @@ namespace ChickenDist.Forms
 			catch { }
 		}
 
+		private void LoadCategoriesAndProductMap()
+		{
+			try
+			{
+				cboCategoryFilter.Items.Clear();
+				cboCategoryFilter.Items.Add("كل الأقسام والتصنيفات");
+				DataTable dtCats = CategoryDAL.GetAll(true);
+				if (dtCats != null)
+				{
+					foreach (DataRow r in dtCats.Rows)
+					{
+						string catName = r["CategoryName"]?.ToString()?.Trim();
+						if (!string.IsNullOrEmpty(catName) && !cboCategoryFilter.Items.Contains(catName))
+						{
+							cboCategoryFilter.Items.Add(catName);
+						}
+					}
+				}
+				cboCategoryFilter.SelectedIndex = 0;
+				cboCategoryFilter.SelectedIndexChanged += (s, e) => ApplyAllFilters();
+
+				_productCategoryMap.Clear();
+				DataTable dtProds = DbHelper.Query(@"
+					SELECT p.ProductID, p.ProductName, ISNULL(c.CategoryName, N'عام') AS CategoryName
+					FROM Products p
+					LEFT JOIN Categories c ON p.CategoryID = c.CategoryID");
+				if (dtProds != null)
+				{
+					foreach (DataRow r in dtProds.Rows)
+					{
+						string pName = r["ProductName"]?.ToString()?.Trim();
+						string pId = r["ProductID"]?.ToString()?.Trim();
+						string cName = r["CategoryName"]?.ToString()?.Trim();
+						if (!string.IsNullOrEmpty(cName))
+						{
+							if (!string.IsNullOrEmpty(pName)) _productCategoryMap[pName] = cName;
+							if (!string.IsNullOrEmpty(pId)) _productCategoryMap[pId] = cName;
+						}
+					}
+				}
+			}
+			catch { }
+		}
+
+		private void LoadParties()
+		{
+			try
+			{
+				cboPartyFilter.Items.Clear();
+				cboPartyFilter.Items.Add("كل العملاء والموردين");
+
+				bool includeClients = string.IsNullOrEmpty(_targetModule) || _targetModule == "Sales" || _targetModule == "Clients" || _targetModule == "Financials" || _targetModule == "Drivers";
+				bool includeSuppliers = string.IsNullOrEmpty(_targetModule) || _targetModule == "Purchases" || _targetModule == "Suppliers" || _targetModule == "Stores" || _targetModule == "Financials";
+
+				if (includeClients)
+				{
+					DataTable dtCli = DbHelper.Query("SELECT ClientName FROM Clients WHERE IsActive=1 ORDER BY ClientName");
+					if (dtCli != null)
+					{
+						foreach (DataRow r in dtCli.Rows)
+						{
+							string name = r["ClientName"]?.ToString()?.Trim();
+							if (!string.IsNullOrEmpty(name) && !cboPartyFilter.Items.Contains(name))
+								cboPartyFilter.Items.Add(name);
+						}
+					}
+				}
+
+				if (includeSuppliers)
+				{
+					DataTable dtSup = DbHelper.Query("SELECT SupplierName FROM Suppliers WHERE IsActive=1 ORDER BY SupplierName");
+					if (dtSup != null)
+					{
+						foreach (DataRow r in dtSup.Rows)
+						{
+							string name = r["SupplierName"]?.ToString()?.Trim();
+							if (!string.IsNullOrEmpty(name) && !cboPartyFilter.Items.Contains(name))
+								cboPartyFilter.Items.Add(name);
+						}
+					}
+				}
+
+				cboPartyFilter.SelectedIndex = 0;
+				cboPartyFilter.SelectedIndexChanged += (s, e) => ApplyAllFilters();
+				cboPartyFilter.TextChanged += (s, e) => ApplyAllFilters();
+			}
+			catch { }
+		}
+
+		private void ResetAllFilters()
+		{
+			try
+			{
+				if (cboWarehouse != null && cboWarehouse.Items.Count > 0) cboWarehouse.SelectedIndex = 0;
+				if (cboPayType != null && cboPayType.Items.Count > 0) cboPayType.SelectedIndex = 0;
+				if (cboCategoryFilter != null && cboCategoryFilter.Items.Count > 0) cboCategoryFilter.SelectedIndex = 0;
+				if (cboPartyFilter != null && cboPartyFilter.Items.Count > 0)
+				{
+					cboPartyFilter.SelectedIndex = 0;
+					cboPartyFilter.Text = cboPartyFilter.Items[0].ToString();
+				}
+				if (cboEmployee != null && cboEmployee.Items.Count > 0) cboEmployee.SelectedIndex = 0;
+				if (cboReportSearchType != null && cboReportSearchType.Items.Count > 0) cboReportSearchType.SelectedIndex = 0;
+				if (txtSearchClient != null) txtSearchClient.Text = "";
+				ApplyAllFilters();
+			}
+			catch { }
+		}
+
 		private void InitUI()
 		{
 			Text = "التقارير التفصيلية المتقدمة";
-			base.Size = new Size(1160, 720);
+			base.Size = new Size(1180, 740);
 			base.StartPosition = FormStartPosition.CenterScreen;
 			RightToLeft = RightToLeft.Yes;
-			BackColor = Theme.BgMain;
+			BackColor = Color.FromArgb(241, 245, 249);
 			Font = Theme.FontMain;
 
 			dtpFrom = new DateTimePicker
 			{
-				Width = 135,
+				Width = 106,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd",
 				Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
@@ -345,7 +471,7 @@ namespace ChickenDist.Forms
 
 			dtpTo = new DateTimePicker
 			{
-				Width = 135,
+				Width = 106,
 				Format = DateTimePickerFormat.Custom,
 				CustomFormat = "yyyy/MM/dd",
 				Value = DateTime.Now,
@@ -353,9 +479,18 @@ namespace ChickenDist.Forms
 				Margin = new Padding(0)
 			};
 
+			dtpFrom.ValueChanged += (s, e) =>
+			{
+				if (!_isApplyingPreset && _isInitialized && _currentDt != null) LoadCurrentTab();
+			};
+			dtpTo.ValueChanged += (s, e) =>
+			{
+				if (!_isApplyingPreset && _isInitialized && _currentDt != null) LoadCurrentTab();
+			};
+
 			cboDatePresets = new ComboBox
 			{
-				Width = 120,
+				Width = 105,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Color.White,
 				ForeColor = Color.FromArgb(30, 41, 59),
@@ -367,7 +502,7 @@ namespace ChickenDist.Forms
 
 			cboWarehouse = new ComboBox
 			{
-				Width = 125,
+				Width = 115,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Color.White,
 				ForeColor = Color.FromArgb(30, 41, 59),
@@ -389,9 +524,35 @@ namespace ChickenDist.Forms
 			};
 			LoadPaymentTypes();
 
-			cboEmployee = new ComboBox
+			cboCategoryFilter = new ComboBox
 			{
 				Width = 135,
+				DropDownStyle = ComboBoxStyle.DropDownList,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
+				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Margin = new Padding(0)
+			};
+			LoadCategoriesAndProductMap();
+
+			cboPartyFilter = new ComboBox
+			{
+				Width = 155,
+				DropDownStyle = ComboBoxStyle.DropDown,
+				AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+				AutoCompleteSource = AutoCompleteSource.ListItems,
+				BackColor = Color.White,
+				ForeColor = Color.FromArgb(30, 41, 59),
+				FlatStyle = FlatStyle.Flat,
+				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+				Margin = new Padding(0)
+			};
+			LoadParties();
+
+			cboEmployee = new ComboBox
+			{
+				Width = 125,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Color.White,
 				ForeColor = Color.FromArgb(30, 41, 59),
@@ -403,7 +564,7 @@ namespace ChickenDist.Forms
 
 			cboReportSearchType = new ComboBox
 			{
-				Width = 145,
+				Width = 135,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Color.White,
 				ForeColor = Color.FromArgb(30, 41, 59),
@@ -414,18 +575,19 @@ namespace ChickenDist.Forms
 			cboReportSearchType.Items.AddRange(new object[]
 			{
 				"🔍 بحث شامل (الكل)",
-				"🏷️ اسم الصنف (Name)",
-				"🔢 كود الصنف (Code)",
-				"🧾 رقم الفاتورة (Inv No)",
-				"👥 اسم العميل / المورد"
+				"🏷️ اسم الصنف",
+				"🔢 كود الصنف",
+				"🧾 رقم الفاتورة / السند",
+				"👥 اسم العميل / المورد",
+				"📝 الملاحظات / البيان"
 			});
 			cboReportSearchType.SelectedIndex = 0;
 			cboReportSearchType.SelectedIndexChanged += (s, e) => ApplyAllFilters();
 
 			txtSearchClient = new TextBox
 			{
-				Width = 170,
-				BackColor = Color.White,
+				Width = 165,
+				BackColor = Color.FromArgb(255, 251, 235),
 				ForeColor = Color.FromArgb(30, 41, 59),
 				BorderStyle = BorderStyle.FixedSingle,
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -433,9 +595,26 @@ namespace ChickenDist.Forms
 			};
 			txtSearchClient.TextChanged += (s, e) => ApplyAllFilters();
 
-			btnLoad = Theme.MakeButton("🔍 بحث", Color.FromArgb(16, 185, 129));
-			btnLoad.Size = new Size(115, 36);
-			btnLoad.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+			btnResetFilters = Theme.MakeButton("🔄 مسح الفلاتر", Color.FromArgb(71, 85, 105));
+			btnResetFilters.Size = new Size(98, 34);
+			btnResetFilters.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+			btnResetFilters.Margin = new Padding(2, 2, 3, 2);
+			btnResetFilters.Click += (s, e) => ResetAllFilters();
+
+			lblFilterMatchCount = new Label
+			{
+				AutoSize = true,
+				BackColor = Color.FromArgb(30, 58, 138),
+				ForeColor = Color.FromArgb(186, 230, 253),
+				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+				Padding = new Padding(8, 6, 8, 6),
+				Margin = new Padding(4, 3, 4, 3),
+				Text = "📊 السجلات: 0"
+			};
+
+			btnLoad = Theme.MakeButton("🔍 عرض التقرير", Color.FromArgb(16, 185, 129));
+			btnLoad.Size = new Size(120, 36);
+			btnLoad.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 			btnLoad.Margin = new Padding(3, 2, 3, 2);
 			btnLoad.Click += delegate
 			{
@@ -451,37 +630,37 @@ namespace ChickenDist.Forms
 			};
 
 			btnPrint = Theme.MakeButton("🖨️ طباعة", Color.FromArgb(37, 99, 235));
-			btnPrint.Size = new Size(100, 36);
+			btnPrint.Size = new Size(95, 36);
 			btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnPrint.Margin = new Padding(3, 2, 3, 2);
 			btnPrint.Click += BtnPrint_Click;
 
 			btnExportPdf = Theme.MakeButton("📄 PDF", Color.FromArgb(220, 38, 38));
-			btnExportPdf.Size = new Size(95, 36);
+			btnExportPdf.Size = new Size(90, 36);
 			btnExportPdf.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnExportPdf.Margin = new Padding(3, 2, 3, 2);
 			btnExportPdf.Click += BtnExportPdf_Click;
 
 			btnExportExcel = Theme.MakeButton("📥 إكسيل", Color.FromArgb(16, 185, 129));
-			btnExportExcel.Size = new Size(100, 36);
+			btnExportExcel.Size = new Size(95, 36);
 			btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnExportExcel.Margin = new Padding(3, 2, 3, 2);
 			btnExportExcel.Click += BtnExportExcel_Click;
 
 			btnWhatsAppReport = Theme.MakeButton("📲 واتساب", Color.FromArgb(37, 211, 102));
-			btnWhatsAppReport.Size = new Size(110, 36);
+			btnWhatsAppReport.Size = new Size(105, 36);
 			btnWhatsAppReport.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnWhatsAppReport.Margin = new Padding(3, 2, 3, 2);
 			btnWhatsAppReport.Click += BtnWhatsAppReport_Click;
 			btnWhatsAppReport.Visible = false;
 
-			// ── 1. بانر علوي فخم (Header Banner) يعرض اسم التقرير وأزرار العمليات ──
+			// ── 1. بانر علوي مريح للعين يعرض اسم التقرير وأزرار العمليات ──
 			var pnlReportBanner = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 58,
+				Height = 56,
 				BackColor = Color.FromArgb(15, 23, 42),
-				Padding = new Padding(12, 6, 12, 6),
+				Padding = new Padding(10, 5, 10, 5),
 				RightToLeft = RightToLeft.Yes
 			};
 
@@ -493,13 +672,13 @@ namespace ChickenDist.Forms
 				BackColor = Color.Transparent,
 				FlowDirection = FlowDirection.LeftToRight,
 				WrapContents = false,
-				Padding = new Padding(0, 4, 0, 4),
+				Padding = new Padding(0, 3, 0, 3),
 				Margin = new Padding(0),
 				RightToLeft = RightToLeft.Yes
 			};
 
 			btnDailyInvoicesSheet = Theme.MakeButton("📑 شيت فواتير اليومية", Color.FromArgb(14, 165, 233));
-			btnDailyInvoicesSheet.Size = new Size(160, 36);
+			btnDailyInvoicesSheet.Size = new Size(155, 36);
 			btnDailyInvoicesSheet.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnDailyInvoicesSheet.Margin = new Padding(3, 2, 3, 2);
 			btnDailyInvoicesSheet.Visible = false;
@@ -515,20 +694,21 @@ namespace ChickenDist.Forms
 			pnlBannerActions.Controls.Add(btnExportPdf);
 			pnlBannerActions.Controls.Add(btnExportExcel);
 			pnlBannerActions.Controls.Add(btnWhatsAppReport);
+			pnlBannerActions.Controls.Add(lblFilterMatchCount);
 
 			var pnlBannerTitles = new Panel
 			{
 				Dock = DockStyle.Fill,
 				BackColor = Color.Transparent,
-				Padding = new Padding(10, 2, 10, 2)
+				Padding = new Padding(8, 2, 8, 2)
 			};
 
 			lblReportHeaderTitle = new Label
 			{
 				Dock = DockStyle.Top,
-				Height = 26,
-				ForeColor = Color.FromArgb(241, 196, 15), // Gold
-				Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+				Height = 25,
+				ForeColor = Color.FromArgb(125, 211, 252), // Calm Sky Blue
+				Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
 				TextAlign = ContentAlignment.MiddleRight,
 				Text = "📊 تقارير المبيعات الشاملة"
 			};
@@ -537,7 +717,7 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Fill,
 				ForeColor = Color.FromArgb(203, 213, 225), // Light Slate
-				Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+				Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
 				TextAlign = ContentAlignment.MiddleRight,
 				Text = "💡 استخدام التقرير: استعراض ومتابعة حركة المبيعات والأرباح وفواتير العملاء مع إمكانية التصدير والطباعة والبحث السريع."
 			};
@@ -548,46 +728,63 @@ namespace ChickenDist.Forms
 			pnlReportBanner.Controls.Add(pnlBannerTitles);
 			pnlReportBanner.Controls.Add(pnlBannerActions);
 
-			// ── 2. شريط أدوات الفلترة والبحث الموحد (Unified Filter & Search Bar) ──
+			// ── 2. شريط أدوات الفلترة والبحث الموحد (2 صفوف منظمة بدون أي قص للشاشة) ──
 			var pnlFiltersBar = new Panel
 			{
 				Dock = DockStyle.Top,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				BackColor = Color.FromArgb(24, 38, 62),
-				Padding = new Padding(10, 6, 10, 6),
+				Height = 82,
+				BackColor = Color.FromArgb(23, 37, 64),
+				Padding = new Padding(8, 4, 8, 4),
 				RightToLeft = RightToLeft.Yes
 			};
 
-			var flowFilters = new FlowLayoutPanel
+			var flowRow1 = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				Height = 37,
 				BackColor = Color.Transparent,
 				FlowDirection = FlowDirection.LeftToRight,
-				WrapContents = true,
+				WrapContents = false,
 				Margin = new Padding(0),
 				Padding = new Padding(0),
 				RightToLeft = RightToLeft.Yes
 			};
 
-			flowFilters.Controls.Add(MakeFilterPanel("📅 من تاريخ:", dtpFrom, 135));
-			flowFilters.Controls.Add(MakeFilterPanel("📅 إلى تاريخ:", dtpTo, 135));
-			flowFilters.Controls.Add(MakeFilterPanel("⚡ الفترة:", cboDatePresets, 120));
-			flowFilters.Controls.Add(MakeFilterPanel("🏢 المخزن:", cboWarehouse, 125));
-			flowFilters.Controls.Add(MakeFilterPanel("💳 طريقة الدفع:", cboPayType, 115));
-			flowFilters.Controls.Add(MakeFilterPanel("👔 الكاشير/المندوب:", cboEmployee, 135));
-			flowFilters.Controls.Add(MakeFilterPanel("🔍 نوع البحث:", cboReportSearchType, 145));
-			flowFilters.Controls.Add(MakeFilterPanel("🔎 نص البحث:", txtSearchClient, 170, Color.FromArgb(255, 220, 110)));
+			var flowRow2 = new FlowLayoutPanel
+			{
+				Dock = DockStyle.Top,
+				Height = 37,
+				BackColor = Color.Transparent,
+				FlowDirection = FlowDirection.LeftToRight,
+				WrapContents = false,
+				Margin = new Padding(0),
+				Padding = new Padding(0),
+				RightToLeft = RightToLeft.Yes
+			};
 
-			pnlFiltersBar.Controls.Add(flowFilters);
+			// الصف الأول: الفترة الزمنية + المخزن + طريقة الدفع + التصنيف
+			flowRow1.Controls.Add(MakeFilterPanel("📅 من:", dtpFrom, 106));
+			flowRow1.Controls.Add(MakeFilterPanel("📅 إلى:", dtpTo, 106));
+			flowRow1.Controls.Add(MakeFilterPanel("⚡ الفترة:", cboDatePresets, 105));
+			flowRow1.Controls.Add(MakeFilterPanel("🏢 المخزن:", cboWarehouse, 115));
+			flowRow1.Controls.Add(MakeFilterPanel("💳 الدفع:", cboPayType, 115));
+			flowRow1.Controls.Add(MakeFilterPanel("📂 التصنيف:", cboCategoryFilter, 135));
+
+			// الصف الثاني: العميل/المورد + الكاشير/المندوب + نطاق البحث + نص البحث الفوري + مسح الفلاتر
+			flowRow2.Controls.Add(MakeFilterPanel("👥 العميل/المورد:", cboPartyFilter, 155));
+			flowRow2.Controls.Add(MakeFilterPanel("👔 الموظف/الكاشير:", cboEmployee, 125));
+			flowRow2.Controls.Add(MakeFilterPanel("🔍 نطاق البحث:", cboReportSearchType, 135));
+			flowRow2.Controls.Add(MakeFilterPanel("🔎 بحث فوري:", txtSearchClient, 165, Color.FromArgb(253, 224, 71)));
+			flowRow2.Controls.Add(btnResetFilters);
+
+			// في WinForms، الكنترول المضاف أخيراً بـ DockStyle.Top يظهر في الأعلى، لذلك نضيف الصف الثاني ثم الأول
+			pnlFiltersBar.Controls.Add(flowRow2);
+			pnlFiltersBar.Controls.Add(flowRow1);
 
 			var pnlTopContainer = new Panel
 			{
 				Dock = DockStyle.Top,
-				AutoSize = true,
-				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				Height = 138,
 				BackColor = Color.FromArgb(15, 23, 42),
 				Padding = new Padding(0),
 				RightToLeft = RightToLeft.Yes
@@ -2992,31 +3189,34 @@ namespace ChickenDist.Forms
 			dg.AllowUserToResizeColumns = true;
 			dg.AllowUserToResizeRows = false;
 			dg.EnableDoubleBuffering();
-			dg.RowTemplate.Height = 28;
+			dg.RowTemplate.Height = 32;
 			dg.RowHeadersVisible = false;
 			dg.AllowUserToAddRows = false;
 			dg.ReadOnly = true;
 			dg.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
 			dg.RightToLeft = RightToLeft.Yes;
 			dg.BorderStyle = BorderStyle.None;
+			dg.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
 
 			bool isDark = (AppConfig.AppTheme == "Dark");
 			Color row1 = isDark ? Color.FromArgb(30, 41, 59) : Color.White;
 			Color row2 = isDark ? Color.FromArgb(24, 32, 47) : Color.FromArgb(248, 250, 252);
-			Color textCol = isDark ? Color.FromArgb(241, 245, 249) : Color.FromArgb(30, 41, 59);
-			Color selBg = Color.FromArgb(37, 99, 235);
+			Color textCol = isDark ? Color.FromArgb(241, 245, 249) : Color.FromArgb(15, 23, 42);
+			Color selBg = isDark ? Color.FromArgb(37, 99, 235) : Color.FromArgb(219, 234, 254);
+			Color selFg = isDark ? Color.White : Color.FromArgb(30, 58, 138);
 			Color gridLine = isDark ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
 
 			dg.GridColor = gridLine;
-			dg.BackgroundColor = isDark ? Color.FromArgb(15, 23, 42) : Color.FromArgb(245, 247, 250);
+			dg.BackgroundColor = isDark ? Color.FromArgb(15, 23, 42) : Color.FromArgb(241, 245, 249);
 
 			dg.DefaultCellStyle = new DataGridViewCellStyle
 			{
 				BackColor = row1,
 				ForeColor = textCol,
 				SelectionBackColor = selBg,
-				SelectionForeColor = Color.White,
+				SelectionForeColor = selFg,
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+				Padding = new Padding(6, 2, 6, 2),
 				Alignment = DataGridViewContentAlignment.MiddleLeft
 			};
 
@@ -3025,19 +3225,22 @@ namespace ChickenDist.Forms
 				BackColor = row2,
 				ForeColor = textCol,
 				SelectionBackColor = selBg,
-				SelectionForeColor = Color.White,
+				SelectionForeColor = selFg,
 				Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+				Padding = new Padding(6, 2, 6, 2),
 				Alignment = DataGridViewContentAlignment.MiddleLeft
 			};
 
 			dg.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
 			{
 				BackColor = Color.FromArgb(30, 41, 59),
-				ForeColor = Color.White,
-				Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+				ForeColor = Color.FromArgb(248, 250, 252),
+				SelectionBackColor = Color.FromArgb(30, 41, 59),
+				SelectionForeColor = Color.FromArgb(248, 250, 252),
+				Font = new Font("Segoe UI", 9.75f, FontStyle.Bold),
 				Alignment = DataGridViewContentAlignment.MiddleCenter
 			};
-			dg.ColumnHeadersHeight = 34;
+			dg.ColumnHeadersHeight = 38;
 			dg.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
 			dg.EnableHeadersVisualStyles = false;
 
@@ -3045,9 +3248,9 @@ namespace ChickenDist.Forms
 			{
 				if (dg.Rows.Count == 0 && dg.Columns.Count == 0)
 				{
-					string msg = "💡 يرجى تحديد معايير التقرير ثم الضغط على زر [ 🔍 بحث ] لعرض البيانات";
+					string msg = "💡 يرجى تحديد معايير التقرير ثم الضغط على زر [ 🔍 عرض التقرير ] لعرض البيانات";
 					using (var font = new Font("Segoe UI", 11.5f, FontStyle.Bold))
-					using (var brush = new SolidBrush(Color.FromArgb(148, 163, 184)))
+					using (var brush = new SolidBrush(Color.FromArgb(100, 116, 139)))
 					{
 						var sf = new StringFormat
 						{
@@ -3097,10 +3300,10 @@ namespace ChickenDist.Forms
 				{
 					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 					col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-					if (name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "PurchasedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
-					else if (name == "IMEI" || name == "السيريال") col.DefaultCellStyle.ForeColor = Color.FromArgb(14, 165, 233);
-					else if (name == "BonusQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(16, 185, 129);
-					else if (name == "ReturnAmount" || name == "ReturnedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
+					if (name == "TotalQty" || name == "TotalQtySold" || name == "NetQty" || name == "PurchasedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(2, 132, 199);
+					else if (name == "IMEI" || name == "السيريال") col.DefaultCellStyle.ForeColor = Color.FromArgb(2, 132, 199);
+					else if (name == "BonusQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(21, 128, 61);
+					else if (name == "ReturnAmount" || name == "ReturnedQty") col.DefaultCellStyle.ForeColor = Color.FromArgb(220, 38, 38);
 				}
 				else if (name == "TotalBeforeDiscount" || name == "DiscountAmount" || name == "TotalDiscounts" || name == "DiscountAmt" || 
 				         name == "TotalAfterDiscount" || name == "TotalAmount" || name == "TotalSales" || name == "TotalSalesAmount" ||
@@ -3112,16 +3315,16 @@ namespace ChickenDist.Forms
 					col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
 					if (name == "DiscountAmount" || name == "TotalDiscounts" || name == "DiscountAmt" || headerText.Contains("خصم")) 
 					{
-						col.DefaultCellStyle.ForeColor = Color.FromArgb(249, 115, 22);
+						col.DefaultCellStyle.ForeColor = Color.FromArgb(234, 88, 12);
 						col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 					}
 					else if (name == "TotalReturns" || name == "ReturnedAmount" || name == "ReturnsTotal" || headerText.Contains("مرتجع"))
 					{
-						col.DefaultCellStyle.ForeColor = Color.FromArgb(231, 76, 60);
+						col.DefaultCellStyle.ForeColor = Color.FromArgb(220, 38, 38);
 					}
 					else if (name == "NetAmount" || name == "NetSales" || headerText.Contains("صافي المبيعات") || headerText.Contains("الصافي النهائي"))
 					{
-						col.DefaultCellStyle.ForeColor = Color.FromArgb(46, 204, 113);
+						col.DefaultCellStyle.ForeColor = Color.FromArgb(21, 128, 61);
 						col.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 					}
 					else if (name == "NetProfit" || name == "GrossProfit")
@@ -4811,6 +5014,15 @@ namespace ChickenDist.Forms
 			string query = txtSearchClient != null ? txtSearchClient.Text.Trim() : "";
 			string payType = (cboPayType != null && cboPayType.SelectedIndex > 0) ? cboPayType.SelectedItem?.ToString() : "";
 			string empName = (cboEmployee != null && cboEmployee.SelectedIndex > 0 && cboEmployee.SelectedItem is ComboItem ci) ? ci.Text : "";
+			string categoryName = (cboCategoryFilter != null && cboCategoryFilter.SelectedIndex > 0) ? cboCategoryFilter.SelectedItem?.ToString() : "";
+			string partyName = "";
+			if (cboPartyFilter != null)
+			{
+				string pTxt = cboPartyFilter.Text?.Trim() ?? "";
+				if (!string.IsNullOrEmpty(pTxt) && !pTxt.StartsWith("كل "))
+					partyName = pTxt;
+			}
+			string warehouseName = (cboWarehouse != null && cboWarehouse.SelectedIndex > 0 && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0) ? wh.Text : "";
 
 			string tabTag = tabReports.SelectedTab?.Tag?.ToString();
 			if (tabTag == "IncomeStatementAndProfitability")
@@ -4819,21 +5031,21 @@ namespace ChickenDist.Forms
 				var dgProd = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgProductProfit");
 				var dgCli = FindControlByName<DataGridView>(tabReports.SelectedTab, "dgClientProfit");
 
-				if (dgPL != null) FilterGrid(dgPL, query, payType, empName);
-				if (dgProd != null) FilterGrid(dgProd, query, payType, empName);
-				if (dgCli != null) FilterGrid(dgCli, query, payType, empName);
+				if (dgPL != null) FilterGrid(dgPL, query, payType, empName, categoryName, partyName, warehouseName);
+				if (dgProd != null) FilterGrid(dgProd, query, payType, empName, categoryName, partyName, warehouseName);
+				if (dgCli != null) FilterGrid(dgCli, query, payType, empName, categoryName, partyName, warehouseName);
 			}
 			else
 			{
-				DataGridView dataGridView = FindDataGridView(tabReports.SelectedTab);
+				DataGridView dataGridView = GetActiveGrid() ?? FindDataGridView(tabReports.SelectedTab);
 				if (dataGridView != null)
 				{
-					FilterGrid(dataGridView, query, payType, empName);
+					FilterGrid(dataGridView, query, payType, empName, categoryName, partyName, warehouseName);
 				}
 			}
 		}
 
-		private void FilterGrid(DataGridView dg, string query, string payType = "", string empName = "")
+		private void FilterGrid(DataGridView dg, string query, string payType = "", string empName = "", string categoryName = "", string partyName = "", string warehouseName = "")
 		{
 			if (dg == null) return;
 
@@ -4843,6 +5055,22 @@ namespace ChickenDist.Forms
 				bool hasQuery = !string.IsNullOrWhiteSpace(query);
 				bool hasPayType = !string.IsNullOrWhiteSpace(payType) && !payType.StartsWith("كل ");
 				bool hasEmp = !string.IsNullOrWhiteSpace(empName) && !empName.StartsWith("كل ");
+				bool hasCategory = !string.IsNullOrWhiteSpace(categoryName) && !categoryName.StartsWith("كل ");
+				bool hasParty = !string.IsNullOrWhiteSpace(partyName) && !partyName.StartsWith("كل ");
+				bool hasWarehouse = !string.IsNullOrWhiteSpace(warehouseName) && !warehouseName.StartsWith("كل ");
+
+				// Check if grid has a dedicated warehouse column
+				bool gridHasWarehouseCol = false;
+				for (int c = 0; c < dg.Columns.Count; c++)
+				{
+					string cn = dg.Columns[c].Name;
+					string ht = dg.Columns[c].HeaderText ?? "";
+					if (cn.IndexOf("Warehouse", StringComparison.OrdinalIgnoreCase) >= 0 || ht.Contains("مخزن") || ht.Contains("المخزن"))
+					{
+						gridHasWarehouseCol = true;
+						break;
+					}
+				}
 
 				for (int i = 0; i < dg.Rows.Count; i++)
 				{
@@ -4858,6 +5086,9 @@ namespace ChickenDist.Forms
 					bool matchQuery = !hasQuery;
 					bool matchPay = !hasPayType;
 					bool matchEmp = !hasEmp;
+					bool matchCat = !hasCategory;
+					bool matchParty = !hasParty;
+					bool matchWh = !hasWarehouse || !gridHasWarehouseCol;
 
 					if (hasQuery)
 					{
@@ -4867,8 +5098,8 @@ namespace ChickenDist.Forms
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
 							{
-								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
-								string cName = dg.Columns[cell.ColumnIndex].Name;
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+								string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
 								if (hText.Contains("صنف") || hText.Contains("بيان") || cName.IndexOf("Product", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Item", StringComparison.OrdinalIgnoreCase) >= 0)
 								{
 									string val = cell.Value?.ToString();
@@ -4885,8 +5116,8 @@ namespace ChickenDist.Forms
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
 							{
-								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
-								string cName = dg.Columns[cell.ColumnIndex].Name;
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+								string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
 								if (hText.Contains("كود") || cName.IndexOf("Code", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("ProductID", StringComparison.OrdinalIgnoreCase) >= 0)
 								{
 									string val = cell.Value?.ToString()?.Trim();
@@ -4898,13 +5129,13 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
-						else if (searchType == 3) // 🧾 رقم الفاتورة فقط
+						else if (searchType == 3) // 🧾 رقم الفاتورة / السند فقط
 						{
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
 							{
-								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
-								string cName = dg.Columns[cell.ColumnIndex].Name;
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+								string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
 								if (hText.Contains("فاتورة") || hText.Contains("سند") || hText.Contains("رقم") || cName.IndexOf("Sale", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Purchase", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Invoice", StringComparison.OrdinalIgnoreCase) >= 0)
 								{
 									string val = cell.Value?.ToString()?.Trim();
@@ -4921,9 +5152,27 @@ namespace ChickenDist.Forms
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
 							{
-								string hText = dg.Columns[cell.ColumnIndex].HeaderText;
-								string cName = dg.Columns[cell.ColumnIndex].Name;
-								if (hText.Contains("عميل") || hText.Contains("مورد") || cName.IndexOf("Client", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Supplier", StringComparison.OrdinalIgnoreCase) >= 0)
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+								string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
+								if (hText.Contains("عميل") || hText.Contains("مورد") || hText.Contains("جهة") || cName.IndexOf("Client", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Supplier", StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									string val = cell.Value?.ToString();
+									if (val != null && val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+									{
+										matchQuery = true;
+										break;
+									}
+								}
+							}
+						}
+						else if (searchType == 5) // 📝 الملاحظات / البيان
+						{
+							matchQuery = false;
+							foreach (DataGridViewCell cell in row.Cells)
+							{
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+								string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
+								if (hText.Contains("ملاحظات") || hText.Contains("بيان") || hText.Contains("وصف") || hText.Contains("سبب") || cName.IndexOf("Note", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Desc", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Reason", StringComparison.OrdinalIgnoreCase) >= 0)
 								{
 									string val = cell.Value?.ToString();
 									if (val != null && val.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
@@ -4936,6 +5185,7 @@ namespace ChickenDist.Forms
 						}
 						else // 🔍 بحث شامل (في كل الحقول)
 						{
+							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
 							{
 								string val = cell.Value?.ToString();
@@ -4950,7 +5200,7 @@ namespace ChickenDist.Forms
 
 					if (hasPayType)
 					{
-						string pKeyword = payType.Contains("نقدي") ? "نقدي" : payType.Contains("آجل") ? "آجل" : payType.Contains("فيزا") ? "فيزا" : payType.Contains("تقسيط") ? "تقسيط" : payType;
+						string pKeyword = payType.Contains("نقدي") ? "نقدي" : payType.Contains("آجل") ? "آجل" : payType.Contains("فيزا") ? "فيزا" : payType.Contains("مختلط") ? "مختلط" : payType.Contains("تقسيط") ? "تقسيط" : payType;
 						foreach (DataGridViewCell cell in row.Cells)
 						{
 							string val = cell.Value?.ToString();
@@ -4975,7 +5225,105 @@ namespace ChickenDist.Forms
 						}
 					}
 
-					row.Visible = (matchQuery && matchPay && matchEmp);
+					if (hasCategory)
+					{
+						bool checkedCatCol = false;
+						foreach (DataGridViewCell cell in row.Cells)
+						{
+							string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+							string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
+							if (cName.IndexOf("Category", StringComparison.OrdinalIgnoreCase) >= 0 || hText.Contains("تصنيف") || hText.Contains("قسم") || hText.Contains("مجموعة") || hText.Contains("الأقسام"))
+							{
+								checkedCatCol = true;
+								string val = cell.Value?.ToString()?.Trim();
+								if (!string.IsNullOrEmpty(val) && val.IndexOf(categoryName, StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									matchCat = true;
+									break;
+								}
+							}
+						}
+
+						if (!matchCat && !checkedCatCol && _productCategoryMap != null && _productCategoryMap.Count > 0)
+						{
+							bool hasProductCol = false;
+							foreach (DataGridViewCell cell in row.Cells)
+							{
+								string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+								string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
+								if (cName.IndexOf("Product", StringComparison.OrdinalIgnoreCase) >= 0 || hText.Contains("صنف") || hText.Contains("الصنف"))
+								{
+									hasProductCol = true;
+									string rawProd = cell.Value?.ToString()?.Trim() ?? "";
+									int sIdx = rawProd.IndexOf(" (سيريال:", StringComparison.OrdinalIgnoreCase);
+									if (sIdx > 0) rawProd = rawProd.Substring(0, sIdx).Trim();
+
+									if (!string.IsNullOrEmpty(rawProd) && _productCategoryMap.TryGetValue(rawProd, out string mappedCat))
+									{
+										if (string.Equals(mappedCat, categoryName, StringComparison.OrdinalIgnoreCase) || mappedCat.IndexOf(categoryName, StringComparison.OrdinalIgnoreCase) >= 0)
+										{
+											matchCat = true;
+											break;
+										}
+									}
+								}
+							}
+							// If this report has neither a Category column nor a Product column (e.g., ClientBalances), don't hide all rows
+							if (!hasProductCol) matchCat = true;
+						}
+					}
+
+					if (hasParty)
+					{
+						bool hasPartyCol = false;
+						foreach (DataGridViewCell cell in row.Cells)
+						{
+							string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+							string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
+							if (cName.IndexOf("Client", StringComparison.OrdinalIgnoreCase) >= 0 || cName.IndexOf("Supplier", StringComparison.OrdinalIgnoreCase) >= 0 || hText.Contains("عميل") || hText.Contains("مورد") || hText.Contains("جهة"))
+							{
+								hasPartyCol = true;
+								string val = cell.Value?.ToString();
+								if (val != null && val.IndexOf(partyName, StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									matchParty = true;
+									break;
+								}
+							}
+						}
+						if (!hasPartyCol)
+						{
+							foreach (DataGridViewCell cell in row.Cells)
+							{
+								string val = cell.Value?.ToString();
+								if (val != null && val.IndexOf(partyName, StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									matchParty = true;
+									break;
+								}
+							}
+						}
+					}
+
+					if (hasWarehouse && gridHasWarehouseCol)
+					{
+						foreach (DataGridViewCell cell in row.Cells)
+						{
+							string hText = dg.Columns[cell.ColumnIndex].HeaderText ?? "";
+							string cName = dg.Columns[cell.ColumnIndex].Name ?? "";
+							if (cName.IndexOf("Warehouse", StringComparison.OrdinalIgnoreCase) >= 0 || hText.Contains("مخزن") || hText.Contains("المخزن"))
+							{
+								string val = cell.Value?.ToString();
+								if (val != null && val.IndexOf(warehouseName, StringComparison.OrdinalIgnoreCase) >= 0)
+								{
+									matchWh = true;
+									break;
+								}
+							}
+						}
+					}
+
+					row.Visible = (matchQuery && matchPay && matchEmp && matchCat && matchParty && matchWh);
 				}
 
 				// Recalculate total row for visible rows matching current search and filter
@@ -4989,17 +5337,17 @@ namespace ChickenDist.Forms
 					}
 				}
 
-				if (totalRow != null)
+				int visibleCount = 0;
+				decimal[] visibleSums = new decimal[dg.Columns.Count];
+
+				for (int i = 0; i < dg.Rows.Count; i++)
 				{
-					decimal[] visibleSums = new decimal[dg.Columns.Count];
-					int visibleCount = 0;
+					DataGridViewRow row = dg.Rows[i];
+					if (row == totalRow || !row.Visible || row.IsNewRow) continue;
+					visibleCount++;
 
-					for (int i = 0; i < dg.Rows.Count; i++)
+					if (totalRow != null)
 					{
-						DataGridViewRow row = dg.Rows[i];
-						if (row == totalRow || !row.Visible || row.IsNewRow) continue;
-						visibleCount++;
-
 						for (int j = 1; j < dg.Columns.Count; j++)
 						{
 							object valObj = row.Cells[j].Value;
@@ -5014,6 +5362,15 @@ namespace ChickenDist.Forms
 							}
 						}
 					}
+				}
+
+				if (lblFilterMatchCount != null)
+				{
+					lblFilterMatchCount.Text = $"📊 السجلات: {visibleCount:N0}";
+				}
+
+				if (totalRow != null)
+				{
 
 					for (int j = 1; j < dg.Columns.Count; j++)
 					{
@@ -5164,31 +5521,29 @@ namespace ChickenDist.Forms
 
 			Rectangle tabRect = tabReports.GetTabRect(e.Index);
 
-			// Background & Text Colors
+			// Calm, eye-friendly colors for tab headers
 			Color bg;
 			Color borderColor;
 			Color textCol;
 
 			if (isSelected)
 			{
-				bg = Color.FromArgb(30, 41, 59); // Slate Navy Card
-				borderColor = Color.FromArgb(59, 130, 246); // Royal Blue Accent
+				bg = Color.FromArgb(30, 58, 138); // Deep Royal Navy
+				borderColor = Color.FromArgb(56, 189, 248); // Sky Blue Accent
 				textCol = Color.White;
 			}
 			else
 			{
-				bg = Color.FromArgb(241, 245, 249); // Calm Soft Slate
+				bg = Color.FromArgb(241, 245, 249); // Soft Cool Slate
 				borderColor = Color.FromArgb(203, 213, 225);
-				textCol = Color.FromArgb(71, 85, 105);
+				textCol = Color.FromArgb(51, 65, 85);
 			}
 
-			// Fill tab background
 			using (var br = new SolidBrush(bg))
 			{
 				g.FillRectangle(br, tabRect);
 			}
 
-			// Border
 			using (var p = new Pen(borderColor, 1f))
 			{
 				g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width - 1, tabRect.Height - 1);
@@ -5196,29 +5551,28 @@ namespace ChickenDist.Forms
 
 			if (isSelected)
 			{
-				// Top Accent Line
-				using (var pAccent = new Pen(Color.FromArgb(59, 130, 246), 3.5f))
+				using (var pAccent = new Pen(Color.FromArgb(56, 189, 248), 3f))
 				{
-					g.DrawLine(pAccent, tabRect.X + 1, tabRect.Y + 2, tabRect.Right - 1, tabRect.Y + 2);
+					g.DrawLine(pAccent, tabRect.X + 1, tabRect.Bottom - 2, tabRect.Right - 1, tabRect.Bottom - 2);
 				}
 			}
 
-			// Text
-			string text = tp.Text;
-			using (var font = new Font("Segoe UI", 9.5f, isSelected ? FontStyle.Bold : FontStyle.Bold))
-			{
-				var sf = new StringFormat
-				{
-					Alignment = StringAlignment.Center,
-					LineAlignment = StringAlignment.Center,
-					FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.FitBlackBox
-				};
+			// Strip surrogate-pair emojis so GDI+ never renders broken square boxes in tab titles
+			string cleanText = System.Text.RegularExpressions.Regex.Replace(
+				tp.Text ?? "",
+				@"[\uD800-\uDBFF][\uDC00-\uDFFF]|\uFE0F|\u200D|[\u2600-\u27BF]",
+				"").Trim();
 
-				var textRect = new RectangleF(tabRect.X + 4, tabRect.Y, tabRect.Width - 8, tabRect.Height);
-				using (var brText = new SolidBrush(textCol))
-				{
-					g.DrawString(text, font, brText, textRect, sf);
-				}
+			using (var font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+			{
+				var textRect = new Rectangle(tabRect.X + 4, tabRect.Y + 1, tabRect.Width - 8, tabRect.Height - 2);
+				TextRenderer.DrawText(
+					g,
+					cleanText,
+					font,
+					textRect,
+					textCol,
+					TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.RightToLeft | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
 			}
 		}
 
