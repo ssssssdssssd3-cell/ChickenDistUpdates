@@ -185,14 +185,13 @@ namespace ChickenDist.Forms
             page.Controls.Add(cboBarcodePrinter);
             y += 42;
 
-            // 4. طابعة المطبخ والتحضير (مطاعم / كافيهات / محامص بن) — تظهر فقط لنشاط المطاعم
-            if (AppConfig.IsRestaurant)
+            // 4. طابعة المطبخ والتحضير (مطاعم / كافيهات / محامص بن / مخازن)
             {
                 var sepKitchen = new Panel { Location = new Point(20, y), Size = new Size(660, 2), BackColor = Color.FromArgb(110, 65, 25) };
                 page.Controls.Add(sepKitchen);
                 y += 10;
 
-                AddLabel(page, "🍳 طابعة المطبخ والتحضير (Kitchen / Prep Printer) — مستقلة عن طابعة الكاشير:", 20, y);
+                AddLabel(page, "🍳 طابعة المطبخ وبون التحضير (Kitchen / Prep Printer) — للمطاعم والكافيهات ومناطق التحضير:", 20, y);
                 y += 24;
                 cboKitchenPrinter = new ComboBox
                 {
@@ -374,11 +373,18 @@ namespace ChickenDist.Forms
             };
             cboPOSReceiptMode.Items.AddRange(new object[]
             {
-                "طباعة تلقائية دائماً",
-                "اسألني كل مرة",
-                "لا تطبع رسيت — بون المطبخ فقط"
+                "طباعة تلقائية دائماً (رسيت العميل)",
+                "اسألني كل مرة (نافذة الاختيار عند الحفظ)",
+                "بون المطبخ / التحضير فقط (بدون رسيت عميل)",
+                "عدم الطباعة نهائياً بعد الحفظ (لا رسيت ولا مطبخ)"
             });
-            cboPOSReceiptMode.SelectedIndex = AppConfig.POSReceiptMode == "Never" ? 2 : AppConfig.POSReceiptMode == "Ask" ? 1 : 0;
+            cboPOSReceiptMode.SelectedIndex = AppConfig.POSReceiptMode switch
+            {
+                "None" => 3,
+                "Never" or "KitchenOnly" => 2,
+                "Ask" => 1,
+                _ => 0
+            };
             page.Controls.Add(cboPOSReceiptMode);
         }
 
@@ -1072,7 +1078,13 @@ namespace ChickenDist.Forms
             }
             AppConfig.PrintBehaviorOnSave = cboPrintBehavior.SelectedIndex == 1 ? "Direct" : (cboPrintBehavior.SelectedIndex == 2 ? "None" : "Prompt");
             AppConfig.ReceiptPrintMode = cboReceiptPrintMode.SelectedIndex == 1 ? "Compact" : "Detailed";
-            AppConfig.POSReceiptMode = cboPOSReceiptMode.SelectedIndex == 2 ? "Never" : cboPOSReceiptMode.SelectedIndex == 1 ? "Ask" : "Always";
+            AppConfig.POSReceiptMode = cboPOSReceiptMode.SelectedIndex switch
+            {
+                3 => "None",
+                2 => "Never",
+                1 => "Ask",
+                _ => "Always"
+            };
 
             AppConfig.ReceiptTemplate = cboReceiptTemplate.SelectedItem?.ToString() switch
             {

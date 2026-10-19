@@ -3334,25 +3334,43 @@ namespace ChickenDist.Forms
                 }
 
                 // طباعة بعد الدفع — حسب إعداد وضع طباعة الرسيت + سلوك الطباعة العام (مثل الفاتورة التفصيلية)
-                string receiptMode = AppConfig.POSReceiptMode;        // Always | Ask | Never
+                string receiptMode = AppConfig.POSReceiptMode;        // Always | Ask | Never | None
                 string printBehavior = AppConfig.PrintBehaviorOnSave; // Prompt | Direct | None
-                if (receiptMode == "Never")
+
+                if (receiptMode == "None")
                 {
-                    // لا يتم طباعة رسيت خالص (بون المطبخ فقط)
+                    // عدم الطباعة نهائياً بعد الحفظ (لا رسيت ولا مطبخ)
                 }
-                else if (receiptMode == "Ask" || printBehavior == "Prompt")
+                else if (receiptMode == "Never" || receiptMode == "KitchenOnly")
                 {
-                    // سؤال عند كل طباعة — نفس نافذة اختيار الفاتورة التفصيلية
+                    // لا تطبع رسيت للعميل — طباعة بون المطبخ / التحضير فقط دائماً ومباشرة
+                    try
+                    {
+                        new FrmKitchenPrint(_lastSaleID);
+                    }
+                    catch (Exception exK)
+                    {
+                        AppLogger.Error("FrmPOS.KitchenPrintOnly", exK);
+                    }
+                }
+                else if (receiptMode == "Ask" || (receiptMode == "Always" && printBehavior == "Prompt"))
+                {
+                    // سؤال عند كل طباعة — نافذة اختيار المقاس (ريسيت / A4 / A5 / إلغاء)
                     PrintReceipt(_lastSaleID, askFirst: true);
+
+                    if (AppConfig.KitchenAutoPrint || AppConfig.IsRestaurant)
+                    {
+                        try { new FrmKitchenPrint(_lastSaleID); } catch (Exception exK) { AppLogger.Error("FrmPOS.KitchenPrintAuto", exK); }
+                    }
                 }
-                else if (printBehavior != "None")
+                else if (receiptMode == "Always" || printBehavior == "Direct")
                 {
                     PrintReceipt(_lastSaleID, askFirst: false);
-                }
 
-                if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
-                {
-                    try { new FrmKitchenPrint(_lastSaleID); } catch { }
+                    if (AppConfig.KitchenAutoPrint || AppConfig.IsRestaurant)
+                    {
+                        try { new FrmKitchenPrint(_lastSaleID); } catch (Exception exK) { AppLogger.Error("FrmPOS.KitchenPrintAuto", exK); }
+                    }
                 }
 
                 try
@@ -5098,7 +5116,7 @@ namespace ChickenDist.Forms
                     _lastSaleID = saleID;
                 });
 
-                if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+                if (AppConfig.KitchenAutoPrint || AppConfig.IsRestaurant)
                 {
                     try { new FrmKitchenPrint(_lastSaleID); } catch { }
                 }

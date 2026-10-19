@@ -6050,7 +6050,7 @@ namespace ChickenDist.Forms
 						}
 						if (isDraft)
 						{
-							if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+							if (AppConfig.KitchenAutoPrint && (AppConfig.IsRestaurant || !string.IsNullOrEmpty(AppConfig.KitchenPrinterName)))
 							{
 								try { new FrmKitchenPrint(num3); } catch (Exception exK) { AppLogger.Error("FrmSale.KitchenPrintDraft", exK); }
 							}
@@ -6079,7 +6079,7 @@ namespace ChickenDist.Forms
 
 							FrmPrintChoiceDialog.PromptAndPrintSale(this, num3, $"✅ تم حفظ الفاتورة بنجاح رقم [{num3}]!");
 
-							if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
+							if (AppConfig.KitchenAutoPrint && (AppConfig.IsRestaurant || !string.IsNullOrEmpty(AppConfig.KitchenPrinterName)))
 							{
 								try { new FrmKitchenPrint(num3); } catch (Exception exK) { AppLogger.Error("FrmSale.KitchenPrintSale", exK); }
 							}

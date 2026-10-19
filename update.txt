@@ -1,5 +1,5 @@
-version=4.1.8
+version=4.1.9
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.8&t=1792427772
-sha256=83D05DFDAE8DE503D0977BE20305A7146CC610F46DDA094DA83809243C8E8370
-changelog=v4.1.8 - 2026-10-19: POS receipt now asks print type/size every time when 'ask on every print' is selected (same as detailed sale invoice)
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.9&t=1792429330
+sha256=364F65BD7CEA611BD1890C360D2DBB8BF4CD44C6BC7EE5D11DBE855E703A392F
+changelog=v4.1.9 - 2026-10-19: Fix POS receipt mode: kitchen slip only now reliably prints regardless of business type, added 'None' option to completely disable receipt and slip printing after POS sale, and universally enabled kitchen printer config

@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.8";
-$CHANGELOG = "v4.1.8 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): POS receipt now asks print type/size every time when 'ask on every print' is selected (same as detailed sale invoice)"
+$VERSION = "4.1.9";
+$CHANGELOG = "v4.1.9 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix POS receipt mode: kitchen slip only now reliably prints regardless of business type, added 'None' option to completely disable receipt and slip printing after POS sale, and universally enabled kitchen printer config"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

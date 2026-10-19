@@ -134,7 +134,8 @@ namespace ChickenDist.Forms
             StringFormat formatLeft = new StringFormat { Alignment = StringAlignment.Near };
 
             // العنوان
-            g.DrawString("⚡ بون تحضير المطبخ ⚡", fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 22), formatCenter);
+            string prepHeaderTitle = AppConfig.IsRestaurant ? "⚡ بون تحضير المطبخ ⚡" : "⚡ بون تحضير وتسليم الطلب ⚡";
+            g.DrawString(prepHeaderTitle, fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 22), formatCenter);
             y += 24;
 
             g.DrawLine(Pens.Black, margin, y, margin + usableWidth, y);
