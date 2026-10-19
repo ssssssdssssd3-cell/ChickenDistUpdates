@@ -94,6 +94,7 @@ namespace ChickenDist.Forms
             btnReceipt.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnReceipt.Click += (s, e) => { OnChoiceSelected("Receipt"); };
             pnlButtons.Controls.Add(btnReceipt);
+            this.AcceptButton = btnReceipt; // Enter = طباعة ريسيت مباشرة (أسرع للكاشير)
             btnY += btnHeight + btnSpacing;
 
             // 2. A4 Button
@@ -168,18 +169,18 @@ namespace ChickenDist.Forms
         /// <summary>
         /// يُظهر نافذة الاختيار أو يطبع مباشرة وفق إعدادات النظام لفاتورة بيع
         /// </summary>
-        public static void PromptAndPrintSale(IWin32Window owner, int saleID, string customTitle = null)
+        public static void PromptAndPrintSale(IWin32Window owner, int saleID, string customTitle = null, bool forceAsk = false)
         {
             if (saleID <= 0) return;
 
             // 1. إذا تم ضبط الإعداد على عدم الطباعة تلقائياً
-            if (AppConfig.PrintBehaviorOnSave == "None")
+            if (!forceAsk && AppConfig.PrintBehaviorOnSave == "None")
             {
                 return;
             }
 
             // 2. إذا تم ضبط الإعداد على الطباعة المباشرة دون سؤال
-            if (AppConfig.PrintBehaviorOnSave == "Direct")
+            if (!forceAsk && AppConfig.PrintBehaviorOnSave == "Direct")
             {
                 try
                 {

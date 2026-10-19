@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.7";
-$CHANGELOG = "v4.1.7 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Website themes & cafe/restaurant styling, owner product benefits editor, 31-day mobile app historical data, wastage profit deduction, and luxury black & gold app theme"
+$VERSION = "4.1.8";
+$CHANGELOG = "v4.1.8 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): POS receipt now asks print type/size every time when 'ask on every print' is selected (same as detailed sale invoice)"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

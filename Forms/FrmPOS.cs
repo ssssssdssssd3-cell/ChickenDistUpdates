@@ -3333,17 +3333,22 @@ namespace ChickenDist.Forms
                     try { RawPrinterHelper.OpenCashDrawer(); } catch { }
                 }
 
-                // طباعة تلقائية بعد الدفع — حسب إعداد وضع طباعة الرسيت
-                string receiptMode = AppConfig.POSReceiptMode; // Always | Ask | Never
-                if (receiptMode == "Always")
+                // طباعة بعد الدفع — حسب إعداد وضع طباعة الرسيت + سلوك الطباعة العام (مثل الفاتورة التفصيلية)
+                string receiptMode = AppConfig.POSReceiptMode;        // Always | Ask | Never
+                string printBehavior = AppConfig.PrintBehaviorOnSave; // Prompt | Direct | None
+                if (receiptMode == "Never")
+                {
+                    // لا يتم طباعة رسيت خالص (بون المطبخ فقط)
+                }
+                else if (receiptMode == "Ask" || printBehavior == "Prompt")
+                {
+                    // سؤال عند كل طباعة — نفس نافذة اختيار الفاتورة التفصيلية
+                    PrintReceipt(_lastSaleID, askFirst: true);
+                }
+                else if (printBehavior != "None")
                 {
                     PrintReceipt(_lastSaleID, askFirst: false);
                 }
-                else if (receiptMode == "Ask")
-                {
-                    PrintReceipt(_lastSaleID, askFirst: true);
-                }
-                // لو "Never" — لا يتم طباعة رسيت خالص
 
                 if (AppConfig.IsRestaurant && AppConfig.KitchenAutoPrint)
                 {
@@ -3795,7 +3800,7 @@ namespace ChickenDist.Forms
             {
                 if (askFirst)
                 {
-                    FrmPrintChoiceDialog.PromptAndPrintSale(this, saleID);
+                    FrmPrintChoiceDialog.PromptAndPrintSale(this, saleID, $"✅ تم حفظ فاتورة البيع رقم [{saleID}]", forceAsk: true);
                 }
                 else
                 {

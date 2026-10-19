@@ -1,5 +1,5 @@
-version=4.1.7
+version=4.1.8
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.7&t=1792409024
-sha256=1AE51AC0A6ABB14D37FFDB0ED2798352858C9D38259D01689702FFB60D38945D
-changelog=v4.1.7 - 2026-10-19: Website themes & cafe/restaurant styling, owner product benefits editor, 31-day mobile app historical data, wastage profit deduction, and luxury black & gold app theme
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.8&t=1792427772
+sha256=83D05DFDAE8DE503D0977BE20305A7146CC610F46DDA094DA83809243C8E8370
+changelog=v4.1.8 - 2026-10-19: POS receipt now asks print type/size every time when 'ask on every print' is selected (same as detailed sale invoice)
