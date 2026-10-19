@@ -198,8 +198,15 @@ namespace ChickenDist.Core
 
                 if (c is FlowLayoutPanel flp)
                 {
-                    flp.RightToLeft = RightToLeft.Yes;
-                    flp.FlowDirection = FlowDirection.RightToLeft;
+                    if (flp.Tag?.ToString() != "LTR" && flp.RightToLeft != RightToLeft.No)
+                    {
+                        flp.RightToLeft = RightToLeft.Yes;
+                        if (flp.FlowDirection != FlowDirection.TopDown && flp.FlowDirection != FlowDirection.BottomUp)
+                        {
+                            // في بيئة WinForms، عند تفعيل RightToLeft = Yes، فإن FlowDirection.LeftToRight يرتب العناصر من اليمين إلى اليسار
+                            flp.FlowDirection = FlowDirection.LeftToRight;
+                        }
+                    }
                 }
                 else if (c is StatusStrip ss)
                 {
@@ -385,32 +392,73 @@ namespace ChickenDist.Core
             }
         }
 
+        private static bool IsFilterInputControl(Control ctrl)
+        {
+            return ctrl is TextBox || ctrl is ComboBox || ctrl is DateTimePicker || ctrl is NumericUpDown;
+        }
+
         public static void StyleSearchPanel(Control container)
         {
             if (container == null) return;
-
-            container.BackColor = BgSearchPanel;
-            container.RightToLeft = RightToLeft.Yes;
-            if (container is FlowLayoutPanel flpContainer)
+            if (container.Tag?.ToString() == "CustomStyle")
             {
-                flpContainer.FlowDirection = FlowDirection.RightToLeft;
+                if (container is FlowLayoutPanel flpCustom && flpCustom.Tag?.ToString() != "LTR" &&
+                    flpCustom.FlowDirection != FlowDirection.TopDown && flpCustom.FlowDirection != FlowDirection.BottomUp)
+                {
+                    flpCustom.RightToLeft = RightToLeft.Yes;
+                    flpCustom.FlowDirection = FlowDirection.LeftToRight;
+                }
+                foreach (Control child in container.Controls)
+                {
+                    if (child is FlowLayoutPanel flpSub && flpSub.Tag?.ToString() != "LTR" &&
+                        flpSub.FlowDirection != FlowDirection.TopDown && flpSub.FlowDirection != FlowDirection.BottomUp)
+                    {
+                        flpSub.RightToLeft = RightToLeft.Yes;
+                        flpSub.FlowDirection = FlowDirection.LeftToRight;
+                    }
+                    if (child.HasChildren)
+                        StyleSearchPanel(child);
+                }
+                return;
+            }
+
+            if (!(container.Parent is FlowLayoutPanel))
+            {
+                container.BackColor = BgSearchPanel;
+            }
+            if (container.Tag?.ToString() != "LTR" && container.RightToLeft != RightToLeft.No)
+            {
+                container.RightToLeft = RightToLeft.Yes;
+                if (container is FlowLayoutPanel flpContainer &&
+                    flpContainer.FlowDirection != FlowDirection.TopDown &&
+                    flpContainer.FlowDirection != FlowDirection.BottomUp)
+                {
+                    flpContainer.FlowDirection = FlowDirection.LeftToRight;
+                }
             }
 
             foreach (Control c in container.Controls)
             {
-                c.RightToLeft = RightToLeft.Yes;
-                if (c is FlowLayoutPanel flpChild)
+                if (c.Tag?.ToString() != "LTR" && c.RightToLeft != RightToLeft.No)
                 {
-                    flpChild.FlowDirection = FlowDirection.RightToLeft;
+                    c.RightToLeft = RightToLeft.Yes;
+                }
+                if (c is FlowLayoutPanel flpChild && flpChild.Tag?.ToString() != "LTR" &&
+                    flpChild.FlowDirection != FlowDirection.TopDown && flpChild.FlowDirection != FlowDirection.BottomUp)
+                {
+                    flpChild.FlowDirection = FlowDirection.LeftToRight;
                 }
 
                 if (c is Label lbl)
                 {
                     lbl.RightToLeft = RightToLeft.Yes;
-                    lbl.BackColor = Color.Transparent;
-                    if (lbl.ForeColor != Color.Red && lbl.ForeColor != Color.Green && lbl.ForeColor != Color.OrangeRed)
+                    if (lbl.Tag?.ToString() != "CustomStyle")
                     {
-                        lbl.ForeColor = Color.FromArgb(255, 220, 110);
+                        lbl.BackColor = Color.Transparent;
+                        if (lbl.ForeColor != Color.Red && lbl.ForeColor != Color.Green && lbl.ForeColor != Color.OrangeRed)
+                        {
+                            lbl.ForeColor = Color.FromArgb(255, 220, 110);
+                        }
                     }
                     lbl.Font = FontBold;
                     if (lbl.TextAlign == ContentAlignment.MiddleLeft)
@@ -418,10 +466,13 @@ namespace ChickenDist.Core
                 }
                 else if (c is TextBox tb)
                 {
-                    tb.RightToLeft = RightToLeft.Yes;
-                    if (tb.TextAlign != HorizontalAlignment.Center)
+                    if (tb.RightToLeft != RightToLeft.No)
                     {
-                        tb.TextAlign = HorizontalAlignment.Left;
+                        tb.RightToLeft = RightToLeft.Yes;
+                        if (tb.TextAlign != HorizontalAlignment.Center)
+                        {
+                            tb.TextAlign = HorizontalAlignment.Left;
+                        }
                     }
                     tb.BorderStyle = BorderStyle.FixedSingle;
                     tb.BackColor = Color.White;
@@ -470,6 +521,55 @@ namespace ChickenDist.Core
                 if (c.HasChildren)
                 {
                     StyleSearchPanel(c);
+                }
+            }
+
+            // ضبط المسافات التلقائية بين (اسم الخانة) و(الخانة) في أشرطة البحث FlowLayoutPanel
+            // في WinForms عند RightToLeft=Yes و FlowDirection=LeftToRight:
+            // Margin.Left يكون على يمين العنصر (بداية التدفق)، و Margin.Right يكون على يسار العنصر (نهاية التدفق)
+            if (container is FlowLayoutPanel flpArrange && flpArrange.FlowDirection == FlowDirection.LeftToRight)
+            {
+                bool isMiniFilterGroup = ( container.Parent is FlowLayoutPanel && flpArrange.Controls.Count >= 2 && flpArrange.Controls.Count <= 4 && flpArrange.Controls[0] is Label && IsFilterInputControl(flpArrange.Controls[1]) );
+                if (isMiniFilterGroup)
+                {
+                    flpArrange.Margin = new Padding(6, 2, 6, 2);
+                    var lblFirst = flpArrange.Controls[0];
+                    lblFirst.Margin = new Padding(3, Math.Max(5, lblFirst.Margin.Top), 2, lblFirst.Margin.Bottom);
+                    var inpSecond = flpArrange.Controls[1];
+                    if (flpArrange.Controls.Count >= 3 && flpArrange.Controls[2] is Button btnExtra)
+                    {
+                        inpSecond.Margin = new Padding(1, Math.Max(2, inpSecond.Margin.Top), 1, inpSecond.Margin.Bottom);
+                        btnExtra.Margin = new Padding(1, Math.Max(2, btnExtra.Margin.Top), 3, btnExtra.Margin.Bottom);
+                    }
+                    else
+                    {
+                        inpSecond.Margin = new Padding(1, Math.Max(2, inpSecond.Margin.Top), 3, inpSecond.Margin.Bottom);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < flpArrange.Controls.Count; i++)
+                    {
+                        Control cur = flpArrange.Controls[i];
+                        if (cur is Label lblCur && i + 1 < flpArrange.Controls.Count && IsFilterInputControl(flpArrange.Controls[i + 1]))
+                        {
+                            Control inpNext = flpArrange.Controls[i + 1];
+                            // اسم الخانة يلتصق بخانته (2px يساره) ويبتعد عن الخانة السابقة له (10px يمينه)
+                            lblCur.Margin = new Padding(10, Math.Max(6, lblCur.Margin.Top), 2, lblCur.Margin.Bottom);
+
+                            if (i + 2 < flpArrange.Controls.Count && flpArrange.Controls[i + 2] is Button btnLookup && btnLookup.Width <= 42)
+                            {
+                                inpNext.Margin = new Padding(1, Math.Max(3, inpNext.Margin.Top), 1, inpNext.Margin.Bottom);
+                                btnLookup.Margin = new Padding(1, Math.Max(3, btnLookup.Margin.Top), 8, btnLookup.Margin.Bottom);
+                                i += 2;
+                            }
+                            else
+                            {
+                                inpNext.Margin = new Padding(1, Math.Max(3, inpNext.Margin.Top), 8, inpNext.Margin.Bottom);
+                                i += 1;
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -581,6 +581,7 @@ namespace ChickenDist.Core
                     IF COL_LENGTH('Products','ImageUrl1') IS NULL ALTER TABLE Products ADD ImageUrl1 NVARCHAR(500) NULL;
                     IF COL_LENGTH('Products','ImageUrl2') IS NULL ALTER TABLE Products ADD ImageUrl2 NVARCHAR(500) NULL;
                     IF COL_LENGTH('Products','ImageUrl3') IS NULL ALTER TABLE Products ADD ImageUrl3 NVARCHAR(500) NULL;
+                    IF COL_LENGTH('Products','OnlineDescription') IS NULL ALTER TABLE Products ADD OnlineDescription NVARCHAR(MAX) NULL;
                 END");
             }
             catch (Exception ex)

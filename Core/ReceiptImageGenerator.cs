@@ -755,71 +755,594 @@ namespace ChickenDist.Core
         {
             try
             {
+                DbHelper.EnsureCashBoxColumnsExist();
+
+                // 1. استرجاع بيانات السند من جدول الخزنة الرئيسي CashBox مع اسم الجهة والخزنة والموظف
                 var dt = DbHelper.Query(@"
-                    SELECT v.VoucherID, v.VoucherCode, v.VoucherDate, v.VoucherType, v.Amount, v.Notes,
-                           c.ClientName, c.Phone
-                    FROM ReceiptVouchers v
-                    LEFT JOIN Clients c ON v.ClientID = c.ClientID
-                    WHERE v.VoucherID = @id", DbHelper.P("@id", voucherID));
+                    SELECT cb.CashID, cb.TransDate, cb.TransType, cb.AmountIn, cb.AmountOut,
+                           cb.RefID, cb.Notes,
+                           ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS AccountName,
+                           ISNULL(emp.EmpName, N'المشرف العام') AS CreatedByName,
+                           COALESCE(
+                               NULLIF(LTRIM(RTRIM(cb.PartyName)), ''),
+                               CASE WHEN cb.TransType = 'ClientPayment' AND cb.Notes LIKE N'%تحصيل أقساط العقد%'
+                                    THEN (SELECT TOP 1 c.ClientName FROM InstallmentContracts ic JOIN Clients c ON ic.CustomerID = c.ClientID WHERE ic.ContractID = cb.RefID)
+                                    WHEN cb.TransType = 'ClientPayment' AND cb.Notes LIKE N'%مقدم عقد التقسيط%'
+                                    THEN (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                    WHEN cb.TransType = 'ClientPayment'
+                                    THEN COALESCE(
+                                        (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID),
+                                        (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                    )
+                                    ELSE NULL END,
+                               CASE WHEN cb.TransType = 'SupplierPayment'
+                                    THEN (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                    ELSE NULL END,
+                               CASE WHEN cb.TransType IN ('Deposit', 'Withdraw') AND (cb.Notes LIKE N'%[مورد:%' OR cb.Notes LIKE N'%صرف للمورد%')
+                                    THEN (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                    WHEN cb.TransType IN ('Deposit', 'Withdraw') AND (cb.Notes LIKE N'%[عميل:%' OR cb.Notes LIKE N'%تحصيل من عميل%')
+                                    THEN (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID)
+                                    WHEN cb.TransType = 'Deposit' AND cb.RefID IS NOT NULL
+                                    THEN COALESCE(
+                                        (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID),
+                                        (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                    )
+                                    WHEN cb.TransType = 'Withdraw' AND cb.RefID IS NOT NULL
+                                    THEN COALESCE(
+                                        (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID),
+                                        (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID)
+                                    )
+                                    ELSE NULL END,
+                               CASE WHEN cb.TransType IN ('SaleIncome', 'Sale')
+                                    THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(c.ClientName)), ''), NULLIF(LTRIM(RTRIM(s.CustomClientName)), ''), N'عميل نقدي')
+                                          FROM Sales s LEFT JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                    ELSE NULL END,
+                               CASE WHEN cb.TransType IN ('ClientPurchaseCash', 'PurchaseExpense')
+                                    THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(s.SupplierName)), ''), NULLIF(LTRIM(RTRIM(c.ClientName)), ''), N'مورد نقدي')
+                                          FROM Purchases p LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID LEFT JOIN Clients c ON p.ClientID = c.ClientID WHERE p.PurchaseID = cb.RefID)
+                                    ELSE NULL END,
+                               CASE WHEN cb.TransType = 'Expense'
+                                    THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(s.SupplierName)), ''), e.ExpenseType)
+                                          FROM Expenses e LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID WHERE e.ExpenseID = cb.RefID)
+                                    ELSE NULL END,
+                               ''
+                           ) AS ResolvedPartyName
+                    FROM CashBox cb
+                    LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    LEFT JOIN Employees emp ON cb.CreatedBy = emp.EmpID
+                    WHERE cb.CashID = @id", DbHelper.P("@id", voucherID));
 
-                if (dt.Rows.Count == 0) return null;
-                var row = dt.Rows[0];
+                string voucherCode = voucherID.ToString();
+                DateTime voucherDate = DateTime.Now;
+                string rawType = "Deposit";
+                decimal inAmt = 0m, outAmt = 0m, amount = 0m;
+                string rawNotes = "";
+                string safeName = "الخزينة الرئيسية";
+                string createdByName = Session.EmpName ?? "المشرف العام";
+                string partyName = "";
+                int refID = 0;
 
-                int width = 620;
-                int height = 360;
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    var row = dt.Rows[0];
+                    voucherCode = row["CashID"].ToString();
+                    voucherDate = row["TransDate"] != DBNull.Value ? Convert.ToDateTime(row["TransDate"]) : DateTime.Now;
+                    rawType = row["TransType"]?.ToString() ?? "Deposit";
+                    inAmt = row["AmountIn"] != DBNull.Value ? Convert.ToDecimal(row["AmountIn"]) : 0m;
+                    outAmt = row["AmountOut"] != DBNull.Value ? Convert.ToDecimal(row["AmountOut"]) : 0m;
+                    amount = inAmt > 0 ? inAmt : outAmt;
+                    rawNotes = row["Notes"]?.ToString() ?? "";
+                    safeName = row["AccountName"]?.ToString() ?? "الخزينة الرئيسية";
+                    createdByName = row["CreatedByName"]?.ToString() ?? "المشرف العام";
+                    partyName = row["ResolvedPartyName"]?.ToString()?.Trim() ?? "";
+                    refID = row["RefID"] != DBNull.Value ? Convert.ToInt32(row["RefID"]) : 0;
+                }
+                else
+                {
+                    // Fallback للجدول القديم إن وجد
+                    var dtLegacy = DbHelper.Query(@"
+                        SELECT v.VoucherID, v.VoucherCode, v.VoucherDate, v.VoucherType, v.Amount, v.Notes,
+                               c.ClientName, c.ClientID
+                        FROM ReceiptVouchers v
+                        LEFT JOIN Clients c ON v.ClientID = c.ClientID
+                        WHERE v.VoucherID = @id", DbHelper.P("@id", voucherID));
+                    if (dtLegacy == null || dtLegacy.Rows.Count == 0) return null;
+
+                    var row = dtLegacy.Rows[0];
+                    voucherCode = row["VoucherCode"]?.ToString() ?? voucherID.ToString();
+                    voucherDate = row["VoucherDate"] != DBNull.Value ? Convert.ToDateTime(row["VoucherDate"]) : DateTime.Now;
+                    rawType = row["VoucherType"]?.ToString() ?? "Deposit";
+                    bool legIn = rawType.Contains("In") || rawType.Contains("Receipt") || rawType.Contains("Deposit");
+                    amount = row["Amount"] != DBNull.Value ? Convert.ToDecimal(row["Amount"]) : 0m;
+                    inAmt = legIn ? amount : 0m;
+                    outAmt = legIn ? 0m : amount;
+                    rawNotes = row["Notes"]?.ToString() ?? "";
+                    partyName = row["ClientName"]?.ToString() ?? "";
+                    refID = row["ClientID"] != DBNull.Value ? Convert.ToInt32(row["ClientID"]) : 0;
+                }
+
+                // استخلاص اسم الجهة وتنظيف الملاحظات
+                string cleanNotes = rawNotes;
+                string balanceNoteFromText = "";
+
+                if (string.IsNullOrWhiteSpace(partyName))
+                {
+                    partyName = Forms.FrmCashBox.ExtractPartyFromNotes(rawNotes);
+                }
+
+                // إزالة الوسوم [عميل: ...] أو [مورد: ...] من نص البيان المعروض ليكون نظيفاً
+                while (cleanNotes.Contains("[") && cleanNotes.Contains("]"))
+                {
+                    int sIdx = cleanNotes.IndexOf('[');
+                    int eIdx = cleanNotes.IndexOf(']', sIdx);
+                    if (eIdx > sIdx)
+                    {
+                        string tagContent = cleanNotes.Substring(sIdx + 1, eIdx - sIdx - 1).Trim();
+                        if (string.IsNullOrWhiteSpace(partyName))
+                        {
+                            int cIdx = tagContent.IndexOf(':');
+                            partyName = cIdx >= 0 ? tagContent.Substring(cIdx + 1).Trim() : tagContent;
+                        }
+                        cleanNotes = (cleanNotes.Substring(0, sIdx) + " " + cleanNotes.Substring(eIdx + 1)).Trim();
+                    }
+                    else break;
+                }
+
+                if (cleanNotes.Contains("(رصيد"))
+                {
+                    int balIdx = cleanNotes.IndexOf("(رصيد");
+                    int closeP = cleanNotes.IndexOf(')', balIdx);
+                    if (closeP > balIdx)
+                    {
+                        balanceNoteFromText = cleanNotes.Substring(balIdx + 1, closeP - balIdx - 1).Trim();
+                        cleanNotes = (cleanNotes.Substring(0, balIdx) + " " + cleanNotes.Substring(closeP + 1)).Trim();
+                    }
+                }
+
+                string[] stripPrefixes = { "تحصيل من عميل -", "تحصيل من عميل:", "تحصيل -", "سداد من عميل -", "سداد للمورد -", "صرف للمورد -", "صرف للمورد:", "توريد نقدية -", "صرف نقدية -" };
+                foreach (var pref in stripPrefixes)
+                {
+                    if (cleanNotes.StartsWith(pref, StringComparison.OrdinalIgnoreCase))
+                        cleanNotes = cleanNotes.Substring(pref.Length).Trim();
+                }
+                cleanNotes = cleanNotes.Trim('-', ':', ' ');
+                if (string.IsNullOrWhiteSpace(cleanNotes))
+                {
+                    cleanNotes = (inAmt > 0) ? "توريد نقدي / دفعة تحت الحساب" : "صرف نقدي / دفعة تحت الحساب";
+                }
+
+                bool isDeposit = inAmt > 0 || rawType == "Deposit" || rawType == "ClientPayment" || rawType == "SaleIncome";
+                bool isTransfer = rawType.Contains("Transfer") || rawType.Contains("ShiftClose");
+
+                // تحديد هل الجهة عميل أم مورد لحساب الموقف المالي (الرصيد السابق والحالي)
+                bool isClient = rawType == "ClientPayment" || rawNotes.Contains("[عميل:") || rawNotes.Contains("تحصيل من عميل");
+                bool isSupplier = rawType == "SupplierPayment" || rawNotes.Contains("[مورد:") || rawNotes.Contains("صرف للمورد");
+                string partyRoleBadge = isClient ? "عميل" : (isSupplier ? "مورد" : "");
+                string partyPhone = "";
+                bool hasFinancialSummary = false;
+                decimal prevBalance = 0m;
+                decimal currentBalance = 0m;
+
+                if (!isClient && !isSupplier && refID > 0 && (rawType == "Deposit" || rawType == "Withdraw"))
+                {
+                    if (isDeposit)
+                    {
+                        var cCheck = DbHelper.Scalar("SELECT COUNT(1) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", refID));
+                        if (Convert.ToInt32(cCheck) > 0) { isClient = true; partyRoleBadge = "عميل"; }
+                        else
+                        {
+                            var sCheck = DbHelper.Scalar("SELECT COUNT(1) FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", refID));
+                            if (Convert.ToInt32(sCheck) > 0) { isSupplier = true; partyRoleBadge = "مورد"; }
+                        }
+                    }
+                    else
+                    {
+                        var sCheck = DbHelper.Scalar("SELECT COUNT(1) FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", refID));
+                        if (Convert.ToInt32(sCheck) > 0) { isSupplier = true; partyRoleBadge = "مورد"; }
+                        else
+                        {
+                            var cCheck = DbHelper.Scalar("SELECT COUNT(1) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", refID));
+                            if (Convert.ToInt32(cCheck) > 0) { isClient = true; partyRoleBadge = "عميل"; }
+                        }
+                    }
+                }
+
+                if (isClient && refID > 0 && rawType != "SaleIncome" && rawType != "Sale")
+                {
+                    try
+                    {
+                        currentBalance = ClientDAL.GetBalance(refID);
+                        prevBalance = isDeposit ? (currentBalance + amount) : (currentBalance - amount);
+                        hasFinancialSummary = true;
+                        var phObj = DbHelper.Scalar("SELECT Phone FROM Clients WHERE ClientID=@id", DbHelper.P("@id", refID));
+                        if (phObj != null && phObj != DBNull.Value) partyPhone = phObj.ToString().Trim();
+                    }
+                    catch { }
+                }
+                else if (isSupplier && refID > 0)
+                {
+                    try
+                    {
+                        currentBalance = SupplierDAL.GetBalance(refID);
+                        prevBalance = !isDeposit ? (currentBalance + amount) : (currentBalance - amount);
+                        hasFinancialSummary = true;
+                        var phObj = DbHelper.Scalar("SELECT Phone FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", refID));
+                        if (phObj != null && phObj != DBNull.Value) partyPhone = phObj.ToString().Trim();
+                    }
+                    catch { }
+                }
+
+                if (string.IsNullOrWhiteSpace(partyName))
+                {
+                    partyName = isClient ? "عميل" : (isSupplier ? "مورد" : (rawType == "Expense" ? "مصروفات تشغيلية" : "تعامل نقدي عام"));
+                }
+
+                string typeArabic = rawType switch
+                {
+                    "Deposit" => isClient ? "سند توريد نقدي (عميل)" : (isSupplier ? "سند توريد نقدي (مورد)" : "سند توريد نقدي"),
+                    "Withdraw" => isSupplier ? "سند صرف نقدي (مورد)" : (isClient ? "سند صرف نقدي (عميل)" : "سند صرف نقدي"),
+                    "ClientPayment" => "سند تحصيل نقدي من عميل",
+                    "SupplierPayment" => "سند سداد نقدي لمورد",
+                    "SaleIncome" => "توريد مبيعات نقدية",
+                    "Sale" => rawNotes.Contains("فيزا") ? "تحصيل مبيعات (فيزا)" : "توريد مبيعات نقدية",
+                    "PurchaseExpense" => "صرف مشتريات نقدية",
+                    "ClientPurchaseCash" => "صرف شراء نقدي من عميل",
+                    "ReturnOutcome" => "صرف مرتجع مبيعات",
+                    "PurchaseReturn" => "توريد مرتجع مشتريات",
+                    "Expense" => "سند صرف مصروفات",
+                    "Transfer" => "سند تحويل نقدية بين الحسابات",
+                    _ => isDeposit ? "سند توريد نقدي (قبض)" : "سند صرف نقدي (دفع)"
+                };
+
+                // ألوان الهوية البصرية حسب نوع السند
+                Color cHeaderDark   = isTransfer ? Color.FromArgb(30, 27, 75)   : (isDeposit ? Color.FromArgb(6, 78, 59)    : Color.FromArgb(127, 29, 29));
+                Color cHeaderLight  = isTransfer ? Color.FromArgb(55, 48, 163)  : (isDeposit ? Color.FromArgb(4, 120, 87)   : Color.FromArgb(185, 28, 28));
+                Color cAccent       = isTransfer ? Color.FromArgb(79, 70, 229)  : (isDeposit ? Color.FromArgb(5, 150, 105)  : Color.FromArgb(220, 38, 38));
+                Color cSoftBg       = isTransfer ? Color.FromArgb(238, 242, 255): (isDeposit ? Color.FromArgb(236, 253, 245): Color.FromArgb(254, 242, 242));
+                Color cSoftBorder   = isTransfer ? Color.FromArgb(165, 180, 252): (isDeposit ? Color.FromArgb(110, 231, 183): Color.FromArgb(252, 165, 165));
+                Color cGoldStripe   = Color.FromArgb(245, 158, 11);
+
+                string docMainTitle = isTransfer ? "سند تحويل نقدية بين الحسابات"
+                                    : (isDeposit ? "إيصال استلام نقدية  (سند توريد / قبض)"
+                                                 : "إيصال صرف نقدية  (سند صرف / دفع)");
+
+                string partyLabel   = isTransfer ? "الحساب / الجهة:"
+                                    : (isDeposit ? "استلمنا من السيد / السادة:"
+                                                 : "صرفنا إلى السيد / السادة:");
+
+                string amountLabel  = isTransfer ? "مبلغ التحويل النقدي:"
+                                    : (isDeposit ? "المبلغ المستلم (وارد للخزينة):"
+                                                 : "المبلغ المصروف (صادر من الخزينة):");
+
+                string tafqeetWords = "";
+                try { tafqeetWords = TafqeetHelper.ConvertToArabicWords(amount); } catch { }
+
+                int width = 880;
+                // حساب ارتفاع البيان التفصيلي
+                int notesBoxHeight = 56;
+                using (var tmpBmp = new Bitmap(1, 1))
+                using (var tmpG = Graphics.FromImage(tmpBmp))
+                using (var fNotesMeasure = new Font("Segoe UI", 14.5f, FontStyle.Bold))
+                {
+                    SizeF sz = tmpG.MeasureString(cleanNotes, fNotesMeasure, 580);
+                    notesBoxHeight = Math.Max(54, (int)Math.Ceiling(sz.Height) + 22);
+                }
+
+                int finSectionHeight = (hasFinancialSummary || !string.IsNullOrWhiteSpace(balanceNoteFromText)) ? 118 : 0;
+                int height = 565 + notesBoxHeight + finSectionHeight;
+
                 var bmp = new Bitmap(width, height);
-
                 using (var g = Graphics.FromImage(bmp))
                 {
                     g.SmoothingMode = SmoothingMode.AntiAlias;
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                    g.Clear(Color.White);
+                    g.Clear(Color.FromArgb(248, 250, 252));
 
-                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 80), Color.FromArgb(15, 118, 110), Color.FromArgb(13, 148, 136), LinearGradientMode.Vertical))
+                    // إطار خارجي أنيق للكارت
+                    using (var penOuter = new Pen(Color.FromArgb(203, 213, 225), 2f))
                     {
-                        g.FillRectangle(brHeader, 0, 0, width, 80);
+                        g.DrawRectangle(penOuter, 1, 1, width - 3, height - 3);
                     }
 
-                    string title = row["VoucherType"].ToString().Contains("In") || row["VoucherType"].ToString().Contains("Receipt") ? "إيصال استلام نقدية (سند قبض)" : "إيصال صرف نقدية (سند صرف)";
-
-                    using (var fTitle = new Font("Segoe UI", 15.5f, FontStyle.Bold))
+                    // ── 1. الهيدر العلوي الرسمي للشركة ──────────────────────────
+                    int headerH = 112;
+                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, headerH), cHeaderDark, cHeaderLight, LinearGradientMode.Horizontal))
                     {
-                        g.DrawString(title, fTitle, Brushes.White, new RectangleF(0, 18, width, 40), SfCenter);
+                        g.FillRectangle(brHeader, 0, 0, width, headerH);
+                    }
+                    using (var brStripe = new SolidBrush(cGoldStripe))
+                    {
+                        g.FillRectangle(brStripe, 0, headerH - 5, width, 5);
                     }
 
-                    int y = 95;
+                    string companyName = AppConfig.CompanyName;
+                    if (string.IsNullOrWhiteSpace(companyName)) companyName = "شركة برو سوفت للأنظمة المتكاملة";
 
-                    using (var fBold = new Font("Segoe UI", 11f, FontStyle.Bold))
-                    using (var fNorm = new Font("Segoe UI", 10f))
-                    using (var brClient = new SolidBrush(Color.FromArgb(30, 64, 175)))
-                    using (var brAmtBg = new SolidBrush(Color.FromArgb(240, 253, 244)))
-                    using (var penAmtBorder = new Pen(Color.FromArgb(187, 247, 208)))
-                    using (var brAmtText = new SolidBrush(Color.FromArgb(22, 101, 52)))
+                    using (var fComp = new Font("Segoe UI", 22f, FontStyle.Bold))
+                    using (var fInfo = new Font("Segoe UI", 12f, FontStyle.Bold))
+                    using (var brSubInfo = new SolidBrush(Color.FromArgb(226, 232, 240)))
                     {
-                        g.DrawString($"رقم السند: #{row["VoucherCode"]}", fBold, Brushes.Black, new RectangleF(320, y, 280, 28), SfRtlRight);
-                        g.DrawString($"التاريخ: {Convert.ToDateTime(row["VoucherDate"]):yyyy/MM/dd HH:mm}", fNorm, Brushes.DarkSlateGray, new RectangleF(20, y, 280, 28), SfRtlLeft);
-                        y += 36;
+                        g.DrawString(companyName, fComp, Brushes.White, new RectangleF(200, 12, width - 230, 44), SfRtlRight);
 
-                        string clientName = row["ClientName"] != DBNull.Value ? row["ClientName"].ToString() : "العميل الكريم";
-                        g.DrawString($"استلمنا من السيد: {clientName}", fBold, brClient, new RectangleF(20, y, 580, 28), SfRtlRight);
-                        y += 36;
+                        string subLine = "";
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress)) subLine += "📍 " + AppConfig.CompanyAddress.Trim();
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
+                            subLine += (subLine.Length > 0 ? "   |   " : "") + "📞 هاتف: " + AppConfig.CompanyPhone.Trim();
+                        if (string.IsNullOrWhiteSpace(subLine))
+                            subLine = "إيصال مالي رسمي معتمد وموثق إلكترونياً";
 
-                        decimal amount = Convert.ToDecimal(row["Amount"]);
-                        g.FillRectangle(brAmtBg, 20, y, width - 40, 56);
-                        g.DrawRectangle(penAmtBorder, 20, y, width - 40, 56);
+                        g.DrawString(CleanEmoji(subLine), fInfo, brSubInfo, new RectangleF(200, 60, width - 230, 34), SfRtlRight);
+                    }
 
-                        using (var fAmt = new Font("Segoe UI", 14f, FontStyle.Bold))
+                    // لوجو الشركة في اليسار إن وجد، أو بادج رقم السند
+                    bool drewLogo = false;
+                    if (!string.IsNullOrWhiteSpace(AppConfig.ShopLogoPath) && System.IO.File.Exists(AppConfig.ShopLogoPath))
+                    {
+                        try
                         {
-                            g.DrawString("المبلغ المدفوع:", fAmt, brAmtText, new RectangleF(320, y + 10, 270, 36), SfRtlRight);
-                            g.DrawString($"{amount:N2} جنيه مصري", fAmt, brAmtText, new RectangleF(30, y + 10, 280, 36), SfRtlLeft);
+                            using (var logoImg = Image.FromFile(AppConfig.ShopLogoPath))
+                            {
+                                g.FillRectangle(Brushes.White, 28, 14, 140, 78);
+                                g.DrawImage(logoImg, new Rectangle(32, 18, 132, 70));
+                                drewLogo = true;
+                            }
+                        }
+                        catch { }
+                    }
+                    if (!drewLogo)
+                    {
+                        using (var brBadge = new SolidBrush(Color.FromArgb(45, 255, 255, 255)))
+                        using (var penBadge = new Pen(Color.FromArgb(120, 255, 255, 255), 1.5f))
+                        using (var fBadgeTitle = new Font("Segoe UI", 11f, FontStyle.Bold))
+                        using (var fBadgeNum = new Font("Segoe UI", 18f, FontStyle.Bold))
+                        {
+                            g.FillRectangle(brBadge, 28, 16, 165, 76);
+                            g.DrawRectangle(penBadge, 28, 16, 165, 76);
+                            g.DrawString("رقم السند المالي", fBadgeTitle, Brushes.WhiteSmoke, new RectangleF(28, 22, 165, 24), SfCenter);
+                            g.DrawString($"#{voucherCode}", fBadgeNum, Brushes.White, new RectangleF(28, 48, 165, 38), SfCenter);
+                        }
+                    }
+
+                    int y = headerH + 14;
+                    int marginX = 26;
+                    int contentW = width - (marginX * 2);
+
+                    // ── 2. شريط عنوان السند الرئيسي ────────────────────────────
+                    int titleBarH = 54;
+                    using (var brTitleBg = new SolidBrush(cSoftBg))
+                    using (var penTitle = new Pen(cAccent, 2f))
+                    using (var fDocTitle = new Font("Segoe UI", 19f, FontStyle.Bold))
+                    using (var brDocTitle = new SolidBrush(cHeaderDark))
+                    {
+                        g.FillRectangle(brTitleBg, marginX, y, contentW, titleBarH);
+                        g.DrawRectangle(penTitle, marginX, y, contentW, titleBarH);
+                        g.DrawString(docMainTitle, fDocTitle, brDocTitle, new RectangleF(marginX, y, contentW, titleBarH), SfCenter);
+                    }
+                    y += titleBarH + 12;
+
+                    // ── 3. شريط رقم السند والتاريخ والوقت ──────────────────────
+                    int metaH = 48;
+                    int halfW = (contentW - 14) / 2;
+                    using (var penBox = new Pen(Color.FromArgb(203, 213, 225), 1.5f))
+                    using (var fMetaLbl = new Font("Segoe UI", 13.5f, FontStyle.Bold))
+                    using (var fMetaVal = new Font("Segoe UI", 15.5f, FontStyle.Bold))
+                    using (var brDark = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    using (var brMuted = new SolidBrush(Color.FromArgb(71, 85, 105)))
+                    {
+                        // يمين: رقم السند ونوعه
+                        int rightBoxX = marginX + halfW + 14;
+                        g.FillRectangle(Brushes.White, rightBoxX, y, halfW, metaH);
+                        g.DrawRectangle(penBox, rightBoxX, y, halfW, metaH);
+                        g.DrawString("رقم السند:", fMetaLbl, brMuted, new RectangleF(rightBoxX + halfW - 125, y, 115, metaH), SfRtlRight);
+                        using (var brAccentTxt = new SolidBrush(cAccent))
+                        {
+                            g.DrawString($"#{voucherCode}   ({typeArabic})", fMetaVal, brAccentTxt, new RectangleF(rightBoxX + 10, y, halfW - 135, metaH), SfRtlRight);
                         }
 
-                        y += 72;
-                        string notes = row["Notes"] != DBNull.Value ? row["Notes"].ToString() : "سداد دفعة من الحساب";
-                        g.DrawString($"وذلك عن: {notes}", fNorm, Brushes.Black, new RectangleF(20, y, 580, 28), SfRtlRight);
-                        y += 45;
+                        // يسار: التاريخ والوقت
+                        int leftBoxX = marginX;
+                        g.FillRectangle(Brushes.White, leftBoxX, y, halfW, metaH);
+                        g.DrawRectangle(penBox, leftBoxX, y, halfW, metaH);
+                        g.DrawString("التاريخ والوقت:", fMetaLbl, brMuted, new RectangleF(leftBoxX + halfW - 145, y, 135, metaH), SfRtlRight);
+                        g.DrawString(voucherDate.ToString("yyyy/MM/dd   hh:mm tt"), fMetaVal, brDark, new RectangleF(leftBoxX + 10, y, halfW - 155, metaH), SfRtlRight);
+                    }
+                    y += metaH + 12;
 
-                        g.DrawString("التوقيع والإحاطة: ___________________", fNorm, Brushes.Gray, new RectangleF(20, y, 580, 28), SfRtlLeft);
+                    // ── 4. كارت اسم الجهة (العميل / المورد) بخط كبير وواضح ──────
+                    int partyCardH = 66;
+                    using (var penParty = new Pen(Color.FromArgb(148, 163, 184), 1.5f))
+                    using (var brAccentBar = new SolidBrush(cAccent))
+                    using (var fPartyLbl = new Font("Segoe UI", 14.5f, FontStyle.Bold))
+                    using (var fPartyVal = new Font("Segoe UI", 19.5f, FontStyle.Bold))
+                    using (var brPartyVal = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    using (var brMuted = new SolidBrush(Color.FromArgb(71, 85, 105)))
+                    {
+                        g.FillRectangle(Brushes.White, marginX, y, contentW, partyCardH);
+                        g.DrawRectangle(penParty, marginX, y, contentW, partyCardH);
+                        g.FillRectangle(brAccentBar, marginX + contentW - 8, y, 8, partyCardH);
+
+                        g.DrawString(partyLabel, fPartyLbl, brMuted, new RectangleF(marginX + contentW - 245, y, 228, partyCardH), SfRtlRight);
+
+                        string displayParty = partyName;
+                        if (!string.IsNullOrWhiteSpace(partyRoleBadge) && !displayParty.Contains(partyRoleBadge))
+                            displayParty = $"{partyName}   [{partyRoleBadge}]";
+                        if (!string.IsNullOrWhiteSpace(partyPhone))
+                            displayParty += $"   -   هاتف: {partyPhone}";
+
+                        g.DrawString(displayParty, fPartyVal, brPartyVal, new RectangleF(marginX + 16, y, contentW - 265, partyCardH), SfRtlRight);
+                    }
+                    y += partyCardH + 12;
+
+                    // ── 5. كارت المبلغ الرئيسي والتفقيط بالحروف ─────────────────
+                    int amtCardH = 116;
+                    using (var brAmtBg = new SolidBrush(cSoftBg))
+                    using (var penAmt = new Pen(cAccent, 2.2f))
+                    using (var penDiv = new Pen(cSoftBorder, 1.5f))
+                    using (var fAmtLbl = new Font("Segoe UI", 16.5f, FontStyle.Bold))
+                    using (var fAmtDigits = new Font("Segoe UI", 27f, FontStyle.Bold))
+                    using (var fTafqeet = new Font("Segoe UI", 14.5f, FontStyle.Bold))
+                    using (var brAmtColor = new SolidBrush(cHeaderDark))
+                    using (var brAccentColor = new SolidBrush(cAccent))
+                    {
+                        g.FillRectangle(brAmtBg, marginX, y, contentW, amtCardH);
+                        g.DrawRectangle(penAmt, marginX, y, contentW, amtCardH);
+
+                        // السطر الأول: المبلغ بالأرقام الكبيرة
+                        g.DrawString(amountLabel, fAmtLbl, brAmtColor, new RectangleF(marginX + contentW - 360, y + 8, 340, 56), SfRtlRight);
+                        g.DrawString($"{amount:N2} جنيه مصري", fAmtDigits, brAccentColor, new RectangleF(marginX + 20, y + 6, contentW - 385, 58), SfRtlLeft);
+
+                        // خط فاصل
+                        g.DrawLine(penDiv, marginX + 20, y + 68, marginX + contentW - 20, y + 68);
+
+                        // السطر الثاني: التفقيط بالحروف العربية
+                        string tafqeetLine = !string.IsNullOrWhiteSpace(tafqeetWords)
+                            ? $"فقط وقدره:  {tafqeetWords} لا غير"
+                            : $"إجمالي المبلغ المسدد: {amount:N2} ج.م";
+                        g.DrawString(tafqeetLine, fTafqeet, brAmtColor, new RectangleF(marginX + 12, y + 72, contentW - 24, 38), SfCenter);
+                    }
+                    y += amtCardH + 12;
+
+                    // ── 6. جدول البيان المحاسبي والتفاصيل والخزنة ──────────────
+                    using (var penGrid = new Pen(Color.FromArgb(203, 213, 225), 1.5f))
+                    using (var brHeaderCell = new SolidBrush(Color.FromArgb(241, 245, 249)))
+                    using (var fCellLbl = new Font("Segoe UI", 13.5f, FontStyle.Bold))
+                    using (var fCellVal = new Font("Segoe UI", 14.5f, FontStyle.Bold))
+                    using (var brLbl = new SolidBrush(Color.FromArgb(51, 65, 85)))
+                    using (var brVal = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    {
+                        // سطر البيان والتفاصيل
+                        int lblColW = 190;
+                        int valColW = contentW - lblColW;
+
+                        g.FillRectangle(Brushes.White, marginX, y, valColW, notesBoxHeight);
+                        g.FillRectangle(brHeaderCell, marginX + valColW, y, lblColW, notesBoxHeight);
+                        g.DrawRectangle(penGrid, marginX, y, contentW, notesBoxHeight);
+                        g.DrawLine(penGrid, marginX + valColW, y, marginX + valColW, y + notesBoxHeight);
+
+                        g.DrawString("البيان والتفاصيل:", fCellLbl, brLbl, new RectangleF(marginX + valColW + 8, y, lblColW - 16, notesBoxHeight), SfRtlRight);
+                        g.DrawString(cleanNotes, fCellVal, brVal, new RectangleF(marginX + 12, y + 6, valColW - 24, notesBoxHeight - 12), SfRtlRight);
+                        y += notesBoxHeight;
+
+                        // سطر الخزنة ومحرر السند
+                        int row2H = 46;
+                        int halfColW = contentW / 2;
+                        int subLblW = 145;
+                        int subValW = halfColW - subLblW;
+
+                        g.FillRectangle(Brushes.White, marginX, y, contentW, row2H);
+                        g.FillRectangle(brHeaderCell, marginX + halfColW + subValW, y, subLblW, row2H);
+                        g.FillRectangle(brHeaderCell, marginX + subValW, y, subLblW, row2H);
+                        g.DrawRectangle(penGrid, marginX, y, contentW, row2H);
+                        g.DrawLine(penGrid, marginX + halfColW, y, marginX + halfColW, y + row2H);
+                        g.DrawLine(penGrid, marginX + halfColW + subValW, y, marginX + halfColW + subValW, y + row2H);
+                        g.DrawLine(penGrid, marginX + subValW, y, marginX + subValW, y + row2H);
+
+                        // النصف الأيمن: الخزنة / الحساب
+                        g.DrawString("الخزنة / الحساب:", fCellLbl, brLbl, new RectangleF(marginX + halfColW + subValW + 6, y, subLblW - 12, row2H), SfRtlRight);
+                        g.DrawString(safeName, fCellVal, brVal, new RectangleF(marginX + halfColW + 10, y, subValW - 20, row2H), SfRtlRight);
+
+                        // النصف الأيسر: محرر السند
+                        g.DrawString("محرر السند:", fCellLbl, brLbl, new RectangleF(marginX + subValW + 6, y, subLblW - 12, row2H), SfRtlRight);
+                        g.DrawString(createdByName, fCellVal, brVal, new RectangleF(marginX + 10, y, subValW - 20, row2H), SfRtlRight);
+                        y += row2H + 14;
+                    }
+
+                    // ── 7. قسم الموقف المالي وكشف الرصيد (للعميل أو المورد) ────
+                    if (hasFinancialSummary)
+                    {
+                        int finH = 98;
+                        int cardW = (contentW - 24) / 3;
+
+                        string prevState = isClient
+                            ? (prevBalance > 0 ? "عليه (مدين)" : (prevBalance < 0 ? "له (دائن)" : "خالص"))
+                            : (prevBalance > 0 ? "له (دائن)" : (prevBalance < 0 ? "عليه (مدين)" : "خالص"));
+
+                        string curState = isClient
+                            ? (currentBalance > 0 ? "عليه (مدين)" : (currentBalance < 0 ? "له (دائن)" : "خالص تماماً"))
+                            : (currentBalance > 0 ? "له (دائن)" : (currentBalance < 0 ? "عليه (مدين)" : "خالص تماماً"));
+
+                        using (var fFinHeader = new Font("Segoe UI", 13f, FontStyle.Bold))
+                        using (var fFinNum = new Font("Segoe UI", 18.5f, FontStyle.Bold))
+                        using (var fFinSub = new Font("Segoe UI", 12f, FontStyle.Bold))
+                        {
+                            // الكارت الأيمن: الرصيد السابق قبل السند
+                            int c1X = marginX + (cardW + 12) * 2;
+                            DrawFinancialCard(g, c1X, y, cardW, finH,
+                                "الرصيد السابق قبل السند",
+                                $"{Math.Abs(prevBalance):N2} ج",
+                                prevState,
+                                Color.FromArgb(241, 245, 249), Color.FromArgb(148, 163, 184), Color.FromArgb(30, 41, 59),
+                                fFinHeader, fFinNum, fFinSub);
+
+                            // الكارت الأوسط: قيمة السند الحالي
+                            int c2X = marginX + (cardW + 12);
+                            DrawFinancialCard(g, c2X, y, cardW, finH,
+                                isDeposit ? "المدفوع / المورّد بهذا السند" : "المصروف / المسدد بهذا السند",
+                                $"{amount:N2} ج",
+                                isDeposit ? "تم خصمه من المديونية" : "تم قيده بالحساب",
+                                cSoftBg, cAccent, cHeaderDark,
+                                fFinHeader, fFinNum, fFinSub);
+
+                            // الكارت الأيسر: الرصيد الحالي المتبقي
+                            int c3X = marginX;
+                            bool hasDebt = Math.Abs(currentBalance) > 0.01m;
+                            Color c3Bg = hasDebt ? Color.FromArgb(254, 242, 242) : Color.FromArgb(236, 253, 245);
+                            Color c3Border = hasDebt ? Color.FromArgb(239, 68, 68) : Color.FromArgb(16, 185, 129);
+                            Color c3Txt = hasDebt ? Color.FromArgb(153, 27, 27) : Color.FromArgb(6, 95, 70);
+                            DrawFinancialCard(g, c3X, y, cardW, finH,
+                                "الرصيد النهائي المتبقي الآن",
+                                $"{Math.Abs(currentBalance):N2} ج",
+                                curState,
+                                c3Bg, c3Border, c3Txt,
+                                fFinHeader, fFinNum, fFinSub);
+                        }
+                        y += finH + 14;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(balanceNoteFromText))
+                    {
+                        int bNoteH = 54;
+                        using (var brBNote = new SolidBrush(Color.FromArgb(254, 249, 195)))
+                        using (var penBNote = new Pen(Color.FromArgb(234, 179, 8), 1.5f))
+                        using (var fBNote = new Font("Segoe UI", 14.5f, FontStyle.Bold))
+                        using (var brBNoteTxt = new SolidBrush(Color.FromArgb(113, 63, 18)))
+                        {
+                            g.FillRectangle(brBNote, marginX, y, contentW, bNoteH);
+                            g.DrawRectangle(penBNote, marginX, y, contentW, bNoteH);
+                            g.DrawString(balanceNoteFromText, fBNote, brBNoteTxt, new RectangleF(marginX + 10, y, contentW - 20, bNoteH), SfCenter);
+                        }
+                        y += bNoteH + 14;
+                    }
+
+                    // ── 8. التوقيعات والباركود والتذييل الرسمي ─────────────────
+                    using (var penDash = new Pen(Color.FromArgb(203, 213, 225), 1.5f) { DashStyle = DashStyle.Dash })
+                    using (var fSigTitle = new Font("Segoe UI", 13f, FontStyle.Bold))
+                    using (var fFooter = new Font("Segoe UI", 11.5f, FontStyle.Bold))
+                    using (var brSig = new SolidBrush(Color.FromArgb(51, 65, 85)))
+                    using (var brFooter = new SolidBrush(Color.FromArgb(100, 116, 139)))
+                    {
+                        g.DrawLine(penDash, marginX, y, marginX + contentW, y);
+                        y += 10;
+
+                        // التوقيع الأيمن
+                        g.DrawString("توقيع المستلم / المتعامل", fSigTitle, brSig, new RectangleF(width - 280, y, 250, 26), SfCenter);
+                        g.DrawString("........................................", fSigTitle, Brushes.Gray, new RectangleF(width - 280, y + 28, 250, 24), SfCenter);
+
+                        // الباركود في المنتصف
+                        try
+                        {
+                            int bcW = 220, bcH = 38;
+                            int bcX = (width - bcW) / 2;
+                            g.FillRectangle(Brushes.White, bcX - 6, y, bcW + 12, bcH + 8);
+                            BarcodeEngine.DrawCode128(g, voucherCode, bcX, y + 4, bcW, bcH, isWide: false);
+                        }
+                        catch { }
+
+                        // التوقيع الأيسر
+                        g.DrawString("أمين الخزينة / الاعتماد", fSigTitle, brSig, new RectangleF(30, y, 250, 26), SfCenter);
+                        g.DrawString("........................................", fSigTitle, Brushes.Gray, new RectangleF(30, y + 28, 250, 24), SfCenter);
+
+                        y += 62;
+                        g.DrawString($"شكراً لتعاملكم مع {companyName}  —  مستند إلكتروني رسمي معتمد (#{voucherCode})", fFooter, brFooter, new RectangleF(0, y, width, 26), SfCenter);
                     }
                 }
 
@@ -832,73 +1355,91 @@ namespace ChickenDist.Core
             }
         }
 
+        private static void DrawFinancialCard(Graphics g, int x, int y, int w, int h, string title, string value, string subtitle, Color bgColor, Color borderColor, Color textColor, Font fHeader, Font fNum, Font fSub)
+        {
+            using (var brBg = new SolidBrush(bgColor))
+            using (var penBorder = new Pen(borderColor, 2f))
+            using (var brTopBar = new SolidBrush(borderColor))
+            using (var brText = new SolidBrush(textColor))
+            using (var brTitle = new SolidBrush(Color.FromArgb(51, 65, 85)))
+            {
+                g.FillRectangle(brBg, x, y, w, h);
+                g.DrawRectangle(penBorder, x, y, w, h);
+                g.FillRectangle(brTopBar, x, y, w, 5);
+
+                g.DrawString(title, fHeader, brTitle, new RectangleF(x + 4, y + 8, w - 8, 24), SfCenter);
+                g.DrawString(value, fNum, brText, new RectangleF(x + 4, y + 33, w - 8, 34), SfCenter);
+                g.DrawString(subtitle, fSub, brText, new RectangleF(x + 4, y + 68, w - 8, 24), SfCenter);
+            }
+        }
+
         public static Bitmap GenerateClientStatementImage(int clientID, string clientName, decimal balance, string extraNotes = "")
         {
             try
             {
-                int width = 620;
-                int height = 370;
+                int width = 820;
+                int height = 460;
                 var bmp = new Bitmap(width, height);
 
                 using (var g = Graphics.FromImage(bmp))
                 {
                     g.SmoothingMode = SmoothingMode.AntiAlias;
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                    g.Clear(Color.White);
+                    g.Clear(Color.FromArgb(248, 250, 252));
 
                     // Header
-                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 85), Color.FromArgb(30, 58, 138), Color.FromArgb(29, 78, 216), LinearGradientMode.Vertical))
+                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 105), Color.FromArgb(30, 58, 138), Color.FromArgb(29, 78, 216), LinearGradientMode.Vertical))
                     {
-                        g.FillRectangle(brHeader, 0, 0, width, 85);
+                        g.FillRectangle(brHeader, 0, 0, width, 105);
                     }
 
                     string companyName = AppConfig.CompanyName;
                     if (string.IsNullOrWhiteSpace(companyName)) companyName = "شركة برو سوفت للأنظمة الإلكترونية";
 
-                    using (var fTitle = new Font("Segoe UI", 16f, FontStyle.Bold))
-                    using (var fSub = new Font("Segoe UI", 10f))
+                    using (var fTitle = new Font("Segoe UI", 21f, FontStyle.Bold))
+                    using (var fSub = new Font("Segoe UI", 13.5f, FontStyle.Bold))
                     {
-                        g.DrawString(companyName, fTitle, Brushes.White, new RectangleF(0, 12, width, 35), SfCenter);
-                        g.DrawString("كشف حساب وموقف مالي للعميل", fSub, Brushes.WhiteSmoke, new RectangleF(0, 48, width, 25), SfCenter);
+                        g.DrawString(companyName, fTitle, Brushes.White, new RectangleF(0, 14, width, 42), SfCenter);
+                        g.DrawString("إشعار كشف حساب وموقف مالي للعميل", fSub, Brushes.WhiteSmoke, new RectangleF(0, 58, width, 32), SfCenter);
                     }
 
-                    int y = 100;
+                    int y = 122;
 
-                    using (var fBold = new Font("Segoe UI", 11.5f, FontStyle.Bold))
-                    using (var fNorm = new Font("Segoe UI", 10f))
+                    using (var fBold = new Font("Segoe UI", 15f, FontStyle.Bold))
+                    using (var fNorm = new Font("Segoe UI", 13.5f, FontStyle.Bold))
                     using (var brClient = new SolidBrush(Color.FromArgb(15, 23, 42)))
                     using (var brBoxBg = new SolidBrush(balance > 0 ? Color.FromArgb(254, 242, 242) : Color.FromArgb(240, 253, 244)))
-                    using (var penBox = new Pen(balance > 0 ? Color.FromArgb(254, 202, 202) : Color.FromArgb(187, 247, 208)))
+                    using (var penBox = new Pen(balance > 0 ? Color.FromArgb(239, 68, 68) : Color.FromArgb(34, 197, 94), 2f))
                     using (var brBalText = new SolidBrush(balance > 0 ? Color.FromArgb(185, 28, 28) : Color.FromArgb(22, 101, 52)))
                     {
-                        g.DrawString($"اسم العميل: {clientName} (كود: {clientID})", fBold, brClient, new RectangleF(260, y, 340, 28), SfRtlRight);
-                        g.DrawString($"التاريخ: {DateTime.Now:yyyy/MM/dd HH:mm}", fNorm, Brushes.DarkSlateGray, new RectangleF(20, y, 230, 28), SfRtlLeft);
-                        y += 38;
+                        g.DrawString($"اسم العميل: {clientName} (كود: #{clientID})", fBold, brClient, new RectangleF(320, y, 470, 36), SfRtlRight);
+                        g.DrawString($"التاريخ: {DateTime.Now:yyyy/MM/dd HH:mm}", fNorm, Brushes.DarkSlateGray, new RectangleF(30, y, 280, 36), SfRtlLeft);
+                        y += 48;
 
                         // Balance Highlight Card
-                        g.FillRectangle(brBoxBg, 20, y, width - 40, 78);
-                        g.DrawRectangle(penBox, 20, y, width - 40, 78);
+                        g.FillRectangle(brBoxBg, 30, y, width - 60, 110);
+                        g.DrawRectangle(penBox, 30, y, width - 60, 110);
 
-                        using (var fBal = new Font("Segoe UI", 15f, FontStyle.Bold))
+                        using (var fBal = new Font("Segoe UI", 22f, FontStyle.Bold))
                         {
-                            string balLabel = balance > 0 ? "الرصيد المستحق (مديونية):" : (balance < 0 ? "الرصيد المتبقي (دائن):" : "الرصيد الحالي:");
-                            g.DrawString(balLabel, fBold, brBalText, new RectangleF(320, y + 10, 270, 32), SfRtlRight);
-                            g.DrawString($"{Math.Abs(balance):N2} جنيه مصري", fBal, brBalText, new RectangleF(30, y + 10, 280, 32), SfRtlLeft);
+                            string balLabel = balance > 0 ? "الرصيد المستحق (مديونية على العميل):" : (balance < 0 ? "الرصيد المتبقي (دائن للعميل):" : "الرصيد الحالي:");
+                            g.DrawString(balLabel, fBold, brBalText, new RectangleF(380, y + 14, 390, 42), SfRtlRight);
+                            g.DrawString($"{Math.Abs(balance):N2} جنيه مصري", fBal, brBalText, new RectangleF(45, y + 12, 330, 44), SfRtlLeft);
                         }
 
-                        string statusText = balance > 0 ? "نرجو التكرم بسداد المبلغ المستحق في أقرب وقت" : "الحساب خالص ومطابق تماماً";
-                        g.DrawString(statusText, fNorm, brBalText, new RectangleF(30, y + 46, 560, 24), SfRtlRight);
-                        y += 96;
+                        string statusText = balance > 0 ? "نرجو التكرم بسداد المبلغ المستحق في أقرب وقت، شاكرين حسن تعاونكم." : "الحساب خالص ومطابق تماماً.";
+                        g.DrawString(statusText, fNorm, brBalText, new RectangleF(45, y + 66, width - 90, 32), SfCenter);
+                        y += 130;
 
                         if (!string.IsNullOrWhiteSpace(extraNotes))
                         {
-                            g.DrawString($"ملاحظات: {extraNotes}", fNorm, Brushes.Black, new RectangleF(20, y, 580, 28), SfRtlRight);
-                            y += 36;
+                            g.DrawString($"ملاحظات: {extraNotes}", fNorm, Brushes.Black, new RectangleF(30, y, width - 60, 34), SfRtlRight);
+                            y += 44;
                         }
 
-                        using (var fFooter = new Font("Segoe UI", 10f, FontStyle.Italic))
+                        using (var fFooter = new Font("Segoe UI", 12f, FontStyle.Bold))
                         {
-                            g.DrawString("شكراً لتعاملكم ونتمنى لكم دوام التوفيق والنجاح", fFooter, Brushes.Gray, new RectangleF(0, y + 8, width, 25), SfCenter);
+                            g.DrawString("شكراً لتعاملكم معنا ونتمنى لكم دوام التوفيق والنجاح", fFooter, Brushes.DimGray, new RectangleF(0, y + 10, width, 30), SfCenter);
                         }
                     }
                 }
@@ -919,77 +1460,89 @@ namespace ChickenDist.Core
                 string[] lines = textBody.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
                 int lineCount = Math.Max(lines.Length, 4);
 
-                int width = 620;
-                int rowHeight = 26;
-                int baseHeight = 170 + (lineCount * rowHeight);
+                int width = 820;
+                int rowHeight = 40;
+                int baseHeight = 220 + (lineCount * rowHeight);
                 var bmp = new Bitmap(width, baseHeight);
 
                 using (var g = Graphics.FromImage(bmp))
                 {
                     g.SmoothingMode = SmoothingMode.AntiAlias;
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                    g.Clear(Color.White);
+                    g.Clear(Color.FromArgb(248, 250, 252));
+
+                    using (var penOuter = new Pen(Color.FromArgb(203, 213, 225), 2f))
+                    {
+                        g.DrawRectangle(penOuter, 1, 1, width - 3, baseHeight - 3);
+                    }
 
                     // Header Gradient
-                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 85), Color.FromArgb(15, 23, 42), Color.FromArgb(30, 41, 59), LinearGradientMode.Vertical))
+                    using (var brHeader = new LinearGradientBrush(new Rectangle(0, 0, width, 105), Color.FromArgb(15, 23, 42), Color.FromArgb(30, 58, 138), LinearGradientMode.Horizontal))
                     {
-                        g.FillRectangle(brHeader, 0, 0, width, 85);
+                        g.FillRectangle(brHeader, 0, 0, width, 105);
+                    }
+                    using (var brGold = new SolidBrush(Color.FromArgb(245, 158, 11)))
+                    {
+                        g.FillRectangle(brGold, 0, 100, width, 5);
                     }
 
                     string companyName = AppConfig.CompanyName;
                     if (string.IsNullOrWhiteSpace(companyName)) companyName = "شركة برو سوفت للأنظمة المتكاملة";
 
-                    using (var fTitle = new Font("Segoe UI", 16f, FontStyle.Bold))
-                    using (var fSub = new Font("Segoe UI", 10f))
+                    using (var fTitle = new Font("Segoe UI", 21f, FontStyle.Bold))
+                    using (var fSub = new Font("Segoe UI", 14f, FontStyle.Bold))
                     {
-                        g.DrawString(companyName, fTitle, Brushes.White, new RectangleF(0, 12, width, 35), SfCenter);
-                        string sub = !string.IsNullOrWhiteSpace(title) ? title : (!string.IsNullOrWhiteSpace(subtitle) ? subtitle : "إشعار موثق من النظام");
-                        // Clean emoji from sub
-                        sub = CleanEmoji(sub);
-                        g.DrawString(sub, fSub, Brushes.LightGray, new RectangleF(0, 48, width, 25), SfCenter);
+                        g.DrawString(companyName, fTitle, Brushes.White, new RectangleF(0, 14, width, 42), SfCenter);
+                        string sub = !string.IsNullOrWhiteSpace(title) ? title : (!string.IsNullOrWhiteSpace(subtitle) ? subtitle : "إشعار رسمي موثق من النظام");
+                        sub = CleanEmoji(sub).Replace("*", "").Trim();
+                        g.DrawString(sub, fSub, Brushes.WhiteSmoke, new RectangleF(0, 58, width, 32), SfCenter);
                     }
 
-                    int y = 98;
-                    using (var fBold = new Font("Segoe UI", 10.5f, FontStyle.Bold))
-                    using (var fNorm = new Font("Segoe UI", 10f))
-                    using (var penLine = new Pen(Color.FromArgb(226, 232, 240)))
+                    int y = 122;
+                    using (var fBold = new Font("Segoe UI", 15.5f, FontStyle.Bold))
+                    using (var fNorm = new Font("Segoe UI", 14.5f, FontStyle.Bold))
+                    using (var penLine = new Pen(Color.FromArgb(203, 213, 225), 1.5f))
                     using (var brPrimary = new SolidBrush(Color.FromArgb(15, 23, 42)))
                     using (var brAccent = new SolidBrush(Color.FromArgb(30, 64, 175)))
                     {
+                        g.FillRectangle(Brushes.White, 24, y - 6, width - 48, baseHeight - y - 48);
+                        g.DrawRectangle(penLine, 24, y - 6, width - 48, baseHeight - y - 48);
+
                         foreach (string rawLine in lines)
                         {
                             string line = CleanEmoji(rawLine?.Trim() ?? "");
                             if (string.IsNullOrWhiteSpace(line))
                             {
-                                y += 10;
+                                y += 14;
                                 continue;
                             }
 
                             if (line.StartsWith("---") || line.StartsWith("===") || line.StartsWith("───") || line.StartsWith("━━━"))
                             {
-                                g.DrawLine(penLine, 25, y + 10, width - 25, y + 10);
-                                y += 20;
+                                g.DrawLine(penLine, 40, y + 14, width - 40, y + 14);
+                                y += 26;
                                 continue;
                             }
 
-                            bool isHeader = line.StartsWith("*") && line.EndsWith("*");
-                            string cleanText = line.Trim('*').Trim();
+                            bool isHeader = line.StartsWith("*") && line.EndsWith("*") && line.IndexOf('*', 1) == line.Length - 1;
+                            // إزالة كل علامات النجمة الخاصة بالماركداون حتى لا تظهر في الصورة
+                            string cleanText = line.Replace("*", "").Trim();
 
                             if (isHeader)
                             {
-                                g.DrawString(cleanText, fBold, brAccent, new RectangleF(25, y, width - 50, 26), SfRtlRight);
+                                g.DrawString(cleanText, fBold, brAccent, new RectangleF(40, y, width - 80, 36), SfRtlRight);
                             }
                             else
                             {
-                                g.DrawString(cleanText, fNorm, brPrimary, new RectangleF(25, y, width - 50, 26), SfRtlRight);
+                                g.DrawString(cleanText, fNorm, brPrimary, new RectangleF(40, y, width - 80, 36), SfRtlRight);
                             }
 
                             y += rowHeight;
                         }
 
-                        using (var fFooter = new Font("Segoe UI", 9.5f, FontStyle.Italic))
+                        using (var fFooter = new Font("Segoe UI", 11.5f, FontStyle.Bold))
                         {
-                            g.DrawString("تم إنشاء هذا المستند آلياً بواسطة النظام", fFooter, Brushes.Gray, new RectangleF(0, y + 6, width, 22), SfCenter);
+                            g.DrawString("تم إنشاء هذا المستند آلياً بواسطة النظام", fFooter, Brushes.DimGray, new RectangleF(0, baseHeight - 38, width, 28), SfCenter);
                         }
                     }
                 }

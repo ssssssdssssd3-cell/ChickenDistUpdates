@@ -49,47 +49,84 @@ namespace ChickenDist.Forms
             var pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 56,
-                FlowDirection = FlowDirection.RightToLeft,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, 52),
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(8, 12, 8, 8),
-                WrapContents = false
+                Padding = new Padding(8, 10, 8, 8),
+                WrapContents = true
             };
 
-            dtpFrom = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(4, 0, 4, 0) };
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth)
+            {
+                var lbl = new Label
+                {
+                    Text = labelText,
+                    AutoSize = true,
+                    ForeColor = Theme.TextMain,
+                    Font = Theme.FontBold,
+                    Margin = new Padding(4, 6, 2, 0)
+                };
+                inputCtrl.Width = inputWidth;
+                inputCtrl.Height = 26;
+                inputCtrl.Margin = new Padding(1, 2, 4, 2);
+
+                var pnl = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    RightToLeft = RightToLeft.Yes,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(6, 2, 6, 2),
+                    Padding = new Padding(0),
+                    WrapContents = false
+                };
+                pnl.Controls.Add(lbl);
+                pnl.Controls.Add(inputCtrl);
+                return pnl;
+            }
+
+            dtpFrom = new DateTimePicker { Width = 185, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
             dtpFrom.ValueChanged += (s, e) => LoadAuditLogs();
 
-            dtpTo = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(4, 0, 4, 0) };
+            dtpTo = new DateTimePicker { Width = 185, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpTo.ValueChanged += (s, e) => LoadAuditLogs();
 
-            cboActionType = new ComboBox { Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(4, 0, 4, 0) };
+            cboActionType = new ComboBox { Width = 100, DropDownStyle = ComboBoxStyle.DropDownList };
             cboActionType.Items.AddRange(new string[] { "الكل", "CREATE", "EDIT", "DELETE" });
             cboActionType.SelectedIndex = 0;
 
-            txtSearch = new TextBox { Width = 140, Margin = new Padding(4, 0, 4, 0) };
+            txtSearch = new TextBox { Width = 160, RightToLeft = RightToLeft.Yes };
 
             btnLoad = MkBtn("🔍 عرض السجل", Theme.Accent, 120, 30);
+            btnLoad.Margin = new Padding(6, 2, 4, 2);
             btnLoad.Click += (s, e) => LoadAuditLogs();
 
             var btnPrint = MkBtn("🖨️ طباعة", Color.FromArgb(40, 100, 180), 95, 30);
+            btnPrint.Margin = new Padding(4, 2, 4, 2);
             btnPrint.Click += BtnPrint_Click;
 
             var btnExportExcel = MkBtn("📥 إكسيل", Color.FromArgb(0, 120, 80), 95, 30);
+            btnExportExcel.Margin = new Padding(4, 2, 4, 2);
             btnExportExcel.Click += BtnExportExcel_Click;
 
             var btnExportPdf = MkBtn("📄 PDF", Color.FromArgb(200, 40, 40), 85, 30);
+            btnExportPdf.Margin = new Padding(4, 2, 4, 2);
             btnExportPdf.Click += BtnExportPdf_Click;
 
             pnlFilter.Controls.Clear();
             pnlFilter.Controls.AddRange(new Control[] {
-                btnLoad, btnPrint, btnExportExcel, btnExportPdf, txtSearch,
-                new Label { Text = "بحث كود/ملاحظات:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4,4,0,0) },
-                cboActionType,
-                new Label { Text = "العملية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(12,4,0,0) },
-                dtpTo,
-                new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(12,4,0,0) },
-                dtpFrom,
-                new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4,4,0,0) }
+                MakeFilterPanel("من:", dtpFrom, 185),
+                MakeFilterPanel("إلى:", dtpTo, 185),
+                MakeFilterPanel("العملية:", cboActionType, 100),
+                MakeFilterPanel("بحث كود/ملاحظات:", txtSearch, 160),
+                btnLoad,
+                btnPrint,
+                btnExportExcel,
+                btnExportPdf
             });
 
             // ─── لوحة المقارنة السفلية (مخفية حتى يُضغط على سجل) ───

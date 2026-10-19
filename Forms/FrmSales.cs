@@ -64,59 +64,55 @@ namespace ChickenDist.Forms
 			Font = Theme.FontMain;
 
 			// ─── شريط أدوات البحث — RTL ───
-			// في FlowDirection.RightToLeft: العنصر المضاف أولاً يظهر أقصى اليمين
-			// لذلك نضيف كل مجموعة (حقل + تسمية) في Panel مستقل لضمان ظهور التسمية يمين الحقل
+			// في WinForms مع RightToLeft=Yes: FlowDirection.LeftToRight يبدأ من أقصى اليمين لليسار
 			FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
 				AutoSize = true,
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				FlowDirection = FlowDirection.RightToLeft,
+				FlowDirection = FlowDirection.LeftToRight,
+				RightToLeft = RightToLeft.Yes,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(6, 6, 6, 6),
 				WrapContents = true
 			};
 
-			// دالة مساعدة لإنشاء حاوية (label + control + optional button) بشكل صحيح
+			// دالة مساعدة لإنشاء حاوية (التسمية يميناً ثم الحقل يساراً) بدون تداخل
 			Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth = 115, Button extraBtn = null)
 			{
 				inputCtrl.Width = inputWidth;
 				inputCtrl.Height = 26;
+				inputCtrl.Margin = new Padding(1, 2, extraBtn != null ? 1 : 3, 2);
+
 				var lbl = new Label
 				{
 					Text = labelText,
 					AutoSize = true,
 					ForeColor = Theme.TextMain,
-					Margin = new Padding(0, 5, 0, 0),
-					Font = Theme.FontMain
+					Margin = new Padding(4, 6, 2, 0),
+					Font = Theme.FontBold,
+					RightToLeft = RightToLeft.Yes
 				};
-				var pnl = new Panel
+
+				var pnl = new FlowLayoutPanel
 				{
-					Height = 36,
 					AutoSize = true,
 					AutoSizeMode = AutoSizeMode.GrowAndShrink,
+					FlowDirection = FlowDirection.LeftToRight,
+					WrapContents = false,
 					BackColor = Color.Transparent,
-					RightToLeft = RightToLeft.No,
-					Margin = new Padding(4, 0, 0, 0),
+					RightToLeft = RightToLeft.Yes,
+					Margin = new Padding(6, 2, 6, 2),
 					Padding = new Padding(0)
 				};
 
-				int extraW = extraBtn != null ? extraBtn.Width + 2 : 0;
-				int lblW = TextRenderer.MeasureText(labelText, Theme.FontMain).Width + 4;
-				int totalW = inputWidth + extraW + lblW + 6;
-
-				lbl.Location = new Point(inputWidth + extraW + 4, 5);
-				inputCtrl.Location = new Point(extraW, 4);
-
+				pnl.Controls.Add(lbl);
+				pnl.Controls.Add(inputCtrl);
 				if (extraBtn != null)
 				{
-					extraBtn.Location = new Point(0, 4);
+					extraBtn.Margin = new Padding(1, 2, 3, 2);
 					pnl.Controls.Add(extraBtn);
 				}
-
-				pnl.Width = totalW;
-				pnl.Controls.Add(inputCtrl);
-				pnl.Controls.Add(lbl);
 				return pnl;
 			}
 

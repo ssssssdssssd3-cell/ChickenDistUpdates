@@ -165,7 +165,7 @@ namespace ChickenDist.Core
             using (var dlg = new Form())
             {
                 dlg.Text = dialogTitle;
-                dlg.Size = new Size(700, 560);
+                dlg.Size = new Size(780, 690);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
@@ -184,7 +184,7 @@ namespace ChickenDist.Core
                 var lblPhone = new Label { Text = "📱 رقم هاتف العميل (واتساب):", Location = new Point(20, y), Width = 190, Height = 22, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 dlg.Controls.Add(lblPhone);
 
-                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 440, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
+                var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 520, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
                 dlg.Controls.Add(txtPhone);
                 y += 38;
 
@@ -193,7 +193,7 @@ namespace ChickenDist.Core
                 var pnlChoiceBtns = new TableLayoutPanel
                 {
                     Location = new Point(20, y),
-                    Size = new Size(640, 52),
+                    Size = new Size(720, 52),
                     ColumnCount = btnColumns,
                     RowCount = 1,
                     BackColor = Color.Transparent
@@ -253,13 +253,13 @@ namespace ChickenDist.Core
                 y += 60;
 
                 // ── Preview Section with Tab switcher & Multi-Page Controls ──
-                var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(640, 30), BackColor = Color.Transparent };
-                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى:", Location = new Point(500, 4), Width = 135, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Theme.TextMain };
+                var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(720, 30), BackColor = Color.Transparent };
+                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى:", Location = new Point(580, 4), Width = 135, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 
-                var btnShowText = new Button { Text = "معاينة النص 📝", Location = new Point(380, 0), Size = new Size(110, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                var btnShowText = new Button { Text = "معاينة النص 📝", Location = new Point(455, 0), Size = new Size(115, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
                 btnShowText.FlatAppearance.BorderSize = 0;
 
-                var btnShowImg = new Button { Text = "معاينة الصورة 🖼️", Location = new Point(260, 0), Size = new Size(115, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), ForeColor = Theme.TextMain, Cursor = Cursors.Hand };
+                var btnShowImg = new Button { Text = "معاينة الصورة 🖼️", Location = new Point(330, 0), Size = new Size(120, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), ForeColor = Theme.TextMain, Cursor = Cursors.Hand };
                 btnShowImg.FlatAppearance.BorderSize = 0;
 
                 var pnlPageNav = new Panel { Location = new Point(0, 0), Size = new Size(250, 28), BackColor = Color.Transparent, Visible = false };
@@ -281,14 +281,14 @@ namespace ChickenDist.Core
                 y += 34;
 
                 // Content Box
-                var pnlContent = new Panel { Location = new Point(20, y), Size = new Size(640, 250), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                var pnlContent = new Panel { Location = new Point(20, y), Size = new Size(720, 380), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
 
                 var txtPreview = new RichTextBox
                 {
                     Dock = DockStyle.Fill,
                     BorderStyle = BorderStyle.None,
                     Text = textMessage,
-                    Font = new Font("Segoe UI", 9.5f),
+                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                     BackColor = Color.White,
                     ForeColor = Color.FromArgb(30, 41, 59),
                     RightToLeft = RightToLeft.Yes
@@ -305,7 +305,7 @@ namespace ChickenDist.Core
                 pnlContent.Controls.Add(txtPreview);
                 pnlContent.Controls.Add(picPreview);
                 dlg.Controls.Add(pnlContent);
-                y += 258;
+                y += 388;
 
                 System.Collections.Generic.List<Image> cachedImages = null;
                 int currentImageIndex = 0;
@@ -392,8 +392,13 @@ namespace ChickenDist.Core
                 btnShowText.Click += (s, e) => showTextPreview();
                 btnShowImg.Click += (s, e) => showImagePreview();
 
+                if (imageGenerator != null || multiImageGenerator != null)
+                {
+                    showImagePreview();
+                }
+
                 // ── Footer Buttons (Copy & Cancel) ──
-                var btnCopy = Theme.MakeButton("📋 نسخ المعروض للحافظة", 440, y, 220, 38, Color.FromArgb(70, 80, 100));
+                var btnCopy = Theme.MakeButton("📋 نسخ المعروض للحافظة", 520, y, 220, 38, Color.FromArgb(70, 80, 100));
                 btnCopy.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                 btnCopy.Click += (s, e) =>
                 {

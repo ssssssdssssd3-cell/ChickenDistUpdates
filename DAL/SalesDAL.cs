@@ -555,6 +555,14 @@ namespace ChickenDist.DAL
                             DbHelper.P("@by", Session.EmpID));
                     }
 
+                    string salePartyName = !string.IsNullOrWhiteSpace(customClientName) ? customClientName.Trim() : "عميل نقدي";
+                    if (clientID.HasValue && clientID.Value > 0)
+                    {
+                        var cNameObj = DbHelper.ScalarTrans(trans, "SELECT ClientName FROM Clients WHERE ClientID = @cid", DbHelper.P("@cid", clientID.Value));
+                        if (cNameObj != null && cNameObj != DBNull.Value && !string.IsNullOrWhiteSpace(cNameObj.ToString()))
+                            salePartyName = cNameObj.ToString().Trim();
+                    }
+
                     // آجل: أضف للحساب
                     if (typeStr == "Credit" && clientID.HasValue)
                     {
@@ -625,10 +633,11 @@ namespace ChickenDist.DAL
                                 DbHelper.P("@uid", Session.EmpID));
 
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, AccountID) VALUES('ClientPayment', @amt, @ref, @notes, @uid, @accId)",
+                                "INSERT INTO CashBox(TransType, AmountIn, RefID, PartyName, Notes, CreatedBy, AccountID) VALUES('ClientPayment', @amt, @ref, @party, @notes, @uid, @accId)",
                                 DbHelper.P("@amt", downPayment),
                                 DbHelper.P("@ref", saleID),
-                                DbHelper.P("@notes", $"مقدم عقد التقسيط {contractCode} - فاتورة {code}"),
+                                DbHelper.P("@party", salePartyName),
+                                DbHelper.P("@notes", $"[عميل: {salePartyName}] مقدم عقد التقسيط {contractCode} - فاتورة {code}"),
                                 DbHelper.P("@uid", Session.EmpID),
                                 DbHelper.P("@accId", safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID())));
                         }
@@ -642,8 +651,9 @@ namespace ChickenDist.DAL
                     {
                         decimal actualPaid = cashPaid ?? total;
                         DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@n,@by,@accId)",
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,PartyName,Notes,CreatedBy,AccountID) VALUES('SaleIncome',@amt,@ref,@party,@n,@by,@accId)",
                             DbHelper.P("@amt", actualPaid), DbHelper.P("@ref", saleID),
+                            DbHelper.P("@party", salePartyName),
                             DbHelper.P("@n", (typeStr == "Mixed" ? "بيع مختلط (نقدي) " : "بيع نقدي ") + code), DbHelper.P("@by", Session.EmpID),
                             DbHelper.P("@accId", safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : (Session.DefaultSafeID ?? Session.GetDefaultSafeID())));
 
@@ -677,8 +687,9 @@ namespace ChickenDist.DAL
                             : (safeAccountID.HasValue && safeAccountID.Value > 0 ? safeAccountID.Value : 1);
 
                         DbHelper.ExecuteTrans(trans,
-                            "INSERT INTO CashBox(TransType,AmountIn,RefID,Notes,CreatedBy,AccountID) VALUES('Sale',@amt,@ref,@n,@by,@accId)",
+                            "INSERT INTO CashBox(TransType,AmountIn,RefID,PartyName,Notes,CreatedBy,AccountID) VALUES('Sale',@amt,@ref,@party,@n,@by,@accId)",
                             DbHelper.P("@amt", actualVisaPaid), DbHelper.P("@ref", saleID),
+                            DbHelper.P("@party", salePartyName),
                             DbHelper.P("@n", (typeStr == "Mixed" ? "سداد فيزا (مختلط) " : "سداد فيزا ") + code), DbHelper.P("@by", Session.EmpID),
                             DbHelper.P("@accId", targetVisaAcc));
 

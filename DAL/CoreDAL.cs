@@ -2504,19 +2504,68 @@ namespace ChickenDist.DAL
             DbHelper.EnsureCashBoxColumnsExist();
             string sql = @"SELECT cb.CashID, cb.TransDate, cb.TransType, cb.AmountIn, cb.AmountOut,
                           (cb.AmountIn - cb.AmountOut) AS Net, cb.Notes, sa.AccountName, cb.RefID,
+                          ISNULL(emp_cb.EmpName, N'المشرف') AS CreatedByName,
                           COALESCE(
-                              NULLIF(cb.PartyName, ''),
-                              (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID AND cb.TransType IN ('ClientPayment')),
-                              (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID AND cb.TransType IN ('SaleIncome', 'Sale', 'ClientPayment')),
-                              (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID AND cb.TransType IN ('SupplierPayment')),
-                              (SELECT TOP 1 s.SupplierName FROM Purchases p JOIN Suppliers s ON p.SupplierID = s.SupplierID WHERE p.PurchaseID = cb.RefID AND cb.TransType IN ('ClientPurchaseCash', 'PurchaseExpense')),
-                              (SELECT TOP 1 c.ClientName FROM SalesReturns r JOIN Clients c ON r.ClientID = c.ClientID WHERE r.ReturnID = cb.RefID AND cb.TransType IN ('ReturnOutcome', 'VisaReturn')),
-                              (SELECT TOP 1 s.SupplierName FROM PurchaseReturns pr JOIN Suppliers s ON pr.SupplierID = s.SupplierID WHERE pr.ReturnID = cb.RefID AND cb.TransType IN ('PurchaseReturn')),
-                              (SELECT TOP 1 ISNULL(s.SupplierName, e.ExpenseType) FROM Expenses e LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID WHERE e.ExpenseID = cb.RefID AND cb.TransType = 'Expense'),
+                              NULLIF(LTRIM(RTRIM(cb.PartyName)), ''),
+                              CASE WHEN cb.TransType = 'ClientPayment' AND cb.Notes LIKE N'%تحصيل أقساط العقد%'
+                                   THEN (SELECT TOP 1 c.ClientName FROM InstallmentContracts ic JOIN Clients c ON ic.CustomerID = c.ClientID WHERE ic.ContractID = cb.RefID)
+                                   WHEN cb.TransType = 'ClientPayment' AND cb.Notes LIKE N'%مقدم عقد التقسيط%'
+                                   THEN (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                   WHEN cb.TransType = 'ClientPayment'
+                                   THEN COALESCE(
+                                       (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID),
+                                       (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                   )
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType = 'SupplierPayment'
+                                   THEN (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType IN ('Deposit', 'Withdraw') AND (cb.Notes LIKE N'%[مورد:%' OR cb.Notes LIKE N'%صرف للمورد%')
+                                   THEN (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                   WHEN cb.TransType IN ('Deposit', 'Withdraw') AND (cb.Notes LIKE N'%[عميل:%' OR cb.Notes LIKE N'%تحصيل من عميل%')
+                                   THEN (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID)
+                                   WHEN cb.TransType = 'Deposit' AND cb.RefID IS NOT NULL
+                                   THEN COALESCE(
+                                       (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID),
+                                       (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                   )
+                                   WHEN cb.TransType = 'Withdraw' AND cb.RefID IS NOT NULL
+                                   THEN COALESCE(
+                                       (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID),
+                                       (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID)
+                                   )
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType IN ('SaleIncome', 'Sale')
+                                   THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(c.ClientName)), ''), NULLIF(LTRIM(RTRIM(s.CustomClientName)), ''), N'عميل نقدي')
+                                         FROM Sales s LEFT JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType IN ('ClientPurchaseCash', 'PurchaseExpense')
+                                   THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(s.SupplierName)), ''), NULLIF(LTRIM(RTRIM(c.ClientName)), ''), N'مورد نقدي')
+                                         FROM Purchases p LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID LEFT JOIN Clients c ON p.ClientID = c.ClientID WHERE p.PurchaseID = cb.RefID)
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType IN ('ReturnOutcome', 'VisaReturn')
+                                   THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(c.ClientName)), ''), NULLIF(LTRIM(RTRIM(sc.ClientName)), ''), NULLIF(LTRIM(RTRIM(s.CustomClientName)), ''), N'عميل نقدي')
+                                         FROM SalesReturns r LEFT JOIN Clients c ON r.ClientID = c.ClientID LEFT JOIN Sales s ON r.SaleID = s.SaleID LEFT JOIN Clients sc ON s.ClientID = sc.ClientID WHERE r.ReturnID = cb.RefID)
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType = 'PurchaseReturn'
+                                   THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(s.SupplierName)), ''), NULLIF(LTRIM(RTRIM(ps.SupplierName)), ''), N'مورد نقدي')
+                                         FROM PurchaseReturns pr LEFT JOIN Suppliers s ON pr.SupplierID = s.SupplierID LEFT JOIN Purchases p ON pr.PurchaseID = p.PurchaseID LEFT JOIN Suppliers ps ON p.SupplierID = ps.SupplierID WHERE pr.ReturnID = cb.RefID)
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType = 'Expense'
+                                   THEN (SELECT TOP 1 COALESCE(NULLIF(LTRIM(RTRIM(s.SupplierName)), ''), e.ExpenseType)
+                                         FROM Expenses e LEFT JOIN Suppliers s ON e.SupplierID = s.SupplierID WHERE e.ExpenseID = cb.RefID)
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType IN ('EmpAdvance', 'EmpPaymentOut', 'EmpPaymentIn')
+                                   THEN (SELECT TOP 1 emp.EmpName FROM EmployeeTransactions et JOIN Employees emp ON et.EmpID = emp.EmpID WHERE et.TransID = cb.RefID)
+                                   ELSE NULL END,
+                              CASE WHEN cb.TransType = 'DriverHandover'
+                                   THEN (SELECT TOP 1 emp.EmpName FROM DriverHandovers dh JOIN Employees emp ON dh.DriverID = emp.EmpID WHERE dh.HandoverID = cb.RefID)
+                                   ELSE NULL END,
                               ''
                           ) AS PartyName
                           FROM CashBox cb
                           LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                          LEFT JOIN Employees emp_cb ON cb.CreatedBy = emp_cb.EmpID
                           WHERE CAST(cb.TransDate AS DATE) BETWEEN @f AND @t";
             
             if (accountID.HasValue && accountID.Value > 0)
@@ -2671,15 +2720,24 @@ namespace ChickenDist.DAL
                 {
                     EnsureSufficientCashTrans(trans, targetAccID, amount, "تسجيل المصروف");
 
+                    string partyName = type;
+                    if (supplierID.HasValue && supplierID.Value > 0)
+                    {
+                        var supObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", supplierID.Value));
+                        if (supObj != null && supObj != DBNull.Value && !string.IsNullOrWhiteSpace(supObj.ToString()))
+                            partyName = supObj.ToString().Trim();
+                    }
+
                     newID = DbHelper.ExecuteInsertTrans(trans,
                         "INSERT INTO Expenses(ExpenseDate,ExpenseType,Amount,Notes,SupplierID,VehicleID,CreatedBy,SafeAccountID,ShiftID) VALUES(@d,@t,@a,@n,@s,@v,@by,@accId,@sid)",
                         DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),
                         DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@by", Session.EmpID),
                         DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID));
                     DbHelper.ExecuteTrans(trans,
-                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID,ShiftID) VALUES(@d,'Expense',@a,@ref,@n,@by,@accId,@sid)",
+                        "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,PartyName,Notes,CreatedBy,AccountID,ShiftID) VALUES(@d,'Expense',@a,@ref,@party,@n,@by,@accId,@sid)",
                         DbHelper.P("@d", date), DbHelper.P("@a", amount), DbHelper.P("@ref", newID),
-                        DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@by", Session.EmpID),
+                        DbHelper.P("@party", (object)partyName ?? DBNull.Value),
+                        DbHelper.P("@n", "مصروف: " + type + (!string.IsNullOrWhiteSpace(notes) ? " - " + notes : "")), DbHelper.P("@by", Session.EmpID),
                         DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID));
                 });
                 try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
@@ -2697,15 +2755,24 @@ namespace ChickenDist.DAL
                     EnsureSufficientCashTrans(trans, targetAccID, diff, "تعديل المصروف بالزيادة");
                 }
 
+                string partyName = type;
+                if (supplierID.HasValue && supplierID.Value > 0)
+                {
+                    var supObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", supplierID.Value));
+                    if (supObj != null && supObj != DBNull.Value && !string.IsNullOrWhiteSpace(supObj.ToString()))
+                        partyName = supObj.ToString().Trim();
+                }
+
                 DbHelper.ExecuteTrans(trans,
                     "UPDATE Expenses SET ExpenseDate=@d,ExpenseType=@t,Amount=@a,Notes=@n,SupplierID=@s,VehicleID=@v,SafeAccountID=@accId,ShiftID=ISNULL(ShiftID,@sid) WHERE ExpenseID=@id",
                     DbHelper.P("@d", date), DbHelper.P("@t", type), DbHelper.P("@a", amount),
                     DbHelper.P("@n", notes), DbHelper.P("@s", supplierID), DbHelper.P("@v", vehicleID), DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID), DbHelper.P("@id", id));
 
                 DbHelper.ExecuteTrans(trans,
-                    "UPDATE CashBox SET TransDate=@d, AmountOut=@a, Notes=@n, AccountID=@accId, ShiftID=ISNULL(ShiftID,@sid) WHERE RefID=@ref AND TransType='Expense'",
+                    "UPDATE CashBox SET TransDate=@d, AmountOut=@a, PartyName=@party, Notes=@n, AccountID=@accId, ShiftID=ISNULL(ShiftID,@sid) WHERE RefID=@ref AND TransType='Expense'",
                     DbHelper.P("@d", date), DbHelper.P("@a", amount),
-                    DbHelper.P("@n", "مصروف: " + type), DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID), DbHelper.P("@ref", id));
+                    DbHelper.P("@party", (object)partyName ?? DBNull.Value),
+                    DbHelper.P("@n", "مصروف: " + type + (!string.IsNullOrWhiteSpace(notes) ? " - " + notes : "")), DbHelper.P("@accId", targetAccID), DbHelper.P("@sid", currentShiftID), DbHelper.P("@ref", id));
             });
             try { System.Threading.Tasks.Task.Run(() => Services.CloudSyncService.PushLiveStatsToFirestoreAsync()); } catch {}
             return id;

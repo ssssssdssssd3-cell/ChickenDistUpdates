@@ -412,6 +412,14 @@ namespace ChickenDist.DAL
                 {
                     if (purchaseSource == "Client" || clientID.HasValue)
                     {
+                        string purClientName = "عميل نقدي";
+                        if (clientID.HasValue && clientID.Value > 0)
+                        {
+                            var cObj = DbHelper.ScalarTrans(trans, "SELECT ClientName FROM Clients WHERE ClientID = @cid", DbHelper.P("@cid", clientID.Value));
+                            if (cObj != null && cObj != DBNull.Value && !string.IsNullOrWhiteSpace(cObj.ToString()))
+                                purClientName = cObj.ToString().Trim();
+                        }
+
                         if (purchaseType == "Credit" && clientID.HasValue)
                         {
                             DbHelper.ExecuteTrans(trans,
@@ -428,18 +436,27 @@ namespace ChickenDist.DAL
                             AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "فاتورة شراء نقدي من عميل");
 
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, Notes, CreatedBy, AccountID)" +
-                                " VALUES(@dt, 'ClientPurchaseCash', @amt, @ref, @n, @by, @accId)",
+                                "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, PartyName, Notes, CreatedBy, AccountID)" +
+                                " VALUES(@dt, 'ClientPurchaseCash', @amt, @ref, @party, @n, @by, @accId)",
                                 DbHelper.P("@dt",  DateTime.Now),
                                 DbHelper.P("@amt", total),
                                 DbHelper.P("@ref", purchaseID),
-                                DbHelper.P("@n",   "فاتورة شراء من عميل نقدي " + code),
+                                DbHelper.P("@party", purClientName),
+                                DbHelper.P("@n",   $"فاتورة شراء من عميل نقدي {code}"),
                                 DbHelper.P("@by",  Session.EmpID),
                                 DbHelper.P("@accId", accId));
                         }
                     }
                     else
                     {
+                        string purSupplierName = "مورد نقدي";
+                        if (supplierID.HasValue && supplierID.Value > 0)
+                        {
+                            var sObj = DbHelper.ScalarTrans(trans, "SELECT SupplierName FROM Suppliers WHERE SupplierID = @sid", DbHelper.P("@sid", supplierID.Value));
+                            if (sObj != null && sObj != DBNull.Value && !string.IsNullOrWhiteSpace(sObj.ToString()))
+                                purSupplierName = sObj.ToString().Trim();
+                        }
+
                         // آجل → أضف دائناً في حساب المورد
                         if (purchaseType == "Credit" && supplierID.HasValue)
                         {
@@ -459,11 +476,12 @@ namespace ChickenDist.DAL
                             AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "فاتورة مشتريات نقدية");
 
                             DbHelper.ExecuteTrans(trans,
-                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,Notes,CreatedBy,AccountID)" +
-                                " VALUES(@dt,'PurchaseExpense',@amt,@ref,@n,@by,@accId)",
+                                "INSERT INTO CashBox(TransDate,TransType,AmountOut,RefID,PartyName,Notes,CreatedBy,AccountID)" +
+                                " VALUES(@dt,'PurchaseExpense',@amt,@ref,@party,@n,@by,@accId)",
                                 DbHelper.P("@dt",  DateTime.Now),
                                 DbHelper.P("@amt", total),
                                 DbHelper.P("@ref", purchaseID),
+                                DbHelper.P("@party", purSupplierName),
                                 DbHelper.P("@n",   "مشتريات نقدية " + code),
                                 DbHelper.P("@by",  Session.EmpID),
                                 DbHelper.P("@accId", accId));

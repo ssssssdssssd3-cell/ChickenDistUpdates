@@ -81,13 +81,51 @@ namespace ChickenDist.Forms
             var pnlFilter = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 46,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, 46),
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgSearchPanel,
                 Padding = new Padding(8, 6, 8, 6),
-                WrapContents = false
+                WrapContents = true
             };
 
-            pnlFilter.Controls.Add(new Label { Text = "👤 العميل:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 6, 0, 0) });
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth, Control extraCtrl = null)
+            {
+                var lbl = new Label
+                {
+                    Text = labelText,
+                    AutoSize = true,
+                    ForeColor = Theme.TextSearchLabel,
+                    Font = Theme.FontBold,
+                    Margin = new Padding(4, 6, 2, 0)
+                };
+                inputCtrl.Width = inputWidth;
+                inputCtrl.Height = 26;
+                inputCtrl.Margin = new Padding(1, 2, extraCtrl != null ? 1 : 4, 2);
+
+                var pnl = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    RightToLeft = RightToLeft.Yes,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(6, 2, 6, 2),
+                    Padding = new Padding(0),
+                    WrapContents = false
+                };
+                pnl.Controls.Add(lbl);
+                pnl.Controls.Add(inputCtrl);
+                if (extraCtrl != null)
+                {
+                    extraCtrl.Margin = new Padding(1, 2, 4, 2);
+                    pnl.Controls.Add(extraCtrl);
+                }
+                return pnl;
+            }
+
             cmbClientSelector = new ComboBox
             {
                 Width = 230,
@@ -96,8 +134,7 @@ namespace ChickenDist.Forms
                 AutoCompleteMode = AutoCompleteMode.SuggestAppend,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 9.5f),
-                Margin = new Padding(2, 2, 0, 0)
+                Font = new Font("Segoe UI", 9.5f)
             };
             cmbClientSelector.SelectedIndexChanged += CmbClientSelector_SelectedIndexChanged;
             cmbClientSelector.KeyDown += (s, e) =>
@@ -128,19 +165,17 @@ namespace ChickenDist.Forms
                     }
                 }
             };
-            pnlFilter.Controls.Add(cmbClientSelector);
 
             var btnSearchClient = new Button
             {
                 Text = "🔍",
                 Width = 34,
-                Height = 27,
+                Height = 26,
                 Font = Theme.FontBold,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.Accent,
                 ForeColor = Color.White,
-                Cursor = Cursors.Hand,
-                Margin = new Padding(2, 2, 0, 0)
+                Cursor = Cursors.Hand
             };
             btnSearchClient.FlatAppearance.BorderSize = 0;
             btnSearchClient.Click += (s, e) =>
@@ -153,41 +188,37 @@ namespace ChickenDist.Forms
                     }
                 }
             };
-            pnlFilter.Controls.Add(btnSearchClient);
+            pnlFilter.Controls.Add(MakeFilterPanel("👤 العميل:", cmbClientSelector, 230, btnSearchClient));
 
-            pnlFilter.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(12, 6, 0, 0) });
             dtpFrom = new DateTimePicker
             {
                 Width = 180,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
-                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
-                Margin = new Padding(2, 2, 0, 0)
+                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0)
             };
             dtpFrom.ValueChanged += (s, e) => RefreshAllData();
-            pnlFilter.Controls.Add(dtpFrom);
+            pnlFilter.Controls.Add(MakeFilterPanel("من:", dtpFrom, 180));
 
-            pnlFilter.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(10, 6, 0, 0) });
             dtpTo = new DateTimePicker
             {
                 Width = 180,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
-                Value = DateTime.Now,
-                Margin = new Padding(2, 2, 0, 0)
+                Value = DateTime.Now
             };
             dtpTo.ValueChanged += (s, e) => RefreshAllData();
-            pnlFilter.Controls.Add(dtpTo);
+            pnlFilter.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 180));
 
             btnLoad = Theme.MakeButton("🔄 تحديث العرض", Theme.Accent);
             btnLoad.Size = new Size(115, 30);
-            btnLoad.Margin = new Padding(12, 0, 0, 0);
+            btnLoad.Margin = new Padding(8, 2, 4, 2);
             btnLoad.Click += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(btnLoad);
 
             var btnCollect = Theme.MakeButton("💵 تحصيل نقدية", Theme.Success);
             btnCollect.Size = new Size(125, 30);
-            btnCollect.Margin = new Padding(8, 0, 0, 0);
+            btnCollect.Margin = new Padding(6, 2, 4, 2);
             btnCollect.Click += (s, e) =>
             {
                 if (_clientID <= 0)

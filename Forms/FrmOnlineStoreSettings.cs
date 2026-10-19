@@ -40,6 +40,8 @@ namespace ChickenDist.Forms
         private Button btnSaveAndSync;
         private Button btnClose;
         private Label lblSyncStatus;
+        private ComboBox cboStoreTheme;
+        private Button btnProductBenefits;
 
         private DataTable _dtCategories;
 
@@ -351,7 +353,7 @@ namespace ChickenDist.Forms
             {
                 Text = "📢 تفاصيل المتجر والتواصل",
                 Location = new Point(10, 485),
-                Size = new Size(470, 335),
+                Size = new Size(470, 415),
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -515,6 +517,53 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleRight
             };
 
+            var lblThemeTitle = new Label
+            {
+                Text = "🎨 مظهر وتصميم الموقع (Theme):",
+                Location = new Point(230, 328),
+                Size = new Size(225, 24),
+                ForeColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            cboStoreTheme = new ComboBox
+            {
+                Location = new Point(15, 326),
+                Size = new Size(210, 26),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(251, 191, 36),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat
+            };
+            cboStoreTheme.Items.Add(new ThemeItem("كافيهات ومطاعم احترافي (Restaurant)", "restaurant"));
+            cboStoreTheme.Items.Add(new ThemeItem("أسود وذهبي فاخر (Royal Gold)", "gold"));
+            cboStoreTheme.Items.Add(new ThemeItem("أخضر صحي وطازج (Emerald Fresh)", "emerald"));
+            cboStoreTheme.Items.Add(new ThemeItem("عصري داكن (Modern Dark)", "dark"));
+            cboStoreTheme.Items.Add(new ThemeItem("نهاري كلاسيكي (Light Classic)", "light"));
+
+            btnProductBenefits = new Button
+            {
+                Text = "📝 إدارة فوائد ومكونات الأصناف للمتجر أونلاين ✨",
+                Location = new Point(15, 362),
+                Size = new Size(440, 36),
+                BackColor = Color.FromArgb(16, 185, 129),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnProductBenefits.FlatAppearance.BorderSize = 0;
+            btnProductBenefits.Click += (s, e) =>
+            {
+                using (var frm = new FrmProductBenefits())
+                {
+                    frm.ShowDialog(this);
+                }
+            };
+
             grpExtra.Controls.Add(lblMin);
             grpExtra.Controls.Add(nudMinimumOrder);
             grpExtra.Controls.Add(lblWa);
@@ -528,6 +577,9 @@ namespace ChickenDist.Forms
             grpExtra.Controls.Add(btnCopyUrl);
             grpExtra.Controls.Add(btnOpenStore);
             grpExtra.Controls.Add(lblUrlHint);
+            grpExtra.Controls.Add(lblThemeTitle);
+            grpExtra.Controls.Add(cboStoreTheme);
+            grpExtra.Controls.Add(btnProductBenefits);
             pnlRight.Controls.Add(grpExtra);
 
             // ===== العمود الأيسر =====
@@ -779,6 +831,21 @@ namespace ChickenDist.Forms
             txtFirebaseProjectId.Text = projectId;
             UpdateStoreUrlAndQr();
 
+            string curTheme = AppConfig.Store_Theme ?? "restaurant";
+            if (cboStoreTheme != null)
+            {
+                int selIdx = 0;
+                for (int i = 0; i < cboStoreTheme.Items.Count; i++)
+                {
+                    if (cboStoreTheme.Items[i] is ThemeItem ti && ti.Code.Equals(curTheme, StringComparison.OrdinalIgnoreCase))
+                    {
+                        selIdx = i;
+                        break;
+                    }
+                }
+                if (cboStoreTheme.Items.Count > 0) cboStoreTheme.SelectedIndex = selIdx;
+            }
+
             LoadCategories();
         }
 
@@ -900,6 +967,11 @@ namespace ChickenDist.Forms
                     AppConfig.CompanyPhone1 = enteredPhone;
                 }
 
+                if (cboStoreTheme != null && cboStoreTheme.SelectedItem is ThemeItem selTi)
+                {
+                    AppConfig.Store_Theme = selTi.Code;
+                }
+
                 // 2. حفظ رؤية الأقسام في قاعدة البيانات
                 for (int i = 0; i < clbCategories.Items.Count; i++)
                 {
@@ -949,6 +1021,18 @@ namespace ChickenDist.Forms
             {
                 return $"{CategoryName} ({ProductsCount} صنف)";
             }
+        }
+
+        private class ThemeItem
+        {
+            public string Name { get; set; }
+            public string Code { get; set; }
+            public ThemeItem(string name, string code)
+            {
+                Name = name;
+                Code = code;
+            }
+            public override string ToString() => Name;
         }
     }
 }

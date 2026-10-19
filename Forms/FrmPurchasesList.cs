@@ -50,31 +50,63 @@ namespace ChickenDist.Forms
 				Dock = DockStyle.Top,
 				AutoSize = true,
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
-				FlowDirection = FlowDirection.RightToLeft,
+				RightToLeft = RightToLeft.Yes,
+				FlowDirection = FlowDirection.LeftToRight,
 				BackColor = Theme.BgCard,
 				Padding = new Padding(8, 8, 8, 8),
 				WrapContents = true
 			};
 
-			Label lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 10, 0) };
-			dtpFrom = new DateTimePicker { Width = 190, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
+			Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth, Control extraCtrl = null)
+			{
+				var lbl = new Label
+				{
+					Text = labelText,
+					AutoSize = true,
+					ForeColor = Theme.TextMain,
+					Font = Theme.FontBold,
+					Margin = new Padding(4, 6, 2, 0)
+				};
+				inputCtrl.Width = inputWidth;
+				inputCtrl.Height = 26;
+				inputCtrl.Margin = new Padding(1, 2, extraCtrl != null ? 1 : 4, 2);
+
+				var pnl = new FlowLayoutPanel
+				{
+					AutoSize = true,
+					AutoSizeMode = AutoSizeMode.GrowAndShrink,
+					RightToLeft = RightToLeft.Yes,
+					FlowDirection = FlowDirection.LeftToRight,
+					BackColor = Color.Transparent,
+					Margin = new Padding(6, 2, 6, 2),
+					Padding = new Padding(0),
+					WrapContents = false
+				};
+				pnl.Controls.Add(lbl);
+				pnl.Controls.Add(inputCtrl);
+				if (extraCtrl != null)
+				{
+					extraCtrl.Margin = new Padding(1, 2, 4, 2);
+					pnl.Controls.Add(extraCtrl);
+				}
+				return pnl;
+			}
+
+			dtpFrom = new DateTimePicker { Width = 185, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
 			dtpFrom.ValueChanged += delegate { LoadPurchases(); };
-			filterPanel.Controls.AddRange(new Control[] { lblFrom, dtpFrom });
+			filterPanel.Controls.Add(MakeFilterPanel("من:", dtpFrom, 185));
 
-			Label lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
-			dtpTo = new DateTimePicker { Width = 190, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
+			dtpTo = new DateTimePicker { Width = 185, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
 			dtpTo.ValueChanged += delegate { LoadPurchases(); };
-			filterPanel.Controls.AddRange(new Control[] { lblTo, dtpTo });
+			filterPanel.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 185));
 
-			Label lblType = new Label { Text = "النوع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			cboTypeFilter = new ComboBox { Width = 110, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			cboTypeFilter.Items.AddRange(new object[] { "الكل", "نقدي (Cash)", "آجل (Credit)" });
 			cboTypeFilter.SelectedIndex = 0;
 			cboTypeFilter.SelectedIndexChanged += delegate { FilterData(); };
-			filterPanel.Controls.AddRange(new Control[] { lblType, cboTypeFilter });
+			filterPanel.Controls.Add(MakeFilterPanel("النوع:", cboTypeFilter, 110));
 
-			Label lblSupplier = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
-			cboSupplierFilter = new ComboBox { Width = 130, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+			cboSupplierFilter = new ComboBox { Width = 135, Height = 26, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			cboSupplierFilter.Items.Add(new ComboItem(0, "الكل"));
 			foreach (DataRow row in SupplierDAL.GetAll(true).Rows)
 				cboSupplierFilter.Items.Add(new ComboItem((int)row["SupplierID"], row["SupplierName"].ToString()));
@@ -89,8 +121,7 @@ namespace ChickenDist.Forms
 				FlatStyle = FlatStyle.Flat,
 				BackColor = Theme.Accent,
 				ForeColor = Color.White,
-				Cursor = Cursors.Hand,
-				Margin = new Padding(2, 0, 8, 0)
+				Cursor = Cursors.Hand
 			};
 			btnSupplierSearchDlg.FlatAppearance.BorderSize = 0;
 			btnSupplierSearchDlg.Click += (s, e) =>
@@ -111,12 +142,11 @@ namespace ChickenDist.Forms
 					}
 				}
 			};
-			filterPanel.Controls.AddRange(new Control[] { lblSupplier, cboSupplierFilter, btnSupplierSearchDlg });
+			filterPanel.Controls.Add(MakeFilterPanel("المورد:", cboSupplierFilter, 135, btnSupplierSearchDlg));
 
-			Label lblWarehouse = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
 			cboWarehouseFilter = new ComboBox
 			{
-				Width = 130,
+				Width = 135,
 				Height = 26,
 				DropDownStyle = ComboBoxStyle.DropDownList,
 				BackColor = Theme.BgInput,
@@ -173,33 +203,31 @@ namespace ChickenDist.Forms
 			}
 			cboWarehouseFilter.DisplayMember = "Text";
 			cboWarehouseFilter.SelectedIndexChanged += delegate { LoadPurchases(); };
-			filterPanel.Controls.AddRange(new Control[] { lblWarehouse, cboWarehouseFilter });
+			filterPanel.Controls.Add(MakeFilterPanel("المخزن:", cboWarehouseFilter, 135));
 
-			Label lblProduct = new Label { Text = "بحث صنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
-			txtProductSearch = new TextBox { Width = 120, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+			txtProductSearch = new TextBox { Width = 125, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			txtProductSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { LoadPurchases(); e.Handled = true; e.SuppressKeyPress = true; } };
-			filterPanel.Controls.AddRange(new Control[] { lblProduct, txtProductSearch });
+			filterPanel.Controls.Add(MakeFilterPanel("بحث صنف:", txtProductSearch, 125));
 
-			Label lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(3, 5, 15, 0) };
-			txtSearch = new TextBox { Width = 140, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
+			txtSearch = new TextBox { Width = 145, Height = 26, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes };
 			txtSearch.TextChanged += delegate { FilterData(); };
-			filterPanel.Controls.AddRange(new Control[] { lblSearch, txtSearch });
+			filterPanel.Controls.Add(MakeFilterPanel("بحث:", txtSearch, 145));
 
 			btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
 			btnLoad.Size = new Size(80, 28);
-			btnLoad.Margin = new Padding(15, 0, 0, 0);
+			btnLoad.Margin = new Padding(6, 3, 4, 2);
 			btnLoad.Click += delegate { LoadPurchases(); };
 			filterPanel.Controls.Add(btnLoad);
 
 			var btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(40, 100, 180));
 			btnPrint.Size = new Size(130, 28);
-			btnPrint.Margin = new Padding(6, 0, 0, 0);
+			btnPrint.Margin = new Padding(6, 3, 4, 2);
 			btnPrint.Click += BtnPrintPurchase_Click;
 			filterPanel.Controls.Add(btnPrint);
 
 			btnNewPurchase = Theme.MakeButton("➕ فاتورة شراء جديدة", Color.FromArgb(40, 150, 80));
 			btnNewPurchase.Size = new Size(150, 28);
-			btnNewPurchase.Margin = new Padding(10, 0, 0, 0);
+			btnNewPurchase.Margin = new Padding(6, 3, 4, 2);
 			btnNewPurchase.Click += delegate { new FrmPurchase().ShowDialog(); LoadPurchases(); };
 			filterPanel.Controls.Add(btnNewPurchase);
 

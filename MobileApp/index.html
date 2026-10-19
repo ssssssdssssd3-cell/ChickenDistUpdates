@@ -1931,12 +1931,17 @@
     const APP_THEME_KEY = 'prosoft_app_theme';
 
     function initAppTheme() {
-      const savedTheme = localStorage.getItem(APP_THEME_KEY) || 'dark';
+      // الثيم الافتراضي الجديد: أسود وذهبي فاخر (يُطبَّق مرة واحدة على الأجهزة القديمة ثم يحترم اختيار المستخدم)
+      if (!localStorage.getItem('prosoft_gold_default_v1')) {
+        localStorage.setItem(APP_THEME_KEY, 'gold');
+        localStorage.setItem('prosoft_gold_default_v1', '1');
+      }
+      const savedTheme = localStorage.getItem(APP_THEME_KEY) || 'gold';
       applyAppTheme(savedTheme);
     }
 
     function applyAppTheme(theme) {
-      if (!['dark', 'light', 'gold'].includes(theme)) theme = 'dark';
+      if (!['dark', 'light', 'gold'].includes(theme)) theme = 'gold';
 
       document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-gold');
       document.documentElement.classList.add('theme-' + theme);
@@ -2561,7 +2566,8 @@
               RecentCashBox: f.RecentCashBoxJson ? JSON.parse(f.RecentCashBoxJson.stringValue || "[]") : [],
               SafeAccounts: f.SafeAccountsJson ? JSON.parse(f.SafeAccountsJson.stringValue || "[]") : [],
               TopSelling: f.TopSellingJson ? JSON.parse(f.TopSellingJson.stringValue || "[]") : [],
-              ExpensesList: f.ExpensesListJson ? JSON.parse(f.ExpensesListJson.stringValue || "[]") : []
+              ExpensesList: f.ExpensesListJson ? JSON.parse(f.ExpensesListJson.stringValue || "[]") : [],
+              DailyStats: f.DailyStatsJson ? JSON.parse(f.DailyStatsJson.stringValue || "[]") : []
             };
             processAndRenderData();
           }
@@ -2708,11 +2714,35 @@
         periodCashOut = parseFloat(rawData.TodayCashOut || 0);
       }
 
+      // ✅ حساب مؤشرات الفترة من الملخص اليومي (آخر 31 يوماً) لضمان دقة أمس/الأسبوع/الشهر
+      let dsProfit = null, dsCount = null, dsWaste = 0, dsExp = 0, dsGross = 0;
+      if (Array.isArray(rawData.DailyStats) && rawData.DailyStats.length > 0) {
+        const dsRows = rawData.DailyStats.filter(x => isDateInPeriod(x.Date));
+        periodSalesTot = 0; periodCashSales = 0; periodCreditSales = 0;
+        periodPurTot = 0; periodPaidPur = 0; periodCreditPur = 0;
+        periodCashIn = 0; periodCashOut = 0; dsProfit = 0; dsCount = 0;
+        dsRows.forEach(x => {
+          periodSalesTot += +x.SalesTotal || 0;
+          periodCashSales += +x.SalesPaid || 0;
+          periodCreditSales += +x.SalesCredit || 0;
+          periodPurTot += +x.PurTotal || 0;
+          periodPaidPur += +x.PurPaid || 0;
+          periodCashIn += +x.CashIn || 0;
+          periodCashOut += +x.CashOut || 0;
+          dsProfit += +x.NetProfit || 0;
+          dsGross += +x.GrossProfit || 0;
+          dsWaste += +x.Wastage || 0;
+          dsExp += +x.Expenses || 0;
+          dsCount += +x.SalesCount || 0;
+        });
+        periodCreditPur = Math.max(0, periodPurTot - periodPaidPur);
+      }
+
       document.getElementById('cardPeriodSales').innerHTML = `${periodSalesTot.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
       document.getElementById('cardPeriodCashSales').textContent = periodCashSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardPeriodCreditSales').textContent = periodCreditSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      const periodProfit = activeFilterRange === 'today' && rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18);
+      const periodProfit = dsProfit !== null ? dsProfit : (activeFilterRange === 'today' && rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18));
       const profitEl = document.getElementById('cardPeriodProfit');
       if (profitEl) {
         if (periodProfit < 0) {
@@ -2721,8 +2751,21 @@
           profitEl.className = "text-xl sm:text-2xl font-black text-emerald-400 tracking-tight";
         }
         profitEl.innerHTML = `${periodProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+        // تفصيل الربح كما في قائمة الدخل (بعد المصروفات والهالك)
+        let bd = document.getElementById('profitBreakdown');
+        if (!bd && profitEl.parentNode) {
+          bd = document.createElement('div');
+          bd.id = 'profitBreakdown';
+          bd.className = 'text-[10px] text-slate-400 mt-1 leading-relaxed';
+          profitEl.parentNode.appendChild(bd);
+        }
+        if (bd) {
+          bd.innerHTML = dsProfit !== null
+            ? `مجمل الربح: ${dsGross.toFixed(2)} − مصروفات: ${dsExp.toFixed(2)} − هالك: <span class="text-rose-400 font-bold">${dsWaste.toFixed(2)}</span>`
+            : '';
+        }
       }
-      const salesCount = filteredSales.length > 0 ? filteredSales.length : (rawData.TodaySalesInvoicesCount || 0);
+      const salesCount = dsCount !== null ? dsCount : (filteredSales.length > 0 ? filteredSales.length : (rawData.TodaySalesInvoicesCount || 0));
       document.getElementById('cardPeriodSalesCount').textContent = salesCount;
 
       document.getElementById('cardPeriodPurchases').innerHTML = `${periodPurTot.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;

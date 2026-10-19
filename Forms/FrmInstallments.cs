@@ -79,7 +79,8 @@ namespace ChickenDist.Forms
             var pnlDashboard = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 BackColor = Theme.BgMain,
                 Padding = new Padding(10, 5, 10, 5)
@@ -94,17 +95,53 @@ namespace ChickenDist.Forms
             mainTbl.Controls.Add(pnlDashboard, 0, 0);
 
             // 2. Filters Bar Panel
-            var pnlFilters = new Panel
+            var pnlFilters = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10)
+                Padding = new Padding(8, 6, 8, 6),
+                WrapContents = true
             };
 
-            AddLabel(pnlFilters, "العميل:", 15, 13);
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth, Control extraCtrl = null)
+            {
+                var lbl = new Label
+                {
+                    Text = labelText,
+                    AutoSize = true,
+                    ForeColor = Theme.TextMain,
+                    Font = Theme.FontBold,
+                    Margin = new Padding(4, 6, 2, 0)
+                };
+                inputCtrl.Width = inputWidth;
+                inputCtrl.Height = 26;
+                inputCtrl.Margin = new Padding(1, 2, extraCtrl != null ? 1 : 4, 2);
+
+                var pnl = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    RightToLeft = RightToLeft.Yes,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(6, 2, 6, 2),
+                    Padding = new Padding(0),
+                    WrapContents = false
+                };
+                pnl.Controls.Add(lbl);
+                pnl.Controls.Add(inputCtrl);
+                if (extraCtrl != null)
+                {
+                    extraCtrl.Margin = new Padding(1, 2, 4, 2);
+                    pnl.Controls.Add(extraCtrl);
+                }
+                return pnl;
+            }
+
             cboSearchClient = new ComboBox
             {
-                Location = new Point(65, 9),
                 Width = 170,
                 DropDownStyle = ComboBoxStyle.DropDown,
                 BackColor = Theme.BgInput,
@@ -112,12 +149,10 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat
             };
             SetupSearchableCombo(cboSearchClient);
-            pnlFilters.Controls.Add(cboSearchClient);
 
             var btnSearchClient = new Button
             {
                 Text = "🔍",
-                Location = new Point(238, 9),
                 Size = new Size(34, 26),
                 Font = Theme.FontBold,
                 FlatStyle = FlatStyle.Flat,
@@ -152,12 +187,9 @@ namespace ChickenDist.Forms
                     }
                 }
             };
-            pnlFilters.Controls.Add(btnSearchClient);
 
-            AddLabel(pnlFilters, "الحالة:", 280, 13);
             cboSearchStatus = new ComboBox
             {
-                Location = new Point(330, 9),
                 Width = 110,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
@@ -166,28 +198,29 @@ namespace ChickenDist.Forms
             };
             cboSearchStatus.Items.AddRange(new object[] { "All", "Active", "Completed", "Cancelled" });
             cboSearchStatus.SelectedIndex = 1; // Default to Active
-            pnlFilters.Controls.Add(cboSearchStatus);
 
-            AddLabel(pnlFilters, "رقم العقد:", 455, 13);
             txtSearchCode = new TextBox
             {
-                Location = new Point(520, 9),
                 Width = 120,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle
             };
-            pnlFilters.Controls.Add(txtSearchCode);
 
-            btnSearch = Theme.MakeButton("🔍 بحث", 660, 8, 90, 26, Theme.Primary);
+            btnSearch = Theme.MakeButton("🔍 بحث", 0, 0, 90, 28, Theme.Primary);
+            btnSearch.Margin = new Padding(6, 2, 4, 2);
             btnSearch.Click += (s, e) => { _currentPage = 1; SearchContracts(); };
-            btnReset = Theme.MakeButton("🔄 إعادة تعيين", 760, 8, 100, 26, Color.FromArgb(100, 100, 100));
+
+            btnReset = Theme.MakeButton("🔄 إعادة تعيين", 0, 0, 100, 28, Color.FromArgb(100, 100, 100));
+            btnReset.Margin = new Padding(4, 2, 4, 2);
             btnReset.Click += BtnReset_Click;
 
-            btnTopDebtors = Theme.MakeButton("📊 أعلى المدينين", 870, 8, 120, 26, Color.FromArgb(120, 120, 80));
+            btnTopDebtors = Theme.MakeButton("📊 أعلى المدينين", 0, 0, 120, 28, Color.FromArgb(120, 120, 80));
+            btnTopDebtors.Margin = new Padding(4, 2, 4, 2);
             btnTopDebtors.Click += (s, e) => new FrmTopDebtors().ShowDialog();
 
-            var btnNewDebtSchedule = Theme.MakeButton("➕ تقسيط مديونية عميل", 1000, 8, 150, 26, Theme.Success);
+            var btnNewDebtSchedule = Theme.MakeButton("➕ تقسيط مديونية عميل", 0, 0, 150, 28, Theme.Success);
+            btnNewDebtSchedule.Margin = new Padding(4, 2, 4, 2);
             btnNewDebtSchedule.Click += (s, e) =>
             {
                 if (new FrmScheduleClientDebt().ShowDialog() == DialogResult.OK)
@@ -198,7 +231,15 @@ namespace ChickenDist.Forms
                 }
             };
 
-            pnlFilters.Controls.AddRange(new Control[] { btnSearch, btnReset, btnTopDebtors, btnNewDebtSchedule });
+            pnlFilters.Controls.AddRange(new Control[] {
+                MakeFilterPanel("العميل:", cboSearchClient, 170, btnSearchClient),
+                MakeFilterPanel("الحالة:", cboSearchStatus, 110),
+                MakeFilterPanel("رقم العقد:", txtSearchCode, 120),
+                btnSearch,
+                btnReset,
+                btnTopDebtors,
+                btnNewDebtSchedule
+            });
             mainTbl.Controls.Add(pnlFilters, 0, 1);
 
             // 3. Grids & Actions Split Table

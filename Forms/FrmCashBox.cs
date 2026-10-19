@@ -78,6 +78,36 @@ namespace ChickenDist.Forms
             Theme.ApplyFormRTL(this);
         }
 
+        private Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth)
+        {
+            var lbl = new Label
+            {
+                Text = labelText,
+                AutoSize = true,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold,
+                Margin = new Padding(4, 6, 2, 0)
+            };
+            inputCtrl.Width = inputWidth;
+            inputCtrl.Height = 26;
+            inputCtrl.Margin = new Padding(1, 2, 4, 2);
+
+            var pnl = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
+                BackColor = Color.Transparent,
+                Margin = new Padding(6, 2, 6, 2),
+                Padding = new Padding(0),
+                WrapContents = false
+            };
+            pnl.Controls.Add(lbl);
+            pnl.Controls.Add(inputCtrl);
+            return pnl;
+        }
+
         private void BuildCashTab()
         {
             var pnlF = new FlowLayoutPanel 
@@ -87,76 +117,71 @@ namespace ChickenDist.Forms
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Theme.BgSearchPanel, 
-                Padding = new Padding(8),
-                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(8, 6, 8, 6),
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true
             };
             
-            pnlF.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
-            dtpCashFrom = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(10, 4, 0, 0) };
+            dtpCashFrom = new DateTimePicker { Width = 185, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
             dtpCashFrom.ValueChanged += (s, e) => LoadCashBox();
-            pnlF.Controls.Add(dtpCashFrom);
+            pnlF.Controls.Add(MakeFilterPanel("من:", dtpCashFrom, 185));
             
-            pnlF.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
-            dtpCashTo = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(10, 4, 0, 0) };
+            dtpCashTo = new DateTimePicker { Width = 185, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpCashTo.ValueChanged += (s, e) => LoadCashBox();
-            pnlF.Controls.Add(dtpCashTo);
+            pnlF.Controls.Add(MakeFilterPanel("إلى:", dtpCashTo, 185));
 
-            pnlF.Controls.Add(new Label { Text = "الحساب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
             cboSafeFilter = new ComboBox
             {
                 Width = 140,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(10, 4, 0, 0)
+                FlatStyle = FlatStyle.Flat
             };
             cboSafeFilter.SelectedIndexChanged += (s, e) => LoadCashBox();
-            pnlF.Controls.Add(cboSafeFilter);
+            pnlF.Controls.Add(MakeFilterPanel("الحساب:", cboSafeFilter, 140));
 
-            pnlF.Controls.Add(new Label { Text = "نوع الحركة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
             cboTransTypeFilter = new ComboBox
             {
-                Width = 115,
+                Width = 120,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(10, 4, 0, 0)
+                FlatStyle = FlatStyle.Flat
             };
             cboTransTypeFilter.Items.AddRange(new object[] { "الكل", "وارد (توريد)", "صادر (صرف)" });
             cboTransTypeFilter.SelectedIndex = 0;
             cboTransTypeFilter.SelectedIndexChanged += (s, e) => LoadCashBox();
-            pnlF.Controls.Add(cboTransTypeFilter);
+            pnlF.Controls.Add(MakeFilterPanel("نوع الحركة:", cboTransTypeFilter, 120));
             
             btnLoadCash = Theme.MakeButton("عرض", Theme.Accent);
-            btnLoadCash.Size = new Size(70, 32);
-            btnLoadCash.Margin = new Padding(15, 0, 0, 0);
+            btnLoadCash.Size = new Size(70, 30);
+            btnLoadCash.Margin = new Padding(8, 2, 4, 2);
             btnLoadCash.Click += (s, e) => LoadCashBox();
             pnlF.Controls.Add(btnLoadCash);
 
             var btnDeposit = Theme.MakeButton("➕ توريد نقدي", Color.FromArgb(40, 130, 80));
-            btnDeposit.Size = new Size(110, 32);
-            btnDeposit.Margin = new Padding(10, 0, 0, 0);
+            btnDeposit.Size = new Size(110, 30);
+            btnDeposit.Margin = new Padding(6, 2, 4, 2);
             btnDeposit.Click += BtnDeposit_Click;
             pnlF.Controls.Add(btnDeposit);
 
             var btnWithdraw = Theme.MakeButton("➖ صرف نقدي", Color.FromArgb(170, 70, 70));
-            btnWithdraw.Size = new Size(110, 32);
-            btnWithdraw.Margin = new Padding(10, 0, 0, 0);
+            btnWithdraw.Size = new Size(110, 30);
+            btnWithdraw.Margin = new Padding(6, 2, 4, 2);
             btnWithdraw.Click += BtnWithdraw_Click;
             pnlF.Controls.Add(btnWithdraw);
 
             var btnReconcile = Theme.MakeButton("⚖️ تسوية", Color.FromArgb(120, 90, 40));
-            btnReconcile.Size = new Size(95, 32);
-            btnReconcile.Margin = new Padding(10, 0, 0, 0);
+            btnReconcile.Size = new Size(95, 30);
+            btnReconcile.Margin = new Padding(6, 2, 4, 2);
             btnReconcile.Click += BtnReconcile_Click;
             pnlF.Controls.Add(btnReconcile);
 
             var btnManageAccounts = Theme.MakeButton("💳 الحسابات", Color.FromArgb(70, 70, 150));
-            btnManageAccounts.Size = new Size(95, 32);
-            btnManageAccounts.Margin = new Padding(10, 0, 0, 0);
+            btnManageAccounts.Size = new Size(95, 30);
+            btnManageAccounts.Margin = new Padding(6, 2, 4, 2);
             btnManageAccounts.Visible = Session.IsAdmin || (Session.CanAccess("SafeAccounts") && (Session.CanAdd("SafeAccounts") || Session.CanEdit("SafeAccounts")));
             btnManageAccounts.Click += (s, e) =>
             {
@@ -172,14 +197,14 @@ namespace ChickenDist.Forms
             pnlF.Controls.Add(btnManageAccounts);
 
             var btnTransfer = Theme.MakeButton("🔄 تحويل", Color.FromArgb(100, 70, 150));
-            btnTransfer.Size = new Size(95, 32);
-            btnTransfer.Margin = new Padding(10, 0, 0, 0);
+            btnTransfer.Size = new Size(95, 30);
+            btnTransfer.Margin = new Padding(6, 2, 4, 2);
             btnTransfer.Click += BtnTransfer_Click;
             pnlF.Controls.Add(btnTransfer);
 
             var btnOpenVouchers = Theme.MakeButton("📄 شاشة السندات المستقلة", Color.FromArgb(40, 120, 180));
-            btnOpenVouchers.Size = new Size(160, 32);
-            btnOpenVouchers.Margin = new Padding(10, 0, 0, 0);
+            btnOpenVouchers.Size = new Size(160, 30);
+            btnOpenVouchers.Margin = new Padding(6, 2, 4, 2);
             btnOpenVouchers.Click += (s, e) =>
             {
                 new FrmReceiptVoucher().ShowDialog();
@@ -188,8 +213,8 @@ namespace ChickenDist.Forms
             pnlF.Controls.Add(btnOpenVouchers);
 
             var btnPrintVoucher = Theme.MakeButton("🖨️ طباعة كشف الحركة", Color.FromArgb(16, 185, 129));
-            btnPrintVoucher.Size = new Size(130, 32);
-            btnPrintVoucher.Margin = new Padding(10, 0, 0, 0);
+            btnPrintVoucher.Size = new Size(130, 30);
+            btnPrintVoucher.Margin = new Padding(6, 2, 4, 2);
             btnPrintVoucher.Click += (s, e) =>
             {
                 int? accId = null;
@@ -250,59 +275,52 @@ namespace ChickenDist.Forms
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Theme.BgCard, 
-                Padding = new Padding(8),
-                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(8, 6, 8, 6),
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true
             };
             
-            pnlF.Controls.Add(new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
-            dtpExpFrom = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0), Margin = new Padding(10, 4, 0, 0) };
+            dtpExpFrom = new DateTimePicker { Width = 185, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0) };
             dtpExpFrom.ValueChanged += (s, e) => LoadExpenses();
-            pnlF.Controls.Add(dtpExpFrom);
+            pnlF.Controls.Add(MakeFilterPanel("من:", dtpExpFrom, 185));
             
-            pnlF.Controls.Add(new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
-            dtpExpTo = new DateTimePicker { Width = 190, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now, Margin = new Padding(10, 4, 0, 0) };
+            dtpExpTo = new DateTimePicker { Width = 185, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd   hh:mm tt", Value = DateTime.Now };
             dtpExpTo.ValueChanged += (s, e) => LoadExpenses();
-            pnlF.Controls.Add(dtpExpTo);
+            pnlF.Controls.Add(MakeFilterPanel("إلى:", dtpExpTo, 185));
 
-            pnlF.Controls.Add(new Label { Text = "نوع العربية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
             cboExpVehicleType = new ComboBox
             {
                 Width = 120,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Margin = new Padding(10, 4, 0, 0)
+                ForeColor = Theme.TextMain
             };
             cboExpVehicleType.SelectedIndexChanged += (s, e) => UpdateVehicleFilter();
-            pnlF.Controls.Add(cboExpVehicleType);
+            pnlF.Controls.Add(MakeFilterPanel("نوع العربية:", cboExpVehicleType, 120));
 
-            pnlF.Controls.Add(new Label { Text = "اسم العربية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0) });
             cboExpVehicleFilter = new ComboBox
             {
                 Width = 140,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Margin = new Padding(10, 4, 0, 0)
+                ForeColor = Theme.TextMain
             };
-            pnlF.Controls.Add(cboExpVehicleFilter);
+            pnlF.Controls.Add(MakeFilterPanel("اسم العربية:", cboExpVehicleFilter, 140));
 
-            pnlF.Controls.Add(new Label { Text = "🔍 بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(15, 8, 0, 0), Font = Theme.FontBold });
             txtExpSearch = new TextBox
             {
                 Width = 140,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                Font = Theme.FontMain,
-                Margin = new Padding(6, 4, 0, 0)
+                Font = Theme.FontMain
             };
             txtExpSearch.TextChanged += (s, e) => LoadExpenses();
-            pnlF.Controls.Add(txtExpSearch);
+            pnlF.Controls.Add(MakeFilterPanel("🔍 بحث:", txtExpSearch, 140));
             
             btnLoadExp = Theme.MakeButton("عرض", Theme.Accent);
-            btnLoadExp.Size = new Size(70, 32);
-            btnLoadExp.Margin = new Padding(15, 0, 0, 0);
+            btnLoadExp.Size = new Size(70, 30);
+            btnLoadExp.Margin = new Padding(8, 2, 4, 2);
             btnLoadExp.Click += (s, e) => LoadExpenses();
             pnlF.Controls.Add(btnLoadExp);
 
@@ -646,10 +664,24 @@ namespace ChickenDist.Forms
                 {
                     "Deposit" => "توريد نقدي",
                     "Withdraw" => "صرف نقدي",
+                    "ClientPayment" => "توريد نقدي (عميل)",
+                    "SupplierPayment" => "صرف نقدي (مورد)",
                     "SaleIncome" => "بيع نقدي",
-                    "ClientPayment" => "تحصيل من عميل",
+                    "Sale" => notes.Contains("فيزا") ? "بيع (فيزا)" : "بيع نقدي",
+                    "PurchaseExpense" => "مشتريات نقدية (مورد)",
+                    "ClientPurchaseCash" => "شراء نقدي (من عميل)",
+                    "ReturnOutcome" => "صرف مرتجع مبيعات",
+                    "VisaReturn" => "رد مرتجع مبيعات (فيزا)",
+                    "PurchaseReturn" => "توريد مرتجع مشتريات",
                     "ReservationDeposit" => "عربون حجز صنف",
                     "Expense" => "مصروفات",
+                    "EmpAdvance" => "صرف سلفة موظف",
+                    "EmpPaymentOut" => "صرف مستحقات موظف",
+                    "EmpPaymentIn" => "توريد سداد موظف",
+                    "DriverHandover" => "توريد عهدة مندوب",
+                    "DriverSaleImport" => "توريد مبيعات مندوب",
+                    "ExchangeDiffIn" => "توريد فرق استبدال",
+                    "ExchangeDiffOut" => "صرف فرق استبدال",
                     "Transfer" => notes.Contains("تقفيل وردية") ? "تحويل تقفيل وردية" : "تحويل بين الحسابات",
                     "ShiftCloseOut" => "إغلاق وردية (تحويل صادر)",
                     "ShiftCloseIn" => "إغلاق وردية (استلام وارد)",
@@ -698,27 +730,48 @@ namespace ChickenDist.Forms
             }
         }
 
-        private static string ExtractPartyFromNotes(string notes)
+        public static string ExtractPartyFromNotes(string notes)
         {
             if (string.IsNullOrWhiteSpace(notes)) return "";
             try
             {
-                int startIdx = notes.IndexOf('[');
-                if (startIdx >= 0)
+                // 1. البحث عن الوسوم الصريحة مثل [عميل: ...] أو [مورد: ...] أو [جهة: ...]
+                int searchFrom = 0;
+                while (searchFrom < notes.Length)
                 {
+                    int startIdx = notes.IndexOf('[', searchFrom);
+                    if (startIdx < 0) break;
                     int endIdx = notes.IndexOf(']', startIdx);
-                    if (endIdx > startIdx)
+                    if (endIdx <= startIdx) break;
+
+                    string tag = notes.Substring(startIdx + 1, endIdx - startIdx - 1).Trim();
+                    int colonIdx = tag.IndexOf(':');
+                    if (colonIdx >= 0)
                     {
-                        string tag = notes.Substring(startIdx + 1, endIdx - startIdx - 1);
-                        int colonIdx = tag.IndexOf(':');
-                        if (colonIdx >= 0)
-                        {
-                            return tag.Substring(colonIdx + 1).Trim();
-                        }
-                        return tag.Trim();
+                        string val = tag.Substring(colonIdx + 1).Trim();
+                        if (!string.IsNullOrWhiteSpace(val)) return val;
                     }
+                    else
+                    {
+                        // تجاهل أوسمة التصنيف المحاسبي أو نوع الفاتورة
+                        if (!tag.Contains("تسوية") && !tag.Contains("تمويل") && !tag.Contains("قرض") &&
+                            !tag.Contains("إيرادات") && !tag.Contains("مسحوبات") && !tag.Contains("عهد") &&
+                            !tag.Contains("درج") && !tag.Contains("كاش") && !tag.Contains("نقدي") &&
+                            !tag.Contains("آجل") && !tag.Contains("فيزا") && !tag.Contains("مختلط") &&
+                            !string.Equals(tag, "Cash", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(tag, "Credit", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(tag, "Visa", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(tag, "Mixed", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(tag, "Installment", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return tag;
+                        }
+                    }
+                    searchFrom = endIdx + 1;
                 }
-                string[] prefixes = new[] { "تحصيل من عميل:", "تحصيل من عميل -", "صرف للمورد:", "صرف للمورد -", "توريد من:", "صرف إلى:" };
+
+                // 2. البحث عن البادئات النصية المعتادة
+                string[] prefixes = new[] { "تحصيل من عميل:", "تحصيل من عميل -", "صرف للمورد:", "صرف للمورد -", "توريد من:", "صرف إلى:", "العميل:", "المورد:" };
                 foreach (var p in prefixes)
                 {
                     int pIdx = notes.IndexOf(p);
@@ -727,9 +780,11 @@ namespace ChickenDist.Forms
                         string rest = notes.Substring(pIdx + p.Length).Trim();
                         int dashIdx = rest.IndexOf(" - ");
                         if (dashIdx > 0) rest = rest.Substring(0, dashIdx).Trim();
+                        int pipeIdx = rest.IndexOf(" | ");
+                        if (pipeIdx > 0) rest = rest.Substring(0, pipeIdx).Trim();
                         int parenIdx = rest.IndexOf(" (");
                         if (parenIdx > 0) rest = rest.Substring(0, parenIdx).Trim();
-                        return rest;
+                        if (!string.IsNullOrWhiteSpace(rest)) return rest;
                     }
                 }
             }
@@ -1150,7 +1205,7 @@ namespace ChickenDist.Forms
             {
                 lblParty = new Label 
                 { 
-                    Text = type == "Deposit" ? "الجهة / العميل المستلم منه (اختياري):" : "الجهة / المورد المصروف إليه (اختياري):", 
+                    Text = type == "Deposit" ? "الجهة (العميل / المورد المستلم منه):" : "الجهة (المورد / العميل المصروف إليه):", 
                     Location = new Point(25, currentY), 
                     AutoSize = true, 
                     ForeColor = Theme.TextMain 
@@ -1159,7 +1214,9 @@ namespace ChickenDist.Forms
                 {
                     Location = new Point(25, currentY + 22),
                     Width = 355,
-                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    DropDownStyle = ComboBoxStyle.DropDown,
+                    AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+                    AutoCompleteSource = AutoCompleteSource.ListItems,
                     BackColor = Theme.BgInput,
                     ForeColor = Theme.TextMain,
                     FlatStyle = FlatStyle.Flat
@@ -1172,12 +1229,18 @@ namespace ChickenDist.Forms
                         var clients = ClientDAL.GetAll(true);
                         foreach (DataRow cr in clients.Rows)
                             cboParty.Items.Add(new ComboItem(Convert.ToInt32(cr["ClientID"]), "[عميل] " + cr["ClientName"].ToString()));
+                        var suppliers = SupplierDAL.GetAll(true);
+                        foreach (DataRow sr in suppliers.Rows)
+                            cboParty.Items.Add(new ComboItem(Convert.ToInt32(sr["SupplierID"]), "[مورد] " + sr["SupplierName"].ToString()));
                     }
                     else
                     {
                         var suppliers = SupplierDAL.GetAll(true);
                         foreach (DataRow sr in suppliers.Rows)
                             cboParty.Items.Add(new ComboItem(Convert.ToInt32(sr["SupplierID"]), "[مورد] " + sr["SupplierName"].ToString()));
+                        var clients = ClientDAL.GetAll(true);
+                        foreach (DataRow cr in clients.Rows)
+                            cboParty.Items.Add(new ComboItem(Convert.ToInt32(cr["ClientID"]), "[عميل] " + cr["ClientName"].ToString()));
                     }
                 }
                 catch { }
@@ -1261,10 +1324,41 @@ namespace ChickenDist.Forms
 
                 string partyName = null;
                 int? partyRefID = null;
-                if (cboParty != null && cboParty.SelectedItem is ComboItem pItem && pItem.ID > 0)
+                bool isClientParty = false;
+                bool isSupplierParty = false;
+
+                if (cboParty != null)
                 {
-                    partyRefID = pItem.ID;
-                    partyName = pItem.Text.Replace("[عميل] ", "").Replace("[مورد] ", "").Trim();
+                    ComboItem matchedItem = cboParty.SelectedItem as ComboItem;
+                    if (matchedItem == null && !string.IsNullOrWhiteSpace(cboParty.Text))
+                    {
+                        string typedText = cboParty.Text.Trim();
+                        foreach (var obj in cboParty.Items)
+                        {
+                            if (obj is ComboItem ci && ci.ID > 0)
+                            {
+                                string cleanItemText = ci.Text.Replace("[عميل] ", "").Replace("[مورد] ", "").Trim();
+                                if (string.Equals(ci.Text, typedText, StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(cleanItemText, typedText, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    matchedItem = ci;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (matchedItem != null && matchedItem.ID > 0)
+                    {
+                        partyRefID = matchedItem.ID;
+                        isClientParty = matchedItem.Text.StartsWith("[عميل]");
+                        isSupplierParty = matchedItem.Text.StartsWith("[مورد]");
+                        partyName = matchedItem.Text.Replace("[عميل] ", "").Replace("[مورد] ", "").Trim();
+                    }
+                    else if (!string.IsNullOrWhiteSpace(cboParty.Text) && !cboParty.Text.Contains("بدون تحديد جهة"))
+                    {
+                        partyName = cboParty.Text.Replace("[عميل] ", "").Replace("[مورد] ", "").Trim();
+                    }
                 }
 
                 // Format Notes to include classification and party
@@ -1277,7 +1371,7 @@ namespace ChickenDist.Forms
                 }
                 if (!string.IsNullOrEmpty(partyName))
                 {
-                    string partyTag = type == "Deposit" ? $"[عميل: {partyName}] " : $"[مورد: {partyName}] ";
+                    string partyTag = isClientParty ? $"[عميل: {partyName}] " : (isSupplierParty ? $"[مورد: {partyName}] " : $"[جهة: {partyName}] ");
                     formattedNotes = partyTag + formattedNotes;
                 }
 
@@ -1285,20 +1379,42 @@ namespace ChickenDist.Forms
 
                 if (type == "Deposit")
                 {
-                    DbHelper.Execute("INSERT INTO CashBox(TransDate, TransType, AmountIn, RefID, PartyName, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Deposit', @amt, @ref, @party, @n, @by, @accId, @sid)",
-                        DbHelper.P("@amt", amount),
-                        DbHelper.P("@ref", partyRefID.HasValue ? (object)partyRefID.Value : DBNull.Value),
-                        DbHelper.P("@party", !string.IsNullOrEmpty(partyName) ? (object)partyName : DBNull.Value),
-                        DbHelper.P("@n", formattedNotes),
-                        DbHelper.P("@by", Session.EmpID),
-                        DbHelper.P("@accId", targetSafeID),
-                        DbHelper.P("@sid", currentShiftID));
-
-                    if (!string.IsNullOrEmpty(classificationKey))
+                    DbHelper.RunInTransaction((con, trans) =>
                     {
-                        DbHelper.Execute("UPDATE AccountingAdjustments SET AccountValue = AccountValue + @amt WHERE AccountKey = @key",
-                            DbHelper.P("@amt", amount), DbHelper.P("@key", classificationKey));
-                    }
+                        if (isClientParty && partyRefID.HasValue && partyRefID.Value > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID, TransType, Credit, Notes, CreatedBy) VALUES(@cid, 'Payment', @amt, @n, @by)",
+                                DbHelper.P("@cid", partyRefID.Value),
+                                DbHelper.P("@amt", amount),
+                                DbHelper.P("@n", "سند توريد خزنة - " + notes),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                        else if (isSupplierParty && partyRefID.HasValue && partyRefID.Value > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO SupplierTransactions(SupplierID, TransType, Credit, Notes, CreatedBy) VALUES(@sid, 'Refund', @amt, @n, @by)",
+                                DbHelper.P("@sid", partyRefID.Value),
+                                DbHelper.P("@amt", amount),
+                                DbHelper.P("@n", "سند توريد خزنة - " + notes),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+
+                        DbHelper.ExecuteTrans(trans, "INSERT INTO CashBox(TransDate, TransType, AmountIn, RefID, PartyName, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Deposit', @amt, @ref, @party, @n, @by, @accId, @sid)",
+                            DbHelper.P("@amt", amount),
+                            DbHelper.P("@ref", partyRefID.HasValue ? (object)partyRefID.Value : DBNull.Value),
+                            DbHelper.P("@party", !string.IsNullOrEmpty(partyName) ? (object)partyName : DBNull.Value),
+                            DbHelper.P("@n", formattedNotes),
+                            DbHelper.P("@by", Session.EmpID),
+                            DbHelper.P("@accId", targetSafeID),
+                            DbHelper.P("@sid", currentShiftID));
+
+                        if (!string.IsNullOrEmpty(classificationKey))
+                        {
+                            DbHelper.ExecuteTrans(trans, "UPDATE AccountingAdjustments SET AccountValue = AccountValue + @amt WHERE AccountKey = @key",
+                                DbHelper.P("@amt", amount), DbHelper.P("@key", classificationKey));
+                        }
+                    });
                 }
                 else if (type == "Withdraw")
                 {
@@ -1311,6 +1427,25 @@ namespace ChickenDist.Forms
                     DbHelper.RunInTransaction((con, trans) =>
                     {
                         AccountDAL.EnsureSufficientCashTrans(trans, targetSafeID, amount, "صرف نقدي من الحساب");
+
+                        if (isSupplierParty && partyRefID.HasValue && partyRefID.Value > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO SupplierTransactions(SupplierID, TransType, Debit, Notes, CreatedBy) VALUES(@sid, 'Payment', @amt, @n, @by)",
+                                DbHelper.P("@sid", partyRefID.Value),
+                                DbHelper.P("@amt", amount),
+                                DbHelper.P("@n", "سند صرف خزنة - " + notes),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
+                        else if (isClientParty && partyRefID.HasValue && partyRefID.Value > 0)
+                        {
+                            DbHelper.ExecuteTrans(trans,
+                                "INSERT INTO ClientTransactions(ClientID, TransType, Debit, Notes, CreatedBy) VALUES(@cid, 'Refund', @amt, @n, @by)",
+                                DbHelper.P("@cid", partyRefID.Value),
+                                DbHelper.P("@amt", amount),
+                                DbHelper.P("@n", "سند صرف خزنة - " + notes),
+                                DbHelper.P("@by", Session.EmpID));
+                        }
 
                         DbHelper.ExecuteTrans(trans, "INSERT INTO CashBox(TransDate, TransType, AmountOut, RefID, PartyName, Notes, CreatedBy, AccountID, ShiftID) VALUES(GETDATE(), 'Withdraw', @amt, @ref, @party, @n, @by, @accId, @sid)",
                             DbHelper.P("@amt", amount),

@@ -804,7 +804,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 10. سجل فواتير المبيعات مع تفاصيل الأصناف وحالة المرتجع (أحدث 25 فاتورة فقط)
                 DataTable dtRecentSales = DbHelper.Query(@"
-                    SELECT TOP 25 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
+                    SELECT TOP 800 s.SaleID, CONVERT(VARCHAR(19), s.SaleDate, 120) AS SaleDate,
                            ISNULL(NULLIF(s.CustomClientName, ''), ISNULL(c.ClientName, N'عميل نقدي')) AS ClientName,
                            ISNULL(s.TotalAmount, 0) AS TotalAmount,
                            ISNULL(s.CashPaid, 0) + ISNULL(s.VisaPaid, 0) AS PaidAmount,
@@ -816,6 +816,7 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(s.OrderType, N'مبيعات') AS InvoiceType
                     FROM Sales s WITH (NOLOCK)
                     LEFT JOIN Clients c WITH (NOLOCK) ON s.ClientID = c.ClientID
+                    WHERE s.SaleDate >= DATEADD(DAY, -31, CAST(GETDATE() AS DATE))
                     ORDER BY s.SaleID DESC");
 
                 DataTable dtSaleItems = null;
@@ -838,7 +839,7 @@ self.addEventListener('fetch', (event) => {
                             WHERE sr.SaleID IS NOT NULL
                             GROUP BY sr.SaleID, ri.ProductID
                         ) ret ON ret.SaleID = si.SaleID AND ret.ProductID = si.ProductID
-                        WHERE si.SaleID IN (SELECT TOP 25 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
+                        WHERE si.SaleID IN (SELECT TOP 150 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
                         ORDER BY si.SaleID DESC, si.ItemID ASC");
                 }
                 catch
@@ -855,7 +856,7 @@ self.addEventListener('fetch', (event) => {
                                    0 AS IsReturned
                             FROM SaleItems si WITH (NOLOCK)
                             JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
-                            WHERE si.SaleID IN (SELECT TOP 25 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
+                            WHERE si.SaleID IN (SELECT TOP 150 SaleID FROM Sales WITH (NOLOCK) ORDER BY SaleID DESC)
                             ORDER BY si.SaleID DESC, si.ItemID ASC");
                     }
                     catch { }
@@ -865,7 +866,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 11. سجل فواتير المشتريات
                 DataTable dtRecentPurchases = DbHelper.Query(@"
-                    SELECT TOP 15 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
+                    SELECT TOP 400 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
                            ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
                            ISNULL(p.TotalAmount, 0) AS TotalAmount,
                            ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0) AS PaidAmount,
@@ -875,19 +876,20 @@ self.addEventListener('fetch', (event) => {
                            END AS RemainingAmount
                     FROM Purchases p WITH (NOLOCK)
                     LEFT JOIN Suppliers sup WITH (NOLOCK) ON p.SupplierID = sup.SupplierID
+                    WHERE p.PurchaseDate >= DATEADD(DAY, -31, CAST(GETDATE() AS DATE))
                     ORDER BY p.PurchaseID DESC");
                 string recentPurchasesJson = DataTableToJson(dtRecentPurchases);
 
                 // 12. سجل حركات الخزينة
                 DataTable dtRecentCash = DbHelper.Query(@"
-                    SELECT TOP 25 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                    SELECT TOP 800 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
                            ISNULL(cb.AmountIn, 0) AS AmountIn,
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'') AS Notes,
                            ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
                     FROM CashBox cb WITH (NOLOCK)
                     LEFT JOIN SafeAccounts sa WITH (NOLOCK) ON cb.AccountID = sa.AccountID
-                    ORDER BY cb.CashID DESC");
+                    WHERE cb.TransDate >= DATEADD(DAY, -31, CAST(GETDATE() AS DATE)) ORDER BY cb.CashID DESC");
                 string recentCashJson = DataTableToJson(dtRecentCash);
 
                 // 13. أرصدة الخزائن التفصيلية
@@ -917,14 +919,14 @@ self.addEventListener('fetch', (event) => {
 
                 // 15. أحدث بنود المصروفات
                 DataTable dtExpenses = DbHelper.Query(@"
-                    SELECT TOP 15 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
+                    SELECT TOP 300 cb.CashID, CONVERT(VARCHAR(19), cb.TransDate, 120) AS TransDate,
                            ISNULL(cb.AmountOut, 0) AS AmountOut,
                            ISNULL(cb.Notes, N'مصروف') AS Notes,
                            ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
                     FROM CashBox cb WITH (NOLOCK)
                     LEFT JOIN SafeAccounts sa WITH (NOLOCK) ON cb.AccountID = sa.AccountID
-                    WHERE cb.AmountOut > 0
-                    ORDER BY cb.CashID DESC");
+                     WHERE cb.AmountOut > 0 AND cb.TransDate >= DATEADD(DAY, -31, CAST(GETDATE() AS DATE))
+                     ORDER BY cb.CashID DESC");
                 string expensesJson = DataTableToJson(dtExpenses);
 
                 // 16. تقارير إغلاق وتقفيل الورديات (Shifts Closing History)
@@ -932,7 +934,7 @@ self.addEventListener('fetch', (event) => {
                 try
                 {
                     dtShifts = DbHelper.Query(@"
-                        SELECT TOP 10
+                        SELECT TOP 60
                             s.ShiftID,
                             CONVERT(VARCHAR(19), s.OpenTime, 120) AS OpenTime,
                             CONVERT(VARCHAR(19), ISNULL(s.CloseTime, s.OpenTime), 120) AS CloseTime,
@@ -968,7 +970,7 @@ self.addEventListener('fetch', (event) => {
                     try
                     {
                         dtShifts = DbHelper.Query(@"
-                            SELECT TOP 10
+                            SELECT TOP 60
                                 s.ShiftID,
                                 CONVERT(VARCHAR(19), s.OpenTime, 120) AS OpenTime,
                                 CONVERT(VARCHAR(19), ISNULL(s.CloseTime, s.OpenTime), 120) AS CloseTime,
@@ -988,6 +990,15 @@ self.addEventListener('fetch', (event) => {
                     catch { }
                 }
                 string shiftsJson = DataTableToJson(dtShifts);
+
+                // 17. ملخص يومي لآخر 31 يوماً (الربح مطابق لقائمة الدخل: بعد الهالك والمصروفات)
+                string dailyStatsJson = "[]";
+                try
+                {
+                    dailyStatsJson = BuildDailyStatsJson(out decimal isTodayProfit);
+                    todayProfit = isTodayProfit;
+                }
+                catch (Exception exDs) { AppLogger.Error("BuildDailyStatsJson failed", exDs, "CloudSync"); }
 
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
                 string timeStr = DateTime.Now.ToString("hh:mm tt");
@@ -1053,7 +1064,8 @@ self.addEventListener('fetch', (event) => {
                         "\"RecentCashBox\": " + recentCashJson + "," +
                         "\"SafeAccounts\": " + safesJson + "," +
                         "\"TopSelling\": " + topSellingJson + "," +
-                        "\"ExpensesList\": " + expensesJson +
+                        "\"ExpensesList\": " + expensesJson + "," +
+                        "\"DailyStats\": " + dailyStatsJson +
                         "}";
 
                     using (var client = new HttpClient())
@@ -1146,7 +1158,8 @@ self.addEventListener('fetch', (event) => {
                         "\"RecentCashBoxJson\": {\"stringValue\": \"" + EscapeJsonString(recentCashJson) + "\"}," +
                         "\"SafeAccountsJson\": {\"stringValue\": \"" + EscapeJsonString(safesJson) + "\"}," +
                         "\"TopSellingJson\": {\"stringValue\": \"" + EscapeJsonString(topSellingJson) + "\"}," +
-                        "\"ExpensesListJson\": {\"stringValue\": \"" + EscapeJsonString(expensesJson) + "\"}" +
+                        "\"ExpensesListJson\": {\"stringValue\": \"" + EscapeJsonString(expensesJson) + "\"}," +
+                        "\"DailyStatsJson\": {\"stringValue\": \"" + EscapeJsonString(dailyStatsJson) + "\"}" +
                         "}}";
 
                     using (var client = new HttpClient())
@@ -1412,6 +1425,8 @@ self.addEventListener('fetch', (event) => {
                     "\"DeliveryCharge\":" + AppConfig.Store_DeliveryCharge.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                     "\"FreeDeliveryThreshold\":" + AppConfig.Store_FreeDeliveryThreshold.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                     "\"Announcement\":\"" + EscapeJsonString(AppConfig.Store_Announcement ?? "") + "\"," +
+                    "\"StoreTheme\":\"" + EscapeJsonString(AppConfig.Store_Theme ?? "restaurant") + "\"," +
+                    "\"BusinessType\":\"" + EscapeJsonString(AppConfig.BusinessType ?? "Restaurant") + "\"," +
                     "\"LastUpdated\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") + "\"," +
                     "\"UpdatedTimestamp\":" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() +
                     "}";
@@ -1457,7 +1472,8 @@ self.addEventListener('fetch', (event) => {
                            ISNULL(stk.TotalStock, 0) AS StockQty,
                            ISNULL(p.ImageUrl1, '') AS ImageUrl1,
                            ISNULL(p.ImageUrl2, '') AS ImageUrl2,
-                           ISNULL(p.ImageUrl3, '') AS ImageUrl3
+                           ISNULL(p.ImageUrl3, '') AS ImageUrl3,
+                           COALESCE(NULLIF(p.OnlineDescription, ''), NULLIF(p.Description, ''), '') AS OnlineDescription
                     FROM Products p WITH (NOLOCK)
                     LEFT JOIN Categories c WITH (NOLOCK) ON p.CategoryID = c.CategoryID
                     OUTER APPLY (
@@ -1492,6 +1508,7 @@ self.addEventListener('fetch', (event) => {
                         string cName = EscapeJsonString(r["CategoryName"]?.ToString() ?? "");
                         string unit = EscapeJsonString(r["Unit"]?.ToString() ?? "قطعة");
                         decimal price = r["Price"] != DBNull.Value ? Convert.ToDecimal(r["Price"]) : 0m;
+                        string desc = EscapeJsonString(r["OnlineDescription"]?.ToString() ?? "");
 
                         string img1 = EscapeJsonString(ResolveImageUrlForStore(r["ImageUrl1"]?.ToString() ?? ""));
                         string img2 = EscapeJsonString(ResolveImageUrlForStore(r["ImageUrl2"]?.ToString() ?? ""));
@@ -1514,7 +1531,10 @@ self.addEventListener('fetch', (event) => {
                             "\"Price\":" + price.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                             "\"StockQty\":" + stock.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                             "\"ImageUrl\":\"" + img1 + "\"," +
-                            "\"Images\":" + sbImgs.ToString() +
+                            "\"Images\":" + sbImgs.ToString() + "," +
+                            "\"Description\":\"" + desc + "\"," +
+                            "\"Benefits\":\"" + desc + "\"," +
+                            "\"OnlineDescription\":\"" + desc + "\"" +
                             "}");
                     }
                 }
@@ -2188,6 +2208,107 @@ self.addEventListener('fetch', (event) => {
             catch { }
 
             return pathOrUrl;
+        }
+
+        private static readonly Dictionary<string, KeyValuePair<string, decimal>> _dayStatsCache = new Dictionary<string, KeyValuePair<string, decimal>>();
+
+        /// <summary>
+        /// ملخص يومي لآخر 31 يوماً للتطبيق: المبيعات/المشتريات/الخزنة/المصروفات/الهالك وصافي الربح
+        /// بنفس معادلة قائمة الدخل (صافي المبيعات - التكلفة - المصروفات - الهالك).
+        /// الأيام السابقة تُخزَّن مؤقتاً، واليوم الحالي يُعاد حسابه في كل مزامنة.
+        /// </summary>
+        private static string BuildDailyStatsJson(out decimal todayNetProfit)
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var sb = new StringBuilder("[");
+            todayNetProfit = 0m;
+            DateTime today = DateTime.Today;
+            // حذف أي أيام أقدم من 31 يوماً من الذاكرة
+            var staleKeys = new List<string>();
+            foreach (var k in _dayStatsCache.Keys)
+                if (DateTime.ParseExact(k, "yyyy-MM-dd", inv) < today.AddDays(-31)) staleKeys.Add(k);
+            foreach (var k in staleKeys) _dayStatsCache.Remove(k);
+
+            bool first = true;
+            for (int i = 0; i <= 31; i++)
+            {
+                DateTime d = today.AddDays(-i);
+                string key = d.ToString("yyyy-MM-dd", inv);
+                KeyValuePair<string, decimal> entry;
+                if (i == 0 || !_dayStatsCache.TryGetValue(key, out entry))
+                {
+                    entry = ComputeOneDayStats(d, key);
+                    if (i != 0) _dayStatsCache[key] = entry;
+                }
+                if (i == 0) todayNetProfit = entry.Value;
+                if (!first) sb.Append(",");
+                sb.Append(entry.Key);
+                first = false;
+            }
+            sb.Append("]");
+            return sb.ToString();
+        }
+
+        private static KeyValuePair<string, decimal> ComputeOneDayStats(DateTime d, string key)
+        {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            Func<object, decimal> dec = o => (o != null && o != DBNull.Value) ? Convert.ToDecimal(o) : 0m;
+
+            DataTable t = DbHelper.Query(@"
+                SELECT
+                  (SELECT ISNULL(SUM(ISNULL(TotalAmount,0)),0) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE)=@d AND ISNULL(IsPosted,1)=1) AS SalesTotal,
+                  (SELECT ISNULL(SUM(ISNULL(CashPaid,0)+ISNULL(VisaPaid,0)),0) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE)=@d AND ISNULL(IsPosted,1)=1) AS SalesPaid,
+                  (SELECT ISNULL(SUM(CASE WHEN SaleType='Cash' THEN 0 ELSE ISNULL(TotalAmount,0)-(ISNULL(CashPaid,0)+ISNULL(VisaPaid,0)) END),0) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE)=@d AND ISNULL(IsPosted,1)=1) AS SalesCredit,
+                  (SELECT COUNT(*) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE)=@d AND ISNULL(IsPosted,1)=1) AS SalesCount,
+                  (SELECT ISNULL(SUM(ISNULL(DiscountAmount,0)),0) FROM Sales WITH (NOLOCK) WHERE CAST(SaleDate AS DATE)=@d AND ISNULL(IsPosted,1)=1) AS Discounts,
+                  (SELECT ISNULL(SUM(ISNULL(TotalAmount,0)),0) FROM Purchases WITH (NOLOCK) WHERE CAST(PurchaseDate AS DATE)=@d) AS PurTotal,
+                  (SELECT ISNULL(SUM(ISNULL(PaidAmount,0)),0) FROM Purchases WITH (NOLOCK) WHERE CAST(PurchaseDate AS DATE)=@d) AS PurPaid,
+                  (SELECT COUNT(*) FROM Purchases WITH (NOLOCK) WHERE CAST(PurchaseDate AS DATE)=@d) AS PurCount,
+                  (SELECT ISNULL(SUM(AmountIn),0) FROM CashBox WITH (NOLOCK) WHERE CAST(TransDate AS DATE)=@d) AS CashIn,
+                  (SELECT ISNULL(SUM(AmountOut),0) FROM CashBox WITH (NOLOCK) WHERE CAST(TransDate AS DATE)=@d) AS CashOut,
+                  (SELECT ISNULL(SUM(ISNULL(Amount,0)),0) FROM Expenses WITH (NOLOCK) WHERE CAST(ExpenseDate AS DATE)=@d) AS Expenses",
+                DbHelper.P("@d", d.Date));
+
+            decimal salesTotal = 0, salesPaid = 0, salesCredit = 0, discounts = 0, purTotal = 0, purPaid = 0, cashIn = 0, cashOut = 0, expenses = 0;
+            int salesCount = 0, purCount = 0;
+            if (t != null && t.Rows.Count > 0)
+            {
+                DataRow r = t.Rows[0];
+                salesTotal = dec(r["SalesTotal"]); salesPaid = dec(r["SalesPaid"]); salesCredit = dec(r["SalesCredit"]);
+                salesCount = (int)dec(r["SalesCount"]); discounts = dec(r["Discounts"]);
+                purTotal = dec(r["PurTotal"]); purPaid = dec(r["PurPaid"]); purCount = (int)dec(r["PurCount"]);
+                cashIn = dec(r["CashIn"]); cashOut = dec(r["CashOut"]); expenses = dec(r["Expenses"]);
+            }
+
+            decimal returns = 0, grossCogs = 0, returnsCogs = 0, whWaste = 0, drWaste = 0, grossSales = 0;
+            DataTable isDt = ReportDAL.GetIncomeStatement(d.Date, d.Date, null);
+            if (isDt != null && isDt.Rows.Count > 0)
+            {
+                DataRow r = isDt.Rows[0];
+                grossSales = dec(r["GrossSales"]); returns = dec(r["SalesReturns"]);
+                grossCogs = dec(r["GrossCOGS"]); returnsCogs = dec(r["ReturnsCOGS"]);
+                whWaste = dec(r["WarehouseWastage"]); drWaste = dec(r["DriverWastage"]);
+            }
+
+            decimal salesAfterReturns = grossSales - returns;
+            decimal netSales = salesAfterReturns - discounts;
+            decimal netCogs = grossCogs - returnsCogs;
+            if (Math.Abs(salesAfterReturns) < 0.01m && Math.Abs(netCogs) <= 1.0m) netCogs = 0m;
+            else if (Math.Abs(netCogs) < 0.005m) netCogs = 0m;
+            decimal grossProfit = netSales - netCogs;
+            decimal wastage = whWaste + drWaste;
+            decimal netProfit = grossProfit - expenses - wastage;
+            if (Math.Abs(netProfit) < 0.005m) netProfit = 0m;
+
+            Func<decimal, string> f = v => Math.Round(v, 2).ToString(inv);
+            string json = "{\"Date\":\"" + key + "\"" +
+                ",\"SalesTotal\":" + f(salesTotal) + ",\"SalesPaid\":" + f(salesPaid) + ",\"SalesCredit\":" + f(salesCredit) +
+                ",\"SalesCount\":" + salesCount + ",\"Returns\":" + f(returns) + ",\"Discounts\":" + f(discounts) +
+                ",\"NetSales\":" + f(netSales) + ",\"COGS\":" + f(netCogs) + ",\"GrossProfit\":" + f(grossProfit) +
+                ",\"Expenses\":" + f(expenses) + ",\"Wastage\":" + f(wastage) + ",\"NetProfit\":" + f(netProfit) +
+                ",\"PurTotal\":" + f(purTotal) + ",\"PurPaid\":" + f(purPaid) + ",\"PurCount\":" + purCount +
+                ",\"CashIn\":" + f(cashIn) + ",\"CashOut\":" + f(cashOut) + "}";
+            return new KeyValuePair<string, decimal>(json, netProfit);
         }
 
         private static string EscapeJsonString(string s)

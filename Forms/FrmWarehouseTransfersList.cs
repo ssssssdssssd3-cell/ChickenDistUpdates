@@ -32,28 +32,60 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── Filter Bar ─────────────────────────────────────────────────
-            var pnlTop = new Panel
+            var pnlTop = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 55,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, 50),
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(10)
+                Padding = new Padding(10, 8, 10, 8),
+                WrapContents = true
             };
 
-            pnlTop.Controls.Add(new Label { Text = "من:", Location = new Point(1010, 18), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpFrom = new DateTimePicker { Location = new Point(810, 14), Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today.AddDays(-30) };
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth)
+            {
+                var lbl = new Label
+                {
+                    Text = labelText,
+                    AutoSize = true,
+                    ForeColor = Theme.TextMain,
+                    Font = Theme.FontBold,
+                    Margin = new Padding(4, 6, 2, 0)
+                };
+                inputCtrl.Width = inputWidth;
+                inputCtrl.Height = 26;
+                inputCtrl.Margin = new Padding(1, 2, 4, 2);
 
-            pnlTop.Controls.Add(new Label { Text = "إلى:", Location = new Point(775, 18), AutoSize = true, ForeColor = Theme.TextMain });
-            dtpTo = new DateTimePicker { Location = new Point(585, 14), Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
+                var pnl = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    RightToLeft = RightToLeft.Yes,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(6, 2, 6, 2),
+                    Padding = new Padding(0),
+                    WrapContents = false
+                };
+                pnl.Controls.Add(lbl);
+                pnl.Controls.Add(inputCtrl);
+                return pnl;
+            }
+
+            dtpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today.AddDays(-30) };
+            dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
 
             btnLoad = Theme.MakeButton("🔍 عرض التحويلات", Color.FromArgb(17, 94, 89));
-            btnLoad.Location = new Point(540, 11);
             btnLoad.Size = new Size(150, 32);
+            btnLoad.Margin = new Padding(8, 2, 4, 2);
             btnLoad.Click += (s, e) => LoadTransfers();
 
             var btnNewTransfer = Theme.MakeButton("🔄 تحويل جديد", Theme.Accent);
-            btnNewTransfer.Location = new Point(10, 11);
             btnNewTransfer.Size = new Size(140, 32);
+            btnNewTransfer.Margin = new Padding(6, 2, 4, 2);
             btnNewTransfer.Click += (s, e) =>
             {
                 if (this.ParentForm is FrmMain main)
@@ -62,7 +94,12 @@ namespace ChickenDist.Forms
                     new FrmWarehouseTransfer().ShowDialog();
             };
 
-            pnlTop.Controls.AddRange(new Control[] { dtpFrom, dtpTo, btnLoad, btnNewTransfer });
+            pnlTop.Controls.AddRange(new Control[] {
+                MakeFilterPanel("من:", dtpFrom, 180),
+                MakeFilterPanel("إلى:", dtpTo, 180),
+                btnLoad,
+                btnNewTransfer
+            });
 
             // ── Split Layout: Transfers list left, Items right ─────────────
             var splitContainer = new SplitContainer

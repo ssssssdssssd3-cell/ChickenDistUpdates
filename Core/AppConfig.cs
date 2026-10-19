@@ -490,6 +490,12 @@ namespace ChickenDist.Core
             set => Set("Store_Announcement", value);
         }
 
+        public static string Store_Theme
+        {
+            get => Get("Store_Theme", "restaurant"); // "restaurant" (كافيهات ومطاعم), "gold" (أسود وذهبي فاخر), "emerald" (طازج وصحي), "dark" (عصري ليلي), "light" (نهاري كلاسيكي)
+            set => Set("Store_Theme", value);
+        }
+
         public static string Store_OrderNotificationWhatsApp
         {
             get => Get("Store_OrderNotificationWhatsApp", "");

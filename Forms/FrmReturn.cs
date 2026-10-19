@@ -422,26 +422,32 @@ namespace ChickenDist.Forms
                     AutoSize = true,
                     ForeColor = Theme.TextMain,
                     Font = Theme.FontBold,
-                    Margin = new Padding(0, 5, 2, 0)
+                    Margin = new Padding(4, 5, 2, 0)
                 };
 
                 inputCtrl.Width = inputWidth;
                 inputCtrl.Height = 26;
+                inputCtrl.Margin = new Padding(1, 2, extraCtrl != null ? 1 : 4, 2);
 
                 var pnl = new FlowLayoutPanel
                 {
                     AutoSize = true,
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    RightToLeft = RightToLeft.Yes,
                     FlowDirection = FlowDirection.LeftToRight,
                     BackColor = Color.Transparent,
-                    Margin = new Padding(4, 2, 4, 2),
+                    Margin = new Padding(6, 2, 6, 2),
                     Padding = new Padding(0),
                     WrapContents = false
                 };
 
                 pnl.Controls.Add(lbl);
                 pnl.Controls.Add(inputCtrl);
-                if (extraCtrl != null) pnl.Controls.Add(extraCtrl);
+                if (extraCtrl != null)
+                {
+                    extraCtrl.Margin = new Padding(1, 2, 4, 2);
+                    pnl.Controls.Add(extraCtrl);
+                }
                 return pnl;
             }
 
@@ -716,13 +722,14 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 44,
-                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Color.FromArgb(45, 35, 45),
                 Padding = new Padding(10, 6, 10, 6),
                 Visible = false
             };
 
-            var lblGenTitle = new Label { Text = "↩ صنف مرتجع:", AutoSize = true, ForeColor = Color.LightCoral, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
+            var lblGenTitle = new Label { Text = "↩ صنف مرتجع:", AutoSize = true, ForeColor = Color.LightCoral, Margin = new Padding(6, 5, 2, 0), Font = Theme.FontBold };
             cboAllProducts = new ComboBox
             {
                 Width = 240, Height = 26,
@@ -733,19 +740,19 @@ namespace ChickenDist.Forms
                 Font = Theme.FontBold
             };
             SetupSearchableCombo(cboAllProducts);
-            var lblGenQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            var lblGenQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(12, 5, 2, 0), Font = Theme.FontBold };
             txtGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold };
-            var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            var lblGenPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(12, 5, 2, 0), Font = Theme.FontBold };
             txtGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
             
             btnAddGenItem = Theme.MakeButton("🔍 بحث (F2)", Color.FromArgb(40, 110, 160));
             btnAddGenItem.Size = new Size(110, 28);
-            btnAddGenItem.Margin = new Padding(8, 0, 0, 0);
+            btnAddGenItem.Margin = new Padding(8, 0, 4, 0);
             btnAddGenItem.Click += (s, e) => OpenProductSearchDialog();
 
             var btnAddGenToList = Theme.MakeButton("➕ إضافة صنف", Color.FromArgb(40, 140, 70));
             btnAddGenToList.Size = new Size(115, 28);
-            btnAddGenToList.Margin = new Padding(8, 0, 0, 0);
+            btnAddGenToList.Margin = new Padding(8, 0, 4, 0);
             btnAddGenToList.Click += BtnAddGenItem_Click;
 
             txtGenPrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { BtnAddGenItem_Click(s, e); e.Handled = true; e.SuppressKeyPress = true; } };
@@ -758,13 +765,14 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 42,
-                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Color.FromArgb(35, 45, 35),
                 Padding = new Padding(10, 6, 10, 6),
                 Visible = false
             };
 
-            var lblNewTitle = new Label { Text = "🆕 صنف بديل جديد:", AutoSize = true, ForeColor = Color.LightGreen, Margin = new Padding(5, 5, 0, 0), Font = Theme.FontBold };
+            var lblNewTitle = new Label { Text = "🆕 صنف بديل جديد:", AutoSize = true, ForeColor = Color.LightGreen, Margin = new Padding(6, 5, 2, 0), Font = Theme.FontBold };
             cboNewExchangeProducts = new ComboBox
             {
                 Width = 220, Height = 26,
@@ -775,18 +783,18 @@ namespace ChickenDist.Forms
                 Font = Theme.FontBold
             };
             SetupSearchableCombo(cboNewExchangeProducts);
-            var lblNewQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            var lblNewQtyL = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(12, 5, 2, 0), Font = Theme.FontBold };
             txtNewGenQty = new TextBox { Width = 60, Text = "1", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold };
-            var lblNewPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 5, 0, 0) };
+            var lblNewPriceL = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(12, 5, 2, 0), Font = Theme.FontBold };
             txtNewGenPrice = new TextBox { Width = 70, Text = "0", BackColor = Theme.BgInput, ForeColor = Theme.TextInput, RightToLeft = RightToLeft.Yes, Font = Theme.FontBold, ReadOnly = !Session.IsAdmin && !Session.CanEditPrice("Returns") };
             btnAddNewGenItem = Theme.MakeButton("➕ إضافة بديل", Color.FromArgb(50, 140, 70));
             btnAddNewGenItem.Size = new Size(110, 26);
-            btnAddNewGenItem.Margin = new Padding(10, 0, 0, 0);
+            btnAddNewGenItem.Margin = new Padding(10, 0, 4, 0);
             btnAddNewGenItem.Click += BtnAddNewGenItem_Click;
 
             var btnSearchNewExItem = Theme.MakeButton("🔍 بحث بديل", Color.FromArgb(40, 110, 160));
             btnSearchNewExItem.Size = new Size(105, 26);
-            btnSearchNewExItem.Margin = new Padding(8, 0, 0, 0);
+            btnSearchNewExItem.Margin = new Padding(8, 0, 4, 0);
             btnSearchNewExItem.Click += (s, e) => OpenExchangeProductSearchDialog();
 
             _pnlNewItemBar.Controls.AddRange(new Control[] { lblNewTitle, cboNewExchangeProducts, lblNewQtyL, txtNewGenQty, lblNewPriceL, txtNewGenPrice, btnAddNewGenItem, btnSearchNewExItem });
@@ -1426,7 +1434,8 @@ namespace ChickenDist.Forms
             { 
                 Dock = DockStyle.Bottom, 
                 Height = 62, 
-                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(15, 10, 15, 10),
                 WrapContents = false

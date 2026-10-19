@@ -3215,11 +3215,20 @@ namespace ChickenDist.Forms
                     }
 
                     // 3. CashBox entry (نقدية الدرج الفعلي والفيزا بحسابها المحدد)
+                    string posPartyName = "عميل نقدي";
+                    if (clientID > 0)
+                    {
+                        var cNameObj = DbHelper.ScalarTrans(trans, "SELECT ClientName FROM Clients WHERE ClientID=@cid", DbHelper.P("@cid", clientID));
+                        if (cNameObj != null && cNameObj != DBNull.Value && !string.IsNullOrWhiteSpace(cNameObj.ToString()))
+                            posPartyName = cNameObj.ToString().Trim();
+                    }
+
                     if (cashPaidVal > 0)
                     {
                         int defaultSafe = Session.GetDefaultSafeID();
                         DbHelper.ExecuteInsertTrans(trans,
-                            "INSERT INTO CashBox (TransDate,TransType,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,@aid)",
+                            "INSERT INTO CashBox (TransDate,TransType,PartyName,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@party,@desc,@amt,0,@ref,@emp,@aid)",
+                            DbHelper.P("@party", posPartyName),
                             DbHelper.P("@desc", $"فاتورة POS #{saleCode} (نقدية درج)"),
                             DbHelper.P("@amt", cashPaidVal),
                             DbHelper.P("@ref", saleID),
@@ -3230,7 +3239,8 @@ namespace ChickenDist.Forms
                     if (visaPaidVal > 0 && _selectedVisaAccountID.HasValue)
                     {
                         DbHelper.ExecuteInsertTrans(trans,
-                            "INSERT INTO CashBox (TransDate,TransType,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@desc,@amt,0,@ref,@emp,@aid)",
+                            "INSERT INTO CashBox (TransDate,TransType,PartyName,Notes,AmountIn,AmountOut,RefID,CreatedBy,AccountID) VALUES (GETDATE(),'Sale',@party,@desc,@amt,0,@ref,@emp,@aid)",
+                            DbHelper.P("@party", posPartyName),
                             DbHelper.P("@desc", $"فاتورة POS #{saleCode} (سداد فيزا: {_selectedVisaAccountName})"),
                             DbHelper.P("@amt", visaPaidVal),
                             DbHelper.P("@ref", saleID),

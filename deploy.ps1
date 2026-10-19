@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.6";
-$CHANGELOG = "v4.1.6 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Eye-friendly UI redesign for Sales, Purchases, and Reports screens, wholesale/half-wholesale price tier fix, and advanced instant report filters"
+$VERSION = "4.1.7";
+$CHANGELOG = "v4.1.7 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Website themes & cafe/restaurant styling, owner product benefits editor, 31-day mobile app historical data, wastage profit deduction, and luxury black & gold app theme"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

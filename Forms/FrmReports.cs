@@ -194,37 +194,43 @@ namespace ChickenDist.Forms
 			inputCtrl.Width = inputWidth;
 			inputCtrl.Height = 26;
 			inputCtrl.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+			inputCtrl.Margin = new Padding(1, 1, 2, 1);
 
 			var lbl = new Label
 			{
 				Text = labelText,
 				AutoSize = true,
-				ForeColor = labelColor ?? Color.FromArgb(226, 232, 240), // Calm soft silver-white for eye comfort
+				ForeColor = labelColor ?? Color.FromArgb(253, 224, 71),
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Margin = new Padding(4, 4, 3, 0),
+				Tag = "CustomStyle"
 			};
 
-			int lblW = lbl.PreferredWidth;
-			int totalW = lblW + inputWidth + 14;
-
-			var pnl = new Panel
+			var pnl = new FlowLayoutPanel
 			{
-				Size = new Size(totalW, 34),
+				AutoSize = true,
+				AutoSizeMode = AutoSizeMode.GrowAndShrink,
+				FlowDirection = FlowDirection.LeftToRight, // في WinForms مع RightToLeft=Yes يضع الاسم يميناً والخانة يساراً
+				WrapContents = false,
 				BackColor = Color.FromArgb(30, 41, 59),
-				Margin = new Padding(2, 2, 3, 2),
-				Padding = new Padding(3),
-				RightToLeft = RightToLeft.Yes
+				Margin = new Padding(5, 2, 5, 2),
+				Padding = new Padding(5, 3, 6, 3),
+				RightToLeft = RightToLeft.Yes,
+				Tag = "CustomStyle"
 			};
 			pnl.Paint += (s, e) =>
 			{
-				using (var pen = new Pen(Color.FromArgb(71, 85, 105), 1f))
+				using (var pen = new Pen(Color.FromArgb(100, 116, 139), 1f))
 				{
 					e.Graphics.DrawRectangle(pen, 0, 0, pnl.Width - 1, pnl.Height - 1);
 				}
+				// خط تمييز سماوي على الحافة اليمنى لبداية كل فلتر لمنع أي تداخل بصري
+				using (var accentBrush = new SolidBrush(Color.FromArgb(56, 189, 248)))
+				{
+					e.Graphics.FillRectangle(accentBrush, pnl.Width - 3, 1, 3, pnl.Height - 2);
+				}
 			};
-
-			lbl.Location = new Point(totalW - lblW - 5, 7);
-			inputCtrl.Location = new Point(4, 4);
 
 			pnl.Controls.Add(lbl);
 			pnl.Controls.Add(inputCtrl);
@@ -609,7 +615,8 @@ namespace ChickenDist.Forms
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Padding = new Padding(8, 6, 8, 6),
 				Margin = new Padding(4, 3, 4, 3),
-				Text = "📊 السجلات: 0"
+				Text = "📊 السجلات: 0",
+				Tag = "CustomStyle"
 			};
 
 			btnLoad = Theme.MakeButton("🔍 عرض التقرير", Color.FromArgb(16, 185, 129));
@@ -661,7 +668,8 @@ namespace ChickenDist.Forms
 				Height = 56,
 				BackColor = Color.FromArgb(15, 23, 42),
 				Padding = new Padding(10, 5, 10, 5),
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Tag = "CustomStyle"
 			};
 
 			var pnlBannerActions = new FlowLayoutPanel
@@ -670,11 +678,12 @@ namespace ChickenDist.Forms
 				AutoSize = true,
 				AutoSizeMode = AutoSizeMode.GrowAndShrink,
 				BackColor = Color.Transparent,
-				FlowDirection = FlowDirection.LeftToRight,
+				FlowDirection = FlowDirection.RightToLeft, // مع RightToLeft=Yes يترتب من اليسار لليمين داخل القسم الأيسر
 				WrapContents = false,
 				Padding = new Padding(0, 3, 0, 3),
 				Margin = new Padding(0),
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Tag = "LTR"
 			};
 
 			btnDailyInvoicesSheet = Theme.MakeButton("📑 شيت فواتير اليومية", Color.FromArgb(14, 165, 233));
@@ -700,7 +709,8 @@ namespace ChickenDist.Forms
 			{
 				Dock = DockStyle.Fill,
 				BackColor = Color.Transparent,
-				Padding = new Padding(8, 2, 8, 2)
+				Padding = new Padding(8, 2, 8, 2),
+				Tag = "CustomStyle"
 			};
 
 			lblReportHeaderTitle = new Label
@@ -710,7 +720,8 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(125, 211, 252), // Calm Sky Blue
 				Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
 				TextAlign = ContentAlignment.MiddleRight,
-				Text = "📊 تقارير المبيعات الشاملة"
+				Text = "📊 تقارير المبيعات الشاملة",
+				Tag = "CustomStyle"
 			};
 
 			lblReportHeaderDesc = new Label
@@ -719,7 +730,8 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(203, 213, 225), // Light Slate
 				Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
 				TextAlign = ContentAlignment.MiddleRight,
-				Text = "💡 استخدام التقرير: استعراض ومتابعة حركة المبيعات والأرباح وفواتير العملاء مع إمكانية التصدير والطباعة والبحث السريع."
+				Text = "💡 استخدام التقرير: استعراض ومتابعة حركة المبيعات والأرباح وفواتير العملاء مع إمكانية التصدير والطباعة والبحث السريع.",
+				Tag = "CustomStyle"
 			};
 
 			pnlBannerTitles.Controls.Add(lblReportHeaderDesc);
@@ -728,53 +740,56 @@ namespace ChickenDist.Forms
 			pnlReportBanner.Controls.Add(pnlBannerTitles);
 			pnlReportBanner.Controls.Add(pnlBannerActions);
 
-			// ── 2. شريط أدوات الفلترة والبحث الموحد (2 صفوف منظمة بدون أي قص للشاشة) ──
+			// ── 2. شريط أدوات الفلترة والبحث الموحد (2 صفوف منظمة تبدأ من اليمين لليسار) ──
 			var pnlFiltersBar = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 82,
+				Height = 84,
 				BackColor = Color.FromArgb(23, 37, 64),
 				Padding = new Padding(8, 4, 8, 4),
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Tag = "CustomStyle"
 			};
 
 			var flowRow1 = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 37,
+				Height = 38,
 				BackColor = Color.Transparent,
-				FlowDirection = FlowDirection.LeftToRight,
+				FlowDirection = FlowDirection.LeftToRight, // مع RightToLeft=Yes يبدأ من أقصى اليمين لليسار
 				WrapContents = false,
 				Margin = new Padding(0),
 				Padding = new Padding(0),
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Tag = "CustomStyle"
 			};
 
 			var flowRow2 = new FlowLayoutPanel
 			{
 				Dock = DockStyle.Top,
-				Height = 37,
+				Height = 38,
 				BackColor = Color.Transparent,
-				FlowDirection = FlowDirection.LeftToRight,
+				FlowDirection = FlowDirection.LeftToRight, // مع RightToLeft=Yes يبدأ من أقصى اليمين لليسار
 				WrapContents = false,
 				Margin = new Padding(0),
 				Padding = new Padding(0),
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Tag = "CustomStyle"
 			};
 
-			// الصف الأول: الفترة الزمنية + المخزن + طريقة الدفع + التصنيف
+			// الصف الأول (من اليمين لليسار): الفترة الزمنية -> من -> إلى -> المخزن -> طريقة الدفع -> التصنيف
+			flowRow1.Controls.Add(MakeFilterPanel("⚡ الفترة:", cboDatePresets, 105));
 			flowRow1.Controls.Add(MakeFilterPanel("📅 من:", dtpFrom, 106));
 			flowRow1.Controls.Add(MakeFilterPanel("📅 إلى:", dtpTo, 106));
-			flowRow1.Controls.Add(MakeFilterPanel("⚡ الفترة:", cboDatePresets, 105));
 			flowRow1.Controls.Add(MakeFilterPanel("🏢 المخزن:", cboWarehouse, 115));
 			flowRow1.Controls.Add(MakeFilterPanel("💳 الدفع:", cboPayType, 115));
 			flowRow1.Controls.Add(MakeFilterPanel("📂 التصنيف:", cboCategoryFilter, 135));
 
-			// الصف الثاني: العميل/المورد + الكاشير/المندوب + نطاق البحث + نص البحث الفوري + مسح الفلاتر
+			// الصف الثاني (من اليمين لليسار): العميل/المورد -> الموظف/الكاشير -> نطاق البحث -> نص البحث الفوري -> مسح الفلاتر
 			flowRow2.Controls.Add(MakeFilterPanel("👥 العميل/المورد:", cboPartyFilter, 155));
 			flowRow2.Controls.Add(MakeFilterPanel("👔 الموظف/الكاشير:", cboEmployee, 125));
 			flowRow2.Controls.Add(MakeFilterPanel("🔍 نطاق البحث:", cboReportSearchType, 135));
-			flowRow2.Controls.Add(MakeFilterPanel("🔎 بحث فوري:", txtSearchClient, 165, Color.FromArgb(253, 224, 71)));
+			flowRow2.Controls.Add(MakeFilterPanel("🔎 بحث فوري:", txtSearchClient, 165, Color.FromArgb(125, 211, 252)));
 			flowRow2.Controls.Add(btnResetFilters);
 
 			// في WinForms، الكنترول المضاف أخيراً بـ DockStyle.Top يظهر في الأعلى، لذلك نضيف الصف الثاني ثم الأول
@@ -784,10 +799,11 @@ namespace ChickenDist.Forms
 			var pnlTopContainer = new Panel
 			{
 				Dock = DockStyle.Top,
-				Height = 138,
+				Height = 140,
 				BackColor = Color.FromArgb(15, 23, 42),
 				Padding = new Padding(0),
-				RightToLeft = RightToLeft.Yes
+				RightToLeft = RightToLeft.Yes,
+				Tag = "CustomStyle"
 			};
 
 			pnlTopContainer.Controls.Add(pnlFiltersBar);

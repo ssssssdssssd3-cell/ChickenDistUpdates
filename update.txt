@@ -1,5 +1,5 @@
-version=4.1.6
+version=4.1.7
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.6&t=1792371214
-sha256=5C65F4C642C7C860129278BE70A05F3274ED7758E04297E192DA170CAA8C9B24
-changelog=v4.1.6 - 2026-10-19: Eye-friendly UI redesign for Sales, Purchases, and Reports screens, wholesale/half-wholesale price tier fix, and advanced instant report filters
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.7&t=1792409024
+sha256=1AE51AC0A6ABB14D37FFDB0ED2798352858C9D38259D01689702FFB60D38945D
+changelog=v4.1.7 - 2026-10-19: Website themes & cafe/restaurant styling, owner product benefits editor, 31-day mobile app historical data, wastage profit deduction, and luxury black & gold app theme

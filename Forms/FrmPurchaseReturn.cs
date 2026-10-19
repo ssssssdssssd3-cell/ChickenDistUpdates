@@ -115,17 +115,54 @@ namespace ChickenDist.Forms
             {
                 Name = "pnlFilter",
                 Dock = DockStyle.Top,
+                RightToLeft = RightToLeft.Yes,
                 FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgSearchPanel,
                 WrapContents = true,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                MinimumSize = new Size(0, 92),
+                MinimumSize = new Size(0, 88),
                 Padding = new Padding(8, 6, 8, 6)
             };
 
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth, Control extraCtrl = null)
+            {
+                var lbl = new Label
+                {
+                    Text = labelText,
+                    AutoSize = true,
+                    ForeColor = Theme.TextMain,
+                    Font = Theme.FontBold,
+                    Margin = new Padding(4, 6, 2, 0)
+                };
+
+                inputCtrl.Width = inputWidth;
+                inputCtrl.Height = 26;
+                inputCtrl.Margin = new Padding(1, 2, extraCtrl != null ? 1 : 4, 2);
+
+                var pnl = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    RightToLeft = RightToLeft.Yes,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(6, 2, 6, 2),
+                    Padding = new Padding(0),
+                    WrapContents = false
+                };
+
+                pnl.Controls.Add(lbl);
+                pnl.Controls.Add(inputCtrl);
+                if (extraCtrl != null)
+                {
+                    extraCtrl.Margin = new Padding(1, 2, 4, 2);
+                    pnl.Controls.Add(extraCtrl);
+                }
+                return pnl;
+            }
+
             // نوع المرتجع
-            var lblMode = new Label { Text = "نوع المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0), Font = Theme.FontBold };
             cboMode = new ComboBox
             {
                 Width = 200, Height = 26,
@@ -136,18 +173,18 @@ namespace ChickenDist.Forms
             cboMode.Items.Add("🌐 مرتجع شراء عام (بدون فاتورة)");
             cboMode.SelectedIndex = 0;
             cboMode.SelectedIndexChanged += (s, e) => ToggleReturnMode();
+            var pnlMode = MakeFilterPanel("نوع المرتجع:", cboMode, 200);
 
             // المخزن
-            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             cboWarehouse = new ComboBox
             {
                 Width = 135, Height = 26,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain
             };
+            var pnlWh = MakeFilterPanel("المخزن:", cboWarehouse, 135);
 
             // طريقة التسوية
-            var lblRetType = new Label { Text = "طريقة التسوية:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             cboReturnType = new ComboBox
             {
                 Width = 155, Height = 26,
@@ -159,9 +196,9 @@ namespace ChickenDist.Forms
             cboReturnType.Items.Add("💵 نقدي (استرداد للخزينة)");
             cboReturnType.Items.Add("💳 فيزا / بنكي (استرداد للبنك)");
             cboReturnType.SelectedIndex = 0;
+            var pnlRetType = MakeFilterPanel("طريقة التسوية:", cboReturnType, 155);
 
             // اختصارات الفترة الزمنية
-            var lblPreset = new Label { Text = "الفترة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             cboDatePreset = new ComboBox
             {
                 Width = 110, Height = 26,
@@ -181,18 +218,18 @@ namespace ChickenDist.Forms
             });
             cboDatePreset.SelectedIndex = 0;
             cboDatePreset.SelectedIndexChanged += (s, e) => ApplyDatePreset();
+            var pnlPreset = MakeFilterPanel("الفترة:", cboDatePreset, 110);
 
             // تواريخ البحث
-            var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(8, 8, 0, 0), Font = Theme.FontBold };
             dtpFrom = new DateTimePicker { Width = 145, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today.AddMonths(-1) };
             dtpFrom.ValueChanged += (s, e) => { if (!_isApplyingDatePreset && cboMode.SelectedIndex == 0) LoadPurchasesGrid(); };
+            var pnlFrom = MakeFilterPanel("من:", dtpFrom, 145);
 
-            var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(8, 8, 0, 0), Font = Theme.FontBold };
             dtpTo = new DateTimePicker { Width = 145, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
             dtpTo.ValueChanged += (s, e) => { if (!_isApplyingDatePreset && cboMode.SelectedIndex == 0) LoadPurchasesGrid(); };
+            var pnlTo = MakeFilterPanel("إلى:", dtpTo, 145);
 
             // جهة الشراء
-            var lblSupplierLbl = new Label { Text = "جهة الشراء:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             cboSupplier = new ComboBox
             {
                 Width = 175, Height = 26,
@@ -204,13 +241,12 @@ namespace ChickenDist.Forms
 
             btnSupplierSearch = Theme.MakeButton("🔍", Color.FromArgb(40, 100, 140));
             btnSupplierSearch.Size = new Size(32, 26);
-            btnSupplierSearch.Margin = new Padding(2, 3, 4, 0);
             var ttSup = new ToolTip();
             ttSup.SetToolTip(btnSupplierSearch, "بحث سريع عن مورد بالاسم أو الكود أو الهاتف");
             btnSupplierSearch.Click += (s, e) => OpenSupplierSearchDialog();
+            var pnlSupplier = MakeFilterPanel("جهة الشراء:", cboSupplier, 175, btnSupplierSearch);
 
             // نوع فاتورة الشراء
-            var lblPurType = new Label { Text = "نوع الفاتورة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             cboPurchaseTypeFilter = new ComboBox
             {
                 Width = 105, Height = 26,
@@ -223,9 +259,9 @@ namespace ChickenDist.Forms
             cboPurchaseTypeFilter.Items.Add("آجل");
             cboPurchaseTypeFilter.SelectedIndex = 0;
             cboPurchaseTypeFilter.SelectedIndexChanged += (s, e) => { if (cboMode.SelectedIndex == 0) LoadPurchasesGrid(); };
+            var pnlPurType = MakeFilterPanel("نوع الفاتورة:", cboPurchaseTypeFilter, 105);
 
             // حالة المرتجع السابق
-            var lblRetStatus = new Label { Text = "حالة المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             cboReturnStatusFilter = new ComboBox
             {
                 Width = 130, Height = 26,
@@ -240,9 +276,9 @@ namespace ChickenDist.Forms
             });
             cboReturnStatusFilter.SelectedIndex = 0;
             cboReturnStatusFilter.SelectedIndexChanged += (s, e) => { if (cboMode.SelectedIndex == 0) LoadPurchasesGrid(); };
+            var pnlRetStatus = MakeFilterPanel("حالة المرتجع:", cboReturnStatusFilter, 130);
 
             // فلتر الصنف
-            var lblProdFilter = new Label { Text = "بحث بالصنف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             cboProductFilter = new ComboBox
             {
                 Width = 185, Height = 26,
@@ -255,7 +291,6 @@ namespace ChickenDist.Forms
 
             btnProductFilterSearch = Theme.MakeButton("🔍", Color.FromArgb(20, 80, 150));
             btnProductFilterSearch.Size = new Size(32, 26);
-            btnProductFilterSearch.Margin = new Padding(2, 3, 4, 0);
             var ttProd = new ToolTip();
             ttProd.SetToolTip(btnProductFilterSearch, "فتح نافذة البحث المفصل عن صنف لفلترة فواتير الشراء به (F3)");
             btnProductFilterSearch.Click += (s, e) =>
@@ -283,9 +318,9 @@ namespace ChickenDist.Forms
                     }
                 }
             };
+            var pnlProdFilter = MakeFilterPanel("بحث بالصنف:", cboProductFilter, 185, btnProductFilterSearch);
 
             // نص البحث الشامل
-            var lblSearch = new Label { Text = "بحث شامل:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             txtSearch = new TextBox
             {
                 Width = 175, Height = 26,
@@ -319,19 +354,9 @@ namespace ChickenDist.Forms
                     }
                 }
             };
-
-            btnSearch = Theme.MakeButton("🔍 جلب الفواتير", Theme.Accent);
-            btnSearch.Size = new Size(105, 28);
-            btnSearch.Margin = new Padding(6, 2, 0, 0);
-            btnSearch.Click += (s, e) => LoadPurchasesGrid();
-
-            btnClearFilters = Theme.MakeButton("🔄 مسح الفلاتر", Color.FromArgb(100, 116, 139));
-            btnClearFilters.Size = new Size(100, 28);
-            btnClearFilters.Margin = new Padding(4, 2, 0, 0);
-            btnClearFilters.Click += (s, e) => ResetAllFilters();
+            var pnlSearch = MakeFilterPanel("بحث شامل:", txtSearch, 175);
 
             // مسح بالاسكانر / السيريال (IMEI)
-            var lblBarcode = new Label { Text = AppConfig.BusinessType == "Mobiles" ? "📷 اسكانر / IMEI:" : "📷 مسح بالاسكانر:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             txtBarcode = new TextBox
             {
                 Width = 140, Height = 26,
@@ -347,19 +372,33 @@ namespace ChickenDist.Forms
                     DoBarcodeSearch(txtBarcode.Text.Trim());
                 }
             };
+            var pnlBarcode = MakeFilterPanel(AppConfig.BusinessType == "Mobiles" ? "📷 اسكانر / IMEI:" : "📷 مسح بالاسكانر:", txtBarcode, 140);
+
+            btnSearch = Theme.MakeButton("🔍 جلب الفواتير", Theme.Accent);
+            btnSearch.Size = new Size(105, 28);
+            btnSearch.Margin = new Padding(6, 3, 4, 2);
+            btnSearch.Click += (s, e) => LoadPurchasesGrid();
+
+            btnClearFilters = Theme.MakeButton("🔄 مسح الفلاتر", Color.FromArgb(100, 116, 139));
+            btnClearFilters.Size = new Size(100, 28);
+            btnClearFilters.Margin = new Padding(4, 3, 4, 2);
+            btnClearFilters.Click += (s, e) => ResetAllFilters();
 
             pnlInfo.Controls.AddRange(new Control[] {
-                lblMode, cboMode,
-                lblWh, cboWarehouse,
-                lblRetType, cboReturnType,
-                lblPreset, cboDatePreset,
-                lblFrom, dtpFrom, lblTo, dtpTo,
-                lblSupplierLbl, cboSupplier, btnSupplierSearch,
-                lblPurType, cboPurchaseTypeFilter,
-                lblRetStatus, cboReturnStatusFilter,
-                lblProdFilter, cboProductFilter, btnProductFilterSearch,
-                lblSearch, txtSearch, btnSearch, btnClearFilters,
-                lblBarcode, txtBarcode
+                pnlMode,
+                pnlWh,
+                pnlRetType,
+                pnlPreset,
+                pnlFrom,
+                pnlTo,
+                pnlSupplier,
+                pnlPurType,
+                pnlRetStatus,
+                pnlProdFilter,
+                pnlSearch,
+                pnlBarcode,
+                btnSearch,
+                btnClearFilters
             });
 
             // ===== SplitContainer للتخطيط المقسم (فواتير فوق / أصناف تحت) =====
@@ -481,19 +520,18 @@ namespace ChickenDist.Forms
             {
                 Name = "pnlFilter",
                 Dock = DockStyle.Top,
-                Height = 42,
+                Height = 44,
+                RightToLeft = RightToLeft.Yes,
                 FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgSearchPanel,
-                Padding = new Padding(5, 5, 5, 5),
+                Padding = new Padding(8, 5, 8, 5),
+                WrapContents = false,
                 Visible = false
             };
 
             var btnSearchProd = Theme.MakeButton("🔍 بحث عن صنف (F3)", Color.FromArgb(20, 80, 150));
-            btnSearchProd.Size = new Size(150, 26);
-            btnSearchProd.Margin = new Padding(5, 1, 5, 0);
-            btnSearchProd.Click += (s, e) => OpenQuickSearch();
+            btnSearchProd.Size = new Size(145, 26);
 
-            var lblGenProd = new Label { Text = "الصنف:", AutoSize = true, ForeColor = Color.FromArgb(255, 220, 110), Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
             cboAllProducts = new ComboBox
             {
                 Width = 220, Height = 26,
@@ -502,16 +540,18 @@ namespace ChickenDist.Forms
                 BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42)
             };
             SetupSearchableCombo(cboAllProducts);
+            var pnlGenProd = MakeFilterPanel("الصنف:", cboAllProducts, 220, btnSearchProd);
+            btnSearchProd.Click += (s, e) => OpenQuickSearch();
 
-            var lblGenQty = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Color.FromArgb(255, 220, 110), Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
             txtGenQty = new TextBox { Width = 65, Height = 26, Text = "1", BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            var pnlGenQty = MakeFilterPanel("الكمية:", txtGenQty, 65);
 
-            var lblGenPrice = new Label { Text = "سعر الشراء الصافي:", AutoSize = true, ForeColor = Color.FromArgb(255, 220, 110), Margin = new Padding(10, 6, 0, 0), Font = Theme.FontBold };
             txtGenPrice = new TextBox { Width = 75, Height = 26, Text = "0", BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
+            var pnlGenPrice = MakeFilterPanel("سعر الشراء الصافي:", txtGenPrice, 75);
 
             btnAddGenItem = Theme.MakeButton("➕ إضافة للصنف المرتجع", Theme.Success);
-            btnAddGenItem.Size = new Size(160, 26);
-            btnAddGenItem.Margin = new Padding(10, 1, 0, 0);
+            btnAddGenItem.Size = new Size(160, 28);
+            btnAddGenItem.Margin = new Padding(10, 3, 4, 2);
             btnAddGenItem.Click += BtnAddGenItem_Click;
 
             txtGenQty.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; BtnAddGenItem_Click(s, e); } };
@@ -519,10 +559,9 @@ namespace ChickenDist.Forms
             cboAllProducts.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; BtnAddGenItem_Click(s, e); } };
 
             pnlGeneralItemBar.Controls.AddRange(new Control[] {
-                btnSearchProd,
-                lblGenProd, cboAllProducts,
-                lblGenQty, txtGenQty,
-                lblGenPrice, txtGenPrice,
+                pnlGenProd,
+                pnlGenQty,
+                pnlGenPrice,
                 btnAddGenItem
             });
 
@@ -640,49 +679,51 @@ namespace ChickenDist.Forms
             _mainSplit.Panel2.Controls.Add(pnlBottom);
 
             // ===== شريط الذيل السفلي =====
-            var pnlFoot = new Panel
+            var pnlFoot = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 65,
+                Height = 58,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 8, 15, 8)
+                Padding = new Padding(12, 8, 12, 8),
+                WrapContents = false
             };
 
-            var lblNotesLbl = new Label { Text = "ملاحظات المرتجع:", Location = new Point(15, 12), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            var lblNotesLbl = new Label { Text = "ملاحظات المرتجع:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(4, 8, 2, 0) };
             txtNotes = new TextBox
             {
-                Location = new Point(125, 8),
-                Width = 260, Height = 26,
+                Width = 240, Height = 26,
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain,
-                RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle
-            };
-
-            lblPurchaseInfo = new Label
-            {
-                Location = new Point(400, 10),
-                AutoSize = true,
-                ForeColor = Color.FromArgb(10, 120, 180),
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Text = ""
+                RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(2, 5, 16, 0)
             };
 
             lblTotal = new Label
             {
                 Text = "إجمالي مرتجع الشراء: 0.00 ج",
                 ForeColor = Color.FromArgb(20, 160, 80),
-                Dock = DockStyle.Right,
-                Width = 320,
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight
+                AutoSize = true,
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
+                Margin = new Padding(12, 4, 16, 0)
+            };
+
+            lblPurchaseInfo = new Label
+            {
+                AutoSize = true,
+                ForeColor = Color.FromArgb(10, 120, 180),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Text = "",
+                Margin = new Padding(10, 8, 16, 0)
             };
 
             btnSave = Theme.MakeButton("💾 حفظ مرتجع الشراء (F5)", Color.FromArgb(30, 110, 50));
-            btnSave.Location = new Point(15, 34);
-            btnSave.Size = new Size(220, 28);
+            btnSave.Size = new Size(210, 36);
             btnSave.Font = Theme.FontBold;
+            btnSave.Margin = new Padding(12, 1, 4, 0);
             btnSave.Click += BtnSave_Click;
 
-            pnlFoot.Controls.AddRange(new Control[] { lblNotesLbl, txtNotes, lblPurchaseInfo, lblTotal, btnSave });
+            pnlFoot.Controls.AddRange(new Control[] { lblNotesLbl, txtNotes, lblTotal, btnSave, lblPurchaseInfo });
 
             // ===== تجميع الشاشة =====
             this.Controls.Add(_mainSplit);

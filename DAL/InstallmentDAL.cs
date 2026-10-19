@@ -256,12 +256,17 @@ namespace ChickenDist.DAL
                     DbHelper.P("@uid", Session.EmpID),
                     DbHelper.P("@dt", DateTime.Now));
 
+                string custName = "";
+                var cNameObj = DbHelper.ScalarTrans(trans, "SELECT ClientName FROM Clients WHERE ClientID=@cid", DbHelper.P("@cid", customerID));
+                if (cNameObj != null && cNameObj != DBNull.Value) custName = cNameObj.ToString().Trim();
+
                 // قيد الخزنة (AmountIn مدين)
                 DbHelper.ExecuteTrans(trans,
-                    "INSERT INTO CashBox(TransType, AmountIn, RefID, Notes, CreatedBy, TransDate, AccountID) VALUES('ClientPayment', @amt, @ref, @notes, @uid, @dt, @accId)",
+                    "INSERT INTO CashBox(TransType, AmountIn, RefID, PartyName, Notes, CreatedBy, TransDate, AccountID) VALUES('ClientPayment', @amt, @ref, @party, @notes, @uid, @dt, @accId)",
                     DbHelper.P("@amt", amount),
                     DbHelper.P("@ref", contractID),
-                    DbHelper.P("@notes", $"تحصيل أقساط العقد {contractCode} للعميل ID:{customerID}"),
+                    DbHelper.P("@party", !string.IsNullOrEmpty(custName) ? (object)custName : DBNull.Value),
+                    DbHelper.P("@notes", $"[عميل: {custName}] تحصيل أقساط العقد {contractCode}"),
                     DbHelper.P("@uid", Session.EmpID),
                     DbHelper.P("@dt", DateTime.Now),
                     DbHelper.P("@accId", safeID));

@@ -49,79 +49,100 @@ namespace ChickenDist.Forms
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Theme.BgSearchPanel,
-                Padding = new Padding(10),
-                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(8, 6, 8, 6),
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true
             };
 
-            pnlFilter.Controls.Add(new Label { Text = "من تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 8, 0, 0) });
+            Panel MakeFilterPanel(string labelText, Control inputCtrl, int inputWidth)
+            {
+                var lbl = new Label
+                {
+                    Text = labelText,
+                    AutoSize = true,
+                    ForeColor = Theme.TextMain,
+                    Font = Theme.FontBold,
+                    Margin = new Padding(4, 6, 2, 0)
+                };
+                inputCtrl.Width = inputWidth;
+                inputCtrl.Height = 26;
+                inputCtrl.Margin = new Padding(1, 2, 4, 2);
+
+                var pnl = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    RightToLeft = RightToLeft.Yes,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    BackColor = Color.Transparent,
+                    Margin = new Padding(6, 2, 6, 2),
+                    Padding = new Padding(0),
+                    WrapContents = false
+                };
+                pnl.Controls.Add(lbl);
+                pnl.Controls.Add(inputCtrl);
+                return pnl;
+            }
+
             dtpFrom = new DateTimePicker
             {
-                Width = 190,
+                Width = 185,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd hh:mm tt",
-                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0),
-                Margin = new Padding(5, 4, 0, 0)
+                Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1, 0, 0, 0)
             };
             dtpFrom.ValueChanged += (s, e) => LoadVouchers();
-            pnlFilter.Controls.Add(dtpFrom);
+            pnlFilter.Controls.Add(MakeFilterPanel("من تاريخ:", dtpFrom, 185));
 
-            pnlFilter.Controls.Add(new Label { Text = "إلى تاريخ:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
             dtpTo = new DateTimePicker
             {
-                Width = 190,
+                Width = 185,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd hh:mm tt",
-                Value = DateTime.Now,
-                Margin = new Padding(5, 4, 0, 0)
+                Value = DateTime.Now
             };
             dtpTo.ValueChanged += (s, e) => LoadVouchers();
-            pnlFilter.Controls.Add(dtpTo);
+            pnlFilter.Controls.Add(MakeFilterPanel("إلى تاريخ:", dtpTo, 185));
 
-            pnlFilter.Controls.Add(new Label { Text = "نوع السند:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
             cboVoucherTypeFilter = new ComboBox
             {
-                Width = 150,
+                Width = 155,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(5, 4, 0, 0)
+                FlatStyle = FlatStyle.Flat
             };
             cboVoucherTypeFilter.Items.AddRange(new object[] { "الكل", "🟢 سند توريد (قبض)", "🔴 سند صرف (دفوعات)", "🔄 تحويل نقدية" });
             cboVoucherTypeFilter.SelectedIndex = 0;
             cboVoucherTypeFilter.SelectedIndexChanged += (s, e) => LoadVouchers();
-            pnlFilter.Controls.Add(cboVoucherTypeFilter);
+            pnlFilter.Controls.Add(MakeFilterPanel("نوع السند:", cboVoucherTypeFilter, 155));
 
-            pnlFilter.Controls.Add(new Label { Text = "الحساب / الخزنة:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
             cboSafeFilter = new ComboBox
             {
                 Width = 150,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(5, 4, 0, 0)
+                FlatStyle = FlatStyle.Flat
             };
             LoadSafesFilterCombo();
             cboSafeFilter.SelectedIndexChanged += (s, e) => LoadVouchers();
-            pnlFilter.Controls.Add(cboSafeFilter);
+            pnlFilter.Controls.Add(MakeFilterPanel("الحساب / الخزنة:", cboSafeFilter, 150));
 
-            pnlFilter.Controls.Add(new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0) });
             txtSearch = new TextBox
             {
-                Width = 140,
+                Width = 150,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
-                BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(5, 4, 0, 0)
+                BorderStyle = BorderStyle.FixedSingle
             };
             txtSearch.TextChanged += (s, e) => FilterGridLocally();
-            pnlFilter.Controls.Add(txtSearch);
+            pnlFilter.Controls.Add(MakeFilterPanel("بحث:", txtSearch, 150));
 
             btnLoad = Theme.MakeButton("🔄 تحديث", Theme.Accent);
-            btnLoad.Size = new Size(80, 32);
-            btnLoad.Margin = new Padding(10, 0, 0, 0);
+            btnLoad.Size = new Size(85, 30);
+            btnLoad.Margin = new Padding(6, 2, 4, 2);
             btnLoad.Click += (s, e) => LoadVouchers();
             pnlFilter.Controls.Add(btnLoad);
 
@@ -133,7 +154,8 @@ namespace ChickenDist.Forms
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Theme.BgCard,
                 Padding = new Padding(10, 8, 10, 8),
-                FlowDirection = FlowDirection.RightToLeft,
+                RightToLeft = RightToLeft.Yes,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true
             };
 
@@ -238,10 +260,11 @@ namespace ChickenDist.Forms
             dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransID", HeaderText = "رقم السند", FillWeight = 25 });
             dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransDate", HeaderText = "التاريخ والوقت", FillWeight = 40 });
             dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "TransType", HeaderText = "نوع السند", FillWeight = 35 });
+            dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "PartyName", HeaderText = "الجهة (العميل / المورد)", FillWeight = 55 });
             dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountIn", HeaderText = "وارد (قبض)", FillWeight = 30 });
             dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "AmountOut", HeaderText = "صادر (صرف)", FillWeight = 30 });
             dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "AccountName", HeaderText = "الحساب / الخزنة", FillWeight = 40 });
-            dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان والتفاصيل المحاسبية (شاملاً رصيد المتعامل)", FillWeight = 110 });
+            dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "البيان والتفاصيل المحاسبية (شاملاً رصيد المتعامل)", FillWeight = 100 });
             dgVouchers.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByName", HeaderText = "محرر السند", FillWeight = 35 });
 
             dgVouchers.DoubleClick += (s, e) => BtnPrintSelected_Click(null, null);
@@ -352,6 +375,12 @@ namespace ChickenDist.Forms
                 string notes = r["Notes"].ToString();
                 string accName = r.Table.Columns.Contains("AccountName") && r["AccountName"] != DBNull.Value ? r["AccountName"].ToString() : "الخزينة الرئيسية";
 
+                string partyName = r.Table.Columns.Contains("PartyName") && r["PartyName"] != DBNull.Value ? r["PartyName"].ToString().Trim() : "";
+                if (string.IsNullOrWhiteSpace(partyName))
+                {
+                    partyName = FrmCashBox.ExtractPartyFromNotes(notes);
+                }
+
                 // Voucher Type Filter
                 if (voucherTypeIdx == 1 && (inAmt == 0 || rawType == "Transfer")) continue;
                 if (voucherTypeIdx == 2 && (outAmt == 0 || rawType == "Transfer")) continue;
@@ -360,7 +389,7 @@ namespace ChickenDist.Forms
                 // Search filter
                 if (!string.IsNullOrEmpty(search))
                 {
-                    string searchableText = $"{transID} {rawType} {notes} {accName}".ToLower();
+                    string searchableText = $"{transID} {rawType} {partyName} {notes} {accName}".ToLower();
                     if (!searchableText.Contains(search)) continue;
                 }
 
@@ -368,10 +397,20 @@ namespace ChickenDist.Forms
                 {
                     "Deposit" => "🟢 سند توريد",
                     "Withdraw" => "🔴 سند صرف",
-                    "SaleIncome" => "🛒 بيع نقدي",
                     "ClientPayment" => "🟢 تحصيل عميل",
                     "SupplierPayment" => "🔴 صرف للمورد",
+                    "SaleIncome" => "🛒 بيع نقدي",
+                    "Sale" => notes.Contains("فيزا") ? "💳 بيع فيزا" : "🛒 بيع نقدي",
+                    "PurchaseExpense" => "📦 مشتريات نقدية",
+                    "ClientPurchaseCash" => "📦 شراء من عميل",
+                    "ReturnOutcome" => "↩️ مرتجع مبيعات",
+                    "VisaReturn" => "↩️ مرتجع مبيعات (فيزا)",
+                    "PurchaseReturn" => "↩️ مرتجع مشتريات",
                     "Expense" => "🔴 مصروفات",
+                    "EmpAdvance" => "👤 سلفة موظف",
+                    "EmpPaymentOut" => "👤 مستحقات موظف",
+                    "EmpPaymentIn" => "👤 سداد موظف",
+                    "DriverHandover" => "🚚 عهدة مندوب",
                     "Transfer" => "🔄 تحويل نقدية",
                     _ => rawType
                 };
@@ -380,6 +419,7 @@ namespace ChickenDist.Forms
                     transID,
                     Convert.ToDateTime(r["TransDate"]).ToString("yyyy/MM/dd HH:mm"),
                     typeArabic,
+                    partyName,
                     inAmt > 0 ? inAmt.ToString("N2") : "",
                     outAmt > 0 ? outAmt.ToString("N2") : "",
                     accName,
@@ -1054,46 +1094,7 @@ namespace ChickenDist.Forms
 
                         if (waResult == DialogResult.Yes)
                         {
-                            try
-                            {
-                                // Get phone based on party type
-                                string phone = "";
-                                if (partyIdx == 0 && selectedClientID > 0)
-                                {
-                                    var cRow = DbHelper.Query("SELECT Phone FROM Clients WHERE ClientID=@id", DbHelper.P("@id", selectedClientID));
-                                    if (cRow.Rows.Count > 0) phone = cRow.Rows[0]["Phone"]?.ToString() ?? "";
-                                }
-                                else if (partyIdx == 1 && selectedSupplierID > 0)
-                                {
-                                    var sRow = DbHelper.Query("SELECT Phone FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", selectedSupplierID));
-                                    if (sRow.Rows.Count > 0) phone = sRow.Rows[0]["Phone"]?.ToString() ?? "";
-                                }
-
-                                string partyName = partyIdx == 0 ? txtClientName.Text
-                                                 : partyIdx == 1 ? txtSupplierName.Text
-                                                 : partyIdx == 4 ? txtGeneralPartyName.Text
-                                                 : "جهة تعامل";
-
-                                string voucherLabel = isDeposit ? "سند توريد (قبض)" : "سند صرف (دفع)";
-                                string msg = $"📄 *{voucherLabel} رقم: #{newTransID}*\n"
-                                           + $"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n"
-                                           + $"👤 *الجهة:* {partyName}\n"
-                                           + $"💵 *المبلغ:* {amount:N2} ج\n"
-                                           + (!string.IsNullOrWhiteSpace(userNotes) ? $"📝 *البيان:* {userNotes}\n" : "")
-                                           + $"\nشكراً لتعاملكم معنا! 🙏";
-
-                                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
-                                    this,
-                                    phone,
-                                    msg,
-                                    () => ReceiptImageGenerator.GenerateVoucherReceiptImage(newTransID),
-                                    "📱 إرسال السند عبر الواتساب");
-                            }
-                            catch (Exception waEx)
-                            {
-                                AppLogger.Error("FrmReceiptVoucher.SaveVoucher.WhatsApp", waEx);
-                                MessageBox.Show("فشل تجهيز الواتساب: " + waEx.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
+                            SendVoucherToWhatsApp(newTransID);
                         }
                     }
                 }
@@ -1147,30 +1148,139 @@ namespace ChickenDist.Forms
                 return;
             }
 
+            int voucherID = Convert.ToInt32(dgVouchers.CurrentRow.Cells["TransID"].Value);
+            SendVoucherToWhatsApp(voucherID);
+        }
+
+        private void SendVoucherToWhatsApp(int voucherID)
+        {
             try
             {
-                int voucherID = Convert.ToInt32(dgVouchers.CurrentRow.Cells["TransID"].Value);
+                DbHelper.EnsureCashBoxColumnsExist();
                 var dt = DbHelper.Query(@"
-                    SELECT v.VoucherCode, v.VoucherDate, v.VoucherType, v.Amount, v.Notes,
-                           c.ClientName, c.Phone
-                    FROM ReceiptVouchers v
-                    LEFT JOIN Clients c ON v.ClientID = c.ClientID
-                    WHERE v.VoucherID = @id", DbHelper.P("@id", voucherID));
+                    SELECT cb.CashID, cb.TransDate, cb.TransType, cb.AmountIn, cb.AmountOut,
+                           cb.RefID, cb.Notes,
+                           ISNULL(sa.AccountName, N'الخزينة الرئيسية') AS AccountName,
+                           ISNULL(emp.EmpName, N'المشرف العام') AS CreatedByName,
+                           COALESCE(
+                               NULLIF(LTRIM(RTRIM(cb.PartyName)), ''),
+                               CASE WHEN cb.TransType = 'ClientPayment' AND cb.Notes LIKE N'%تحصيل أقساط العقد%'
+                                    THEN (SELECT TOP 1 c.ClientName FROM InstallmentContracts ic JOIN Clients c ON ic.CustomerID = c.ClientID WHERE ic.ContractID = cb.RefID)
+                                    WHEN cb.TransType = 'ClientPayment' AND cb.Notes LIKE N'%مقدم عقد التقسيط%'
+                                    THEN (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                    WHEN cb.TransType = 'ClientPayment'
+                                    THEN COALESCE(
+                                        (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID),
+                                        (SELECT TOP 1 c.ClientName FROM Sales s JOIN Clients c ON s.ClientID = c.ClientID WHERE s.SaleID = cb.RefID)
+                                    )
+                                    ELSE NULL END,
+                               CASE WHEN cb.TransType = 'SupplierPayment'
+                                    THEN (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                    ELSE NULL END,
+                               CASE WHEN cb.TransType IN ('Deposit', 'Withdraw') AND (cb.Notes LIKE N'%[مورد:%' OR cb.Notes LIKE N'%صرف للمورد%')
+                                    THEN (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                    WHEN cb.TransType IN ('Deposit', 'Withdraw') AND (cb.Notes LIKE N'%[عميل:%' OR cb.Notes LIKE N'%تحصيل من عميل%')
+                                    THEN (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID)
+                                    WHEN cb.TransType = 'Deposit' AND cb.RefID IS NOT NULL
+                                    THEN COALESCE(
+                                        (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID),
+                                        (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID)
+                                    )
+                                    WHEN cb.TransType = 'Withdraw' AND cb.RefID IS NOT NULL
+                                    THEN COALESCE(
+                                        (SELECT TOP 1 s.SupplierName FROM Suppliers s WHERE s.SupplierID = cb.RefID),
+                                        (SELECT TOP 1 c.ClientName FROM Clients c WHERE c.ClientID = cb.RefID)
+                                    )
+                                    ELSE NULL END,
+                               ''
+                           ) AS ResolvedPartyName
+                    FROM CashBox cb
+                    LEFT JOIN SafeAccounts sa ON cb.AccountID = sa.AccountID
+                    LEFT JOIN Employees emp ON cb.CreatedBy = emp.EmpID
+                    WHERE cb.CashID = @id", DbHelper.P("@id", voucherID));
 
-                if (dt.Rows.Count == 0) return;
+                if (dt == null || dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("لم يتم العثور على بيانات السند المحدد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 var r = dt.Rows[0];
-                string phone = r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
-                string code = r["VoucherCode"].ToString();
-                decimal amount = Convert.ToDecimal(r["Amount"]);
-                string party = r["ClientName"] != DBNull.Value ? r["ClientName"].ToString() : "عميل عام";
-                string notes = r["Notes"] != DBNull.Value ? r["Notes"].ToString() : "";
+                string rawType = r["TransType"]?.ToString() ?? "Deposit";
+                decimal inAmt = r["AmountIn"] != DBNull.Value ? Convert.ToDecimal(r["AmountIn"]) : 0m;
+                decimal outAmt = r["AmountOut"] != DBNull.Value ? Convert.ToDecimal(r["AmountOut"]) : 0m;
+                decimal amount = inAmt > 0 ? inAmt : outAmt;
+                bool isDeposit = inAmt > 0 || rawType == "Deposit" || rawType == "ClientPayment" || rawType == "SaleIncome";
+                DateTime vDate = r["TransDate"] != DBNull.Value ? Convert.ToDateTime(r["TransDate"]) : DateTime.Now;
+                string rawNotes = r["Notes"]?.ToString() ?? "";
+                string safeName = r["AccountName"]?.ToString() ?? "الخزينة الرئيسية";
+                string partyName = r["ResolvedPartyName"]?.ToString()?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(partyName))
+                    partyName = FrmCashBox.ExtractPartyFromNotes(rawNotes);
+                if (string.IsNullOrWhiteSpace(partyName))
+                    partyName = "جهة تعامل";
 
-                string msg = $"📄 *إيصال نقدية رقم: #{code}*\n" +
-                             $"📅 *التاريخ:* {Convert.ToDateTime(r["VoucherDate"]):yyyy-MM-dd HH:mm}\n" +
-                             $"👤 *العميل:* {party}\n" +
-                             $"💵 *المبلغ:* {amount:N2} ج\n" +
-                             (!string.IsNullOrWhiteSpace(notes) ? $"📝 *الملاحظات:* {notes}\n" : "") +
-                             $"\nشكراً لتعاملكم معنا! 🙏";
+                int refID = r["RefID"] != DBNull.Value ? Convert.ToInt32(r["RefID"]) : 0;
+                bool isClient = rawType == "ClientPayment" || rawNotes.Contains("[عميل:") || rawNotes.Contains("تحصيل من عميل");
+                bool isSupplier = rawType == "SupplierPayment" || rawNotes.Contains("[مورد:") || rawNotes.Contains("صرف للمورد");
+                string phone = "";
+                string balanceLine = "";
+
+                if (!isClient && !isSupplier && refID > 0 && (rawType == "Deposit" || rawType == "Withdraw"))
+                {
+                    if (isDeposit)
+                    {
+                        var cCheck = DbHelper.Scalar("SELECT COUNT(1) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", refID));
+                        if (Convert.ToInt32(cCheck) > 0) isClient = true;
+                        else if (Convert.ToInt32(DbHelper.Scalar("SELECT COUNT(1) FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", refID))) > 0) isSupplier = true;
+                    }
+                    else
+                    {
+                        var sCheck = DbHelper.Scalar("SELECT COUNT(1) FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", refID));
+                        if (Convert.ToInt32(sCheck) > 0) isSupplier = true;
+                        else if (Convert.ToInt32(DbHelper.Scalar("SELECT COUNT(1) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", refID))) > 0) isClient = true;
+                    }
+                }
+
+                if (isClient && refID > 0)
+                {
+                    var phObj = DbHelper.Scalar("SELECT Phone FROM Clients WHERE ClientID=@id", DbHelper.P("@id", refID));
+                    if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString().Trim();
+                    decimal curBal = ClientDAL.GetBalance(refID);
+                    decimal prevBal = isDeposit ? (curBal + amount) : (curBal - amount);
+                    string curState = curBal > 0 ? "عليه (مدين)" : (curBal < 0 ? "له (دائن)" : "خالص");
+                    balanceLine = $"📊 *الرصيد السابق:* {Math.Abs(prevBal):N2} ج\n" +
+                                  $"📊 *الرصيد المتبقي الآن:* {Math.Abs(curBal):N2} ج ({curState})\n";
+                }
+                else if (isSupplier && refID > 0)
+                {
+                    var phObj = DbHelper.Scalar("SELECT Phone FROM Suppliers WHERE SupplierID=@id", DbHelper.P("@id", refID));
+                    if (phObj != null && phObj != DBNull.Value) phone = phObj.ToString().Trim();
+                    decimal curBal = SupplierDAL.GetBalance(refID);
+                    decimal prevBal = !isDeposit ? (curBal + amount) : (curBal - amount);
+                    string curState = curBal > 0 ? "له (دائن)" : (curBal < 0 ? "عليه (مدين)" : "خالص");
+                    balanceLine = $"📊 *الرصيد السابق:* {Math.Abs(prevBal):N2} ج\n" +
+                                  $"📊 *الرصيد المتبقي الآن:* {Math.Abs(curBal):N2} ج ({curState})\n";
+                }
+
+                string tafqeet = "";
+                try { tafqeet = TafqeetHelper.ConvertToArabicWords(amount); } catch { }
+
+                string voucherLabel = isDeposit ? "سند توريد نقدي (قبض)" : "سند صرف نقدي (دفع)";
+                string compName = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "شركة برو سوفت" : AppConfig.CompanyName;
+
+                string msg = $"🏢 *{compName}*\n" +
+                             $"📄 *{voucherLabel} رقم: #{voucherID}*\n" +
+                             $"━━━━━━━━━━━━━━━━━━━━\n" +
+                             $"📅 *التاريخ والوقت:* {vDate:yyyy/MM/dd hh:mm tt}\n" +
+                             $"👤 *الجهة:* {partyName}\n" +
+                             $"💵 *المبلغ:* {amount:N2} ج.م\n" +
+                             (!string.IsNullOrWhiteSpace(tafqeet) ? $"🔤 *فقط وقدره:* {tafqeet} لا غير\n" : "") +
+                             $"🏦 *الخزنة / الحساب:* {safeName}\n" +
+                             (!string.IsNullOrWhiteSpace(rawNotes) ? $"📝 *البيان:* {rawNotes}\n" : "") +
+                             balanceLine +
+                             $"━━━━━━━━━━━━━━━━━━━━\n" +
+                             $"شكراً لتعاملكم معنا! 🙏";
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
@@ -1181,7 +1291,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                AppLogger.Error("FrmReceiptVoucher.BtnWhatsApp_Click", ex);
+                AppLogger.Error("FrmReceiptVoucher.SendVoucherToWhatsApp", ex);
                 MessageBox.Show("فشل تجهيز الواتساب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
