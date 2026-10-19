@@ -3116,7 +3116,7 @@ namespace ChickenDist.Forms
 			flowQuickItems.Controls.Clear();
 			try
 			{
-				int? whId = GetSelectedWarehouseID() ?? Session.GetDefaultWarehouseID();
+				int whId = GetSelectedWarehouseID();
 				var stockMap = StockCache.GetStockSummary(whId);
 				DataTable dt = ProductDAL.GetQuickItems();
 				foreach (DataRow row in dt.Rows)
@@ -5639,35 +5639,48 @@ namespace ChickenDist.Forms
 			}
 
 			// ─── التحقق من المخزون ───
-			foreach (SaleItemDTO item in _items)
+			int activeWhId = GetSelectedWarehouseID();
+			var groupedSaleItems = _items
+				.GroupBy(x => x.ProductID)
+				.Select(g => new
+				{
+					ProductID = g.Key,
+					ProductName = g.First().ProductName,
+					UnitName = g.First().UnitName,
+					Factor = g.First().Factor > 0 ? g.First().Factor : 1.0m,
+					TotalQtyInGridBase = g.Sum(x => x.Quantity * (x.Factor > 0 ? x.Factor : 1.0m)),
+					IsService = g.Any(x => x.IsService)
+				});
+
+			foreach (var gItem in groupedSaleItems)
 			{
-				bool isSrv = item.IsService;
+				bool isSrv = gItem.IsService;
 				if (!isSrv)
 				{
-					var isSrvVal = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", item.ProductID));
+					var isSrvVal = DbHelper.Scalar("SELECT IsService FROM Products WHERE ProductID=@pid", DbHelper.P("@pid", gItem.ProductID));
 					isSrv = isSrvVal != null && isSrvVal != DBNull.Value && Convert.ToBoolean(isSrvVal);
 				}
 				if (isSrv) continue; // الأصناف الخدمية لا تخضع لفحص الرصيد وتباع بالسالب
 
-				decimal productStock = InventoryDAL.GetProductStock(item.ProductID, GetSelectedWarehouseID());
-				decimal quantityToCheck = item.Quantity;
+				decimal productStock = InventoryDAL.GetProductStock(gItem.ProductID, activeWhId);
+				decimal quantityToCheckBase = gItem.TotalQtyInGridBase;
 
 				if (_editSaleID > 0)
 				{
-					// في حال التعديل، نقوم بالتحقق من الفارق فقط
-					var oldQtyObj = DbHelper.Scalar("SELECT Quantity FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid",
-						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", item.ProductID));
-					decimal oldQty = oldQtyObj != null ? Convert.ToDecimal(oldQtyObj) : 0m;
+					// في حال التعديل، نقوم بالتحقق من الفارق فقط بالوحدة الصغرى
+					var oldQtyObj = DbHelper.Scalar("SELECT SUM(Quantity * COALESCE(Factor, 1.0)) FROM SaleItems WHERE SaleID=@sid AND ProductID=@pid",
+						DbHelper.P("@sid", _editSaleID), DbHelper.P("@pid", gItem.ProductID));
+					decimal oldQtyBase = oldQtyObj != null && oldQtyObj != DBNull.Value ? Convert.ToDecimal(oldQtyObj) : 0m;
 					
-					quantityToCheck = item.Quantity - oldQty;
+					quantityToCheckBase = gItem.TotalQtyInGridBase - oldQtyBase;
 				}
-
-				decimal quantityToCheckBase = quantityToCheck * item.Factor;
 
 				if (quantityToCheckBase > 0 && quantityToCheckBase > productStock)
 				{
-					decimal availableInSelectedUnit = productStock / (item.Factor > 0 ? item.Factor : 1m);
-					MessageBox.Show($"❌ تم منع حفظ الفاتورة: الصنف '{item.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الكمية المطلوبة.\nالكمية المطلوبة: {quantityToCheck:N2} {item.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {item.UnitName}\n\n⚠️ البيع بالسالب غير مسموح به للأصناف غير الخدمية.",
+					decimal factor = gItem.Factor > 0 ? gItem.Factor : 1.0m;
+					decimal availableInSelectedUnit = productStock / factor;
+					decimal requestedInSelectedUnit = quantityToCheckBase / factor;
+					MessageBox.Show($"❌ تم منع حفظ الفاتورة: الصنف '{gItem.ProductName}' لا يوجد منه رصيد كافٍ في المخزن حالياً لتغطية الكمية المطلوبة.\nالكمية المطلوبة: {requestedInSelectedUnit:N2} {gItem.UnitName}\nالكمية المتاحة بالمخزن: {availableInSelectedUnit:N2} {gItem.UnitName}\n\n⚠️ البيع بالسالب غير مسموح به للأصناف غير الخدمية.",
 						"عجز في الرصيد - منع البيع بالسالب", MessageBoxButtons.OK, MessageBoxIcon.Hand);
 					return;
 				}
@@ -8757,11 +8770,11 @@ namespace ChickenDist.Forms
 			});
 		}
 
-		private int? GetSelectedWarehouseID()
+		private int GetSelectedWarehouseID()
 		{
 			if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem wh && wh.ID > 0)
 				return wh.ID;
-			return null;
+			return Session.GetDefaultWarehouseID();
 		}
 
         // ══════════════════════════════════════════════════════════════════════

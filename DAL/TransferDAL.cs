@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using System.Collections.Generic;
+using System.Linq;
 using ChickenDist.Core;
 
 namespace ChickenDist.DAL
@@ -58,16 +59,25 @@ namespace ChickenDist.DAL
 
             DbHelper.RunInTransaction((con, trans) =>
             {
-                // التحقق من توافر الرصيد لكل صنف في المخزن المرسل بناءً على المعامل الفعلي
-                foreach (var item in items)
-                {
-                    decimal availableStockSmallest = InventoryDAL.GetProductStock(item.ProductID, fromWarehouseID);
-                    decimal factor = item.Factor > 0 ? item.Factor : 1.0m;
-                    decimal requiredSmallest = item.Quantity * factor;
-                    if (availableStockSmallest < requiredSmallest)
+                // التحقق من توافر الرصيد لكل صنف في المخزن المرسل بناءً على المعامل الفعلي وتجميع الأصناف المتكررة
+                var groupedTransferItems = items
+                    .GroupBy(x => x.ProductID)
+                    .Select(g => new
                     {
-                        decimal maxInUnit = factor > 0 ? Math.Floor(availableStockSmallest / factor * 1000m) / 1000m : availableStockSmallest;
-                        throw new Exception($"رصيد الصنف '{item.ProductName}' لا يكفي للتحويل.\nالرصيد المتاح بالمخزن المصدر: {maxInUnit:G29} {item.Unit} (أي {availableStockSmallest:G29} بالوحدة الصغرى)\nالكمية المطلوبة للتحويل: {item.Quantity:G29} {item.Unit} (أي {requiredSmallest:G29} بالوحدة الصغرى)");
+                        ProductID = g.Key,
+                        ProductName = g.First().ProductName,
+                        Unit = g.First().Unit,
+                        Factor = g.First().Factor > 0 ? g.First().Factor : 1.0m,
+                        TotalRequiredSmallest = g.Sum(x => x.Quantity * (x.Factor > 0 ? x.Factor : 1.0m))
+                    });
+
+                foreach (var gItem in groupedTransferItems)
+                {
+                    decimal availableStockSmallest = InventoryDAL.GetProductStock(gItem.ProductID, fromWarehouseID);
+                    if (availableStockSmallest < gItem.TotalRequiredSmallest)
+                    {
+                        decimal maxInUnit = gItem.Factor > 0 ? Math.Floor(availableStockSmallest / gItem.Factor * 1000m) / 1000m : availableStockSmallest;
+                        throw new Exception($"رصيد الصنف '{gItem.ProductName}' لا يكفي للتحويل.\nالرصيد المتاح بالمخزن المصدر: {maxInUnit:G29} {gItem.Unit} (أي {availableStockSmallest:G29} بالوحدة الصغرى)\nالكمية المطلوبة للتحويل: {(gItem.TotalRequiredSmallest / gItem.Factor):G29} {gItem.Unit} (أي {gItem.TotalRequiredSmallest:G29} بالوحدة الصغرى)");
                     }
                 }
 
