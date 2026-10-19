@@ -1,5 +1,5 @@
-version=4.1.9
+version=4.2.0
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.1.9&t=1792429330
-sha256=364F65BD7CEA611BD1890C360D2DBB8BF4CD44C6BC7EE5D11DBE855E703A392F
-changelog=v4.1.9 - 2026-10-19: Fix POS receipt mode: kitchen slip only now reliably prints regardless of business type, added 'None' option to completely disable receipt and slip printing after POS sale, and universally enabled kitchen printer config
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.0&t=1792431018
+sha256=77CAC3FAAAD2C6ADC19C0243A483DD9AB5CCF43BF8BCE36D938646FE85487913
+changelog=v4.2.0 - 2026-10-19: Strict security lock: service products can no longer be reverted to non-service (prevents negative stock manipulation), with warning confirmations and database-level constraint

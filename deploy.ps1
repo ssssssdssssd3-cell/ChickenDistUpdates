@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.1.9";
-$CHANGELOG = "v4.1.9 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix POS receipt mode: kitchen slip only now reliably prints regardless of business type, added 'None' option to completely disable receipt and slip printing after POS sale, and universally enabled kitchen printer config"
+$VERSION = "4.2.0";
+$CHANGELOG = "v4.2.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Strict security lock: service products can no longer be reverted to non-service (prevents negative stock manipulation), with warning confirmations and database-level constraint"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -216,8 +216,17 @@ git commit -m $commitMsg
 if ($LASTEXITCODE -ne 0) { Write-Host "  [INFO] git commit note or nothing to commit" }
 else { Write-OK "git commit ok" }
 
-git push origin main
-if ($LASTEXITCODE -ne 0) { Write-Fail "git push failed" }
+$pushSuccess = $false
+for ($attempt = 1; $attempt -le 3; $attempt++) {
+    git push origin main
+    if ($LASTEXITCODE -eq 0) {
+        $pushSuccess = $true
+        break
+    }
+    Write-Host "  [WARN] git push attempt $attempt failed, retrying in 3 seconds..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 3
+}
+if (-not $pushSuccess) { Write-Fail "git push failed after 3 attempts" }
 Write-OK "git push ok"
 
 $ErrorActionPreference = $prevEAP

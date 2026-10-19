@@ -42,6 +42,7 @@ namespace ChickenDist.Forms
         private bool _unit2SaleOverride = false;
         private bool _inRecalc = false; // منع التداخل
         private decimal _originalTotalFactor = 1.0m;
+        private bool _isLoadingData = false; // تتبع تحميل البيانات لمنع تشغيل أحداث الواجهة
 
         public FrmProductCard(int id = 0)
         {
@@ -167,6 +168,22 @@ namespace ChickenDist.Forms
             ry += 24;
 
             chkIsService = new CheckBox { Text = "🔧 صنف خدمة (سالب)", Location = new Point(145, ry), Width = 145, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsService.CheckedChanged += (s, e) =>
+            {
+                if (_isLoadingData) return;
+                if (chkIsService.Checked)
+                {
+                    var res = MessageBox.Show(
+                        "⚠️ تنبيه هام لمنع أخطاء الحسابات:\n\nتحويل الصنف إلى 'صنف خدمة' يتيح البيع بالسالب بدون فحص رصيد المخزن.\n\n🔒 تذكير أمان: لن يمكنك التراجع عن هذا الخيار أو إرجاع الصنف كصنف عادي (مخزني) مرة أخرى بعد الحفظ لحماية حركة المخزون.\n\nهل أنت متأكد من تفعيل هذا الصنف كخدمي؟",
+                        "تأكيد تحويل صنف خدمة", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (res != DialogResult.Yes)
+                    {
+                        _isLoadingData = true;
+                        chkIsService.Checked = false;
+                        _isLoadingData = false;
+                    }
+                }
+            };
             chkIsQuickItem = new CheckBox { Text = "⚡ بيع سريع (POS)", Location = new Point(5, ry), Width = 135, Height = 22, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
             grpBasic.Controls.AddRange(new Control[] { chkIsService, chkIsQuickItem });
             ry += 24;
@@ -775,6 +792,7 @@ namespace ChickenDist.Forms
 
         private void LoadProductDetails()
         {
+            _isLoadingData = true;
             try
             {
                 var dr = ProductDAL.GetByID(_selectedID);
@@ -801,7 +819,18 @@ namespace ChickenDist.Forms
                 txtDescription.Text = dr["Description"].ToString();
                 chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
                 chkPrintLocalBarcode.Checked = dr.Table.Columns.Contains("PrintLocalBarcode") && dr["PrintLocalBarcode"] != DBNull.Value ? Convert.ToBoolean(dr["PrintLocalBarcode"]) : false;
-                chkIsService.Checked = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
+                bool isSrv = dr.Table.Columns.Contains("IsService") && dr["IsService"] != DBNull.Value ? Convert.ToBoolean(dr["IsService"]) : false;
+                chkIsService.Checked = isSrv;
+                if (isSrv)
+                {
+                    chkIsService.Enabled = false;
+                    chkIsService.Text = "🔧 صنف خدمة (سالب) 🔒";
+                }
+                else
+                {
+                    chkIsService.Enabled = true;
+                    chkIsService.Text = "🔧 صنف خدمة (سالب)";
+                }
                 chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
                 chkIsIMEI.Checked = dr.Table.Columns.Contains("IsIMEI") && dr["IsIMEI"] != DBNull.Value ? Convert.ToBoolean(dr["IsIMEI"]) : (AppConfig.BusinessType == "Mobiles");
                 _originalHasExpiry = dr.Table.Columns.Contains("HasExpiry") && dr["HasExpiry"] != DBNull.Value ? Convert.ToBoolean(dr["HasExpiry"]) : false;
@@ -888,6 +917,10 @@ namespace ChickenDist.Forms
             {
                 AppLogger.Error("LoadProductDetails failed", ex);
             }
+            finally
+            {
+                _isLoadingData = false;
+            }
         }
 
         private void ClearDetail()
@@ -914,6 +947,8 @@ namespace ChickenDist.Forms
             chkActive.Checked = true;
             chkPrintLocalBarcode.Checked = false;
             chkIsService.Checked = false;
+            chkIsService.Enabled = true;
+            chkIsService.Text = "🔧 صنف خدمة (سالب)";
             chkIsQuickItem.Checked = false;
             if (chkIsIMEI != null) chkIsIMEI.Checked = (AppConfig.BusinessType == "Mobiles");
             if (chkHasExpiry != null) chkHasExpiry.Checked = false;
@@ -1167,6 +1202,20 @@ namespace ChickenDist.Forms
 
             try
             {
+                if (_selectedID > 0)
+                {
+                    var oldSrvVal = DbHelper.Scalar("SELECT IsService FROM Products WITH (NOLOCK) WHERE ProductID=@id", DbHelper.P("@id", _selectedID));
+                    bool wasService = oldSrvVal != null && oldSrvVal != DBNull.Value && Convert.ToBoolean(oldSrvVal);
+                    if (wasService && !chkIsService.Checked)
+                    {
+                        MessageBox.Show("⛔ غير مسموح بتحويل الصنف الخدمي إلى صنف عادي (مخزني)!\n\nنظراً لأن الأصناف الخدمية تباع بدون رصيد متاح ويتم الصرف منها بالسالب، لا يمكن إرجاعها كأصناف مخزنية لتفادي اختلال الجرد والأرصدة.",
+                            "إجراء محظور", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                        chkIsService.Checked = true;
+                        chkIsService.Enabled = false;
+                        return;
+                    }
+                }
+
                 // الحفظ في قاعدة البيانات
                 int id = ProductDAL.Save(_selectedID, prodCode, txtName.Text, cboUnit.Text.Trim(), nudPrice.Value, chkActive.Checked,
                     nudPurchasePrice.Value, nudMinStockLimit.Value, txtDescription.Text,

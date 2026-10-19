@@ -791,6 +791,14 @@ namespace ChickenDist.DAL
             }
             else
             {
+                // حماية ومنع تحويل الصنف الخدمي إلى صنف عادي (مخزني) مرة أخرى
+                var oldSrvVal = DbHelper.Scalar("SELECT IsService FROM Products WITH (NOLOCK) WHERE ProductID=@id", DbHelper.P("@id", id));
+                bool wasService = oldSrvVal != null && oldSrvVal != DBNull.Value && Convert.ToBoolean(oldSrvVal);
+                if (wasService && !isService)
+                {
+                    throw new Exception("⚠️ غير مسموح بتحويل الصنف الخدمي إلى صنف مخزني عادي مرة أخرى!\nالأصناف الخدمية تُباع بالسالب ولا يتم احتساب مخزون لها، وتحويلها لصنف مخزني عادي يسبب خللاً في الأرصدة والجرد.");
+                }
+
                 decimal oldPrice = 0m;
                 var oldPriceVal = DbHelper.Scalar("SELECT SalePrice FROM Products WHERE ProductID=@id", DbHelper.P("@id", id));
                 if (oldPriceVal != null && oldPriceVal != DBNull.Value)
