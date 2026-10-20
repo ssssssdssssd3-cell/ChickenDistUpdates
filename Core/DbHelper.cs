@@ -24,11 +24,20 @@ namespace ChickenDist.Core
                     return false;
                 }
 
+                // فحص الشذوذ الزمني المسجل في جلسات الأجهزة أو المبيعات المستقبلية
+                if (DeviceSessionManager.CheckForTimeAnomalies(out string anomalyInfo))
+                {
+                    warningMessage = $"⚠️ تنبيه خطأ زمني مسجل في النظام:\n{anomalyInfo}\n\nيرجى الدخول إلى [سجل أجهزة البرنامج ومواعيد الفتح والإغلاق] لحذف السجل الخاطئ وضبط ساعة الجهاز المتسبب قبل استمرار العمل.";
+                    return false;
+                }
+
                 var objMax = Scalar(@"
                     SELECT MAX(MaxDate) FROM (
                         SELECT MAX(SaleDate) AS MaxDate FROM Sales
                         UNION ALL
                         SELECT MAX(TransDate) AS MaxDate FROM CashBox
+                        UNION ALL
+                        SELECT MAX(LoginTime) AS MaxDate FROM DeviceSessions WHERE LoginTime <= DATEADD(day, 1, GETDATE())
                     ) T");
 
                 if (objMax != DBNull.Value && objMax != null && DateTime.TryParse(objMax.ToString(), out DateTime maxDbDate))
@@ -1551,6 +1560,7 @@ namespace ChickenDist.Core
             EnsureRestaurantBlendsSchema();
             EnsureProductUnitsSafety();
             EnsureProductCodesCleaned();
+            DeviceSessionManager.EnsureSchema();
 
             try
             {

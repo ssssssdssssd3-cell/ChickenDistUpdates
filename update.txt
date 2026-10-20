@@ -1,5 +1,5 @@
-version=4.2.4
+version=4.2.5
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.4&t=1792483973
-sha256=730F2E395F86FDF2DB18740A1D9F846B1D223E119E3B05E46974179A9E86C473
-changelog=v4.2.4 - 2026-10-20: Fix mobile app profit calculation to match desktop sales profit, eliminate double discount deduction, separate gross sales profit and net profit after expenses
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.5&t=1792489842
+sha256=16F2CFB80941D91C82248D335238C274FEA317682123BF69C23939810FE80498
+changelog=v4.2.5 - 2026-10-20: DeviceSessions tracking and time anomaly guard

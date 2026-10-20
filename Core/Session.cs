@@ -243,6 +243,7 @@ namespace ChickenDist.Core
 
         /// <summary>معرف الوردية الحالية المفتوحة (null = لا توجد وردية مفتوحة)</summary>
         public static int? CurrentShiftID { get; set; }
+        public static int? CurrentDeviceSessionID { get; set; }
 
 
         // قائمة الشاشات المسموح بها
@@ -931,6 +932,7 @@ namespace ChickenDist.Core
             CanSelectDriver = true;
             AllowSellBelowCost = false;
             CurrentShiftID = null;
+            CurrentDeviceSessionID = null;
             _perms.Clear();
         }
 
@@ -967,7 +969,7 @@ namespace ChickenDist.Core
             // Drivers & Administration
             "Drivers", "DriverHandover", "DriverPortal", "DriverSales", "ImportPreview", "DriversMonitor", "DriverCustody", "DriverLeaderboard",
             "Employees", "EmployeeTransactions",
-            "Settings", "BotManager", "CloudSync", "LookupManager", "EditInvoiceDate",
+            "Settings", "BotManager", "CloudSync", "LookupManager", "EditInvoiceDate", "DeviceSessions",
             
             // Dashboards
             "DashTreasury", "DashSales", "DashLoads", "DashBelowMin"

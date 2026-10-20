@@ -452,7 +452,7 @@ namespace ChickenDist.Forms
                     }
                     return "المالية";
                 default:
-                    if (className.Contains("Setting") || className.Contains("Config") || className.Contains("Lookup") || className.Contains("Activation") || className.Contains("CloudSync"))
+                    if (className.Contains("Setting") || className.Contains("Config") || className.Contains("Lookup") || className.Contains("Activation") || className.Contains("CloudSync") || className.Contains("DeviceSession"))
                         return "الإدارة";
                     return "";
             }
@@ -690,6 +690,7 @@ namespace ChickenDist.Forms
                     ("💾 النسخ الاحتياطي والأرشفة", "Settings", (Action)(() => new FrmBackupSettings().ShowDialog())),
                     ("⚖️ إعدادات الموازين والأجهزة", "Settings", (Action)(() => new FrmScaleSettings().ShowDialog())),
                     ("⚙️ خيارات النظام والتشغيل", "Settings", (Action)(() => new FrmGeneralSettings().ShowDialog())),
+                    ("💻 سجل أجهزة البرنامج ومواعيد الفتح والإغلاق", "DeviceSessions", (Action)(() => NavigateTo(new FrmDeviceSessions()))),
                     ("---", "_SEP_", (Action)null),
                     ("🔑 تفعيل الترخيص (سيريال العميل)", "Settings", (Action)(() => new FrmActivation("").ShowDialog())),
                     ("📱 تطبيق المالك وخدمات السحاب (Firebase)", "CloudSync", (Action)(() => NavigateTo(new FrmCloudSync()))),
@@ -1540,6 +1541,8 @@ namespace ChickenDist.Forms
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             Instance = null;
+            // تسجيل وقت الخروج وإغلاق جلسة الجهاز
+            try { Core.DeviceSessionManager.EndCurrentSession(); } catch { }
             try { tmrOrdersBadge?.Stop(); tmrOrdersBadge?.Dispose(); } catch { }
             // إيقاف خادم المندوب بأمان عند إغلاق البرنامج
             try { Core.DriverPortalServer.Stop(); } catch { }

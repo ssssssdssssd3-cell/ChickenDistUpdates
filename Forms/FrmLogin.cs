@@ -319,6 +319,7 @@ namespace ChickenDist.Forms
             Session.AllowSellBelowCost = row.Table.Columns.Contains("CanSellBelowCost") && row["CanSellBelowCost"] != DBNull.Value && Convert.ToBoolean(row["CanSellBelowCost"]);
 
             Session.LoadPermissions(Session.EmpID);
+            try { DeviceSessionManager.StartSession(Session.EmpID, Session.EmpName, Session.UserName); } catch { }
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
