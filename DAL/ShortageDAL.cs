@@ -521,9 +521,10 @@ namespace ChickenDist.DAL
         {
             EnsureTable();
             List<SqlParameter> prms = new List<SqlParameter>();
+            prms.Add(DbHelper.P("@maxRows", maxRows <= 0 ? 5000 : maxRows));
 
             string sql = @"
-                SELECT 
+                SELECT TOP (@maxRows) 
                     p.ProductID,
                     p.ProductCode,
                     p.ProductName,

@@ -44,6 +44,9 @@ namespace ChickenDist.Forms
         private DateTimePicker dtpDateTo;
         private CheckBox chkUseDateFilter;
         private Button btnResetFilters;
+        private Button btnSearch;
+        private bool _isInitializing = false;
+        private bool _hasLoadedOnce = false;
 
         // Main Data Grid
         private Panel pnlGridWrapper;
@@ -53,8 +56,21 @@ namespace ChickenDist.Forms
         {
             ShortageDAL.EnsureTable();
             InitializeComponentCustom();
+            _isInitializing = true;
             LoadDropdowns();
-            LoadData();
+            _isInitializing = false;
+            // تفتح الشاشة فوراً دون تحميل مسبق لتجنب أي ثقل، وينتظر ضغط العميل على زر البحث
+            ShowInitialEmptyState();
+        }
+
+        private void ShowInitialEmptyState()
+        {
+            if (lblHeaderSubtitle != null)
+            {
+                lblHeaderSubtitle.Text = "👈 حدد خيارات البحث واضغط على زر [🔍 عرض وبحث] أو اضغط Enter في حقل البحث لعرض كشكول النواقص";
+                lblHeaderSubtitle.ForeColor = Color.FromArgb(37, 99, 235);
+                lblHeaderSubtitle.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
+            }
         }
 
         private void InitializeComponentCustom()
@@ -230,21 +246,33 @@ namespace ChickenDist.Forms
                 return grp;
             }
 
-            // Search box
+            // Search box & Button
             txtSearch = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f), BorderStyle = BorderStyle.FixedSingle };
-            txtSearch.TextChanged += (s, e) => LoadData();
+            txtSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    LoadData();
+                }
+            };
+
+            btnSearch = Theme.MakeButton("🔍 عرض وبحث", 0, 0, 105, 26, Color.FromArgb(37, 99, 235));
+            btnSearch.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
+            btnSearch.Cursor = Cursors.Hand;
+            btnSearch.Click += (s, e) => LoadData();
 
             // Supplier
             cboSupplierFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
-            cboSupplierFilter.SelectedIndexChanged += (s, e) => LoadData();
+            cboSupplierFilter.SelectedIndexChanged += (s, e) => { if (!_isInitializing && _hasLoadedOnce) LoadData(); };
 
             // Category
             cboCategoryFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
-            cboCategoryFilter.SelectedIndexChanged += (s, e) => LoadData();
+            cboCategoryFilter.SelectedIndexChanged += (s, e) => { if (!_isInitializing && _hasLoadedOnce) LoadData(); };
 
             // Brand
             cboBrandFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
-            cboBrandFilter.SelectedIndexChanged += (s, e) => LoadData();
+            cboBrandFilter.SelectedIndexChanged += (s, e) => { if (!_isInitializing && _hasLoadedOnce) LoadData(); };
 
             // Stock Condition
             cboStockCondition = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
@@ -253,17 +281,17 @@ namespace ChickenDist.Forms
                 "الكل", "⚠️ تحت حد الطلب", "🔴 رصيد صفر", "🟡 بين الصفر والحد"
             });
             cboStockCondition.SelectedIndex = 0;
-            cboStockCondition.SelectedIndexChanged += (s, e) => LoadData();
+            cboStockCondition.SelectedIndexChanged += (s, e) => { if (!_isInitializing && _hasLoadedOnce) LoadData(); };
 
             // Status
             cboStatusFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboStatusFilter.Items.AddRange(new object[] { "الكل", "جديد", "تم الطلب", "تم التوفير", "ملغي" });
             cboStatusFilter.SelectedIndex = 0;
-            cboStatusFilter.SelectedIndexChanged += (s, e) => LoadData();
+            cboStatusFilter.SelectedIndexChanged += (s, e) => { if (!_isInitializing && _hasLoadedOnce) LoadData(); };
 
             // Warehouse
             cboWarehouseFilter = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
-            cboWarehouseFilter.SelectedIndexChanged += (s, e) => LoadData();
+            cboWarehouseFilter.SelectedIndexChanged += (s, e) => { if (!_isInitializing && _hasLoadedOnce) LoadData(); };
 
             // Date filter toggle
             chkUseDateFilter = new CheckBox
@@ -312,8 +340,26 @@ namespace ChickenDist.Forms
             dtpDateTo.Location = new Point(0, 18); dtpDateTo.Width = 80; dtpDateTo.Height = 24;
             pnlDate.Controls.AddRange(new Control[] { lblDateLbl, chkUseDateFilter, dtpDateFrom, lblArrow, dtpDateTo });
 
+            var pnlSearch = new Panel { AutoSize = false, Width = 285, Height = 48, Margin = new Padding(3, 2, 3, 2) };
+            var lblSearch = new Label
+            {
+                Text = "🔍 بحث بالاسم أو الكود (Enter):",
+                AutoSize = false, Width = 285, Height = 16,
+                Location = new Point(0, 0), ForeColor = Theme.TextGray,
+                Font = new Font("Segoe UI", 8.25f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight
+            };
+            txtSearch.Location = new Point(110, 18);
+            txtSearch.Width = 175;
+            txtSearch.Height = 26;
+
+            btnSearch.Location = new Point(0, 18);
+
+            pnlSearch.Controls.Add(lblSearch);
+            pnlSearch.Controls.Add(txtSearch);
+            pnlSearch.Controls.Add(btnSearch);
+
             // إضافة الفلاتر بالترتيب الصحيح من اليمين لليسار
-            flowFilters.Controls.Add(MakeFilterGroup("🔍 بحث سريع", txtSearch, 175));
+            flowFilters.Controls.Add(pnlSearch);
             flowFilters.Controls.Add(MakeFilterGroup("المورد", cboSupplierFilter, 125));
             flowFilters.Controls.Add(MakeFilterGroup("القسم", cboCategoryFilter, 115));
             flowFilters.Controls.Add(MakeFilterGroup("الماركة", cboBrandFilter, 105));
@@ -481,6 +527,14 @@ namespace ChickenDist.Forms
                 }
             };
 
+            try
+            {
+                typeof(DataGridView).InvokeMember("DoubleBuffered",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
+                    null, dgShortages, new object[] { true });
+            }
+            catch { }
+
             pnlGridWrapper.Controls.Add(dgShortages);
 
             this.Controls.Add(pnlGridWrapper);
@@ -501,6 +555,7 @@ namespace ChickenDist.Forms
         {
             try
             {
+                _isInitializing = true;
                 // Suppliers
                 cboSupplierFilter.Items.Clear();
                 cboSupplierFilter.Items.Add(new ComboItem(0, "كل الموردين"));
@@ -540,10 +595,15 @@ namespace ChickenDist.Forms
             {
                 AppLogger.Error("FrmShortageNotebook.LoadDropdowns", ex);
             }
+            finally
+            {
+                _isInitializing = false;
+            }
         }
 
         private void ResetFilters()
         {
+            _isInitializing = true;
             txtSearch.Text = "";
             if (cboSupplierFilter.Items.Count > 0) cboSupplierFilter.SelectedIndex = 0;
             if (cboCategoryFilter.Items.Count > 0) cboCategoryFilter.SelectedIndex = 0;
@@ -554,12 +614,26 @@ namespace ChickenDist.Forms
             chkUseDateFilter.Checked = false;
             dtpDateFrom.Value = DateTime.Today;
             dtpDateTo.Value = DateTime.Today;
-            LoadData();
+            _isInitializing = false;
+            if (_hasLoadedOnce)
+            {
+                LoadData();
+            }
+            else
+            {
+                dgShortages.Rows.Clear();
+                ShowInitialEmptyState();
+            }
         }
 
         public void LoadData()
         {
-            dgShortages.Rows.Clear();
+            _hasLoadedOnce = true;
+            try
+            {
+                Cursor.Current = Cursors.WaitCursor;
+                dgShortages.SuspendLayout();
+                dgShortages.Rows.Clear();
 
             int? supId = (cboSupplierFilter.SelectedItem is ComboItem cis && cis.ID > 0) ? cis.ID : (int?)null;
             int? catId = (cboCategoryFilter.SelectedItem is ComboItem cic && cic.ID > 0) ? cic.ID : (int?)null;
@@ -572,9 +646,7 @@ namespace ChickenDist.Forms
             else if (cboStockCondition.SelectedIndex == 2) stockCond = "ZERO_ONLY";
             else if (cboStockCondition.SelectedIndex == 3) stockCond = "BETWEEN_ZERO_AND_MIN";
 
-            try
-            {
-                _dtCurrentShortages = ShortageDAL.GetComprehensiveShortages(
+            _dtCurrentShortages = ShortageDAL.GetComprehensiveShortages(
                     searchTerm: txtSearch.Text.Trim(),
                     supplierID: supId,
                     categoryID: catId,
@@ -657,12 +729,28 @@ namespace ChickenDist.Forms
 
                 if (lblHeaderSubtitle != null)
                 {
-                    lblHeaderSubtitle.Text = $"المعروض حالياً: {dgShortages.Rows.Count} صنف (نفد بالكامل: {zeroCount} | تحت حد الطلب: {belowMinCount}) | تكلفة التوفير التقديرية: {totalDeficitCost:N2} ج";
+                    if (dgShortages.Rows.Count == 0)
+                    {
+                        lblHeaderSubtitle.Text = "لا توجد أصناف ناقصة مطابقة لمعايير البحث الحالية.";
+                        lblHeaderSubtitle.ForeColor = Theme.TextGray;
+                        lblHeaderSubtitle.Font = new Font("Segoe UI", 8.25f);
+                    }
+                    else
+                    {
+                        lblHeaderSubtitle.Text = $"المعروض حالياً: {dgShortages.Rows.Count} صنف (نفد بالكامل: {zeroCount} | تحت حد الطلب: {belowMinCount}) | تكلفة التوفير التقديرية: {totalDeficitCost:N2} ج";
+                        lblHeaderSubtitle.ForeColor = Theme.TextGray;
+                        lblHeaderSubtitle.Font = new Font("Segoe UI", 8.25f);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Error("FrmShortageNotebook.LoadData", ex);
+            }
+            finally
+            {
+                dgShortages.ResumeLayout();
+                Cursor.Current = Cursors.Default;
             }
         }
 

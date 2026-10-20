@@ -1,5 +1,5 @@
-version=4.2.5
+version=4.2.6
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.5&t=1792489842
-sha256=16F2CFB80941D91C82248D335238C274FEA317682123BF69C23939810FE80498
-changelog=v4.2.5 - 2026-10-20: DeviceSessions tracking and time anomaly guard
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.6&t=1792495950
+sha256=DA632B47225319760A9BB72F033B23C0061902C9D3C1BB98AF56ED3CED73A5A4
+changelog=v4.2.6 - 2026-10-20: Instant opening for Shortage Notebook with dedicated search button and double buffering
