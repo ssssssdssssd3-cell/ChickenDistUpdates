@@ -54,7 +54,8 @@ namespace ChickenDist.Forms
         private string _deductionsNotes = null;
 
         // ── أزرار الذيل ────────────────────────────────────────────────────────
-        private Button btnSave, btnNew, btnPrint, btnHold, btnLoadHold;
+        private Button btnSave, btnNew, btnPrint, btnHold, btnLoadHold, btnLoadPurchaseOrder;
+        private int? _loadedPurchaseOrderID = null;
 
         // ── بيانات الفاتورة ────────────────────────────────────────────────────
         private List<PurchaseItemDTO> _items = new List<PurchaseItemDTO>();
@@ -1231,6 +1232,8 @@ namespace ChickenDist.Forms
             btnHold     = Theme.MakeButton("⏸️ تعليق (F7)",        0, 0, 105, 40, secBtnBg);
             btnLoadHold = Theme.MakeButton("📂 معلقات (F8)",       0, 0, 110, 40, secBtnBg);
             var btnIncompletePurchases = Theme.MakeButton("📂 فواتير لم تكتمل", 0, 0, 140, 40, secBtnBg);
+            btnLoadPurchaseOrder = Theme.MakeButton("📋 استدعاء طلبية شراء", 0, 0, 160, 40, Color.FromArgb(79, 70, 229));
+            btnLoadPurchaseOrder.Click += (s, e) => OpenPurchaseOrdersRecallDialog();
             Button btnSarf = Theme.MakeButton("💵 صرف للمورد",     0, 0, 115, 40, Color.FromArgb(13, 148, 136));
             btnNew      = Theme.MakeButton("🆕 جديد (F2)",         0, 0, 100, 40, secBtnBg);
             btnPrint    = Theme.MakeButton("🖨️ طباعة باركود",      0, 0, 120, 40, secBtnBg);
@@ -1319,7 +1322,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnNew, btnSarf, btnIncompletePurchases, btnLoadHold, btnHold, btnSave });
+            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnNew, btnSarf, btnIncompletePurchases, btnLoadPurchaseOrder, btnLoadHold, btnHold, btnSave });
             foreach (Control fbCtl in pnlFooterButtons.Controls)
             {
                 if (fbCtl is Button fbBtn && fbBtn != btnSave)
@@ -3436,6 +3439,7 @@ namespace ChickenDist.Forms
         {
             _activeDraftKey = null;
             _activeDraftID = 0;
+            _loadedPurchaseOrderID = null;
             _items.Clear();
             RefreshGrid();
             if (cboSupplier.Items.Count > 0) cboSupplier.SelectedIndex = 0;
@@ -4030,6 +4034,11 @@ namespace ChickenDist.Forms
                     }
                     DraftManager.DeleteDraft($"Purchase_User_{Session.EmpID}");
                     _activeDraftID = 0;
+                    if (_loadedPurchaseOrderID.HasValue && _loadedPurchaseOrderID.Value > 0)
+                    {
+                        PurchaseOrderDAL.MarkAsCompleted(_loadedPurchaseOrderID.Value, id);
+                    }
+                    _loadedPurchaseOrderID = null;
                     _activeDraftKey = null;
 
                     MessageBox.Show(
@@ -4958,6 +4967,68 @@ namespace ChickenDist.Forms
                 this.Text = $"تعديل فاتورة مشتريات رقم {purchaseID}";
 
             _isDirty = false;
+        }
+
+        public void LoadFromPurchaseOrder(PurchaseOrderDTO order)
+        {
+            if (order == null || order.Items == null) return;
+
+            ClearInvoice();
+            _loadedPurchaseOrderID = order.OrderID;
+
+            // تحديد المورد
+            if (cboSupplier != null && order.SupplierID > 0)
+            {
+                for (int i = 0; i < cboSupplier.Items.Count; i++)
+                {
+                    if (cboSupplier.Items[i] is ComboItem ci && ci.ID == order.SupplierID)
+                    {
+                        cboSupplier.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            // إضافة الأصناف
+            _items.Clear();
+            foreach (var itm in order.Items)
+            {
+                _items.Add(new PurchaseItemDTO
+                {
+                    ProductID = itm.ProductID,
+                    ProductCode = itm.ProductCode,
+                    ProductName = itm.ProductName,
+                    CategoryName = itm.CategoryName,
+                    UnitName = itm.UnitName,
+                    Quantity = itm.Quantity,
+                    UnitPrice = itm.EstimatedUnitPrice,
+                    Factor = 1.0m
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(order.Notes))
+            {
+                txtNotes.Text = (string.IsNullOrWhiteSpace(txtNotes.Text) ? "" : txtNotes.Text + " | ") + $"مستوردة من أمر الشراء {order.OrderCode}: {order.Notes}";
+            }
+
+            RefreshGrid();
+            this.Text = $"فاتورة مشتريات (مستوردة من أمر الشراء رقم {order.OrderCode})";
+            MessageBox.Show($"✅ تم استيراد أصناف الطلبية رقم [{order.OrderCode}] بنجاح!\n\nيمكنك الآن مراجعة الكميات المستلمة والأسعار وتعديلها وفقاً للفاتورة الفعلية ثم الضغط على [حفظ].", "تم استيراد الطلبية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void OpenPurchaseOrdersRecallDialog()
+        {
+            int? currentSupId = null;
+            if (cboSupplier != null && cboSupplier.SelectedItem is ComboItem ci && ci.ID > 0)
+                currentSupId = ci.ID;
+
+            using (var dlg = new FrmSelectPurchaseOrderDialog(currentSupId))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedOrder != null)
+                {
+                    LoadFromPurchaseOrder(dlg.SelectedOrder);
+                }
+            }
         }
     }
 

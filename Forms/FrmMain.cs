@@ -376,6 +376,8 @@ namespace ChickenDist.Forms
                 case "FrmPurchase":
                 case "FrmPurchaseReturn":
                 case "FrmPurchasesList":
+                case "FrmPurchaseOrder":
+                case "FrmPurchaseOrdersList":
                     return "المشتريات";
                 case "FrmProducts":
                 case "FrmCategories":
@@ -585,6 +587,9 @@ namespace ChickenDist.Forms
                     ("📥 فاتورة شراء",    "Purchases",      (Action)(() => NavigateTo(new FrmPurchase()))),
                     ("↩ مرتجع شراء",     "PurchaseReturn", (Action)(() => NavigateTo(new FrmPurchaseReturn()))),
                     ("📋 سجل المشتريات", "PurchasesList",  (Action)(() => NavigateTo(new FrmPurchasesList()))),
+                    ("---", "_SEP_", (Action)null),
+                    ("📝 إعداد طلبية مشتريات / أمر شراء", "PurchaseOrder", (Action)(() => NavigateTo(new FrmPurchaseOrder()))),
+                    ("📑 سجل طلبيات وأوامر الشراء", "PurchaseOrdersList", (Action)(() => NavigateTo(new FrmPurchaseOrdersList()))),
                     ("---", "_SEP_", (Action)null),
                     ("🎁 تقرير بونص المشتريات", "RepPurchases", (Action)(() => NavigateTo(new FrmReports("Purchases", defaultTabTag: "PurchaseBonusReport")))),
                     ("📊 تقارير المشتريات", "RepPurchases",      (Action)(() => NavigateTo(new FrmReports("Purchases")))),

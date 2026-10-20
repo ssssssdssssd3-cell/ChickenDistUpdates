@@ -1,5 +1,5 @@
-version=4.2.6
+version=4.2.7
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.6&t=1792495950
-sha256=DA632B47225319760A9BB72F033B23C0061902C9D3C1BB98AF56ED3CED73A5A4
-changelog=v4.2.6 - 2026-10-20: Instant opening for Shortage Notebook with dedicated search button and double buffering
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.7&t=1792497627
+sha256=A91626E0DE7DD904AF36EB153276A4047B9C6E791837AC9C43C3029801BC1093
+changelog=v4.2.7 - 2026-10-20: Smart Purchase Orders with stock and sales velocity replenishment suggestions, WhatsApp/PDF/Excel export, and Purchase invoice recall

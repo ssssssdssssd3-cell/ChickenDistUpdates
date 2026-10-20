@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.2.6";
-$CHANGELOG = "v4.2.6 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Instant opening for Shortage Notebook with dedicated search button and double buffering"
+$VERSION = "4.2.7";
+$CHANGELOG = "v4.2.7 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Smart Purchase Orders with stock and sales velocity replenishment suggestions, WhatsApp/PDF/Excel export, and Purchase invoice recall"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

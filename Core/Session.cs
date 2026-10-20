@@ -943,7 +943,7 @@ namespace ChickenDist.Core
             "Clients", "ClientStatement", "InactiveClients", "Vehicles", "OnlineOrders", "OnlineStoreSettings",
             
             // Purchases & Suppliers
-            "Purchases", "PurchaseReturn", "PurchasesList", "PurchaseDeductions",
+            "Purchases", "PurchaseReturn", "PurchasesList", "PurchaseDeductions", "PurchaseOrder", "PurchaseOrdersList",
             "Suppliers", "SupplierStatement", "SupplierPayment", "SupplierAdjustment",
             
             // Inventory & Products

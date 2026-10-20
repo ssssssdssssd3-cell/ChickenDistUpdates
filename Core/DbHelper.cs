@@ -1561,6 +1561,7 @@ namespace ChickenDist.Core
             EnsureProductUnitsSafety();
             EnsureProductCodesCleaned();
             DeviceSessionManager.EnsureSchema();
+            PurchaseOrderDAL.EnsureSchema();
 
             try
             {
