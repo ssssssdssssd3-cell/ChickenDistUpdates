@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.2.1";
-$CHANGELOG = "v4.2.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Strict warehouse stock check in sales and transfers prevents negative balances across all warehouse routes"
+$VERSION = "4.2.2";
+$CHANGELOG = "v4.2.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Business activity theme selector in online store settings with live preview and simulator"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

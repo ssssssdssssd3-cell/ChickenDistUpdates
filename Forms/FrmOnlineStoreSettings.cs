@@ -41,6 +41,9 @@ namespace ChickenDist.Forms
         private Button btnClose;
         private Label lblSyncStatus;
         private ComboBox cboStoreTheme;
+        private Label lblThemeDesc;
+        private Button btnPreviewActivity;
+        private Button btnOpenSimulator;
         private Button btnProductBenefits;
 
         private DataTable _dtCategories;
@@ -353,7 +356,7 @@ namespace ChickenDist.Forms
             {
                 Text = "📢 تفاصيل المتجر والتواصل",
                 Location = new Point(10, 485),
-                Size = new Size(470, 415),
+                Size = new Size(470, 495),
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -519,9 +522,9 @@ namespace ChickenDist.Forms
 
             var lblThemeTitle = new Label
             {
-                Text = "🎨 مظهر وتصميم الموقع (Theme):",
-                Location = new Point(230, 328),
-                Size = new Size(225, 24),
+                Text = "🎨 النشاط التجاري وتصميم المتجر (Activity & Theme):",
+                Location = new Point(190, 328),
+                Size = new Size(265, 24),
                 ForeColor = Color.FromArgb(241, 245, 249),
                 BackColor = Color.FromArgb(24, 33, 53),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -531,23 +534,148 @@ namespace ChickenDist.Forms
             cboStoreTheme = new ComboBox
             {
                 Location = new Point(15, 326),
-                Size = new Size(210, 26),
+                Size = new Size(170, 26),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.FromArgb(251, 191, 36),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
-            cboStoreTheme.Items.Add(new ThemeItem("كافيهات ومطاعم احترافي (Restaurant)", "restaurant"));
-            cboStoreTheme.Items.Add(new ThemeItem("أسود وذهبي فاخر (Royal Gold)", "gold"));
-            cboStoreTheme.Items.Add(new ThemeItem("أخضر صحي وطازج (Emerald Fresh)", "emerald"));
-            cboStoreTheme.Items.Add(new ThemeItem("عصري داكن (Modern Dark)", "dark"));
-            cboStoreTheme.Items.Add(new ThemeItem("نهاري كلاسيكي (Light Classic)", "light"));
+
+            // الأنشطة التجارية المتخصصة الـ 7 + الثيمات العامة
+            cboStoreTheme.Items.Add(new ThemeItem("☕ كافيهات ومحامص البن (بن الأكابر)", "coffee", "واجهة متخصصة لمحامص وكافيهات البن مع توليفات القهوة وأوزان الطحن وشرح الفوائد"));
+            cboStoreTheme.Items.Add(new ThemeItem("🍔 المطاعم والمشاوي (شيف الأكابر)", "restaurant", "ثيم داكن وشهي للبرجر، الشاورما، المشاوي، والبيتزا مع تفاصيل الإضافات"));
+            cboStoreTheme.Items.Add(new ThemeItem("🛒 السوبرماركت والبقالة (سوبر الأكابر)", "supermarket", "واجهة سريعة وخفيفة للبقالة والألبان والزيوت مع عروض التوفير الأسبوعية"));
+            cboStoreTheme.Items.Add(new ThemeItem("👗 الأزياء والملابس (أكابر فاشون)", "fashion", "تصميم فندقي أنيق بلمسات بنفسجية للملابس الراقية ودليل المقاسات ونوع القماش"));
+            cboStoreTheme.Items.Add(new ThemeItem("📱 الموبايلات والإلكترونيات (أكابر فون)", "mobiles", "ثيم إلكتروني حديث للموبايلات، شواحن GaN، سماعات مع تفاصيل المعالج والضمان"));
+            cboStoreTheme.Items.Add(new ThemeItem("🍗 الدواجن واللحوم (مزارع الأكابر)", "butchery", "مزارع الدواجن واللحوم البلدي مع خيارات الذبح الحلال والتغليف المفرغ"));
+            cboStoreTheme.Items.Add(new ThemeItem("⚙️ قطع الغيار والزيوت (أكابر سبيرز)", "autoparts", "كتالوج تقني لقطع غيار السيارات والزيوت التخليقية مع أكواد OEM الأصلية"));
+            cboStoreTheme.Items.Add(new ThemeItem("👑 أسود وذهبي فاخر (Royal Gold)", "gold", "طابع ملكي فخم باللون الأسود والذهبي للمطاعم والبراندات الراقية"));
+            cboStoreTheme.Items.Add(new ThemeItem("🥗 أخضر صحي وطازج (Emerald Fresh)", "emerald", "طابع منعش للأغذية الصحية والمشروبات والمطابخ الصحية"));
+            cboStoreTheme.Items.Add(new ThemeItem("🌙 عصري داكن (Modern Dark)", "dark", "وضع ليلي عصري ومريح للعينين"));
+            cboStoreTheme.Items.Add(new ThemeItem("☀️ نهاري كلاسيكي (Light Classic)", "light", "تصميم نهاري خفيف وواضح لكافة الأنشطة"));
+
+            lblThemeDesc = new Label
+            {
+                Text = "💡 اختر النشاط المناسب لضبط هوية وألوان وأيقونات متجرك الإلكتروني تلقائياً.",
+                Location = new Point(15, 358),
+                Size = new Size(440, 34),
+                ForeColor = Color.FromArgb(251, 191, 36),
+                BackColor = Color.FromArgb(24, 33, 53),
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                TextAlign = ContentAlignment.TopRight
+            };
+
+            cboStoreTheme.SelectedIndexChanged += (s, e) =>
+            {
+                if (cboStoreTheme.SelectedItem is ThemeItem ti)
+                {
+                    if (lblThemeDesc != null) lblThemeDesc.Text = "💡 " + ti.Description;
+                    UpdateStoreUrlAndQr();
+                }
+            };
+
+            btnPreviewActivity = new Button
+            {
+                Text = "👁️ معاينة قالب النشاط",
+                Location = new Point(235, 396),
+                Size = new Size(220, 34),
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnPreviewActivity.FlatAppearance.BorderSize = 0;
+            btnPreviewActivity.Click += (s, e) =>
+            {
+                if (cboStoreTheme.SelectedItem is ThemeItem ti)
+                {
+                    string localDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string[] possiblePaths = new string[]
+                    {
+                        System.IO.Path.Combine(localDir, "MobileApp", "activities", $"activity-{ti.Code}.html"),
+                        System.IO.Path.Combine(@"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\activities", $"activity-{ti.Code}.html"),
+                        System.IO.Path.Combine(@"C:\Users\Tamim\.gemini\antigravity\scratch\restaurant-builder", $"activity-{ti.Code}.html")
+                    };
+
+                    string foundPath = null;
+                    foreach (var p in possiblePaths)
+                    {
+                        if (System.IO.File.Exists(p)) { foundPath = p; break; }
+                    }
+
+                    if (!string.IsNullOrEmpty(foundPath))
+                    {
+                        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = foundPath, UseShellExecute = true }); } catch { }
+                    }
+                    else
+                    {
+                        string pId = txtFirebaseProjectId != null ? txtFirebaseProjectId.Text.Trim() : "";
+                        if (!string.IsNullOrWhiteSpace(pId) && !pId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string url = $"https://{pId}.web.app/activities/activity-{ti.Code}.html";
+                            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = url, UseShellExecute = true }); } catch { }
+                        }
+                        else
+                        {
+                            string sUrl = txtStoreUrl.Text;
+                            if (!string.IsNullOrEmpty(sUrl))
+                            {
+                                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = sUrl, UseShellExecute = true }); } catch { }
+                            }
+                        }
+                    }
+                }
+            };
+
+            btnOpenSimulator = new Button
+            {
+                Text = "📱 محاكي كافة الأنشطة",
+                Location = new Point(15, 396),
+                Size = new Size(210, 34),
+                BackColor = Color.FromArgb(217, 119, 6),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnOpenSimulator.FlatAppearance.BorderSize = 0;
+            btnOpenSimulator.Click += (s, e) =>
+            {
+                string localDir = AppDomain.CurrentDomain.BaseDirectory;
+                string[] possiblePaths = new string[]
+                {
+                    System.IO.Path.Combine(localDir, "MobileApp", "activities", "index.html"),
+                    System.IO.Path.Combine(@"D:\قطع غيار وتوزيع\قطع غيار وتوزيع\ChickenDistUpdates-main\ChickenDistUpdates-main\MobileApp\activities", "index.html"),
+                    System.IO.Path.Combine(@"C:\Users\Tamim\.gemini\antigravity\scratch\restaurant-builder", "index.html")
+                };
+
+                string foundPath = null;
+                foreach (var p in possiblePaths)
+                {
+                    if (System.IO.File.Exists(p)) { foundPath = p; break; }
+                }
+
+                if (!string.IsNullOrEmpty(foundPath))
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = foundPath, UseShellExecute = true }); } catch { }
+                }
+                else
+                {
+                    string pId = txtFirebaseProjectId != null ? txtFirebaseProjectId.Text.Trim() : "";
+                    if (!string.IsNullOrWhiteSpace(pId) && !pId.Equals("checkin-192ab", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string url = $"https://{pId}.web.app/activities/index.html";
+                        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = url, UseShellExecute = true }); } catch { }
+                    }
+                }
+            };
 
             btnProductBenefits = new Button
             {
                 Text = "📝 إدارة فوائد ومكونات الأصناف للمتجر أونلاين ✨",
-                Location = new Point(15, 362),
+                Location = new Point(15, 440),
                 Size = new Size(440, 36),
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
@@ -579,6 +707,9 @@ namespace ChickenDist.Forms
             grpExtra.Controls.Add(lblUrlHint);
             grpExtra.Controls.Add(lblThemeTitle);
             grpExtra.Controls.Add(cboStoreTheme);
+            grpExtra.Controls.Add(lblThemeDesc);
+            grpExtra.Controls.Add(btnPreviewActivity);
+            grpExtra.Controls.Add(btnOpenSimulator);
             grpExtra.Controls.Add(btnProductBenefits);
             pnlRight.Controls.Add(grpExtra);
 
@@ -843,7 +974,14 @@ namespace ChickenDist.Forms
                         break;
                     }
                 }
-                if (cboStoreTheme.Items.Count > 0) cboStoreTheme.SelectedIndex = selIdx;
+                if (cboStoreTheme.Items.Count > 0)
+                {
+                    cboStoreTheme.SelectedIndex = selIdx;
+                    if (cboStoreTheme.SelectedItem is ThemeItem selTi && lblThemeDesc != null)
+                    {
+                        lblThemeDesc.Text = "💡 " + selTi.Description;
+                    }
+                }
             }
 
             LoadCategories();
@@ -860,7 +998,8 @@ namespace ChickenDist.Forms
             }
             else
             {
-                txtStoreUrl.Text = $"https://{pId}.web.app/store.html?p={pId}";
+                string themeCode = cboStoreTheme?.SelectedItem is ThemeItem ti ? ti.Code : (AppConfig.Store_Theme ?? "restaurant");
+                txtStoreUrl.Text = $"https://{pId}.web.app/store.html?p={pId}&theme={themeCode}";
             }
 
             GenerateQrCode();
@@ -1027,10 +1166,12 @@ namespace ChickenDist.Forms
         {
             public string Name { get; set; }
             public string Code { get; set; }
-            public ThemeItem(string name, string code)
+            public string Description { get; set; }
+            public ThemeItem(string name, string code, string description = "")
             {
                 Name = name;
                 Code = code;
+                Description = description;
             }
             public override string ToString() => Name;
         }

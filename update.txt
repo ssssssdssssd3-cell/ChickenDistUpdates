@@ -1,5 +1,5 @@
-version=4.2.1
+version=4.2.2
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.1&t=1792434643
-sha256=6020911D6DC01758280299B4171F0FA91D80F68D6EDBF73C7AB1B18458349923
-changelog=v4.2.1 - 2026-10-19: Strict warehouse stock check in sales and transfers prevents negative balances across all warehouse routes
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.2&t=1792479646
+sha256=E60B4253B4392958D30663F98E5AE5F6964C172F72C68B0A488464698E32FDA5
+changelog=v4.2.2 - 2026-10-20: Business activity theme selector in online store settings with live preview and simulator

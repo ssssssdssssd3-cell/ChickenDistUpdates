@@ -79,15 +79,23 @@
   <script>
     // تحميل وتطبيق مظهر المتجر فوراً قبل اكتمال رسم الصفحة لمنع الوميض
     (function() {
-      const savedTheme = localStorage.getItem('prosoft_store_theme') || 'restaurant';
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTheme = urlParams.get('theme');
+      const savedTheme = urlTheme || localStorage.getItem('prosoft_store_theme') || 'restaurant';
       document.documentElement.classList.add('theme-' + savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) {
         const themeColors = {
+          coffee: '#140d08',
+          restaurant: '#0f0a07',
+          supermarket: '#051912',
+          fashion: '#0f0a1a',
+          mobiles: '#06111e',
+          butchery: '#170a07',
+          autoparts: '#0b0f15',
           light: '#f8fafc',
           gold: '#07080a',
-          restaurant: '#0f0a07',
           emerald: '#04140b',
           dark: '#090d16'
         };
@@ -458,6 +466,379 @@
     }
     html.theme-emerald .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #065f46 !important;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* ☕ THEME: COFFEE & ROASTERY (محامص وكافيهات البن - بن الأكابر) */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-coffee, html.theme-coffee body {
+      background-color: #140d08 !important;
+      color: #fdfaf5 !important;
+    }
+    html.theme-coffee .glass-card {
+      background: rgba(30, 20, 14, 0.92) !important;
+      border-color: rgba(201, 168, 76, 0.22) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.65), 0 0 14px rgba(201, 168, 76, 0.08) !important;
+    }
+    html.theme-coffee .bg-slate-950,
+    html.theme-coffee .bg-slate-900,
+    html.theme-coffee [class*="bg-slate-900/"],
+    html.theme-coffee [class*="bg-slate-950/"] {
+      background-color: #1b120c !important;
+    }
+    html.theme-coffee .bg-slate-800,
+    html.theme-coffee [class*="bg-slate-800/"] {
+      background-color: #271a12 !important;
+    }
+    html.theme-coffee [class*="border-slate-800"],
+    html.theme-coffee [class*="border-slate-700"],
+    html.theme-coffee [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(201, 168, 76, 0.18) !important;
+    }
+    html.theme-coffee .text-white {
+      color: #fffbeb !important;
+    }
+    html.theme-coffee .text-slate-100,
+    html.theme-coffee .text-slate-200,
+    html.theme-coffee .text-slate-300 {
+      color: #fef3c7 !important;
+    }
+    html.theme-coffee .text-slate-400 {
+      color: #c9a84c !important;
+    }
+    html.theme-coffee .text-slate-500 {
+      color: #92400e !important;
+    }
+    html.theme-coffee input,
+    html.theme-coffee select,
+    html.theme-coffee textarea {
+      background-color: #1b120c !important;
+      color: #fffbeb !important;
+      border-color: rgba(201, 168, 76, 0.35) !important;
+    }
+    html.theme-coffee input:focus,
+    html.theme-coffee select:focus,
+    html.theme-coffee textarea:focus {
+      border-color: #c9a84c !important;
+      box-shadow: 0 0 0 1px #c9a84c !important;
+    }
+    html.theme-coffee .active-pill {
+      background: linear-gradient(135deg, #1b4d3e 0%, #143b2f 100%) !important;
+      color: #ffffff !important;
+      border-color: #c9a84c !important;
+      box-shadow: 0 4px 16px rgba(27, 77, 62, 0.4) !important;
+    }
+    html.theme-coffee .active-pill * {
+      color: #ffffff !important;
+      font-weight: 900 !important;
+    }
+    html.theme-coffee button[onclick*="addToCart"],
+    html.theme-coffee [class*="from-blue-600"][class*="to-indigo-600"] {
+      background: linear-gradient(135deg, #c9a84c 0%, #b38b2f 100%) !important;
+      color: #0d1117 !important;
+      font-weight: 900 !important;
+      box-shadow: 0 4px 14px rgba(201, 168, 76, 0.35) !important;
+    }
+    html.theme-coffee button[onclick*="addToCart"] *,
+    html.theme-coffee [class*="from-blue-600"][class*="to-indigo-600"] * {
+      color: #0d1117 !important;
+    }
+    html.theme-coffee .text-emerald-400 {
+      color: #fbbf24 !important;
+    }
+    html.theme-coffee .text-blue-400 {
+      color: #c9a84c !important;
+    }
+    html.theme-coffee .custom-scrollbar::-webkit-scrollbar-track {
+      background: #140d08 !important;
+    }
+    html.theme-coffee .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #3e2415 !important;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* 🛒 THEME: SUPERMARKET & GROCERIES (سوبرماركت ومواد غذائية) */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-supermarket, html.theme-supermarket body {
+      background-color: #051912 !important;
+      color: #f0fdf4 !important;
+    }
+    html.theme-supermarket .glass-card {
+      background: rgba(8, 35, 26, 0.92) !important;
+      border-color: rgba(5, 150, 105, 0.25) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 12px rgba(5, 150, 105, 0.1) !important;
+    }
+    html.theme-supermarket .bg-slate-950,
+    html.theme-supermarket .bg-slate-900,
+    html.theme-supermarket [class*="bg-slate-900/"],
+    html.theme-supermarket [class*="bg-slate-950/"] {
+      background-color: #092c20 !important;
+    }
+    html.theme-supermarket .bg-slate-800,
+    html.theme-supermarket [class*="bg-slate-800/"] {
+      background-color: #104130 !important;
+    }
+    html.theme-supermarket [class*="border-slate-800"],
+    html.theme-supermarket [class*="border-slate-700"],
+    html.theme-supermarket [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(16, 185, 129, 0.2) !important;
+    }
+    html.theme-supermarket .text-white {
+      color: #ffffff !important;
+    }
+    html.theme-supermarket .text-slate-100,
+    html.theme-supermarket .text-slate-200,
+    html.theme-supermarket .text-slate-300 {
+      color: #d1fae5 !important;
+    }
+    html.theme-supermarket .text-slate-400 {
+      color: #34d399 !important;
+    }
+    html.theme-supermarket input,
+    html.theme-supermarket select,
+    html.theme-supermarket textarea {
+      background-color: #092c20 !important;
+      color: #ffffff !important;
+      border-color: rgba(16, 185, 129, 0.35) !important;
+    }
+    html.theme-supermarket .active-pill {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+      color: #ffffff !important;
+      border-color: #34d399 !important;
+    }
+    html.theme-supermarket button[onclick*="addToCart"],
+    html.theme-supermarket [class*="from-blue-600"][class*="to-indigo-600"] {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* 👗 THEME: FASHION & APPAREL (أزياء وملابس وأحذية)   */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-fashion, html.theme-fashion body {
+      background-color: #0f0a1a !important;
+      color: #faf5ff !important;
+    }
+    html.theme-fashion .glass-card {
+      background: rgba(25, 16, 44, 0.92) !important;
+      border-color: rgba(168, 85, 247, 0.22) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(168, 85, 247, 0.1) !important;
+    }
+    html.theme-fashion .bg-slate-950,
+    html.theme-fashion .bg-slate-900,
+    html.theme-fashion [class*="bg-slate-900/"],
+    html.theme-fashion [class*="bg-slate-950/"] {
+      background-color: #1e1336 !important;
+    }
+    html.theme-fashion .bg-slate-800,
+    html.theme-fashion [class*="bg-slate-800/"] {
+      background-color: #2b1c4c !important;
+    }
+    html.theme-fashion [class*="border-slate-800"],
+    html.theme-fashion [class*="border-slate-700"],
+    html.theme-fashion [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(168, 85, 247, 0.2) !important;
+    }
+    html.theme-fashion .text-white {
+      color: #ffffff !important;
+    }
+    html.theme-fashion .text-slate-100,
+    html.theme-fashion .text-slate-200,
+    html.theme-fashion .text-slate-300 {
+      color: #f3e8ff !important;
+    }
+    html.theme-fashion .text-slate-400 {
+      color: #c084fc !important;
+    }
+    html.theme-fashion input,
+    html.theme-fashion select,
+    html.theme-fashion textarea {
+      background-color: #1e1336 !important;
+      color: #ffffff !important;
+      border-color: rgba(168, 85, 247, 0.35) !important;
+    }
+    html.theme-fashion .active-pill {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+      color: #ffffff !important;
+      border-color: #a855f7 !important;
+    }
+    html.theme-fashion button[onclick*="addToCart"],
+    html.theme-fashion [class*="from-blue-600"][class*="to-indigo-600"] {
+      background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* 📱 THEME: MOBILES & TECH (موبايلات وإلكترونيات)     */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-mobiles, html.theme-mobiles body {
+      background-color: #06111e !important;
+      color: #f0f9ff !important;
+    }
+    html.theme-mobiles .glass-card {
+      background: rgba(11, 26, 44, 0.92) !important;
+      border-color: rgba(6, 182, 212, 0.22) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(6, 182, 212, 0.1) !important;
+    }
+    html.theme-mobiles .bg-slate-950,
+    html.theme-mobiles .bg-slate-900,
+    html.theme-mobiles [class*="bg-slate-900/"],
+    html.theme-mobiles [class*="bg-slate-950/"] {
+      background-color: #0d2036 !important;
+    }
+    html.theme-mobiles .bg-slate-800,
+    html.theme-mobiles [class*="bg-slate-800/"] {
+      background-color: #143050 !important;
+    }
+    html.theme-mobiles [class*="border-slate-800"],
+    html.theme-mobiles [class*="border-slate-700"],
+    html.theme-mobiles [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(6, 182, 212, 0.2) !important;
+    }
+    html.theme-mobiles .text-white {
+      color: #ffffff !important;
+    }
+    html.theme-mobiles .text-slate-100,
+    html.theme-mobiles .text-slate-200,
+    html.theme-mobiles .text-slate-300 {
+      color: #e0f2fe !important;
+    }
+    html.theme-mobiles .text-slate-400 {
+      color: #22d3ee !important;
+    }
+    html.theme-mobiles input,
+    html.theme-mobiles select,
+    html.theme-mobiles textarea {
+      background-color: #0d2036 !important;
+      color: #ffffff !important;
+      border-color: rgba(6, 182, 212, 0.35) !important;
+    }
+    html.theme-mobiles .active-pill {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+      color: #ffffff !important;
+      border-color: #38bdf8 !important;
+    }
+    html.theme-mobiles button[onclick*="addToCart"],
+    html.theme-mobiles [class*="from-blue-600"][class*="to-indigo-600"] {
+      background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* 🍗 THEME: BUTCHERY & POULTRY (دواجن ولحوم طازجة)   */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-butchery, html.theme-butchery body {
+      background-color: #170a07 !important;
+      color: #fff7ed !important;
+    }
+    html.theme-butchery .glass-card {
+      background: rgba(36, 17, 12, 0.92) !important;
+      border-color: rgba(220, 38, 38, 0.22) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(220, 38, 38, 0.1) !important;
+    }
+    html.theme-butchery .bg-slate-950,
+    html.theme-butchery .bg-slate-900,
+    html.theme-butchery [class*="bg-slate-900/"],
+    html.theme-butchery [class*="bg-slate-950/"] {
+      background-color: #24110b !important;
+    }
+    html.theme-butchery .bg-slate-800,
+    html.theme-butchery [class*="bg-slate-800/"] {
+      background-color: #341910 !important;
+    }
+    html.theme-butchery [class*="border-slate-800"],
+    html.theme-butchery [class*="border-slate-700"],
+    html.theme-butchery [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(220, 38, 38, 0.2) !important;
+    }
+    html.theme-butchery .text-white {
+      color: #ffffff !important;
+    }
+    html.theme-butchery .text-slate-100,
+    html.theme-butchery .text-slate-200,
+    html.theme-butchery .text-slate-300 {
+      color: #ffedd5 !important;
+    }
+    html.theme-butchery .text-slate-400 {
+      color: #fb923c !important;
+    }
+    html.theme-butchery input,
+    html.theme-butchery select,
+    html.theme-butchery textarea {
+      background-color: #24110b !important;
+      color: #ffffff !important;
+      border-color: rgba(220, 38, 38, 0.35) !important;
+    }
+    html.theme-butchery .active-pill {
+      background: linear-gradient(135deg, #b45309 0%, #92400e 100%) !important;
+      color: #ffffff !important;
+      border-color: #f59e0b !important;
+    }
+    html.theme-butchery button[onclick*="addToCart"],
+    html.theme-butchery [class*="from-blue-600"][class*="to-indigo-600"] {
+      background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+
+    /* ══════════════════════════════════════════════════ */
+    /* ⚙️ THEME: AUTO PARTS & OILS (قطع غيار وزيوت سيارات) */
+    /* ══════════════════════════════════════════════════ */
+    html.theme-autoparts, html.theme-autoparts body {
+      background-color: #0b0f15 !important;
+      color: #f8fafc !important;
+    }
+    html.theme-autoparts .glass-card {
+      background: rgba(21, 28, 38, 0.92) !important;
+      border-color: rgba(245, 158, 11, 0.22) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(245, 158, 11, 0.08) !important;
+    }
+    html.theme-autoparts .bg-slate-950,
+    html.theme-autoparts .bg-slate-900,
+    html.theme-autoparts [class*="bg-slate-900/"],
+    html.theme-autoparts [class*="bg-slate-950/"] {
+      background-color: #141c26 !important;
+    }
+    html.theme-autoparts .bg-slate-800,
+    html.theme-autoparts [class*="bg-slate-800/"] {
+      background-color: #1d2736 !important;
+    }
+    html.theme-autoparts [class*="border-slate-800"],
+    html.theme-autoparts [class*="border-slate-700"],
+    html.theme-autoparts [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]) {
+      border-color: rgba(245, 158, 11, 0.2) !important;
+    }
+    html.theme-autoparts .text-white {
+      color: #ffffff !important;
+    }
+    html.theme-autoparts .text-slate-100,
+    html.theme-autoparts .text-slate-200,
+    html.theme-autoparts .text-slate-300 {
+      color: #e2e8f0 !important;
+    }
+    html.theme-autoparts .text-slate-400 {
+      color: #fbbf24 !important;
+    }
+    html.theme-autoparts input,
+    html.theme-autoparts select,
+    html.theme-autoparts textarea {
+      background-color: #141c26 !important;
+      color: #ffffff !important;
+      border-color: rgba(245, 158, 11, 0.35) !important;
+    }
+    html.theme-autoparts .active-pill {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+      color: #ffffff !important;
+      border-color: #f59e0b !important;
+    }
+    html.theme-autoparts button[onclick*="addToCart"],
+    html.theme-autoparts [class*="from-blue-600"][class*="to-indigo-600"] {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      color: #0b0f15 !important;
+      font-weight: 800 !important;
     }
   </style>
 </head>
@@ -1045,94 +1426,193 @@
         </button>
       </div>
 
-      <!-- خيارات الثيمات -->
-      <div class="space-y-2.5">
-        <!-- 1. كافيهات ومطاعم احترافي -->
-        <button onclick="selectTheme('restaurant')" id="themeCard-restaurant" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-orange-500 cursor-pointer group">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white text-lg shadow-md shadow-orange-500/20 group-hover:scale-105 transition">
-              <i class="fa-solid fa-mug-hot"></i>
+      <!-- خيارات الأنشطة والثيمات المتخصصة -->
+      <div class="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+        <!-- 1. كافيهات ومحامص البن (بن الأكابر) -->
+        <button onclick="selectTheme('coffee')" id="themeCard-coffee" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-700 to-amber-900 flex items-center justify-center text-amber-300 text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
+              <i class="fa-solid fa-mug-saucer"></i>
             </div>
-            <div>
-              <div class="font-bold text-amber-400 text-xs sm:text-sm">☕ كافيهات ومطاعم احترافي (Restaurant)</div>
-              <div class="text-[10px] text-amber-200/70 mt-0.5">أجواء دافئة مخصصة للمنيو والمأكولات والمشروبات</div>
+            <div class="min-w-0">
+              <div class="font-bold text-amber-300 text-xs sm:text-sm truncate">☕ محامص وكافيهات البن (بن الأكابر)</div>
+              <div class="text-[10px] text-amber-200/70 truncate">أوزان الطحن، درجات التحويجة، وشرح الفوائد</div>
             </div>
           </div>
-          <div class="theme-check-icon w-6 h-6 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs hidden">
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-amber-500 text-black font-black flex items-center justify-center text-[10px] hidden flex-shrink-0">
             <i class="fa-solid fa-check"></i>
           </div>
         </button>
 
-        <!-- 2. أسود في ذهبي فاخر -->
-        <button onclick="selectTheme('gold')" id="themeCard-gold" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-400 cursor-pointer group">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center text-slate-950 text-lg font-black shadow-md shadow-amber-500/20 group-hover:scale-105 transition">
+        <!-- 2. مطاعم ومشاوي وسريع (شيف الأكابر) -->
+        <button onclick="selectTheme('restaurant')" id="themeCard-restaurant" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-orange-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-600 to-red-600 flex items-center justify-center text-white text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
+              <i class="fa-solid fa-burger"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-orange-400 text-xs sm:text-sm truncate">🍔 المطاعم والمشاوي (شيف الأكابر)</div>
+              <div class="text-[10px] text-orange-200/70 truncate">وجبات سريعة، كومبو، وإضافات شهية</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 3. سوبرماركت ومواد غذائية (سوبر الأكابر) -->
+        <button onclick="selectTheme('supermarket')" id="themeCard-supermarket" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-emerald-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-white text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
+              <i class="fa-solid fa-basket-shopping"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-emerald-400 text-xs sm:text-sm truncate">🛒 السوبرماركت والبقالة (سوبر الأكابر)</div>
+              <div class="text-[10px] text-emerald-200/70 truncate">ألبان، زيوت، أرز، وعروض التوفير</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 4. أزياء وملابس وأحذية (أكابر فاشون) -->
+        <button onclick="selectTheme('fashion')" id="themeCard-fashion" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-purple-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
+              <i class="fa-solid fa-shirt"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-purple-400 text-xs sm:text-sm truncate">👗 الأزياء والملابس (أكابر فاشون)</div>
+              <div class="text-[10px] text-purple-200/70 truncate">أناقة راقية، نوع القماش، ودليل المقاسات</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 5. موبايلات وإلكترونيات (أكابر فون) -->
+        <button onclick="selectTheme('mobiles')" id="themeCard-mobiles" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-cyan-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
+              <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-cyan-400 text-xs sm:text-sm truncate">📱 الموبايلات والإلكترونيات (أكابر فون)</div>
+              <div class="text-[10px] text-cyan-200/70 truncate">هواتف، شواحن سريعة، ومواصفات الضمان</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-cyan-600 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 6. دواجن ولحوم طازجة (مزارع الأكابر) -->
+        <button onclick="selectTheme('butchery')" id="themeCard-butchery" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-red-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-700 to-red-600 flex items-center justify-center text-white text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
+              <i class="fa-solid fa-drumstick-bite"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-rose-400 text-xs sm:text-sm truncate">🍗 الدواجن واللحوم (مزارع الأكابر)</div>
+              <div class="text-[10px] text-rose-200/70 truncate">ذبح حلال طازج وتغليف مفرغ صحي</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 7. قطع غيار وزيوت سيارات (أكابر سبيرز) -->
+        <button onclick="selectTheme('autoparts')" id="themeCard-autoparts" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-700 to-amber-600 flex items-center justify-center text-amber-400 text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
+              <i class="fa-solid fa-gears"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-amber-400 text-xs sm:text-sm truncate">⚙️ قطع الغيار والزيوت (أكابر سبيرز)</div>
+              <div class="text-[10px] text-amber-200/70 truncate">زيوت تخليقية، بوجيهات، وأكواد OEM</div>
+            </div>
+          </div>
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-amber-500 text-black font-black flex items-center justify-center text-[10px] hidden flex-shrink-0">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </button>
+
+        <!-- 8. أسود في ذهبي فاخر -->
+        <button onclick="selectTheme('gold')" id="themeCard-gold" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-400 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center text-slate-950 text-base font-black shadow-md group-hover:scale-105 transition flex-shrink-0">
               <i class="fa-solid fa-crown"></i>
             </div>
-            <div>
-              <div class="font-black text-amber-400 text-xs sm:text-sm flex items-center gap-1.5">
-                <span>👑 أسود وذهبي فاخر (Royal Gold)</span>
-              </div>
-              <div class="text-[10px] text-amber-200/70 mt-0.5">طابع ملكي فخم للمطاعم والبراندات الراقية</div>
+            <div class="min-w-0">
+              <div class="font-black text-amber-400 text-xs sm:text-sm truncate">👑 أسود وذهبي فاخر (Royal Gold)</div>
+              <div class="text-[10px] text-amber-200/70 truncate">طابع ملكي فخم للبراندات الراقية</div>
             </div>
           </div>
-          <div class="theme-check-icon w-6 h-6 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black flex items-center justify-center text-xs hidden">
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-amber-400 text-black font-black flex items-center justify-center text-[10px] hidden flex-shrink-0">
             <i class="fa-solid fa-check"></i>
           </div>
         </button>
 
-        <!-- 3. أخضر صحي وطازج -->
-        <button onclick="selectTheme('emerald')" id="themeCard-emerald" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-emerald-500 cursor-pointer group">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-lg shadow-md shadow-emerald-500/20 group-hover:scale-105 transition">
+        <!-- 9. أخضر صحي وطازج -->
+        <button onclick="selectTheme('emerald')" id="themeCard-emerald" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-emerald-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-base shadow-md group-hover:scale-105 transition flex-shrink-0">
               <i class="fa-solid fa-leaf"></i>
             </div>
-            <div>
-              <div class="font-bold text-emerald-400 text-xs sm:text-sm">🥗 أخضر صحي وطازج (Emerald Fresh)</div>
-              <div class="text-[10px] text-emerald-200/70 mt-0.5">طابع منعش للأغذية الصحية والمشروبات والخضار</div>
+            <div class="min-w-0">
+              <div class="font-bold text-emerald-400 text-xs sm:text-sm truncate">🥗 أخضر صحي (Emerald Fresh)</div>
+              <div class="text-[10px] text-emerald-200/70 truncate">أغذية صحية ومشروبات منعشة</div>
             </div>
           </div>
-          <div class="theme-check-icon w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs hidden">
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
             <i class="fa-solid fa-check"></i>
           </div>
         </button>
 
-        <!-- 4. الوضع الليلي -->
-        <button onclick="selectTheme('dark')" id="themeCard-dark" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-blue-500 cursor-pointer group">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-indigo-400 text-lg shadow-inner group-hover:scale-105 transition">
+        <!-- 10. الوضع الليلي -->
+        <button onclick="selectTheme('dark')" id="themeCard-dark" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-blue-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-indigo-400 text-base shadow-inner group-hover:scale-105 transition flex-shrink-0">
               <i class="fa-solid fa-moon"></i>
             </div>
-            <div>
-              <div class="font-bold text-white text-xs sm:text-sm">🌙 الوضع الليلي (Dark)</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">مريح للعينين في الإضاءة المنخفضة</div>
+            <div class="min-w-0">
+              <div class="font-bold text-white text-xs sm:text-sm truncate">🌙 الوضع الليلي (Dark)</div>
+              <div class="text-[10px] text-slate-400 truncate">مريح للعينين في الإضاءة المنخفضة</div>
             </div>
           </div>
-          <div class="theme-check-icon w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs hidden">
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
             <i class="fa-solid fa-check"></i>
           </div>
         </button>
 
-        <!-- 5. الوضع النهاري -->
-        <button onclick="selectTheme('light')" id="themeCard-light" class="theme-option-card w-full p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-500 cursor-pointer group">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 text-lg shadow-inner group-hover:scale-105 transition">
+        <!-- 11. الوضع النهاري -->
+        <button onclick="selectTheme('light')" id="themeCard-light" class="theme-option-card w-full p-3 rounded-2xl border transition flex items-center justify-between gap-3 text-right bg-slate-900 border-slate-700 hover:border-amber-500 cursor-pointer group">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 text-base shadow-inner group-hover:scale-105 transition flex-shrink-0">
               <i class="fa-solid fa-sun"></i>
             </div>
-            <div>
-              <div class="font-bold text-white text-xs sm:text-sm">☀️ الوضع النهاري (Light)</div>
-              <div class="text-[10px] text-slate-400 mt-0.5">ناصع وأنيق وتباين عالي نهاراً</div>
+            <div class="min-w-0">
+              <div class="font-bold text-white text-xs sm:text-sm truncate">☀️ الوضع النهاري (Light)</div>
+              <div class="text-[10px] text-slate-400 truncate">ناصع وأنيق وتباين عالي نهاراً</div>
             </div>
           </div>
-          <div class="theme-check-icon w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs hidden">
+          <div class="theme-check-icon w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] hidden flex-shrink-0">
             <i class="fa-solid fa-check"></i>
           </div>
         </button>
       </div>
 
-      <div class="pt-1">
-        <button onclick="closeThemeSelectorModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
-          تم
+      <!-- روابط سريعة للمنصة والمحاكي -->
+      <div class="pt-2 border-t border-slate-800 space-y-2">
+        <a href="activities/index.html" target="_blank" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-md transition">
+          <i class="fa-solid fa-mobile-screen"></i>
+          <span>📱 فتح منصة محاكي الجوال ومعاينة كافة الأنشطة</span>
+        </a>
+        <button onclick="closeThemeSelectorModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+          إغلاق
         </button>
       </div>
 
@@ -3375,19 +3855,22 @@ ${itemsText}
     }
 
     // ──────────────────────────────────────────
-    // 11. محرك إدارة المظهر (Theme Engine: Restaurant, Gold, Emerald, Dark, Light)
+    // 11. محرك إدارة المظهر والأنشطة التجارية (Theme Engine)
     // ──────────────────────────────────────────
     const STORE_THEME_KEY = 'prosoft_store_theme';
+    const ALL_STORE_THEMES = ['coffee', 'restaurant', 'supermarket', 'fashion', 'mobiles', 'butchery', 'autoparts', 'gold', 'emerald', 'dark', 'light'];
 
     function initTheme() {
-      const savedTheme = localStorage.getItem(STORE_THEME_KEY) || (storeConfig && storeConfig.StoreTheme ? storeConfig.StoreTheme : 'restaurant');
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTheme = urlParams.get('theme');
+      const savedTheme = urlTheme || localStorage.getItem(STORE_THEME_KEY) || (storeConfig && storeConfig.StoreTheme ? storeConfig.StoreTheme : 'restaurant');
       applyTheme(savedTheme);
     }
 
     function applyTheme(theme) {
-      if (!['restaurant', 'gold', 'emerald', 'dark', 'light'].includes(theme)) theme = 'restaurant';
+      if (!ALL_STORE_THEMES.includes(theme)) theme = 'restaurant';
 
-      document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-gold', 'theme-restaurant', 'theme-emerald');
+      ALL_STORE_THEMES.forEach(t => document.documentElement.classList.remove('theme-' + t));
       document.documentElement.classList.add('theme-' + theme);
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem(STORE_THEME_KEY, theme);
@@ -3395,51 +3878,54 @@ ${itemsText}
       // تحديث شريط حالة متصفح الهاتف
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) {
-        if (theme === 'light') meta.setAttribute('content', '#f8fafc');
-        else if (theme === 'gold') meta.setAttribute('content', '#07080a');
-        else if (theme === 'restaurant') meta.setAttribute('content', '#0f0a07');
-        else if (theme === 'emerald') meta.setAttribute('content', '#04140b');
-        else meta.setAttribute('content', '#090d16');
+        const themeColors = {
+          coffee: '#140d08',
+          restaurant: '#0f0a07',
+          supermarket: '#051912',
+          fashion: '#0f0a1a',
+          mobiles: '#06111e',
+          butchery: '#170a07',
+          autoparts: '#0b0f15',
+          light: '#f8fafc',
+          gold: '#07080a',
+          emerald: '#04140b',
+          dark: '#090d16'
+        };
+        meta.setAttribute('content', themeColors[theme] || '#090d16');
       }
 
       // تحديث أيقونة وزر الهيدر
       const icon = document.getElementById('themeIcon');
       const label = document.getElementById('themeLabel');
       if (icon) {
-        if (theme === 'restaurant') {
-          icon.className = 'fa-solid fa-mug-hot text-sm text-orange-400';
-          if (label) label.textContent = 'مطاعم';
-        } else if (theme === 'gold') {
-          icon.className = 'fa-solid fa-crown text-sm text-amber-400';
-          if (label) label.textContent = 'ذهبي';
-        } else if (theme === 'emerald') {
-          icon.className = 'fa-solid fa-leaf text-sm text-emerald-400';
-          if (label) label.textContent = 'صحي';
-        } else if (theme === 'light') {
-          icon.className = 'fa-solid fa-sun text-sm text-amber-500';
-          if (label) label.textContent = 'نهاري';
-        } else {
-          icon.className = 'fa-solid fa-moon text-sm text-indigo-400';
-          if (label) label.textContent = 'ليلي';
-        }
+        const themeInfo = {
+          coffee: { icon: 'fa-solid fa-mug-saucer text-sm text-amber-500', label: 'كافيهات' },
+          restaurant: { icon: 'fa-solid fa-burger text-sm text-orange-400', label: 'مطاعم' },
+          supermarket: { icon: 'fa-solid fa-basket-shopping text-sm text-emerald-400', label: 'سوبرماركت' },
+          fashion: { icon: 'fa-solid fa-shirt text-sm text-purple-400', label: 'أزياء' },
+          mobiles: { icon: 'fa-solid fa-mobile-screen text-sm text-cyan-400', label: 'موبايل' },
+          butchery: { icon: 'fa-solid fa-drumstick-bite text-sm text-rose-500', label: 'دواجن' },
+          autoparts: { icon: 'fa-solid fa-gears text-sm text-amber-400', label: 'قطع غيار' },
+          gold: { icon: 'fa-solid fa-crown text-sm text-amber-400', label: 'ذهبي' },
+          emerald: { icon: 'fa-solid fa-leaf text-sm text-emerald-400', label: 'صحي' },
+          light: { icon: 'fa-solid fa-sun text-sm text-amber-500', label: 'نهاري' },
+          dark: { icon: 'fa-solid fa-moon text-sm text-indigo-400', label: 'ليلي' }
+        };
+        const current = themeInfo[theme] || themeInfo.restaurant;
+        icon.className = current.icon;
+        if (label) label.textContent = current.label;
       }
 
       // تحديث مؤشرات الاختيار في المودال
-      ['restaurant', 'gold', 'emerald', 'dark', 'light'].forEach(t => {
+      ALL_STORE_THEMES.forEach(t => {
         const card = document.getElementById(`themeCard-${t}`);
         if (!card) return;
         const check = card.querySelector('.theme-check-icon');
         if (t === theme) {
-          card.classList.add('ring-2');
-          if (t === 'restaurant') card.classList.add('ring-orange-500', 'border-orange-500/50');
-          else if (t === 'gold') card.classList.add('ring-amber-400', 'border-amber-500/50');
-          else if (t === 'emerald') card.classList.add('ring-emerald-500', 'border-emerald-500/50');
-          else if (t === 'light') card.classList.add('ring-amber-500', 'border-amber-500/50');
-          else card.classList.add('ring-blue-500', 'border-blue-500/50');
-
+          card.classList.add('ring-2', 'ring-amber-400', 'border-amber-400/60');
           if (check) check.classList.remove('hidden');
         } else {
-          card.classList.remove('ring-2', 'ring-orange-500', 'ring-amber-400', 'ring-emerald-500', 'ring-amber-500', 'ring-blue-500', 'border-orange-500/50', 'border-amber-500/50', 'border-emerald-500/50', 'border-blue-500/50');
+          card.classList.remove('ring-2', 'ring-amber-400', 'border-amber-400/60');
           if (check) check.classList.add('hidden');
         }
       });
