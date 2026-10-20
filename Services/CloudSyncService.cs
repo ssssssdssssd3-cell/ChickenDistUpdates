@@ -868,6 +868,7 @@ self.addEventListener('fetch', (event) => {
                 DataTable dtRecentPurchases = DbHelper.Query(@"
                     SELECT TOP 400 p.PurchaseID, CONVERT(VARCHAR(19), p.PurchaseDate, 120) AS PurchaseDate,
                            ISNULL(sup.SupplierName, N'مورد عام') AS SupplierName,
+                           ISNULL(sup.Phone, N'') AS SupplierPhone,
                            ISNULL(p.TotalAmount, 0) AS TotalAmount,
                            ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0) AS PaidAmount,
                            CASE 
@@ -878,7 +879,40 @@ self.addEventListener('fetch', (event) => {
                     LEFT JOIN Suppliers sup WITH (NOLOCK) ON p.SupplierID = sup.SupplierID
                     WHERE p.PurchaseDate >= DATEADD(DAY, -31, CAST(GETDATE() AS DATE))
                     ORDER BY p.PurchaseID DESC");
-                string recentPurchasesJson = DataTableToJson(dtRecentPurchases);
+                DataTable dtPurchaseItems = null;
+                try
+                {
+                    dtPurchaseItems = DbHelper.Query(@"
+                        SELECT pi.PurchaseID, pi.ProductID, p.ProductName,
+                               ISNULL(pi.Quantity, 0) AS Quantity,
+                               ISNULL(pi.BonusQuantity, 0) AS BonusQuantity,
+                               ISNULL(pi.UnitPrice, 0) AS UnitPrice,
+                               ISNULL(pi.TotalPrice, 0) AS TotalPrice,
+                               ISNULL(pi.UnitName, ISNULL(p.Unit, N'قطعة')) AS UnitName
+                        FROM PurchaseItems pi WITH (NOLOCK)
+                        JOIN Products p WITH (NOLOCK) ON pi.ProductID = p.ProductID
+                        WHERE pi.PurchaseID IN (SELECT TOP 400 PurchaseID FROM Purchases WITH (NOLOCK) ORDER BY PurchaseID DESC)
+                        ORDER BY pi.PurchaseID DESC");
+                }
+                catch
+                {
+                    try
+                    {
+                        dtPurchaseItems = DbHelper.Query(@"
+                            SELECT pi.PurchaseID, pi.ProductID, p.ProductName,
+                                   ISNULL(pi.Quantity, 0) AS Quantity,
+                                   0.0 AS BonusQuantity,
+                                   ISNULL(pi.UnitPrice, 0) AS UnitPrice,
+                                   ISNULL(pi.TotalPrice, 0) AS TotalPrice,
+                                   ISNULL(p.Unit, N'قطعة') AS UnitName
+                            FROM PurchaseItems pi WITH (NOLOCK)
+                            JOIN Products p WITH (NOLOCK) ON pi.ProductID = p.ProductID
+                            WHERE pi.PurchaseID IN (SELECT TOP 400 PurchaseID FROM Purchases WITH (NOLOCK) ORDER BY PurchaseID DESC)
+                            ORDER BY pi.PurchaseID DESC");
+                    }
+                    catch { }
+                }
+                string recentPurchasesJson = PurchasesWithItemsToJson(dtRecentPurchases, dtPurchaseItems);
 
                 // 12. سجل حركات الخزينة
                 DataTable dtRecentCash = DbHelper.Query(@"
@@ -907,7 +941,7 @@ self.addEventListener('fetch', (event) => {
 
                 // 14. الأصناف الأكثر مبيعاً
                 DataTable dtTopSelling = DbHelper.Query(@"
-                    SELECT TOP 20 p.ProductID, p.ProductName, ISNULL(p.ProductCode, '') AS ProductCode,
+                    SELECT TOP 500 p.ProductID, p.ProductName, ISNULL(p.ProductCode, '') AS ProductCode,
                            ISNULL(SUM(si.Quantity), 0) AS TotalQtySold,
                            ISNULL(SUM(si.TotalPrice), 0) AS TotalSalesValue
                     FROM SaleItems si WITH (NOLOCK)
@@ -1295,6 +1329,86 @@ self.addEventListener('fetch', (event) => {
                 int saleId = Convert.ToInt32(dtSales.Rows[i]["SaleID"]);
                 sb.Append(",\"Items\":");
                 if (itemsBySaleId.TryGetValue(saleId, out var itemList) && itemList.Count > 0)
+                {
+                    sb.Append("[" + string.Join(",", itemList) + "]");
+                }
+                else
+                {
+                    sb.Append("[]");
+                }
+
+                sb.Append("}");
+            }
+            sb.Append("]");
+            return sb.ToString();
+        }
+
+        private static string PurchasesWithItemsToJson(DataTable dtPurchases, DataTable dtItems)
+        {
+            if (dtPurchases == null || dtPurchases.Rows.Count == 0) return "[]";
+
+            var itemsByPurchaseId = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>();
+            if (dtItems != null && dtItems.Rows.Count > 0)
+            {
+                foreach (DataRow ir in dtItems.Rows)
+                {
+                    if (ir["PurchaseID"] == DBNull.Value) continue;
+                    int pId = Convert.ToInt32(ir["PurchaseID"]);
+                    if (!itemsByPurchaseId.ContainsKey(pId))
+                        itemsByPurchaseId[pId] = new System.Collections.Generic.List<string>();
+
+                    string pName = EscapeJsonString(ir["ProductName"] != DBNull.Value ? ir["ProductName"].ToString() : "");
+                    string uName = EscapeJsonString(ir.Table.Columns.Contains("UnitName") && ir["UnitName"] != DBNull.Value ? ir["UnitName"].ToString() : "");
+                    decimal qty = ir["Quantity"] != DBNull.Value ? Convert.ToDecimal(ir["Quantity"]) : 0m;
+                    decimal bonus = ir.Table.Columns.Contains("BonusQuantity") && ir["BonusQuantity"] != DBNull.Value ? Convert.ToDecimal(ir["BonusQuantity"]) : 0m;
+                    decimal uPrice = ir["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(ir["UnitPrice"]) : 0m;
+                    decimal tPrice = ir["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(ir["TotalPrice"]) : 0m;
+
+                    string itemJson = "{" +
+                        "\"ProductID\":" + (ir["ProductID"] != DBNull.Value ? ir["ProductID"].ToString() : "0") + "," +
+                        "\"ProductName\":\"" + pName + "\"," +
+                        "\"UnitName\":\"" + uName + "\"," +
+                        "\"Quantity\":" + qty.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"BonusQuantity\":" + bonus.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"UnitPrice\":" + uPrice.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TotalPrice\":" + tPrice.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                        "}";
+                    itemsByPurchaseId[pId].Add(itemJson);
+                }
+            }
+
+            var sb = new StringBuilder("[");
+            for (int i = 0; i < dtPurchases.Rows.Count; i++)
+            {
+                if (i > 0) sb.Append(",");
+                sb.Append("{");
+                for (int j = 0; j < dtPurchases.Columns.Count; j++)
+                {
+                    if (j > 0) sb.Append(",");
+                    string colName = dtPurchases.Columns[j].ColumnName;
+                    object val = dtPurchases.Rows[i][j];
+                    sb.Append($"\"{EscapeJsonString(colName)}\":");
+                    if (val == DBNull.Value || val == null)
+                    {
+                        sb.Append("null");
+                    }
+                    else if (val is bool b)
+                    {
+                        sb.Append(b ? "true" : "false");
+                    }
+                    else if (val is int || val is long || val is short || val is decimal || val is double || val is float)
+                    {
+                        sb.Append(val.ToString().Replace(",", "."));
+                    }
+                    else
+                    {
+                        sb.Append($"\"{EscapeJsonString(val.ToString())}\"");
+                    }
+                }
+
+                int purchaseId = Convert.ToInt32(dtPurchases.Rows[i]["PurchaseID"]);
+                sb.Append(",\"Items\":");
+                if (itemsByPurchaseId.TryGetValue(purchaseId, out var itemList) && itemList.Count > 0)
                 {
                     sb.Append("[" + string.Join(",", itemList) + "]");
                 }

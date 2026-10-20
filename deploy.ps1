@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.2.2";
-$CHANGELOG = "v4.2.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Business activity theme selector in online store settings with live preview and simulator"
+$VERSION = "4.2.3";
+$CHANGELOG = "v4.2.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Item sales summary report with WhatsApp sharing, purchase invoices items preview & WhatsApp sharing, supplier detailed statement via WhatsApp"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

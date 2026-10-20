@@ -1304,7 +1304,22 @@ namespace ChickenDist.Forms
             btnNew.Margin = new Padding(3, 2, 3, 2);
             btnPrint.Margin = new Padding(3, 2, 3, 2);
 
-            pnlFooterButtons.Controls.AddRange(new Control[] { btnPrint, btnNew, btnSarf, btnIncompletePurchases, btnLoadHold, btnHold, btnSave });
+            var btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 110, 40, Color.FromArgb(37, 211, 102));
+            btnWhatsApp.Margin = new Padding(3, 2, 3, 2);
+            btnWhatsApp.Click += (s, e) =>
+            {
+                int targetId = _editPurchaseID > 0 ? _editPurchaseID : _lastPurchaseID;
+                if (targetId > 0)
+                {
+                    WhatsAppSender.SendPurchaseInvoice(this, targetId);
+                }
+                else
+                {
+                    MessageBox.Show("يرجى حفظ الفاتورة أولاً لتمكين إرسالها عبر الواتساب.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+
+            pnlFooterButtons.Controls.AddRange(new Control[] { btnWhatsApp, btnPrint, btnNew, btnSarf, btnIncompletePurchases, btnLoadHold, btnHold, btnSave });
             foreach (Control fbCtl in pnlFooterButtons.Controls)
             {
                 if (fbCtl is Button fbBtn && fbBtn != btnSave)
@@ -4033,6 +4048,20 @@ namespace ChickenDist.Forms
                     catch (Exception ex)
                     {
                         AppLogger.Error("Failed to open FrmPrintPurchaseBarcodes automatically", ex, "FrmPurchase.BtnSave_Click");
+                    }
+
+                    try
+                    {
+                        var askWa = MessageBox.Show($"هل ترغب في إرسال فاتورة المشتريات #{id} للمورد عبر الواتساب الآن؟",
+                            "إرسال واتساب", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+                        if (askWa == DialogResult.Yes)
+                        {
+                            WhatsAppSender.SendPurchaseInvoice(this, id);
+                        }
+                    }
+                    catch (Exception exWa)
+                    {
+                        AppLogger.Error("Purchase WhatsApp send prompt", exWa);
                     }
 
                     ClearInvoice();

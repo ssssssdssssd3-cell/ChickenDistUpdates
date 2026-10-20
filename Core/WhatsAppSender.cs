@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using ChickenDist.Forms;
+using ChickenDist.DAL;
 
 namespace ChickenDist.Core
 {
@@ -656,6 +657,148 @@ namespace ChickenDist.Core
             {
                 AppLogger.Error("WhatsAppSender.SendReturnReceipt", ex);
                 MessageBox.Show("فشل إرسال إيصال المرتجع: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// إرسال فاتورة المشتريات للمورد عبر الواتساب (نص تفصيلي + صورة إيصال احترافية)
+        /// </summary>
+        public static void SendPurchaseInvoice(Form parentForm, int purchaseID, string overridePhone = null)
+        {
+            try
+            {
+                var dt = DbHelper.Query(@"
+                    SELECT p.PurchaseID, p.PurchaseCode, p.PurchaseDate, p.PurchaseType, p.SupplierID, p.TotalAmount, p.Notes,
+                           ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0) AS PaidAmount,
+                           CASE 
+                               WHEN p.PurchaseType = 'Cash' THEN 0 
+                               ELSE ISNULL(p.TotalAmount, 0) - (ISNULL(p.PaidAmount, 0) + ISNULL(p.VisaPaid, 0)) 
+                           END AS RemainingAmount,
+                           COALESCE(s.SupplierName, N'مورد عام') AS SupplierName,
+                           ISNULL(s.Phone, N'') AS SupplierPhone,
+                           COALESCE(w.WarehouseName, N'المخزن الرئيسي') AS WarehouseName,
+                           COALESCE(sa.AccountName, N'الخزينة الرئيسية') AS SafeName
+                    FROM Purchases p WITH (NOLOCK)
+                    LEFT JOIN Suppliers s WITH (NOLOCK) ON p.SupplierID = s.SupplierID
+                    LEFT JOIN Warehouses w WITH (NOLOCK) ON p.WarehouseID = w.WarehouseID
+                    LEFT JOIN SafeAccounts sa WITH (NOLOCK) ON p.SafeAccountID = sa.AccountID
+                    WHERE p.PurchaseID = @id", DbHelper.P("@id", purchaseID));
+
+                if (dt == null || dt.Rows.Count == 0)
+                {
+                    MessageBox.Show("لم يتم العثور على بيانات الفاتورة المحددة!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var row = dt.Rows[0];
+                string suppName = row["SupplierName"]?.ToString() ?? "المورد الكريم";
+                string phone = !string.IsNullOrWhiteSpace(overridePhone) ? overridePhone : (row["SupplierPhone"]?.ToString() ?? "");
+
+                if (string.IsNullOrWhiteSpace(phone))
+                {
+                    using (var inputDlg = new Form())
+                    {
+                        inputDlg.Text = "📱 رقم واتساب المورد";
+                        inputDlg.Size = new Size(380, 160);
+                        inputDlg.StartPosition = FormStartPosition.CenterParent;
+                        inputDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        inputDlg.MaximizeBox = false;
+                        inputDlg.MinimizeBox = false;
+                        inputDlg.RightToLeft = RightToLeft.Yes;
+                        inputDlg.RightToLeftLayout = true;
+                        inputDlg.BackColor = Theme.BgMain;
+                        inputDlg.Font = Theme.FontMain;
+
+                        var lbl = new Label { Text = $"رقم موبايل/واتساب المورد ({suppName}):", Location = new Point(15, 15), AutoSize = true, ForeColor = Theme.TextMain };
+                        var txt = new TextBox { Location = new Point(15, 40), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+                        var btn = Theme.MakeButton("متابعة الإرسال 📱", 200, 75, 145, 32, Theme.Success);
+                        btn.Click += (s, e) => { inputDlg.DialogResult = DialogResult.OK; inputDlg.Close(); };
+
+                        inputDlg.Controls.AddRange(new Control[] { lbl, txt, btn });
+                        if (inputDlg.ShowDialog(parentForm) == DialogResult.OK)
+                        {
+                            phone = txt.Text.Trim();
+                        }
+                    }
+                }
+
+                string shopName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة والتجارة العامة";
+                string purCode = row["PurchaseCode"]?.ToString();
+                if (string.IsNullOrWhiteSpace(purCode)) purCode = "#PUR-" + purchaseID;
+                string purDate = Convert.ToDateTime(row["PurchaseDate"]).ToString("yyyy/MM/dd hh:mm tt");
+                decimal totalAmount = Convert.ToDecimal(row["TotalAmount"]);
+                decimal paidAmount = Convert.ToDecimal(row["PaidAmount"]);
+                decimal remainingAmount = Convert.ToDecimal(row["RemainingAmount"]);
+                string pType = (row["PurchaseType"]?.ToString() == "Cash") ? "نقدي (مسدد)" : "آجل (على الحساب)";
+                string warehouse = row["WarehouseName"]?.ToString() ?? "المخزن الرئيسي";
+
+                var dtItems = PurchaseDAL.GetItems(purchaseID);
+
+                var sb = new StringBuilder();
+                sb.AppendLine($"🧾 *فاتورة مشتريات بضاعة* 📦");
+                sb.AppendLine($"🏢 *{shopName}*");
+                if (!string.IsNullOrEmpty(AppConfig.CompanyPhone))
+                    sb.AppendLine($"📞 هاتف: {AppConfig.CompanyPhone}");
+                sb.AppendLine("───────────────────");
+                sb.AppendLine($"👤 المورد: *{suppName}*");
+                sb.AppendLine($"🔢 رقم الفاتورة: *{purCode}*");
+                sb.AppendLine($"📅 التاريخ: {purDate}");
+                sb.AppendLine($"💳 طريقة السداد: *{pType}*");
+                sb.AppendLine($"🏢 المستودع: {warehouse}");
+                sb.AppendLine("───────────────────");
+
+                if (dtItems != null && dtItems.Rows.Count > 0)
+                {
+                    sb.AppendLine("📦 *الأصناف والكميات الواردة:*");
+                    foreach (DataRow ir in dtItems.Rows)
+                    {
+                        string pName = ir["ProductName"]?.ToString() ?? "صنف";
+                        string u = ir.Table.Columns.Contains("UnitName") ? (ir["UnitName"]?.ToString() ?? "") : "";
+                        decimal q = ir["Quantity"] != DBNull.Value ? Convert.ToDecimal(ir["Quantity"]) : 0m;
+                        decimal bonus = ir.Table.Columns.Contains("BonusQuantity") && ir["BonusQuantity"] != DBNull.Value ? Convert.ToDecimal(ir["BonusQuantity"]) : 0m;
+                        decimal p = ir["UnitPrice"] != DBNull.Value ? Convert.ToDecimal(ir["UnitPrice"]) : 0m;
+                        decimal t = ir["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(ir["TotalPrice"]) : (q * p);
+                        string uStr = !string.IsNullOrEmpty(u) ? $" {u}" : "";
+                        string bonusStr = bonus > 0 ? $" (بونص: {bonus:0.##})" : "";
+                        sb.AppendLine($"▫️ {pName}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*{bonusStr}");
+                    }
+                    sb.AppendLine("───────────────────");
+                }
+
+                sb.AppendLine($"💰 *إجمالي الفاتورة:* *{totalAmount:N2} جنيه*");
+                sb.AppendLine($"💵 *المدفوع / المسدد:* *{paidAmount:N2} جنيه*");
+                if (remainingAmount > 0)
+                    sb.AppendLine($"⏳ *المتبقي:* *{remainingAmount:N2} جنيه*");
+
+                int suppId = row["SupplierID"] != DBNull.Value ? Convert.ToInt32(row["SupplierID"]) : 0;
+                if (suppId > 0)
+                {
+                    try
+                    {
+                        decimal suppBal = SupplierDAL.GetBalance(suppId);
+                        sb.AppendLine($"⚖️ *رصيد الحساب الحالي طرفنا:* *{suppBal:N2} جنيه*");
+                    }
+                    catch { }
+                }
+
+                string notes = row["Notes"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(notes))
+                    sb.AppendLine($"📝 ملاحظات: {notes}");
+
+                sb.AppendLine("🙏 شكراً لحسن تعاونكم المستمر معنا!");
+
+                ShowWhatsAppSendOptionsDialog(
+                    parentForm,
+                    phone,
+                    sb.ToString(),
+                    () => ReceiptImageGenerator.GeneratePurchaseReceiptImage(purchaseID),
+                    "📱 إرسال فاتورة المشتريات عبر الواتساب"
+                );
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("WhatsAppSender.SendPurchaseInvoice", ex);
+                MessageBox.Show("فشل إرسال فاتورة المشتريات عبر الواتساب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

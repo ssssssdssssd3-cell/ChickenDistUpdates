@@ -225,6 +225,21 @@ namespace ChickenDist.Forms
 			btnPrint.Click += BtnPrintPurchase_Click;
 			filterPanel.Controls.Add(btnPrint);
 
+			var btnWhatsApp = Theme.MakeButton("📲 إرسال واتساب", Color.FromArgb(37, 211, 102));
+			btnWhatsApp.Size = new Size(130, 28);
+			btnWhatsApp.Margin = new Padding(6, 3, 4, 2);
+			btnWhatsApp.Click += (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count == 0)
+				{
+					MessageBox.Show("من فضلك اختر الفاتورة المراد إرسالها أولاً من الجدول.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					return;
+				}
+				int purchaseID = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+				WhatsAppSender.SendPurchaseInvoice(this, purchaseID);
+			};
+			filterPanel.Controls.Add(btnWhatsApp);
+
 			btnNewPurchase = Theme.MakeButton("➕ فاتورة شراء جديدة", Color.FromArgb(40, 150, 80));
 			btnNewPurchase.Size = new Size(150, 28);
 			btnNewPurchase.Margin = new Padding(6, 3, 4, 2);
@@ -731,6 +746,15 @@ namespace ChickenDist.Forms
 				}
 			});
 
+			var miWhatsApp = new ToolStripMenuItem("📲 إرسال الفاتورة عبر الواتساب", null, (s, e) =>
+			{
+				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
+				{
+					int pid = Convert.ToInt32(dgPurchases.SelectedRows[0].Cells["PurchaseID"].Value);
+					WhatsAppSender.SendPurchaseInvoice(this, pid);
+				}
+			});
+
 			var miReturn = new ToolStripMenuItem("↩️ إنشاء مرتجع مشتريات", null, (s, e) =>
 			{
 				new FrmPurchaseReturn().ShowDialog(this);
@@ -768,6 +792,7 @@ namespace ChickenDist.Forms
 				new ToolStripSeparator(),
 				miPrint,
 				miBarcode,
+				miWhatsApp,
 				miReturn,
 				new ToolStripSeparator(),
 				miStatement,

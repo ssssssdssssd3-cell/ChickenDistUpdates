@@ -843,10 +843,11 @@
                 <th class="p-3">إجمالي الفاتورة</th>
                 <th class="p-3">المدفوع</th>
                 <th class="p-3">المتبقي</th>
+                <th class="p-3 text-center">الإجراءات</th>
               </tr>
             </thead>
             <tbody id="tblPurchasesFull" class="divide-y divide-slate-800 text-slate-300">
-              <tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد بيانات</td></tr>
+              <tr><td colspan="7" class="p-4 text-center text-slate-500">لا توجد بيانات</td></tr>
             </tbody>
           </table>
         </div>
@@ -1153,36 +1154,81 @@
         </div>
       </div>
 
-      <!-- تقرير 1: الأصناف الأكثر مبيعاً والأعلى إيراداً (Top Selling Products) -->
+      <!-- تقرير 1: تقرير مجمع مبيعات الأصناف والكميات (Sales Summary by Item) -->
       <div class="glass-card rounded-2xl p-4">
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-3">
           <div>
-            <h2 class="text-sm font-black text-white flex items-center gap-2">
-              <i class="fa-solid fa-trophy text-amber-400"></i>
-              تقرير الأصناف الأكثر مبيعاً والأعلى إيراداً
+            <h2 class="text-sm sm:text-base font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-boxes-packing text-amber-400 text-base"></i>
+              تقرير مجمع مبيعات الأصناف والكميات
             </h2>
-            <p class="text-[11px] text-slate-400">أفضل المنتجات حركة وتحقيقاً للإيرادات في النظام</p>
+            <p class="text-[11px] text-slate-400">إجمالي المبيعات والكميات المباعة لكل صنف ومتوسط السعر والإجمالي العام</p>
           </div>
-          <button onclick="shareTopSellingWhatsApp()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition">
-            <i class="fa-brands fa-whatsapp text-sm"></i>
-            <span>مشاركة التقرير واتساب</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="shareItemSalesSummaryWhatsApp()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+              <span>مشاركة مجمع الأصناف واتساب</span>
+            </button>
+          </div>
         </div>
 
-        <div class="overflow-x-auto custom-scrollbar max-h-80">
+        <!-- أزرار تصفية الفترة ومربع البحث السريع -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-900/90 rounded-xl p-2.5 border border-slate-800 mb-3">
+          <div class="flex items-center gap-1 overflow-x-auto custom-scrollbar text-xs">
+            <button id="btnItemSales-today" onclick="setItemSalesPeriod('today')" class="item-sales-period-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold transition">اليوم</button>
+            <button id="btnItemSales-yesterday" onclick="setItemSalesPeriod('yesterday')" class="item-sales-period-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold transition">أمس</button>
+            <button id="btnItemSales-last7" onclick="setItemSalesPeriod('last7')" class="item-sales-period-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold transition">آخر 7 أيام</button>
+            <button id="btnItemSales-month" onclick="setItemSalesPeriod('month')" class="item-sales-period-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold transition">هذا الشهر</button>
+            <button id="btnItemSales-all" onclick="setItemSalesPeriod('all')" class="item-sales-period-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold transition">الكل</button>
+          </div>
+          <div class="relative min-w-[200px]">
+            <input type="text" id="searchItemSalesInput" oninput="renderItemSalesSummaryTable()" 
+                   placeholder="🔍 بحث باسم الصنف..." 
+                   class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+
+        <!-- شريط الإجماليات السريع للتقرير -->
+        <div class="grid grid-cols-3 gap-2 bg-slate-950/80 rounded-xl p-2.5 border border-slate-800 mb-3 text-center">
+          <div>
+            <span class="text-[10px] text-slate-400 block">عدد الأصناف المباعة</span>
+            <span class="text-sm font-black text-white" id="statItemSalesCount">0</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">إجمالي الكميات المباعة</span>
+            <span class="text-sm font-black text-blue-400" id="statItemSalesQty">0</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">إجمالي قيمة المبيعات</span>
+            <span class="text-sm font-black text-emerald-400" id="statItemSalesTotal">0.00 ج.م</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar max-h-96">
           <table class="w-full text-right text-xs">
-            <thead class="sticky top-0 bg-slate-900">
+            <thead class="sticky top-0 bg-slate-900 shadow z-10">
               <tr class="text-slate-400 border-b border-slate-800">
                 <th class="p-2.5">#</th>
                 <th class="p-2.5">اسم الصنف</th>
-                <th class="p-2.5">الكمية المباعة</th>
-                <th class="p-2.5 text-emerald-400">إجمالي المبيعات</th>
-                <th class="p-2.5">مؤشر الحجم</th>
+                <th class="p-2.5 text-center">الكمية المباعة</th>
+                <th class="p-2.5 text-center">متوسط السعر</th>
+                <th class="p-2.5 text-emerald-400 font-bold">إجمالي المبيعات</th>
+                <th class="p-2.5">المساهمة %</th>
+                <th class="p-2.5 text-center">كشف صنف</th>
               </tr>
             </thead>
             <tbody id="tblTopSelling" class="divide-y divide-slate-800 text-slate-300">
-              <tr><td colspan="5" class="p-4 text-center text-slate-500">جاري تحليل المبيعات...</td></tr>
+              <tr><td colspan="7" class="p-4 text-center text-slate-500">جاري تحليل مبيعات الأصناف...</td></tr>
             </tbody>
+            <tfoot class="bg-slate-900 border-t-2 border-slate-700 font-bold text-white">
+              <tr>
+                <td class="p-2.5" colspan="2">الإجمالي العام</td>
+                <td class="p-2.5 text-center text-blue-400" id="tfootItemSalesQty">0</td>
+                <td class="p-2.5 text-center text-slate-400">-</td>
+                <td class="p-2.5 text-emerald-400 font-black" id="tfootItemSalesTotal">0.00 ج.م</td>
+                <td class="p-2.5" colspan="2">100%</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -1354,6 +1400,82 @@
           <span>مشاركة الفاتورة واتساب</span>
         </button>
         <button onclick="closeSaleDetailsModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition text-xs">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5.1 نافذة تفاصيل وأصناف فاتورة المشتريات (PURCHASE INVOICE ITEMS MODAL) -->
+  <!-- ========================================== -->
+  <div id="purchaseDetailsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-4">
+    <div class="glass-card rounded-2xl p-4 sm:p-5 w-full max-w-2xl shadow-2xl border border-slate-700 text-right relative overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-cart-shopping"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-sm sm:text-base flex items-center gap-2">
+              <span id="modalPurTitle">فاتورة مشتريات #0</span>
+              <span id="modalPurPaymentBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">نقدي</span>
+            </h3>
+            <span class="text-[11px] text-slate-400" id="modalPurDate">--</span>
+          </div>
+        </div>
+        <button onclick="closePurchaseDetailsModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Quick Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/90 rounded-xl p-3 border border-slate-800 mb-3 flex-shrink-0 text-xs">
+        <div>
+          <span class="text-slate-400 text-[10px] block">المورد</span>
+          <span class="font-bold text-white truncate block" id="modalPurSupplier">مورد عام</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">إجمالي الفاتورة</span>
+          <span class="font-black text-white block" id="modalPurTotal">0.00 ج.م</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">المدفوع</span>
+          <span class="font-bold text-emerald-400 block" id="modalPurPaid">0.00 ج.م</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-[10px] block">المتبقي</span>
+          <span class="font-bold text-rose-400 block" id="modalPurRemaining">0.00 ج.م</span>
+        </div>
+      </div>
+
+      <!-- Scrollable Items Table -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-slate-800 mb-3">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-slate-900 text-slate-400 sticky top-0 border-b border-slate-800">
+            <tr>
+              <th class="p-2.5 text-center">#</th>
+              <th class="p-2.5">الصنف</th>
+              <th class="p-2.5 text-center">الكمية</th>
+              <th class="p-2.5 text-center">الوحدة</th>
+              <th class="p-2.5 text-center">سعر الشراء</th>
+              <th class="p-2.5 text-center">الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody id="modalPurItemsBody" class="divide-y divide-slate-800 text-slate-300">
+            <tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد أصناف مسجلة</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between gap-2 flex-shrink-0">
+        <button id="modalPurBtnWhatsApp" onclick="" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition text-xs">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span>مشاركة الفاتورة واتساب</span>
+        </button>
+        <button onclick="closePurchaseDetailsModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition text-xs">
           إغلاق
         </button>
       </div>
@@ -3260,7 +3382,7 @@
 
       const tbody = document.getElementById('tblPurchasesFull');
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">لا توجد فواتير مشتريات مطابقة</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">لا توجد فواتير مشتريات مطابقة</td></tr>`;
         return;
       }
 
@@ -3272,8 +3394,93 @@
           <td class="p-3 font-black text-white">${parseFloat(p.TotalAmount || 0).toFixed(2)}</td>
           <td class="p-3 text-emerald-400">${parseFloat(p.PaidAmount || 0).toFixed(2)}</td>
           <td class="p-3 font-bold ${parseFloat(p.RemainingAmount || 0) > 0 ? 'text-rose-400' : 'text-slate-500'}">${parseFloat(p.RemainingAmount || 0).toFixed(2)}</td>
+          <td class="p-3 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="openPurchaseItemsModal(${p.PurchaseID})" class="px-2.5 py-1.5 bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 rounded-lg transition text-[11px] font-bold inline-flex items-center gap-1 shadow-sm" title="عرض أصناف الفاتورة">
+                <i class="fa-solid fa-eye"></i>
+                <span class="hidden sm:inline">الأصناف</span>
+              </button>
+              <button onclick="sharePurchaseInvoiceWhatsApp(${p.PurchaseID}, '${escapeQuotes(p.SupplierName)}', ${p.TotalAmount}, ${p.PaidAmount}, ${p.RemainingAmount}, '${p.PurchaseDate}')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition text-[11px] font-bold inline-flex items-center gap-1 shadow-sm" title="مشاركة الفاتورة واتساب">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span class="hidden sm:inline">واتساب</span>
+              </button>
+            </div>
+          </td>
         </tr>
       `).join('');
+    }
+
+    function openPurchaseItemsModal(purchaseId) {
+      const allPurchases = (rawData && rawData.RecentPurchases) ? rawData.RecentPurchases : [];
+      const pur = allPurchases.find(p => p.PurchaseID == purchaseId);
+      if (!pur) {
+        showToast("لم يتم العثور على بيانات الفاتورة المحددة");
+        return;
+      }
+
+      document.getElementById('modalPurTitle').textContent = `فاتورة مشتريات #${pur.PurchaseID}`;
+      document.getElementById('modalPurDate').textContent = pur.PurchaseDate || '--';
+      document.getElementById('modalPurSupplier').textContent = pur.SupplierName || 'مورد عام';
+      document.getElementById('modalPurTotal').textContent = `${parseFloat(pur.TotalAmount || 0).toFixed(2)} ج.م`;
+      document.getElementById('modalPurPaid').textContent = `${parseFloat(pur.PaidAmount || 0).toFixed(2)} ج.م`;
+      document.getElementById('modalPurRemaining').textContent = `${parseFloat(pur.RemainingAmount || 0).toFixed(2)} ج.م`;
+
+      const isPaid = parseFloat(pur.RemainingAmount || 0) <= 0;
+      const badge = document.getElementById('modalPurPaymentBadge');
+      if (badge) {
+        badge.textContent = isPaid ? 'خالصة / نقدي' : 'آجل / متبقي';
+        badge.className = isPaid 
+          ? 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800'
+          : 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800';
+      }
+
+      const tbody = document.getElementById('modalPurItemsBody');
+      const items = pur.Items || [];
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">
+          <i class="fa-solid fa-boxes-stacked text-3xl text-slate-600 mb-2 block"></i>
+          <p class="font-bold text-xs text-slate-300">لم يتم تضمين أصناف فاتورة الشراء بعد</p>
+          <span class="text-[11px] text-slate-500 block mt-1">ستظهر تفاصيل الأصناف والكميات والأسعار فور إتمام المزامنة التلقائية من السيرفر المحدث 🔄</span>
+        </td></tr>`;
+      } else {
+        tbody.innerHTML = items.map((it, idx) => {
+          const qty = parseFloat(it.Quantity || 0);
+          const bonus = parseFloat(it.BonusQuantity || 0);
+          const bonusStr = bonus > 0 ? ` <span class="text-emerald-400 font-bold text-[10px] bg-emerald-950/60 border border-emerald-800 px-1 rounded">(+${bonus} بونص)</span>` : '';
+          const uPrice = parseFloat(it.UnitPrice || 0);
+          const tPrice = parseFloat(it.TotalPrice || (qty * uPrice));
+          return `
+            <tr class="hover:bg-slate-800/60 transition">
+              <td class="p-2.5 text-center font-bold text-slate-400">${idx + 1}</td>
+              <td class="p-2.5 font-bold text-white">${it.ProductName || 'صنف'}${bonusStr}</td>
+              <td class="p-2.5 text-center font-bold text-blue-400">${qty}</td>
+              <td class="p-2.5 text-center text-slate-400 text-[11px]">${it.UnitName || 'قطعة'}</td>
+              <td class="p-2.5 text-center text-slate-300">${uPrice.toFixed(2)}</td>
+              <td class="p-2.5 text-center font-black text-emerald-400">${tPrice.toFixed(2)} ج.م</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const btnWa = document.getElementById('modalPurBtnWhatsApp');
+      if (btnWa) {
+        btnWa.onclick = () => sharePurchaseInvoiceWhatsApp(
+          pur.PurchaseID,
+          pur.SupplierName,
+          pur.TotalAmount,
+          pur.PaidAmount,
+          pur.RemainingAmount,
+          pur.PurchaseDate
+        );
+      }
+
+      const modal = document.getElementById('purchaseDetailsModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closePurchaseDetailsModal() {
+      const modal = document.getElementById('purchaseDetailsModal');
+      if (modal) modal.classList.add('hidden');
     }
 
     function renderCashboxTable() {
@@ -3667,33 +3874,170 @@
     // ──────────────────────────────────────────
     // 8. رسم التقارير والتحليلات المتقدمة (ANALYTICS)
     // ──────────────────────────────────────────
-    function renderAnalyticsTables() {
-      const topItems = rawData.TopSelling || [];
-      const tblTop = document.getElementById('tblTopSelling');
-      if (tblTop) {
-        if (!topItems.length) {
-          tblTop.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">لا توجد بيانات مبيعات كافية للتحليل</td></tr>`;
-        } else {
-          const maxVal = Math.max(...topItems.map(i => parseFloat(i.TotalSalesValue || 0)), 1);
-          tblTop.innerHTML = topItems.map((item, idx) => {
-            const val = parseFloat(item.TotalSalesValue || 0);
-            const pct = Math.min(100, Math.round((val / maxVal) * 100));
-            return `
-              <tr class="hover:bg-slate-800/50 transition">
-                <td class="p-2.5 font-bold ${idx < 3 ? 'text-amber-400 font-black' : 'text-slate-400'}">#${idx + 1}</td>
-                <td class="p-2.5 font-bold text-white">${item.ProductName || ''}</td>
-                <td class="p-2.5 font-bold text-slate-300">${parseFloat(item.TotalQtySold || 0).toLocaleString('en-US')}</td>
-                <td class="p-2.5 font-black text-emerald-400">${val.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م</td>
-                <td class="p-2.5 w-32">
-                  <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div class="bg-gradient-to-r from-emerald-500 to-green-400 h-2 rounded-full" style="width: ${pct}%"></div>
-                  </div>
-                </td>
-              </tr>
-            `;
-          }).join('');
-        }
+    let currentItemSalesPeriod = 'today';
+
+    function setItemSalesPeriod(period) {
+      currentItemSalesPeriod = period;
+      document.querySelectorAll('.item-sales-period-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      });
+      const activeBtn = document.getElementById(`btnItemSales-${period}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+        activeBtn.classList.add('bg-blue-600', 'text-white');
       }
+      renderItemSalesSummaryTable();
+    }
+
+    function renderItemSalesSummaryTable() {
+      const q = (document.getElementById('searchItemSalesInput')?.value || '').trim().toLowerCase();
+      const allSales = rawData.RecentSales || [];
+      const now = new Date();
+      const todayStr = now.toISOString().substring(0, 10);
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().substring(0, 10);
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(now.getDate() - 7);
+      const sevenDaysAgoStr = sevenDaysAgo.toISOString().substring(0, 10);
+      const monthPrefix = todayStr.substring(0, 7);
+
+      // تصفية الفواتير بحسب الفترة المحددة
+      const matchingSales = allSales.filter(s => {
+        if (!s.SaleDate) return currentItemSalesPeriod === 'all';
+        const sDate = s.SaleDate.substring(0, 10);
+        if (currentItemSalesPeriod === 'today') return sDate === todayStr;
+        if (currentItemSalesPeriod === 'yesterday') return sDate === yesterdayStr;
+        if (currentItemSalesPeriod === 'last7') return sDate >= sevenDaysAgoStr;
+        if (currentItemSalesPeriod === 'month') return sDate.startsWith(monthPrefix);
+        return true; // 'all'
+      });
+
+      // تجميع مبيعات الأصناف (الكميات والمبالغ)
+      const itemsMap = {};
+      let totalQtyAll = 0;
+      let totalValAll = 0;
+
+      matchingSales.forEach(s => {
+        const items = s.Items || [];
+        items.forEach(it => {
+          const pName = (it.ProductName || 'صنف غير محدد').trim();
+          if (!itemsMap[pName]) {
+            itemsMap[pName] = {
+              name: pName,
+              qty: 0,
+              totalVal: 0,
+              unit: it.UnitName || '',
+              salesCount: 0
+            };
+          }
+          const qVal = parseFloat(it.Quantity || 0);
+          const tVal = parseFloat(it.TotalPrice || (qVal * parseFloat(it.UnitPrice || 0)));
+          itemsMap[pName].qty += qVal;
+          itemsMap[pName].totalVal += tVal;
+          itemsMap[pName].salesCount += 1;
+        });
+      });
+
+      // دمج بيانات TopSelling الموسعة في حالة الكل أو عدم توفر أصناف تفصيلية سابقة
+      if (currentItemSalesPeriod === 'all' || Object.keys(itemsMap).length === 0) {
+        const topItems = rawData.TopSelling || [];
+        topItems.forEach(t => {
+          const pName = (t.ProductName || '').trim();
+          if (pName) {
+            if (!itemsMap[pName]) {
+              itemsMap[pName] = {
+                name: pName,
+                qty: parseFloat(t.TotalQtySold || 0),
+                totalVal: parseFloat(t.TotalSalesValue || 0),
+                unit: '',
+                salesCount: 1
+              };
+            }
+          }
+        });
+      }
+
+      let itemsList = Object.values(itemsMap);
+
+      // البحث السريع
+      if (q) {
+        itemsList = itemsList.filter(item => item.name.toLowerCase().includes(q));
+      }
+
+      // ترتيب تنازلي حسب إجمالي قيمة المبيعات
+      itemsList.sort((a, b) => b.totalVal - a.totalVal);
+
+      // حساب الإجماليات
+      itemsList.forEach(it => {
+        totalQtyAll += it.qty;
+        totalValAll += it.totalVal;
+      });
+
+      // تحديث شريط الإحصائيات السريع
+      const statCount = document.getElementById('statItemSalesCount');
+      if (statCount) statCount.textContent = itemsList.length;
+      const statQty = document.getElementById('statItemSalesQty');
+      if (statQty) statQty.textContent = totalQtyAll.toLocaleString('en-US', {maximumFractionDigits: 2});
+      const statTot = document.getElementById('statItemSalesTotal');
+      if (statTot) statTot.textContent = `${totalValAll.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ج.م`;
+
+      // تحديث تذييل الجدول (Footer)
+      const tfootQty = document.getElementById('tfootItemSalesQty');
+      if (tfootQty) tfootQty.textContent = totalQtyAll.toLocaleString('en-US', {maximumFractionDigits: 2});
+      const tfootTot = document.getElementById('tfootItemSalesTotal');
+      if (tfootTot) tfootTot.textContent = `${totalValAll.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ج.م`;
+
+      // ملء جدول مجمع مبيعات الأصناف
+      const tbl = document.getElementById('tblTopSelling');
+      if (!tbl) return;
+
+      if (!itemsList.length) {
+        tbl.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">لا توجد مبيعات أصناف مسجلة في هذه الفترة</td></tr>`;
+        return;
+      }
+
+      const maxVal = Math.max(...itemsList.map(i => i.totalVal), 1);
+
+      tbl.innerHTML = itemsList.map((item, idx) => {
+        const avgPrice = item.qty > 0 ? (item.totalVal / item.qty) : 0;
+        const pct = Math.min(100, Math.round((item.totalVal / maxVal) * 100));
+        const sharePct = totalValAll > 0 ? ((item.totalVal / totalValAll) * 100).toFixed(1) : '0';
+
+        return `
+          <tr class="hover:bg-slate-800/60 transition">
+            <td class="p-2.5 font-bold ${idx < 3 ? 'text-amber-400 font-black' : 'text-slate-400'}">#${idx + 1}</td>
+            <td class="p-2.5 font-bold text-white">
+              <div>${item.name}</div>
+              ${item.unit ? `<span class="text-[10px] text-slate-500">${item.unit}</span>` : ''}
+            </td>
+            <td class="p-2.5 text-center font-bold text-blue-400">${item.qty.toLocaleString('en-US', {maximumFractionDigits: 2})}</td>
+            <td class="p-2.5 text-center text-slate-300 font-medium">${avgPrice.toFixed(2)}</td>
+            <td class="p-2.5 text-emerald-400 font-black">${item.totalVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ج.م</td>
+            <td class="p-2.5 w-28">
+              <div class="flex items-center gap-1.5">
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden flex-1">
+                  <div class="bg-gradient-to-r from-emerald-500 to-green-400 h-1.5 rounded-full" style="width: ${pct}%"></div>
+                </div>
+                <span class="text-[10px] text-slate-400 w-8 text-left font-mono">${sharePct}%</span>
+              </div>
+            </td>
+            <td class="p-2.5 text-center">
+              <button onclick="shareItemMovementWhatsApp('${escapeQuotes(item.name)}', ${item.qty}, ${item.totalVal}, ${avgPrice})" 
+                      class="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/40 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 transition"
+                      title="مشاركة كشف حركة الصنف واتساب">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span class="hidden sm:inline">كشف</span>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderAnalyticsTables() {
+      renderItemSalesSummaryTable();
 
       const expenses = rawData.ExpensesList || [];
       const tblExp = document.getElementById('tblExpensesBreakdown');
@@ -3789,17 +4133,178 @@
     function shareSupplierDebtWhatsApp(supplierName, balance, phone) {
       const storeName = rawData.StoreName || "شركة برو سوفت";
       const todayStr = new Date().toLocaleDateString('ar-EG');
+      const purchases = (rawData.RecentPurchases || []).filter(p => (p.SupplierName || '').toLowerCase() === supplierName.toLowerCase());
+
+      let invoicesSection = '';
+      let totalPurchased = 0;
+      let totalPaid = 0;
+
+      if (purchases.length > 0) {
+        invoicesSection = '\n📋 *فواتير المشتريات المسجلة حديثاً:*\n' + purchases.slice(0, 8).map(p => {
+          const tot = parseFloat(p.TotalAmount || 0);
+          const pd = parseFloat(p.PaidAmount || 0);
+          const rem = parseFloat(p.RemainingAmount || 0);
+          totalPurchased += tot;
+          totalPaid += pd;
+
+          let itemNames = '';
+          if (p.Items && p.Items.length > 0) {
+            itemNames = '\n   الأصناف: ' + p.Items.map(it => `${it.ProductName} (${parseFloat(it.Quantity || 0)})`).join('، ');
+          }
+
+          return `▫️ فاتورة #${p.PurchaseID} (${(p.PurchaseDate || '').substring(0, 10)})
+   إجمالي: ${tot.toFixed(2)} ج | مدفوع: ${pd.toFixed(2)} ج | متبقي: ${rem.toFixed(2)} ج${itemNames}`;
+        }).join('\n\n') + '\n━━━━━━━━━━━━━━━━━━';
+      }
+
       const text = 
-`السادة شركة / *${supplierName}* المحترمين 🤝
+`📑 *كشف حساب مورد تفصيلي*
+🤝 السادة شركة / *${supplierName}* المحترمين
 تحية طيبة وبعد من *${storeName}*،
-
-إشعار مطابقة رصيد:
-رصيدكم المستحق لدينا حتى تاريخ اليوم (${todayStr}) هو:
+🗓️ *تاريخ المطابقة:* ${todayStr}
+━━━━━━━━━━━━━━━━━━${invoicesSection}
+${totalPurchased > 0 ? `📦 *إجمالي قيمة المشتريات:* ${totalPurchased.toFixed(2)} ج.م\n` : ''}${totalPaid > 0 ? `💵 *إجمالي المسدد:* ${totalPaid.toFixed(2)} ج.م\n` : ''}⚖️ *صافي الرصيد المستحق لكم حالياً:*
 💰 *${parseFloat(balance || 0).toFixed(2)} ج.م*
-
-شكراً لتعاملكم الراقي.`;
+━━━━━━━━━━━━━━━━━━
+شاكرين ومقدرين حسن تعاونكم الدائم معنا.`;
 
       openWhatsAppUrl(phone, text);
+    }
+
+    function sharePurchaseInvoiceWhatsApp(purchaseId, supplierName, total, paid, remaining, date) {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const allPurchases = (rawData && rawData.RecentPurchases) ? rawData.RecentPurchases : [];
+      const pur = allPurchases.find(p => p.PurchaseID == purchaseId);
+
+      let itemsSection = '';
+      if (pur && pur.Items && pur.Items.length > 0) {
+        itemsSection = '\n📦 *الأصناف والكميات الواردة:*\n' + pur.Items.map((it, i) => {
+          const qty = parseFloat(it.Quantity || 0);
+          const bonus = parseFloat(it.BonusQuantity || 0);
+          const bonusTag = bonus > 0 ? ` (+${bonus} بونص)` : '';
+          const uPrice = parseFloat(it.UnitPrice || 0);
+          const tPrice = parseFloat(it.TotalPrice || (qty * uPrice));
+          return `${i + 1}. ${it.ProductName} | كمية: ${qty} ${it.UnitName || ''}${bonusTag} × ${uPrice.toFixed(2)} = ${tPrice.toFixed(2)} ج.م`;
+        }).join('\n') + '\n━━━━━━━━━━━━━━━━━━';
+      }
+
+      const text = 
+`🧾 *فاتورة مشتريات واردة رقم #${purchaseId}*
+🏢 *${storeName}*
+👤 *المورد:* ${supplierName || 'مورد عام'}
+📅 *التاريخ:* ${date || ''}
+━━━━━━━━━━━━━━━━━━${itemsSection}
+💰 *إجمالي الفاتورة:* ${parseFloat(total || 0).toFixed(2)} ج.م
+💵 *المدفوع:* ${parseFloat(paid || 0).toFixed(2)} ج.م
+⏳ *المتبقي:* ${parseFloat(remaining || 0).toFixed(2)} ج.م
+━━━━━━━━━━━━━━━━━━
+تم استلام وتوثيق البضاعة بنجاح - نظام ProSoft ERP`;
+
+      const supplierPhone = pur ? (pur.SupplierPhone || '') : '';
+      openWhatsAppUrl(supplierPhone, text);
+    }
+
+    function shareItemSalesSummaryWhatsApp() {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const periodMap = {
+        'today': 'اليوم',
+        'yesterday': 'أمس',
+        'last7': 'آخر 7 أيام',
+        'month': 'هذا الشهر',
+        'all': 'كل الفترات'
+      };
+      const periodName = periodMap[currentItemSalesPeriod] || 'الفترة المحددة';
+      const nowStr = new Date().toLocaleDateString('ar-EG');
+
+      const statCount = document.getElementById('statItemSalesCount')?.textContent || '0';
+      const statQty = document.getElementById('statItemSalesQty')?.textContent || '0';
+      const statTot = document.getElementById('statItemSalesTotal')?.textContent || '0.00 ج.م';
+
+      const tableRows = document.querySelectorAll('#tblTopSelling tr');
+      const itemsLines = [];
+      let counter = 1;
+
+      tableRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 5) {
+          const name = cells[1].innerText.trim().replace(/\n/g, ' ');
+          const qty = cells[2].innerText.trim();
+          const avg = cells[3].innerText.trim();
+          const tot = cells[4].innerText.trim();
+          itemsLines.push(`${counter}. *${name}*\n   الكمية: ${qty} | م.السعر: ${avg} ج | الإجمالي: *${tot}*`);
+          counter++;
+        }
+      });
+
+      if (!itemsLines.length) {
+        showToast("لا توجد بيانات مبيعات أصناف كافية للمشاركة");
+        return;
+      }
+
+      const text = 
+`📊 *تقرير مجمع مبيعات الأصناف والكميات*
+🏢 *${storeName}*
+🗓️ *الفترة:* ${periodName} (${nowStr})
+━━━━━━━━━━━━━━━━━━
+📦 *بيان مبيعات الأصناف:*
+${itemsLines.slice(0, 35).join('\n')}
+━━━━━━━━━━━━━━━━━━
+🔢 *إجمالي عدد الأصناف:* ${statCount} صنف
+📦 *إجمالي الكميات المباعة:* ${statQty}
+💰 *إجمالي قيمة المبيعات:* *${statTot}*
+━━━━━━━━━━━━━━━━━━
+تقارير المبيعات الذكية - نظام ProSoft ERP`;
+
+      openWhatsAppUrl('', text);
+    }
+
+    function shareItemMovementWhatsApp(productName, totalQty = 0, totalVal = 0, avgPrice = 0) {
+      const storeName = rawData.StoreName || "شركة برو سوفت";
+      const todayStr = new Date().toLocaleDateString('ar-EG');
+      const allSales = rawData.RecentSales || [];
+
+      // استخراج أحدث حركات البيع لهذا الصنف
+      const recentMovements = [];
+      allSales.forEach(s => {
+        const items = s.Items || [];
+        const match = items.find(it => (it.ProductName || '').trim().toLowerCase() === productName.trim().toLowerCase());
+        if (match) {
+          recentMovements.push({
+            saleId: s.SaleID,
+            date: (s.SaleDate || '').substring(0, 16),
+            client: s.ClientName || 'نقدي',
+            qty: parseFloat(match.Quantity || 0),
+            price: parseFloat(match.UnitPrice || 0),
+            total: parseFloat(match.TotalPrice || 0)
+          });
+        }
+      });
+
+      // فحص المخزون المتاح في الكتالوج إن وجد
+      const catalog = rawData.ProductsCatalog || [];
+      const catProd = catalog.find(p => (p.ProductName || '').trim().toLowerCase() === productName.trim().toLowerCase());
+      const stockStr = catProd ? `\n🏢 *الرصيد المتاح بالمخزن:* ${parseFloat(catProd.Quantity || catProd.Stock || 0)} ${catProd.Unit || ''}` : '';
+
+      let movSection = '';
+      if (recentMovements.length > 0) {
+        movSection = '\n📋 *أحدث حركات البيع المسجلة:*\n' + recentMovements.slice(0, 5).map(m => 
+          `• فاتورة #${m.saleId} (${m.client}) | كمية: ${m.qty} × ${m.price.toFixed(2)} = ${m.total.toFixed(2)} ج.م`
+        ).join('\n') + '\n━━━━━━━━━━━━━━━━━━';
+      }
+
+      const text = 
+`📦 *كشف حركة ومبيعات صنف*
+🏷️ *اسم الصنف:* *${productName}*
+🏢 *المؤسسة:* ${storeName}
+🗓️ *تاريخ التقرير:* ${todayStr}
+━━━━━━━━━━━━━━━━━━
+🔢 *إجمالي الكمية المباعة:* ${parseFloat(totalQty || 0).toLocaleString('en-US')}
+💵 *متوسط سعر البيع:* ${parseFloat(avgPrice || 0).toFixed(2)} ج.م
+💰 *إجمالي قيمة المبيعات:* *${parseFloat(totalVal || 0).toFixed(2)} ج.م*${stockStr}
+━━━━━━━━━━━━━━━━━━${movSection}
+نظام ProSoft ERP لإدارة المخازن والمبيعات`;
+
+      openWhatsAppUrl('', text);
     }
 
     function shareSaleInvoiceWhatsApp(saleId, clientName, total, paid, remaining, date) {
@@ -3923,20 +4428,7 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
     }
 
     function shareTopSellingWhatsApp() {
-      const storeName = rawData.StoreName || "شركة برو سوفت";
-      const items = rawData.TopSelling || [];
-      if (!items.length) {
-        showToast("لا توجد بيانات للأصناف الأكثر مبيعاً!");
-        return;
-      }
-
-      let text = `🏆 *تقرير الأصناف الأكثر مبيعاً والأعلى إيراداً | ${storeName}*\n━━━━━━━━━━━━━━━━━━\n`;
-      items.slice(0, 15).forEach((item, idx) => {
-        text += `${idx + 1}. *${item.ProductName}* - مبيعات: ${parseFloat(item.TotalSalesValue || 0).toFixed(2)} ج.م (كمية: ${item.TotalQtySold})\n`;
-      });
-      text += `━━━━━━━━━━━━━━━━━━\nنظام ProSoft ERP`;
-
-      openWhatsAppUrl('', text);
+      shareItemSalesSummaryWhatsApp();
     }
 
     function shareExpensesWhatsApp() {
