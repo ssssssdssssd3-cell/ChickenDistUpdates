@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.2.3";
-$CHANGELOG = "v4.2.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Item sales summary report with WhatsApp sharing, purchase invoices items preview & WhatsApp sharing, supplier detailed statement via WhatsApp"
+$VERSION = "4.2.4";
+$CHANGELOG = "v4.2.4 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix mobile app profit calculation to match desktop sales profit, eliminate double discount deduction, separate gross sales profit and net profit after expenses"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

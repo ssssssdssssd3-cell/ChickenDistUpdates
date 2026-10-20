@@ -525,7 +525,7 @@ self.addEventListener('fetch', (event) => {
                         FROM Sales s WITH (NOLOCK)
                         LEFT JOIN SaleItems si WITH (NOLOCK) ON s.SaleID = si.SaleID
                         LEFT JOIN Products p WITH (NOLOCK) ON si.ProductID = p.ProductID
-                        WHERE s.IsPosted = 1
+                        WHERE (COL_LENGTH('Sales', 'IsPosted') IS NULL OR ISNULL(s.IsPosted, 1) = 1)
                           AND CAST(s.SaleDate AS DATE) = CAST(GETDATE() AS DATE)
                         GROUP BY s.SaleID, s.TotalAmount
                     ),
@@ -1029,8 +1029,8 @@ self.addEventListener('fetch', (event) => {
                 string dailyStatsJson = "[]";
                 try
                 {
-                    dailyStatsJson = BuildDailyStatsJson(out decimal isTodayProfit);
-                    todayProfit = isTodayProfit;
+                    dailyStatsJson = BuildDailyStatsJson(out decimal isTodayGrossProfit, out decimal isTodayNetProfit);
+                    if (todayProfit == 0m && isTodayGrossProfit > 0m) todayProfit = isTodayGrossProfit;
                 }
                 catch (Exception exDs) { AppLogger.Error("BuildDailyStatsJson failed", exDs, "CloudSync"); }
 
@@ -1060,6 +1060,7 @@ self.addEventListener('fetch', (event) => {
                         "\"TodayCashIn\": " + todayCashIn.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayCashOut\": " + todayCashOut.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayNetProfit\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
+                        "\"TodayGrossProfit\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayPurchases\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayPaidPurchases\": " + todayPaidPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
                         "\"TodayCreditPurchases\": " + todayCreditPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," +
@@ -1162,6 +1163,7 @@ self.addEventListener('fetch', (event) => {
                         "\"TodayCreditSales\": {\"doubleValue\": " + dto.TodayCreditSales.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"CashboxBalance\": {\"doubleValue\": " + dto.CashboxBalance.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"TodayNetProfit\": {\"doubleValue\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
+                        "\"TodayGrossProfit\": {\"doubleValue\": " + todayProfit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"TodayPurchases\": {\"doubleValue\": " + todayPurchases.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"StockCostValue\": {\"doubleValue\": " + stockCostValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
                         "\"StockSaleValue\": {\"doubleValue\": " + stockSaleValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}," +
@@ -2324,18 +2326,25 @@ self.addEventListener('fetch', (event) => {
             return pathOrUrl;
         }
 
-        private static readonly Dictionary<string, KeyValuePair<string, decimal>> _dayStatsCache = new Dictionary<string, KeyValuePair<string, decimal>>();
+        private struct DayStatEntry
+        {
+            public string Json;
+            public decimal GrossProfit;
+            public decimal NetProfit;
+        }
+
+        private static readonly Dictionary<string, DayStatEntry> _dayStatsCache = new Dictionary<string, DayStatEntry>();
 
         /// <summary>
         /// ملخص يومي لآخر 31 يوماً للتطبيق: المبيعات/المشتريات/الخزنة/المصروفات/الهالك وصافي الربح
         /// بنفس معادلة قائمة الدخل (صافي المبيعات - التكلفة - المصروفات - الهالك).
         /// الأيام السابقة تُخزَّن مؤقتاً، واليوم الحالي يُعاد حسابه في كل مزامنة.
         /// </summary>
-        private static string BuildDailyStatsJson(out decimal todayNetProfit)
+        private static string BuildDailyStatsJson(out decimal todayGrossProfit, out decimal todayNetProfit)
         {
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             var sb = new StringBuilder("[");
-            todayNetProfit = 0m;
+            todayGrossProfit = 0m; todayNetProfit = 0m;
             DateTime today = DateTime.Today;
             // حذف أي أيام أقدم من 31 يوماً من الذاكرة
             var staleKeys = new List<string>();
@@ -2348,22 +2357,22 @@ self.addEventListener('fetch', (event) => {
             {
                 DateTime d = today.AddDays(-i);
                 string key = d.ToString("yyyy-MM-dd", inv);
-                KeyValuePair<string, decimal> entry;
+                DayStatEntry entry;
                 if (i == 0 || !_dayStatsCache.TryGetValue(key, out entry))
                 {
                     entry = ComputeOneDayStats(d, key);
                     if (i != 0) _dayStatsCache[key] = entry;
                 }
-                if (i == 0) todayNetProfit = entry.Value;
+                if (i == 0) { todayGrossProfit = entry.GrossProfit; todayNetProfit = entry.NetProfit; }
                 if (!first) sb.Append(",");
-                sb.Append(entry.Key);
+                sb.Append(entry.Json);
                 first = false;
             }
             sb.Append("]");
             return sb.ToString();
         }
 
-        private static KeyValuePair<string, decimal> ComputeOneDayStats(DateTime d, string key)
+        private static DayStatEntry ComputeOneDayStats(DateTime d, string key)
         {
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             Func<object, decimal> dec = o => (o != null && o != DBNull.Value) ? Convert.ToDecimal(o) : 0m;
@@ -2404,12 +2413,14 @@ self.addEventListener('fetch', (event) => {
                 whWaste = dec(r["WarehouseWastage"]); drWaste = dec(r["DriverWastage"]);
             }
 
-            decimal salesAfterReturns = grossSales - returns;
-            decimal netSales = salesAfterReturns - discounts;
-            decimal netCogs = grossCogs - returnsCogs;
+            decimal salesAfterReturns = Math.Max(0m, grossSales - returns);
+            // In GetIncomeStatement, grossSales is SUM(TotalAmount) which already has DiscountAmount deducted
+            decimal netSales = salesAfterReturns;
+            decimal netCogs = Math.Max(0m, grossCogs - returnsCogs);
             if (Math.Abs(salesAfterReturns) < 0.01m && Math.Abs(netCogs) <= 1.0m) netCogs = 0m;
             else if (Math.Abs(netCogs) < 0.005m) netCogs = 0m;
             decimal grossProfit = netSales - netCogs;
+            if (Math.Abs(salesAfterReturns) < 0.01m) grossProfit = 0m;
             decimal wastage = whWaste + drWaste;
             decimal netProfit = grossProfit - expenses - wastage;
             if (Math.Abs(netProfit) < 0.005m) netProfit = 0m;
@@ -2422,7 +2433,7 @@ self.addEventListener('fetch', (event) => {
                 ",\"Expenses\":" + f(expenses) + ",\"Wastage\":" + f(wastage) + ",\"NetProfit\":" + f(netProfit) +
                 ",\"PurTotal\":" + f(purTotal) + ",\"PurPaid\":" + f(purPaid) + ",\"PurCount\":" + purCount +
                 ",\"CashIn\":" + f(cashIn) + ",\"CashOut\":" + f(cashOut) + "}";
-            return new KeyValuePair<string, decimal>(json, netProfit);
+            return new DayStatEntry { Json = json, GrossProfit = grossProfit, NetProfit = netProfit };
         }
 
         private static string EscapeJsonString(string s)

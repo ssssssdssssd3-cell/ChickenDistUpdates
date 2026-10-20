@@ -1,5 +1,5 @@
-version=4.2.3
+version=4.2.4
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.3&t=1792482410
-sha256=487B06CD6707A30FCFC258B2CCD812B4A14FA7CBC612BECED59E630B1C445AFA
-changelog=v4.2.3 - 2026-10-20: Item sales summary report with WhatsApp sharing, purchase invoices items preview & WhatsApp sharing, supplier detailed statement via WhatsApp
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.4&t=1792483973
+sha256=730F2E395F86FDF2DB18740A1D9F846B1D223E119E3B05E46974179A9E86C473
+changelog=v4.2.4 - 2026-10-20: Fix mobile app profit calculation to match desktop sales profit, eliminate double discount deduction, separate gross sales profit and net profit after expenses

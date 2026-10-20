@@ -641,10 +641,10 @@
           </div>
         </div>
 
-        <!-- 2. صافي الربح للفترة -->
-        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border-t-2 border-t-emerald-400 shadow-lg">
+        <!-- 2. أرباح المبيعات للفترة -->
+        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border-t-2 border-t-emerald-400 shadow-lg cursor-pointer select-none transition hover:border-emerald-300" onclick="toggleProfitCardMode()" title="انقر للتبديل بين أرباح المبيعات وصافي الربح بعد المصروفات">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-slate-400">صافي الربح التقديري</span>
+            <span class="text-xs font-bold text-slate-400" id="lblProfitCardTitle">أرباح المبيعات 💰</span>
             <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
               <i class="fa-solid fa-chart-line"></i>
             </div>
@@ -2666,6 +2666,8 @@
               TodayCreditSales: f.TodayCreditSales ? (f.TodayCreditSales.doubleValue || f.TodayCreditSales.integerValue || 0) : 0,
               CashboxBalance: f.CashboxBalance ? (f.CashboxBalance.doubleValue || f.CashboxBalance.integerValue || 0) : 0,
               TodayNetProfit: f.TodayNetProfit ? (f.TodayNetProfit.doubleValue || f.TodayNetProfit.integerValue || 0) : 0,
+              TodayGrossProfit: f.TodayGrossProfit ? (f.TodayGrossProfit.doubleValue || f.TodayGrossProfit.integerValue || 0) : (f.TodayNetProfit ? (f.TodayNetProfit.doubleValue || f.TodayNetProfit.integerValue || 0) : 0),
+              TodayNetAfterExpenses: f.TodayNetAfterExpenses ? (f.TodayNetAfterExpenses.doubleValue || f.TodayNetAfterExpenses.integerValue || 0) : 0,
               TodayPurchases: f.TodayPurchases ? (f.TodayPurchases.doubleValue || f.TodayPurchases.integerValue || 0) : 0,
               StockCostValue: f.StockCostValue ? (f.StockCostValue.doubleValue || f.StockCostValue.integerValue || 0) : 0,
               StockSaleValue: f.StockSaleValue ? (f.StockSaleValue.doubleValue || f.StockSaleValue.integerValue || 0) : 0,
@@ -2864,29 +2866,24 @@
       document.getElementById('cardPeriodCashSales').textContent = periodCashSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       document.getElementById('cardPeriodCreditSales').textContent = periodCreditSales.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
 
-      const periodProfit = dsProfit !== null ? dsProfit : (activeFilterRange === 'today' && rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18));
-      const profitEl = document.getElementById('cardPeriodProfit');
-      if (profitEl) {
-        if (periodProfit < 0) {
-          profitEl.className = "text-xl sm:text-2xl font-black text-rose-400 tracking-tight";
-        } else {
-          profitEl.className = "text-xl sm:text-2xl font-black text-emerald-400 tracking-tight";
-        }
-        profitEl.innerHTML = `${periodProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
-        // تفصيل الربح كما في قائمة الدخل (بعد المصروفات والهالك)
-        let bd = document.getElementById('profitBreakdown');
-        if (!bd && profitEl.parentNode) {
-          bd = document.createElement('div');
-          bd.id = 'profitBreakdown';
-          bd.className = 'text-[10px] text-slate-400 mt-1 leading-relaxed';
-          profitEl.parentNode.appendChild(bd);
-        }
-        if (bd) {
-          bd.innerHTML = dsProfit !== null
-            ? `مجمل الربح: ${dsGross.toFixed(2)} − مصروفات: ${dsExp.toFixed(2)} − هالك: <span class="text-rose-400 font-bold">${dsWaste.toFixed(2)}</span>`
-            : '';
-        }
-      }
+      // ✅ حساب أرباح المبيعات (المطابقة تماماً لشاشة مبيعات البرنامج وتقارير الأرباح)
+      const salesGrossProfit = (dsGross !== null && (dsGross !== 0 || periodSalesTot === 0))
+        ? dsGross
+        : (activeFilterRange === 'today' && rawData.TodayGrossProfit !== undefined
+            ? parseFloat(rawData.TodayGrossProfit)
+            : (rawData.TodayNetProfit !== undefined ? parseFloat(rawData.TodayNetProfit) : (periodSalesTot * 0.18)));
+
+      const netAfterExp = (dsProfit !== null)
+        ? dsProfit
+        : (salesGrossProfit - parseFloat(rawData.TodayCashOut || 0));
+
+      window._currentSalesGrossProfit = salesGrossProfit;
+      window._currentNetAfterExpenses = netAfterExp;
+      window._currentPeriodSalesTot = periodSalesTot;
+      window._currentDsExp = dsExp;
+      window._currentDsWaste = dsWaste;
+
+      renderProfitCard();
       const salesCount = dsCount !== null ? dsCount : (filteredSales.length > 0 ? filteredSales.length : (rawData.TodaySalesInvoicesCount || 0));
       document.getElementById('cardPeriodSalesCount').textContent = salesCount;
 
@@ -2951,6 +2948,66 @@
       renderContactsTables();
       renderAnalyticsTables();
       renderCloudBackupInfo();
+    }
+
+    // ──────────────────────────────────────────
+    // 5.1 عرض وتبديل كارت الأرباح (أرباح المبيعات vs الصافي بعد المصروفات)
+    // ──────────────────────────────────────────
+    window._profitDisplayMode = window._profitDisplayMode || 'gross'; // 'gross' = أرباح المبيعات, 'net' = بعد المصروفات
+
+    function toggleProfitCardMode() {
+      window._profitDisplayMode = (window._profitDisplayMode === 'gross') ? 'net' : 'gross';
+      renderProfitCard();
+    }
+
+    function renderProfitCard() {
+      const profitEl = document.getElementById('cardPeriodProfit');
+      const titleEl = document.getElementById('lblProfitCardTitle');
+      if (!profitEl) return;
+
+      const isGross = (window._profitDisplayMode !== 'net');
+      const grossVal = window._currentSalesGrossProfit || 0;
+      const netVal = window._currentNetAfterExpenses || 0;
+      const expVal = window._currentDsExp || 0;
+      const wasteVal = window._currentDsWaste || 0;
+      const salesTot = window._currentPeriodSalesTot || 0;
+      const val = isGross ? grossVal : netVal;
+
+      if (titleEl) {
+        titleEl.innerHTML = isGross
+          ? 'أرباح المبيعات 💰 <span class="text-[9px] text-brand-400 font-normal hover:underline">(انقر للصافي)</span>'
+          : 'الصافي بعد المصاريف ⚖️ <span class="text-[9px] text-brand-400 font-normal hover:underline">(انقر للمبيعات)</span>';
+      }
+
+      if (val < 0) {
+        profitEl.className = "text-xl sm:text-2xl font-black text-rose-400 tracking-tight";
+      } else {
+        profitEl.className = "text-xl sm:text-2xl font-black text-emerald-400 tracking-tight";
+      }
+      profitEl.innerHTML = `${val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">ج.م</span>`;
+
+      let bd = document.getElementById('profitBreakdown');
+      if (!bd && profitEl.parentNode) {
+        bd = document.createElement('div');
+        bd.id = 'profitBreakdown';
+        bd.className = 'text-[10px] text-slate-400 mt-1 leading-relaxed';
+        profitEl.parentNode.appendChild(bd);
+      }
+      if (bd) {
+        if (isGross) {
+          if (expVal > 0 || wasteVal > 0) {
+            const netColor = netVal >= 0 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold';
+            bd.innerHTML = `الصافي بعد المصاريف: <span class="${netColor}">${netVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ج</span> <span class="text-slate-500">(مصروفات: ${expVal.toFixed(0)})</span>`;
+          } else if (salesTot > 0) {
+            const margin = ((grossVal / salesTot) * 100).toFixed(1);
+            bd.innerHTML = `هامش الربح: <span class="text-emerald-400 font-bold">${margin}%</span> من المبيعات`;
+          } else {
+            bd.innerHTML = '';
+          }
+        } else {
+          bd.innerHTML = `أرباح فواتير المبيعات: <span class="text-emerald-400 font-bold">${grossVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ج</span> − مصاريف: <span class="text-rose-400 font-bold">${expVal.toFixed(0)} ج</span>`;
+        }
+      }
     }
 
     // ──────────────────────────────────────────
@@ -4082,12 +4139,19 @@
       const creditSales = document.getElementById('cardPeriodCreditSales')?.textContent || "0.00";
       const salesCount = document.getElementById('cardPeriodSalesCount')?.textContent || "0";
       const profit = document.getElementById('cardPeriodProfit')?.textContent || "0.00 ج.م";
+      const grossVal = window._currentSalesGrossProfit || 0;
+      const netVal = window._currentNetAfterExpenses || 0;
+      const expVal = window._currentDsExp || 0;
       const purchases = document.getElementById('cardPeriodPurchases')?.textContent || "0.00 ج.م";
       const cashbox = document.getElementById('cardCashboxBalance')?.textContent || "0.00 ج.م";
       const clientDebts = document.getElementById('cardClientDebts')?.textContent || "0.00 ج.م";
       const supplierDebts = document.getElementById('cardSupplierDebts')?.textContent || "0.00 ج.م";
       const stockVal = document.getElementById('cardStockValue')?.textContent || "0.00 ج.م";
       const lowStock = document.getElementById('cardLowStockCount')?.textContent || "0";
+
+      const profitSection = expVal > 0
+        ? `📈 *أرباح المبيعات:* ${grossVal.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م\n📉 *المصروفات التشغيلية:* ${expVal.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م\n⚖️ *الصافي بعد المصروفات:* ${netVal.toLocaleString('en-US', {minimumFractionDigits: 2})} ج.م`
+        : `📈 *أرباح المبيعات:* ${profit}`;
 
       const text = 
 `📊 *التقرير التنفيذي | ${storeName}*
@@ -4099,7 +4163,7 @@
    ▫️ آجل (ذمم): ${creditSales}
    ▫️ عدد الفواتير: ${salesCount} فاتورة
 
-📈 *صافي الربح التقديري:* ${profit}
+${profitSection}
 📦 *المشتريات:* ${purchases}
 💵 *رصيد الخزينة والسيولة:* ${cashbox}
 
