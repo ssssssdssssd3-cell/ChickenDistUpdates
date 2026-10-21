@@ -1,5 +1,5 @@
-version=4.3.2
+version=4.3.3
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.2&t=1792616839
-sha256=9A491B779E4D8CD93A24E461CCC20A30FB26620BA50330A83667197ED68494AC
-changelog=v4.3.2 - 2026-10-22: Redesign Warranty UI with responsive layout, clear stats cards and Arabic columns
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.3&t=1792617389
+sha256=C92ADB1DD6355FFA0C0409C47A777CC7E4BCCCD0984C934E00329C9F5037A91F
+changelog=v4.3.3 - 2026-10-22: Fix Warranty Card RTL input alignments, label-first ordering, and footer button overlaps

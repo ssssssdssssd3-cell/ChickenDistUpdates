@@ -69,16 +69,18 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _ticketID > 0 ? "📝 تعديل كرت جهاز تحت الضمان" : "➕ استلام جهاز جديد تحت الضمان";
-            this.Size = new Size(820, 720);
+            this.Size = new Size(890, 770);
+            this.MinimumSize = new Size(890, 700);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
+            this.RightToLeftLayout = false; // Prevents WinForms GDI mirroring glitches with child containers
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
             this.KeyPreview = true;
+
             this.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.F2) { btnSave.PerformClick(); e.Handled = true; }
@@ -86,135 +88,252 @@ namespace ChickenDist.Forms
                 else if (e.KeyCode == Keys.Escape) { this.Close(); e.Handled = true; }
             };
 
-            // Title Bar
-            var pnlTitle = Theme.MakeTitleBar(
+            // ── Top Title Bar (Docked Top) ──
+            Panel pnlTitle = Theme.MakeTitleBar(
                 _ticketID > 0 ? "📝 تعديل بيانات كرت الضمان" : "🛡️ استلام جهاز تحت الضمان والصيانة",
                 "سجل إداري لمتابعة الأجهزة مع العملاء والتوكيلات الخارجية دون التأثير على المخزون أو الحسابات.");
-            this.Controls.Add(pnlTitle);
+            pnlTitle.Dock = DockStyle.Top;
 
-            // Main Scrollable Panel
-            var pnlBody = new Panel
+            // ── Footer Panel for Action Buttons (Docked Bottom) ──
+            Panel pnlFooter = new Panel
             {
-                Location = new Point(15, 65),
-                Size = new Size(775, 580),
-                AutoScroll = true,
+                Dock = DockStyle.Bottom,
+                Height = 65,
+                BackColor = Theme.BgCard,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            FlowLayoutPanel pnlButtons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                Padding = new Padding(20, 12, 20, 12),
+                WrapContents = false,
                 BackColor = Color.Transparent
             };
-            this.Controls.Add(pnlBody);
 
-            int y = 5;
+            btnSave = Theme.MakeButton("💾 حفظ الكرت (F2)", Theme.Success);
+            btnSave.Size = new Size(160, 40);
+            btnSave.Margin = new Padding(12, 0, 0, 0);
+            btnSave.Click += (s, e) => SaveTicket(false);
 
-            // ── Top Ticket Bar ──
-            var pnlHeader = new Panel
+            btnSaveAndPrint = Theme.MakeButton("🖨️ حفظ وطباعة الإيصال (F3)", Color.FromArgb(30, 80, 180));
+            btnSaveAndPrint.Size = new Size(220, 40);
+            btnSaveAndPrint.Margin = new Padding(12, 0, 0, 0);
+            btnSaveAndPrint.Click += (s, e) => SaveTicket(true);
+
+            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Color.FromArgb(100, 110, 120));
+            btnCancel.Size = new Size(130, 40);
+            btnCancel.Margin = new Padding(12, 0, 0, 0);
+            btnCancel.Click += (s, e) => this.Close();
+
+            pnlButtons.Controls.Add(btnSave);
+            pnlButtons.Controls.Add(btnSaveAndPrint);
+            pnlButtons.Controls.Add(btnCancel);
+            pnlFooter.Controls.Add(pnlButtons);
+
+            // ── Main Scrollable Body ──
+            Panel pnlBody = new Panel
             {
-                Location = new Point(5, y),
-                Size = new Size(745, 45),
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                BackColor = Color.Transparent,
+                Padding = new Padding(15, 10, 15, 10)
+            };
+
+            int curY = 10;
+            const int boxWidth = 825;
+
+            // ── 1. Top Ticket Header Bar ──
+            Panel pnlHeader = new Panel
+            {
+                Location = new Point(15, curY),
+                Size = new Size(boxWidth, 48),
                 BackColor = Theme.BgCard,
                 BorderStyle = BorderStyle.FixedSingle
             };
             pnlBody.Controls.Add(pnlHeader);
 
-            pnlHeader.Controls.Add(new Label { Text = "رقم الإيصال:", Location = new Point(15, 12), Width = 90, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            lblTicketCode = new Label { Text = "WR-00000", Location = new Point(110, 10), Width = 150, AutoSize = false, ForeColor = Theme.Primary, Font = new Font(Theme.FontMain.FontFamily, 12f, FontStyle.Bold) };
+            // Right side of Header: Ticket Number & Date
+            pnlHeader.Controls.Add(new Label
+            {
+                Text = "رقم الإيصال:",
+                Location = new Point(720, 13),
+                Width = 90,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            });
+
+            lblTicketCode = new Label
+            {
+                Text = "WR-00000",
+                Location = new Point(600, 10),
+                Width = 115,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.Primary,
+                Font = new Font(Theme.FontMain.FontFamily, 12f, FontStyle.Bold)
+            };
             pnlHeader.Controls.Add(lblTicketCode);
 
-            pnlHeader.Controls.Add(new Label { Text = "تاريخ الاستلام:", Location = new Point(320, 12), Width = 100, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            dtpReceiveDate = new DateTimePicker { Location = new Point(425, 10), Width = 140, Format = DateTimePickerFormat.Short, Font = Theme.FontMain };
+            pnlHeader.Controls.Add(new Label
+            {
+                Text = "تاريخ الاستلام:",
+                Location = new Point(485, 13),
+                Width = 100,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            });
+
+            dtpReceiveDate = new DateTimePicker
+            {
+                Location = new Point(345, 11),
+                Width = 135,
+                Format = DateTimePickerFormat.Short,
+                Font = Theme.FontMain
+            };
             pnlHeader.Controls.Add(dtpReceiveDate);
 
-            // Quick Invoice / Customer Lookup
-            pnlHeader.Controls.Add(new Label { Text = "🔍 جلب سريع:", Location = new Point(575, 12), Width = 80, AutoSize = false, ForeColor = Theme.Accent, Font = Theme.FontBold });
-            txtQuickSearch = new TextBox { Location = new Point(655, 10), Width = 110, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            // Left side of Header: Quick invoice lookup
+            pnlHeader.Controls.Add(new Label
+            {
+                Text = "🔍 بحث سريع:",
+                Location = new Point(230, 13),
+                Width = 95,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.Accent,
+                Font = Theme.FontBold
+            });
+
+            txtQuickSearch = new TextBox
+            {
+                Location = new Point(55, 11),
+                Width = 170,
+                Font = Theme.FontMain,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
             txtQuickSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { DoQuickSearch(); e.Handled = true; e.SuppressKeyPress = true; } };
-            btnQuickSearch = new Button { Text = "🔎", Location = new Point(770, 9), Width = 30, Height = 25, BackColor = Theme.Accent, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
+
+            btnQuickSearch = new Button
+            {
+                Text = "🔎",
+                Location = new Point(15, 10),
+                Width = 36,
+                Height = 27,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnQuickSearch.FlatAppearance.BorderSize = 0;
             btnQuickSearch.Click += (s, e) => DoQuickSearch();
-            // Add tooltip
+
             var tip = new ToolTip();
             tip.SetToolTip(txtQuickSearch, "اكتب رقم فاتورة أو هاتف الزبون واضغط Enter لجلب البيانات فوراً");
             pnlHeader.Controls.AddRange(new Control[] { txtQuickSearch, btnQuickSearch });
 
-            y += 55;
+            curY += 58;
 
-            // ── GroupBox 1: بيانات العميل ──
-            var grpCustomer = CreateSectionBox("👤 بيانات العميل / الزبون", 5, y, 745, 90);
+            // ── 2. GroupBox: بيانات العميل ──
+            GroupBox grpCustomer = CreateSectionBox("👤 بيانات العميل / الزبون", 15, curY, boxWidth, 105);
             pnlBody.Controls.Add(grpCustomer);
 
-            grpCustomer.Controls.Add(new Label { Text = "اسم العميل *:", Location = new Point(15, 25), Width = 95, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtCustomerName = new TextBox { Location = new Point(115, 22), Width = 230, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpCustomer.Controls.Add(txtCustomerName);
+            txtCustomerName = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtCustomerPhone = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtCustomerAddress = new TextBox { Width = 660, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
-            grpCustomer.Controls.Add(new Label { Text = "رقم الهاتف *:", Location = new Point(365, 25), Width = 95, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtCustomerPhone = new TextBox { Location = new Point(465, 22), Width = 255, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpCustomer.Controls.Add(txtCustomerPhone);
+            AddTwoFieldRow(grpCustomer, 24, "اسم العميل *:", txtCustomerName, "رقم الهاتف *:", txtCustomerPhone);
+            AddOneFieldRow(grpCustomer, 62, "العنوان بالتفصيل:", txtCustomerAddress);
 
-            grpCustomer.Controls.Add(new Label { Text = "العنوان:", Location = new Point(15, 57), Width = 95, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtCustomerAddress = new TextBox { Location = new Point(115, 54), Width = 605, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpCustomer.Controls.Add(txtCustomerAddress);
+            curY += 115;
 
-            y += 100;
-
-            // ── GroupBox 2: بيانات الجهاز والأصناف ──
-            var grpDevice = CreateSectionBox("📦 بيانات الجهاز / الصنف والضمان", 5, y, 745, 125);
+            // ── 3. GroupBox: بيانات الجهاز والأصناف ──
+            GroupBox grpDevice = CreateSectionBox("📦 بيانات الجهاز / الصنف والضمان", 15, curY, boxWidth, 142);
             pnlBody.Controls.Add(grpDevice);
 
-            grpDevice.Controls.Add(new Label { Text = "اسم الصنف / الجهاز *:", Location = new Point(15, 25), Width = 145, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtProductName = new TextBox { Location = new Point(165, 22), Width = 280, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpDevice.Controls.Add(txtProductName);
+            txtProductName = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtBrand = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtSerialNumber = new TextBox { Width = 250, Font = new Font("Consolas", 10.5f, FontStyle.Bold), BackColor = Color.FromArgb(240, 245, 255), ForeColor = Color.FromArgb(20, 60, 160) };
+            txtInvoiceNumber = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
-            grpDevice.Controls.Add(new Label { Text = "الماركة / الشركة:", Location = new Point(465, 25), Width = 100, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtBrand = new TextBox { Location = new Point(570, 22), Width = 150, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpDevice.Controls.Add(txtBrand);
+            AddTwoFieldRow(grpDevice, 24, "الصنف / الجهاز *:", txtProductName, "الماركة / الشركة:", txtBrand);
+            AddTwoFieldRow(grpDevice, 62, "السيريال / IMEI *:", txtSerialNumber, "رقم فاتورة الشراء:", txtInvoiceNumber);
 
-            grpDevice.Controls.Add(new Label { Text = "رقم السيريال / كرت الضمان:", Location = new Point(15, 58), Width = 145, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtSerialNumber = new TextBox { Location = new Point(165, 55), Width = 280, Font = new Font("Consolas", 10.5f, FontStyle.Bold), BackColor = Color.FromArgb(240, 245, 255), ForeColor = Color.FromArgb(20, 60, 160) };
-            grpDevice.Controls.Add(txtSerialNumber);
-
-            grpDevice.Controls.Add(new Label { Text = "رقم فاتورة الشراء:", Location = new Point(465, 58), Width = 100, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtInvoiceNumber = new TextBox { Location = new Point(570, 55), Width = 150, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpDevice.Controls.Add(txtInvoiceNumber);
-
-            chkHasInvoiceDate = new CheckBox { Text = "تاريخ الشراء:", Location = new Point(15, 90), Width = 145, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            dtpInvoiceDate = new DateTimePicker { Location = new Point(165, 88), Width = 160, Format = DateTimePickerFormat.Short, Font = Theme.FontMain, Enabled = false };
+            // Row 3: تاريخ الشراء
+            chkHasInvoiceDate = new CheckBox
+            {
+                Text = "تاريخ الشراء:",
+                Location = new Point(675, 99),
+                Width = 130,
+                CheckAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain
+            };
+            dtpInvoiceDate = new DateTimePicker
+            {
+                Location = new Point(415, 98),
+                Width = 250,
+                Format = DateTimePickerFormat.Short,
+                Font = Theme.FontMain,
+                Enabled = false
+            };
             chkHasInvoiceDate.CheckedChanged += (s, e) => dtpInvoiceDate.Enabled = chkHasInvoiceDate.Checked;
             grpDevice.Controls.AddRange(new Control[] { chkHasInvoiceDate, dtpInvoiceDate });
 
-            y += 135;
+            curY += 152;
 
-            // ── GroupBox 3: الفحص المبدئي والعطل ──
-            var grpInspection = CreateSectionBox("🔍 الفحص المبدئي والاستلام من العميل", 5, y, 745, 125);
+            // ── 4. GroupBox: الفحص المبدئي والاستلام من العميل ──
+            GroupBox grpInspection = CreateSectionBox("🔍 الفحص المبدئي والاستلام من العميل", 15, curY, boxWidth, 150);
             pnlBody.Controls.Add(grpInspection);
 
-            grpInspection.Controls.Add(new Label { Text = "وصف العطل والشكوى *:", Location = new Point(15, 25), Width = 145, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtProblemDescription = new TextBox { Location = new Point(165, 22), Width = 555, Height = 42, Multiline = true, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpInspection.Controls.Add(txtProblemDescription);
+            txtProblemDescription = new TextBox
+            {
+                Width = 660,
+                Height = 44,
+                Multiline = true,
+                Font = Theme.FontMain,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain
+            };
+            AddOneFieldRow(grpInspection, 24, "وصف العطل *:", txtProblemDescription);
 
-            grpInspection.Controls.Add(new Label { Text = "الملحقات المستلمة:", Location = new Point(15, 72), Width = 145, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtAccessories = new TextBox { Location = new Point(165, 69), Width = 230, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            // Add quick suggestions for accessories
-            var btnAccBox = new Button { Text = "📦 بالكرتونة", Location = new Point(400, 68), Width = 75, Height = 25, Font = new Font(Theme.FontMain.FontFamily, 8f), FlatStyle = FlatStyle.Flat };
+            txtAccessories = new TextBox { Width = 370, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
+            // Helper quick buttons for accessories
+            Button btnAccBox = new Button { Text = "📦 بالكرتونة", Location = new Point(205, 75), Width = 85, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
             btnAccBox.Click += (s, e) => AppendAccessory("بالكرتونة");
-            var btnAccCable = new Button { Text = "🔌 شاحن/كابل", Location = new Point(480, 68), Width = 80, Height = 25, Font = new Font(Theme.FontMain.FontFamily, 8f), FlatStyle = FlatStyle.Flat };
+            Button btnAccCable = new Button { Text = "🔌 شاحن/كابل", Location = new Point(110, 75), Width = 90, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
             btnAccCable.Click += (s, e) => AppendAccessory("شاحن/سلك");
-            var btnAccNone = new Button { Text = "🚫 جهاز فقط", Location = new Point(565, 68), Width = 75, Height = 25, Font = new Font(Theme.FontMain.FontFamily, 8f), FlatStyle = FlatStyle.Flat };
+            Button btnAccNone = new Button { Text = "🚫 جهاز فقط", Location = new Point(15, 75), Width = 90, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
             btnAccNone.Click += (s, e) => txtAccessories.Text = "الجهاز فقط بدون ملحقات";
-            grpInspection.Controls.AddRange(new Control[] { txtAccessories, btnAccBox, btnAccCable, btnAccNone });
 
-            grpInspection.Controls.Add(new Label { Text = "حالة الجهاز الظاهرية:", Location = new Point(15, 99), Width = 145, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtDeviceCondition = new TextBox { Location = new Point(165, 96), Width = 555, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            txtDeviceCondition.Text = "بحالة جيدة - لا توجد كسور ظاهرة";
-            grpInspection.Controls.Add(txtDeviceCondition);
+            Label lblAcc = new Label
+            {
+                Text = "الملحقات المستلمة:",
+                Location = new Point(675, 77),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain
+            };
+            txtAccessories.Location = new Point(295, 75);
+            grpInspection.Controls.AddRange(new Control[] { lblAcc, txtAccessories, btnAccBox, btnAccCable, btnAccNone });
 
-            y += 135;
+            txtDeviceCondition = new TextBox { Width = 660, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Text = "بحالة جيدة - لا توجد كسور ظاهرة" };
+            AddOneFieldRow(grpInspection, 108, "الحالة الظاهرية:", txtDeviceCondition);
 
-            // ── GroupBox 4: متابعة التوكيل والصيانة ──
-            var grpVendor = CreateSectionBox("🏢 متابعة التوكيل / مركز الصيانة الخارجي", 5, y, 745, 140);
+            curY += 160;
+
+            // ── 5. GroupBox: متابعة التوكيل والصيانة الخارجية ──
+            GroupBox grpVendor = CreateSectionBox("🏢 متابعة التوكيل / مركز الصيانة الخارجي", 15, curY, boxWidth, 180);
             pnlBody.Controls.Add(grpVendor);
 
-            grpVendor.Controls.Add(new Label { Text = "حالة الجهاز الحالية *:", Location = new Point(15, 25), Width = 135, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
             cboStatus = new ComboBox
             {
-                Location = new Point(155, 22),
-                Width = 200,
+                Width = 250,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = new Font(Theme.FontMain, FontStyle.Bold),
                 BackColor = Theme.BgInput,
@@ -223,31 +342,61 @@ namespace ChickenDist.Forms
             cboStatus.Items.AddRange(new object[] { "مستلم بالمحل", "مرسل للتوكيل", "مستلم من التوكيل (جاهز)", "تم التسليم للزبون", "مرفوض الضمان" });
             cboStatus.SelectedIndex = 0;
             cboStatus.SelectedIndexChanged += CboStatus_SelectedIndexChanged;
-            grpVendor.Controls.Add(cboStatus);
 
-            grpVendor.Controls.Add(new Label { Text = "التوكيل / جهة الصيانة:", Location = new Point(375, 25), Width = 130, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtVendorName = new TextBox { Location = new Point(510, 22), Width = 210, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpVendor.Controls.Add(txtVendorName);
+            txtVendorName = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
-            chkSentToVendor = new CheckBox { Text = "تاريخ الإرسال للتوكيل:", Location = new Point(15, 58), Width = 135, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            dtpSentToVendor = new DateTimePicker { Location = new Point(155, 56), Width = 140, Format = DateTimePickerFormat.Short, Font = Theme.FontMain, Enabled = false };
+            AddTwoFieldRow(grpVendor, 24, "حالة الجهاز الحالية *:", cboStatus, "التوكيل / الورشة:", txtVendorName);
+
+            // Row 2: Sent to vendor date & tracking no
+            chkSentToVendor = new CheckBox
+            {
+                Text = "تاريخ الإرسال:",
+                Location = new Point(675, 62),
+                Width = 130,
+                CheckAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain
+            };
+            dtpSentToVendor = new DateTimePicker
+            {
+                Location = new Point(415, 60),
+                Width = 250,
+                Format = DateTimePickerFormat.Short,
+                Font = Theme.FontMain,
+                Enabled = false
+            };
             chkSentToVendor.CheckedChanged += (s, e) => dtpSentToVendor.Enabled = chkSentToVendor.Checked;
+
+            txtVendorTrackingNo = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+
             grpVendor.Controls.AddRange(new Control[] { chkSentToVendor, dtpSentToVendor });
+            AddSingleFieldOnLeft(grpVendor, 60, "رقم البوليصة / الشحن:", txtVendorTrackingNo);
 
-            grpVendor.Controls.Add(new Label { Text = "رقم البوليصة / الإيصال:", Location = new Point(375, 58), Width = 130, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtVendorTrackingNo = new TextBox { Location = new Point(510, 56), Width = 210, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpVendor.Controls.Add(txtVendorTrackingNo);
-
-            chkReceivedFromVendor = new CheckBox { Text = "تاريخ الاستلام من التوكيل:", Location = new Point(15, 90), Width = 135, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            dtpReceivedFromVendor = new DateTimePicker { Location = new Point(155, 88), Width = 140, Format = DateTimePickerFormat.Short, Font = Theme.FontMain, Enabled = false };
+            // Row 3: Received from vendor date & resolution
+            chkReceivedFromVendor = new CheckBox
+            {
+                Text = "تاريخ الاستلام:",
+                Location = new Point(675, 98),
+                Width = 130,
+                CheckAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain
+            };
+            dtpReceivedFromVendor = new DateTimePicker
+            {
+                Location = new Point(415, 96),
+                Width = 250,
+                Format = DateTimePickerFormat.Short,
+                Font = Theme.FontMain,
+                Enabled = false
+            };
             chkReceivedFromVendor.CheckedChanged += (s, e) => dtpReceivedFromVendor.Enabled = chkReceivedFromVendor.Checked;
-            grpVendor.Controls.AddRange(new Control[] { chkReceivedFromVendor, dtpReceivedFromVendor });
 
-            grpVendor.Controls.Add(new Label { Text = "نتيجة الفحص / الحل:", Location = new Point(375, 90), Width = 130, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
             cboResolutionType = new ComboBox
             {
-                Location = new Point(510, 88),
-                Width = 210,
+                Width = 250,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = Theme.FontMain,
                 BackColor = Theme.BgInput,
@@ -255,20 +404,38 @@ namespace ChickenDist.Forms
             };
             cboResolutionType.Items.AddRange(new object[] { "قيد الفحص", "تم الإصلاح بنجاح", "تم استبدال جهاز جديد", "تم استبدال قطعة غيار", "مرفوض - سوء استخدام", "مرفوض - خارج فترة الضمان", "لا يمكن إصلاحه" });
             cboResolutionType.SelectedIndex = 0;
-            grpVendor.Controls.Add(cboResolutionType);
 
-            grpVendor.Controls.Add(new Label { Text = "تقرير وملاحظات التوكيل:", Location = new Point(15, 120), Width = 135, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtVendorReport = new TextBox { Location = new Point(155, 117), Width = 565, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpVendor.Controls.Add(txtVendorReport);
+            grpVendor.Controls.AddRange(new Control[] { chkReceivedFromVendor, dtpReceivedFromVendor });
+            AddSingleFieldOnLeft(grpVendor, 96, "نتيجة الفحص / الحل:", cboResolutionType);
 
-            y += 150;
+            // Row 4: Vendor report
+            txtVendorReport = new TextBox { Width = 660, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            AddOneFieldRow(grpVendor, 134, "تقرير وملاحظات التوكيل:", txtVendorReport);
 
-            // ── GroupBox 5: التسليم للزبون والملاحظات ──
-            var grpDelivery = CreateSectionBox("🤝 التسليم للزبون والملاحظات", 5, y, 745, 95);
+            curY += 190;
+
+            // ── 6. GroupBox: التسليم للزبون والملاحظات ──
+            GroupBox grpDelivery = CreateSectionBox("🤝 التسليم للزبون والملاحظات", 15, curY, boxWidth, 105);
             pnlBody.Controls.Add(grpDelivery);
 
-            chkDelivered = new CheckBox { Text = "تم التسليم للزبون بتاريخ:", Location = new Point(15, 25), Width = 155, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold };
-            dtpDelivered = new DateTimePicker { Location = new Point(175, 23), Width = 140, Format = DateTimePickerFormat.Short, Font = Theme.FontMain, Enabled = false };
+            chkDelivered = new CheckBox
+            {
+                Text = "تم التسليم للزبون بتاريخ:",
+                Location = new Point(625, 24),
+                Width = 180,
+                CheckAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            dtpDelivered = new DateTimePicker
+            {
+                Location = new Point(415, 22),
+                Width = 205,
+                Format = DateTimePickerFormat.Short,
+                Font = Theme.FontMain,
+                Enabled = false
+            };
             chkDelivered.CheckedChanged += (s, e) =>
             {
                 dtpDelivered.Enabled = chkDelivered.Checked;
@@ -279,30 +446,87 @@ namespace ChickenDist.Forms
             };
             grpDelivery.Controls.AddRange(new Control[] { chkDelivered, dtpDelivered });
 
-            grpDelivery.Controls.Add(new Label { Text = "ملاحظات إضافية:", Location = new Point(15, 58), Width = 120, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtNotes = new TextBox { Location = new Point(140, 55), Width = 580, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            grpDelivery.Controls.Add(txtNotes);
+            txtNotes = new TextBox { Width = 660, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            AddOneFieldRow(grpDelivery, 60, "ملاحظات إضافية:", txtNotes);
 
-            // ── Footer Panel (Save / Print / Cancel) ──
-            var pnlFooter = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 65,
-                BackColor = Theme.BgCard,
-                BorderStyle = BorderStyle.FixedSingle
-            };
+            curY += 120;
+
+            // Add main docked components
+            this.Controls.Add(pnlBody);
             this.Controls.Add(pnlFooter);
+            this.Controls.Add(pnlTitle);
+        }
 
-            btnSave = Theme.MakeButton("💾 حفظ الكرت (F2)", 570, 14, 180, 38, Theme.Success);
-            btnSave.Click += (s, e) => SaveTicket(false);
+        // ==========================================
+        // RTL FORM LAYOUT HELPERS
+        // ==========================================
+        // In Arabic RTL, reading is strictly RIGHT TO LEFT:
+        // Right side (Col 1): [Label 1 (X=675..805)] followed by its [Input Control 1 (X=415..665)]
+        // Left side  (Col 2): [Label 2 (X=275..405)] followed by its [Input Control 2 (X=15..265)]
 
-            btnSaveAndPrint = Theme.MakeButton("🖨️ حفظ وطباعة الإيصال (F3)", 330, 14, 230, 38, Color.FromArgb(30, 80, 180));
-            btnSaveAndPrint.Click += (s, e) => SaveTicket(true);
+        private void AddTwoFieldRow(GroupBox grp, int y, string lblRightText, Control ctrlRight, string lblLeftText, Control ctrlLeft)
+        {
+            // Right Side
+            Label lblRight = new Label
+            {
+                Text = lblRightText,
+                Location = new Point(675, y + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            ctrlRight.Location = new Point(415, y);
+            ctrlRight.Width = 250;
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", 190, 14, 130, 38, Color.FromArgb(100, 110, 120));
-            btnCancel.Click += (s, e) => this.Close();
+            // Left Side
+            Label lblLeft = new Label
+            {
+                Text = lblLeftText,
+                Location = new Point(275, y + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            ctrlLeft.Location = new Point(15, y);
+            ctrlLeft.Width = 250;
 
-            pnlFooter.Controls.AddRange(new Control[] { btnSave, btnSaveAndPrint, btnCancel });
+            grp.Controls.AddRange(new Control[] { lblRight, ctrlRight, lblLeft, ctrlLeft });
+        }
+
+        private void AddOneFieldRow(GroupBox grp, int y, string lblText, Control ctrl)
+        {
+            Label lbl = new Label
+            {
+                Text = lblText,
+                Location = new Point(675, y + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            ctrl.Location = new Point(15, y);
+            ctrl.Width = 650;
+
+            grp.Controls.AddRange(new Control[] { lbl, ctrl });
+        }
+
+        private void AddSingleFieldOnLeft(GroupBox grp, int y, string lblLeftText, Control ctrlLeft)
+        {
+            Label lblLeft = new Label
+            {
+                Text = lblLeftText,
+                Location = new Point(275, y + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            ctrlLeft.Location = new Point(15, y);
+            ctrlLeft.Width = 250;
+
+            grp.Controls.AddRange(new Control[] { lblLeft, ctrlLeft });
         }
 
         private GroupBox CreateSectionBox(string title, int x, int y, int width, int height)
@@ -420,7 +644,7 @@ namespace ChickenDist.Forms
                         dlg.Size = new Size(680, 380);
                         dlg.StartPosition = FormStartPosition.CenterParent;
                         dlg.RightToLeft = RightToLeft.Yes;
-                        dlg.RightToLeftLayout = true;
+                        dlg.RightToLeftLayout = false;
                         dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
 
                         var dgv = new DataGridView
@@ -435,8 +659,9 @@ namespace ChickenDist.Forms
                         };
                         Theme.ApplyGridTheme(dgv);
 
-                        var btnChoose = Theme.MakeButton("اختيار الصنف المكتمل ✔", 20, 10, 200, 35, Theme.Success);
+                        var btnChoose = Theme.MakeButton("اختيار الصنف المكتمل ✔", Theme.Success);
                         btnChoose.Dock = DockStyle.Bottom;
+                        btnChoose.Height = 38;
                         btnChoose.Click += (s, e) =>
                         {
                             if (dgv.SelectedRows.Count > 0)
