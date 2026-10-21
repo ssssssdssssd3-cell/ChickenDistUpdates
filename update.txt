@@ -1,5 +1,5 @@
-version=4.2.8
+version=4.2.9
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.8&t=1792584223
-sha256=40452689D447A571397AD3201539406B6EE0548ED7BED63D6D95A7F533A18B35
-changelog=v4.2.8 - 2026-10-21: Smart Purchase Orders with stock and sales velocity replenishment suggestions, WhatsApp/PDF/Excel export, and Purchase invoice recall
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.9&t=1792586314
+sha256=6265585B40E4F5424C01278BA04517D5B382BBD05E77D48C73B70B2FEEEE25EC
+changelog=v4.2.9 - 2026-10-21: Expanded Statement Details column (+45% width) with dynamic row height for perfect multi-line item readability
