@@ -31,6 +31,7 @@ namespace ChickenDist.Forms
             Instance = this;
             InitializeComponent();
             try { ShiftDAL.EnsureActiveShift(Session.EmpID); } catch {}
+            try { WarrantyDAL.EnsureTable(); } catch {}
             NavigateTo(new FrmDashboard());
             InitializePeriodicBackup();
             try { ChickenDist.Services.CloudSyncService.StartAutoBackgroundSync(); } catch {}
@@ -437,6 +438,9 @@ namespace ChickenDist.Forms
                 case "FrmEmployeeCommissions":
                 case "FrmEmployeePayroll":
                     return "الموظفين";
+                case "FrmWarranty":
+                case "FrmWarrantyCard":
+                    return "العملاء";
                 case "FrmMaintenance":
                 case "FrmMaintenanceCard":
                     return "الصيانة";
@@ -634,6 +638,7 @@ namespace ChickenDist.Forms
                     ("📊 كشف حساب عميل",   "ClientStatement", (Action)(() => OpenClientStatementSelector())),
                     ("💵 تحصيل نقدي من عميل (سند قبض)", "ReceiptVoucher", (Action)(() => NavigateTo(new FrmReceiptVoucher()))),
                     ("💳 تقسيط وجدولة مديونية عميل", "Installments", (Action)(() => new FrmScheduleClientDebt().ShowDialog())),
+                    ("🛡️ سجل وتتبع أجهزة الضمان", "Warranty", (Action)(() => NavigateTo(new FrmWarranty()))),
                     ("---", "_SEP_", (Action)null),
                     ("📢 العملاء الرواكد", "InactiveClients", (Action)(() => NavigateTo(new FrmInactiveClients()))),
                     ("🚗 المركبات",  "Vehicles",  (Action)(() => NavigateTo(new FrmVehicles()))),
@@ -709,6 +714,7 @@ namespace ChickenDist.Forms
                 groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
                     ("🔧 تذاكر وشاشة الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
                     ("📋 كرت صيانة جديد",       "MaintenanceCard", (Action)(() => NavigateTo(new FrmMaintenanceCard(0)))),
+                    ("🛡️ سجل وتتبع أجهزة الضمان", "Warranty", (Action)(() => NavigateTo(new FrmWarranty()))),
                     ("📱 جرد وسيريلات الأجهزة بالمخزن", "SerialStockReport", (Action)(() => NavigateTo(new FrmSerialStockReport()))),
                 }));
             }

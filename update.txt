@@ -1,5 +1,5 @@
-version=4.3.0
+version=4.3.1
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.0&t=1792602314
-sha256=C03DCCD2F0DA76167F7EF114DDA5EAF88F1B480313167FCE83DAA36ED9879E92
-changelog=v4.3.0 - 2026-10-21: Hide IMEI checkbox from Product Card and Quick Add in General activity (Mobiles only)
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.1&t=1792609503
+sha256=D79DEFC989B1BBE2E8A9731F5C91EEF84C323B91F8CB62B3C4BE397B0E4AB7D3
+changelog=v4.3.1 - 2026-10-21: Add full Warranty and RMA Device Tracking module with thermal receipt printing and WhatsApp alerts without affecting stock or financials

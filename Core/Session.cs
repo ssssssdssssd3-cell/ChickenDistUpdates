@@ -940,7 +940,7 @@ namespace ChickenDist.Core
         public static readonly string[] AllScreens = {
             // Sales & POS
             "Sales", "POS", "PriceQuote", "Returns", "Installments", "Reservations", "ClearanceOffers", "SalesList", "SalesAudit", "AccountantPortal", "ProductSearch", "QuickItems", "QuickDetails", "Maintenance",
-            "Clients", "ClientStatement", "InactiveClients", "Vehicles", "OnlineOrders", "OnlineStoreSettings",
+            "Clients", "ClientStatement", "InactiveClients", "Vehicles", "Warranty", "OnlineOrders", "OnlineStoreSettings",
             
             // Purchases & Suppliers
             "Purchases", "PurchaseReturn", "PurchasesList", "PurchaseDeductions", "PurchaseOrder", "PurchaseOrdersList",

@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.0";
-$CHANGELOG = "v4.3.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Hide IMEI checkbox from Product Card and Quick Add in General activity (Mobiles only)"
+$VERSION = "4.3.1";
+$CHANGELOG = "v4.3.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add full Warranty and RMA Device Tracking module with thermal receipt printing and WhatsApp alerts without affecting stock or financials"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
