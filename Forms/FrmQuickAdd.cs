@@ -183,12 +183,13 @@ namespace ChickenDist.Forms
                 Height = 24,
                 ForeColor = Color.FromArgb(234, 88, 12),
                 Checked = (AppConfig.BusinessType == "Mobiles"),
+                Visible = (AppConfig.BusinessType == "Mobiles"),
                 AutoSize = false,
                 CheckAlign = ContentAlignment.MiddleRight,
                 TextAlign = ContentAlignment.MiddleRight,
                 Font = new Font(Theme.FontMain, FontStyle.Bold)
             };
-            pnlForm.Controls.Add(chkIsIMEI);
+            if (AppConfig.BusinessType == "Mobiles") pnlForm.Controls.Add(chkIsIMEI);
 
             this.Controls.Add(pnlForm);
 
@@ -448,7 +449,7 @@ namespace ChickenDist.Forms
                     null, null, null, null,
                     null, null, null, null, null,
                     null, chkIsQuickItem.Checked,
-                    isIMEI: chkIsIMEI != null && chkIsIMEI.Checked
+                    isIMEI: (AppConfig.BusinessType == "Mobiles") && chkIsIMEI != null && chkIsIMEI.Checked
                 );
 
                 if (id > 0)

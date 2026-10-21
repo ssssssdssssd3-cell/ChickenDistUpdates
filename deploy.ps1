@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.2.9";
-$CHANGELOG = "v4.2.9 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Expanded Statement Details column (+45% width) with dynamic row height for perfect multi-line item readability"
+$VERSION = "4.3.0";
+$CHANGELOG = "v4.3.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Hide IMEI checkbox from Product Card and Quick Add in General activity (Mobiles only)"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

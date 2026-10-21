@@ -1,5 +1,5 @@
-version=4.2.9
+version=4.3.0
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.2.9&t=1792586314
-sha256=6265585B40E4F5424C01278BA04517D5B382BBD05E77D48C73B70B2FEEEE25EC
-changelog=v4.2.9 - 2026-10-21: Expanded Statement Details column (+45% width) with dynamic row height for perfect multi-line item readability
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.0&t=1792602314
+sha256=C03DCCD2F0DA76167F7EF114DDA5EAF88F1B480313167FCE83DAA36ED9879E92
+changelog=v4.3.0 - 2026-10-21: Hide IMEI checkbox from Product Card and Quick Add in General activity (Mobiles only)

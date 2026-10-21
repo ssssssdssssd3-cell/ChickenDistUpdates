@@ -188,9 +188,10 @@ namespace ChickenDist.Forms
             grpBasic.Controls.AddRange(new Control[] { chkIsService, chkIsQuickItem });
             ry += 24;
 
-            chkIsIMEI = new CheckBox { Text = "📱 صنف ذو سيريال / IMEI (إلزامي بالشراء)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(234, 88, 12), Checked = (AppConfig.BusinessType == "Mobiles"), AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            grpBasic.Controls.Add(chkIsIMEI);
-            ry += 28;
+            bool isMobileBiz = (AppConfig.BusinessType == "Mobiles");
+            chkIsIMEI = new CheckBox { Text = "📱 صنف ذو سيريال / IMEI (إلزامي بالشراء)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(234, 88, 12), Checked = isMobileBiz, Visible = isMobileBiz, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            if (isMobileBiz) grpBasic.Controls.Add(chkIsIMEI);
+            if (isMobileBiz) ry += 28;
 
             var lblDesc = new Label { Text = "الوصف:", Location = new Point(195, ry + 3), Width = 95, AutoSize = false, TextAlign = ContentAlignment.TopRight, ForeColor = Theme.TextMain, Font = Theme.FontMain };
             txtDescription = new TextBox { Location = new Point(5, ry), Width = 188, Height = 45, Multiline = true, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
@@ -832,7 +833,7 @@ namespace ChickenDist.Forms
                     chkIsService.Text = "🔧 صنف خدمة (سالب)";
                 }
                 chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
-                chkIsIMEI.Checked = dr.Table.Columns.Contains("IsIMEI") && dr["IsIMEI"] != DBNull.Value ? Convert.ToBoolean(dr["IsIMEI"]) : (AppConfig.BusinessType == "Mobiles");
+                if (chkIsIMEI != null) chkIsIMEI.Checked = (AppConfig.BusinessType == "Mobiles") && dr.Table.Columns.Contains("IsIMEI") && dr["IsIMEI"] != DBNull.Value && Convert.ToBoolean(dr["IsIMEI"]);
                 _originalHasExpiry = dr.Table.Columns.Contains("HasExpiry") && dr["HasExpiry"] != DBNull.Value ? Convert.ToBoolean(dr["HasExpiry"]) : false;
                 if (chkHasExpiry != null) chkHasExpiry.Checked = _originalHasExpiry;
                 if (nudDefaultExpiryDays != null)
@@ -1226,7 +1227,7 @@ namespace ChickenDist.Forms
                     cboUnit2Name.Text.Trim(), newU2Factor, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                     newU3Factor, chkIsQuickItem.Checked, producerVal,
                     chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal,
-                    _imageUrl1, _imageUrl2, _imageUrl3, chkIsIMEI != null && chkIsIMEI.Checked);
+                    _imageUrl1, _imageUrl2, _imageUrl3, (AppConfig.BusinessType == "Mobiles") && chkIsIMEI != null && chkIsIMEI.Checked);
 
                 if (id > 0)
                 {
