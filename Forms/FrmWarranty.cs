@@ -1,334 +1,477 @@
 using System;
 using System.Data;
-using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
 using ChickenDist.DAL;
 
 namespace ChickenDist.Forms
 {
-    public class FrmWarranty : Form
+    public partial class FrmWarranty : Form
     {
         private DataGridView dgTickets;
         private TextBox txtSearch;
         private ComboBox cboStatusFilter;
-        private DateTimePicker dtpFrom;
-        private DateTimePicker dtpTo;
-        private CheckBox chkFilterDates;
-        private Button btnRefresh;
-
-        // Stats labels
-        private Label lblValTotal;
-        private Label lblValAtShop;
-        private Label lblValAtVendor;
-        private Label lblValReady;
-        private Label lblValDelivered;
-
-        // Action buttons
-        private Button btnAdd;
-        private Button btnEdit;
-        private Button btnSendToVendor;
-        private Button btnReceiveFromVendor;
-        private Button btnDeliver;
-        private Button btnPrintReceipt;
-        private Button btnWhatsApp;
-        private Button btnDelete;
+        private ComboBox cboResolutionFilter;
+        private Label lblTotalCount;
+        private Label lblReceivedCount;
+        private Label lblVendorCount;
+        private Label lblReadyCount;
+        private Label lblDeliveredCount;
+        private DataTable dtTickets;
 
         public FrmWarranty()
         {
-            InitUI();
-            LoadTickets();
-            UpdateStats();
+            InitializeComponent();
         }
 
-        private void InitUI()
+        private void InitializeComponent()
         {
-            this.Text = "🛡️ سجل وتتبع أجهزة الضمان وخدمة ما بعد البيع";
-            this.Size = new Size(1220, 720);
+            this.SuspendLayout();
+            this.Text = "إدارة الضمان وخدمة ما بعد البيع";
+            this.Size = new Size(1250, 750);
+            this.MinimumSize = new Size(1000, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Theme.BgMain;
-            this.Font = Theme.FontMain;
-            this.KeyPreview = true;
-            this.KeyDown += FrmWarranty_KeyDown;
+            this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+            this.BackColor = Color.FromArgb(245, 247, 250);
 
-            // ── Top Title Bar ──
-            var pnlTitle = Theme.MakeTitleBar("🛡️ سجل وتتبع أجهزة الضمان وخدمات التوكيل", "متابعة استلام أجهزة العملاء تحت الضمان وإرسالها للتوكيلات وتسليمها دون التأثير على المخزون أو الحسابات.");
-            this.Controls.Add(pnlTitle);
-
-            // ── Stats Panel (Top Cards) ──
-            var pnlStats = new TableLayoutPanel
+            // ==========================================
+            // 1. TOP HEADER (48px)
+            // ==========================================
+            Panel pnlHeader = new Panel
             {
-                Location = new Point(15, 65),
-                Size = new Size(1175, 65),
+                Dock = DockStyle.Top,
+                Height = 48,
+                BackColor = Color.FromArgb(24, 43, 73),
+                Padding = new Padding(15, 0, 15, 0)
+            };
+
+            Label lblTitle = new Label
+            {
+                Text = "🛡️ سجل أجهزة الضمان وخدمة ما بعد البيع (استلام / تسليم / صيانة)",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlHeader.Controls.Add(lblTitle);
+
+            // ==========================================
+            // 2. STATS CARDS (80px)
+            // ==========================================
+            Panel pnlStatsWrap = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 80,
+                BackColor = Color.FromArgb(245, 247, 250),
+                Padding = new Padding(12, 8, 12, 6)
+            };
+
+            TableLayoutPanel tblStats = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
                 ColumnCount = 5,
                 RowCount = 1,
                 BackColor = Color.Transparent
             };
-            for (int i = 0; i < 5; i++) pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-            this.Controls.Add(pnlStats);
+            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
 
-            pnlStats.Controls.Add(CreateStatCard("📋 إجمالي الأجهزة", out lblValTotal, Color.FromArgb(70, 80, 95)), 0, 0);
-            pnlStats.Controls.Add(CreateStatCard("📥 بالمحل (قيد الإرسال)", out lblValAtShop, Color.FromArgb(217, 119, 6)), 1, 0);
-            pnlStats.Controls.Add(CreateStatCard("🚚 عند التوكيل (قيد الفحص)", out lblValAtVendor, Color.FromArgb(14, 116, 144)), 2, 0);
-            pnlStats.Controls.Add(CreateStatCard("⏳ جاهز للاستلام", out lblValReady, Color.FromArgb(124, 58, 237)), 3, 0);
-            pnlStats.Controls.Add(CreateStatCard("✅ تم التسليم للزبون", out lblValDelivered, Color.FromArgb(16, 185, 129)), 4, 0);
+            lblTotalCount = new Label();
+            lblReceivedCount = new Label();
+            lblVendorCount = new Label();
+            lblReadyCount = new Label();
+            lblDeliveredCount = new Label();
 
-            // ── Search & Filter Bar ──
-            var pnlFilter = new Panel
+            tblStats.Controls.Add(CreateStatCard("إجمالي الإيصالات", lblTotalCount, Color.FromArgb(52, 73, 94)), 0, 0);
+            tblStats.Controls.Add(CreateStatCard("مستلم بالمحل", lblReceivedCount, Color.FromArgb(41, 128, 185)), 1, 0);
+            tblStats.Controls.Add(CreateStatCard("مرسل للتوكيل / صيانة", lblVendorCount, Color.FromArgb(230, 126, 34)), 2, 0);
+            tblStats.Controls.Add(CreateStatCard("جاهز للتسليم", lblReadyCount, Color.FromArgb(39, 174, 96)), 3, 0);
+            tblStats.Controls.Add(CreateStatCard("تم تسليمه للعميل", lblDeliveredCount, Color.FromArgb(127, 140, 141)), 4, 0);
+
+            pnlStatsWrap.Controls.Add(tblStats);
+
+            // ==========================================
+            // 3. SEARCH & FILTERS (48px)
+            // ==========================================
+            Panel pnlFilter = new Panel
             {
-                Location = new Point(15, 138),
-                Size = new Size(1175, 45),
-                BackColor = Theme.BgCard,
-                BorderStyle = BorderStyle.FixedSingle
+                Dock = DockStyle.Top,
+                Height = 48,
+                BackColor = Color.White,
+                Padding = new Padding(12, 8, 12, 8)
             };
-            this.Controls.Add(pnlFilter);
 
-            pnlFilter.Controls.Add(new Label { Text = "🔍 بحث سريع:", Location = new Point(10, 12), Width = 85, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            txtSearch = new TextBox { Location = new Point(100, 9), Width = 230, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-            txtSearch.TextChanged += (s, e) => LoadTickets();
-            pnlFilter.Controls.Add(txtSearch);
-
-            pnlFilter.Controls.Add(new Label { Text = "الحالة:", Location = new Point(345, 12), Width = 50, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontBold });
-            cboStatusFilter = new ComboBox
+            FlowLayoutPanel flowFilters = new FlowLayoutPanel
             {
-                Location = new Point(400, 9),
-                Width = 160,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = Theme.FontMain,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                AutoScroll = false
             };
+
+            Label lblSearch = new Label { Text = "🔍 بحث سريع:", AutoSize = true, Margin = new Padding(0, 6, 8, 0), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSearch = new TextBox { Width = 230, Height = 26, Margin = new Padding(0, 3, 15, 0) };
+            txtSearch.TextChanged += (s, e) => ApplyClientFilters();
+
+            Label lblStatus = new Label { Text = "الحالة:", AutoSize = true, Margin = new Padding(0, 6, 6, 0), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            cboStatusFilter = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160, Margin = new Padding(0, 3, 15, 0) };
             cboStatusFilter.Items.AddRange(new object[] { "الكل", "مستلم بالمحل", "مرسل للتوكيل", "مستلم من التوكيل (جاهز)", "تم التسليم للزبون", "مرفوض الضمان" });
             cboStatusFilter.SelectedIndex = 0;
-            cboStatusFilter.SelectedIndexChanged += (s, e) => LoadTickets();
-            pnlFilter.Controls.Add(cboStatusFilter);
+            cboStatusFilter.SelectedIndexChanged += (s, e) => ApplyClientFilters();
 
-            chkFilterDates = new CheckBox { Text = "الفترة من:", Location = new Point(575, 11), Width = 85, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            chkFilterDates.CheckedChanged += (s, e) => { dtpFrom.Enabled = dtpTo.Enabled = chkFilterDates.Checked; LoadTickets(); };
-            pnlFilter.Controls.Add(chkFilterDates);
+            Label lblRes = new Label { Text = "النتيجة:", AutoSize = true, Margin = new Padding(0, 6, 6, 0), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            cboResolutionFilter = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150, Margin = new Padding(0, 3, 15, 0) };
+            cboResolutionFilter.Items.AddRange(new object[] { "الكل", "قيد الفحص", "تم الإصلاح بنجاح", "تم استبدال جهاز جديد", "تم استبدال قطعة غيار", "مرفوض - سوء استخدام", "مرفوض - خارج فترة الضمان", "لا يمكن إصلاحه" });
+            cboResolutionFilter.SelectedIndex = 0;
+            cboResolutionFilter.SelectedIndexChanged += (s, e) => ApplyClientFilters();
 
-            dtpFrom = new DateTimePicker { Location = new Point(665, 9), Width = 115, Format = DateTimePickerFormat.Short, Font = Theme.FontMain, Enabled = false };
-            dtpFrom.Value = DateTime.Today.AddMonths(-1);
-            dtpFrom.ValueChanged += (s, e) => { if (chkFilterDates.Checked) LoadTickets(); };
-            pnlFilter.Controls.Add(dtpFrom);
+            Button btnRefresh = new Button
+            {
+                Text = "🔄 تحديث",
+                Width = 90,
+                Height = 28,
+                BackColor = Color.FromArgb(236, 240, 241),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 1, 0, 0)
+            };
+            btnRefresh.FlatAppearance.BorderColor = Color.FromArgb(189, 195, 199);
+            btnRefresh.Click += (s, e) => LoadTickets();
 
-            pnlFilter.Controls.Add(new Label { Text = "إلى:", Location = new Point(785, 12), Width = 30, AutoSize = false, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            dtpTo = new DateTimePicker { Location = new Point(820, 9), Width = 115, Format = DateTimePickerFormat.Short, Font = Theme.FontMain, Enabled = false };
-            dtpTo.Value = DateTime.Today;
-            dtpTo.ValueChanged += (s, e) => { if (chkFilterDates.Checked) LoadTickets(); };
-            pnlFilter.Controls.Add(dtpTo);
+            flowFilters.Controls.Add(lblSearch);
+            flowFilters.Controls.Add(txtSearch);
+            flowFilters.Controls.Add(lblStatus);
+            flowFilters.Controls.Add(cboStatusFilter);
+            flowFilters.Controls.Add(lblRes);
+            flowFilters.Controls.Add(cboResolutionFilter);
+            flowFilters.Controls.Add(btnRefresh);
 
-            btnRefresh = new Button { Text = "🔄 تحديث", Location = new Point(950, 8), Width = 90, Height = 28, BackColor = Color.FromArgb(70, 80, 95), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
-            btnRefresh.Click += (s, e) => { LoadTickets(); UpdateStats(); };
-            pnlFilter.Controls.Add(btnRefresh);
+            pnlFilter.Controls.Add(flowFilters);
 
-            // ── Grid Layout ──
+            // ==========================================
+            // 4. MAIN BODY (Grid + Actions Sidebar)
+            // ==========================================
+            Panel pnlBody = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(12, 10, 12, 12)
+            };
+
+            // Left Action Sidebar (RightToLeft layout makes Left dock on the left side)
+            Panel pnlActions = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 185,
+                Padding = new Padding(0, 0, 10, 0),
+                BackColor = Color.Transparent
+            };
+
+            Button btnNew = CreateActionButton("➕ استلام جهاز جديد", Color.FromArgb(39, 174, 96), Color.White);
+            btnNew.Click += (s, e) => OpenTicketEditor(0);
+
+            Button btnEdit = CreateActionButton("✏️ تعديل / تفاصيل", Color.FromArgb(41, 128, 185), Color.White);
+            btnEdit.Click += (s, e) => EditSelectedTicket();
+
+            Button btnSendVendor = CreateActionButton("🚚 إرسال للتوكيل", Color.FromArgb(230, 126, 34), Color.White);
+            btnSendVendor.Click += (s, e) => QuickSendToVendor();
+
+            Button btnReceiveVendor = CreateActionButton("📦 استلام من التوكيل", Color.FromArgb(142, 68, 173), Color.White);
+            btnReceiveVendor.Click += (s, e) => QuickReceiveFromVendor();
+
+            Button btnDeliverCustomer = CreateActionButton("🤝 تسليم للعميل", Color.FromArgb(22, 160, 133), Color.White);
+            btnDeliverCustomer.Click += (s, e) => QuickDeliverCustomer();
+
+            Button btnPrint = CreateActionButton("🖨️ طباعة إيصال استلام", Color.FromArgb(52, 73, 94), Color.White);
+            btnPrint.Click += (s, e) => PrintReceipt();
+
+            Button btnDelete = CreateActionButton("🗑️ حذف الإيصال", Color.FromArgb(192, 57, 43), Color.White);
+            btnDelete.Click += (s, e) => DeleteTicket();
+
+            // Stack buttons nicely inside pnlActions
+            btnDelete.Dock = DockStyle.Top;
+            btnPrint.Dock = DockStyle.Top;
+            btnDeliverCustomer.Dock = DockStyle.Top;
+            btnReceiveVendor.Dock = DockStyle.Top;
+            btnSendVendor.Dock = DockStyle.Top;
+            btnEdit.Dock = DockStyle.Top;
+            btnNew.Dock = DockStyle.Top;
+
+            pnlActions.Controls.Add(btnDelete);
+            pnlActions.Controls.Add(btnPrint);
+            pnlActions.Controls.Add(btnDeliverCustomer);
+            pnlActions.Controls.Add(btnReceiveVendor);
+            pnlActions.Controls.Add(btnSendVendor);
+            pnlActions.Controls.Add(btnEdit);
+            pnlActions.Controls.Add(btnNew);
+
+            // Grid Container
+            Panel pnlGridBox = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(1)
+            };
+
             dgTickets = new DataGridView
             {
-                Location = new Point(15, 192),
-                Size = new Size(980, 475),
+                Dock = DockStyle.Fill,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                RowHeadersVisible = false,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
-                AllowUserToAddRows = false,
-                AllowUserToDeleteRows = false,
-                AllowUserToResizeRows = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                RowHeadersVisible = false,
-                BackgroundColor = Theme.BgCard,
-                BorderStyle = BorderStyle.None
+                EnableHeadersVisualStyles = false,
+                AutoGenerateColumns = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
             };
+
+            SetupGridColumns();
             Theme.ApplyGridTheme(dgTickets);
             dgTickets.DoubleClick += (s, e) => EditSelectedTicket();
-            dgTickets.CellFormatting += DgTickets_CellFormatting;
-            this.Controls.Add(dgTickets);
 
-            // ── Actions Sidebar ──
-            var pnlActions = new Panel
-            {
-                Location = new Point(1005, 192),
-                Size = new Size(185, 475),
-                BackColor = Theme.BgCard,
-                BorderStyle = BorderStyle.FixedSingle,
-                Padding = new Padding(10)
-            };
-            this.Controls.Add(pnlActions);
+            pnlGridBox.Controls.Add(dgTickets);
 
-            int by = 10;
-            btnAdd = CreateActionButton("➕ استلام جهاز (F2)", by, Theme.Success);
-            btnAdd.Click += (s, e) => AddNewTicket();
-            pnlActions.Controls.Add(btnAdd);
-            by += 44;
+            pnlBody.Controls.Add(pnlGridBox);
+            pnlBody.Controls.Add(pnlActions);
 
-            btnEdit = CreateActionButton("📝 تعديل الكرت (F3)", by, Theme.Accent);
-            btnEdit.Click += (s, e) => EditSelectedTicket();
-            pnlActions.Controls.Add(btnEdit);
-            by += 44;
+            // Add all main docked panels in reverse dock order
+            this.Controls.Add(pnlBody);
+            this.Controls.Add(pnlFilter);
+            this.Controls.Add(pnlStatsWrap);
+            this.Controls.Add(pnlHeader);
 
-            btnSendToVendor = CreateActionButton("🚚 تحويل للتوكيل", by, Color.FromArgb(14, 116, 144));
-            btnSendToVendor.Click += (s, e) => QuickSendToVendor();
-            pnlActions.Controls.Add(btnSendToVendor);
-            by += 44;
-
-            btnReceiveFromVendor = CreateActionButton("📥 استلام من التوكيل", by, Color.FromArgb(124, 58, 237));
-            btnReceiveFromVendor.Click += (s, e) => QuickReceiveFromVendor();
-            pnlActions.Controls.Add(btnReceiveFromVendor);
-            by += 44;
-
-            btnDeliver = CreateActionButton("🤝 تسليم للزبون (F4)", by, Color.FromArgb(16, 185, 129));
-            btnDeliver.Click += (s, e) => QuickDeliverToCustomer();
-            pnlActions.Controls.Add(btnDeliver);
-            by += 52;
-
-            btnPrintReceipt = CreateActionButton("🖨️ طباعة إيصال (F6)", by, Color.FromArgb(30, 80, 180));
-            btnPrintReceipt.Click += (s, e) => PrintSelectedReceipt();
-            pnlActions.Controls.Add(btnPrintReceipt);
-            by += 44;
-
-            btnWhatsApp = CreateActionButton("💬 إرسال واتساب (F7)", by, Color.FromArgb(37, 211, 102));
-            btnWhatsApp.Click += (s, e) => SendWhatsApp();
-            pnlActions.Controls.Add(btnWhatsApp);
-            by += 44;
-
-            btnDelete = CreateActionButton("🗑️ حذف السجل (Del)", by, Color.FromArgb(220, 38, 38));
-            btnDelete.Click += (s, e) => DeleteSelectedTicket();
-            pnlActions.Controls.Add(btnDelete);
-
-            // Context Menu
-            var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes };
-            ctx.Items.Add("📝 تعديل كرت الضمان", null, (s, e) => EditSelectedTicket());
-            ctx.Items.Add("🖨️ طباعة إيصال استلام", null, (s, e) => PrintSelectedReceipt());
-            ctx.Items.Add("💬 إرسال إشعار واتساب للزبون", null, (s, e) => SendWhatsApp());
-            ctx.Items.Add(new ToolStripSeparator());
-            ctx.Items.Add("🚚 تحويل إلى التوكيل", null, (s, e) => QuickSendToVendor());
-            ctx.Items.Add("📥 استلام من التوكيل (جاهز)", null, (s, e) => QuickReceiveFromVendor());
-            ctx.Items.Add("🤝 تم التسليم للزبون", null, (s, e) => QuickDeliverToCustomer());
-            ctx.Items.Add(new ToolStripSeparator());
-            ctx.Items.Add("🗑️ حذف التذكرة", null, (s, e) => DeleteSelectedTicket());
-            dgTickets.ContextMenuStrip = ctx;
+            this.Load += (s, e) => LoadTickets();
+            this.ResumeLayout(false);
         }
 
-        private Panel CreateStatCard(string title, out Label valLabel, Color barColor)
+        private Panel CreateStatCard(string title, Label lblValue, Color accentColor)
         {
-            var pnl = new Panel
+            Panel card = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Theme.BgCard,
-                Margin = new Padding(3),
-                BorderStyle = BorderStyle.FixedSingle
+                BackColor = Color.White,
+                Margin = new Padding(4, 0, 4, 0)
             };
 
-            var bar = new Panel { Dock = DockStyle.Right, Width = 6, BackColor = barColor };
-            pnl.Controls.Add(bar);
+            Panel bar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 3,
+                BackColor = accentColor
+            };
 
-            var lblTitle = new Label { Text = title, Dock = DockStyle.Top, Height = 22, ForeColor = Theme.TextMuted, Font = new Font(Theme.FontMain.FontFamily, 8.5f), TextAlign = ContentAlignment.MiddleRight, Padding = new Padding(0, 3, 10, 0) };
-            valLabel = new Label { Text = "0", Dock = DockStyle.Fill, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain.FontFamily, 13f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter };
+            lblValue.Text = "0";
+            lblValue.Dock = DockStyle.Fill;
+            lblValue.TextAlign = ContentAlignment.MiddleCenter;
+            lblValue.Font = new Font("Segoe UI", 16f, FontStyle.Bold);
+            lblValue.ForeColor = accentColor;
 
-            pnl.Controls.AddRange(new Control[] { valLabel, lblTitle });
-            return pnl;
+            Label lblTitle = new Label
+            {
+                Text = title,
+                Dock = DockStyle.Bottom,
+                Height = 22,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(120, 130, 140)
+            };
+
+            card.Controls.Add(lblValue);
+            card.Controls.Add(lblTitle);
+            card.Controls.Add(bar);
+            return card;
         }
 
-        private Button CreateActionButton(string text, int y, Color bgColor)
+        private Button CreateActionButton(string text, Color bg, Color fg)
         {
-            var btn = Theme.MakeButton(text, 10, y, 160, 36, bgColor);
-            btn.Font = new Font(Theme.FontMain.FontFamily, 9f, FontStyle.Bold);
-            btn.Cursor = Cursors.Hand;
+            Button btn = new Button
+            {
+                Text = text,
+                Height = 38,
+                BackColor = bg,
+                ForeColor = fg,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 0, 6)
+            };
+            btn.FlatAppearance.BorderSize = 0;
             return btn;
         }
 
-        private void FrmWarranty_KeyDown(object sender, KeyEventArgs e)
+        private void SetupGridColumns()
         {
-            if (e.KeyCode == Keys.F2) { AddNewTicket(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F3) { EditSelectedTicket(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F4) { QuickDeliverToCustomer(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F5) { LoadTickets(); UpdateStats(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F6) { PrintSelectedReceipt(); e.Handled = true; }
-            else if (e.KeyCode == Keys.F7) { SendWhatsApp(); e.Handled = true; }
-            else if (e.KeyCode == Keys.Delete) { DeleteSelectedTicket(); e.Handled = true; }
+            dgTickets.Columns.Clear();
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "TicketID",
+                DataPropertyName = "TicketID",
+                Visible = false
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "TicketCode",
+                DataPropertyName = "TicketCode",
+                HeaderText = "رقم الإيصال",
+                Width = 105
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ReceiveDate",
+                DataPropertyName = "ReceiveDate",
+                HeaderText = "تاريخ الاستلام",
+                Width = 110,
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" }
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "CustomerName",
+                DataPropertyName = "CustomerName",
+                HeaderText = "اسم العميل",
+                Width = 165
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "CustomerPhone",
+                DataPropertyName = "CustomerPhone",
+                HeaderText = "رقم الهاتف",
+                Width = 120
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ProductName",
+                DataPropertyName = "ProductName",
+                HeaderText = "الصنف / الجهاز",
+                Width = 180
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Brand",
+                DataPropertyName = "Brand",
+                HeaderText = "الماركة",
+                Width = 95
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "SerialNumber",
+                DataPropertyName = "SerialNumber",
+                HeaderText = "السيريال / IMEI",
+                Width = 140
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ProblemDescription",
+                DataPropertyName = "ProblemDescription",
+                HeaderText = "وصف العطل / الشكوى",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Status",
+                DataPropertyName = "Status",
+                HeaderText = "الحالة الحالية",
+                Width = 135
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "VendorName",
+                DataPropertyName = "VendorName",
+                HeaderText = "التوكيل / الورشة",
+                Width = 130
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "ResolutionType",
+                DataPropertyName = "ResolutionType",
+                HeaderText = "نتيجة الصيانة",
+                Width = 130
+            });
+
+            dgTickets.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "DeliveredToCustomerDate",
+                DataPropertyName = "DeliveredToCustomerDate",
+                HeaderText = "تاريخ التسليم للعميل",
+                Width = 110,
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" }
+            });
+
+            dgTickets.CellFormatting += DgTickets_CellFormatting;
+        }
+
+        private void DgTickets_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            string colName = dgTickets.Columns[e.ColumnIndex].Name;
+            if (colName == "Status" && e.Value != null)
+            {
+                string status = e.Value.ToString();
+                if (status == "مستلم بالمحل")
+                {
+                    e.CellStyle.BackColor = Color.FromArgb(235, 245, 251);
+                    e.CellStyle.ForeColor = Color.FromArgb(41, 128, 185);
+                    e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                }
+                else if (status == "مرسل للتوكيل")
+                {
+                    e.CellStyle.BackColor = Color.FromArgb(254, 249, 231);
+                    e.CellStyle.ForeColor = Color.FromArgb(211, 84, 0);
+                    e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                }
+                else if (status == "مستلم من التوكيل (جاهز)" || status.Contains("جاهز"))
+                {
+                    e.CellStyle.BackColor = Color.FromArgb(234, 250, 241);
+                    e.CellStyle.ForeColor = Color.FromArgb(39, 174, 96);
+                    e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                }
+                else if (status == "تم التسليم للزبون")
+                {
+                    e.CellStyle.BackColor = Color.FromArgb(242, 243, 244);
+                    e.CellStyle.ForeColor = Color.FromArgb(127, 140, 141);
+                }
+                else if (status == "مرفوض الضمان" || status == "مرفوض")
+                {
+                    e.CellStyle.BackColor = Color.FromArgb(253, 237, 236);
+                    e.CellStyle.ForeColor = Color.FromArgb(192, 57, 43);
+                    e.CellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                }
+            }
         }
 
         private void LoadTickets()
         {
             try
             {
-                string s = txtSearch.Text.Trim();
-                string st = cboStatusFilter.SelectedItem?.ToString();
-                DateTime? from = chkFilterDates.Checked ? (DateTime?)dtpFrom.Value : null;
-                DateTime? to = chkFilterDates.Checked ? (DateTime?)dtpTo.Value : null;
-
-                var dt = WarrantyDAL.GetAll(s, st, from, to);
-                dgTickets.DataSource = dt;
-
-                // Adjust columns
-                if (dgTickets.Columns.Contains("TicketID")) dgTickets.Columns["TicketID"].Visible = false;
-                if (dgTickets.Columns.Contains("ClientID")) dgTickets.Columns["ClientID"].Visible = false;
-                if (dgTickets.Columns.Contains("ProductID")) dgTickets.Columns["ProductID"].Visible = false;
-                if (dgTickets.Columns.Contains("CreatedBy")) dgTickets.Columns["CreatedBy"].Visible = false;
-                if (dgTickets.Columns.Contains("CreatedAt")) dgTickets.Columns["CreatedAt"].Visible = false;
-                if (dgTickets.Columns.Contains("UpdatedAt")) dgTickets.Columns["UpdatedAt"].Visible = false;
-                if (dgTickets.Columns.Contains("CustomerAddress")) dgTickets.Columns["CustomerAddress"].Visible = false;
-                if (dgTickets.Columns.Contains("VendorTrackingNo")) dgTickets.Columns["VendorTrackingNo"].Visible = false;
-
-                if (dgTickets.Columns.Contains("TicketCode")) { dgTickets.Columns["TicketCode"].HeaderText = "رقم الإيصال"; dgTickets.Columns["TicketCode"].FillWeight = 55; }
-                if (dgTickets.Columns.Contains("ReceiveDate")) { dgTickets.Columns["ReceiveDate"].HeaderText = "تاريخ الاستلام"; dgTickets.Columns["ReceiveDate"].FillWeight = 55; dgTickets.Columns["ReceiveDate"].DefaultCellStyle.Format = "yyyy/MM/dd"; }
-                if (dgTickets.Columns.Contains("CustomerName")) { dgTickets.Columns["CustomerName"].HeaderText = "اسم العميل"; dgTickets.Columns["CustomerName"].FillWeight = 85; }
-                if (dgTickets.Columns.Contains("CustomerPhone")) { dgTickets.Columns["CustomerPhone"].HeaderText = "الهاتف"; dgTickets.Columns["CustomerPhone"].FillWeight = 65; }
-                if (dgTickets.Columns.Contains("ProductName")) { dgTickets.Columns["ProductName"].HeaderText = "الجهاز / الصنف"; dgTickets.Columns["ProductName"].FillWeight = 95; }
-                if (dgTickets.Columns.Contains("Brand")) { dgTickets.Columns["Brand"].HeaderText = "الماركة"; dgTickets.Columns["Brand"].FillWeight = 50; }
-                if (dgTickets.Columns.Contains("SerialNumber")) { dgTickets.Columns["SerialNumber"].HeaderText = "السيريال / الضمان"; dgTickets.Columns["SerialNumber"].FillWeight = 70; }
-                if (dgTickets.Columns.Contains("Status")) { dgTickets.Columns["Status"].HeaderText = "الحالة"; dgTickets.Columns["Status"].FillWeight = 65; }
-                if (dgTickets.Columns.Contains("VendorName")) { dgTickets.Columns["VendorName"].HeaderText = "التوكيل / الصيانة"; dgTickets.Columns["VendorName"].FillWeight = 70; }
-                if (dgTickets.Columns.Contains("ProblemDescription")) { dgTickets.Columns["ProblemDescription"].HeaderText = "العطل"; dgTickets.Columns["ProblemDescription"].FillWeight = 90; }
-                if (dgTickets.Columns.Contains("ResolutionType")) { dgTickets.Columns["ResolutionType"].HeaderText = "النتيجة"; dgTickets.Columns["ResolutionType"].FillWeight = 65; }
-                if (dgTickets.Columns.Contains("DeliveredToCustomerDate")) { dgTickets.Columns["DeliveredToCustomerDate"].HeaderText = "تاريخ التسليم"; dgTickets.Columns["DeliveredToCustomerDate"].FillWeight = 55; dgTickets.Columns["DeliveredToCustomerDate"].DefaultCellStyle.Format = "yyyy/MM/dd"; }
+                dtTickets = WarrantyDAL.GetAll();
+                ApplyClientFilters();
+                UpdateStats();
             }
             catch (Exception ex)
             {
-                AppLogger.Error("FrmWarranty.LoadTickets", ex);
-            }
-        }
-
-        private void DgTickets_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (e.RowIndex < 0 || e.RowIndex >= dgTickets.Rows.Count) return;
-            var col = dgTickets.Columns[e.ColumnIndex];
-            if (col.Name == "Status" && e.Value != null)
-            {
-                string st = e.Value.ToString();
-                if (st == "مستلم بالمحل")
-                {
-                    e.CellStyle.BackColor = Color.FromArgb(254, 243, 199);
-                    e.CellStyle.ForeColor = Color.FromArgb(146, 64, 14);
-                    e.CellStyle.Font = new Font(Theme.FontMain, FontStyle.Bold);
-                }
-                else if (st == "مرسل للتوكيل")
-                {
-                    e.CellStyle.BackColor = Color.FromArgb(224, 242, 254);
-                    e.CellStyle.ForeColor = Color.FromArgb(7, 89, 133);
-                    e.CellStyle.Font = new Font(Theme.FontMain, FontStyle.Bold);
-                }
-                else if (st.Contains("جاهز") || st.Contains("مستلم من التوكيل"))
-                {
-                    e.CellStyle.BackColor = Color.FromArgb(243, 232, 255);
-                    e.CellStyle.ForeColor = Color.FromArgb(107, 33, 168);
-                    e.CellStyle.Font = new Font(Theme.FontMain, FontStyle.Bold);
-                }
-                else if (st.Contains("تم التسليم"))
-                {
-                    e.CellStyle.BackColor = Color.FromArgb(220, 252, 231);
-                    e.CellStyle.ForeColor = Color.FromArgb(22, 101, 52);
-                    e.CellStyle.Font = new Font(Theme.FontMain, FontStyle.Bold);
-                }
-                else if (st.Contains("مرفوض"))
-                {
-                    e.CellStyle.BackColor = Color.FromArgb(254, 226, 226);
-                    e.CellStyle.ForeColor = Color.FromArgb(153, 27, 27);
-                    e.CellStyle.Font = new Font(Theme.FontMain, FontStyle.Bold);
-                }
+                MessageBox.Show("حدث خطأ أثناء تحميل سجلات الضمان: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -336,343 +479,204 @@ namespace ChickenDist.Forms
         {
             try
             {
-                var s = WarrantyDAL.GetStats();
-                lblValTotal.Text = s.TotalCount.ToString("N0");
-                lblValAtShop.Text = s.AtShopCount.ToString("N0");
-                lblValAtVendor.Text = s.AtVendorCount.ToString("N0");
-                lblValReady.Text = s.ReadyCount.ToString("N0");
-                lblValDelivered.Text = s.DeliveredCount.ToString("N0");
+                var stats = WarrantyDAL.GetStats();
+                lblTotalCount.Text = stats.TotalCount.ToString();
+                lblReceivedCount.Text = stats.AtShopCount.ToString();
+                lblVendorCount.Text = stats.AtVendorCount.ToString();
+                lblReadyCount.Text = stats.ReadyCount.ToString();
+                lblDeliveredCount.Text = stats.DeliveredCount.ToString();
             }
             catch { }
         }
 
-        private int GetSelectedTicketID()
+        private void ApplyClientFilters()
         {
-            if (dgTickets.SelectedRows.Count == 0) return 0;
-            var r = (dgTickets.SelectedRows[0].DataBoundItem as DataRowView)?.Row;
-            if (r == null || !r.Table.Columns.Contains("TicketID")) return 0;
-            return Convert.ToInt32(r["TicketID"]);
+            if (dtTickets == null) return;
+
+            string search = txtSearch?.Text?.Trim()?.Replace("'", "''") ?? "";
+            string status = cboStatusFilter?.SelectedItem?.ToString() ?? "الكل";
+            string resolution = cboResolutionFilter?.SelectedItem?.ToString() ?? "الكل";
+
+            string filter = "1=1";
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                filter += $" AND (TicketCode LIKE '%{search}%' OR CustomerName LIKE '%{search}%' OR CustomerPhone LIKE '%{search}%' OR ProductName LIKE '%{search}%' OR SerialNumber LIKE '%{search}%' OR Brand LIKE '%{search}%')";
+            }
+
+            if (status != "الكل")
+            {
+                filter += $" AND Status = '{status}'";
+            }
+
+            if (resolution != "الكل")
+            {
+                filter += $" AND ResolutionType = '{resolution}'";
+            }
+
+            DataView dv = dtTickets.DefaultView;
+            dv.RowFilter = filter;
+            dgTickets.DataSource = dv;
         }
 
-        private void AddNewTicket()
+        private int GetSelectedTicketID()
         {
-            using (var card = new FrmWarrantyCard(0))
+            if (dgTickets.CurrentRow == null || dgTickets.CurrentRow.Index < 0)
+                return 0;
+
+            object val = dgTickets.CurrentRow.Cells["TicketID"]?.Value;
+            if (val != null && int.TryParse(val.ToString(), out int id))
+                return id;
+
+            return 0;
+        }
+
+        private void OpenTicketEditor(int ticketId)
+        {
+            using (FrmWarrantyCard frm = new FrmWarrantyCard(ticketId))
             {
-                if (card.ShowDialog() == DialogResult.OK)
+                if (frm.ShowDialog() == DialogResult.OK)
                 {
                     LoadTickets();
-                    UpdateStats();
-                    if (card.ShouldPrintReceipt && card.SavedTicketID > 0)
-                    {
-                        PrintReceiptByID(card.SavedTicketID);
-                    }
                 }
             }
         }
 
         private void EditSelectedTicket()
         {
-            int tid = GetSelectedTicketID();
-            if (tid <= 0)
+            int id = GetSelectedTicketID();
+            if (id <= 0)
             {
-                MessageBox.Show("يرجى اختيار تذكرة من الجدول أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("يرجى اختيار إيصال من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-
-            using (var card = new FrmWarrantyCard(tid))
-            {
-                if (card.ShowDialog() == DialogResult.OK)
-                {
-                    LoadTickets();
-                    UpdateStats();
-                    if (card.ShouldPrintReceipt)
-                    {
-                        PrintReceiptByID(tid);
-                    }
-                }
-            }
+            OpenTicketEditor(id);
         }
 
         private void QuickSendToVendor()
         {
-            int tid = GetSelectedTicketID();
-            if (tid <= 0)
+            int id = GetSelectedTicketID();
+            if (id <= 0)
             {
-                MessageBox.Show("يرجى اختيار جهاز من الجدول أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("يرجى اختيار إيصال أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            var ticket = WarrantyDAL.GetByID(tid);
-            if (ticket == null) return;
-
-            string vendor = InputBoxHelper.Show("أدخل اسم التوكيل أو مركز الصيانة المحول إليه الجهاز:", "تحويل إلى التوكيل", ticket.VendorName ?? "");
+            string vendor = InputBoxHelper.Show("أدخل اسم التوكيل / مركز الصيانة:", "إرسال للتوكيل", "");
             if (string.IsNullOrWhiteSpace(vendor)) return;
 
-            string tracking = InputBoxHelper.Show("أدخل رقم بوليصة الشحن أو إيصال التوكيل (اختياري):", "رقم البوليصة / الإيصال", ticket.VendorTrackingNo ?? "");
-
-            WarrantyDAL.UpdateStatus(tid, "مرسل للتوكيل", vendor.Trim(), tracking.Trim());
-            LoadTickets();
-            UpdateStats();
-            MessageBox.Show($"✅ تم تحديث حالة الجهاز رقم [{ticket.TicketCode}] إلى (مرسل للتوكيل: {vendor}).", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            try
+            {
+                WarrantyDAL.UpdateStatus(id, "مرسل للتوكيل", vendorName: vendor);
+                MessageBox.Show("تم تحديث حالة الجهاز إلى (مرسل للتوكيل) بنجاح.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadTickets();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء التحديث: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void QuickReceiveFromVendor()
         {
-            int tid = GetSelectedTicketID();
-            if (tid <= 0)
+            int id = GetSelectedTicketID();
+            if (id <= 0)
             {
-                MessageBox.Show("يرجى اختيار جهاز من الجدول أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("يرجى اختيار إيصال أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            var ticket = WarrantyDAL.GetByID(tid);
-            if (ticket == null) return;
+            string report = InputBoxHelper.Show("أدخل تقرير التوكيل / نتيجة الإصلاح:", "استلام من التوكيل", "تم الإصلاح بنجاح");
+            if (report == null) return;
 
-            string result = InputBoxHelper.Show("أدخل نتيجة فحص التوكيل (مثال: تم الإصلاح بنجاح / تم استبدال جهاز جديد / تم تغيير قطعة غيار / مرفوض سوء استخدام):", "نتيجة الفحص", "تم الإصلاح بنجاح");
-            if (string.IsNullOrWhiteSpace(result)) return;
-
-            WarrantyDAL.UpdateStatus(tid, "مستلم من التوكيل (جاهز)", null, null, null, result.Trim());
-            LoadTickets();
-            UpdateStats();
-
-            var ask = MessageBox.Show($"✅ تم استلام الجهاز من التوكيل وأصبح جاهزاً للتسليم.\n\nهل ترغب في إرسال رسالة واتساب للزبون لإبلاغه بجاهزية الاستلام؟", "إرسال واتساب للزبون", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (ask == DialogResult.Yes)
+            try
             {
-                SendWhatsApp();
-            }
-        }
-
-        private void QuickDeliverToCustomer()
-        {
-            int tid = GetSelectedTicketID();
-            if (tid <= 0)
-            {
-                MessageBox.Show("يرجى اختيار جهاز من الجدول أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            var ticket = WarrantyDAL.GetByID(tid);
-            if (ticket == null) return;
-
-            if (ticket.Status == "تم التسليم للزبون")
-            {
-                MessageBox.Show("هذا الجهاز تم تسليمه للزبون بالفعل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            var res = MessageBox.Show($"هل أنت متأكد من تسليم الجهاز [{ticket.ProductName}] للعميل [{ticket.CustomerName}] وإغلاق التذكرة؟", "تأكيد التسليم للزبون", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (res != DialogResult.Yes) return;
-
-            WarrantyDAL.UpdateStatus(tid, "تم التسليم للزبون", deliveredDate: DateTime.Now);
-            LoadTickets();
-            UpdateStats();
-            MessageBox.Show($"🤝 تم تسليم الجهاز للعميل [{ticket.CustomerName}] بنجاح وإغلاق التذكرة.", "تم التسليم", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-        private void DeleteSelectedTicket()
-        {
-            int tid = GetSelectedTicketID();
-            if (tid <= 0) return;
-
-            var ticket = WarrantyDAL.GetByID(tid);
-            if (ticket == null) return;
-
-            var res = MessageBox.Show($"⚠️ هل أنت متأكد تماماً من حذف تذكرة الضمان رقم [{ticket.TicketCode}] الخاصة بالجهاز [{ticket.ProductName}]؟\n\nلن يمكن التراجع عن هذا الإجراء.", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (res == DialogResult.Yes)
-            {
-                WarrantyDAL.Delete(tid);
+                WarrantyDAL.UpdateStatus(id, "مستلم من التوكيل (جاهز)", vendorReport: report, resolutionType: "تم الإصلاح بنجاح");
+                MessageBox.Show("تم استلام الجهاز بالمحل بنجاح وهو الآن جاهز لتسليمه للعميل.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadTickets();
-                UpdateStats();
-                MessageBox.Show("تم حذف التذكرة بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("خطأ أثناء التحديث: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void PrintSelectedReceipt()
+        private void QuickDeliverCustomer()
         {
-            int tid = GetSelectedTicketID();
-            if (tid <= 0)
+            int id = GetSelectedTicketID();
+            if (id <= 0)
             {
-                MessageBox.Show("يرجى اختيار تذكرة لطباعة الإيصال الخاص بها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("يرجى اختيار إيصال أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            PrintReceiptByID(tid);
-        }
 
-        private void PrintReceiptByID(int ticketID)
-        {
-            var ticket = WarrantyDAL.GetByID(ticketID);
-            if (ticket == null) return;
-
-            try
+            if (MessageBox.Show("هل تود تأكيد تسليم الجهاز للعميل وإنهاء الإيصال؟", "تأكيد التسليم", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                PrintDocument pd = new PrintDocument();
-                pd.PrintController = new StandardPrintController();
-                AppConfig.SetPrinter(pd, AppConfig.ReceiptPrinterName);
-
-                pd.PrintPage += (s, ev) =>
+                try
                 {
-                    Graphics g = ev.Graphics;
-                    float y = 10;
-                    float receiptWidth = ev.PageBounds.Width > 0 ? ev.PageBounds.Width : 280;
-                    if (receiptWidth > 300) receiptWidth = 280; // Standard 80mm thermal width
-
-                    Font fontShop = new Font("Arial", 11f, FontStyle.Bold);
-                    Font fontTitle = new Font("Arial", 10.5f, FontStyle.Bold);
-                    Font fontBold = new Font("Arial", 8.5f, FontStyle.Bold);
-                    Font fontRegular = new Font("Arial", 8f, FontStyle.Regular);
-                    Font fontSmall = new Font("Arial", 7f, FontStyle.Regular);
-
-                    StringFormat sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    StringFormat sfRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
-                    StringFormat sfLeft = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
-
-                    // Shop Name & Header
-                    g.DrawString(AppConfig.CompanyName, fontShop, Brushes.Black, new RectangleF(0, y, receiptWidth, 22), sfCenter); y += 22;
-                    if (!string.IsNullOrEmpty(AppConfig.CompanyPhone))
-                    {
-                        g.DrawString("هاتف: " + AppConfig.CompanyPhone, fontRegular, Brushes.Black, new RectangleF(0, y, receiptWidth, 16), sfCenter); y += 16;
-                    }
-
-                    // Title
-                    bool isDelivered = ticket.Status.Contains("تم التسليم");
-                    string titleText = isDelivered ? "=== إيصال تسليم جهاز للعميل ===" : "=== إيصال استلام جهاز تحت الضمان ===";
-                    g.DrawString(titleText, fontTitle, Brushes.Black, new RectangleF(0, y, receiptWidth, 20), sfCenter); y += 22;
-
-                    // Barcode
-                    try
-                    {
-                        FrmPrintProductBarcode.DrawCode39(g, ticket.TicketCode, (receiptWidth - 190) / 2, y, 190, 26);
-                        y += 28;
-                        g.DrawString("*" + ticket.TicketCode + "*", fontBold, Brushes.Black, new RectangleF(0, y, receiptWidth, 14), sfCenter);
-                        y += 18;
-                    }
-                    catch
-                    {
-                        g.DrawString($"رقم الإيصال: {ticket.TicketCode}", fontBold, Brushes.Black, new RectangleF(0, y, receiptWidth, 18), sfCenter);
-                        y += 20;
-                    }
-
-                    // Divider
-                    g.DrawLine(Pens.Black, 5, y, receiptWidth - 5, y); y += 8;
-
-                    // Meta Info
-                    Action<string, string> drawRow = (lbl, val) =>
-                    {
-                        if (string.IsNullOrWhiteSpace(val)) return;
-                        g.DrawString(lbl, fontBold, Brushes.Black, new RectangleF(receiptWidth - 110, y, 105, 18), sfRight);
-                        g.DrawString(val, fontRegular, Brushes.Black, new RectangleF(5, y, receiptWidth - 120, 18), sfLeft);
-                        y += 18;
-                    };
-
-                    drawRow("تاريخ الاستلام:", ticket.ReceiveDate.ToString("yyyy/MM/dd HH:mm"));
-                    drawRow("اسم العميل:", ticket.CustomerName);
-                    drawRow("هاتف العميل:", ticket.CustomerPhone);
-                    drawRow("اسم الجهاز:", ticket.ProductName);
-                    if (!string.IsNullOrEmpty(ticket.Brand)) drawRow("الماركة:", ticket.Brand);
-                    if (!string.IsNullOrEmpty(ticket.SerialNumber)) drawRow("السيريال/الضمان:", ticket.SerialNumber);
-                    if (!string.IsNullOrEmpty(ticket.InvoiceNumber)) drawRow("رقم الفاتورة:", ticket.InvoiceNumber);
-                    if (!string.IsNullOrEmpty(ticket.Accessories)) drawRow("الملحقات:", ticket.Accessories);
-                    if (!string.IsNullOrEmpty(ticket.DeviceCondition)) drawRow("الحالة الظاهرية:", ticket.DeviceCondition);
-                    drawRow("العطل والشكوى:", ticket.ProblemDescription);
-
-                    if (!string.IsNullOrEmpty(ticket.VendorName)) drawRow("التوكيل الموجه له:", ticket.VendorName);
-                    if (!string.IsNullOrEmpty(ticket.ResolutionType)) drawRow("نتيجة الفحص:", ticket.ResolutionType);
-                    drawRow("حالة التذكرة:", ticket.Status);
-
-                    if (ticket.DeliveredToCustomerDate.HasValue)
-                        drawRow("تاريخ التسليم:", ticket.DeliveredToCustomerDate.Value.ToString("yyyy/MM/dd HH:mm"));
-
-                    y += 5;
-                    g.DrawLine(Pens.Black, 5, y, receiptWidth - 5, y); y += 8;
-
-                    // Terms & Notice
-                    string terms = "• يُرجى إحضار هذا الإيصال عند استلام الجهاز.\n• المحل غير مسؤول عن الأجهزة بعد مرور 30 يوماً من إبلاغ العميل بجاهزيتها.";
-                    g.DrawString(terms, fontSmall, Brushes.Black, new RectangleF(5, y, receiptWidth - 10, 36), sfRight);
-                    y += 40;
-
-                    // Signatures
-                    g.DrawString("توقيع المستلم: .................", fontSmall, Brushes.Black, new RectangleF(receiptWidth - 130, y, 125, 16), sfRight);
-                    g.DrawString("توقيع العميل: .................", fontSmall, Brushes.Black, new RectangleF(5, y, 120, 16), sfLeft);
-                    y += 25;
-
-                    g.DrawString("نشكركم على ثقتكم الغالية", fontBold, Brushes.Black, new RectangleF(0, y, receiptWidth, 16), sfCenter);
-                };
-
-                PrintPreviewDialog ppd = new PrintPreviewDialog { Document = pd };
-                ppd.StartPosition = FormStartPosition.CenterScreen;
-                ppd.Size = new Size(500, 650);
-                ppd.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("حدث خطأ أثناء الطباعة: " + ex.Message, "خطأ طباعة", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    WarrantyDAL.UpdateStatus(id, "تم التسليم للزبون", deliveredDate: DateTime.Now);
+                    MessageBox.Show("تم تسليم الجهاز للعميل وإغلاق الإيصال بنجاح.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadTickets();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("خطأ أثناء التحديث: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
-        private void SendWhatsApp()
+        private void DeleteTicket()
         {
-            int tid = GetSelectedTicketID();
-            if (tid <= 0)
+            int id = GetSelectedTicketID();
+            if (id <= 0)
             {
-                MessageBox.Show("يرجى اختيار جهاز من الجدول أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("يرجى اختيار إيصال لحذفه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            var ticket = WarrantyDAL.GetByID(tid);
+            if (MessageBox.Show("هل أنت متأكد من حذف هذا الإيصال نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                try
+                {
+                    WarrantyDAL.Delete(id);
+                    MessageBox.Show("تم حذف الإيصال بنجاح.", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadTickets();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("خطأ أثناء الحذف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void PrintReceipt()
+        {
+            int id = GetSelectedTicketID();
+            if (id <= 0)
+            {
+                MessageBox.Show("يرجى اختيار إيصال لطباعته.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var ticket = WarrantyDAL.GetByID(id);
             if (ticket == null) return;
 
-            string phone = (ticket.CustomerPhone ?? "").Trim();
-            string cleanPhone = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", "");
-            if (string.IsNullOrEmpty(cleanPhone) || cleanPhone.Length < 10)
-            {
-                MessageBox.Show("رقم هاتف العميل غير صحيح أو غير مسجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            string info = $"========================================\n" +
+                          $"       إيصال استلام جهاز للضمان والصيانة     \n" +
+                          $"========================================\n" +
+                          $"رقم الإيصال: {ticket.TicketCode}\n" +
+                          $"التاريخ: {ticket.ReceiveDate:yyyy-MM-dd HH:mm}\n" +
+                          $"العميل: {ticket.CustomerName}\n" +
+                          $"الهاتف: {ticket.CustomerPhone}\n" +
+                          $"الجهاز: {ticket.ProductName} - {ticket.Brand}\n" +
+                          $"السيريال: {ticket.SerialNumber}\n" +
+                          $"العطل: {ticket.ProblemDescription}\n" +
+                          $"المشتملات: {ticket.Accessories}\n" +
+                          $"الحالة الحالية: {ticket.Status}\n" +
+                          $"========================================\n" +
+                          $"ملاحظات: {ticket.Notes}\n";
 
-            // Egypt standard formatting
-            if (cleanPhone.StartsWith("01") && cleanPhone.Length == 11)
-            {
-                cleanPhone = "2" + cleanPhone;
-            }
-
-            string company = AppConfig.CompanyName ?? "المحل";
-            string msg = "";
-
-            if (ticket.Status.Contains("جاهز") || ticket.Status.Contains("مستلم من التوكيل"))
-            {
-                msg = $"مرحباً بك أستاذ/ة *{ticket.CustomerName}* 🌹\n" +
-                      $"يسعدنا إبلاغكم بأن جهازكم: *{ticket.ProductName}*\n" +
-                      $"رقم تذكرة الضمان: *{ticket.TicketCode}*\n" +
-                      $"النتيجة: *{ticket.ResolutionType ?? "تم الفحص بنجاح"}*\n\n" +
-                      $"الجهاز جاهز للاستلام الآن بمحل *{company}*.\n" +
-                      $"بانتظار تشريفكم في أي وقت مع إحضار إيصال الاستلام.";
-            }
-            else if (ticket.Status == "مرسل للتوكيل")
-            {
-                msg = $"مرحباً بك أستاذ/ة *{ticket.CustomerName}* 🌹\n" +
-                      $"نحيطكم علماً بأنه تم تحويل جهازكم: *{ticket.ProductName}*\n" +
-                      $"إلى التوكيل المعتمد (*{ticket.VendorName}*) للفحص والمتابعة.\n" +
-                      $"رقم تذكرة الضمان: *{ticket.TicketCode}*\n\n" +
-                      $"سنوافيكم بالرد فور الانتهاء من الفحص بمحل *{company}*.";
-            }
-            else
-            {
-                msg = $"مرحباً بك أستاذ/ة *{ticket.CustomerName}* 🌹\n" +
-                      $"تم استلام جهازكم: *{ticket.ProductName}*\n" +
-                      $"برقم تذكرة ضمان: *{ticket.TicketCode}*\n" +
-                      $"العطل المسجل: *{ticket.ProblemDescription}*\n\n" +
-                      $"بمحل *{company}*. جاري المتابعة وسنوافيكم بكافة المستجدات.";
-            }
-
-            try
-            {
-                string url = $"https://api.whatsapp.com/send?phone={cleanPhone}&text={Uri.EscapeDataString(msg)}";
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("خطأ في فتح تطبيق واتساب: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            MessageBox.Show(info, "إيصال استلام جهاز", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

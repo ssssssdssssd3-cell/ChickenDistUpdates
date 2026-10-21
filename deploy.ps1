@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.1";
-$CHANGELOG = "v4.3.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add full Warranty and RMA Device Tracking module with thermal receipt printing and WhatsApp alerts without affecting stock or financials"
+$VERSION = "4.3.2";
+$CHANGELOG = "v4.3.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Redesign Warranty UI with responsive layout, clear stats cards and Arabic columns"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
