@@ -859,7 +859,7 @@ namespace ChickenDist.Forms
                     {
                         dgSuppliers.ClearSelection();
                         dgSuppliers.Rows[hit.RowIndex].Selected = true;
-                        dgSuppliers.CurrentCell = dgSuppliers.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+                        dgSuppliers.SafeSetCurrentCell(hit.RowIndex, hit.ColumnIndex);
                     }
                 }
             };

@@ -1365,7 +1365,7 @@ namespace ChickenDist.Forms
 					{
 						dgSales.ClearSelection();
 						dgSales.Rows[hit.RowIndex].Selected = true;
-						dgSales.CurrentCell = dgSales.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+						dgSales.SafeSetCurrentCell(hit.RowIndex, hit.ColumnIndex);
 					}
 				}
 			};

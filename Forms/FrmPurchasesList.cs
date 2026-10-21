@@ -810,7 +810,7 @@ namespace ChickenDist.Forms
 					{
 						dgPurchases.ClearSelection();
 						dgPurchases.Rows[hit.RowIndex].Selected = true;
-						dgPurchases.CurrentCell = dgPurchases.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+						dgPurchases.SafeSetCurrentCell(hit.RowIndex, hit.ColumnIndex);
 					}
 				}
 			};

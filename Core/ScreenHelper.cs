@@ -120,5 +120,62 @@ namespace ChickenDist.Core
             form.AutoScaleMode       = AutoScaleMode.Dpi;
             form.AutoScaleDimensions = new SizeF(96F, 96F);
         }
+
+        /// <summary>
+        /// يضبط الخلية النشطة (CurrentCell) في DataGridView بأمان تام دون التسبب في خطأ "Current cell cannot be set to an invisible cell"
+        /// إذا كان العمود المطلوب مخفياً أو كان النقر على رأس السطر (ColumnIndex = -1)، ينتقل تلقائياً إلى أول عمود مرئي.
+        /// </summary>
+        public static void SafeSetCurrentCell(this DataGridView dgv, int rowIndex, int columnIndex = -1, string preferredColName = null)
+        {
+            try
+            {
+                if (dgv == null || rowIndex < 0 || rowIndex >= dgv.Rows.Count) return;
+                var row = dgv.Rows[rowIndex];
+                if (!row.Visible) return;
+
+                // 1. فحص العمود المفضل بالاسم أولاً
+                if (!string.IsNullOrEmpty(preferredColName) && dgv.Columns.Contains(preferredColName))
+                {
+                    var col = dgv.Columns[preferredColName];
+                    if (col.Visible && row.Cells[col.Index] != null)
+                    {
+                        dgv.CurrentCell = row.Cells[col.Index];
+                        return;
+                    }
+                }
+
+                // 2. فحص رقم العمود الممرر إذا كان صالحاً ومرئياً
+                if (columnIndex >= 0 && columnIndex < dgv.ColumnCount)
+                {
+                    var col = dgv.Columns[columnIndex];
+                    if (col.Visible && row.Cells[columnIndex] != null)
+                    {
+                        dgv.CurrentCell = row.Cells[columnIndex];
+                        return;
+                    }
+                }
+
+                // 3. بديل آمن: العثور على أول عمود مرئي حسب ترتيب العرض (DisplayIndex)
+                DataGridViewColumn firstVisibleCol = null;
+                int minDisplayIdx = int.MaxValue;
+                foreach (DataGridViewColumn col in dgv.Columns)
+                {
+                    if (col.Visible && col.DisplayIndex < minDisplayIdx)
+                    {
+                        minDisplayIdx = col.DisplayIndex;
+                        firstVisibleCol = col;
+                    }
+                }
+
+                if (firstVisibleCol != null && row.Cells[firstVisibleCol.Index] != null)
+                {
+                    dgv.CurrentCell = row.Cells[firstVisibleCol.Index];
+                }
+            }
+            catch
+            {
+                // منع انهيار البرنامج في حالة الخلايا غير المرئية
+            }
+        }
     }
 }

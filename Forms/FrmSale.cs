@@ -3876,7 +3876,7 @@ namespace ChickenDist.Forms
 				{
 					if (dgItems.Columns.Contains("IMEI"))
 					{
-						dgItems.CurrentCell = dgItems.CurrentRow.Cells["IMEI"];
+						dgItems.SafeSetCurrentCell(dgItems.CurrentRow.Index, -1, "IMEI");
 						dgItems.BeginEdit(true);
 					}
 				}
@@ -3910,7 +3910,7 @@ namespace ChickenDist.Forms
 					{
 						dgItems.ClearSelection();
 						dgItems.Rows[hit.RowIndex].Selected = true;
-						dgItems.CurrentCell = dgItems.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+						dgItems.SafeSetCurrentCell(hit.RowIndex, hit.ColumnIndex);
 					}
 				}
 			};

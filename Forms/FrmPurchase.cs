@@ -1537,7 +1537,7 @@ namespace ChickenDist.Forms
                         {
                             if (!dgItems.Columns[col].ReadOnly && dgItems.Columns[col].Visible)
                             {
-                                dgItems.CurrentCell = dgItems.Rows[cur.RowIndex].Cells[col];
+                                dgItems.SafeSetCurrentCell(cur.RowIndex, col);
                                 dgItems.BeginEdit(true);
                                 return true;
                             }
@@ -2395,7 +2395,7 @@ namespace ChickenDist.Forms
             try
             {
                 dgItems.ClearSelection();
-                dgItems.CurrentCell = dgItems.Rows[_pendingRowIdx].Cells["ProductCode"];
+                dgItems.SafeSetCurrentCell(_pendingRowIdx, -1, "ProductCode");
                 dgItems.BeginEdit(true);
                 dgItems.FirstDisplayedScrollingRowIndex = _pendingRowIdx;
             }
@@ -2506,7 +2506,7 @@ namespace ChickenDist.Forms
                         {
                             if (rowIdx >= 0 && rowIdx < dgItems.Rows.Count)
                             {
-                                dgItems.CurrentCell = dgItems.Rows[rowIdx].Cells["ProductCode"];
+                                dgItems.SafeSetCurrentCell(rowIdx, -1, "ProductCode");
                                 dgItems.BeginEdit(true);
                             }
                         }
@@ -2785,7 +2785,7 @@ namespace ChickenDist.Forms
                         if (row.Cells["ProductID"].Value != null && Convert.ToInt32(row.Cells["ProductID"].Value) == prodId)
                         {
                             dgItems.Focus();
-                            dgItems.CurrentCell = row.Cells["Quantity"];
+                            dgItems.SafeSetCurrentCell(row.Index, -1, "Quantity");
                             dgItems.BeginEdit(true);
                             break;
                         }
@@ -2808,7 +2808,7 @@ namespace ChickenDist.Forms
                             dgItems.Focus();
                             if (dgItems.Columns.Contains("IMEI"))
                             {
-                                dgItems.CurrentCell = row.Cells["IMEI"];
+                                dgItems.SafeSetCurrentCell(row.Index, -1, "IMEI");
                                 dgItems.BeginEdit(true);
                             }
                             break;
@@ -3102,7 +3102,7 @@ namespace ChickenDist.Forms
                     {
                         dgItems.ClearSelection();
                         dgItems.Rows[hit.RowIndex].Selected = true;
-                        dgItems.CurrentCell = dgItems.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+                        dgItems.SafeSetCurrentCell(hit.RowIndex, hit.ColumnIndex);
                     }
                 }
             };
@@ -3857,7 +3857,7 @@ namespace ChickenDist.Forms
                                 if (i < dgItems.Rows.Count && dgItems.Columns.Contains("IMEI"))
                                 {
                                     dgItems.Rows[i].Selected = true;
-                                    dgItems.CurrentCell = dgItems.Rows[i].Cells["IMEI"];
+                                    dgItems.SafeSetCurrentCell(i, -1, "IMEI");
                                     dgItems.Focus();
                                 }
                             }
@@ -3874,7 +3874,7 @@ namespace ChickenDist.Forms
                                 if (i < dgItems.Rows.Count && dgItems.Columns.Contains("IMEI"))
                                 {
                                     dgItems.Rows[i].Selected = true;
-                                    dgItems.CurrentCell = dgItems.Rows[i].Cells["IMEI"];
+                                    dgItems.SafeSetCurrentCell(i, -1, "IMEI");
                                     dgItems.Focus();
                                 }
                             }

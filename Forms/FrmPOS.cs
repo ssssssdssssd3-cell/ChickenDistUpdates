@@ -671,7 +671,7 @@ namespace ChickenDist.Forms
                     {
                         dgItems.ClearSelection();
                         dgItems.Rows[hit.RowIndex].Selected = true;
-                        dgItems.CurrentCell = dgItems.Rows[hit.RowIndex].Cells[Math.Max(0, hit.ColumnIndex)];
+                        dgItems.SafeSetCurrentCell(hit.RowIndex, hit.ColumnIndex);
                     }
                 }
             };
