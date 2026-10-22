@@ -404,5 +404,59 @@ namespace ChickenDist.DAL
                 DbHelper.P("@exact", q), 
                 DbHelper.P("@like", "%" + q + "%"));
         }
+
+        public static DataTable GetClientPurchasedItems(int? clientID, string customerPhone = null, string customerName = null)
+        {
+            try
+            {
+                string sql = @"
+                SELECT TOP 100
+                    s.SaleID,
+                    s.SaleCode,
+                    s.SaleDate,
+                    si.ProductID,
+                    si.ProductName,
+                    ISNULL(p.Brand, N'') AS Brand,
+                    ISNULL(si.IMEI, N'') AS IMEI,
+                    si.Quantity,
+                    si.UnitPrice,
+                    ISNULL(s.ClientName, N'') AS ClientName,
+                    ISNULL(s.Phone, N'') AS Phone
+                FROM SaleItems si
+                INNER JOIN Sales s ON si.SaleID = s.SaleID
+                LEFT JOIN Products p ON si.ProductID = p.ProductID
+                WHERE 1 = 1 ";
+
+                var pList = new List<SqlParameter>();
+                if (clientID.HasValue && clientID.Value > 0)
+                {
+                    sql += " AND s.ClientID = @cid ";
+                    pList.Add(DbHelper.P("@cid", clientID.Value));
+                }
+                else if (!string.IsNullOrWhiteSpace(customerPhone))
+                {
+                    sql += " AND (s.Phone = @phone OR s.Phone LIKE @phoneLike) ";
+                    pList.Add(DbHelper.P("@phone", customerPhone.Trim()));
+                    pList.Add(DbHelper.P("@phoneLike", "%" + customerPhone.Trim() + "%"));
+                }
+                else if (!string.IsNullOrWhiteSpace(customerName))
+                {
+                    sql += " AND s.ClientName LIKE @name ";
+                    pList.Add(DbHelper.P("@name", "%" + customerName.Trim() + "%"));
+                }
+                else
+                {
+                    sql += " AND 1 = 0 ";
+                }
+
+                sql += " ORDER BY s.SaleDate DESC, s.SaleID DESC";
+                return DbHelper.Query(sql, pList.ToArray());
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("WarrantyDAL.GetClientPurchasedItems", ex);
+                return new DataTable();
+            }
+        }
     }
 }

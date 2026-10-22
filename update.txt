@@ -1,5 +1,5 @@
-version=4.3.5
+version=4.3.6
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.5&t=1792672295
-sha256=19C22D9515D41C1046B141F292905400131E584005C571A64AE72DB70BA67AC1
-changelog=v4.3.5 - 2026-10-22: Add in-stock filter, IMEI reading in Price Checker, and new Code-On-Side barcode sticker template
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.6&t=1792682126
+sha256=AFFD50918105DF9671463F18DC236348205725137EADEE14A42B1CF9825B8F29
+changelog=v4.3.6 - 2026-10-22: Add customer purchases lookup in Warranty Card, compact header badges in Warranty Screen, and fix bottom action buttons cutoff

@@ -11,6 +11,7 @@ namespace ChickenDist.Forms
     {
         private int _ticketID;
         private int? _selectedClientID = null;
+        private int? _selectedProductID = null;
         public int SavedTicketID { get; private set; }
         public bool ShouldPrintReceipt { get; private set; }
 
@@ -71,9 +72,11 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _ticketID > 0 ? "📝 تعديل كرت جهاز تحت الضمان" : "➕ استلام جهاز جديد تحت الضمان";
-            this.Size = new Size(890, 770);
-            this.MinimumSize = new Size(890, 700);
-            this.StartPosition = FormStartPosition.CenterParent;
+            int screenH = Screen.FromControl(this)?.WorkingArea.Height ?? Screen.PrimaryScreen.WorkingArea.Height;
+            int formH = Math.Min(660, screenH - 45);
+            this.Size = new Size(890, formH);
+            this.MinimumSize = new Size(820, 480);
+            this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -85,7 +88,8 @@ namespace ChickenDist.Forms
 
             this.KeyDown += (s, e) =>
             {
-                if (e.KeyCode == Keys.F2) { btnSave.PerformClick(); e.Handled = true; }
+                if (e.KeyCode == Keys.F1) { OpenProductOrClientPurchasesSearch(); e.Handled = true; }
+                else if (e.KeyCode == Keys.F2) { btnSave.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F3) { btnSaveAndPrint.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F4) { OpenClientSearch(); e.Handled = true; }
                 else if (e.KeyCode == Keys.Escape) { this.Close(); e.Handled = true; }
@@ -101,7 +105,7 @@ namespace ChickenDist.Forms
             Panel pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 65,
+                Height = 56,
                 BackColor = Theme.BgCard,
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -110,24 +114,24 @@ namespace ChickenDist.Forms
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
-                Padding = new Padding(20, 12, 20, 12),
+                Padding = new Padding(15, 8, 15, 8),
                 WrapContents = false,
                 BackColor = Color.Transparent
             };
 
             btnSave = Theme.MakeButton("💾 حفظ الكرت (F2)", Theme.Success);
-            btnSave.Size = new Size(160, 40);
-            btnSave.Margin = new Padding(12, 0, 0, 0);
+            btnSave.Size = new Size(160, 38);
+            btnSave.Margin = new Padding(10, 0, 0, 0);
             btnSave.Click += (s, e) => SaveTicket(false);
 
             btnSaveAndPrint = Theme.MakeButton("🖨️ حفظ وطباعة الإيصال (F3)", Color.FromArgb(30, 80, 180));
-            btnSaveAndPrint.Size = new Size(220, 40);
-            btnSaveAndPrint.Margin = new Padding(12, 0, 0, 0);
+            btnSaveAndPrint.Size = new Size(220, 38);
+            btnSaveAndPrint.Margin = new Padding(10, 0, 0, 0);
             btnSaveAndPrint.Click += (s, e) => SaveTicket(true);
 
             btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Color.FromArgb(100, 110, 120));
-            btnCancel.Size = new Size(130, 40);
-            btnCancel.Margin = new Padding(12, 0, 0, 0);
+            btnCancel.Size = new Size(130, 38);
+            btnCancel.Margin = new Padding(10, 0, 0, 0);
             btnCancel.Click += (s, e) => this.Close();
 
             pnlButtons.Controls.Add(btnSave);
@@ -296,12 +300,50 @@ namespace ChickenDist.Forms
             GroupBox grpDevice = CreateSectionBox("📦 بيانات الجهاز / الصنف والضمان", 15, curY, boxWidth, 142);
             pnlBody.Controls.Add(grpDevice);
 
-            txtProductName = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtProductName = new TextBox { Width = 212, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            Button btnSearchProduct = new Button
+            {
+                Text = "🔍",
+                Size = new Size(34, 26),
+                Location = new Point(415, 24),
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnSearchProduct.FlatAppearance.BorderSize = 0;
+            var tipProd = new ToolTip();
+            tipProd.SetToolTip(btnSearchProduct, "بحث واختيار جهاز من مشتريات العميل أو من دليل الأصناف (F1)");
+            btnSearchProduct.Click += (s, e) => OpenProductOrClientPurchasesSearch();
+
+            Label lblProd = new Label
+            {
+                Text = "الصنف / الجهاز *:",
+                Location = new Point(675, 24 + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            txtProductName.Location = new Point(453, 24);
+
             txtBrand = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            Label lblBrand = new Label
+            {
+                Text = "الماركة / الشركة:",
+                Location = new Point(275, 24 + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            txtBrand.Location = new Point(15, 24);
+
+            grpDevice.Controls.AddRange(new Control[] { lblProd, txtProductName, btnSearchProduct, lblBrand, txtBrand });
+
             txtSerialNumber = new TextBox { Width = 250, Font = new Font("Consolas", 10.5f, FontStyle.Bold), BackColor = Color.FromArgb(240, 245, 255), ForeColor = Color.FromArgb(20, 60, 160) };
             txtInvoiceNumber = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
-            AddTwoFieldRow(grpDevice, 24, "الصنف / الجهاز *:", txtProductName, "الماركة / الشركة:", txtBrand);
             AddTwoFieldRow(grpDevice, 62, "السيريال / IMEI *:", txtSerialNumber, "رقم فاتورة الشراء:", txtInvoiceNumber);
 
             // Row 3: تاريخ الشراء
@@ -498,6 +540,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(pnlBody);
             this.Controls.Add(pnlFooter);
             this.Controls.Add(pnlTitle);
+            pnlBody.SendToBack();
         }
 
         // ==========================================
@@ -639,6 +682,139 @@ namespace ChickenDist.Forms
                 }
             }
             catch { }
+        }
+
+        private void OpenProductOrClientPurchasesSearch()
+        {
+            // If client is not specified yet, prompt whether to choose a client or search general catalog
+            if (!_selectedClientID.HasValue && string.IsNullOrWhiteSpace(txtCustomerPhone.Text) && string.IsNullOrWhiteSpace(txtCustomerName.Text))
+            {
+                var res = MessageBox.Show(
+                    "لم تقم بتحديد عميل بعد.\n\nهل ترغب في اختيار عميل مسجل لعرض قائمة الأجهزة التي اشتراها؟\n(اضغط 'نعم' لاختيار عميل، أو 'لا' للبحث في دليل كل الأصناف)",
+                    "بحث الأصناف والأجهزة",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (res == DialogResult.Yes)
+                {
+                    OpenClientSearch();
+                    if (_selectedClientID.HasValue && _selectedClientID.Value > 0)
+                    {
+                        OpenProductOrClientPurchasesSearch();
+                    }
+                    return;
+                }
+                else if (res == DialogResult.No)
+                {
+                    OpenGeneralProductSearch();
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            // Try fetching client purchased items
+            var dtPurchases = WarrantyDAL.GetClientPurchasedItems(_selectedClientID, txtCustomerPhone.Text, txtCustomerName.Text);
+            if (dtPurchases != null && dtPurchases.Rows.Count > 0)
+            {
+                using (var dlg = new FrmSelectClientDeviceDialog(dtPurchases, txtCustomerName.Text, txtCustomerPhone.Text))
+                {
+                    var dr = dlg.ShowDialog();
+                    if (dr == DialogResult.OK && dlg.SelectedRow != null)
+                    {
+                        ApplyPurchasedItem(dlg.SelectedRow);
+                        return;
+                    }
+                    else if (dr == DialogResult.Retry || dlg.SwitchedToCatalogSearch)
+                    {
+                        OpenGeneralProductSearch();
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                // No previous purchases found for this client
+                var res = MessageBox.Show(
+                    "لم يتم العثور على أجهزة مسجلة في فواتير سابقة لهذا العميل.\nهل تريد البحث في دليل كل الأصناف لاختيار الصنف؟",
+                    "لا توجد مشتريات سابقة",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
+                if (res == DialogResult.Yes)
+                {
+                    OpenGeneralProductSearch();
+                }
+            }
+        }
+
+        private void OpenGeneralProductSearch()
+        {
+            try
+            {
+                using (var frm = new FrmProductSearch(allowZeroStockSelection: true, defaultShowZeroStock: true))
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
+                    {
+                        _selectedProductID = frm.SelectedProductID;
+                        var dt = DbHelper.Query(@"
+                            SELECT ProductID, ProductName, ISNULL(Brand, N'') AS Brand, ISNULL(ItemCode, N'') AS ItemCode 
+                            FROM Products 
+                            WHERE ProductID = @id", 
+                            DbHelper.P("@id", frm.SelectedProductID));
+
+                        if (dt.Rows.Count > 0)
+                        {
+                            var r = dt.Rows[0];
+                            txtProductName.Text = r["ProductName"]?.ToString() ?? "";
+                            string brand = r["Brand"]?.ToString() ?? "";
+                            if (!string.IsNullOrEmpty(brand)) txtBrand.Text = brand;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("FrmWarrantyCard.OpenGeneralProductSearch", ex);
+            }
+        }
+
+        private void ApplyPurchasedItem(DataRow r)
+        {
+            if (r == null) return;
+
+            if (r.Table.Columns.Contains("ProductID") && r["ProductID"] != DBNull.Value)
+            {
+                int.TryParse(r["ProductID"].ToString(), out int pid);
+                if (pid > 0) _selectedProductID = pid;
+            }
+
+            if (r.Table.Columns.Contains("ProductName") && r["ProductName"] != DBNull.Value)
+                txtProductName.Text = r["ProductName"].ToString();
+
+            if (r.Table.Columns.Contains("Brand") && r["Brand"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["Brand"].ToString()))
+                txtBrand.Text = r["Brand"].ToString();
+
+            if (r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["IMEI"].ToString()))
+                txtSerialNumber.Text = r["IMEI"].ToString();
+
+            if (r.Table.Columns.Contains("SaleCode") && r["SaleCode"] != DBNull.Value)
+                txtInvoiceNumber.Text = r["SaleCode"].ToString();
+
+            if (r.Table.Columns.Contains("SaleDate") && r["SaleDate"] != DBNull.Value)
+            {
+                chkHasInvoiceDate.Checked = true;
+                dtpInvoiceDate.Value = Convert.ToDateTime(r["SaleDate"]);
+                dtpInvoiceDate.Enabled = true;
+            }
+
+            if (r.Table.Columns.Contains("ClientName") && r["ClientName"] != DBNull.Value && string.IsNullOrWhiteSpace(txtCustomerName.Text))
+                txtCustomerName.Text = r["ClientName"].ToString();
+
+            if (r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value && string.IsNullOrWhiteSpace(txtCustomerPhone.Text))
+                txtCustomerPhone.Text = r["Phone"].ToString();
         }
 
         private void LoadAutocomplete()
@@ -821,6 +997,7 @@ namespace ChickenDist.Forms
 
             lblTicketCode.Text = t.TicketCode;
             _selectedClientID = t.ClientID;
+            _selectedProductID = t.ProductID;
             dtpReceiveDate.Value = t.ReceiveDate;
             txtCustomerName.Text = t.CustomerName;
             txtCustomerPhone.Text = t.CustomerPhone;
@@ -914,6 +1091,7 @@ namespace ChickenDist.Forms
                     CustomerName = custName,
                     CustomerPhone = txtCustomerPhone.Text.Trim(),
                     CustomerAddress = txtCustomerAddress.Text.Trim(),
+                    ProductID = _selectedProductID,
                     ProductName = prodName,
                     Brand = txtBrand.Text.Trim(),
                     SerialNumber = txtSerialNumber.Text.Trim(),

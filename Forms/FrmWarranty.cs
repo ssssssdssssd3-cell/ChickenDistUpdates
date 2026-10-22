@@ -38,66 +38,56 @@ namespace ChickenDist.Forms
             this.BackColor = Color.FromArgb(245, 247, 250);
 
             // ==========================================
-            // 1. TOP HEADER (48px)
+            // 1. SLEEK COMPACT HEADER (42px) WITH INLINE STATS BADGES
             // ==========================================
             Panel pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 48,
+                Height = 42,
                 BackColor = Color.FromArgb(24, 43, 73),
-                Padding = new Padding(15, 0, 15, 0)
+                Padding = new Padding(12, 0, 12, 0)
             };
 
             Label lblTitle = new Label
             {
-                Text = "🛡️ سجل أجهزة الضمان وخدمة ما بعد البيع (استلام / تسليم / صيانة)",
+                Text = "🛡️ سجل أجهزة الضمان وخدمة ما بعد البيع",
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 12f, FontStyle.Bold),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleRight,
+                Padding = new Padding(0, 8, 8, 0)
             };
             pnlHeader.Controls.Add(lblTitle);
 
-            // ==========================================
-            // 2. STATS CARDS (80px)
-            // ==========================================
-            Panel pnlStatsWrap = new Panel
+            FlowLayoutPanel flowStats = new FlowLayoutPanel
             {
-                Dock = DockStyle.Top,
-                Height = 80,
-                BackColor = Color.FromArgb(245, 247, 250),
-                Padding = new Padding(12, 8, 12, 6)
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 6, 0, 0)
             };
 
-            TableLayoutPanel tblStats = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 5,
-                RowCount = 1,
-                BackColor = Color.Transparent
-            };
-            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
-            tblStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
+            lblTotalCount = CreateBadgeLabel("الإجمالي: 0", Color.FromArgb(70, 85, 105));
+            lblReceivedCount = CreateBadgeLabel("بالمحل: 0", Color.FromArgb(31, 110, 165));
+            lblVendorCount = CreateBadgeLabel("بالتوكيل: 0", Color.FromArgb(210, 105, 30));
+            lblReadyCount = CreateBadgeLabel("جاهز: 0", Color.FromArgb(34, 139, 34));
+            lblDeliveredCount = CreateBadgeLabel("مسلّم: 0", Color.FromArgb(108, 117, 125));
 
-            lblTotalCount = new Label();
-            lblReceivedCount = new Label();
-            lblVendorCount = new Label();
-            lblReadyCount = new Label();
-            lblDeliveredCount = new Label();
-
-            tblStats.Controls.Add(CreateStatCard("إجمالي الإيصالات", lblTotalCount, Color.FromArgb(52, 73, 94)), 0, 0);
-            tblStats.Controls.Add(CreateStatCard("مستلم بالمحل", lblReceivedCount, Color.FromArgb(41, 128, 185)), 1, 0);
-            tblStats.Controls.Add(CreateStatCard("مرسل للتوكيل / صيانة", lblVendorCount, Color.FromArgb(230, 126, 34)), 2, 0);
-            tblStats.Controls.Add(CreateStatCard("جاهز للتسليم", lblReadyCount, Color.FromArgb(39, 174, 96)), 3, 0);
-            tblStats.Controls.Add(CreateStatCard("تم تسليمه للعميل", lblDeliveredCount, Color.FromArgb(127, 140, 141)), 4, 0);
-
-            pnlStatsWrap.Controls.Add(tblStats);
+            flowStats.Controls.AddRange(new Control[] {
+                lblTotalCount,
+                lblReceivedCount,
+                lblVendorCount,
+                lblReadyCount,
+                lblDeliveredCount
+            });
+            pnlHeader.Controls.Add(flowStats);
 
             // ==========================================
-            // 3. SEARCH & FILTERS (48px)
+            // 2. SEARCH & FILTERS (48px)
             // ==========================================
             Panel pnlFilter = new Panel
             {
@@ -269,49 +259,25 @@ namespace ChickenDist.Forms
             // Add all main docked panels in reverse dock order
             this.Controls.Add(pnlBody);
             this.Controls.Add(pnlFilter);
-            this.Controls.Add(pnlStatsWrap);
             this.Controls.Add(pnlHeader);
 
             this.Load += (s, e) => LoadTickets();
             this.ResumeLayout(false);
         }
 
-        private Panel CreateStatCard(string title, Label lblValue, Color accentColor)
+        private Label CreateBadgeLabel(string text, Color bgColor)
         {
-            Panel card = new Panel
+            return new Label
             {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                Margin = new Padding(4, 0, 4, 0)
+                Text = text,
+                ForeColor = Color.White,
+                BackColor = bgColor,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                AutoSize = true,
+                Padding = new Padding(8, 4, 8, 4),
+                Margin = new Padding(4, 0, 4, 0),
+                TextAlign = ContentAlignment.MiddleCenter
             };
-
-            Panel bar = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 3,
-                BackColor = accentColor
-            };
-
-            lblValue.Text = "0";
-            lblValue.Dock = DockStyle.Fill;
-            lblValue.TextAlign = ContentAlignment.MiddleCenter;
-            lblValue.Font = new Font("Segoe UI", 16f, FontStyle.Bold);
-            lblValue.ForeColor = accentColor;
-
-            Label lblTitle = new Label
-            {
-                Text = title,
-                Dock = DockStyle.Bottom,
-                Height = 22,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(120, 130, 140)
-            };
-
-            card.Controls.Add(lblValue);
-            card.Controls.Add(lblTitle);
-            card.Controls.Add(bar);
-            return card;
         }
 
         private Button CreateActionButton(string text, Color bg, Color fg)
@@ -503,11 +469,11 @@ namespace ChickenDist.Forms
             try
             {
                 var stats = WarrantyDAL.GetStats();
-                lblTotalCount.Text = stats.TotalCount.ToString();
-                lblReceivedCount.Text = stats.AtShopCount.ToString();
-                lblVendorCount.Text = stats.AtVendorCount.ToString();
-                lblReadyCount.Text = stats.ReadyCount.ToString();
-                lblDeliveredCount.Text = stats.DeliveredCount.ToString();
+                lblTotalCount.Text = "الإجمالي: " + stats.TotalCount;
+                lblReceivedCount.Text = "بالمحل: " + stats.AtShopCount;
+                lblVendorCount.Text = "بالتوكيل: " + stats.AtVendorCount;
+                lblReadyCount.Text = "جاهز: " + stats.ReadyCount;
+                lblDeliveredCount.Text = "مسلّم: " + stats.DeliveredCount;
             }
             catch { }
         }
