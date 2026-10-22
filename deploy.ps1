@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.3";
-$CHANGELOG = "v4.3.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Warranty Card RTL input alignments, label-first ordering, and footer button overlaps"
+$VERSION = "4.3.4";
+$CHANGELOG = "v4.3.4 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add registered clients search in Warranty module and add advanced product search (F1) in Purchase Order screen"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

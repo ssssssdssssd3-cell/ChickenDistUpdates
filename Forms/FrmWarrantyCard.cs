@@ -10,6 +10,7 @@ namespace ChickenDist.Forms
     public class FrmWarrantyCard : Form
     {
         private int _ticketID;
+        private int? _selectedClientID = null;
         public int SavedTicketID { get; private set; }
         public bool ShouldPrintReceipt { get; private set; }
 
@@ -17,6 +18,7 @@ namespace ChickenDist.Forms
         private Label lblTicketCode;
         private DateTimePicker dtpReceiveDate;
         private TextBox txtCustomerName;
+        private Button btnSearchClient;
         private TextBox txtCustomerPhone;
         private TextBox txtCustomerAddress;
         private TextBox txtProductName;
@@ -85,6 +87,7 @@ namespace ChickenDist.Forms
             {
                 if (e.KeyCode == Keys.F2) { btnSave.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F3) { btnSaveAndPrint.PerformClick(); e.Handled = true; }
+                else if (e.KeyCode == Keys.F4) { OpenClientSearch(); e.Handled = true; }
                 else if (e.KeyCode == Keys.Escape) { this.Close(); e.Handled = true; }
             };
 
@@ -240,11 +243,51 @@ namespace ChickenDist.Forms
             GroupBox grpCustomer = CreateSectionBox("👤 بيانات العميل / الزبون", 15, curY, boxWidth, 105);
             pnlBody.Controls.Add(grpCustomer);
 
-            txtCustomerName = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtCustomerName = new TextBox { Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            btnSearchClient = new Button
+            {
+                Text = "🔍",
+                Size = new Size(34, 26),
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnSearchClient.FlatAppearance.BorderSize = 0;
+            var tipClient = new ToolTip();
+            tipClient.SetToolTip(btnSearchClient, "بحث واختيار عميل مسجل من الدليل (F4)");
+            btnSearchClient.Click += (s, e) => OpenClientSearch();
+
             txtCustomerPhone = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             txtCustomerAddress = new TextBox { Width = 660, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
-            AddTwoFieldRow(grpCustomer, 24, "اسم العميل *:", txtCustomerName, "رقم الهاتف *:", txtCustomerPhone);
+            // Row 1: Right Side (Customer Name + Search Button) / Left Side (Phone)
+            Label lblCust = new Label
+            {
+                Text = "اسم العميل *:",
+                Location = new Point(675, 24 + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            btnSearchClient.Location = new Point(415, 24);
+            txtCustomerName.Location = new Point(453, 24);
+            txtCustomerName.Width = 212;
+
+            Label lblPhone = new Label
+            {
+                Text = "رقم الهاتف *:",
+                Location = new Point(275, 24 + 2),
+                Width = 130,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontBold
+            };
+            txtCustomerPhone.Location = new Point(15, 24);
+            txtCustomerPhone.Width = 250;
+
+            grpCustomer.Controls.AddRange(new Control[] { lblCust, txtCustomerName, btnSearchClient, lblPhone, txtCustomerPhone });
             AddOneFieldRow(grpCustomer, 62, "العنوان بالتفصيل:", txtCustomerAddress);
 
             curY += 115;
@@ -570,6 +613,34 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void OpenClientSearch()
+        {
+            using (var frm = new FrmClientSearch())
+            {
+                if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                {
+                    ApplyClientSelection(frm.SelectedClientID, frm.SelectedClientName, frm.SelectedClientPhone);
+                }
+            }
+        }
+
+        private void ApplyClientSelection(int clientId, string clientName, string clientPhone)
+        {
+            _selectedClientID = clientId;
+            txtCustomerName.Text = clientName;
+            txtCustomerPhone.Text = clientPhone;
+
+            try
+            {
+                var dt = DbHelper.Query("SELECT Address FROM Clients WHERE ClientID = @id", DbHelper.P("@id", clientId));
+                if (dt.Rows.Count > 0 && dt.Rows[0]["Address"] != DBNull.Value)
+                {
+                    txtCustomerAddress.Text = dt.Rows[0]["Address"]?.ToString() ?? "";
+                }
+            }
+            catch { }
+        }
+
         private void LoadAutocomplete()
         {
             try
@@ -627,7 +698,33 @@ namespace ChickenDist.Forms
                 var dt = WarrantyDAL.SearchSalesByQuery(q);
                 if (dt.Rows.Count == 0)
                 {
-                    MessageBox.Show("لم يتم العثور على فواتير أو مبيعات مطابقة لرقم البحث.", "بحث فواتير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // فحص العملاء المسجلين بالاسم أو الهاتف أو الكود
+                    var dtClients = DbHelper.Query(@"
+                        SELECT TOP 10 ClientID, ClientName, Phone, Address 
+                        FROM Clients 
+                        WHERE IsActive = 1 AND (ClientName LIKE @q OR Phone LIKE @q OR ClientCode = @exact)",
+                        DbHelper.P("@q", "%" + q + "%"), DbHelper.P("@exact", q));
+
+                    if (dtClients.Rows.Count == 1)
+                    {
+                        var cr = dtClients.Rows[0];
+                        ApplyClientSelection(Convert.ToInt32(cr["ClientID"]), cr["ClientName"]?.ToString() ?? "", cr["Phone"]?.ToString() ?? "");
+                        MessageBox.Show("✅ تم العثور على العميل المسجل وجلب بياناته بنجاح!", "تم العثور على العميل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                    else if (dtClients.Rows.Count > 1)
+                    {
+                        using (var frm = new FrmClientSearch())
+                        {
+                            if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                            {
+                                ApplyClientSelection(frm.SelectedClientID, frm.SelectedClientName, frm.SelectedClientPhone);
+                            }
+                        }
+                        return;
+                    }
+
+                    MessageBox.Show("لم يتم العثور على فواتير أو عملاء مسجلين مطابقين لنص البحث.", "بحث سريع", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
@@ -723,6 +820,7 @@ namespace ChickenDist.Forms
             }
 
             lblTicketCode.Text = t.TicketCode;
+            _selectedClientID = t.ClientID;
             dtpReceiveDate.Value = t.ReceiveDate;
             txtCustomerName.Text = t.CustomerName;
             txtCustomerPhone.Text = t.CustomerPhone;
@@ -812,6 +910,7 @@ namespace ChickenDist.Forms
                     TicketID = _ticketID,
                     TicketCode = lblTicketCode.Text,
                     ReceiveDate = dtpReceiveDate.Value,
+                    ClientID = _selectedClientID,
                     CustomerName = custName,
                     CustomerPhone = txtCustomerPhone.Text.Trim(),
                     CustomerAddress = txtCustomerAddress.Text.Trim(),

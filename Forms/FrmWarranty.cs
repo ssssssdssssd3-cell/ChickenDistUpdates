@@ -116,8 +116,30 @@ namespace ChickenDist.Forms
             };
 
             Label lblSearch = new Label { Text = "🔍 بحث سريع:", AutoSize = true, Margin = new Padding(0, 6, 8, 0), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSearch = new TextBox { Width = 230, Height = 26, Margin = new Padding(0, 3, 15, 0) };
+            txtSearch = new TextBox { Width = 210, Height = 26, Margin = new Padding(0, 3, 5, 0) };
             txtSearch.TextChanged += (s, e) => ApplyClientFilters();
+
+            Button btnSearchClient = new Button
+            {
+                Text = "👤 اختيار عميل",
+                Width = 110,
+                Height = 28,
+                BackColor = Color.FromArgb(236, 240, 241),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 1, 15, 0)
+            };
+            btnSearchClient.FlatAppearance.BorderColor = Color.FromArgb(189, 195, 199);
+            btnSearchClient.Click += (s, e) =>
+            {
+                using (var frm = new FrmClientSearch())
+                {
+                    if (frm.ShowDialog() == DialogResult.OK && frm.SelectedClientID > 0)
+                    {
+                        txtSearch.Text = frm.SelectedClientName;
+                    }
+                }
+            };
 
             Label lblStatus = new Label { Text = "الحالة:", AutoSize = true, Margin = new Padding(0, 6, 6, 0), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             cboStatusFilter = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160, Margin = new Padding(0, 3, 15, 0) };
@@ -146,6 +168,7 @@ namespace ChickenDist.Forms
 
             flowFilters.Controls.Add(lblSearch);
             flowFilters.Controls.Add(txtSearch);
+            flowFilters.Controls.Add(btnSearchClient);
             flowFilters.Controls.Add(lblStatus);
             flowFilters.Controls.Add(cboStatusFilter);
             flowFilters.Controls.Add(lblRes);

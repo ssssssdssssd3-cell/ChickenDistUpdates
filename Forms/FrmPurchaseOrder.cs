@@ -37,6 +37,7 @@ namespace ChickenDist.Forms
         private TextBox txtQuickPrice;
         private Button btnQuickAdd;
         private Button btnSmartSuggest;
+        private Button btnProductSearch;
 
         private int? _selectedQuickPID;
         private string _selectedQuickCode;
@@ -86,6 +87,15 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
+            this.KeyPreview = true;
+            this.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.F1)
+                {
+                    OpenProductSearch();
+                    e.Handled = true;
+                }
+            };
 
             // 1. ترويسة رئيسية
             var pnlHeader = new Panel
@@ -199,12 +209,18 @@ namespace ChickenDist.Forms
             // زر الاقتراح الذكي المميز
             btnSmartSuggest = Theme.MakeButton("💡 الاقتراح الذكي (حركة المبيعات والأرصدة)", 0, 0, 290, 34, Color.FromArgb(139, 92, 246));
             btnSmartSuggest.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            btnSmartSuggest.Margin = new Padding(2, 6, 20, 2);
+            btnSmartSuggest.Margin = new Padding(2, 6, 12, 2);
             btnSmartSuggest.Click += (s, e) => OpenSmartSuggestionsDialog();
+
+            // زر بحث الأصناف الشامل المتقدم
+            btnProductSearch = Theme.MakeButton("🔍 بحث الأصناف (F1)", 0, 0, 155, 34, Color.FromArgb(16, 185, 129));
+            btnProductSearch.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            btnProductSearch.Margin = new Padding(2, 6, 16, 2);
+            btnProductSearch.Click += (s, e) => OpenProductSearch();
 
             // بحث عن صنف يدوي
             var lblSearch = new Label { Text = "📦 صنف يدوي:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 12, 2, 0) };
-            txtQuickSearch = new TextBox { Width = 220, Height = 28, Margin = new Padding(2, 9, 4, 2) };
+            txtQuickSearch = new TextBox { Width = 200, Height = 28, Margin = new Padding(2, 9, 4, 2) };
             txtQuickSearch.TextChanged += TxtQuickSearch_TextChanged;
             txtQuickSearch.KeyDown += TxtQuickSearch_KeyDown;
 
@@ -220,6 +236,7 @@ namespace ChickenDist.Forms
             btnQuickAdd.Click += (s, e) => AddQuickProductToGrid();
 
             flowQuick.Controls.Add(btnSmartSuggest);
+            flowQuick.Controls.Add(btnProductSearch);
             flowQuick.Controls.Add(lblSearch);
             flowQuick.Controls.Add(txtQuickSearch);
             flowQuick.Controls.Add(lblQty);
@@ -525,8 +542,96 @@ namespace ChickenDist.Forms
         }
 
         // ══════════════════════════════════════════════
-        //  الإضافة السريعة والاقتراح الذكي
+        //  الإضافة السريعة وبحث الأصناف والاقتراح الذكي
         // ══════════════════════════════════════════════
+
+        private void OpenProductSearch()
+        {
+            string lastSearch = txtQuickSearch.Text?.Trim() ?? "";
+            while (true)
+            {
+                using (var dlg = new FrmProductSearch(warehouseID: null, isPurchaseMode: true, defaultShowZeroStock: true, initialSearchText: lastSearch))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedProductID > 0)
+                    {
+                        lastSearch = dlg.SearchText;
+                        int pid = dlg.SelectedProductID;
+                        decimal qty = dlg.SelectedQuantity > 0 ? dlg.SelectedQuantity : 1m;
+                        decimal price = dlg.SelectedPurchasePrice > 0 ? dlg.SelectedPurchasePrice : dlg.SelectedPrice;
+                        string unit = !string.IsNullOrEmpty(dlg.SelectedUnitName) ? dlg.SelectedUnitName : "قطعة";
+
+                        var dt = DbHelper.Query(@"
+                            SELECT TOP 1 
+                                p.ProductID, p.ProductCode, p.ProductName, p.Unit,
+                                c.CategoryName,
+                                COALESCE(stk.TotalStock, p.Quantity, 0) AS CurrentStock
+                            FROM Products p
+                            LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
+                            OUTER APPLY (
+                                SELECT SUM(ps.Quantity) AS TotalStock FROM ProductStock ps WHERE ps.ProductID = p.ProductID
+                            ) stk
+                            WHERE p.ProductID = @id",
+                            DbHelper.P("@id", pid));
+
+                        if (dt.Rows.Count > 0)
+                        {
+                            var r = dt.Rows[0];
+                            string code = r["ProductCode"]?.ToString() ?? "";
+                            string name = r["ProductName"]?.ToString() ?? "";
+                            string cat = r["CategoryName"]?.ToString() ?? "عام";
+                            decimal stock = r["CurrentStock"] != DBNull.Value ? Convert.ToDecimal(r["CurrentStock"]) : 0m;
+                            if (string.IsNullOrEmpty(unit) || unit == "قطعة")
+                            {
+                                unit = r["Unit"]?.ToString() ?? "قطعة";
+                            }
+
+                            // فحص التكرار في الجدول
+                            bool exists = false;
+                            foreach (DataGridViewRow row in dgvItems.Rows)
+                            {
+                                if (Convert.ToInt32(row.Cells["colPID"].Value) == pid)
+                                {
+                                    decimal oldQty = Convert.ToDecimal(row.Cells["colQty"].Value);
+                                    decimal newQty = oldQty + qty;
+                                    row.Cells["colQty"].Value = newQty.ToString("N2");
+                                    row.Cells["colPrice"].Value = price.ToString("N2");
+                                    row.Cells["colTotal"].Value = (newQty * price).ToString("N2");
+                                    exists = true;
+                                    break;
+                                }
+                            }
+
+                            if (!exists)
+                            {
+                                decimal total = Math.Round(qty * price, 2);
+                                int rIdx = dgvItems.Rows.Add(
+                                    dgvItems.Rows.Count + 1,
+                                    pid,
+                                    code,
+                                    name,
+                                    cat,
+                                    unit,
+                                    stock.ToString("N2"),
+                                    qty.ToString("N2"),
+                                    price.ToString("N2"),
+                                    total.ToString("N2"),
+                                    ""
+                                );
+
+                                if (stock <= 0)
+                                    dgvItems.Rows[rIdx].Cells["colStock"].Style.ForeColor = Color.FromArgb(220, 38, 38);
+                            }
+
+                            RecalculateTotals();
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
 
         private void OpenSmartSuggestionsDialog()
         {
@@ -644,7 +749,13 @@ namespace ChickenDist.Forms
 
         private void TxtQuickSearch_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Down && lstProductLookup.Visible && lstProductLookup.Items.Count > 0)
+            if (e.KeyCode == Keys.F1)
+            {
+                OpenProductSearch();
+                e.Handled = true;
+                return;
+            }
+            else if (e.KeyCode == Keys.Down && lstProductLookup.Visible && lstProductLookup.Items.Count > 0)
             {
                 lstProductLookup.Focus();
                 lstProductLookup.SelectedIndex = 0;

@@ -1,5 +1,5 @@
-version=4.3.3
+version=4.3.4
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.3&t=1792617389
-sha256=C92ADB1DD6355FFA0C0409C47A777CC7E4BCCCD0984C934E00329C9F5037A91F
-changelog=v4.3.3 - 2026-10-22: Fix Warranty Card RTL input alignments, label-first ordering, and footer button overlaps
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.4&t=1792668464
+sha256=ED48CF03FBC94755B39674878E98142A19C38423657F2B8BA450C38E3CBB4B19
+changelog=v4.3.4 - 2026-10-22: Add registered clients search in Warranty module and add advanced product search (F1) in Purchase Order screen
