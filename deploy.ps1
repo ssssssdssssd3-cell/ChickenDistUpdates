@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.7";
-$CHANGELOG = "v4.3.7 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix barcode scanning for IMEI: ISO-15417 Code 128 odd digits, add wide quiet zone buffer in Code-On-Side template, and support selected encoding"
+$VERSION = "4.3.8";
+$CHANGELOG = "v4.3.8 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix mobile app sales and purchases table loading, prevent reference crash on load, and auto-fallback to recent invoices"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -424,7 +424,7 @@
         </button>
         <div class="flex items-center gap-2">
           <span>🔒 بيانات مشفرة ومحمية</span>
-          <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v3.2.5</span>
+          <span id="appVersionBadge" class="bg-slate-800/80 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-slate-700">v4.3.8</span>
         </div>
       </div>
     </div>
@@ -2935,19 +2935,24 @@
       document.getElementById('statAvgInvoice').textContent = avgInvoice.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' ج.م';
       const cashRatio = periodSalesTot > 0 ? Math.round((periodCashSales / periodSalesTot) * 100) : 0;
       document.getElementById('statCashRatio').textContent = cashRatio + '%';
-      const marginRatio = periodSalesTot > 0 ? Math.round((periodProfit / periodSalesTot) * 100) : 0;
+      const marginRatio = periodSalesTot > 0 ? Math.round(((salesGrossProfit || 0) / periodSalesTot) * 100) : 0;
       document.getElementById('statProfitMargin').textContent = marginRatio + '%';
 
-      renderRecentSalesPreview(filteredSales);
-      renderSalesTable();
-      renderPurchasesTable();
-      renderCashboxTable();
-      renderMissingTable();
-      renderShiftsTable();
-      renderProductsTable();
-      renderContactsTables();
-      renderAnalyticsTables();
-      renderCloudBackupInfo();
+      // استدعاء دوال الرسم بشكل آمن ومستقل لضمان عرض الجداول والبيانات فوراً
+      const safeRun = (fn, name) => {
+        try { fn(); } catch (err) { console.warn(`Render error in ${name}:`, err); }
+      };
+
+      safeRun(() => renderRecentSalesPreview(filteredSales), 'renderRecentSalesPreview');
+      safeRun(renderSalesTable, 'renderSalesTable');
+      safeRun(renderPurchasesTable, 'renderPurchasesTable');
+      safeRun(renderCashboxTable, 'renderCashboxTable');
+      safeRun(renderMissingTable, 'renderMissingTable');
+      safeRun(renderShiftsTable, 'renderShiftsTable');
+      safeRun(renderProductsTable, 'renderProductsTable');
+      safeRun(renderContactsTables, 'renderContactsTables');
+      safeRun(renderAnalyticsTables, 'renderAnalyticsTables');
+      safeRun(renderCloudBackupInfo, 'renderCloudBackupInfo');
     }
 
     // ──────────────────────────────────────────
@@ -3275,12 +3280,18 @@
     // ──────────────────────────────────────────
     function renderRecentSalesPreview(salesList) {
       const tbody = document.getElementById('tblRecentSalesPreview');
-      if (!salesList || salesList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">لا توجد فواتير مبيعات في الفترة المحددة</td></tr>`;
+      if (!tbody) return;
+      const allSales = (rawData && rawData.RecentSales) ? rawData.RecentSales : [];
+      let listToShow = (salesList && salesList.length > 0) ? salesList : allSales;
+      const isFallback = (!salesList || salesList.length === 0) && listToShow.length > 0;
+
+      if (!listToShow || listToShow.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500">لا توجد فواتير مبيعات مسجلة</td></tr>`;
         return;
       }
-      const top5 = salesList.slice(0, 5);
-      tbody.innerHTML = top5.map(s => `
+      const top5 = listToShow.slice(0, 5);
+      const fallbackNote = isFallback ? `<tr><td colspan="6" class="py-1 px-3 text-center text-[11px] text-amber-300 bg-amber-950/40 border-b border-amber-800/40 font-bold">لا توجد مبيعات مسجلة اليوم — يتم عرض أحدث 5 فواتير مسجلة:</td></tr>` : '';
+      tbody.innerHTML = fallbackNote + top5.map(s => `
         <tr class="hover:bg-slate-800/40 transition">
           <td class="py-2.5 font-bold text-white">#${s.SaleID}</td>
           <td class="py-2.5 text-slate-400">${s.SaleDate || ''}</td>
@@ -3302,21 +3313,49 @@
     }
 
     function renderSalesTable() {
-      const q = (document.getElementById('searchSalesInput')?.value || '').toLowerCase();
-      const allSales = rawData.RecentSales || [];
-      const filtered = allSales.filter(s => {
-        if (!isDateInPeriod(s.SaleDate)) return false;
-        if (q && !String(s.SaleID).includes(q) && !(s.ClientName || '').toLowerCase().includes(q)) return false;
-        return true;
-      });
-
+      const q = (document.getElementById('searchSalesInput')?.value || '').trim().toLowerCase();
+      const allSales = (rawData && rawData.RecentSales) ? rawData.RecentSales : [];
       const tbody = document.getElementById('tblSalesFull');
+      if (!tbody) return;
+
+      let filtered = [];
+      let isFallbackNotice = false;
+
+      if (q) {
+        // إذا قام المستخدم بكتابة بحث، نبحث في كل الفواتير المسجلة مباشرة دون التقيد بفترة التاريخ
+        filtered = allSales.filter(s => 
+          String(s.SaleID).toLowerCase().includes(q) ||
+          (s.ClientName || '').toLowerCase().includes(q) ||
+          (s.SaleDate || '').includes(q) ||
+          (s.PaymentType || '').toLowerCase().includes(q)
+        );
+      } else {
+        // تصفية حسب الفترة المحددة
+        filtered = allSales.filter(s => isDateInPeriod(s.SaleDate));
+
+        // إذا كانت الفترة هي اليوم ولا توجد فواتير اليوم بعد، ولكن يوجد فواتير مسجلة في السجل، نعرض أحدث الفواتير تلقائياً حتى تظهر البيانات فوراً
+        if (filtered.length === 0 && activeFilterRange === 'today' && allSales.length > 0) {
+          filtered = allSales.slice(0, 30);
+          isFallbackNotice = true;
+        }
+      }
+
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">لا توجد فواتير مبيعات مطابقة</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500 font-bold">لا توجد فواتير مبيعات مطابقة</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = filtered.map(s => `
+      const noticeRow = isFallbackNotice ? `
+        <tr>
+          <td colspan="9" class="p-2.5 bg-blue-950/50 border-b border-blue-800/60 text-center text-blue-300 text-xs">
+            <i class="fa-solid fa-circle-info text-blue-400 ml-1"></i>
+            لا توجد فواتير مسجلة اليوم — يتم عرض أحدث <b>${filtered.length}</b> فاتورة مسجلة
+            <button onclick="setDateRange('all')" class="mr-2 px-2.5 py-0.5 bg-blue-600/80 hover:bg-blue-600 text-white rounded text-[11px] font-bold transition">عرض جميع الفترات</button>
+          </td>
+        </tr>
+      ` : '';
+
+      tbody.innerHTML = noticeRow + filtered.map(s => `
         <tr class="hover:bg-slate-800/50 transition">
           <td class="p-3 font-bold text-white">#${s.SaleID}</td>
           <td class="p-3 text-slate-400 text-[11px]">${s.SaleDate || ''}</td>
@@ -3429,21 +3468,48 @@
     }
 
     function renderPurchasesTable() {
-      const q = (document.getElementById('searchPurInput')?.value || '').toLowerCase();
-      const allPur = rawData.RecentPurchases || [];
-      const filtered = allPur.filter(p => {
-        if (!isDateInPeriod(p.PurchaseDate)) return false;
-        if (q && !String(p.PurchaseID).includes(q) && !(p.SupplierName || '').toLowerCase().includes(q)) return false;
-        return true;
-      });
-
+      const q = (document.getElementById('searchPurInput')?.value || '').trim().toLowerCase();
+      const allPur = (rawData && rawData.RecentPurchases) ? rawData.RecentPurchases : [];
       const tbody = document.getElementById('tblPurchasesFull');
+      if (!tbody) return;
+
+      let filtered = [];
+      let isFallbackNotice = false;
+
+      if (q) {
+        // إذا قام المستخدم بكتابة بحث، نبحث في كل الفواتير المسجلة مباشرة دون التقيد بفترة التاريخ
+        filtered = allPur.filter(p => 
+          String(p.PurchaseID).toLowerCase().includes(q) || 
+          (p.SupplierName || '').toLowerCase().includes(q) || 
+          (p.PurchaseDate || '').includes(q)
+        );
+      } else {
+        // تصفية حسب الفترة المحددة
+        filtered = allPur.filter(p => isDateInPeriod(p.PurchaseDate));
+
+        // إذا كانت الفترة هي اليوم ولا توجد فواتير اليوم بعد، ولكن يوجد فواتير مسجلة في السجل، نعرض أحدث الفواتير تلقائياً حتى تظهر البيانات فوراً
+        if (filtered.length === 0 && activeFilterRange === 'today' && allPur.length > 0) {
+          filtered = allPur.slice(0, 30);
+          isFallbackNotice = true;
+        }
+      }
+
       if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">لا توجد فواتير مشتريات مطابقة</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500 font-bold">لا توجد فواتير مشتريات مطابقة</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = filtered.map(p => `
+      const noticeRow = isFallbackNotice ? `
+        <tr>
+          <td colspan="7" class="p-2.5 bg-blue-950/50 border-b border-blue-800/60 text-center text-blue-300 text-xs">
+            <i class="fa-solid fa-circle-info text-blue-400 ml-1"></i>
+            لا توجد فواتير مشتريات مسجلة اليوم — يتم عرض أحدث <b>${filtered.length}</b> فاتورة مسجلة
+            <button onclick="setDateRange('all')" class="mr-2 px-2.5 py-0.5 bg-blue-600/80 hover:bg-blue-600 text-white rounded text-[11px] font-bold transition">عرض جميع الفترات</button>
+          </td>
+        </tr>
+      ` : '';
+
+      tbody.innerHTML = noticeRow + filtered.map(p => `
         <tr class="hover:bg-slate-800/50 transition">
           <td class="p-3 font-bold text-white">#${p.PurchaseID}</td>
           <td class="p-3 text-slate-400 text-[11px]">${p.PurchaseDate || ''}</td>
@@ -4634,6 +4700,19 @@ ${shift.Notes ? `📝 *ملاحظات:* ${shift.Notes}\n` : ''}━━━━━�
       if (activeBtn) {
         activeBtn.classList.add('active-tab');
         activeBtn.classList.remove('text-slate-400');
+      }
+
+      // تحديث فوري وسريع للجداول عند التنقل المباشر بين الشاشات
+      try {
+        if (tabId === 'sales') renderSalesTable();
+        else if (tabId === 'purchases') renderPurchasesTable();
+        else if (tabId === 'cashbox') renderCashboxTable();
+        else if (tabId === 'inventory') renderProductsTable();
+        else if (tabId === 'contacts') renderContactsTables();
+        else if (tabId === 'shifts') renderShiftsTable();
+        else if (tabId === 'analytics') renderAnalyticsTables();
+      } catch (err) {
+        console.warn(`Tab switch render error (${tabId}):`, err);
       }
     }
 

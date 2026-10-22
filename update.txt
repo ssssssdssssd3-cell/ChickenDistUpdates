@@ -1,5 +1,5 @@
-version=4.3.7
+version=4.3.8
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.7&t=1792702646
-sha256=D3ED701990B910C0A09A64D66EAD021CDDF476E49191C3424342C3CA2AC66A1B
-changelog=v4.3.7 - 2026-10-22: Fix barcode scanning for IMEI: ISO-15417 Code 128 odd digits, add wide quiet zone buffer in Code-On-Side template, and support selected encoding
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.8&t=1792703435
+sha256=248AD6C030965D537AE929C132CF1E01FF30415651B8DE11E833114042EC7C39
+changelog=v4.3.8 - 2026-10-23: Fix mobile app sales and purchases table loading, prevent reference crash on load, and auto-fallback to recent invoices
