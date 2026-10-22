@@ -25,6 +25,7 @@ namespace ChickenDist.Forms
         private ComboBox cboBannerStyle;
         private ComboBox cboCategoryFilter;
         private TextBox txtSearchFilter;
+        private CheckBox chkOnlyInStock;
         private CheckBox chkShowQty;
         private CheckBox chkShowPrice;
         private Bitmap _posterBitmap;
@@ -168,6 +169,20 @@ namespace ChickenDist.Forms
             txtSearchFilter.TextChanged += (s, e) => { LoadProductsList(); GeneratePoster(); };
             pnlControls.Controls.Add(txtSearchFilter);
             y += 35;
+
+            chkOnlyInStock = new CheckBox
+            {
+                Text = "📦 أصناف لها رصيد فقط (المتوفر > 0)",
+                Location = new Point(10, y),
+                Width = 280,
+                Height = 25,
+                ForeColor = Theme.Success,
+                Font = Theme.FontBold,
+                Checked = false
+            };
+            chkOnlyInStock.CheckedChanged += (s, e) => { LoadProductsList(); GeneratePoster(); };
+            pnlControls.Controls.Add(chkOnlyInStock);
+            y += 30;
 
             chkShowQty = new CheckBox
             {
@@ -321,6 +336,9 @@ namespace ChickenDist.Forms
                 string searchTxt = txtSearchFilter?.Text?.Trim() ?? "";
                 if (!string.IsNullOrEmpty(searchTxt))
                     whereExtra += $" AND (p.ProductName LIKE N'%{searchTxt.Replace("'", "''")}%' OR p.ProductCode LIKE N'%{searchTxt.Replace("'", "''")}%')";
+
+                if (chkOnlyInStock != null && chkOnlyInStock.Checked)
+                    whereExtra += " AND ISNULL(s.StockQty, 0) > 0";
 
                 string sql = $@"
                     SELECT 

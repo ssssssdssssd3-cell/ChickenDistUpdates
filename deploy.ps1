@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.4";
-$CHANGELOG = "v4.3.4 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add registered clients search in Warranty module and add advanced product search (F1) in Purchase Order screen"
+$VERSION = "4.3.5";
+$CHANGELOG = "v4.3.5 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add in-stock filter, IMEI reading in Price Checker, and new Code-On-Side barcode sticker template"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

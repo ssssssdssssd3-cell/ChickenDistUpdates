@@ -859,6 +859,7 @@ namespace ChickenDist.Forms
             {
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
+                "كود الصنف علي العرض",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
                 "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
@@ -866,6 +867,7 @@ namespace ChickenDist.Forms
             });
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate switch
             {
+                "CodeOnSide" => "كود الصنف علي العرض",
                 "MobileIMEI" => "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "PriceHeavy" => "سعر بارز (سعر كبير + باركود)",
                 "Small" => "ملصق صغير (سعر وباركود فقط)",
@@ -1171,7 +1173,8 @@ namespace ChickenDist.Forms
             }
 
             string bTmpl = cboBarcodeTemplate.SelectedItem?.ToString() ?? "";
-            AppConfig.BarcodeTemplate = (bTmpl.Contains("MobileIMEI") || bTmpl.Contains("الموبايل") || bTmpl.Contains("IMEI")) ? "MobileIMEI"
+            AppConfig.BarcodeTemplate = (bTmpl.Contains("كود الصنف علي العرض") || bTmpl.Contains("كود الصنف على العرض") || bTmpl.Contains("CodeOnSide")) ? "CodeOnSide"
+                                      : (bTmpl.Contains("MobileIMEI") || bTmpl.Contains("الموبايل") || bTmpl.Contains("IMEI")) ? "MobileIMEI"
                                       : bTmpl.Contains("سعر بارز") ? "PriceHeavy"
                                       : bTmpl.Contains("ملصق صغير") ? "Small"
                                       : bTmpl.Contains("ملصق الرف") ? "Shelf"

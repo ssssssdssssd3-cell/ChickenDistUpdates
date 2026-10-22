@@ -13,6 +13,7 @@ namespace ChickenDist.Forms
         private DataGridView dgProducts;
         private TextBox txtSearch;
         private ComboBox cboSearchType, cboCategory, cboBrand, cboDealStatus, cboStockStatus, cboStatus, cboShelf;
+        private CheckBox chkInStockOnly;
         private Label lblItemCount, lblSearch, lblCat, lblBrand, lblDealStatus, lblStockStatus, lblStatus, lblShelf;
         private Button btnResetFilters, btnSearch;
         private Button btnNew, btnEdit, btnMovement, btnDelete;
@@ -254,7 +255,36 @@ namespace ChickenDist.Forms
                 "🎯 تحت حد الطلب (نواقص)"
             });
             cboStockStatus.SelectedIndex = 0;
-            cboStockStatus.SelectedIndexChanged += (s, e) => { if (_dtProducts != null) FilterProducts(); };
+            cboStockStatus.SelectedIndexChanged += (s, e) =>
+            {
+                if (chkInStockOnly != null)
+                {
+                    chkInStockOnly.Checked = (cboStockStatus.SelectedIndex == 1);
+                }
+                if (_dtProducts != null) FilterProducts();
+            };
+
+            chkInStockOnly = new CheckBox
+            {
+                Text = "أصناف لها رصيد فقط 📦",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(254, 240, 138),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            chkInStockOnly.CheckedChanged += (s, e) =>
+            {
+                if (chkInStockOnly.Checked)
+                {
+                    cboStockStatus.SelectedIndex = 1;
+                }
+                else
+                {
+                    if (cboStockStatus.SelectedIndex == 1)
+                        cboStockStatus.SelectedIndex = 0;
+                }
+                if (_dtProducts != null) FilterProducts();
+            };
 
             lblStatus = new Label 
             { 
@@ -295,6 +325,7 @@ namespace ChickenDist.Forms
                 btnResetFilters,
                 lblDealStatus, cboDealStatus,
                 lblStockStatus, cboStockStatus,
+                chkInStockOnly,
                 lblStatus, cboStatus,
                 lblItemCount 
             });
@@ -352,7 +383,9 @@ namespace ChickenDist.Forms
                 curX2 -= (lblStockStatus.PreferredWidth + 5);
 
                 cboStockStatus.Location = new Point(curX2 - cboStockStatus.Width, 54);
-                curX2 -= (cboStockStatus.Width + 15);
+                curX2 -= (cboStockStatus.Width + 12);
+                chkInStockOnly.Location = new Point(curX2 - chkInStockOnly.PreferredSize.Width, 57);
+                curX2 -= (chkInStockOnly.PreferredSize.Width + 15);
 
                 lblStatus.Location = new Point(curX2 - lblStatus.PreferredWidth, 57);
                 curX2 -= (lblStatus.PreferredWidth + 5);
@@ -673,6 +706,7 @@ namespace ChickenDist.Forms
             if (cboShelf.Items.Count > 0) cboShelf.SelectedIndex = 0;
             if (cboDealStatus.Items.Count > 0) cboDealStatus.SelectedIndex = 0;
             if (cboStockStatus.Items.Count > 0) cboStockStatus.SelectedIndex = 0;
+            if (chkInStockOnly != null) chkInStockOnly.Checked = false;
             if (cboStatus.Items.Count > 0) cboStatus.SelectedIndex = 0;
             if (_dtProducts != null)
             {

@@ -978,6 +978,131 @@ namespace ChickenDist.DAL
             return null;
         }
 
+        /// <summary>
+        /// البحث الشامل عن الصنف المرتبط برقم سيريال IMEI سواء كان متاحاً أو تم بيعه مسبقاً
+        /// </summary>
+        public static (int ProductID, string MatchedIMEI)? FindProductByAnyIMEI(string imei)
+        {
+            if (string.IsNullOrWhiteSpace(imei)) return null;
+            string cleanImei = SanitizeIMEIString(imei);
+            if (string.IsNullOrWhiteSpace(cleanImei)) return null;
+
+            // 1. فحص المتاح أولاً
+            var avail = FindProductByAvailableIMEI(cleanImei);
+            if (avail.HasValue) return (avail.Value.ProductID, avail.Value.IMEI);
+
+            // 2. فحص فواتير الشراء
+            var dtPurch = DbHelper.Query(@"
+                SELECT TOP 1 pi.ProductID, LTRIM(RTRIM(pi.IMEI)) AS IMEI
+                FROM PurchaseItems pi
+                WHERE LTRIM(RTRIM(pi.IMEI)) = @imei
+                ORDER BY pi.ItemID DESC",
+                DbHelper.P("@imei", cleanImei));
+            if (dtPurch != null && dtPurch.Rows.Count > 0)
+            {
+                int pid = Convert.ToInt32(dtPurch.Rows[0]["ProductID"]);
+                string mImei = dtPurch.Rows[0]["IMEI"]?.ToString() ?? cleanImei;
+                return (pid, mImei);
+            }
+
+            // 3. فحص الزوج المحتمل (IMEI 1 / IMEI 2)
+            if (cleanImei.Length == 15 && cleanImei.All(char.IsDigit))
+            {
+                var candidates = GetCandidatePairedIMEIs(cleanImei);
+                foreach (var cand in candidates)
+                {
+                    var dtCand = DbHelper.Query(@"
+                        SELECT TOP 1 pi.ProductID, LTRIM(RTRIM(pi.IMEI)) AS IMEI
+                        FROM PurchaseItems pi
+                        WHERE LTRIM(RTRIM(pi.IMEI)) = @imei
+                        ORDER BY pi.ItemID DESC",
+                        DbHelper.P("@imei", cand));
+                    if (dtCand != null && dtCand.Rows.Count > 0)
+                    {
+                        int pid = Convert.ToInt32(dtCand.Rows[0]["ProductID"]);
+                        string mImei = dtCand.Rows[0]["IMEI"]?.ToString() ?? cand;
+                        return (pid, mImei);
+                    }
+                }
+            }
+
+            // 4. فحص المبيعات
+            var dtSale = DbHelper.Query(@"
+                SELECT TOP 1 si.ProductID, LTRIM(RTRIM(si.IMEI)) AS IMEI
+                FROM SaleItems si
+                WHERE LTRIM(RTRIM(si.IMEI)) = @imei
+                ORDER BY si.ItemID DESC",
+                DbHelper.P("@imei", cleanImei));
+            if (dtSale != null && dtSale.Rows.Count > 0)
+            {
+                int pid = Convert.ToInt32(dtSale.Rows[0]["ProductID"]);
+                string mImei = dtSale.Rows[0]["IMEI"]?.ToString() ?? cleanImei;
+                return (pid, mImei);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// الحصول على كود واسم المورد للصنف أو لجهاز برقم سيريال IMEI معين
+        /// </summary>
+        public static (string SupplierCode, string SupplierName) GetProductSupplierInfo(int productID, string imei = null)
+        {
+            try
+            {
+                // 1. إذا توفر سيريال IMEI: البحث في فواتير الشراء المسجلة بالسيريال أولاً
+                if (!string.IsNullOrWhiteSpace(imei))
+                {
+                    string cleanImei = SanitizeIMEIString(imei);
+                    var dtImei = DbHelper.Query(@"
+                        SELECT TOP 1 
+                            COALESCE(NULLIF(s.SupplierCode, N''), CAST(s.SupplierID AS NVARCHAR(20)), N'') AS SupplierCode,
+                            ISNULL(s.SupplierName, N'') AS SupplierName
+                        FROM PurchaseItems pi
+                        JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                        LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                        WHERE LTRIM(RTRIM(pi.IMEI)) = @imei
+                        ORDER BY pi.ItemID DESC",
+                        DbHelper.P("@imei", cleanImei));
+
+                    if (dtImei != null && dtImei.Rows.Count > 0)
+                    {
+                        string c = dtImei.Rows[0]["SupplierCode"]?.ToString() ?? "";
+                        string n = dtImei.Rows[0]["SupplierName"]?.ToString() ?? "";
+                        if (!string.IsNullOrWhiteSpace(c) || !string.IsNullOrWhiteSpace(n))
+                            return (c, n);
+                    }
+                }
+
+                // 2. البحث عن آخر مورد تم الشراء منه لهذا الصنف
+                if (productID > 0)
+                {
+                    var dtProd = DbHelper.Query(@"
+                        SELECT TOP 1 
+                            COALESCE(NULLIF(s.SupplierCode, N''), CAST(s.SupplierID AS NVARCHAR(20)), N'') AS SupplierCode,
+                            ISNULL(s.SupplierName, N'') AS SupplierName
+                        FROM PurchaseItems pi
+                        JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+                        LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+                        WHERE pi.ProductID = @pid
+                        ORDER BY p.PurchaseDate DESC, pi.ItemID DESC",
+                        DbHelper.P("@pid", productID));
+
+                    if (dtProd != null && dtProd.Rows.Count > 0)
+                    {
+                        string c = dtProd.Rows[0]["SupplierCode"]?.ToString() ?? "";
+                        string n = dtProd.Rows[0]["SupplierName"]?.ToString() ?? "";
+                        return (c, n);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("PurchaseDAL.GetProductSupplierInfo", ex);
+            }
+            return ("", "");
+        }
+
         private static (int ProductID, string IMEI)? LookupAvailableIMEI(string testImei)
         {
             string sql = @"

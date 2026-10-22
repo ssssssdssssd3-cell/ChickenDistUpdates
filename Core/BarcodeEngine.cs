@@ -481,5 +481,78 @@ namespace ChickenDist.Core
             catch { }
             return null;
         }
+
+        public static void DrawFittedText(Graphics g, string text, Font baseFont, Brush brush, RectangleF rect, StringFormat format, float minFontSize = 5f)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            float currentSize = baseFont.Size;
+            Font fontToUse = baseFont;
+            bool createdNew = false;
+            try
+            {
+                while (currentSize > minFontSize)
+                {
+                    SizeF size = g.MeasureString(text, fontToUse, (int)rect.Width, format);
+                    if (size.Width <= rect.Width && size.Height <= rect.Height + 2f)
+                        break;
+                    currentSize -= 0.5f;
+                    Font nextFont = new Font(baseFont.FontFamily, currentSize, baseFont.Style);
+                    if (createdNew) fontToUse.Dispose();
+                    fontToUse = nextFont;
+                    createdNew = true;
+                }
+                g.DrawString(text, fontToUse, brush, rect, format);
+            }
+            finally
+            {
+                if (createdNew && fontToUse != null) fontToUse.Dispose();
+            }
+        }
+
+        public static void DrawRotatedFittedText(Graphics g, string text, Font baseFont, Brush brush, RectangleF rect, bool topToBottom = true, float minFontSize = 4.5f)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+            var state = g.Save();
+            try
+            {
+                float cx = rect.X + rect.Width / 2f;
+                float cy = rect.Y + rect.Height / 2f;
+                g.TranslateTransform(cx, cy);
+                g.RotateTransform(topToBottom ? 90f : -90f);
+
+                float availLength = rect.Height;
+                float availThickness = rect.Width;
+
+                float currentSize = baseFont.Size;
+                Font fontToUse = baseFont;
+                bool createdNew = false;
+                try
+                {
+                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap })
+                    {
+                        while (currentSize > minFontSize)
+                        {
+                            SizeF size = g.MeasureString(text, fontToUse, (int)availLength, sf);
+                            if (size.Width <= availLength && size.Height <= availThickness + 2f)
+                                break;
+                            currentSize -= 0.5f;
+                            Font nextFont = new Font(baseFont.FontFamily, currentSize, baseFont.Style);
+                            if (createdNew) fontToUse.Dispose();
+                            fontToUse = nextFont;
+                            createdNew = true;
+                        }
+                        g.DrawString(text, fontToUse, brush, new RectangleF(-availLength / 2f, -availThickness / 2f, availLength, availThickness), sf);
+                    }
+                }
+                finally
+                {
+                    if (createdNew && fontToUse != null) fontToUse.Dispose();
+                }
+            }
+            finally
+            {
+                g.Restore(state);
+            }
+        }
     }
 }

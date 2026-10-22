@@ -1,5 +1,5 @@
-version=4.3.4
+version=4.3.5
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.4&t=1792668464
-sha256=ED48CF03FBC94755B39674878E98142A19C38423657F2B8BA450C38E3CBB4B19
-changelog=v4.3.4 - 2026-10-22: Add registered clients search in Warranty module and add advanced product search (F1) in Purchase Order screen
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.5&t=1792672295
+sha256=19C22D9515D41C1046B141F292905400131E584005C571A64AE72DB70BA67AC1
+changelog=v4.3.5 - 2026-10-22: Add in-stock filter, IMEI reading in Price Checker, and new Code-On-Side barcode sticker template

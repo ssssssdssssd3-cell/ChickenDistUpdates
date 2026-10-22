@@ -838,10 +838,39 @@ namespace ChickenDist.Forms
 
             try
             {
-                var dr = ProductDAL.GetByBarcodeOrScaleCode(code, out decimal parsedWeight);
+                DataRow dr = null;
+
+                // 1. في نشاط الموبايلات (أو عند مسح كود IMEI): فحص سيريالات الأجهزة أولاً
+                string cleanImei = PurchaseDAL.SanitizeIMEIString(code);
+                if (!string.IsNullOrWhiteSpace(cleanImei) && (AppConfig.BusinessType == "Mobiles" || cleanImei.Length >= 8))
+                {
+                    var imeiMatch = PurchaseDAL.FindProductByAnyIMEI(cleanImei);
+                    if (imeiMatch.HasValue)
+                    {
+                        var dtImei = DbHelper.Query(@"
+                            SELECT TOP 1 p.*, c.CategoryName, @scannedImei AS MatchedIMEI
+                            FROM Products p
+                            LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
+                            WHERE p.ProductID = @pid",
+                            DbHelper.P("@scannedImei", imeiMatch.Value.MatchedIMEI),
+                            DbHelper.P("@pid", imeiMatch.Value.ProductID));
+
+                        if (dtImei != null && dtImei.Rows.Count > 0)
+                        {
+                            dr = dtImei.Rows[0];
+                        }
+                    }
+                }
+
+                // 2. إذا لم يكن سيريال، البحث بالباركود المباشر أو كود الميزان
                 if (dr == null)
                 {
-                    // Fallback to code or name search
+                    dr = ProductDAL.GetByBarcodeOrScaleCode(code, out decimal parsedWeight);
+                }
+
+                // 3. محاولة البحث بكود الصنف أو الاسم كحل بديل
+                if (dr == null)
+                {
                     var dtAll = DbHelper.Query(@"
                         SELECT TOP 1 p.*, c.CategoryName 
                         FROM Products p 
@@ -851,7 +880,7 @@ namespace ChickenDist.Forms
                         DbHelper.P("@q", "%" + code + "%"),
                         DbHelper.P("@code", code));
 
-                    if (dtAll.Rows.Count > 0)
+                    if (dtAll != null && dtAll.Rows.Count > 0)
                     {
                         dr = dtAll.Rows[0];
                     }
@@ -863,7 +892,7 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    MessageBox.Show($"❌ لم يتم العثور على صنف مطابق للباركود:\n({code})", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"❌ لم يتم العثور على صنف مطابق للباركود أو السيريال:\n({code})", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     SwitchToStandby();
                 }
             }
@@ -911,8 +940,16 @@ namespace ChickenDist.Forms
             }
             catch { }
 
-            // Populate Badges
-            lblBarcodeBadge.Text = $"🏷️ كود: {prodCode}";
+            // Populate Badges & Serial Info
+            string matchedImei = dr.Table.Columns.Contains("MatchedIMEI") ? dr["MatchedIMEI"]?.ToString() ?? "" : "";
+            string imeiPart = !string.IsNullOrWhiteSpace(matchedImei) ? $" | 📱 IMEI: {matchedImei}" : "";
+            string supCode = "";
+            if (AppConfig.BusinessType == "Mobiles" || !string.IsNullOrWhiteSpace(matchedImei))
+            {
+                try { supCode = PurchaseDAL.GetProductSupplierInfo(productID, matchedImei).SupplierCode; } catch { }
+            }
+            string supPart = !string.IsNullOrWhiteSpace(supCode) ? $" | 🏢 مورد: {supCode}" : "";
+            lblBarcodeBadge.Text = $"🏷️ كود: {prodCode}{imeiPart}{supPart}";
             lblCategoryBadge.Text = string.IsNullOrWhiteSpace(catName) ? "📂 القسم: عام" : $"📂 {catName}";
             lblShelfLocation.Text = string.IsNullOrWhiteSpace(shelfLoc) ? "📍 مكان الرف: غير محدد" : $"📍 مكان الرف: {shelfLoc}";
 
