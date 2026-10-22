@@ -1,5 +1,5 @@
-version=4.3.6
+version=4.3.7
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.6&t=1792682126
-sha256=AFFD50918105DF9671463F18DC236348205725137EADEE14A42B1CF9825B8F29
-changelog=v4.3.6 - 2026-10-22: Add customer purchases lookup in Warranty Card, compact header badges in Warranty Screen, and fix bottom action buttons cutoff
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.7&t=1792702646
+sha256=D3ED701990B910C0A09A64D66EAD021CDDF476E49191C3424342C3CA2AC66A1B
+changelog=v4.3.7 - 2026-10-22: Fix barcode scanning for IMEI: ISO-15417 Code 128 odd digits, add wide quiet zone buffer in Code-On-Side template, and support selected encoding

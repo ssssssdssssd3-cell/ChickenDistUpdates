@@ -583,18 +583,22 @@ namespace ChickenDist.Forms
                     DrawFittedText(g, titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x + 1, y, w - 2, titleH), center, 5.5f);
                     y += titleH + 2f;
 
-                    float barcodeHeight = isSmallSticker ? 22f : 28f;
-                    float sideColWidth = isSmallSticker ? 20f : 26f;
-                    float barcodeX = x + sideColWidth;
-                    float barcodeW = w - (sideColWidth * 2);
+                    float barcodeHeight = isSmallSticker ? 24f : 30f;
+                    float sideColWidth = isSmallSticker ? 12f : 16f;
+                    float quietGap = isSmallSticker ? 8f : 10f;
+                    float totalSide = sideColWidth + quietGap;
 
-                    // الباركود الرئيسي في المنتصف (Code 128)
-                    BarcodeEngine.DrawBarcode(g, currentBarcode, "Code128", barcodeX, y, barcodeW, barcodeHeight);
+                    float barcodeX = x + totalSide;
+                    float barcodeW = w - (totalSide * 2);
+
+                    // الباركود الرئيسي في المنتصف (حسب التشفير المختار مع مسافة أمان عريضة)
+                    string enc = !string.IsNullOrWhiteSpace(_printEncoding) ? _printEncoding : "Code128";
+                    BarcodeEngine.DrawBarcode(g, currentBarcode, enc, barcodeX, y, barcodeW, barcodeHeight);
 
                     // كود الصنف على اليمين بالعرض
                     string rightCode = !string.IsNullOrWhiteSpace(_productCode) ? _productCode : "";
-                    var fSide = new Font("Segoe UI", isSmallSticker ? 6.5f : 7.5f, FontStyle.Bold);
-                    RectangleF rightRect = new RectangleF(x + w - sideColWidth, y, sideColWidth, barcodeHeight);
+                    var fSide = new Font("Segoe UI", isSmallSticker ? 6f : 7.5f, FontStyle.Bold);
+                    RectangleF rightRect = new RectangleF(x + w - sideColWidth - 1, y, sideColWidth, barcodeHeight);
                     BarcodeEngine.DrawRotatedFittedText(g, rightCode, fSide, Brushes.Black, rightRect, true);
 
                     // كود المورد على الشمال بالعرض
@@ -606,7 +610,7 @@ namespace ChickenDist.Forms
                     catch { }
                     if (!string.IsNullOrWhiteSpace(supCode))
                     {
-                        RectangleF leftRect = new RectangleF(x, y, sideColWidth, barcodeHeight);
+                        RectangleF leftRect = new RectangleF(x + 1, y, sideColWidth, barcodeHeight);
                         BarcodeEngine.DrawRotatedFittedText(g, supCode, fSide, Brushes.Black, leftRect, true);
                     }
 
@@ -648,12 +652,13 @@ namespace ChickenDist.Forms
                     DrawFittedText(g, titleToPrint, fDeviceTitle, Brushes.Black, new RectangleF(x + 2, y, w - 4, titleH), center, 5.5f);
                     y += titleH + 2f;
 
-                    // 3. رسم باركود الـ IMEI بدقة عالية ومسافات حواف مريحة (Code 128)
-                    float barcodeHeight = isSmallSticker ? 20f : 25f;
+                    // 3. رسم باركود الـ IMEI بدقة عالية ومسافات حواف مريحة
+                    float barcodeHeight = isSmallSticker ? 24f : 30f;
                     float barcodeMargin = isSmallSticker ? 8f : 12f;
                     float barcodeX = x + barcodeMargin;
                     float barcodeW = w - (barcodeMargin * 2);
-                    BarcodeEngine.DrawBarcode(g, currentBarcode, "Code128", barcodeX, y, barcodeW, barcodeHeight);
+                    string encM = !string.IsNullOrWhiteSpace(_printEncoding) ? _printEncoding : "Code128";
+                    BarcodeEngine.DrawBarcode(g, currentBarcode, encM, barcodeX, y, barcodeW, barcodeHeight);
                     y += barcodeHeight + 2f;
 
                     // 4. كتابة كود الـ IMEI بوضوح + السعر إن وجد

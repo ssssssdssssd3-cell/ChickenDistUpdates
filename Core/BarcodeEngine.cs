@@ -131,7 +131,23 @@ namespace ChickenDist.Core
                     if (c < '0' || c > '9') { isAllDigits = false; break; }
                 }
 
-                if (isAllDigits && code.Length >= 2 && code.Length % 2 == 0)
+                if (isWide)
+                {
+                    // Pure Code B for maximum scanner compatibility, no mode switches, and wide clear bars
+                    symbolIndices.Add(104); // Start B
+                    int sum = 104;
+                    for (int i = 0; i < code.Length; i++)
+                    {
+                        int val = code[i] - 32;
+                        if (val < 0 || val > 95) val = 0;
+                        symbolIndices.Add(val);
+                        sum += val * (i + 1);
+                    }
+                    int checksum = sum % 103;
+                    symbolIndices.Add(checksum);
+                    symbolIndices.Add(106); // Stop
+                }
+                else if (isAllDigits && code.Length >= 2 && code.Length % 2 == 0)
                 {
                     symbolIndices.Add(105); // Start C
                     int sum = 105;
@@ -149,26 +165,31 @@ namespace ChickenDist.Core
                 }
                 else if (isAllDigits && code.Length >= 3 && code.Length % 2 != 0)
                 {
-                    symbolIndices.Add(105); // Start C
-                    int sum = 105;
+                    // ISO/IEC 15417 Standard: Start B for the first digit, then Switch to Code C (99) for the remaining even pairs
+                    symbolIndices.Add(104); // Start B
+                    int sum = 104;
                     int pos = 1;
-                    for (int i = 0; i < code.Length - 1; i += 2)
+
+                    // First digit in Code B
+                    int firstVal = code[0] - 32;
+                    if (firstVal < 0 || firstVal > 95) firstVal = 0;
+                    symbolIndices.Add(firstVal);
+                    sum += firstVal * pos;
+                    pos++;
+
+                    // Switch to Code C
+                    symbolIndices.Add(99); // Code C
+                    sum += 99 * pos;
+                    pos++;
+
+                    // Remaining even pairs in Code C
+                    for (int i = 1; i < code.Length; i += 2)
                     {
                         int val = int.Parse(code.Substring(i, 2));
                         symbolIndices.Add(val);
                         sum += val * pos;
                         pos++;
                     }
-
-                    symbolIndices.Add(100); // Switch to B
-                    sum += 100 * pos;
-                    pos++;
-
-                    int lastVal = code[code.Length - 1] - 32;
-                    if (lastVal < 0 || lastVal > 95) lastVal = 0;
-                    symbolIndices.Add(lastVal);
-                    sum += lastVal * pos;
-                    pos++;
 
                     int checksum = sum % 103;
                     symbolIndices.Add(checksum);
@@ -200,18 +221,21 @@ namespace ChickenDist.Core
                     }
                 }
 
-                float quietZoneModules = isWide ? 12f : 10f;
+                float quietZoneModules = isWide ? 10f : 8f;
                 float availableWidth = width;
                 float moduleWidth = availableWidth / (totalModules + (quietZoneModules * 2f));
 
                 float maxModule = isWide ? 2.5f : ((availableWidth < 130f) ? 1.5f : 2.0f);
-                float minModule = isWide ? 1.2f : 0.8f;
-
                 if (moduleWidth > maxModule) moduleWidth = maxModule;
-                if (moduleWidth < minModule) moduleWidth = minModule;
+
+                // Ensure actualBarcodeWidth does not overflow availableWidth
+                if ((totalModules * moduleWidth) > (availableWidth - 2f))
+                {
+                    moduleWidth = Math.Max(0.55f, (availableWidth - 2f) / totalModules);
+                }
 
                 float actualBarcodeWidth = totalModules * moduleWidth;
-                float curX = x + (width - actualBarcodeWidth) / 2f;
+                float curX = x + Math.Max(0f, (width - actualBarcodeWidth) / 2f);
 
                 using (var brush = new SolidBrush(Color.Black))
                 {

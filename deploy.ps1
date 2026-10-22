@@ -1,11 +1,11 @@
-﻿# ============================================================
+# ============================================================
 #  Ã°Å¸Å¡â‚¬ Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.6";
-$CHANGELOG = "v4.3.6 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add customer purchases lookup in Warranty Card, compact header badges in Warranty Screen, and fix bottom action buttons cutoff"
+$VERSION = "4.3.7";
+$CHANGELOG = "v4.3.7 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix barcode scanning for IMEI: ISO-15417 Code 128 odd digits, add wide quiet zone buffer in Code-On-Side template, and support selected encoding"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
