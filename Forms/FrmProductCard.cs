@@ -14,7 +14,10 @@ namespace ChickenDist.Forms
         private ComboBox cboCategory, cboUnit;
         private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize, btnAddColor, btnAddCat;
         private Button btnMultiBarcode, btnResetU1, btnResetU2, btnRecalcAll;
-        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice;
+        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice, nudProfitMarginPct, nudTaxPct;
+        private GroupBox grpBasic, grpPrice, grpUnit2, grpUnit1;
+        private Panel pnlFooter;
+        private bool _inMarginRecalc = false;
         private CheckBox chkActive, chkPrintLocalBarcode, chkIsService, chkIsQuickItem, chkHasExpiry, chkIsIMEI;
         private NumericUpDown nudDefaultExpiryDays;
         private Button btnSave, btnCancel;
@@ -65,21 +68,23 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _selectedID > 0 ? "تعديل بيانات الصنف" : "إضافة صنف جديد";
-            this.Size = new Size(1340, 660);
+            this.Size = new Size(1340, 720);
+            this.MinimumSize = new Size(1100, 680);
+            this.WindowState = FormWindowState.Maximized;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
             this.MaximizeBox = true;
-            this.MinimizeBox = false;
+            this.MinimizeBox = true;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
+            this.RightToLeftLayout = false;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
             int grpWidth = 315;
-            int grpHeight = 520;
+            int grpHeight = 530;
 
-            // GroupBox 1: البيانات الأساسية
-            var grpBasic = new GroupBox
+            // GroupBox 1: البيانات الأساسية (أقصى اليمين)
+            grpBasic = new GroupBox
             {
                 Text = "📝 البيانات الأساسية",
                 Location = new Point(15, 15),
@@ -89,10 +94,10 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(grpBasic);
 
-            // GroupBox 2: الأسعار والصلاحية
-            var grpPrice = new GroupBox
+            // GroupBox 2: الأسعار والربح والضريبة (الثاني من اليمين)
+            grpPrice = new GroupBox
             {
-                Text = "💰 الأسعار والصلاحية",
+                Text = "💰 الأسعار والربح والضريبة",
                 Location = new Point(345, 15),
                 Size = new Size(grpWidth, grpHeight),
                 ForeColor = Theme.Primary,
@@ -100,8 +105,8 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(grpPrice);
 
-            // GroupBox 3: الوحدة الوسطى
-            var grpUnit2 = new GroupBox
+            // GroupBox 3: الوحدة الوسطى (الثالث من اليمين)
+            grpUnit2 = new GroupBox
             {
                 Text = "📦 الوحدة الوسطى (علبة/دستة)",
                 Location = new Point(675, 15),
@@ -111,8 +116,8 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(grpUnit2);
 
-            // GroupBox 4: الوحدة الصغرى والربط
-            var grpUnit1 = new GroupBox
+            // GroupBox 4: الوحدة الصغرى والربط (أقصى اليسار)
+            grpUnit1 = new GroupBox
             {
                 Text = "🔍 الوحدة الصغرى (تجزئة/قطعة)",
                 Location = new Point(1005, 15),
@@ -209,41 +214,52 @@ namespace ChickenDist.Forms
 
             bool canSeeCost = Session.CanViewCost("Products");
 
-            // --- GroupBox 2 Content ---
-            int py = 25;
+            // --- GroupBox 2 Content (الأسعار والربح والضريبة) ---
+            int py = 22;
             AddNud(grpPrice, "شراء الكبرى:", 10, py, out nudPurchasePrice, 2, canSeeCost);
-            if (canSeeCost) py += 38;
-            AddNud(grpPrice, "بيع قطاعي الكبرى:", 10, py, out nudPrice, 2); py += 38;
-            AddNud(grpPrice, "نصف جملة الكبرى:", 10, py, out nudSemiWholesalePrice, 2); py += 38;
-            AddNud(grpPrice, "جملة الكبرى:", 10, py, out nudWholesalePrice, 2); py += 38;
-            AddNud(grpPrice, "حد الطلب (بالصغرى):", 10, py, out nudMinStockLimit, 3); py += 42;
+            if (canSeeCost) py += 34;
+
+            AddNud(grpPrice, "نسبة الربح %:", 10, py, out nudProfitMarginPct, 2);
+            nudProfitMarginPct.Maximum = 9999m;
+            py += 34;
+
+            AddNud(grpPrice, "نسبة الضريبة %:", 10, py, out nudTaxPct, 2);
+            nudTaxPct.Maximum = 100m;
+            py += 34;
+
+            AddNud(grpPrice, "بيع قطاعي الكبرى:", 10, py, out nudPrice, 2); py += 34;
+            AddNud(grpPrice, "نصف جملة الكبرى:", 10, py, out nudSemiWholesalePrice, 2); py += 34;
+            AddNud(grpPrice, "جملة الكبرى:", 10, py, out nudWholesalePrice, 2); py += 34;
+            AddNud(grpPrice, "حد الطلب (بالصغرى):", 10, py, out nudMinStockLimit, 3); py += 34;
 
             string bizType = AppConfig.BusinessType;
 
             AddLookupComboField(grpPrice, "موقع الرف:", 10, py, out txtShelfLocation, out btnAddShelfLocation);
             btnAddShelfLocation.Click += (s, e) => { new FrmLookupManager("ShelfLocations", "ShelfID", "ShelfCode", "ShelfName", "SHF", "أماكن الرفوف").ShowDialog(); LoadLookupCombos(); };
-            py += 38;
+            py += 34;
 
             AddLookupComboField(grpPrice, "المقاس:", 10, py, out txtProductSize, out btnAddProductSize);
             btnAddProductSize.Click += (s, e) => { new FrmLookupManager("ProductSizes", "SizeID", "SizeCode", "SizeName", "SIZ", "المقاسات").ShowDialog(); LoadLookupCombos(); };
-            py += 38;
+            py += 34;
 
-            grpPrice.Controls.Add(new Label { Text = "الباركود الدولي:", Location = new Point(10, py + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txtInternationalCode = new TextBox { Location = new Point(165, py), Width = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            btnMultiBarcode = new Button { Text = "➕", Location = new Point(263, py), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            int lblBarW = 125;
+            int lblBarX = (grpPrice.ClientSize.Width > 0 ? grpPrice.ClientSize.Width : 315) - lblBarW - 12;
+            var lblBar = new Label { Text = "الباركود الدولي:", Location = new Point(lblBarX, py + 3), Size = new Size(lblBarW, 24), AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnMultiBarcode = new Button { Text = "➕", Location = new Point(12, py), Size = new Size(28, 23), FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             btnMultiBarcode.Click += BtnMultiBarcode_Click;
-            grpPrice.Controls.AddRange(new Control[] { txtInternationalCode, btnMultiBarcode });
-            py += 36;
+            txtInternationalCode = new TextBox { Location = new Point(46, py), Size = new Size(Math.Max(80, lblBarX - 46 - 6), 24), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            grpPrice.Controls.AddRange(new Control[] { lblBar, txtInternationalCode, btnMultiBarcode });
+            py += 34;
 
-            AddField(grpPrice, "⚖️ كود كرت الميزان (PLU):", 10, py, out txtScalePLU);
+            AddField(grpPrice, "⚖️ كود كرت الميزان:", 10, py, out txtScalePLU);
             txtScalePLU.BackColor = Color.FromArgb(30, 48, 70);
             txtScalePLU.ForeColor = Color.FromArgb(254, 240, 138);
             txtScalePLU.Font = new Font(Theme.FontMain, FontStyle.Bold);
-            py += 38;
+            py += 34;
 
-            chkHasExpiry = new CheckBox { Text = "له تاريخ صلاحية", Location = new Point(10, py), Width = 280, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkHasExpiry = new CheckBox { Text = "له تاريخ صلاحية", Location = new Point(12, py), Width = 280, Height = 24, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             grpPrice.Controls.Add(chkHasExpiry);
-            py += 28;
+            py += 26;
 
             AddNud(grpPrice, "أيام الصلاحية الافتراضية:", 10, py, out nudDefaultExpiryDays, 0);
             nudDefaultExpiryDays.Maximum = 9999;
@@ -350,7 +366,7 @@ namespace ChickenDist.Forms
             toolTip.SetToolTip(nudUnit1SalePrice, "يُحسب تلقائياً من سعر الكبرى - يمكنك تعديله يدوياً");
 
             // --- Footer Panel for Save / Cancel / RecalcAll ---
-            var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 65, BackColor = Theme.BgCard };
+            pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 65, BackColor = Theme.BgCard };
 
             btnRecalcAll = Theme.MakeButton("🔄 إعادة حساب كافة التقسيمات تلقائياً", 710, 14, 340, 38, Color.FromArgb(30, 120, 190));
             btnRecalcAll.Click += (s, e) =>
@@ -402,7 +418,147 @@ namespace ChickenDist.Forms
 
             UpdateUnitHeaders();
 
+            // ─── Live Margin & Price Recalculation Events ───
+            nudProfitMarginPct.ValueChanged += (s, e) =>
+            {
+                if (!_inMarginRecalc && !_isLoadingData)
+                {
+                    _inMarginRecalc = true;
+                    try
+                    {
+                        decimal buy = nudPurchasePrice.Value;
+                        if (buy > 0)
+                        {
+                            decimal newSale = Math.Round(buy * (1m + nudProfitMarginPct.Value / 100m), 2);
+                            if (newSale <= nudPrice.Maximum)
+                                nudPrice.Value = newSale;
+                        }
+                    }
+                    finally
+                    {
+                        _inMarginRecalc = false;
+                    }
+                    RecalculateSubUnitPrices();
+                }
+            };
+
+            nudPurchasePrice.ValueChanged += (s, e) =>
+            {
+                if (!_inMarginRecalc && !_isLoadingData)
+                {
+                    _inMarginRecalc = true;
+                    try
+                    {
+                        decimal buy = nudPurchasePrice.Value;
+                        if (buy > 0 && nudProfitMarginPct.Value > 0)
+                        {
+                            decimal newSale = Math.Round(buy * (1m + nudProfitMarginPct.Value / 100m), 2);
+                            if (newSale <= nudPrice.Maximum)
+                                nudPrice.Value = newSale;
+                        }
+                        else if (buy > 0 && nudPrice.Value > buy)
+                        {
+                            decimal margin = Math.Round(((nudPrice.Value - buy) / buy) * 100m, 2);
+                            if (margin <= nudProfitMarginPct.Maximum)
+                                nudProfitMarginPct.Value = margin;
+                        }
+                    }
+                    finally
+                    {
+                        _inMarginRecalc = false;
+                    }
+                }
+                RecalculateSubUnitPrices();
+            };
+
+            nudPrice.ValueChanged += (s, e) =>
+            {
+                if (!_inMarginRecalc && !_isLoadingData)
+                {
+                    _inMarginRecalc = true;
+                    try
+                    {
+                        decimal buy = nudPurchasePrice.Value;
+                        decimal sale = nudPrice.Value;
+                        if (buy > 0 && sale > buy)
+                        {
+                            decimal margin = Math.Round(((sale - buy) / buy) * 100m, 2);
+                            if (margin <= nudProfitMarginPct.Maximum)
+                                nudProfitMarginPct.Value = margin;
+                        }
+                        else if (buy > 0 && sale <= buy)
+                        {
+                            nudProfitMarginPct.Value = 0m;
+                        }
+                    }
+                    finally
+                    {
+                        _inMarginRecalc = false;
+                    }
+                }
+                RecalculateSubUnitPrices();
+            };
+
             Theme.ApplyFormRTL(this);
+            this.RightToLeftLayout = false;
+            LayoutColumns();
+            this.Resize += (s, e) => LayoutColumns();
+        }
+
+        private void LayoutColumns()
+        {
+            if (grpBasic == null || grpPrice == null || grpUnit2 == null || grpUnit1 == null) return;
+
+            int margin = 15;
+            int spacing = 12;
+            int footerH = (pnlFooter != null && pnlFooter.Visible) ? pnlFooter.Height : 65;
+            int availableW = this.ClientSize.Width - (2 * margin) - (3 * spacing);
+            int colW = Math.Max(300, availableW / 4);
+            int colH = Math.Max(530, this.ClientSize.Height - margin - footerH - 15);
+
+            // RTL reading order (Right to Left):
+            // grpBasic (Rightmost) -> grpPrice -> grpUnit2 -> grpUnit1 (Leftmost)
+            int xBasic = this.ClientSize.Width - margin - colW;
+            int xPrice = xBasic - spacing - colW;
+            int xUnit2 = xPrice - spacing - colW;
+            int xUnit1 = margin;
+
+            grpBasic.SetBounds(xBasic, margin, colW, colH);
+            grpPrice.SetBounds(xPrice, margin, colW, colH);
+            grpUnit2.SetBounds(xUnit2, margin, colW, colH);
+            grpUnit1.SetBounds(xUnit1, margin, colW, colH);
+
+            // Adjust specific controls inside grpBasic that have 2 buttons or 2 checkboxes per row
+            int bw = grpBasic.ClientSize.Width;
+            if (bw > 60)
+            {
+                int halfW = (bw - 30) / 2;
+                if (chkActive != null && chkPrintLocalBarcode != null)
+                {
+                    chkActive.SetBounds(bw - halfW - 12, chkActive.Top, halfW, 22);
+                    chkPrintLocalBarcode.SetBounds(12, chkPrintLocalBarcode.Top, halfW, 22);
+                }
+                if (chkIsService != null && chkIsQuickItem != null)
+                {
+                    chkIsService.SetBounds(bw - halfW - 12, chkIsService.Top, halfW, 22);
+                    chkIsQuickItem.SetBounds(12, chkIsQuickItem.Top, halfW, 22);
+                }
+                if (btnProductImages != null && btnMobileUpload != null)
+                {
+                    btnProductImages.SetBounds(bw - halfW - 12, btnProductImages.Top, halfW, 36);
+                    btnMobileUpload.SetBounds(12, btnMobileUpload.Top, halfW, 36);
+                }
+            }
+
+            // Center footer buttons
+            if (pnlFooter != null && btnSave != null && btnCancel != null && btnRecalcAll != null)
+            {
+                int totalBtnW = btnSave.Width + 15 + btnCancel.Width + 25 + btnRecalcAll.Width;
+                int startX = Math.Max(20, (pnlFooter.Width - totalBtnW) / 2);
+                btnSave.Location = new Point(pnlFooter.Width - startX - btnSave.Width, 14);
+                btnCancel.Location = new Point(btnSave.Left - 15 - btnCancel.Width, 14);
+                btnRecalcAll.Location = new Point(btnCancel.Left - 25 - btnRecalcAll.Width, 14);
+            }
         }
 
         private void RecalculateSubUnitPrices()
@@ -560,6 +716,8 @@ namespace ChickenDist.Forms
                     MakeReadOnly(nudUnit2SalePrice);
                     MakeReadOnly(nudUnit2PurchasePrice);
                     MakeReadOnly(nudUnit3Factor);
+                    MakeReadOnly(nudProfitMarginPct);
+                    MakeReadOnly(nudTaxPct);
                     return;
                 }
 
@@ -580,6 +738,8 @@ namespace ChickenDist.Forms
                     LockPriceField(nudSemiWholesalePrice);
                     LockPriceField(nudUnit1SalePrice);
                     LockPriceField(nudUnit2SalePrice);
+                    LockPriceField(nudProfitMarginPct);
+                    LockPriceField(nudTaxPct);
 
                     if (btnRecalcAll != null) { btnRecalcAll.Enabled = false; btnRecalcAll.Visible = false; }
                     if (btnResetU1 != null) { btnResetU1.Enabled = false; btnResetU1.Visible = false; }
@@ -633,25 +793,85 @@ namespace ChickenDist.Forms
 
         private void AddField(Control parent, string label, int x, int y, out TextBox txt)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 115, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            txt = new TextBox { Location = new Point(x + 130, y), Width = 160, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            parent.Controls.Add(txt);
+            int pw = parent.ClientSize.Width > 0 ? parent.ClientSize.Width : 315;
+            int lblW = 125;
+            int lblX = pw - lblW - 12;
+            int txtX = 12;
+            int txtW = Math.Max(80, lblX - txtX - 6);
+
+            var lbl = new Label
+            {
+                Text = label,
+                Location = new Point(lblX, y + 3),
+                Size = new Size(lblW, 24),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            txt = new TextBox
+            {
+                Location = new Point(txtX, y),
+                Size = new Size(txtW, 24),
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = Theme.FontMain,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            parent.Controls.AddRange(new Control[] { lbl, txt });
         }
 
         private void AddUnitComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 125, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            cbo = new ComboBox { Location = new Point(x + 140, y), Width = 120, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
-            btnAdd = new Button { Text = "➕", Location = new Point(x + 263, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
-            parent.Controls.AddRange(new Control[] { cbo, btnAdd });
+            AddLookupComboField(parent, label, x, y, out cbo, out btnAdd);
         }
 
         private void AddLookupComboField(Control parent, string label, int x, int y, out ComboBox cbo, out Button btnAdd)
         {
-            parent.Controls.Add(new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 125, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
-            cbo = new ComboBox { Location = new Point(x + 140, y), Width = 120, DropDownStyle = ComboBoxStyle.DropDown, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Font = Theme.FontMain };
-            btnAdd = new Button { Text = "➕", Location = new Point(x + 263, y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
-            parent.Controls.AddRange(new Control[] { cbo, btnAdd });
+            int pw = parent.ClientSize.Width > 0 ? parent.ClientSize.Width : 315;
+            int lblW = 125;
+            int lblX = pw - lblW - 12;
+            int btnX = 12;
+            int btnW = 28;
+            int cboX = btnX + btnW + 6;
+            int cboW = Math.Max(80, lblX - cboX - 6);
+
+            var lbl = new Label
+            {
+                Text = label,
+                Location = new Point(lblX, y + 3),
+                Size = new Size(lblW, 24),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            btnAdd = new Button
+            {
+                Text = "➕",
+                Location = new Point(btnX, y),
+                Size = new Size(btnW, 23),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Theme.Accent,
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
+            };
+            cbo = new ComboBox
+            {
+                Location = new Point(cboX, y),
+                Size = new Size(cboW, 24),
+                DropDownStyle = ComboBoxStyle.DropDown,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.FontMain,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            parent.Controls.AddRange(new Control[] { lbl, cbo, btnAdd });
         }
 
         private void LoadLookupCombos()
@@ -764,18 +984,46 @@ namespace ChickenDist.Forms
 
         private void AddNud(Control parent, string label, int x, int y, out NumericUpDown nud, int decimals, bool visible = true)
         {
-            var lbl = new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 160, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Visible = visible };
-            parent.Controls.Add(lbl);
-            nud = new NumericUpDown { Location = new Point(x + 175, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Visible = visible };
-            parent.Controls.Add(nud);
+            Label lblIgnored;
+            AddNud(parent, label, x, y, out nud, decimals, out lblIgnored, visible);
         }
 
         private void AddNud(Control parent, string label, int x, int y, out NumericUpDown nud, int decimals, out Label lblOut, bool visible = true)
         {
-            lblOut = new Label { Text = label, Location = new Point(x + 10, y + 3), Width = 160, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Visible = visible };
-            parent.Controls.Add(lblOut);
-            nud = new NumericUpDown { Location = new Point(x + 175, y), Width = 115, Minimum = 0, Maximum = 9999999, DecimalPlaces = decimals, TextAlign = HorizontalAlignment.Center, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Visible = visible };
-            parent.Controls.Add(nud);
+            int pw = parent.ClientSize.Width > 0 ? parent.ClientSize.Width : 315;
+            int lblW = 135;
+            int lblX = pw - lblW - 12;
+            int nudX = 12;
+            int nudW = Math.Max(80, lblX - nudX - 6);
+
+            lblOut = new Label
+            {
+                Text = label,
+                Location = new Point(lblX, y + 3),
+                Size = new Size(lblW, 24),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleRight,
+                ForeColor = Theme.TextMain,
+                Font = Theme.FontMain,
+                Visible = visible,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            nud = new NumericUpDown
+            {
+                Location = new Point(nudX, y),
+                Size = new Size(nudW, 24),
+                Minimum = 0,
+                Maximum = 9999999,
+                DecimalPlaces = decimals,
+                TextAlign = HorizontalAlignment.Center,
+                BackColor = Theme.BgInput,
+                ForeColor = Theme.TextMain,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = Theme.FontMain,
+                Visible = visible,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            parent.Controls.AddRange(new Control[] { lblOut, nud });
         }
 
         private void LoadCategoriesCombo()
@@ -814,6 +1062,12 @@ namespace ChickenDist.Forms
                 cboUnit.Text = dr["Unit"].ToString();
                 nudPurchasePrice.Value = Convert.ToDecimal(dr["PurchasePrice"] == DBNull.Value ? 0 : dr["PurchasePrice"]);
                 nudPrice.Value = Convert.ToDecimal(dr["SalePrice"]);
+                nudProfitMarginPct.Value = dr.Table.Columns.Contains("ProfitMarginPct") && dr["ProfitMarginPct"] != DBNull.Value ? Convert.ToDecimal(dr["ProfitMarginPct"]) : 0m;
+                nudTaxPct.Value = dr.Table.Columns.Contains("TaxPct") && dr["TaxPct"] != DBNull.Value ? Convert.ToDecimal(dr["TaxPct"]) : 0m;
+                if (nudProfitMarginPct.Value == 0 && nudPurchasePrice.Value > 0 && nudPrice.Value > nudPurchasePrice.Value)
+                {
+                    nudProfitMarginPct.Value = Math.Round(((nudPrice.Value - nudPurchasePrice.Value) / nudPurchasePrice.Value) * 100m, 2);
+                }
                 nudWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("WholesalePrice") && dr["WholesalePrice"] != DBNull.Value ? dr["WholesalePrice"] : 0);
                 nudSemiWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("SemiWholesalePrice") && dr["SemiWholesalePrice"] != DBNull.Value ? dr["SemiWholesalePrice"] : 0);
                 nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
@@ -941,6 +1195,8 @@ namespace ChickenDist.Forms
             cboUnit.Text = "كرتونة";
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
+            if (nudProfitMarginPct != null) nudProfitMarginPct.Value = 0;
+            if (nudTaxPct != null) nudTaxPct.Value = 0;
             nudWholesalePrice.Value = 0;
             nudSemiWholesalePrice.Value = 0;
             nudMinStockLimit.Value = 0;
@@ -1227,7 +1483,8 @@ namespace ChickenDist.Forms
                     cboUnit2Name.Text.Trim(), newU2Factor, normalisedU2Barcode, nudUnit2SalePrice.Value, nudUnit2PurchasePrice.Value,
                     newU3Factor, chkIsQuickItem.Checked, producerVal,
                     chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal,
-                    _imageUrl1, _imageUrl2, _imageUrl3, (AppConfig.BusinessType == "Mobiles") && chkIsIMEI != null && chkIsIMEI.Checked);
+                    _imageUrl1, _imageUrl2, _imageUrl3, (AppConfig.BusinessType == "Mobiles") && chkIsIMEI != null && chkIsIMEI.Checked,
+                    nudProfitMarginPct.Value, nudTaxPct.Value);
 
                 if (id > 0)
                 {

@@ -448,7 +448,8 @@ namespace ChickenDist.DAL
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
                            p.Unit3Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.DefaultSaleUnit,
-                           p.ImageUrl1, p.ImageUrl2, p.ImageUrl3
+                           p.ImageUrl1, p.ImageUrl2, p.ImageUrl3,
+                           COALESCE(p.ProfitMarginPct, 0) AS ProfitMarginPct, COALESCE(p.TaxPct, 0) AS TaxPct, COALESCE(p.LastPurchasePrice, p.PurchasePrice, 0) AS LastPurchasePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     WHERE p.IsActive=1 ORDER BY p.ProductName"
@@ -460,7 +461,8 @@ namespace ChickenDist.DAL
                            p.Unit1Name, p.Unit1Barcode, p.Unit1SalePrice, p.Unit1PurchasePrice,
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
                            p.Unit3Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.DefaultSaleUnit,
-                           p.ImageUrl1, p.ImageUrl2, p.ImageUrl3
+                           p.ImageUrl1, p.ImageUrl2, p.ImageUrl3,
+                           COALESCE(p.ProfitMarginPct, 0) AS ProfitMarginPct, COALESCE(p.TaxPct, 0) AS TaxPct, COALESCE(p.LastPurchasePrice, p.PurchasePrice, 0) AS LastPurchasePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     ORDER BY p.ProductName";
@@ -711,7 +713,8 @@ namespace ChickenDist.DAL
             string unit1Name = null, string unit1Barcode = null, decimal? unit1SalePrice = null, decimal? unit1PurchasePrice = null,
             string unit2Name = null, decimal? unit2Factor = null, string unit2Barcode = null, decimal? unit2SalePrice = null, decimal? unit2PurchasePrice = null,
             decimal? unit3Factor = null, bool isQuickItem = false, string producerCompany = null, bool hasExpiry = false, int? defaultExpiryDays = null, string defaultSaleUnit = null, string productSize = null, string color = null, string englishName = null, string scalePLU = null,
-            string imageUrl1 = null, string imageUrl2 = null, string imageUrl3 = null, bool isIMEI = false)
+            string imageUrl1 = null, string imageUrl2 = null, string imageUrl3 = null, bool isIMEI = false,
+            decimal profitMarginPct = 0, decimal taxPct = 0)
         {
             DbHelper.EnsureProductImagesColumnsExist();
             DbHelper.EnsureScalePLUColumnExists();
@@ -758,10 +761,10 @@ namespace ChickenDist.DAL
                 int newId = DbHelper.ExecuteInsert(
                     @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode,IsService,IsQuickItem,
                                            Unit1Name,Unit1Barcode,Unit1SalePrice,Unit1PurchasePrice,Unit2Name,Unit2Factor,Unit2Barcode,Unit2SalePrice,Unit2PurchasePrice,Unit3Factor,ProducerCompany,HasExpiry,DefaultExpiryDays,DefaultSaleUnit,ProductSize,Color,EnglishName,ScalePLU,
-                                           ImageUrl1,ImageUrl2,ImageUrl3,IsIMEI) 
+                                           ImageUrl1,ImageUrl2,ImageUrl3,IsIMEI,ProfitMarginPct,TaxPct,LastPurchasePrice) 
                       VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic,@plb,@srv,@qi,
                              @u1n,@u1b,@u1sp,@u1pp,@u2n,@u2f,@u2b,@u2sp,@u2pp,@u3f,@comp,@hexp,@expd,@dsu,@psize,@clr,@enName,@splu,
-                             @img1,@img2,@img3,@isIMEI)",
+                             @img1,@img2,@img3,@isIMEI,@profitMargin,@taxPct,@lastBuyPrice)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
@@ -784,7 +787,10 @@ namespace ChickenDist.DAL
                     DbHelper.P("@img1", string.IsNullOrWhiteSpace(imageUrl1) ? (object)DBNull.Value : imageUrl1.Trim()),
                     DbHelper.P("@img2", string.IsNullOrWhiteSpace(imageUrl2) ? (object)DBNull.Value : imageUrl2.Trim()),
                     DbHelper.P("@img3", string.IsNullOrWhiteSpace(imageUrl3) ? (object)DBNull.Value : imageUrl3.Trim()),
-                    DbHelper.P("@isIMEI", isIMEI));
+                    DbHelper.P("@isIMEI", isIMEI),
+                    DbHelper.P("@profitMargin", profitMarginPct),
+                    DbHelper.P("@taxPct", taxPct),
+                    DbHelper.P("@lastBuyPrice", purchasePrice > 0 ? purchasePrice : 0m));
 
                 ProductCache.Invalidate();
                 return newId;
@@ -814,6 +820,7 @@ namespace ChickenDist.DAL
                           Unit2Name=@u2n,Unit2Factor=@u2f,Unit2Barcode=@u2b,Unit2SalePrice=@u2sp,Unit2PurchasePrice=@u2pp,
                           Unit3Factor=@u3f,ProducerCompany=@comp,HasExpiry=@hexp,DefaultExpiryDays=@expd,DefaultSaleUnit=@dsu,ProductSize=@psize,Color=@clr,EnglishName=@enName,ScalePLU=@splu,
                           ImageUrl1=@img1, ImageUrl2=@img2, ImageUrl3=@img3, IsIMEI=@isIMEI,
+                          ProfitMarginPct=@profitMargin, TaxPct=@taxPct, LastPurchasePrice = CASE WHEN @pp > 0 THEN @pp ELSE LastPurchasePrice END,
                           PendingSalePrice=NULL, PendingQtyThreshold=NULL, PendingPriceSourceRefID=NULL
                       WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
@@ -839,6 +846,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@img2", string.IsNullOrWhiteSpace(imageUrl2) ? (object)DBNull.Value : imageUrl2.Trim()),
                     DbHelper.P("@img3", string.IsNullOrWhiteSpace(imageUrl3) ? (object)DBNull.Value : imageUrl3.Trim()),
                     DbHelper.P("@isIMEI", isIMEI),
+                    DbHelper.P("@profitMargin", profitMarginPct),
+                    DbHelper.P("@taxPct", taxPct),
                     DbHelper.P("@id", id));
 
                 if (Math.Abs(price - oldPrice) > 0.005m)
@@ -847,6 +856,7 @@ namespace ChickenDist.DAL
                         @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
                           VALUES (@pid, @old, @new, 'ProductCard', NULL, @uid, N'تعديل سعر البيع من كارت الصنف')",
                         DbHelper.P("@pid", id), DbHelper.P("@old", oldPrice), DbHelper.P("@new", price), DbHelper.P("@uid", Session.EmpID));
+                    RecordPriceChange(id, code, name, purchasePrice, purchasePrice, oldPrice, price, "تعديل من كارت الصنف", 0, null, null, null, Session.EmpName ?? "المستخدم", "تعديل سعر البيع من كارت الصنف");
                 }
 
                 ProductCache.Invalidate();
@@ -867,6 +877,67 @@ namespace ChickenDist.DAL
                 DbHelper.P("@img3", string.IsNullOrWhiteSpace(imageUrl3) ? (object)DBNull.Value : imageUrl3.Trim()));
             ProductCache.Invalidate();
             Services.CloudSyncService.TriggerStoreCatalogSyncDebounced();
+        }
+
+        public static void RecordPriceChange(int productId, string code, string name, decimal oldBuy, decimal newBuy, decimal oldSale, decimal newSale, string changeType, decimal changePct, int? supplierId, string supplierName, int? warehouseId, string userName, string notes)
+        {
+            try
+            {
+                DbHelper.EnsurePriceMarginAndHistorySchema();
+                DbHelper.Execute(@"
+                    INSERT INTO PriceChangeHistory 
+                    (ChangeDate, ProductID, ProductCode, ProductName, OldPurchasePrice, NewPurchasePrice, OldSalePrice, NewSalePrice, ChangeType, ChangePct, SupplierID, SupplierName, WarehouseID, UserName, Notes)
+                    VALUES 
+                    (GETDATE(), @pid, @code, @name, @oldBuy, @newBuy, @oldSale, @newSale, @ctype, @cpct, @supId, @supName, @whId, @user, @notes)",
+                    DbHelper.P("@pid", productId),
+                    DbHelper.P("@code", string.IsNullOrEmpty(code) ? (object)DBNull.Value : code),
+                    DbHelper.P("@name", string.IsNullOrEmpty(name) ? (object)DBNull.Value : name),
+                    DbHelper.P("@oldBuy", oldBuy),
+                    DbHelper.P("@newBuy", newBuy),
+                    DbHelper.P("@oldSale", oldSale),
+                    DbHelper.P("@newSale", newSale),
+                    DbHelper.P("@ctype", string.IsNullOrEmpty(changeType) ? "تعديل أسعار" : changeType),
+                    DbHelper.P("@cpct", changePct),
+                    DbHelper.P("@supId", supplierId.HasValue ? (object)supplierId.Value : DBNull.Value),
+                    DbHelper.P("@supName", string.IsNullOrEmpty(supplierName) ? (object)DBNull.Value : supplierName),
+                    DbHelper.P("@whId", warehouseId.HasValue ? (object)warehouseId.Value : DBNull.Value),
+                    DbHelper.P("@user", string.IsNullOrEmpty(userName) ? (Session.EmpName ?? "المستخدم") : userName),
+                    DbHelper.P("@notes", string.IsNullOrEmpty(notes) ? (object)DBNull.Value : notes));
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ProductDAL.RecordPriceChange", ex);
+            }
+        }
+
+        public static void RecordPriceChange(int productId, string changeField, decimal oldValue, decimal newValue, string notes, SqlTransaction trans = null)
+        {
+            try
+            {
+                var dt = DbHelper.Query("SELECT ProductCode, ProductName, PurchasePrice, SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", productId));
+                if (dt.Rows.Count > 0)
+                {
+                    string code = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
+                    string name = dt.Rows[0]["ProductName"]?.ToString() ?? "";
+                    decimal curBuy = dt.Rows[0]["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["PurchasePrice"]) : 0m;
+                    decimal curSale = dt.Rows[0]["SalePrice"] != DBNull.Value ? Convert.ToDecimal(dt.Rows[0]["SalePrice"]) : 0m;
+
+                    decimal oldBuy = (changeField == "CostPrice" || changeField == "PurchasePrice") ? oldValue : curBuy;
+                    decimal newBuy = (changeField == "CostPrice" || changeField == "PurchasePrice") ? newValue : curBuy;
+                    decimal oldSale = (changeField == "SalePrice") ? oldValue : curSale;
+                    decimal newSale = (changeField == "SalePrice") ? newValue : curSale;
+
+                    decimal pct = 0m;
+                    if (oldValue > 0)
+                        pct = Math.Round(((newValue - oldValue) / oldValue) * 100m, 2);
+
+                    RecordPriceChange(productId, code, name, oldBuy, newBuy, oldSale, newSale, notes, pct, null, null, null, Session.EmpName ?? "المستخدم", notes);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ProductDAL.RecordPriceChange overload", ex);
+            }
         }
 
         public static DataTable GetQuickItems()

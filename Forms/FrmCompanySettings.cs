@@ -247,7 +247,8 @@ namespace ChickenDist.Forms
                 "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
                 "غيار زيت وصيانة سيارات (أرقام لوحات، فحص، كروت صيانة)",
                 "مطعم وكافيه (طاولات، تحضير مطبخ، تيك أواي، توصيل)",
-                "مصانع وإنتاج (أوامر تشغيل، خطوط إنتاج، خامات وتكاليف)"
+                "مصانع وإنتاج (أوامر تشغيل، خطوط إنتاج، خامات وتكاليف)",
+                "قطع غيار ومنزلي (نسبة ربح وضريبة)"
             });
             cboBusinessType.SelectedItem = AppConfig.BusinessType switch
             {
@@ -258,6 +259,7 @@ namespace ChickenDist.Forms
                 "General" => "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
                 "Restaurant" => "مطعم وكافيه (طاولات، تحضير مطبخ، تيك أواي، توصيل)",
                 "Factories" or "Manufacturing" => "مصانع وإنتاج (أوامر تشغيل، خطوط إنتاج، خامات وتكاليف)",
+                "PartsAndHomeMargin" or "SparePartsHomeMargin" => "قطع غيار ومنزلي (نسبة ربح وضريبة)",
                 _ => "سوبر ماركت (المواد الغذائية والصلاحية)"
             };
             pnlBody.Controls.Add(cboBusinessType);
@@ -441,6 +443,7 @@ namespace ChickenDist.Forms
                 5 => "CarService",
                 6 => "Restaurant",
                 7 => "Factories",
+                8 => "PartsAndHomeMargin",
                 _ => "Supermarket"
             };
 

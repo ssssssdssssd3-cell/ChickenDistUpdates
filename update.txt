@@ -1,5 +1,5 @@
-version=4.4.2
+version=4.4.3
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.2&t=1792787202
-sha256=36AC6D8CE02D476D84A64353715F8F81FFECEF5E62C6AB0C59278AAE59C6BD2A
-changelog=v4.4.2 - 2026-10-23: Fix Status column crash in Purchase Orders list; fix smart order reorder suggestions query; compact purchase order screen header and rows; add professional purchase order WhatsApp sharing with high-res invoice card; auto-reset purchase order screen for next order; add thermal receipt printing and WhatsApp sharing for warranty tickets upon receipt and from warranty manager
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.3&t=1792796401
+sha256=0F206B8801D47FD0937EF4BF814431E56111D42C2368883F51BAFEB38734B189
+changelog=v4.4.3 - 2026-10-24: Add PartsAndHomeMargin activity profile with profit margin % and tax %; full RTL redesign of product card with label before field and full-screen maximization; bulk profit margin and tax application in purchase invoices; dedicated bulk price adjustment workstation (FrmPriceAdjustment) with multi-criteria filters, supplier filtering, rounding rules and barcode printing; price change audit history log (FrmPriceChangeHistory) with CSV export; and last purchase price costing architecture replacing average cost.

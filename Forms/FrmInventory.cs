@@ -446,11 +446,17 @@ namespace ChickenDist.Forms
             btnSerialsStockReport.Margin = new Padding(2, 1, 3, 0);
             btnSerialsStockReport.Click += (s, e) => new FrmSerialStockReport().ShowDialog(this);
 
+            var btnPriceAdjustment = Theme.MakeButton("⚡ تعديل الأسعار جماعياً", Color.FromArgb(180, 80, 20));
+            btnPriceAdjustment.Size = new Size(135, 28);
+            btnPriceAdjustment.Margin = new Padding(2, 1, 3, 0);
+            btnPriceAdjustment.Click += (s, e) => new FrmPriceAdjustment().ShowDialog(this);
+
             pnlRow3.Controls.AddRange(new Control[] {
                 btnStartInventory,
                 btnSaveAdj, btnClearAdj,
                 btnPrintStock, btnPrintIncreaseBarcodes, btnVarianceReport, btnMovement, btnAddExpiryRow,
-                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnSerialsStockReport
+                btnSessionsTabStock, btnIncompleteTabStock, btnScaleReport, btnSerialsStockReport,
+                btnPriceAdjustment
             });
 
             pnlHeaderContainer.Controls.Add(pnlRow3);
@@ -469,7 +475,7 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "المكان/الرف", ReadOnly = true,  FillWeight = 45 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",    HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",          HeaderText = "الوحدة 🔽", ReadOnly = true,  FillWeight = 42 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر الشراء", ReadOnly = false, FillWeight = 40, Visible = Session.CanViewCost("Inventory") });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = AppConfig.UseLastPurchasePriceAsCost ? "آخر شراء / تكلفة" : "سعر الشراء", ReadOnly = false, FillWeight = 40, Visible = Session.CanViewCost("Inventory") });
             dgStock.Columns.Add(new DataGridViewButtonColumn 
             { 
                 Name = "BtnCostAudit", 
@@ -827,6 +833,11 @@ namespace ChickenDist.Forms
                 displayedCount++;
                 decimal baseBookQty = Convert.ToDecimal(r["BookQty"]);
                 decimal basePP = r["PurchasePrice"]     != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"])     : 0m;
+                if (AppConfig.UseLastPurchasePriceAsCost && r.Table.Columns.Contains("LastPurchasePrice") && r["LastPurchasePrice"] != DBNull.Value)
+                {
+                    decimal lpp = Convert.ToDecimal(r["LastPurchasePrice"]);
+                    if (lpp > 0) basePP = lpp;
+                }
                 decimal baseSP = r["SalePrice"]          != DBNull.Value ? Convert.ToDecimal(r["SalePrice"])          : 0m;
                 decimal baseWP = r.Table.Columns.Contains("WholesalePrice")     && r["WholesalePrice"]     != DBNull.Value ? Convert.ToDecimal(r["WholesalePrice"])     : baseSP;
                 decimal baseSWP= r.Table.Columns.Contains("SemiWholesalePrice") && r["SemiWholesalePrice"] != DBNull.Value ? Convert.ToDecimal(r["SemiWholesalePrice"]) : baseSP;
@@ -2134,7 +2145,11 @@ namespace ChickenDist.Forms
                                     if (Math.Round(mainItem.NewPurchasePrice, 2) != Math.Round(mainItem.OriginalPurchasePrice, 2))
                                     {
                                         decimal basePurPrice = mainItem.NewPurchasePrice / mainItem.Factor;
-                                        DbHelper.ExecuteTrans(trans, "UPDATE Products SET PurchasePrice = @pur WHERE ProductID = @pid",
+                                        string purSql = AppConfig.UseLastPurchasePriceAsCost
+                                            ? "UPDATE Products SET PurchasePrice = @pur, LastPurchasePrice = @pur, CostPrice = @pur WHERE ProductID = @pid"
+                                            : "UPDATE Products SET PurchasePrice = @pur WHERE ProductID = @pid";
+                                        ProductDAL.RecordPriceChange(pid, "CostPrice", mainItem.OriginalPurchasePrice / mainItem.Factor, basePurPrice, "تعديل تكلفة من شاشة الجرد", trans);
+                                        DbHelper.ExecuteTrans(trans, purSql,
                                             DbHelper.P("@pur", basePurPrice),
                                             DbHelper.P("@pid", pid));
                                     }
@@ -2142,6 +2157,7 @@ namespace ChickenDist.Forms
                                     if (Math.Round(mainItem.NewSalePrice, 2) != Math.Round(mainItem.OriginalSalePrice, 2))
                                     {
                                         decimal baseSalePrice = mainItem.NewSalePrice / mainItem.Factor;
+                                        ProductDAL.RecordPriceChange(pid, "SalePrice", mainItem.OriginalSalePrice / mainItem.Factor, baseSalePrice, "تعديل سعر بيع من شاشة الجرد", trans);
                                         DbHelper.ExecuteTrans(trans, "UPDATE Products SET SalePrice = @sale WHERE ProductID = @pid",
                                             DbHelper.P("@sale", baseSalePrice),
                                             DbHelper.P("@pid", pid));

@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.2";
-$CHANGELOG = "v4.4.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Status column crash in Purchase Orders list; fix smart order reorder suggestions query; compact purchase order screen header and rows; add professional purchase order WhatsApp sharing with high-res invoice card; auto-reset purchase order screen for next order; add thermal receipt printing and WhatsApp sharing for warranty tickets upon receipt and from warranty manager"
+$VERSION = "4.4.3";
+$CHANGELOG = "v4.4.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add PartsAndHomeMargin activity profile with profit margin % and tax %; full RTL redesign of product card with label before field and full-screen maximization; bulk profit margin and tax application in purchase invoices; dedicated bulk price adjustment workstation (FrmPriceAdjustment) with multi-criteria filters, supplier filtering, rounding rules and barcode printing; price change audit history log (FrmPriceChangeHistory) with CSV export; and last purchase price costing architecture replacing average cost."
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

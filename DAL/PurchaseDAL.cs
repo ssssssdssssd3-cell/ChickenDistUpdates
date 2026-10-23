@@ -28,6 +28,8 @@ namespace ChickenDist.DAL
         public decimal Factor { get; set; } = 1.0m;
         public DateTime? ExpiryDate { get; set; } = null;
         public string IMEI { get; set; } = "";
+        public decimal ProfitMarginPct { get; set; } = 0m;
+        public decimal TaxPct { get; set; } = 0m;
 
         /// <summary>صافي سعر شراء الوحدة بعد الخصم (تكلفة الوحدة الصافية)</summary>
         public decimal NetUnitPrice
@@ -353,8 +355,8 @@ namespace ChickenDist.DAL
                 {
                     DbHelper.ExecuteTrans(trans,
                         @"INSERT INTO PurchaseItems
-                            (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI)
-                          VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei)",
+                            (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI, ProfitMarginPct, TaxPct)
+                          VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei, @margin, @tax)",
                         DbHelper.P("@pid",    purchaseID),
                         DbHelper.P("@prodid", item.ProductID),
                         DbHelper.P("@qty",    item.Quantity),
@@ -367,7 +369,9 @@ namespace ChickenDist.DAL
                         DbHelper.P("@un",     item.UnitName),
                         DbHelper.P("@fac",    item.Factor),
                         DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value),
-                        DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
+                        DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()),
+                        DbHelper.P("@margin", item.ProfitMarginPct),
+                        DbHelper.P("@tax",    item.TaxPct));
 
                     if (!isDraft && item.ExpiryDate.HasValue)
                     {
@@ -745,8 +749,8 @@ namespace ChickenDist.DAL
                     {
                         DbHelper.ExecuteTrans(trans,
                             @"INSERT INTO PurchaseItems
-                                (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI)
-                              VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei)",
+                                (PurchaseID, ProductID, Quantity, BonusQuantity, UnitPrice, TotalPrice, DiscountPct, DiscountAmt, SuggestedSalePrice, UnitName, Factor, ExpiryDate, IMEI, ProfitMarginPct, TaxPct)
+                              VALUES (@pid, @prodid, @qty, @bqty, @up, @tp, @dpct, @damt, @ssp, @un, @fac, @exp, @imei, @margin, @tax)",
                             DbHelper.P("@pid",    purchaseID),
                             DbHelper.P("@prodid", item.ProductID),
                             DbHelper.P("@qty",    item.Quantity),
@@ -759,7 +763,9 @@ namespace ChickenDist.DAL
                             DbHelper.P("@un",     item.UnitName),
                             DbHelper.P("@fac",    item.Factor),
                             DbHelper.P("@exp",    item.ExpiryDate.HasValue ? (object)item.ExpiryDate.Value.Date : DBNull.Value),
-                            DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()));
+                            DbHelper.P("@imei",   string.IsNullOrWhiteSpace(item.IMEI) ? DBNull.Value : (object)item.IMEI.Trim()),
+                            DbHelper.P("@margin", item.ProfitMarginPct),
+                            DbHelper.P("@tax",    item.TaxPct));
 
                         if (item.ExpiryDate.HasValue)
                         {

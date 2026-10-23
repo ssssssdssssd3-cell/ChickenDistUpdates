@@ -1552,6 +1552,59 @@ namespace ChickenDist.Core
             catch {}
         }
 
+        public static void EnsurePriceMarginAndHistorySchema()
+        {
+            try
+            {
+                Execute(@"
+                IF OBJECT_ID('Products', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('Products', 'ProfitMarginPct') IS NULL
+                        ALTER TABLE Products ADD ProfitMarginPct DECIMAL(18,2) NULL CONSTRAINT DF_Products_ProfitMarginPct DEFAULT 0;
+                    IF COL_LENGTH('Products', 'TaxPct') IS NULL
+                        ALTER TABLE Products ADD TaxPct DECIMAL(18,2) NULL CONSTRAINT DF_Products_TaxPct DEFAULT 0;
+                    IF COL_LENGTH('Products', 'LastPurchasePrice') IS NULL
+                        ALTER TABLE Products ADD LastPurchasePrice DECIMAL(18,2) NULL CONSTRAINT DF_Products_LastPurchasePrice DEFAULT 0;
+                END
+
+                IF OBJECT_ID('PurchaseItems', 'U') IS NOT NULL
+                BEGIN
+                    IF COL_LENGTH('PurchaseItems', 'TaxPct') IS NULL
+                        ALTER TABLE PurchaseItems ADD TaxPct DECIMAL(18,2) NULL CONSTRAINT DF_PurchaseItems_TaxPct DEFAULT 0;
+                    IF COL_LENGTH('PurchaseItems', 'ProfitMarginPct') IS NULL
+                        ALTER TABLE PurchaseItems ADD ProfitMarginPct DECIMAL(18,2) NULL CONSTRAINT DF_PurchaseItems_ProfitMarginPct DEFAULT 0;
+                END
+
+                IF OBJECT_ID('PriceChangeHistory', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE PriceChangeHistory (
+                        ChangeID INT IDENTITY(1,1) PRIMARY KEY,
+                        ChangeDate DATETIME DEFAULT GETDATE(),
+                        ProductID INT NOT NULL,
+                        ProductCode NVARCHAR(100) NULL,
+                        ProductName NVARCHAR(250) NULL,
+                        OldPurchasePrice DECIMAL(18,2) NULL,
+                        NewPurchasePrice DECIMAL(18,2) NULL,
+                        OldSalePrice DECIMAL(18,2) NULL,
+                        NewSalePrice DECIMAL(18,2) NULL,
+                        ChangeType NVARCHAR(100) NULL,
+                        ChangePct DECIMAL(18,2) NULL,
+                        SupplierID INT NULL,
+                        SupplierName NVARCHAR(200) NULL,
+                        WarehouseID INT NULL,
+                        UserName NVARCHAR(100) NULL,
+                        Notes NVARCHAR(500) NULL
+                    );
+                    CREATE INDEX IX_PriceChangeHistory_Date ON PriceChangeHistory(ChangeDate DESC);
+                    CREATE INDEX IX_PriceChangeHistory_Product ON PriceChangeHistory(ProductID);
+                END");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsurePriceMarginAndHistorySchema", ex);
+            }
+        }
+
         public static void EnsureDatabaseSchema()
         {
             EnsureCashBoxColumnsExist();
@@ -1562,6 +1615,7 @@ namespace ChickenDist.Core
             EnsureProductCodesCleaned();
             DeviceSessionManager.EnsureSchema();
             PurchaseOrderDAL.EnsureSchema();
+            EnsurePriceMarginAndHistorySchema();
 
             try
             {

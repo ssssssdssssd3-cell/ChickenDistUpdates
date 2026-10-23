@@ -733,6 +733,96 @@ namespace ChickenDist.Forms
             flowToolbar.Controls.Add(lblProd);
             flowToolbar.Controls.Add(cboProduct);
             flowToolbar.Controls.Add(btnCustomizeCols);
+
+            // ── أدوات تطبيق هامش الربح والضريبة جماعياً على الأصناف ──
+            var lblBulkMargin = new Label { Text = "هامش %:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(6, 6, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var nudBulkMargin = new NumericUpDown { Size = new Size(60, 28), Minimum = 0, Maximum = 9999, DecimalPlaces = 1, Value = 20, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 2, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var btnApplyBulkMargin = new Button
+            {
+                Text = "⚡ تطبيق الربح على الكل",
+                Size = new Size(150, 30),
+                BackColor = Color.FromArgb(14, 116, 144),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 0, 6, 0)
+            };
+            btnApplyBulkMargin.FlatAppearance.BorderSize = 0;
+            btnApplyBulkMargin.Click += (s, e) =>
+            {
+                if (dgItems.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا توجد أصناف في الفاتورة لتطبيق نسبة الربح عليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                decimal marginPct = nudBulkMargin.Value;
+                int updatedCount = 0;
+                for (int r = 0; r < dgItems.Rows.Count; r++)
+                {
+                    var row = dgItems.Rows[r];
+                    if (row.IsNewRow || r >= _items.Count) continue;
+                    var item = _items[r];
+                    decimal unitPrice = item.UnitPrice > 0 ? item.UnitPrice : (decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal up) ? up : 0m);
+                    row.Cells["MarginPct"].Value = marginPct.ToString("G29");
+                    if (unitPrice > 0)
+                    {
+                        decimal suggested = Math.Round(unitPrice * (1m + marginPct / 100m), 2);
+                        item.SuggestedSalePrice = suggested;
+                        row.Cells["SuggestedSalePrice"].Value = suggested.ToString("N2");
+                    }
+                    updatedCount++;
+                }
+                MessageBox.Show($"✅ تم تطبيق نسبة ربح ({marginPct}%) وحساب سعر البيع المقترح لجميع أصناف الفاتورة بنجاح ({updatedCount} صنف).", "تطبيق الربح جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+
+            var lblBulkTax = new Label { Text = "ضريبة %:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(4, 6, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var nudBulkTax = new NumericUpDown { Size = new Size(55, 28), Minimum = 0, Maximum = 100, DecimalPlaces = 1, Value = 14, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 2, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var btnApplyBulkTax = new Button
+            {
+                Text = "⚡ تطبيق الضريبة على الكل",
+                Size = new Size(155, 30),
+                BackColor = Color.FromArgb(16, 185, 129),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 0, 4, 0)
+            };
+            btnApplyBulkTax.FlatAppearance.BorderSize = 0;
+            btnApplyBulkTax.Click += (s, e) =>
+            {
+                if (dgItems.Rows.Count == 0)
+                {
+                    MessageBox.Show("لا توجد أصناف في الفاتورة لتطبيق الضريبة عليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                decimal taxPctVal = nudBulkTax.Value;
+                int updatedCount = 0;
+                foreach (DataGridViewRow row in dgItems.Rows)
+                {
+                    if (row.IsNewRow) continue;
+                    if (dgItems.Columns.Contains("TaxPct"))
+                    {
+                        row.Cells["TaxPct"].Value = taxPctVal.ToString("G29");
+                        updatedCount++;
+                    }
+                }
+                if (nudTaxPct != null)
+                {
+                    nudTaxPct.Value = taxPctVal;
+                }
+                RecalcTotals();
+                MessageBox.Show($"✅ تم تطبيق نسبة الضريبة ({taxPctVal}%) على أصناف الفاتورة بنجاح.", "تطبيق الضريبة جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+
+            flowToolbar.Controls.Add(lblBulkMargin);
+            flowToolbar.Controls.Add(nudBulkMargin);
+            flowToolbar.Controls.Add(btnApplyBulkMargin);
+            flowToolbar.Controls.Add(lblBulkTax);
+            flowToolbar.Controls.Add(nudBulkTax);
+            flowToolbar.Controls.Add(btnApplyBulkTax);
+
             pnlGridToolbar.Controls.Add(flowToolbar);
 
             // ── جدول الأصناف (عرض كامل 100% مريح للعين) ─────────────────────────
@@ -810,7 +900,8 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct",  HeaderText = "خصم %",       FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",   HeaderText = "الإجمالي",    ReadOnly = true, FillWeight = 65, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(240, 253, 244), ForeColor = Color.FromArgb(21, 128, 61), Font = new Font("Segoe UI", 10f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش",      ReadOnly = true, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش %",    ReadOnly = false, FillWeight = 50 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TaxPct",       HeaderText = "ضريبة %",     ReadOnly = false, FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 85, MinimumWidth = 180, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
@@ -3162,8 +3253,19 @@ namespace ChickenDist.Forms
                         item.DiscountPct = 0m;
                         dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = "0.00";
                     }
-                    decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
-                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                    string curMarginStr = dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value?.ToString()?.Replace("%", "")?.Trim();
+                    if (decimal.TryParse(curMarginStr, out decimal existingMargin) && existingMargin > 0)
+                    {
+                        decimal newSuggested = Math.Round(p * (1m + existingMargin / 100m), 2);
+                        item.SuggestedSalePrice = newSuggested;
+                        dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
+                        dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = existingMargin.ToString("G29");
+                    }
+                    else
+                    {
+                        decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
+                        dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                    }
                     dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
                 }
                 else
@@ -3238,6 +3340,28 @@ namespace ChickenDist.Forms
             else if (colName == "IMEI")
             {
                 item.IMEI = cellVal?.Trim() ?? "";
+            }
+            else if (colName == "MarginPct")
+            {
+                string cleanMargin = (cellVal ?? "").Replace("%", "").Trim();
+                if (decimal.TryParse(cleanMargin, out decimal m) && m >= 0)
+                {
+                    if (item.UnitPrice > 0)
+                    {
+                        decimal newSuggested = Math.Round(item.UnitPrice * (1m + m / 100m), 2);
+                        item.SuggestedSalePrice = newSuggested;
+                        dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
+                    }
+                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = m.ToString("G29");
+                }
+            }
+            else if (colName == "TaxPct")
+            {
+                string cleanTax = (cellVal ?? "").Replace("%", "").Trim();
+                if (decimal.TryParse(cleanTax, out decimal t) && t >= 0 && t <= 100)
+                {
+                    dgItems.Rows[e.RowIndex].Cells["TaxPct"].Value = t.ToString("G29");
+                }
             }
 
             // تحديث عمود الإجمالي
@@ -3764,6 +3888,23 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanAdd("Purchases")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ فواتير الشراء.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
+            // مزامنة نسب الهامش والضريبة من الجدول إلى عناصر الفاتورة
+            for (int r = 0; r < dgItems.Rows.Count; r++)
+            {
+                if (r < _items.Count)
+                {
+                    var row = dgItems.Rows[r];
+                    string mStr = row.Cells["MarginPct"].Value?.ToString()?.Replace("%", "")?.Trim();
+                    if (decimal.TryParse(mStr, out decimal mVal)) _items[r].ProfitMarginPct = mVal;
+                    
+                    if (dgItems.Columns.Contains("TaxPct"))
+                    {
+                        string tStr = row.Cells["TaxPct"].Value?.ToString()?.Replace("%", "")?.Trim();
+                        if (decimal.TryParse(tStr, out decimal tVal)) _items[r].TaxPct = tVal;
+                    }
+                }
+            }
+
             if (_items.Count == 0)
             {
                 MessageBox.Show("أضف أصنافاً أولاً", "تنبيه",
@@ -4004,6 +4145,40 @@ namespace ChickenDist.Forms
 
                 if (id > 0)
                 {
+                    // تحديث آخر سعر شراء والتكلفة للأصناف المشتراة
+                    try
+                    {
+                        foreach (var item in _items)
+                        {
+                            decimal factor = item.Factor > 0 ? item.Factor : 1m;
+                            decimal majorUnitPrice = item.UnitPrice * factor;
+                            decimal baseCost = item.NetUnitPrice;
+
+                            DbHelper.Execute(
+                                @"UPDATE Products 
+                                  SET LastPurchasePrice = CASE WHEN @mup > 0 THEN @mup ELSE LastPurchasePrice END
+                                  WHERE ProductID = @pid",
+                                DbHelper.P("@mup", majorUnitPrice),
+                                DbHelper.P("@pid", item.ProductID));
+
+                            if (AppConfig.UseLastPurchasePriceAsCost)
+                            {
+                                DbHelper.Execute(
+                                    @"UPDATE Products 
+                                      SET CostPrice = CASE WHEN @bc > 0 THEN @bc ELSE CostPrice END,
+                                          PurchasePrice = CASE WHEN @mup > 0 THEN @mup ELSE PurchasePrice END
+                                      WHERE ProductID = @pid",
+                                    DbHelper.P("@bc", baseCost),
+                                    DbHelper.P("@mup", majorUnitPrice),
+                                    DbHelper.P("@pid", item.ProductID));
+                            }
+                        }
+                    }
+                    catch (Exception exCost)
+                    {
+                        AppLogger.Error("Update LastPurchasePrice/Cost in BtnSave_Click", exCost);
+                    }
+
                     // تطبيق قرار تعديل أسعار البيع بحسب وحدة كل صنف
                     if (priceDecision == "ApplyNow")
                     {

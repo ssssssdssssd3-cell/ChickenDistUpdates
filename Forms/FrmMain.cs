@@ -394,6 +394,8 @@ namespace ChickenDist.Forms
                 case "FrmWarehouseTransfer":
                 case "FrmWarehouseTransfersList":
                 case "FrmPriceChanges":
+                case "FrmPriceAdjustment":
+                case "FrmPriceChangeHistory":
                 case "FrmPricePoster":
                 case "FrmPriceChecker":
                 case "FrmBulkPrintBarcodes":
@@ -621,6 +623,8 @@ namespace ChickenDist.Forms
                     ("---", "_SEP_", (Action)null),
 
                     // 3. الباركود والتسعير
+                    ("⚡ تغيير أسعار البيع والتكلفة", "PriceAdjustment", (Action)(() => NavigateTo(new FrmPriceAdjustment()))),
+                    ("📜 سجل تقرير تغيرات الأسعار", "PriceChangeHistory", (Action)(() => NavigateTo(new FrmPriceChangeHistory()))),
                     ("🏷️ طباعة الباركود (مجمع)", "BulkPrintBarcodes", (Action)(() => NavigateTo(new FrmBulkPrintBarcodes()))),
                     ("📋 لستة الأصناف",      "PricePoster",       (Action)(() => NavigateTo(new FrmPricePoster()))),
                     ("🏷️ كشك فحص الأسعار والبدائل", "PriceChecker", (Action)(() => new FrmPriceChecker(false).ShowDialog())),

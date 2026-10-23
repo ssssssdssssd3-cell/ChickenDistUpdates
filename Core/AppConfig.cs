@@ -75,6 +75,18 @@ namespace ChickenDist.Core
             get => BusinessType == "Factories" || BusinessType == "Manufacturing";
         }
 
+        public static bool IsPartsAndHomeMargin => BusinessType == "PartsAndHomeMargin" || BusinessType == "SparePartsHomeMargin";
+        public static bool UseLastPurchasePriceAsCost
+        {
+            get
+            {
+                if (IsPartsAndHomeMargin) return true;
+                string val = Get("UseLastPurchasePriceAsCost", "false");
+                return bool.TryParse(val, out bool b) && b;
+            }
+            set => Set("UseLastPurchasePriceAsCost", value.ToString());
+        }
+
         public static bool IsClothing
         {
             get => BusinessType == "Clothing";
