@@ -2992,6 +2992,246 @@ namespace ChickenDist.Core
             }
         }
 
+        /// <summary>
+        /// تصميم كارت صورة احترافي عالي الدقة لأمر الشراء / طلب التوريد للمورد
+        /// </summary>
+        public static Bitmap GeneratePurchaseOrderImage(PurchaseOrderDTO order)
+        {
+            if (order == null) return null;
+
+            try
+            {
+                int itemCount = order.Items != null ? order.Items.Count : 0;
+                int width = 720;
+                int rowH = 30;
+                int headerH = 135;
+                int metaH = 95;
+                int tableHeaderH = 34;
+                int itemsH = Math.Max(itemCount, 1) * rowH;
+                string notes = order.Notes ?? "";
+                int summaryH = 140 + (string.IsNullOrWhiteSpace(notes) ? 0 : 30);
+                int totalH = headerH + metaH + tableHeaderH + itemsH + summaryH + 40;
+
+                var bmp = new Bitmap(width, totalH);
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    g.Clear(Color.White);
+
+                    Color cPrimary   = Color.FromArgb(15, 23, 42);
+                    Color cSecondary = Color.FromArgb(30, 41, 59);
+                    Color cAccent    = Color.FromArgb(139, 92, 246);
+                    Color cAltBg     = Color.FromArgb(248, 250, 252);
+                    Color cBorder    = Color.FromArgb(226, 232, 240);
+
+                    using (var penOuter = new Pen(Color.FromArgb(203, 213, 225), 2f))
+                    {
+                        g.DrawRectangle(penOuter, 1, 1, width - 3, totalH - 3);
+                    }
+
+                    // 1. Header Banner
+                    using (var brHead = new LinearGradientBrush(new Rectangle(0, 0, width, headerH), cPrimary, cSecondary, LinearGradientMode.Horizontal))
+                    {
+                        g.FillRectangle(brHead, 0, 0, width, headerH);
+                    }
+                    using (var brAccent = new SolidBrush(cAccent))
+                    {
+                        g.FillRectangle(brAccent, 0, headerH - 5, width, 5);
+                    }
+
+                    string coName = AppConfig.CompanyName;
+                    if (string.IsNullOrWhiteSpace(coName)) coName = "الشركة للأنظمة والتوزيع";
+
+                    using (var fCo = new Font("Segoe UI", 19f, FontStyle.Bold))
+                    using (var fTitle = new Font("Segoe UI", 13f, FontStyle.Bold))
+                    using (var fSub = new Font("Segoe UI", 9.5f))
+                    using (var brWhite = new SolidBrush(Color.White))
+                    using (var brGold = new SolidBrush(Color.FromArgb(253, 224, 71)))
+                    using (var brMuted = new SolidBrush(Color.FromArgb(203, 213, 225)))
+                    {
+                        g.DrawString(CleanEmoji(coName), fCo, brWhite, new RectangleF(20, 16, width - 40, 36), SfCenter);
+                        g.DrawString("📋 طلب توريد بضاعة / أمر شراء رسمي (Purchase Order)", fTitle, brGold, new RectangleF(20, 56, width - 40, 28), SfCenter);
+
+                        string subInfo = $"التاريخ: {order.OrderDate:yyyy/MM/dd}   |   رقم الطلبية: {order.OrderCode}";
+                        g.DrawString(subInfo, fSub, brMuted, new RectangleF(20, 88, width - 40, 22), SfCenter);
+                    }
+
+                    int y = headerH + 12;
+
+                    // 2. Meta Info Card
+                    using (var brMetaBg = new SolidBrush(Color.FromArgb(241, 245, 249)))
+                    using (var penMeta = new Pen(cBorder, 1f))
+                    {
+                        var rMeta = new Rectangle(20, y, width - 40, metaH);
+                        g.FillRectangle(brMetaBg, rMeta);
+                        g.DrawRectangle(penMeta, rMeta);
+                    }
+
+                    using (var fLabel = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+                    using (var fVal = new Font("Segoe UI", 9.5f))
+                    using (var brDark = new SolidBrush(Color.FromArgb(30, 41, 59)))
+                    using (var brPrimary = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    {
+                        // Right column: Supplier Name & Expected Delivery
+                        float col1X = width - 40;
+                        g.DrawString("المطلوب من الأستاذ / المورد:", fLabel, brDark, new RectangleF(col1X - 170, y + 14, 160, 22), SfRtlRight);
+                        g.DrawString(order.SupplierName, fLabel, brPrimary, new RectangleF(col1X - 350, y + 14, 175, 22), SfRtlRight);
+
+                        string expDate = order.ExpectedDeliveryDate.HasValue ? order.ExpectedDeliveryDate.Value.ToString("yyyy/MM/dd") : "عاجل في أقرب وقت";
+                        g.DrawString("موعد التوريد المطلوب:", fLabel, brDark, new RectangleF(col1X - 170, y + 50, 160, 22), SfRtlRight);
+                        g.DrawString(expDate, fVal, brPrimary, new RectangleF(col1X - 350, y + 50, 175, 22), SfRtlRight);
+
+                        // Left column: Supplier Phone & Order Status
+                        float col2X = width - 390;
+                        g.DrawString("هاتف المورد:", fLabel, brDark, new RectangleF(col2X - 100, y + 14, 95, 22), SfRtlRight);
+                        g.DrawString(string.IsNullOrWhiteSpace(order.SupplierPhone) ? "---" : order.SupplierPhone, fVal, brPrimary, new RectangleF(25, y + 14, col2X - 130, 22), SfRtlRight);
+
+                        g.DrawString("حالة الطلبية:", fLabel, brDark, new RectangleF(col2X - 100, y + 50, 95, 22), SfRtlRight);
+                        g.DrawString(order.Status, fLabel, new SolidBrush(Color.FromArgb(180, 83, 9)), new RectangleF(25, y + 50, col2X - 130, 22), SfRtlRight);
+                    }
+
+                    y += metaH + 16;
+
+                    // 3. Table Header
+                    int tableX = 20;
+                    int tableW = width - 40;
+
+                    int wNum = 35, wCode = 90, wName = 235, wUnit = 60, wQty = 85, wPrice = 85, wTotal = 90;
+
+                    using (var brTh = new SolidBrush(Color.FromArgb(30, 41, 59)))
+                    {
+                        g.FillRectangle(brTh, tableX, y, tableW, tableHeaderH);
+                    }
+
+                    using (var fTh = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+                    using (var brWhite = new SolidBrush(Color.White))
+                    {
+                        int curX = tableX + tableW;
+                        DrawCellRtl(g, "#", fTh, brWhite, curX, y, wNum, tableHeaderH, SfCenter); curX -= wNum;
+                        DrawCellRtl(g, "كود الصنف", fTh, brWhite, curX, y, wCode, tableHeaderH, SfCenter); curX -= wCode;
+                        DrawCellRtl(g, "اسم الصنف والبيان", fTh, brWhite, curX, y, wName, tableHeaderH, SfRtlRight); curX -= wName;
+                        DrawCellRtl(g, "الوحدة", fTh, brWhite, curX, y, wUnit, tableHeaderH, SfCenter); curX -= wUnit;
+                        DrawCellRtl(g, "الكمية المطلوبة", fTh, brWhite, curX, y, wQty, tableHeaderH, SfCenter); curX -= wQty;
+                        DrawCellRtl(g, "السعر المتوقع", fTh, brWhite, curX, y, wPrice, tableHeaderH, SfCenter); curX -= wPrice;
+                        DrawCellRtl(g, "الإجمالي", fTh, brWhite, curX, y, wTotal, tableHeaderH, SfCenter);
+                    }
+
+                    y += tableHeaderH;
+
+                    // 4. Table Rows
+                    using (var fCell = new Font("Segoe UI", 9f))
+                    using (var fCellBold = new Font("Segoe UI", 9f, FontStyle.Bold))
+                    using (var penLine = new Pen(cBorder, 1f))
+                    using (var brRowDark = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    using (var brQty = new SolidBrush(Color.FromArgb(21, 128, 61)))
+                    using (var brAlt = new SolidBrush(cAltBg))
+                    {
+                        int rowIdx = 0;
+                        if (order.Items != null)
+                        {
+                            foreach (var itm in order.Items)
+                            {
+                                if (rowIdx % 2 == 1)
+                                {
+                                    g.FillRectangle(brAlt, tableX, y, tableW, rowH);
+                                }
+                                g.DrawLine(penLine, tableX, y + rowH, tableX + tableW, y + rowH);
+
+                                int curX = tableX + tableW;
+                                DrawCellRtl(g, (rowIdx + 1).ToString(), fCell, brRowDark, curX, y, wNum, rowH, SfCenter); curX -= wNum;
+                                DrawCellRtl(g, itm.ProductCode ?? "", fCell, brRowDark, curX, y, wCode, rowH, SfCenter); curX -= wCode;
+                                DrawCellRtl(g, CleanEmoji(itm.ProductName ?? ""), fCellBold, brRowDark, curX, y, wName, rowH, SfRtlRight); curX -= wName;
+                                DrawCellRtl(g, itm.UnitName ?? "قطعة", fCell, brRowDark, curX, y, wUnit, rowH, SfCenter); curX -= wUnit;
+                                DrawCellRtl(g, itm.Quantity.ToString("0.##"), fCellBold, brQty, curX, y, wQty, rowH, SfCenter); curX -= wQty;
+                                DrawCellRtl(g, itm.EstimatedUnitPrice > 0 ? itm.EstimatedUnitPrice.ToString("N2") : "-", fCell, brRowDark, curX, y, wPrice, rowH, SfCenter); curX -= wPrice;
+                                DrawCellRtl(g, itm.TotalPrice > 0 ? itm.TotalPrice.ToString("N2") : "-", fCellBold, brRowDark, curX, y, wTotal, rowH, SfCenter);
+
+                                y += rowH;
+                                rowIdx++;
+                            }
+                        }
+                    }
+
+                    // Outer border for table
+                    using (var penTable = new Pen(Color.FromArgb(203, 213, 225), 1f))
+                    {
+                        g.DrawRectangle(penTable, tableX, headerH + metaH + 28, tableW, tableHeaderH + itemsH);
+                    }
+
+                    y += 14;
+
+                    // 5. Summary & Totals
+                    using (var brSumBg = new SolidBrush(Color.FromArgb(248, 250, 252)))
+                    using (var penSum = new Pen(Color.FromArgb(203, 213, 225), 1f))
+                    {
+                        var rSum = new Rectangle(tableX, y, tableW, summaryH - 20);
+                        g.FillRectangle(brSumBg, rSum);
+                        g.DrawRectangle(penSum, rSum);
+                    }
+
+                    using (var fSumLabel = new Font("Segoe UI", 10f, FontStyle.Bold))
+                    using (var fSumVal = new Font("Segoe UI", 11f, FontStyle.Bold))
+                    using (var brGreen = new SolidBrush(Color.FromArgb(5, 150, 105)))
+                    using (var brBlue = new SolidBrush(Color.FromArgb(37, 99, 235)))
+                    using (var brText = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    {
+                        int sumY = y + 14;
+
+                        g.DrawString($"عدد الأصناف:  {order.TotalItemsCount} صنف", fSumLabel, brBlue, new RectangleF(tableX + tableW - 220, sumY, 200, 26), SfRtlRight);
+                        g.DrawString($"إجمالي الكميات المطلوبة:  {order.TotalQuantity:0.##}", fSumLabel, brText, new RectangleF(tableX + tableW - 450, sumY, 210, 26), SfRtlRight);
+
+                        if (order.TotalEstimatedCost > 0)
+                        {
+                            g.DrawString($"إجمالي القيمة التقديرية:  {order.TotalEstimatedCost:N2} ج", fSumVal, brGreen, new RectangleF(tableX + 15, sumY, 220, 26), SfRtlRight);
+                        }
+
+                        sumY += 34;
+
+                        if (!string.IsNullOrWhiteSpace(order.Notes))
+                        {
+                            using (var penDash = new Pen(Color.FromArgb(203, 213, 225), 1f) { DashStyle = DashStyle.Dash })
+                            {
+                                g.DrawLine(penDash, tableX + 15, sumY, tableX + tableW - 15, sumY);
+                            }
+                            sumY += 8;
+                            g.DrawString("ملاحظات الطلبية: " + order.Notes, new Font("Segoe UI", 9.5f), brText, new RectangleF(tableX + 15, sumY, tableW - 30, 24), SfRtlRight);
+                            sumY += 28;
+                        }
+
+                        g.DrawString("⚠️ برجاء مراجعة الكميات الموضحة وتأكيد موعد استلام البضاعة فور استلامكم لأمر الشراء.", new Font("Segoe UI", 9f, FontStyle.Italic), Brushes.Gray, new RectangleF(tableX + 15, sumY + 4, tableW - 30, 20), SfCenter);
+                    }
+
+                    y += summaryH;
+
+                    // 6. Footer
+                    using (var fFoot = new Font("Segoe UI", 8.5f))
+                    {
+                        string coPhone = AppConfig.CompanyPhone;
+                        string coAddr = AppConfig.CompanyAddress;
+                        string footerText = $"تم الإصدار آلياً بواسطة نظام {CleanEmoji(coName)}";
+                        if (!string.IsNullOrWhiteSpace(coPhone)) footerText += $"  |  هاتف: {coPhone}";
+                        if (!string.IsNullOrWhiteSpace(coAddr)) footerText += $"  |  {coAddr}";
+
+                        g.DrawString(footerText, fFoot, Brushes.Gray, new RectangleF(20, y, width - 40, 18), SfCenter);
+                    }
+
+                    return bmp;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ReceiptImageGenerator.GeneratePurchaseOrderImage", ex);
+                return null;
+            }
+        }
+
+        private static void DrawCellRtl(Graphics g, string text, Font font, Brush brush, int rightX, int y, int width, int height, StringFormat sf)
+        {
+            RectangleF rect = new RectangleF(rightX - width, y, width, height);
+            g.DrawString(text ?? "", font, brush, rect, sf);
+        }
+
         public static Bitmap GenerateOnlineOrderReceiptImage(int onlineOrderID)
         {
             try

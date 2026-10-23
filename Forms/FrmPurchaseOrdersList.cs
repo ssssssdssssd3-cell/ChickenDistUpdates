@@ -229,43 +229,46 @@ namespace ChickenDist.Forms
         private void SetupGridColumns()
         {
             dgvOrders.Columns.Clear();
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderID", HeaderText = "#", Width = 55, Visible = false });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderCode", HeaderText = "كود الطلبية 🔖", Width = 140, DefaultCellStyle = { Font = Theme.FontBold, Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderDate", HeaderText = "تاريخ الطلب 📅", Width = 145, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd hh:mm tt" } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "SupplierName", HeaderText = "المورد 👤", Width = 190, DefaultCellStyle = { Font = Theme.FontBold } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "SupplierPhone", HeaderText = "هاتف المورد 📱", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalItemsCount", HeaderText = "عدد الأصناف", Width = 95, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalQuantity", HeaderText = "إجمالي الكمية", Width = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2" } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalEstimatedCost", HeaderText = "التكلفة التقديرية 💰", Width = 135, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold, ForeColor = Color.FromArgb(5, 150, 105) } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Status", HeaderText = "الحالة 📶", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = Theme.FontBold } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "ExpectedDeliveryDate", HeaderText = "تاريخ التوريد المتوقع", Width = 130, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd" } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CreatedByEmpName", HeaderText = "المستخدم", Width = 110, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Notes", HeaderText = "ملاحظات", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderID", DataPropertyName = "OrderID", HeaderText = "#", Width = 55, Visible = false });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderCode", DataPropertyName = "OrderCode", HeaderText = "كود الطلبية 🔖", Width = 140, DefaultCellStyle = { Font = Theme.FontBold, Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderDate", DataPropertyName = "OrderDate", HeaderText = "تاريخ الطلب 📅", Width = 145, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd hh:mm tt" } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", DataPropertyName = "SupplierName", HeaderText = "المورد 👤", Width = 190, DefaultCellStyle = { Font = Theme.FontBold } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierPhone", DataPropertyName = "SupplierPhone", HeaderText = "هاتف المورد 📱", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalItemsCount", DataPropertyName = "TotalItemsCount", HeaderText = "عدد الأصناف", Width = 95, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalQuantity", DataPropertyName = "TotalQuantity", HeaderText = "إجمالي الكمية", Width = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2" } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalEstimatedCost", DataPropertyName = "TotalEstimatedCost", HeaderText = "التكلفة التقديرية 💰", Width = 135, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold, ForeColor = Color.FromArgb(5, 150, 105) } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", DataPropertyName = "Status", HeaderText = "الحالة 📶", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = Theme.FontBold } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpectedDeliveryDate", DataPropertyName = "ExpectedDeliveryDate", HeaderText = "تاريخ التوريد المتوقع", Width = 130, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd" } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByEmpName", DataPropertyName = "CreatedByEmpName", HeaderText = "المستخدم", Width = 110, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", DataPropertyName = "Notes", HeaderText = "ملاحظات", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
         }
 
         private void DgvOrders_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || e.RowIndex >= dgvOrders.Rows.Count) return;
+            if (!dgvOrders.Columns.Contains("Status")) return;
+
             var drv = dgvOrders.Rows[e.RowIndex].DataBoundItem as DataRowView;
             if (drv == null) return;
 
-            string status = drv["Status"]?.ToString() ?? "";
-            var row = dgvOrders.Rows[e.RowIndex];
+            string status = drv.Row.Table.Columns.Contains("Status") ? (drv["Status"]?.ToString() ?? "") : "";
+            var cell = dgvOrders.Rows[e.RowIndex].Cells["Status"];
+            if (cell == null) return;
 
             if (status.Contains("كامل"))
             {
-                row.Cells["Status"].Style.ForeColor = Color.FromArgb(6, 95, 70);
-                row.Cells["Status"].Style.BackColor = Color.FromArgb(236, 253, 245);
+                cell.Style.ForeColor = Color.FromArgb(6, 95, 70);
+                cell.Style.BackColor = Color.FromArgb(236, 253, 245);
             }
             else if (status.Contains("معلقة"))
             {
-                row.Cells["Status"].Style.ForeColor = Color.FromArgb(180, 83, 9);
-                row.Cells["Status"].Style.BackColor = Color.FromArgb(254, 243, 199);
+                cell.Style.ForeColor = Color.FromArgb(180, 83, 9);
+                cell.Style.BackColor = Color.FromArgb(254, 243, 199);
             }
             else if (status.Contains("ملغاة"))
             {
-                row.Cells["Status"].Style.ForeColor = Color.FromArgb(185, 28, 28);
-                row.Cells["Status"].Style.BackColor = Color.FromArgb(254, 226, 226);
+                cell.Style.ForeColor = Color.FromArgb(185, 28, 28);
+                cell.Style.BackColor = Color.FromArgb(254, 226, 226);
             }
         }
 
@@ -452,8 +455,15 @@ namespace ChickenDist.Forms
             if (!string.IsNullOrWhiteSpace(order.Notes))
                 sb.AppendLine($"📝 *ملاحظات خاصة:* {order.Notes}");
 
-            string url = "https://api.whatsapp.com/send?phone=" + phone + "&text=" + Uri.EscapeDataString(sb.ToString());
-            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); } catch { }
+            sb.AppendLine("\nيرجى مراجعة الطلبية وتأكيد موعد التوريد. شاكرين حسن التعاون معكم.");
+
+            WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                this,
+                phone,
+                sb.ToString(),
+                () => ReceiptImageGenerator.GeneratePurchaseOrderImage(order),
+                "📱 إرسال أمر الشراء عبر الواتساب"
+            );
         }
 
         private void PrintSelected()

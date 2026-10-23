@@ -14,6 +14,7 @@ namespace ChickenDist.Forms
         private int? _selectedProductID = null;
         public int SavedTicketID { get; private set; }
         public bool ShouldPrintReceipt { get; private set; }
+        public bool ShouldSendWhatsApp { get; private set; }
 
         // Controls
         private Label lblTicketCode;
@@ -50,6 +51,9 @@ namespace ChickenDist.Forms
 
         private Button btnSave;
         private Button btnSaveAndPrint;
+        private Button btnSaveAndWhatsApp;
+        private Button btnDirectPrint;
+        private Button btnDirectWhatsApp;
         private Button btnCancel;
 
         public FrmWarrantyCard(int ticketID = 0)
@@ -95,6 +99,7 @@ namespace ChickenDist.Forms
                 else if (e.KeyCode == Keys.F2) { btnSave.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F3) { btnSaveAndPrint.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F4) { OpenClientSearch(); e.Handled = true; }
+                else if (e.KeyCode == Keys.F5) { btnSaveAndWhatsApp?.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.Escape) { this.Close(); e.Handled = true; }
             };
 
@@ -122,23 +127,58 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ الكرت (F2)", Theme.Success);
-            btnSave.Size = new Size(160, 38);
-            btnSave.Margin = new Padding(10, 0, 0, 0);
-            btnSave.Click += (s, e) => SaveTicket(false);
+            btnSave = Theme.MakeButton("💾 حفظ فقط (F2)", Theme.Success);
+            btnSave.Size = new Size(130, 38);
+            btnSave.Margin = new Padding(8, 0, 0, 0);
+            btnSave.Click += (s, e) => SaveTicket(printAfterSave: false, sendWhatsAppAfterSave: false);
 
-            btnSaveAndPrint = Theme.MakeButton("🖨️ حفظ وطباعة الإيصال (F3)", Color.FromArgb(30, 80, 180));
-            btnSaveAndPrint.Size = new Size(220, 38);
-            btnSaveAndPrint.Margin = new Padding(10, 0, 0, 0);
-            btnSaveAndPrint.Click += (s, e) => SaveTicket(true);
+            btnSaveAndPrint = Theme.MakeButton("🖨️ حفظ وطباعة (F3)", Color.FromArgb(30, 80, 180));
+            btnSaveAndPrint.Size = new Size(160, 38);
+            btnSaveAndPrint.Margin = new Padding(8, 0, 0, 0);
+            btnSaveAndPrint.Click += (s, e) => SaveTicket(printAfterSave: true, sendWhatsAppAfterSave: false);
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Color.FromArgb(100, 110, 120));
-            btnCancel.Size = new Size(130, 38);
-            btnCancel.Margin = new Padding(10, 0, 0, 0);
-            btnCancel.Click += (s, e) => this.Close();
+            btnSaveAndWhatsApp = Theme.MakeButton("📱 حفظ وواتساب (F5)", Color.FromArgb(37, 211, 102));
+            btnSaveAndWhatsApp.Size = new Size(160, 38);
+            btnSaveAndWhatsApp.ForeColor = Color.White;
+            btnSaveAndWhatsApp.Margin = new Padding(8, 0, 0, 0);
+            btnSaveAndWhatsApp.Click += (s, e) => SaveTicket(printAfterSave: false, sendWhatsAppAfterSave: true);
 
             pnlButtons.Controls.Add(btnSave);
             pnlButtons.Controls.Add(btnSaveAndPrint);
+            pnlButtons.Controls.Add(btnSaveAndWhatsApp);
+
+            if (_ticketID > 0)
+            {
+                btnDirectPrint = Theme.MakeButton("🖨️ طباعة فورية", Color.FromArgb(52, 73, 94));
+                btnDirectPrint.Size = new Size(130, 38);
+                btnDirectPrint.Margin = new Padding(8, 0, 0, 0);
+                btnDirectPrint.Click += (s, e) =>
+                {
+                    var ticket = BuildTicketFromUI();
+                    ticket.TicketID = _ticketID;
+                    WarrantyReceiptHelper.PrintReceipt(ticket, showPreview: true);
+                };
+
+                btnDirectWhatsApp = Theme.MakeButton("📱 إرسال واتساب", Color.FromArgb(18, 140, 126));
+                btnDirectWhatsApp.Size = new Size(130, 38);
+                btnDirectWhatsApp.ForeColor = Color.White;
+                btnDirectWhatsApp.Margin = new Padding(8, 0, 0, 0);
+                btnDirectWhatsApp.Click += (s, e) =>
+                {
+                    var ticket = BuildTicketFromUI();
+                    ticket.TicketID = _ticketID;
+                    WarrantyReceiptHelper.SendWhatsApp(this, ticket);
+                };
+
+                pnlButtons.Controls.Add(btnDirectPrint);
+                pnlButtons.Controls.Add(btnDirectWhatsApp);
+            }
+
+            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Color.FromArgb(100, 110, 120));
+            btnCancel.Size = new Size(110, 38);
+            btnCancel.Margin = new Padding(8, 0, 0, 0);
+            btnCancel.Click += (s, e) => this.Close();
+
             pnlButtons.Controls.Add(btnCancel);
             pnlFooter.Controls.Add(pnlButtons);
 
@@ -1111,7 +1151,39 @@ namespace ChickenDist.Forms
             txtNotes.Text = t.Notes;
         }
 
-        private void SaveTicket(bool printAfterSave)
+        private WarrantyTicket BuildTicketFromUI()
+        {
+            return new WarrantyTicket
+            {
+                TicketID = _ticketID,
+                TicketCode = lblTicketCode.Text,
+                ReceiveDate = dtpReceiveDate.Value,
+                ClientID = _selectedClientID,
+                CustomerName = txtCustomerName.Text.Trim(),
+                CustomerPhone = txtCustomerPhone.Text.Trim(),
+                CustomerAddress = txtCustomerAddress.Text.Trim(),
+                ProductID = _selectedProductID,
+                ProductName = txtProductName.Text.Trim(),
+                Brand = txtBrand.Text.Trim(),
+                SerialNumber = txtSerialNumber.Text.Trim(),
+                InvoiceNumber = txtInvoiceNumber.Text.Trim(),
+                InvoiceDate = chkHasInvoiceDate.Checked ? (DateTime?)dtpInvoiceDate.Value : null,
+                ProblemDescription = txtProblemDescription.Text.Trim(),
+                Accessories = txtAccessories.Text.Trim(),
+                DeviceCondition = txtDeviceCondition.Text.Trim(),
+                Status = cboStatus.SelectedItem?.ToString() ?? "مستلم بالمحل",
+                VendorName = txtVendorName.Text.Trim(),
+                SentToVendorDate = chkSentToVendor.Checked ? (DateTime?)dtpSentToVendor.Value : null,
+                VendorTrackingNo = txtVendorTrackingNo.Text.Trim(),
+                ReceivedFromVendorDate = chkReceivedFromVendor.Checked ? (DateTime?)dtpReceivedFromVendor.Value : null,
+                ResolutionType = cboResolutionType.SelectedItem?.ToString(),
+                VendorReport = txtVendorReport.Text.Trim(),
+                DeliveredToCustomerDate = chkDelivered.Checked ? (DateTime?)dtpDelivered.Value : null,
+                Notes = txtNotes.Text.Trim()
+            };
+        }
+
+        private void SaveTicket(bool printAfterSave, bool sendWhatsAppAfterSave = false)
         {
             string custName = txtCustomerName.Text.Trim();
             if (string.IsNullOrWhiteSpace(custName))
@@ -1139,40 +1211,34 @@ namespace ChickenDist.Forms
 
             try
             {
-                var t = new WarrantyTicket
-                {
-                    TicketID = _ticketID,
-                    TicketCode = lblTicketCode.Text,
-                    ReceiveDate = dtpReceiveDate.Value,
-                    ClientID = _selectedClientID,
-                    CustomerName = custName,
-                    CustomerPhone = txtCustomerPhone.Text.Trim(),
-                    CustomerAddress = txtCustomerAddress.Text.Trim(),
-                    ProductID = _selectedProductID,
-                    ProductName = prodName,
-                    Brand = txtBrand.Text.Trim(),
-                    SerialNumber = txtSerialNumber.Text.Trim(),
-                    InvoiceNumber = txtInvoiceNumber.Text.Trim(),
-                    InvoiceDate = chkHasInvoiceDate.Checked ? (DateTime?)dtpInvoiceDate.Value : null,
-                    ProblemDescription = problem,
-                    Accessories = txtAccessories.Text.Trim(),
-                    DeviceCondition = txtDeviceCondition.Text.Trim(),
-                    Status = cboStatus.SelectedItem?.ToString() ?? "مستلم بالمحل",
-                    VendorName = txtVendorName.Text.Trim(),
-                    SentToVendorDate = chkSentToVendor.Checked ? (DateTime?)dtpSentToVendor.Value : null,
-                    VendorTrackingNo = txtVendorTrackingNo.Text.Trim(),
-                    ReceivedFromVendorDate = chkReceivedFromVendor.Checked ? (DateTime?)dtpReceivedFromVendor.Value : null,
-                    ResolutionType = cboResolutionType.SelectedItem?.ToString(),
-                    VendorReport = txtVendorReport.Text.Trim(),
-                    DeliveredToCustomerDate = chkDelivered.Checked ? (DateTime?)dtpDelivered.Value : null,
-                    Notes = txtNotes.Text.Trim()
-                };
+                var t = BuildTicketFromUI();
 
                 int savedID = WarrantyDAL.Save(t);
                 if (savedID > 0)
                 {
+                    t.TicketID = savedID;
                     SavedTicketID = savedID;
                     ShouldPrintReceipt = printAfterSave;
+                    ShouldSendWhatsApp = sendWhatsAppAfterSave;
+
+                    if (printAfterSave)
+                    {
+                        WarrantyReceiptHelper.PrintReceipt(t, showPreview: true);
+                    }
+                    else if (sendWhatsAppAfterSave)
+                    {
+                        WarrantyReceiptHelper.SendWhatsApp(this, t);
+                    }
+                    else if (_ticketID == 0)
+                    {
+                        // New ticket - ask for print
+                        var ask = MessageBox.Show("✅ تم استلام وحفظ كرت الضمان بنجاح!\n\nهل ترغب في طباعة إيصال الاستلام الآن للعميل؟", "طباعة إيصال الضمان", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (ask == DialogResult.Yes)
+                        {
+                            WarrantyReceiptHelper.PrintReceipt(t, showPreview: true);
+                        }
+                    }
+
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }

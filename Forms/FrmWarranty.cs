@@ -203,11 +203,15 @@ namespace ChickenDist.Forms
             Button btnPrint = CreateActionButton("🖨️ طباعة إيصال استلام", Color.FromArgb(52, 73, 94), Color.White);
             btnPrint.Click += (s, e) => PrintReceipt();
 
+            Button btnWhatsApp = CreateActionButton("💬 إرسال واتساب للعميل", Color.FromArgb(37, 211, 102), Color.White);
+            btnWhatsApp.Click += (s, e) => SendWhatsApp();
+
             Button btnDelete = CreateActionButton("🗑️ حذف الإيصال", Color.FromArgb(192, 57, 43), Color.White);
             btnDelete.Click += (s, e) => DeleteTicket();
 
             // Stack buttons nicely inside pnlActions
             btnDelete.Dock = DockStyle.Top;
+            btnWhatsApp.Dock = DockStyle.Top;
             btnPrint.Dock = DockStyle.Top;
             btnDeliverCustomer.Dock = DockStyle.Top;
             btnReceiveVendor.Dock = DockStyle.Top;
@@ -216,6 +220,7 @@ namespace ChickenDist.Forms
             btnNew.Dock = DockStyle.Top;
 
             pnlActions.Controls.Add(btnDelete);
+            pnlActions.Controls.Add(btnWhatsApp);
             pnlActions.Controls.Add(btnPrint);
             pnlActions.Controls.Add(btnDeliverCustomer);
             pnlActions.Controls.Add(btnReceiveVendor);
@@ -650,22 +655,22 @@ namespace ChickenDist.Forms
             var ticket = WarrantyDAL.GetByID(id);
             if (ticket == null) return;
 
-            string info = $"========================================\n" +
-                          $"       إيصال استلام جهاز للضمان والصيانة     \n" +
-                          $"========================================\n" +
-                          $"رقم الإيصال: {ticket.TicketCode}\n" +
-                          $"التاريخ: {ticket.ReceiveDate:yyyy-MM-dd HH:mm}\n" +
-                          $"العميل: {ticket.CustomerName}\n" +
-                          $"الهاتف: {ticket.CustomerPhone}\n" +
-                          $"الجهاز: {ticket.ProductName} - {ticket.Brand}\n" +
-                          $"السيريال: {ticket.SerialNumber}\n" +
-                          $"العطل: {ticket.ProblemDescription}\n" +
-                          $"المشتملات: {ticket.Accessories}\n" +
-                          $"الحالة الحالية: {ticket.Status}\n" +
-                          $"========================================\n" +
-                          $"ملاحظات: {ticket.Notes}\n";
+            WarrantyReceiptHelper.PrintReceipt(ticket, showPreview: true);
+        }
 
-            MessageBox.Show(info, "إيصال استلام جهاز", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        private void SendWhatsApp()
+        {
+            int id = GetSelectedTicketID();
+            if (id <= 0)
+            {
+                MessageBox.Show("يرجى اختيار إيصال لإرساله.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var ticket = WarrantyDAL.GetByID(id);
+            if (ticket == null) return;
+
+            WarrantyReceiptHelper.SendWhatsApp(this, ticket);
         }
     }
 }

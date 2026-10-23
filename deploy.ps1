@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.1";
-$CHANGELOG = "v4.4.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix warranty receipt screen top header overlap and open maximized; fix item selection from product search without invoice; separate general catalog search button and client past purchases button"
+$VERSION = "4.4.2";
+$CHANGELOG = "v4.4.2 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Status column crash in Purchase Orders list; fix smart order reorder suggestions query; compact purchase order screen header and rows; add professional purchase order WhatsApp sharing with high-res invoice card; auto-reset purchase order screen for next order; add thermal receipt printing and WhatsApp sharing for warranty tickets upon receipt and from warranty manager"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -60,7 +60,7 @@ New-Item -ItemType Directory -Path $OUT_DIR -Force | Out-Null
 
 $msbuildExe = "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
 if (Test-Path $msbuildExe) {
-    & $msbuildExe $CSPROJ /p:Configuration=Release /t:Build /m /v:minimal /nologo
+    & $msbuildExe $CSPROJ /p:Configuration=Release /t:Build /v:minimal /nologo /nodeReuse:false
 } else {
     & dotnet build $CSPROJ -c Release /v:minimal /nologo /m
 }
@@ -173,7 +173,8 @@ if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
         Get-Process -Name "ChickenDist", "ProSoft" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 800
         Copy-Item $exePath -Destination $finalReleaseExe -Force
-        Write-OK "Copied final Release EXE to $finalReleaseExe"
+        Copy-Item $exePath -Destination (Join-Path (Split-Path $finalReleaseExe -Parent) "ProSoft.exe") -Force
+        Write-OK "Copied final Release EXE to $finalReleaseExe and ProSoft.exe"
 
         $qrDllSrc = Join-Path $REPO_ROOT "QRCoder.dll"
         $qrDllDest = Join-Path (Split-Path $finalReleaseExe -Parent) "QRCoder.dll"

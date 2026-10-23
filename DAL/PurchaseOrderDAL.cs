@@ -482,18 +482,41 @@ namespace ChickenDist.DAL
 
             try
             {
+                bool hasShortages = false;
+                if (includeShortages)
+                {
+                    try
+                    {
+                        var chk = DbHelper.Scalar("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ShortageNotebook'");
+                        hasShortages = (chk != null && chk != DBNull.Value);
+                    }
+                    catch { }
+                }
+
                 var prms = new List<SqlParameter>();
                 prms.Add(DbHelper.P("@salesDays", salesDays));
                 prms.Add(DbHelper.P("@maxResults", maxResults <= 0 ? 200 : maxResults));
 
-                string sql = @"
+                string shortageJoin = hasShortages
+                    ? @"OUTER APPLY (
+                        SELECT TOP 1 snItem.RequestedQty 
+                        FROM ShortageNotebook snItem
+                        WHERE snItem.ProductID = p.ProductID 
+                          AND snItem.Status IN (N'جديد', N'تم الطلب') 
+                        ORDER BY snItem.ShortageID DESC
+                    ) sn"
+                    : @"OUTER APPLY (
+                        SELECT CAST(NULL AS DECIMAL(18,2)) AS RequestedQty
+                    ) sn";
+
+                string sql = $@"
                     SELECT TOP (@maxResults)
                         p.ProductID,
                         p.ProductCode,
                         p.ProductName,
                         COALESCE(c.CategoryName, N'عام') AS CategoryName,
                         COALESCE(p.Unit, N'قطعة') AS UnitName,
-                        p.MinStockLimit,
+                        COALESCE(p.MinStockLimit, 0) AS MinStockLimit,
                         COALESCE(p.PurchasePrice, 0) AS PurchasePrice,
                         ISNULL(stk.TotalStock, 0) AS CurrentStock,
                         ISNULL(sales.TotalSold, 0) AS TotalSoldInPeriod,
@@ -504,11 +527,7 @@ namespace ChickenDist.DAL
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     OUTER APPLY (
-                        SELECT COALESCE(
-                            (SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID),
-                            p.Quantity,
-                            0
-                        ) AS TotalStock
+                        SELECT ISNULL((SELECT SUM(ps.Quantity) FROM ProductStock ps WHERE ps.ProductID = p.ProductID), 0) AS TotalStock
                     ) stk
                     OUTER APPLY (
                         SELECT 
@@ -524,21 +543,16 @@ namespace ChickenDist.DAL
                         FROM PurchaseItems pi
                         INNER JOIN Purchases pu ON pi.PurchaseID = pu.PurchaseID
                         LEFT JOIN Suppliers sup ON pu.SupplierID = sup.SupplierID
-                        WHERE pi.ProductID = p.ProductID AND pu.IsPosted = 1
+                        WHERE pi.ProductID = p.ProductID
                         ORDER BY pu.PurchaseDate DESC, pu.PurchaseID DESC
                     ) lastPur
-                    LEFT JOIN (
-                        SELECT TOP 1 ProductID, RequestedQty 
-                        FROM ShortageNotebook 
-                        WHERE Status IN (N'جديد', N'تم الطلب') 
-                        ORDER BY ShortageID DESC
-                    ) sn ON p.ProductID = sn.ProductID
+                    {shortageJoin}
                     WHERE p.IsActive = 1 ";
 
                 // تصفية المورد إن وُجد
                 if (supplierID.HasValue && supplierID.Value > 0)
                 {
-                    sql += " AND (lastPur.SupplierID = @supId OR p.SupplierID = @supId) ";
+                    sql += " AND lastPur.SupplierID = @supId ";
                     prms.Add(DbHelper.P("@supId", supplierID.Value));
                 }
 

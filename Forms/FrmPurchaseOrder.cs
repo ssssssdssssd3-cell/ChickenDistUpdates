@@ -97,44 +97,33 @@ namespace ChickenDist.Forms
                 }
             };
 
-            // 1. ترويسة رئيسية
+            // 1. ترويسة رئيسية مدمجة
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 65,
+                Height = 32,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 8, 15, 8)
+                Padding = new Padding(12, 4, 12, 4)
             };
 
             var lblTitle = new Label
             {
                 Text = "📋 إعداد طلبية مشتريات / أمر شراء للمورد (Purchase Order)",
-                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
-                Dock = DockStyle.Top,
-                Height = 28
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
             };
-
-            var lblSub = new Label
-            {
-                Text = "تحديد أصناف الشراء والتحكم في الكميات والأسعار المتوقعة، إرسال أمر الشراء للمورد عبر واتساب أو ملف، وتعليق الطلبية للتوريد",
-                Font = new Font("Segoe UI", 8.8f),
-                ForeColor = Theme.TextSub,
-                Dock = DockStyle.Top,
-                Height = 20
-            };
-
-            pnlHeader.Controls.Add(lblSub);
             pnlHeader.Controls.Add(lblTitle);
 
-            // 2. بطاقة بيانات الطلبية والمورد
+            // 2. بطاقة بيانات الطلبية والمورد (مدمجة ومنسقة)
             var pnlOrderInfo = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 84,
+                Height = 52,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12, 6, 12, 6),
-                Margin = new Padding(0, 0, 0, 4)
+                Padding = new Padding(10, 2, 10, 2),
+                Margin = new Padding(0, 0, 0, 2)
             };
 
             var flowInfo = new FlowLayoutPanel
@@ -172,13 +161,13 @@ namespace ChickenDist.Forms
             {
                 Text = "معلقة 🟡",
                 AutoSize = false,
-                Width = 90,
-                Height = 26,
+                Width = 85,
+                Height = 24,
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.FromArgb(254, 243, 199),
                 ForeColor = Color.FromArgb(180, 83, 9),
                 Font = Theme.FontBold,
-                Margin = new Padding(3, 18, 10, 2)
+                Margin = new Padding(3, 14, 8, 2)
             };
             flowInfo.Controls.Add(MakeInfoGroup("الحالة:", lblStatusBadge));
 
@@ -188,13 +177,13 @@ namespace ChickenDist.Forms
 
             pnlOrderInfo.Controls.Add(flowInfo);
 
-            // 3. شريط الاقتراح الذكي والإضافة السريعة
+            // 3. شريط الاقتراح الذكي والإضافة السريعة المدمج
             var pnlQuickAdd = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 56,
+                Height = 44,
                 BackColor = Color.FromArgb(248, 250, 252),
-                Padding = new Padding(12, 6, 12, 6)
+                Padding = new Padding(8, 4, 8, 4)
             };
 
             var flowQuick = new FlowLayoutPanel
@@ -207,37 +196,45 @@ namespace ChickenDist.Forms
             };
 
             // زر الاقتراح الذكي المميز
-            btnSmartSuggest = Theme.MakeButton("💡 الاقتراح الذكي (حركة المبيعات والأرصدة)", 0, 0, 290, 34, Color.FromArgb(139, 92, 246));
-            btnSmartSuggest.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            btnSmartSuggest.Margin = new Padding(2, 6, 12, 2);
+            btnSmartSuggest = Theme.MakeButton("💡 الاقتراح الذكي", 0, 0, 160, 32, Color.FromArgb(139, 92, 246));
+            btnSmartSuggest.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnSmartSuggest.Margin = new Padding(2, 2, 8, 2);
             btnSmartSuggest.Click += (s, e) => OpenSmartSuggestionsDialog();
 
             // زر بحث الأصناف الشامل المتقدم
-            btnProductSearch = Theme.MakeButton("🔍 بحث الأصناف (F1)", 0, 0, 155, 34, Color.FromArgb(16, 185, 129));
-            btnProductSearch.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-            btnProductSearch.Margin = new Padding(2, 6, 16, 2);
+            btnProductSearch = Theme.MakeButton("🔍 بحث الأصناف (F1)", 0, 0, 140, 32, Color.FromArgb(16, 185, 129));
+            btnProductSearch.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+            btnProductSearch.Margin = new Padding(2, 2, 12, 2);
             btnProductSearch.Click += (s, e) => OpenProductSearch();
 
             // بحث عن صنف يدوي
-            var lblSearch = new Label { Text = "📦 صنف يدوي:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 12, 2, 0) };
-            txtQuickSearch = new TextBox { Width = 200, Height = 28, Margin = new Padding(2, 9, 4, 2) };
+            var lblSearch = new Label { Text = "📦 صنف يدوي:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 7, 2, 0) };
+            txtQuickSearch = new TextBox { Width = 210, Height = 26, Margin = new Padding(2, 4, 4, 2) };
             txtQuickSearch.TextChanged += TxtQuickSearch_TextChanged;
             txtQuickSearch.KeyDown += TxtQuickSearch_KeyDown;
 
-            var lblQty = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(6, 12, 2, 0) };
-            nudQuickQty = new NumericUpDown { Width = 75, Height = 28, Minimum = 1, Maximum = 99999, Value = 1, Margin = new Padding(2, 9, 4, 2) };
+            var lblQty = new Label { Text = "الكمية:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(6, 7, 2, 0) };
+            nudQuickQty = new NumericUpDown { Width = 70, Height = 26, Minimum = 1, Maximum = 99999, Value = 1, Margin = new Padding(2, 4, 4, 2) };
 
-            var lblPrice = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(6, 12, 2, 0) };
-            txtQuickPrice = new TextBox { Width = 85, Height = 28, Text = "0.00", Margin = new Padding(2, 9, 8, 2) };
+            var lblPrice = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(6, 7, 2, 0) };
+            txtQuickPrice = new TextBox { Width = 80, Height = 26, Text = "0.00", Margin = new Padding(2, 4, 8, 2) };
 
-            btnQuickAdd = Theme.MakeButton("➕ إضافة للبند", 0, 0, 110, 32, Color.FromArgb(37, 99, 235));
-            btnQuickAdd.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnQuickAdd.Margin = new Padding(2, 7, 4, 2);
+            btnQuickAdd = Theme.MakeButton("➕ إضافة للبند", 0, 0, 105, 30, Color.FromArgb(37, 99, 235));
+            btnQuickAdd.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
+            btnQuickAdd.Margin = new Padding(2, 2, 4, 2);
             btnQuickAdd.Click += (s, e) => AddQuickProductToGrid();
 
             flowQuick.Controls.Add(btnSmartSuggest);
             flowQuick.Controls.Add(btnProductSearch);
             flowQuick.Controls.Add(lblSearch);
+            flowQuick.Controls.Add(txtQuickSearch);
+            flowQuick.Controls.Add(lblQty);
+            flowQuick.Controls.Add(nudQuickQty);
+            flowQuick.Controls.Add(lblPrice);
+            flowQuick.Controls.Add(txtQuickPrice);
+            flowQuick.Controls.Add(btnQuickAdd);
+
+            pnlQuickAdd.Controls.Add(flowQuick);
             flowQuick.Controls.Add(txtQuickSearch);
             flowQuick.Controls.Add(lblQty);
             flowQuick.Controls.Add(nudQuickQty);
@@ -271,7 +268,8 @@ namespace ChickenDist.Forms
                 ReadOnly = false,
                 SelectionMode = DataGridViewSelectionMode.CellSelect,
                 RightToLeft = RightToLeft.Yes,
-                RowTemplate = { Height = 34 }
+                RowTemplate = { Height = 28 },
+                ColumnHeadersHeight = 28
             };
 
             EnableDoubleBuffer(dgvItems);
@@ -985,7 +983,19 @@ namespace ChickenDist.Forms
                 _order = PurchaseOrderDAL.GetOrder(_orderID);
                 txtOrderCode.Text = _order.OrderCode;
 
-                MessageBox.Show($"✅ تم حفظ أمر الشراء رقم [{_order.OrderCode}] بنجاح بحالة [معلقة]!\n\nيمكنك الآن إرسال الطلبية للمورد عبر الواتساب أو استدعاؤها لاحقاً في فاتورة المشتريات.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var res = MessageBox.Show(
+                    $"✅ تم حفظ أمر الشراء رقم [{_order.OrderCode}] بنجاح بحالة [معلقة]!\n\nهل ترغب في إرسال نسخة الطلبية للمورد عبر الواتساب الآن؟ 📱",
+                    "تم الحفظ بنجاح",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (res == DialogResult.Yes)
+                {
+                    SendWhatsAppOrder();
+                }
+
+                // تجهيز الشاشة تلقائياً لطلبية جديدة كما طلب المستخدم
+                StartNewOrder();
                 return true;
             }
             catch (Exception ex)
@@ -1006,9 +1016,6 @@ namespace ChickenDist.Forms
                 txtSupplierPhone.Focus();
                 return;
             }
-
-            // تنظيف كود الدولة لمصر إن كان بادئاً بـ 01
-            if (phone.StartsWith("01")) phone = "20" + phone.Substring(1);
 
             var sb = new StringBuilder();
             sb.AppendLine($"📋 *طلب توريد بضاعة / أمر شراء جديد*");
@@ -1042,15 +1049,13 @@ namespace ChickenDist.Forms
             sb.AppendLine("────────────────────");
             sb.AppendLine("يرجى تأكيد استلام الطلبية وموعد الشحن. شاكرين حسن تعاونكم الدائم.");
 
-            string url = "https://api.whatsapp.com/send?phone=" + phone + "&text=" + Uri.EscapeDataString(sb.ToString());
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("فشل فتح واتساب:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                this,
+                phone,
+                sb.ToString(),
+                () => ReceiptImageGenerator.GeneratePurchaseOrderImage(order),
+                "📱 إرسال أمر الشراء عبر الواتساب"
+            );
         }
 
         private void ExportOrderToExcel()
@@ -1266,19 +1271,19 @@ namespace ChickenDist.Forms
 
         private Panel MakeInfoGroup(string label, Control ctrl)
         {
-            var pnl = new Panel { AutoSize = false, Width = ctrl.Width, Height = 48, Margin = new Padding(3, 2, 3, 2) };
+            var pnl = new Panel { AutoSize = false, Width = ctrl.Width, Height = 44, Margin = new Padding(2, 1, 2, 1) };
             var lbl = new Label
             {
                 Text = label,
                 AutoSize = false,
                 Width = ctrl.Width,
-                Height = 16,
+                Height = 15,
                 Location = new Point(0, 0),
                 ForeColor = Theme.TextGray,
-                Font = new Font("Segoe UI", 8.25f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleRight
             };
-            ctrl.Location = new Point(0, 18);
+            ctrl.Location = new Point(0, 16);
             pnl.Controls.Add(lbl);
             pnl.Controls.Add(ctrl);
             return pnl;

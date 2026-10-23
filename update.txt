@@ -1,5 +1,5 @@
-version=4.4.1
+version=4.4.2
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.1&t=1792779056
-sha256=E960B55387C03F935F27EA7B6BC319E84A7BD64CBCA258308A6346B2B4D24C5D
-changelog=v4.4.1 - 2026-10-23: Fix warranty receipt screen top header overlap and open maximized; fix item selection from product search without invoice; separate general catalog search button and client past purchases button
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.2&t=1792787202
+sha256=36AC6D8CE02D476D84A64353715F8F81FFECEF5E62C6AB0C59278AAE59C6BD2A
+changelog=v4.4.2 - 2026-10-23: Fix Status column crash in Purchase Orders list; fix smart order reorder suggestions query; compact purchase order screen header and rows; add professional purchase order WhatsApp sharing with high-res invoice card; auto-reset purchase order screen for next order; add thermal receipt printing and WhatsApp sharing for warranty tickets upon receipt and from warranty manager
