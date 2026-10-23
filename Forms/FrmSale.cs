@@ -1130,7 +1130,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountAmt", HeaderText = "قيمة خصم", ReadOnly = false, FillWeight = 35f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", ReadOnly = true, FillWeight = 50f, MinimumWidth = 105, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(240, 253, 244), ForeColor = Color.FromArgb(21, 128, 61), Font = new Font("Segoe UI", 10f, FontStyle.Bold) } });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate", HeaderText = "الصلاحية", ReadOnly = true, FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 85f, MinimumWidth = 140, Visible = AppConfig.BusinessType == "Mobiles" });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال", ReadOnly = false, FillWeight = 140f, MinimumWidth = 190, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = "سعر التكلفة", ReadOnly = true, FillWeight = 40f, Visible = Session.CanViewCost("Sales") });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "CostTotal", HeaderText = "إجمالي التكلفة", ReadOnly = true, FillWeight = 50f, Visible = Session.CanViewCost("Sales") });
 			if (AppConfig.IsRestaurant)
@@ -1185,6 +1185,11 @@ namespace ChickenDist.Forms
 			{
 				dgItems.Columns["ProductName"].MinimumWidth = 160;
 			}
+			if (dgItems.Columns.Contains("IMEI"))
+			{
+				dgItems.Columns["IMEI"].MinimumWidth = 190;
+				dgItems.Columns["IMEI"].FillWeight = 140f;
+			}
 			
 			dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("Sales");
 			Session.LoadColumnOrder(dgItems, "Sales");
@@ -1197,6 +1202,20 @@ namespace ChickenDist.Forms
 					this.BeginInvoke((MethodInvoker)delegate
 					{
 						if (dgItems.CurrentCell != null && dgItems.CurrentCell.RowIndex == e.RowIndex && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "UnitName")
+						{
+							dgItems.BeginEdit(true);
+							if (dgItems.EditingControl is ComboBox cbo)
+							{
+								cbo.DroppedDown = true;
+							}
+						}
+					});
+				}
+				else if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "IMEI")
+				{
+					this.BeginInvoke((MethodInvoker)delegate
+					{
+						if (dgItems.CurrentCell != null && dgItems.CurrentCell.RowIndex == e.RowIndex && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "IMEI")
 						{
 							dgItems.BeginEdit(true);
 							if (dgItems.EditingControl is ComboBox cbo)
@@ -3793,6 +3812,20 @@ namespace ChickenDist.Forms
 					}
 				});
 			}
+			else if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && dgItems.Columns[e.ColumnIndex].Name == "IMEI")
+			{
+				this.BeginInvoke((MethodInvoker)delegate
+				{
+					if (dgItems.CurrentCell != null && dgItems.Columns[dgItems.CurrentCell.ColumnIndex].Name == "IMEI")
+					{
+						dgItems.BeginEdit(true);
+						if (dgItems.EditingControl is ComboBox cbo)
+						{
+							cbo.DroppedDown = true;
+						}
+					}
+				});
+			}
 		}
 
 		private void SetupGridContextMenu()
@@ -3919,6 +3952,13 @@ namespace ChickenDist.Forms
 		private void DgItems_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
 		{
 			if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "UnitName")
+			{
+				if (e.Control is ComboBox comboBox)
+				{
+					comboBox.DroppedDown = true;
+				}
+			}
+			else if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "IMEI")
 			{
 				if (e.Control is ComboBox comboBox)
 				{
@@ -4287,7 +4327,16 @@ namespace ChickenDist.Forms
 			}
 			else if (dgItems.Columns[e.ColumnIndex].Name == "IMEI")
 			{
-				saleItemDTO.IMEI = dataGridViewRow.Cells["IMEI"].Value?.ToString() ?? "";
+				string val = dataGridViewRow.Cells["IMEI"].Value?.ToString()?.Trim() ?? "";
+				if (dataGridViewRow.Cells["IMEI"] is DataGridViewComboBoxCell combo)
+				{
+					if (!string.IsNullOrEmpty(val) && !combo.Items.Contains(val))
+					{
+						combo.Items.Add(val);
+						combo.Value = val;
+					}
+				}
+				saleItemDTO.IMEI = val;
 			}
 			else if (dgItems.Columns[e.ColumnIndex].Name == "KitchenNotes")
 			{
@@ -4544,8 +4593,10 @@ namespace ChickenDist.Forms
 							comboCell.Items.Add(s);
 						}
 						dgItems.Rows[rIndex].Cells["IMEI"] = comboCell;
-						if (!string.IsNullOrEmpty(item.IMEI) && comboCell.Items.Contains(item.IMEI))
+						if (!string.IsNullOrEmpty(item.IMEI))
 						{
+							if (!comboCell.Items.Contains(item.IMEI))
+								comboCell.Items.Add(item.IMEI);
 							comboCell.Value = item.IMEI;
 						}
 						else

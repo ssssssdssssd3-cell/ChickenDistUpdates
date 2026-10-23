@@ -812,7 +812,7 @@ namespace ChickenDist.Forms
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش",      ReadOnly = true, FillWeight = 50 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 60, Visible = AppConfig.BusinessType == "Mobiles" });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 85, MinimumWidth = 180, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
                 Text = "🗑️", UseColumnTextForButtonValue = true, FillWeight = 30 });
             Theme.AdjustGridHeaders(dgItems);
@@ -824,6 +824,11 @@ namespace ChickenDist.Forms
             if (dgItems.Columns.Contains("ProductName"))
             {
                 dgItems.Columns["ProductName"].MinimumWidth = 160;
+            }
+            if (dgItems.Columns.Contains("IMEI"))
+            {
+                dgItems.Columns["IMEI"].MinimumWidth = 180;
+                dgItems.Columns["IMEI"].FillWeight = 85;
             }
 
             dgItems.AllowUserToOrderColumns = Session.CanOrderColumns("Purchases");

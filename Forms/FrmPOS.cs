@@ -380,7 +380,13 @@ namespace ChickenDist.Forms
                 HeaderText = "السيريال",
                 Visible = AppConfig.BusinessType == "Mobiles",
                 ReadOnly = false,
-                Width = 100
+                Width = 190,
+                MinimumWidth = 185,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+                }
             };
             dgItems.Columns.Add(colIMEI);
 
@@ -437,6 +443,12 @@ namespace ChickenDist.Forms
             dgItems.Columns["Price"].Width = 75;
             dgItems.Columns["Discount"].Width = 60;
             dgItems.Columns["Total"].Width = 85;
+            if (dgItems.Columns.Contains("IMEI"))
+            {
+                dgItems.Columns["IMEI"].Width = 190;
+                dgItems.Columns["IMEI"].MinimumWidth = 185;
+                dgItems.Columns["IMEI"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            }
             if (dgItems.Columns.Contains("Delete")) dgItems.Columns["Delete"].Width = 42;
             dgItems.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
 
@@ -458,6 +470,14 @@ namespace ChickenDist.Forms
                         }
                     }
                     else if (colName == "UnitName")
+                    {
+                        dgItems.BeginEdit(true);
+                        if (dgItems.EditingControl is ComboBox cbo)
+                        {
+                            cbo.DroppedDown = true;
+                        }
+                    }
+                    else if (colName == "IMEI")
                     {
                         dgItems.BeginEdit(true);
                         if (dgItems.EditingControl is ComboBox cbo)
@@ -524,7 +544,7 @@ namespace ChickenDist.Forms
                 if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
                 {
                     string colName = dgItems.Columns[e.ColumnIndex].Name;
-                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes" || colName == "Delete" || colName == "QtyPlus" || colName == "QtyMinus" || colName == "UnitName")
+                    if (colName == "Qty" || colName == "Price" || colName == "Discount" || colName == "KitchenNotes" || colName == "Delete" || colName == "QtyPlus" || colName == "QtyMinus" || colName == "UnitName" || colName == "IMEI")
                     {
                         return; // السماح بتعديل الخانات التفاعلية مباشرة
                     }
@@ -543,6 +563,13 @@ namespace ChickenDist.Forms
             dgItems.EditingControlShowing += (s, e) =>
             {
                 if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "UnitName")
+                {
+                    if (e.Control is ComboBox cbo)
+                    {
+                        cbo.DroppedDown = true;
+                    }
+                }
+                else if (dgItems.CurrentCell != null && dgItems.CurrentCell.OwningColumn.Name == "IMEI")
                 {
                     if (e.Control is ComboBox cbo)
                     {
@@ -2486,8 +2513,10 @@ namespace ChickenDist.Forms
                         comboCell.Items.Add(s);
                     }
                     dgItems.Rows[rIndex].Cells["IMEI"] = comboCell;
-                    if (!string.IsNullOrEmpty(item.IMEI) && comboCell.Items.Contains(item.IMEI))
+                    if (!string.IsNullOrEmpty(item.IMEI))
                     {
+                        if (!comboCell.Items.Contains(item.IMEI))
+                            comboCell.Items.Add(item.IMEI);
                         comboCell.Value = item.IMEI;
                     }
                     else
@@ -2868,7 +2897,16 @@ namespace ChickenDist.Forms
             }
             else if (colName == "IMEI")
             {
-                item.IMEI = dgItems.Rows[e.RowIndex].Cells["IMEI"].Value?.ToString()?.Trim() ?? "";
+                string val = dgItems.Rows[e.RowIndex].Cells["IMEI"].Value?.ToString()?.Trim() ?? "";
+                if (dgItems.Rows[e.RowIndex].Cells["IMEI"] is DataGridViewComboBoxCell combo)
+                {
+                    if (!string.IsNullOrEmpty(val) && !combo.Items.Contains(val))
+                    {
+                        combo.Items.Add(val);
+                        combo.Value = val;
+                    }
+                }
+                item.IMEI = val;
             }
         }
 

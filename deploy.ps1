@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.9";
-$CHANGELOG = "v4.3.9 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix mobile barcode reading for UPOS-990 scanner (sub-pixel float rendering, GS1/ISO Code128 odd digits encoding, 10X quiet zones, and mobile code display)"
+$VERSION = "4.4.0";
+$CHANGELOG = "v4.4.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Expand serial/IMEI column width in sales and purchases grids so full 15-digit serials display clearly without truncation and can be edited/selected seamlessly"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

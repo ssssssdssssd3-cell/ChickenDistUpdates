@@ -1,5 +1,5 @@
-version=4.3.9
+version=4.4.0
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.3.9&t=1792773213
-sha256=0C2BE67E53EB1D5A17F1978DB7BC5F3445103E8A5F65DDFA21D2FBCFDE602EB5
-changelog=v4.3.9 - 2026-10-23: Fix mobile barcode reading for UPOS-990 scanner (sub-pixel float rendering, GS1/ISO Code128 odd digits encoding, 10X quiet zones, and mobile code display)
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.0&t=1792775443
+sha256=D63D967DE8493B10C7687A63FEC7497613815DC6409E6E2070274EC4B506B4AB
+changelog=v4.4.0 - 2026-10-23: Expand serial/IMEI column width in sales and purchases grids so full 15-digit serials display clearly without truncation and can be edited/selected seamlessly

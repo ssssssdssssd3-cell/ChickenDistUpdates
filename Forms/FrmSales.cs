@@ -671,9 +671,10 @@ namespace ChickenDist.Forms
 			{
 				Name = "IMEI",
 				HeaderText = "السيريال",
-				FillWeight = 45f,
+				FillWeight = 80f,
+				MinimumWidth = 160,
 				Visible = AppConfig.BusinessType == "Mobiles",
-				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
 			});
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
