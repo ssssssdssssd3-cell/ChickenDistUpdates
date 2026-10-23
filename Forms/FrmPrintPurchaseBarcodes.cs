@@ -531,8 +531,8 @@ namespace ChickenDist.Forms
                     y += isSmallSticker ? 13 : 16;
 
                     float barcodeHeight = isSmallSticker ? 24 : 30;
-                    float sideColWidth = isSmallSticker ? 12 : 16;
-                    float quietGap = isSmallSticker ? 8 : 10;
+                    float sideColWidth = isSmallSticker ? 10 : 13;
+                    float quietGap = isSmallSticker ? 12 : 15;
                     float totalSide = sideColWidth + quietGap;
 
                     float barcodeX = x + totalSide;
@@ -543,7 +543,7 @@ namespace ChickenDist.Forms
 
                     // كود الصنف على اليمين بالعرض
                     string rightCode = !string.IsNullOrWhiteSpace(item.ProductCode) ? item.ProductCode : "";
-                    var fSide = new Font("Segoe UI", isSmallSticker ? 6f : 7.5f, FontStyle.Bold);
+                    var fSide = new Font("Segoe UI", isSmallSticker ? 6f : 7f, FontStyle.Bold);
                     RectangleF rightRect = new RectangleF(x + w - sideColWidth - 1, y, sideColWidth, barcodeHeight);
                     BarcodeEngine.DrawRotatedFittedText(g, rightCode, fSide, Brushes.Black, rightRect, true);
 
@@ -595,19 +595,29 @@ namespace ChickenDist.Forms
                     BarcodeEngine.DrawBarcode(g, barcodeToPrint, encoding, barcodeX, y, barcodeW, barcodeHeight);
                     y += barcodeHeight + 2;
 
-                    var fIMEIText = new Font("Consolas", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
+                    var fIMEIText = new Font("Consolas", isSmallSticker ? 7.5f : 8.5f, FontStyle.Bold);
                     string imeiDisplay = (barcodeToPrint.Length == 15 && barcodeToPrint.All(char.IsDigit)) ? $"IMEI: {barcodeToPrint}" : $"S/N: {barcodeToPrint}";
+                    float imeiH = isSmallSticker ? 12f : 14f;
+                    g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, imeiH), center);
+                    y += imeiH + 1f;
+
+                    string supCode = item.SupplierCode ?? "";
+                    string codePart = !string.IsNullOrWhiteSpace(item.ProductCode) ? $"كود: {item.ProductCode}" : "";
+                    string supPart = !string.IsNullOrWhiteSpace(supCode) ? $"مورد: {supCode}" : "";
+                    string extraCodes = string.Join(" | ", new string[] { codePart, supPart }.Where(s => !string.IsNullOrEmpty(s)));
+
+                    var fPriceSmall = new Font("Segoe UI", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
+                    float priceH = isSmallSticker ? 14f : 17f;
 
                     if (chkPrintPrice.Checked && item.Price > 0)
                     {
-                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 9 : 12), center);
-                        y += isSmallSticker ? 9 : 12;
-                        var fPriceSmall = new Font("Segoe UI", isSmallSticker ? 7f : 8.5f, FontStyle.Bold);
-                        g.DrawString($"السعر: {item.Price:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x, y, w, isSmallSticker ? 10 : 13), center);
+                        string priceStr = $"السعر: {item.Price:N0} ج";
+                        string fullBottom = !string.IsNullOrEmpty(extraCodes) ? $"{priceStr}  •  {extraCodes}" : priceStr;
+                        g.DrawString(fullBottom, fPriceSmall, Brushes.DarkRed, new RectangleF(x, y, w, priceH), center);
                     }
-                    else
+                    else if (!string.IsNullOrEmpty(extraCodes))
                     {
-                        g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 11 : 14), center);
+                        g.DrawString(extraCodes, fPriceSmall, Brushes.Black, new RectangleF(x, y, w, priceH), center);
                     }
                 }
                 else if (template == "Shelf")

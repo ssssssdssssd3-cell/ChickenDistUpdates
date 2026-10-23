@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.3.8";
-$CHANGELOG = "v4.3.8 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix mobile app sales and purchases table loading, prevent reference crash on load, and auto-fallback to recent invoices"
+$VERSION = "4.3.9";
+$CHANGELOG = "v4.3.9 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix mobile barcode reading for UPOS-990 scanner (sub-pixel float rendering, GS1/ISO Code128 odd digits encoding, 10X quiet zones, and mobile code display)"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

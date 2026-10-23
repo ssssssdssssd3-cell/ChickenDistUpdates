@@ -584,8 +584,8 @@ namespace ChickenDist.Forms
                     y += titleH + 2f;
 
                     float barcodeHeight = isSmallSticker ? 24f : 30f;
-                    float sideColWidth = isSmallSticker ? 12f : 16f;
-                    float quietGap = isSmallSticker ? 8f : 10f;
+                    float sideColWidth = isSmallSticker ? 10f : 13f;
+                    float quietGap = isSmallSticker ? 12f : 15f;
                     float totalSide = sideColWidth + quietGap;
 
                     float barcodeX = x + totalSide;
@@ -597,7 +597,7 @@ namespace ChickenDist.Forms
 
                     // كود الصنف على اليمين بالعرض
                     string rightCode = !string.IsNullOrWhiteSpace(_productCode) ? _productCode : "";
-                    var fSide = new Font("Segoe UI", isSmallSticker ? 6f : 7.5f, FontStyle.Bold);
+                    var fSide = new Font("Segoe UI", isSmallSticker ? 6f : 7f, FontStyle.Bold);
                     RectangleF rightRect = new RectangleF(x + w - sideColWidth - 1, y, sideColWidth, barcodeHeight);
                     BarcodeEngine.DrawRotatedFittedText(g, rightCode, fSide, Brushes.Black, rightRect, true);
 
@@ -661,23 +661,31 @@ namespace ChickenDist.Forms
                     BarcodeEngine.DrawBarcode(g, currentBarcode, encM, barcodeX, y, barcodeW, barcodeHeight);
                     y += barcodeHeight + 2f;
 
-                    // 4. كتابة كود الـ IMEI بوضوح + السعر إن وجد
+                    // 4. كتابة كود الـ IMEI بوضوح + كود الصنف والمورد والسعر
                     var fIMEIText = new Font("Consolas", isSmallSticker ? 7.5f : 8.5f, FontStyle.Bold);
                     string imeiDisplay = (currentBarcode.Length == 15 && currentBarcode.All(char.IsDigit)) ? $"IMEI: {currentBarcode}" : $"S/N: {currentBarcode}";
-                    float imeiH = isSmallSticker ? 13f : 15f;
+                    float imeiH = isSmallSticker ? 12f : 14f;
+                    DrawFittedText(g, imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x + 2, y, w - 4, imeiH), center, 6f);
+                    y += imeiH + 1f;
+
+                    string supCode = "";
+                    try { supCode = PurchaseDAL.GetProductSupplierInfo(_productID, currentBarcode).SupplierCode; } catch { }
+                    string codePart = !string.IsNullOrWhiteSpace(_productCode) ? $"كود: {_productCode}" : "";
+                    string supPart = !string.IsNullOrWhiteSpace(supCode) ? $"مورد: {supCode}" : "";
+                    string extraCodes = string.Join(" | ", new string[] { codePart, supPart }.Where(s => !string.IsNullOrEmpty(s)));
+
+                    var fPriceSmall = new Font("Arial", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
+                    float priceH = isSmallSticker ? 14f : 17f;
 
                     if (_printPriceFlag && _printedPrice > 0)
                     {
-                        DrawFittedText(g, imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x + 2, y, w - 4, imeiH), center, 6f);
-                        y += imeiH + 1f;
-                        var fPriceSmall = new Font("Arial", isSmallSticker ? 8f : 9.5f, FontStyle.Bold);
-                        float priceH = isSmallSticker ? 16f : 20f;
-                        DrawFittedText(g, $"السعر: {_printedPrice:N0} ج", fPriceSmall, Brushes.DarkRed, new RectangleF(x + 2, y, w - 4, priceH), center, 6f);
+                        string priceStr = $"السعر: {_printedPrice:N0} ج";
+                        string fullBottom = !string.IsNullOrEmpty(extraCodes) ? $"{priceStr}  •  {extraCodes}" : priceStr;
+                        DrawFittedText(g, fullBottom, fPriceSmall, Brushes.DarkRed, new RectangleF(x + 2, y, w - 4, priceH), center, 5.5f);
                     }
-                    else
+                    else if (!string.IsNullOrEmpty(extraCodes))
                     {
-                        float imeiAloneH = isSmallSticker ? 16f : 19f;
-                        DrawFittedText(g, imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x + 2, y, w - 4, imeiAloneH), center, 6f);
+                        DrawFittedText(g, extraCodes, fPriceSmall, Brushes.Black, new RectangleF(x + 2, y, w - 4, priceH), center, 5.5f);
                     }
                 }
                 else if (template == "Shelf")

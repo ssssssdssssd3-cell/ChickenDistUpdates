@@ -165,31 +165,31 @@ namespace ChickenDist.Core
                 }
                 else if (isAllDigits && code.Length >= 3 && code.Length % 2 != 0)
                 {
-                    // ISO/IEC 15417 Standard: Start B for the first digit, then Switch to Code C (99) for the remaining even pairs
-                    symbolIndices.Add(104); // Start B
-                    int sum = 104;
+                    // GS1 / ISO-15417 Standard: Start in Code C for all 2-digit pairs, then switch to Code B for the final single digit
+                    symbolIndices.Add(105); // Start C
+                    int sum = 105;
                     int pos = 1;
 
-                    // First digit in Code B
-                    int firstVal = code[0] - 32;
-                    if (firstVal < 0 || firstVal > 95) firstVal = 0;
-                    symbolIndices.Add(firstVal);
-                    sum += firstVal * pos;
-                    pos++;
-
-                    // Switch to Code C
-                    symbolIndices.Add(99); // Code C
-                    sum += 99 * pos;
-                    pos++;
-
-                    // Remaining even pairs in Code C
-                    for (int i = 1; i < code.Length; i += 2)
+                    // Encode all even pairs in Code C
+                    for (int i = 0; i < code.Length - 1; i += 2)
                     {
                         int val = int.Parse(code.Substring(i, 2));
                         symbolIndices.Add(val);
                         sum += val * pos;
                         pos++;
                     }
+
+                    // Switch to Code B (Symbol 100 in Code C)
+                    symbolIndices.Add(100); // Code B
+                    sum += 100 * pos;
+                    pos++;
+
+                    // Final single digit in Code B
+                    int lastVal = code[code.Length - 1] - 32;
+                    if (lastVal < 0 || lastVal > 95) lastVal = 0;
+                    symbolIndices.Add(lastVal);
+                    sum += lastVal * pos;
+                    pos++;
 
                     int checksum = sum % 103;
                     symbolIndices.Add(checksum);
@@ -221,22 +221,30 @@ namespace ChickenDist.Core
                     }
                 }
 
-                float quietZoneModules = isWide ? 10f : 8f;
+                // ISO/IEC 15417 Standard: Minimum 10 modules quiet zone each side
+                float quietZoneModules = isWide ? 10f : 10f;
                 float availableWidth = width;
                 float moduleWidth = availableWidth / (totalModules + (quietZoneModules * 2f));
 
-                float maxModule = isWide ? 2.5f : ((availableWidth < 130f) ? 1.5f : 2.0f);
+                float maxModule = isWide ? 2.5f : ((availableWidth < 130f) ? 1.6f : 2.0f);
                 if (moduleWidth > maxModule) moduleWidth = maxModule;
 
                 // Ensure actualBarcodeWidth does not overflow availableWidth
                 if ((totalModules * moduleWidth) > (availableWidth - 2f))
                 {
-                    moduleWidth = Math.Max(0.55f, (availableWidth - 2f) / totalModules);
+                    moduleWidth = Math.Max(0.65f, (availableWidth - 2f) / totalModules);
                 }
 
                 float actualBarcodeWidth = totalModules * moduleWidth;
                 float curX = x + Math.Max(0f, (width - actualBarcodeWidth) / 2f);
 
+                // 1. Draw solid pure white background to guarantee 100% clean quiet zones and spaces
+                using (var bgBrush = new SolidBrush(Color.White))
+                {
+                    g.FillRectangle(bgBrush, x, y, width, height);
+                }
+
+                // 2. Draw bars with exact sub-pixel floating point precision (no integer rounding jitter)
                 using (var brush = new SolidBrush(Color.Black))
                 {
                     foreach (int index in symbolIndices)
@@ -247,15 +255,11 @@ namespace ChickenDist.Core
                         {
                             bool isBar = (i % 2 == 0);
                             float elementWidth = (pattern[i] - '0') * moduleWidth;
-                            float nextX = curX + elementWidth;
                             if (isBar)
                             {
-                                int rectX = (int)Math.Round(curX);
-                                int rectW = (int)Math.Round(nextX) - rectX;
-                                if (rectW < 1) rectW = 1;
-                                g.FillRectangle(brush, rectX, (int)Math.Round(y), rectW, (int)Math.Round(height));
+                                g.FillRectangle(brush, curX, y, elementWidth, height);
                             }
-                            curX = nextX;
+                            curX += elementWidth;
                         }
                     }
                 }
@@ -416,51 +420,19 @@ namespace ChickenDist.Core
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(code)) return;
                 float size = Math.Min(width, height);
                 float startX = x + (width - size) / 2f;
                 float startY = y + (height - size) / 2f;
 
-                int matrixSize = 21;
-                float cellSize = size / matrixSize;
-
-                var isBlack = new bool[matrixSize, matrixSize];
-
-                DrawFinderPattern(isBlack, 0, 0);
-                DrawFinderPattern(isBlack, matrixSize - 7, 0);
-                DrawFinderPattern(isBlack, 0, matrixSize - 7);
-
-                for (int i = 8; i < matrixSize - 8; i++)
+                using (var qrGenerator = new QRCoder.QRCodeGenerator())
+                using (var qrCodeData = qrGenerator.CreateQrCode(code.Trim(), QRCoder.QRCodeGenerator.ECCLevel.M))
+                using (var qrCode = new QRCoder.QRCode(qrCodeData))
+                using (var qrImage = qrCode.GetGraphic(20, Color.Black, Color.White, true))
                 {
-                    isBlack[6, i] = (i % 2 == 0);
-                    isBlack[i, 6] = (i % 2 == 0);
-                }
-
-                int hash = Math.Abs(code.GetHashCode());
-                for (int r = 0; r < matrixSize; r++)
-                {
-                    for (int c = 0; c < matrixSize; c++)
-                    {
-                        if ((r < 8 && c < 8) || (r < 8 && c >= matrixSize - 8) || (r >= matrixSize - 8 && c < 8) || r == 6 || c == 6)
-                            continue;
-
-                        int bit = ((hash ^ (r * 31 + c * 17) ^ (code.Length * 7)) >> ((r + c) % 16)) & 1;
-                        isBlack[r, c] = (bit == 1);
-                    }
-                }
-
-                g.SmoothingMode = SmoothingMode.None;
-                using (var brush = new SolidBrush(Color.Black))
-                {
-                    for (int r = 0; r < matrixSize; r++)
-                    {
-                        for (int c = 0; c < matrixSize; c++)
-                        {
-                            if (isBlack[r, c])
-                            {
-                                g.FillRectangle(brush, startX + (c * cellSize), startY + (r * cellSize), cellSize, cellSize);
-                            }
-                        }
-                    }
+                    g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                    g.PixelOffsetMode = PixelOffsetMode.Half;
+                    g.DrawImage(qrImage, startX, startY, size, size);
                 }
             }
             catch
