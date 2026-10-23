@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.0";
-$CHANGELOG = "v4.4.0 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Expand serial/IMEI column width in sales and purchases grids so full 15-digit serials display clearly without truncation and can be edited/selected seamlessly"
+$VERSION = "4.4.1";
+$CHANGELOG = "v4.4.1 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix warranty receipt screen top header overlap and open maximized; fix item selection from product search without invoice; separate general catalog search button and client past purchases button"
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -1,5 +1,5 @@
-version=4.4.0
+version=4.4.1
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.0&t=1792775443
-sha256=D63D967DE8493B10C7687A63FEC7497613815DC6409E6E2070274EC4B506B4AB
-changelog=v4.4.0 - 2026-10-23: Expand serial/IMEI column width in sales and purchases grids so full 15-digit serials display clearly without truncation and can be edited/selected seamlessly
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.1&t=1792779056
+sha256=E960B55387C03F935F27EA7B6BC319E84A7BD64CBCA258308A6346B2B4D24C5D
+changelog=v4.4.1 - 2026-10-23: Fix warranty receipt screen top header overlap and open maximized; fix item selection from product search without invoice; separate general catalog search button and client past purchases button

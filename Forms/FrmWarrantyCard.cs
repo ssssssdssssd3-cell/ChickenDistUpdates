@@ -73,13 +73,16 @@ namespace ChickenDist.Forms
         {
             this.Text = _ticketID > 0 ? "📝 تعديل كرت جهاز تحت الضمان" : "➕ استلام جهاز جديد تحت الضمان";
             int screenH = Screen.FromControl(this)?.WorkingArea.Height ?? Screen.PrimaryScreen.WorkingArea.Height;
-            int formH = Math.Min(660, screenH - 45);
-            this.Size = new Size(890, formH);
-            this.MinimumSize = new Size(820, 480);
+            int screenW = Screen.FromControl(this)?.WorkingArea.Width ?? Screen.PrimaryScreen.WorkingArea.Width;
+            int formH = Math.Min(720, screenH - 40);
+            int formW = Math.Min(980, screenW - 40);
+            this.Size = new Size(formW, formH);
+            this.MinimumSize = new Size(860, 520);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
             this.MinimizeBox = false;
+            this.WindowState = FormWindowState.Maximized;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = false; // Prevents WinForms GDI mirroring glitches with child containers
             this.BackColor = Theme.BgMain;
@@ -88,7 +91,7 @@ namespace ChickenDist.Forms
 
             this.KeyDown += (s, e) =>
             {
-                if (e.KeyCode == Keys.F1) { OpenProductOrClientPurchasesSearch(); e.Handled = true; }
+                if (e.KeyCode == Keys.F1) { OpenGeneralProductSearch(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F2) { btnSave.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F3) { btnSaveAndPrint.PerformClick(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F4) { OpenClientSearch(); e.Handled = true; }
@@ -300,12 +303,12 @@ namespace ChickenDist.Forms
             GroupBox grpDevice = CreateSectionBox("📦 بيانات الجهاز / الصنف والضمان", 15, curY, boxWidth, 142);
             pnlBody.Controls.Add(grpDevice);
 
-            txtProductName = new TextBox { Width = 212, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
+            txtProductName = new TextBox { Width = 175, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             Button btnSearchProduct = new Button
             {
                 Text = "🔍",
                 Size = new Size(34, 26),
-                Location = new Point(415, 24),
+                Location = new Point(452, 24),
                 BackColor = Theme.Accent,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -313,8 +316,23 @@ namespace ChickenDist.Forms
             };
             btnSearchProduct.FlatAppearance.BorderSize = 0;
             var tipProd = new ToolTip();
-            tipProd.SetToolTip(btnSearchProduct, "بحث واختيار جهاز من مشتريات العميل أو من دليل الأصناف (F1)");
-            btnSearchProduct.Click += (s, e) => OpenProductOrClientPurchasesSearch();
+            tipProd.SetToolTip(btnSearchProduct, "بحث واختيار صنف من دليل كل الأصناف (بدون فاتورة) [F1]");
+            btnSearchProduct.Click += (s, e) => OpenGeneralProductSearch();
+
+            Button btnClientPurchases = new Button
+            {
+                Text = "📋",
+                Size = new Size(34, 26),
+                Location = new Point(415, 24),
+                BackColor = Color.FromArgb(30, 80, 160),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnClientPurchases.FlatAppearance.BorderSize = 0;
+            var tipPurchases = new ToolTip();
+            tipPurchases.SetToolTip(btnClientPurchases, "جلب جهاز مسجل من فواتير ومشتريات العميل السابقة");
+            btnClientPurchases.Click += (s, e) => OpenClientPurchasesSearch();
 
             Label lblProd = new Label
             {
@@ -325,7 +343,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold
             };
-            txtProductName.Location = new Point(453, 24);
+            txtProductName.Location = new Point(490, 24);
 
             txtBrand = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             Label lblBrand = new Label
@@ -339,7 +357,7 @@ namespace ChickenDist.Forms
             };
             txtBrand.Location = new Point(15, 24);
 
-            grpDevice.Controls.AddRange(new Control[] { lblProd, txtProductName, btnSearchProduct, lblBrand, txtBrand });
+            grpDevice.Controls.AddRange(new Control[] { lblProd, txtProductName, btnSearchProduct, btnClientPurchases, lblBrand, txtBrand });
 
             txtSerialNumber = new TextBox { Width = 250, Font = new Font("Consolas", 10.5f, FontStyle.Bold), BackColor = Color.FromArgb(240, 245, 255), ForeColor = Color.FromArgb(20, 60, 160) };
             txtInvoiceNumber = new TextBox { Width = 250, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
@@ -536,11 +554,29 @@ namespace ChickenDist.Forms
 
             curY += 120;
 
-            // Add main docked components
+            // Add main docked components with proper WinForms Z-order to prevent title overlap
             this.Controls.Add(pnlBody);
             this.Controls.Add(pnlFooter);
             this.Controls.Add(pnlTitle);
-            pnlBody.SendToBack();
+            pnlTitle.SendToBack();
+            pnlFooter.SendToBack();
+            pnlBody.BringToFront();
+
+            Action layoutCards = () =>
+            {
+                int startX = Math.Max(15, (pnlBody.ClientSize.Width - boxWidth) / 2);
+                pnlBody.SuspendLayout();
+                foreach (Control c in pnlBody.Controls)
+                {
+                    if (c is GroupBox || c == pnlHeader)
+                    {
+                        c.Left = startX;
+                    }
+                }
+                pnlBody.ResumeLayout();
+            };
+            pnlBody.Resize += (s, e) => layoutCards();
+            layoutCards();
         }
 
         // ==========================================
@@ -684,15 +720,15 @@ namespace ChickenDist.Forms
             catch { }
         }
 
-        private void OpenProductOrClientPurchasesSearch()
+        private void OpenClientPurchasesSearch()
         {
-            // If client is not specified yet, prompt whether to choose a client or search general catalog
+            // If client is not specified yet, prompt user to select a registered client first
             if (!_selectedClientID.HasValue && string.IsNullOrWhiteSpace(txtCustomerPhone.Text) && string.IsNullOrWhiteSpace(txtCustomerName.Text))
             {
                 var res = MessageBox.Show(
-                    "لم تقم بتحديد عميل بعد.\n\nهل ترغب في اختيار عميل مسجل لعرض قائمة الأجهزة التي اشتراها؟\n(اضغط 'نعم' لاختيار عميل، أو 'لا' للبحث في دليل كل الأصناف)",
-                    "بحث الأصناف والأجهزة",
-                    MessageBoxButtons.YesNoCancel,
+                    "لم تقم بتحديد عميل بعد لعرض سجل مشترياته.\n\nهل ترغب في اختيار عميل مسجل الآن؟",
+                    "اختيار عميل لعرض المشتريات",
+                    MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question);
 
                 if (res == DialogResult.Yes)
@@ -700,22 +736,13 @@ namespace ChickenDist.Forms
                     OpenClientSearch();
                     if (_selectedClientID.HasValue && _selectedClientID.Value > 0)
                     {
-                        OpenProductOrClientPurchasesSearch();
+                        OpenClientPurchasesSearch();
                     }
-                    return;
                 }
-                else if (res == DialogResult.No)
-                {
-                    OpenGeneralProductSearch();
-                    return;
-                }
-                else
-                {
-                    return;
-                }
+                return;
             }
 
-            // Try fetching client purchased items
+            // Try fetching client purchased items from previous invoices
             var dtPurchases = WarrantyDAL.GetClientPurchasedItems(_selectedClientID, txtCustomerPhone.Text, txtCustomerName.Text);
             if (dtPurchases != null && dtPurchases.Rows.Count > 0)
             {
@@ -738,7 +765,7 @@ namespace ChickenDist.Forms
             {
                 // No previous purchases found for this client
                 var res = MessageBox.Show(
-                    "لم يتم العثور على أجهزة مسجلة في فواتير سابقة لهذا العميل.\nهل تريد البحث في دليل كل الأصناف لاختيار الصنف؟",
+                    "لم يتم العثور على أجهزة مسجلة في فواتير سابقة لهذا العميل.\nهل تريد فتح دليل كل الأصناف لاختيار الصنف (بدون فاتورة)؟",
                     "لا توجد مشتريات سابقة",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Information);
@@ -759,25 +786,55 @@ namespace ChickenDist.Forms
                     if (frm.ShowDialog() == DialogResult.OK && frm.SelectedProductID > 0)
                     {
                         _selectedProductID = frm.SelectedProductID;
-                        var dt = DbHelper.Query(@"
-                            SELECT ProductID, ProductName, ISNULL(Brand, N'') AS Brand, ISNULL(ItemCode, N'') AS ItemCode 
-                            FROM Products 
-                            WHERE ProductID = @id", 
-                            DbHelper.P("@id", frm.SelectedProductID));
 
-                        if (dt.Rows.Count > 0)
+                        // Use selected product details directly from the search dialog
+                        if (!string.IsNullOrWhiteSpace(frm.SelectedProductName))
                         {
-                            var r = dt.Rows[0];
-                            txtProductName.Text = r["ProductName"]?.ToString() ?? "";
-                            string brand = r["Brand"]?.ToString() ?? "";
-                            if (!string.IsNullOrEmpty(brand)) txtBrand.Text = brand;
+                            txtProductName.Text = frm.SelectedProductName;
                         }
+                        if (!string.IsNullOrWhiteSpace(frm.SelectedBrand))
+                        {
+                            txtBrand.Text = frm.SelectedBrand;
+                        }
+
+                        // Safe fallback query if product name or brand is not yet populated
+                        if (string.IsNullOrWhiteSpace(txtProductName.Text) || string.IsNullOrWhiteSpace(txtBrand.Text))
+                        {
+                            try
+                            {
+                                string sql = @"
+                                    SELECT ProductID, ProductName, 
+                                           CASE WHEN COL_LENGTH('Products', 'Brand') IS NOT NULL THEN ISNULL(Brand, N'') ELSE N'' END AS Brand 
+                                    FROM Products 
+                                    WHERE ProductID = @id";
+                                var dt = DbHelper.Query(sql, DbHelper.P("@id", frm.SelectedProductID));
+
+                                if (dt != null && dt.Rows.Count > 0)
+                                {
+                                    var r = dt.Rows[0];
+                                    if (string.IsNullOrWhiteSpace(txtProductName.Text))
+                                        txtProductName.Text = r["ProductName"]?.ToString() ?? "";
+                                    if (string.IsNullOrWhiteSpace(txtBrand.Text))
+                                    {
+                                        string brand = r["Brand"]?.ToString() ?? "";
+                                        if (!string.IsNullOrEmpty(brand)) txtBrand.Text = brand;
+                                    }
+                                }
+                            }
+                            catch (Exception dbEx)
+                            {
+                                AppLogger.Error("FrmWarrantyCard.OpenGeneralProductSearch.DbFallback", dbEx);
+                            }
+                        }
+
+                        txtSerialNumber?.Focus();
                     }
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Error("FrmWarrantyCard.OpenGeneralProductSearch", ex);
+                MessageBox.Show("حدث خطأ أثناء فتح شاشة البحث: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

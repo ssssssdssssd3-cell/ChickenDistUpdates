@@ -32,6 +32,9 @@ namespace ChickenDist.Forms
         private DateTime _openedTime = DateTime.MinValue;
 
         public int SelectedProductID { get; private set; } = 0;
+        public string SelectedProductName { get; private set; } = "";
+        public string SelectedProductCode { get; private set; } = "";
+        public string SelectedBrand { get; private set; } = "";
         public decimal SelectedPrice { get; private set; } = 0m;
         public string SelectedUnitName { get; private set; } = "";
         public int? SelectedBatchID { get; private set; } = null;
@@ -1167,6 +1170,14 @@ namespace ChickenDist.Forms
             }
 
             SelectedProductID = pid;
+            SelectedProductName = row.Cells["ProductName"].Value?.ToString() ?? "";
+            if (dgProducts.Columns.Contains("ProductCode"))
+                SelectedProductCode = row.Cells["ProductCode"].Value?.ToString() ?? "";
+            if (row.DataBoundItem is DataRowView drvSelect)
+            {
+                if (drvSelect.Row.Table.Columns.Contains("Brand"))
+                    SelectedBrand = drvSelect.Row["Brand"]?.ToString() ?? "";
+            }
 
             SelectedBatchID = null;
             SelectedExpiryDate = null;
