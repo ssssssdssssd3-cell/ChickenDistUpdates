@@ -969,6 +969,10 @@ namespace ChickenDist.Forms
                 });
             }
 
+            order.TotalItemsCount = order.Items.Count;
+            order.TotalQuantity = order.Items.Sum(x => x.Quantity);
+            order.TotalEstimatedCost = order.Items.Sum(x => x.TotalPrice);
+
             return true;
         }
 

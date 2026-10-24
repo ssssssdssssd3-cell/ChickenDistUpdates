@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -2779,7 +2780,7 @@ namespace ChickenDist.Core
                 int width = 700;
                 int rowH = 30;
                 int headerH = 135;
-                int metaH = 95;
+                int metaH = 100;
                 int tableHeaderH = 34;
                 int itemsH = Math.Max(itemCount, 1) * rowH;
                 string notes = purRow["Notes"]?.ToString() ?? "";
@@ -3001,13 +3002,15 @@ namespace ChickenDist.Core
 
             try
             {
-                int itemCount = order.Items != null ? order.Items.Count : 0;
+                int itemsCount = (order.Items != null && order.Items.Count > 0) ? order.Items.Count : order.TotalItemsCount;
+                decimal totalQty = (order.Items != null && order.Items.Count > 0) ? order.Items.Sum(x => x.Quantity) : order.TotalQuantity;
+                decimal totalCost = (order.Items != null && order.Items.Count > 0) ? order.Items.Sum(x => x.TotalPrice) : order.TotalEstimatedCost;
                 int width = 720;
                 int rowH = 30;
                 int headerH = 135;
-                int metaH = 95;
+                int metaH = 100;
                 int tableHeaderH = 34;
-                int itemsH = Math.Max(itemCount, 1) * rowH;
+                int itemsH = Math.Max(itemsCount, 1) * rowH;
                 string notes = order.Notes ?? "";
                 int summaryH = 140 + (string.IsNullOrWhiteSpace(notes) ? 0 : 30);
                 int totalH = headerH + metaH + tableHeaderH + itemsH + summaryH + 40;
@@ -3051,51 +3054,85 @@ namespace ChickenDist.Core
                     using (var brMuted = new SolidBrush(Color.FromArgb(203, 213, 225)))
                     {
                         g.DrawString(CleanEmoji(coName), fCo, brWhite, new RectangleF(20, 16, width - 40, 36), SfCenter);
-                        g.DrawString("📋 طلب توريد بضاعة / أمر شراء رسمي (Purchase Order)", fTitle, brGold, new RectangleF(20, 56, width - 40, 28), SfCenter);
+                        g.DrawString("طلب توريد بضاعة / أمر شراء رسمي (Purchase Order)", fTitle, brGold, new RectangleF(20, 54, width - 40, 28), SfCenter);
 
-                        string subInfo = $"التاريخ: {order.OrderDate:yyyy/MM/dd}   |   رقم الطلبية: {order.OrderCode}";
-                        g.DrawString(subInfo, fSub, brMuted, new RectangleF(20, 88, width - 40, 22), SfCenter);
+                        int midX = width / 2;
+                        using (var brChipBg = new SolidBrush(Color.FromArgb(45, 255, 255, 255)))
+                        using (var penChip = new Pen(Color.FromArgb(70, 255, 255, 255), 1f))
+                        using (var fChip = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+                        {
+                            var rChipDate = new Rectangle(midX + 10, 88, 195, 26);
+                            var rChipCode = new Rectangle(midX - 205, 88, 195, 26);
+
+                            g.FillRectangle(brChipBg, rChipDate);
+                            g.DrawRectangle(penChip, rChipDate);
+                            g.FillRectangle(brChipBg, rChipCode);
+                            g.DrawRectangle(penChip, rChipCode);
+
+                            g.DrawString($"تاريخ الطلب: {order.OrderDate:yyyy/MM/dd}", fChip, brWhite, rChipDate, SfCenter);
+                            g.DrawString($"رقم الطلبية: {order.OrderCode}", fChip, brGold, rChipCode, SfCenter);
+                        }
                     }
 
                     int y = headerH + 12;
 
                     // 2. Meta Info Card
-                    using (var brMetaBg = new SolidBrush(Color.FromArgb(241, 245, 249)))
+                    int tableX = 20;
+                    int tableW = width - 40;
+
+                    using (var brMetaBg = new SolidBrush(Color.FromArgb(248, 250, 252)))
                     using (var penMeta = new Pen(cBorder, 1f))
+                    using (var penDiv = new Pen(Color.FromArgb(226, 232, 240), 1f))
                     {
-                        var rMeta = new Rectangle(20, y, width - 40, metaH);
+                        var rMeta = new Rectangle(tableX, y, tableW, metaH);
                         g.FillRectangle(brMetaBg, rMeta);
                         g.DrawRectangle(penMeta, rMeta);
+                        g.DrawLine(penDiv, tableX + 350, y + 8, tableX + 350, y + metaH - 8);
                     }
 
                     using (var fLabel = new Font("Segoe UI", 9.5f, FontStyle.Bold))
-                    using (var fVal = new Font("Segoe UI", 9.5f))
-                    using (var brDark = new SolidBrush(Color.FromArgb(30, 41, 59)))
+                    using (var fVal = new Font("Segoe UI", 10.5f, FontStyle.Bold))
+                    using (var fPhone = new Font("Segoe UI", 10.5f, FontStyle.Bold))
+                    using (var brDark = new SolidBrush(Color.FromArgb(71, 85, 105)))
                     using (var brPrimary = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    using (var brBlue = new SolidBrush(Color.FromArgb(2, 132, 199)))
+                    using (var brAmber = new SolidBrush(Color.FromArgb(180, 83, 9)))
                     {
-                        // Right column: Supplier Name & Expected Delivery
-                        float col1X = width - 40;
-                        g.DrawString("المطلوب من الأستاذ / المورد:", fLabel, brDark, new RectangleF(col1X - 170, y + 14, 160, 22), SfRtlRight);
-                        g.DrawString(order.SupplierName, fLabel, brPrimary, new RectangleF(col1X - 350, y + 14, 175, 22), SfRtlRight);
+                        // Right column: المورد المكرم وموعد التوريد
+                        int colRightX = tableX + tableW; // 700
+                        g.DrawString("المورد المكرم:", fLabel, brDark, new RectangleF(colRightX - 100, y + 12, 90, 22), SfRtlRight);
+                        string supName = CleanEmoji(order.SupplierName ?? "");
+                        g.DrawString(supName, fVal, brPrimary, new RectangleF(tableX + 360, y + 10, colRightX - 100 - (tableX + 360), 44), SfRtlRight);
 
                         string expDate = order.ExpectedDeliveryDate.HasValue ? order.ExpectedDeliveryDate.Value.ToString("yyyy/MM/dd") : "عاجل في أقرب وقت";
-                        g.DrawString("موعد التوريد المطلوب:", fLabel, brDark, new RectangleF(col1X - 170, y + 50, 160, 22), SfRtlRight);
-                        g.DrawString(expDate, fVal, brPrimary, new RectangleF(col1X - 350, y + 50, 175, 22), SfRtlRight);
+                        g.DrawString("موعد التوريد:", fLabel, brDark, new RectangleF(colRightX - 100, y + 58, 90, 22), SfRtlRight);
+                        g.DrawString(expDate, fVal, brAmber, new RectangleF(tableX + 360, y + 58, colRightX - 100 - (tableX + 360), 24), SfRtlRight);
 
-                        // Left column: Supplier Phone & Order Status
-                        float col2X = width - 390;
-                        g.DrawString("هاتف المورد:", fLabel, brDark, new RectangleF(col2X - 100, y + 14, 95, 22), SfRtlRight);
-                        g.DrawString(string.IsNullOrWhiteSpace(order.SupplierPhone) ? "---" : order.SupplierPhone, fVal, brPrimary, new RectangleF(25, y + 14, col2X - 130, 22), SfRtlRight);
+                        // Left column: هاتف المورد وحالة الطلبية
+                        int colLeftX = tableX + 340; // 360
+                        g.DrawString("هاتف المورد:", fLabel, brDark, new RectangleF(colLeftX - 90, y + 12, 85, 22), SfRtlRight);
+                        string phoneVal = string.IsNullOrWhiteSpace(order.SupplierPhone) ? "---" : order.SupplierPhone.Trim();
+                        g.DrawString(phoneVal, fPhone, brBlue, new RectangleF(tableX + 15, y + 12, colLeftX - 90 - (tableX + 15), 24), SfCenter);
 
-                        g.DrawString("حالة الطلبية:", fLabel, brDark, new RectangleF(col2X - 100, y + 50, 95, 22), SfRtlRight);
-                        g.DrawString(order.Status, fLabel, new SolidBrush(Color.FromArgb(180, 83, 9)), new RectangleF(25, y + 50, col2X - 130, 22), SfRtlRight);
+                        g.DrawString("حالة الطلبية:", fLabel, brDark, new RectangleF(colLeftX - 90, y + 58, 85, 22), SfRtlRight);
+                        string statusVal = string.IsNullOrWhiteSpace(order.Status) ? "معلقة" : order.Status.Trim();
+                        Color statusColor = statusVal.Contains("مكتمل") ? Color.FromArgb(22, 163, 74) : (statusVal.Contains("ملغ") ? Color.FromArgb(220, 38, 38) : Color.FromArgb(217, 119, 6));
+                        Color statusBg = statusVal.Contains("مكتمل") ? Color.FromArgb(220, 252, 231) : (statusVal.Contains("ملغ") ? Color.FromArgb(254, 226, 226) : Color.FromArgb(254, 243, 199));
+                        
+                        var rStatus = new Rectangle(tableX + 45, y + 56, 140, 26);
+                        using (var brStBg = new SolidBrush(statusBg))
+                        using (var penSt = new Pen(statusColor, 1f))
+                        using (var brStText = new SolidBrush(statusColor))
+                        {
+                            g.FillRectangle(brStBg, rStatus);
+                            g.DrawRectangle(penSt, rStatus);
+                            g.DrawString(statusVal, fVal, brStText, rStatus, SfCenter);
+                        }
                     }
 
                     y += metaH + 16;
 
                     // 3. Table Header
-                    int tableX = 20;
-                    int tableW = width - 40;
 
                     int wNum = 35, wCode = 90, wName = 235, wUnit = 60, wQty = 85, wPrice = 85, wTotal = 90;
 
@@ -3161,32 +3198,54 @@ namespace ChickenDist.Core
 
                     y += 14;
 
-                    // 5. Summary & Totals
+                    // 5. Summary & Totals Card
                     using (var brSumBg = new SolidBrush(Color.FromArgb(248, 250, 252)))
                     using (var penSum = new Pen(Color.FromArgb(203, 213, 225), 1f))
                     {
-                        var rSum = new Rectangle(tableX, y, tableW, summaryH - 20);
+                        var rSum = new Rectangle(tableX, y, tableW, summaryH - 12);
                         g.FillRectangle(brSumBg, rSum);
                         g.DrawRectangle(penSum, rSum);
                     }
 
-                    using (var fSumLabel = new Font("Segoe UI", 10f, FontStyle.Bold))
-                    using (var fSumVal = new Font("Segoe UI", 11f, FontStyle.Bold))
-                    using (var brGreen = new SolidBrush(Color.FromArgb(5, 150, 105)))
+                    using (var fMetricLabel = new Font("Segoe UI", 9f, FontStyle.Bold))
+                    using (var fMetricVal = new Font("Segoe UI", 12f, FontStyle.Bold))
+                    using (var brDark = new SolidBrush(Color.FromArgb(71, 85, 105)))
                     using (var brBlue = new SolidBrush(Color.FromArgb(37, 99, 235)))
-                    using (var brText = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    using (var brGreen = new SolidBrush(Color.FromArgb(16, 149, 78)))
+                    using (var brSlate = new SolidBrush(Color.FromArgb(15, 23, 42)))
                     {
-                        int sumY = y + 14;
+                        int sumY = y + 10;
 
-                        g.DrawString($"عدد الأصناف:  {order.TotalItemsCount} صنف", fSumLabel, brBlue, new RectangleF(tableX + tableW - 220, sumY, 200, 26), SfRtlRight);
-                        g.DrawString($"إجمالي الكميات المطلوبة:  {order.TotalQuantity:0.##}", fSumLabel, brText, new RectangleF(tableX + tableW - 450, sumY, 210, 26), SfRtlRight);
+                        // 3 Balanced Metric Boxes
+                        int boxW = (tableW - 30) / 3; // ~216px each
+                        int boxH = 46;
 
-                        if (order.TotalEstimatedCost > 0)
+                        var rBox1 = new Rectangle(tableX + tableW - 10 - boxW, sumY, boxW, boxH);
+                        var rBox2 = new Rectangle(tableX + tableW - 15 - (boxW * 2), sumY, boxW, boxH);
+                        var rBox3 = new Rectangle(tableX + 10, sumY, boxW, boxH);
+
+                        using (var brBoxBg = new SolidBrush(Color.White))
+                        using (var penBox = new Pen(Color.FromArgb(226, 232, 240), 1f))
                         {
-                            g.DrawString($"إجمالي القيمة التقديرية:  {order.TotalEstimatedCost:N2} ج", fSumVal, brGreen, new RectangleF(tableX + 15, sumY, 220, 26), SfRtlRight);
+                            g.FillRectangle(brBoxBg, rBox1); g.DrawRectangle(penBox, rBox1);
+                            g.FillRectangle(brBoxBg, rBox2); g.DrawRectangle(penBox, rBox2);
+                            g.FillRectangle(brBoxBg, rBox3); g.DrawRectangle(penBox, rBox3);
                         }
 
-                        sumY += 34;
+                        // Box 1 (Right): Items Count
+                        g.DrawString("عدد الأصناف المطلوبة", fMetricLabel, brDark, new RectangleF(rBox1.X, rBox1.Y + 4, rBox1.Width, 18), SfCenter);
+                        g.DrawString($"{itemsCount} صنف", fMetricVal, brBlue, new RectangleF(rBox1.X, rBox1.Y + 20, rBox1.Width, 24), SfCenter);
+
+                        // Box 2 (Center): Total Quantity
+                        g.DrawString("إجمالي الكميات", fMetricLabel, brDark, new RectangleF(rBox2.X, rBox2.Y + 4, rBox2.Width, 18), SfCenter);
+                        g.DrawString($"{totalQty:0.##}", fMetricVal, brSlate, new RectangleF(rBox2.X, rBox2.Y + 20, rBox2.Width, 24), SfCenter);
+
+                        // Box 3 (Left): Total Estimated Cost
+                        g.DrawString("إجمالي القيمة التقديرية", fMetricLabel, brDark, new RectangleF(rBox3.X, rBox3.Y + 4, rBox3.Width, 18), SfCenter);
+                        string costTxt = totalCost > 0 ? $"{totalCost:N2} ج" : "غير محدد";
+                        g.DrawString(costTxt, fMetricVal, brGreen, new RectangleF(rBox3.X, rBox3.Y + 20, rBox3.Width, 24), SfCenter);
+
+                        sumY += boxH + 8;
 
                         if (!string.IsNullOrWhiteSpace(order.Notes))
                         {
@@ -3194,12 +3253,12 @@ namespace ChickenDist.Core
                             {
                                 g.DrawLine(penDash, tableX + 15, sumY, tableX + tableW - 15, sumY);
                             }
-                            sumY += 8;
-                            g.DrawString("ملاحظات الطلبية: " + order.Notes, new Font("Segoe UI", 9.5f), brText, new RectangleF(tableX + 15, sumY, tableW - 30, 24), SfRtlRight);
-                            sumY += 28;
+                            sumY += 6;
+                            g.DrawString("ملاحظات الطلبية: " + CleanEmoji(order.Notes), new Font("Segoe UI", 9.5f), brSlate, new RectangleF(tableX + 15, sumY, tableW - 30, 22), SfRtlRight);
+                            sumY += 24;
                         }
 
-                        g.DrawString("⚠️ برجاء مراجعة الكميات الموضحة وتأكيد موعد استلام البضاعة فور استلامكم لأمر الشراء.", new Font("Segoe UI", 9f, FontStyle.Italic), Brushes.Gray, new RectangleF(tableX + 15, sumY + 4, tableW - 30, 20), SfCenter);
+                        g.DrawString("برجاء مراجعة الأصناف والكميات الموضحة وتأكيد موعد استلام البضاعة فور استلامكم لأمر الشراء.", new Font("Segoe UI", 9f, FontStyle.Italic), Brushes.Gray, new RectangleF(tableX + 15, sumY + 2, tableW - 30, 20), SfCenter);
                     }
 
                     y += summaryH;

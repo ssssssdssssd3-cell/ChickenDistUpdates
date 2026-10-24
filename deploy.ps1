@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.3";
-$CHANGELOG = "v4.4.3 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add PartsAndHomeMargin activity profile with profit margin % and tax %; full RTL redesign of product card with label before field and full-screen maximization; bulk profit margin and tax application in purchase invoices; dedicated bulk price adjustment workstation (FrmPriceAdjustment) with multi-criteria filters, supplier filtering, rounding rules and barcode printing; price change audit history log (FrmPriceChangeHistory) with CSV export; and last purchase price costing architecture replacing average cost."
+$VERSION = "4.4.4";
+$CHANGELOG = "v4.4.4 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Purchase Order WhatsApp image card: compute and display accurate non-zero totals (total items, total quantity, total estimated cost); eliminate broken emoji glyph boxes; fix supplier name text overlapping and clipping with a clean balanced 2-column layout; and ensure crisp order code and date chips in header."
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -1,5 +1,5 @@
-version=4.4.3
+version=4.4.4
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.3&t=1792796401
-sha256=0F206B8801D47FD0937EF4BF814431E56111D42C2368883F51BAFEB38734B189
-changelog=v4.4.3 - 2026-10-24: Add PartsAndHomeMargin activity profile with profit margin % and tax %; full RTL redesign of product card with label before field and full-screen maximization; bulk profit margin and tax application in purchase invoices; dedicated bulk price adjustment workstation (FrmPriceAdjustment) with multi-criteria filters, supplier filtering, rounding rules and barcode printing; price change audit history log (FrmPriceChangeHistory) with CSV export; and last purchase price costing architecture replacing average cost.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.4&t=1792831901
+sha256=3DB54B620A9BBABFA77331DE0025B29EDCD694BEF820BA26C55655D370FE90E1
+changelog=v4.4.4 - 2026-10-24: Fix Purchase Order WhatsApp image card: compute and display accurate non-zero totals (total items, total quantity, total estimated cost); eliminate broken emoji glyph boxes; fix supplier name text overlapping and clipping with a clean balanced 2-column layout; and ensure crisp order code and date chips in header.
