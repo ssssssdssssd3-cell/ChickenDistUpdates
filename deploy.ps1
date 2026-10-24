@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.4";
-$CHANGELOG = "v4.4.4 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Fix Purchase Order WhatsApp image card: compute and display accurate non-zero totals (total items, total quantity, total estimated cost); eliminate broken emoji glyph boxes; fix supplier name text overlapping and clipping with a clean balanced 2-column layout; and ensure crisp order code and date chips in header."
+$VERSION = "4.4.5";
+$CHANGELOG = "v4.4.5 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add semi-wholesale and wholesale profit margin percentages to Product Card with distinctive color coding (Emerald Retail, Amber Semi-Wholesale, Sky Blue Wholesale, Violet Tax), full bidirectional live recalculation, and database schema persistence."
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -449,7 +449,7 @@ namespace ChickenDist.DAL
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
                            p.Unit3Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.DefaultSaleUnit,
                            p.ImageUrl1, p.ImageUrl2, p.ImageUrl3,
-                           COALESCE(p.ProfitMarginPct, 0) AS ProfitMarginPct, COALESCE(p.TaxPct, 0) AS TaxPct, COALESCE(p.LastPurchasePrice, p.PurchasePrice, 0) AS LastPurchasePrice
+                           COALESCE(p.ProfitMarginPct, 0) AS ProfitMarginPct, COALESCE(p.SemiWholesaleMarginPct, 0) AS SemiWholesaleMarginPct, COALESCE(p.WholesaleMarginPct, 0) AS WholesaleMarginPct, COALESCE(p.TaxPct, 0) AS TaxPct, COALESCE(p.LastPurchasePrice, p.PurchasePrice, 0) AS LastPurchasePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     WHERE p.IsActive=1 ORDER BY p.ProductName"
@@ -462,7 +462,7 @@ namespace ChickenDist.DAL
                            p.Unit2Name, p.Unit2Factor, p.Unit2Barcode, p.Unit2SalePrice, p.Unit2PurchasePrice,
                            p.Unit3Factor, COALESCE(p.HasExpiry, 0) AS HasExpiry, p.DefaultExpiryDays, p.DefaultSaleUnit,
                            p.ImageUrl1, p.ImageUrl2, p.ImageUrl3,
-                           COALESCE(p.ProfitMarginPct, 0) AS ProfitMarginPct, COALESCE(p.TaxPct, 0) AS TaxPct, COALESCE(p.LastPurchasePrice, p.PurchasePrice, 0) AS LastPurchasePrice
+                           COALESCE(p.ProfitMarginPct, 0) AS ProfitMarginPct, COALESCE(p.SemiWholesaleMarginPct, 0) AS SemiWholesaleMarginPct, COALESCE(p.WholesaleMarginPct, 0) AS WholesaleMarginPct, COALESCE(p.TaxPct, 0) AS TaxPct, COALESCE(p.LastPurchasePrice, p.PurchasePrice, 0) AS LastPurchasePrice
                     FROM Products p
                     LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
                     ORDER BY p.ProductName";
@@ -714,7 +714,7 @@ namespace ChickenDist.DAL
             string unit2Name = null, decimal? unit2Factor = null, string unit2Barcode = null, decimal? unit2SalePrice = null, decimal? unit2PurchasePrice = null,
             decimal? unit3Factor = null, bool isQuickItem = false, string producerCompany = null, bool hasExpiry = false, int? defaultExpiryDays = null, string defaultSaleUnit = null, string productSize = null, string color = null, string englishName = null, string scalePLU = null,
             string imageUrl1 = null, string imageUrl2 = null, string imageUrl3 = null, bool isIMEI = false,
-            decimal profitMarginPct = 0, decimal taxPct = 0)
+            decimal profitMarginPct = 0, decimal taxPct = 0, decimal semiWholesaleMarginPct = 0, decimal wholesaleMarginPct = 0)
         {
             DbHelper.EnsureProductImagesColumnsExist();
             DbHelper.EnsureScalePLUColumnExists();
@@ -761,10 +761,10 @@ namespace ChickenDist.DAL
                 int newId = DbHelper.ExecuteInsert(
                     @"INSERT INTO Products(ProductCode,ProductName,Unit,SalePrice,IsActive,PurchasePrice,MinStockLimit,Description,PartNumber,CategoryID,CarModel,Brand,ShelfLocation,WholesalePrice,SemiWholesalePrice,InternationalCode,PrintLocalBarcode,IsService,IsQuickItem,
                                            Unit1Name,Unit1Barcode,Unit1SalePrice,Unit1PurchasePrice,Unit2Name,Unit2Factor,Unit2Barcode,Unit2SalePrice,Unit2PurchasePrice,Unit3Factor,ProducerCompany,HasExpiry,DefaultExpiryDays,DefaultSaleUnit,ProductSize,Color,EnglishName,ScalePLU,
-                                           ImageUrl1,ImageUrl2,ImageUrl3,IsIMEI,ProfitMarginPct,TaxPct,LastPurchasePrice) 
+                                           ImageUrl1,ImageUrl2,ImageUrl3,IsIMEI,ProfitMarginPct,TaxPct,LastPurchasePrice,SemiWholesaleMarginPct,WholesaleMarginPct) 
                       VALUES(@c,@n,@u,@p,@a,@pp,@msl,@d,@pn,@cat,@cm,@b,@sl,@wp,@swp,@ic,@plb,@srv,@qi,
                              @u1n,@u1b,@u1sp,@u1pp,@u2n,@u2f,@u2b,@u2sp,@u2pp,@u3f,@comp,@hexp,@expd,@dsu,@psize,@clr,@enName,@splu,
-                             @img1,@img2,@img3,@isIMEI,@profitMargin,@taxPct,@lastBuyPrice)",
+                             @img1,@img2,@img3,@isIMEI,@profitMargin,@taxPct,@lastBuyPrice,@swMargin,@wMargin)",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
                     DbHelper.P("@pp", purchasePrice), DbHelper.P("@msl", minStockLimit), DbHelper.P("@d", description),
                     DbHelper.P("@pn", partNumber), DbHelper.P("@cat", categoryID), DbHelper.P("@cm", carModel), DbHelper.P("@b", brand), DbHelper.P("@sl", shelfLocation),
@@ -790,7 +790,7 @@ namespace ChickenDist.DAL
                     DbHelper.P("@isIMEI", isIMEI),
                     DbHelper.P("@profitMargin", profitMarginPct),
                     DbHelper.P("@taxPct", taxPct),
-                    DbHelper.P("@lastBuyPrice", purchasePrice > 0 ? purchasePrice : 0m));
+                    DbHelper.P("@lastBuyPrice", purchasePrice > 0 ? purchasePrice : 0m), DbHelper.P("@swMargin", semiWholesaleMarginPct), DbHelper.P("@wMargin", wholesaleMarginPct));
 
                 ProductCache.Invalidate();
                 return newId;
@@ -820,7 +820,7 @@ namespace ChickenDist.DAL
                           Unit2Name=@u2n,Unit2Factor=@u2f,Unit2Barcode=@u2b,Unit2SalePrice=@u2sp,Unit2PurchasePrice=@u2pp,
                           Unit3Factor=@u3f,ProducerCompany=@comp,HasExpiry=@hexp,DefaultExpiryDays=@expd,DefaultSaleUnit=@dsu,ProductSize=@psize,Color=@clr,EnglishName=@enName,ScalePLU=@splu,
                           ImageUrl1=@img1, ImageUrl2=@img2, ImageUrl3=@img3, IsIMEI=@isIMEI,
-                          ProfitMarginPct=@profitMargin, TaxPct=@taxPct, LastPurchasePrice = CASE WHEN @pp > 0 THEN @pp ELSE LastPurchasePrice END,
+                          ProfitMarginPct=@profitMargin, TaxPct=@taxPct, SemiWholesaleMarginPct=@swMargin, WholesaleMarginPct=@wMargin, LastPurchasePrice = CASE WHEN @pp > 0 THEN @pp ELSE LastPurchasePrice END,
                           PendingSalePrice=NULL, PendingQtyThreshold=NULL, PendingPriceSourceRefID=NULL
                       WHERE ProductID=@id",
                     DbHelper.P("@c", code), DbHelper.P("@n", name), DbHelper.P("@u", unit), DbHelper.P("@p", price), DbHelper.P("@a", active),
@@ -848,6 +848,8 @@ namespace ChickenDist.DAL
                     DbHelper.P("@isIMEI", isIMEI),
                     DbHelper.P("@profitMargin", profitMarginPct),
                     DbHelper.P("@taxPct", taxPct),
+                    DbHelper.P("@swMargin", semiWholesaleMarginPct),
+                    DbHelper.P("@wMargin", wholesaleMarginPct),
                     DbHelper.P("@id", id));
 
                 if (Math.Abs(price - oldPrice) > 0.005m)

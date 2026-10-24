@@ -2946,6 +2946,7 @@ namespace ChickenDist.Forms
                     item.TotalPrice.ToString("F2"),
                     sell.ToString("F2"),
                     margin.ToString("F1") + "%",
+                    item.TaxPct > 0 ? item.TaxPct.ToString("G29") : "0",
                     item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "",
                     item.IMEI ?? "");
                 // عمود الكود للسطور المضافة = قراءة فقط

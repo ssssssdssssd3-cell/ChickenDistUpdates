@@ -1561,6 +1561,10 @@ namespace ChickenDist.Core
                 BEGIN
                     IF COL_LENGTH('Products', 'ProfitMarginPct') IS NULL
                         ALTER TABLE Products ADD ProfitMarginPct DECIMAL(18,2) NULL CONSTRAINT DF_Products_ProfitMarginPct DEFAULT 0;
+                    IF COL_LENGTH('Products', 'SemiWholesaleMarginPct') IS NULL
+                        ALTER TABLE Products ADD SemiWholesaleMarginPct DECIMAL(18,2) NULL CONSTRAINT DF_Products_SemiWholesaleMarginPct DEFAULT 0;
+                    IF COL_LENGTH('Products', 'WholesaleMarginPct') IS NULL
+                        ALTER TABLE Products ADD WholesaleMarginPct DECIMAL(18,2) NULL CONSTRAINT DF_Products_WholesaleMarginPct DEFAULT 0;
                     IF COL_LENGTH('Products', 'TaxPct') IS NULL
                         ALTER TABLE Products ADD TaxPct DECIMAL(18,2) NULL CONSTRAINT DF_Products_TaxPct DEFAULT 0;
                     IF COL_LENGTH('Products', 'LastPurchasePrice') IS NULL

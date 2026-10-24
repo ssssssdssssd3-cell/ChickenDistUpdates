@@ -1,5 +1,5 @@
-version=4.4.4
+version=4.4.5
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.4&t=1792831901
-sha256=3DB54B620A9BBABFA77331DE0025B29EDCD694BEF820BA26C55655D370FE90E1
-changelog=v4.4.4 - 2026-10-24: Fix Purchase Order WhatsApp image card: compute and display accurate non-zero totals (total items, total quantity, total estimated cost); eliminate broken emoji glyph boxes; fix supplier name text overlapping and clipping with a clean balanced 2-column layout; and ensure crisp order code and date chips in header.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.5&t=1792834578
+sha256=60DD903C96BCE53BD0A420AC62351FF0C95B0845659F6FDB971BCAF5EE34F935
+changelog=v4.4.5 - 2026-10-24: Add semi-wholesale and wholesale profit margin percentages to Product Card with distinctive color coding (Emerald Retail, Amber Semi-Wholesale, Sky Blue Wholesale, Violet Tax), full bidirectional live recalculation, and database schema persistence.

@@ -14,7 +14,7 @@ namespace ChickenDist.Forms
         private ComboBox cboCategory, cboUnit;
         private Button btnAddUnit, btnAddBrand, btnAddCarModel, btnAddShelfLocation, btnAddProducerCompany, btnAddProductSize, btnAddColor, btnAddCat;
         private Button btnMultiBarcode, btnResetU1, btnResetU2, btnRecalcAll;
-        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice, nudProfitMarginPct, nudTaxPct;
+        private NumericUpDown nudPrice, nudPurchasePrice, nudMinStockLimit, nudWholesalePrice, nudSemiWholesalePrice, nudProfitMarginPct, nudTaxPct, nudSemiWholesaleMarginPct, nudWholesaleMarginPct;
         private GroupBox grpBasic, grpPrice, grpUnit2, grpUnit1;
         private Panel pnlFooter;
         private bool _inMarginRecalc = false;
@@ -88,6 +88,7 @@ namespace ChickenDist.Forms
             {
                 Text = "📝 البيانات الأساسية",
                 Location = new Point(15, 15),
+
                 Size = new Size(grpWidth, grpHeight),
                 ForeColor = Theme.Primary,
                 Font = new Font(Theme.FontMain, FontStyle.Bold)
@@ -99,6 +100,7 @@ namespace ChickenDist.Forms
             {
                 Text = "💰 الأسعار والربح والضريبة",
                 Location = new Point(345, 15),
+
                 Size = new Size(grpWidth, grpHeight),
                 ForeColor = Theme.Primary,
                 Font = new Font(Theme.FontMain, FontStyle.Bold)
@@ -219,17 +221,56 @@ namespace ChickenDist.Forms
             AddNud(grpPrice, "شراء الكبرى:", 10, py, out nudPurchasePrice, 2, canSeeCost);
             if (canSeeCost) py += 34;
 
-            AddNud(grpPrice, "نسبة الربح %:", 10, py, out nudProfitMarginPct, 2);
+            // 🟢 القطاعي
+            Label lblRetailMargin;
+            AddNud(grpPrice, "🟢 ربح القطاعي %:", 10, py, out nudProfitMarginPct, 2, out lblRetailMargin, canSeeCost);
             nudProfitMarginPct.Maximum = 9999m;
-            py += 34;
-
-            AddNud(grpPrice, "نسبة الضريبة %:", 10, py, out nudTaxPct, 2);
-            nudTaxPct.Maximum = 100m;
-            py += 34;
+            nudProfitMarginPct.BackColor = Color.FromArgb(16, 42, 34);
+            nudProfitMarginPct.ForeColor = Color.FromArgb(52, 211, 153);
+            nudProfitMarginPct.Font = new Font(Theme.FontMain.FontFamily, 9.5f, FontStyle.Bold);
+            lblRetailMargin.ForeColor = Color.FromArgb(52, 211, 153);
+            lblRetailMargin.Font = new Font(Theme.FontMain.FontFamily, 9f, FontStyle.Bold);
+            if (canSeeCost) py += 34;
 
             AddNud(grpPrice, "بيع قطاعي الكبرى:", 10, py, out nudPrice, 2); py += 34;
+
+            // 🟠 نصف الجملة
+            Label lblSemiMargin;
+            AddNud(grpPrice, "🟠 ربح نصف الجملة %:", 10, py, out nudSemiWholesaleMarginPct, 2, out lblSemiMargin, canSeeCost);
+            nudSemiWholesaleMarginPct.Maximum = 9999m;
+            nudSemiWholesaleMarginPct.BackColor = Color.FromArgb(48, 34, 12);
+            nudSemiWholesaleMarginPct.ForeColor = Color.FromArgb(251, 191, 36);
+            nudSemiWholesaleMarginPct.Font = new Font(Theme.FontMain.FontFamily, 9.5f, FontStyle.Bold);
+            lblSemiMargin.ForeColor = Color.FromArgb(251, 191, 36);
+            lblSemiMargin.Font = new Font(Theme.FontMain.FontFamily, 9f, FontStyle.Bold);
+            if (canSeeCost) py += 34;
+
             AddNud(grpPrice, "نصف جملة الكبرى:", 10, py, out nudSemiWholesalePrice, 2); py += 34;
+
+            // 🔵 الجملة
+            Label lblWholeMargin;
+            AddNud(grpPrice, "🔵 ربح الجملة %:", 10, py, out nudWholesaleMarginPct, 2, out lblWholeMargin, canSeeCost);
+            nudWholesaleMarginPct.Maximum = 9999m;
+            nudWholesaleMarginPct.BackColor = Color.FromArgb(18, 36, 56);
+            nudWholesaleMarginPct.ForeColor = Color.FromArgb(56, 189, 248);
+            nudWholesaleMarginPct.Font = new Font(Theme.FontMain.FontFamily, 9.5f, FontStyle.Bold);
+            lblWholeMargin.ForeColor = Color.FromArgb(56, 189, 248);
+            lblWholeMargin.Font = new Font(Theme.FontMain.FontFamily, 9f, FontStyle.Bold);
+            if (canSeeCost) py += 34;
+
             AddNud(grpPrice, "جملة الكبرى:", 10, py, out nudWholesalePrice, 2); py += 34;
+
+            // 🟣 الضريبة
+            Label lblTax;
+            AddNud(grpPrice, "🟣 نسبة الضريبة %:", 10, py, out nudTaxPct, 2, out lblTax);
+            nudTaxPct.Maximum = 100m;
+            nudTaxPct.BackColor = Color.FromArgb(36, 22, 54);
+            nudTaxPct.ForeColor = Color.FromArgb(216, 180, 254);
+            nudTaxPct.Font = new Font(Theme.FontMain.FontFamily, 9.5f, FontStyle.Bold);
+            lblTax.ForeColor = Color.FromArgb(216, 180, 254);
+            lblTax.Font = new Font(Theme.FontMain.FontFamily, 9f, FontStyle.Bold);
+            py += 34;
+
             AddNud(grpPrice, "حد الطلب (بالصغرى):", 10, py, out nudMinStockLimit, 3); py += 34;
 
             string bizType = AppConfig.BusinessType;
@@ -418,7 +459,7 @@ namespace ChickenDist.Forms
 
             UpdateUnitHeaders();
 
-            // ─── Live Margin & Price Recalculation Events ───
+            // ─── Live Margin & Price Recalculation Events (قطاعي - نصف جملة - جملة) ───
             nudProfitMarginPct.ValueChanged += (s, e) =>
             {
                 if (!_inMarginRecalc && !_isLoadingData)
@@ -442,6 +483,50 @@ namespace ChickenDist.Forms
                 }
             };
 
+            nudSemiWholesaleMarginPct.ValueChanged += (s, e) =>
+            {
+                if (!_inMarginRecalc && !_isLoadingData)
+                {
+                    _inMarginRecalc = true;
+                    try
+                    {
+                        decimal buy = nudPurchasePrice.Value;
+                        if (buy > 0)
+                        {
+                            decimal newSemi = Math.Round(buy * (1m + nudSemiWholesaleMarginPct.Value / 100m), 2);
+                            if (newSemi <= nudSemiWholesalePrice.Maximum)
+                                nudSemiWholesalePrice.Value = newSemi;
+                        }
+                    }
+                    finally
+                    {
+                        _inMarginRecalc = false;
+                    }
+                }
+            };
+
+            nudWholesaleMarginPct.ValueChanged += (s, e) =>
+            {
+                if (!_inMarginRecalc && !_isLoadingData)
+                {
+                    _inMarginRecalc = true;
+                    try
+                    {
+                        decimal buy = nudPurchasePrice.Value;
+                        if (buy > 0)
+                        {
+                            decimal newWhole = Math.Round(buy * (1m + nudWholesaleMarginPct.Value / 100m), 2);
+                            if (newWhole <= nudWholesalePrice.Maximum)
+                                nudWholesalePrice.Value = newWhole;
+                        }
+                    }
+                    finally
+                    {
+                        _inMarginRecalc = false;
+                    }
+                }
+            };
+
             nudPurchasePrice.ValueChanged += (s, e) =>
             {
                 if (!_inMarginRecalc && !_isLoadingData)
@@ -450,17 +535,43 @@ namespace ChickenDist.Forms
                     try
                     {
                         decimal buy = nudPurchasePrice.Value;
-                        if (buy > 0 && nudProfitMarginPct.Value > 0)
+                        if (buy > 0)
                         {
-                            decimal newSale = Math.Round(buy * (1m + nudProfitMarginPct.Value / 100m), 2);
-                            if (newSale <= nudPrice.Maximum)
-                                nudPrice.Value = newSale;
-                        }
-                        else if (buy > 0 && nudPrice.Value > buy)
-                        {
-                            decimal margin = Math.Round(((nudPrice.Value - buy) / buy) * 100m, 2);
-                            if (margin <= nudProfitMarginPct.Maximum)
-                                nudProfitMarginPct.Value = margin;
+                            // قطاعي
+                            if (nudProfitMarginPct.Value > 0)
+                            {
+                                decimal newSale = Math.Round(buy * (1m + nudProfitMarginPct.Value / 100m), 2);
+                                if (newSale <= nudPrice.Maximum) nudPrice.Value = newSale;
+                            }
+                            else if (nudPrice.Value > buy)
+                            {
+                                decimal margin = Math.Round(((nudPrice.Value - buy) / buy) * 100m, 2);
+                                if (margin <= nudProfitMarginPct.Maximum) nudProfitMarginPct.Value = margin;
+                            }
+
+                            // نصف جملة
+                            if (nudSemiWholesaleMarginPct.Value > 0)
+                            {
+                                decimal newSemi = Math.Round(buy * (1m + nudSemiWholesaleMarginPct.Value / 100m), 2);
+                                if (newSemi <= nudSemiWholesalePrice.Maximum) nudSemiWholesalePrice.Value = newSemi;
+                            }
+                            else if (nudSemiWholesalePrice.Value > buy)
+                            {
+                                decimal semiMargin = Math.Round(((nudSemiWholesalePrice.Value - buy) / buy) * 100m, 2);
+                                if (semiMargin <= nudSemiWholesaleMarginPct.Maximum) nudSemiWholesaleMarginPct.Value = semiMargin;
+                            }
+
+                            // جملة
+                            if (nudWholesaleMarginPct.Value > 0)
+                            {
+                                decimal newWhole = Math.Round(buy * (1m + nudWholesaleMarginPct.Value / 100m), 2);
+                                if (newWhole <= nudWholesalePrice.Maximum) nudWholesalePrice.Value = newWhole;
+                            }
+                            else if (nudWholesalePrice.Value > buy)
+                            {
+                                decimal wholeMargin = Math.Round(((nudWholesalePrice.Value - buy) / buy) * 100m, 2);
+                                if (wholeMargin <= nudWholesaleMarginPct.Maximum) nudWholesaleMarginPct.Value = wholeMargin;
+                            }
                         }
                     }
                     finally
@@ -497,6 +608,60 @@ namespace ChickenDist.Forms
                     }
                 }
                 RecalculateSubUnitPrices();
+            };
+
+            nudSemiWholesalePrice.ValueChanged += (s, e) =>
+            {
+                if (!_inMarginRecalc && !_isLoadingData)
+                {
+                    _inMarginRecalc = true;
+                    try
+                    {
+                        decimal buy = nudPurchasePrice.Value;
+                        decimal semi = nudSemiWholesalePrice.Value;
+                        if (buy > 0 && semi > buy)
+                        {
+                            decimal margin = Math.Round(((semi - buy) / buy) * 100m, 2);
+                            if (margin <= nudSemiWholesaleMarginPct.Maximum)
+                                nudSemiWholesaleMarginPct.Value = margin;
+                        }
+                        else if (buy > 0 && semi <= buy)
+                        {
+                            nudSemiWholesaleMarginPct.Value = 0m;
+                        }
+                    }
+                    finally
+                    {
+                        _inMarginRecalc = false;
+                    }
+                }
+            };
+
+            nudWholesalePrice.ValueChanged += (s, e) =>
+            {
+                if (!_inMarginRecalc && !_isLoadingData)
+                {
+                    _inMarginRecalc = true;
+                    try
+                    {
+                        decimal buy = nudPurchasePrice.Value;
+                        decimal whole = nudWholesalePrice.Value;
+                        if (buy > 0 && whole > buy)
+                        {
+                            decimal margin = Math.Round(((whole - buy) / buy) * 100m, 2);
+                            if (margin <= nudWholesaleMarginPct.Maximum)
+                                nudWholesaleMarginPct.Value = margin;
+                        }
+                        else if (buy > 0 && whole <= buy)
+                        {
+                            nudWholesaleMarginPct.Value = 0m;
+                        }
+                    }
+                    finally
+                    {
+                        _inMarginRecalc = false;
+                    }
+                }
             };
 
             Theme.ApplyFormRTL(this);
@@ -717,6 +882,8 @@ namespace ChickenDist.Forms
                     MakeReadOnly(nudUnit2PurchasePrice);
                     MakeReadOnly(nudUnit3Factor);
                     MakeReadOnly(nudProfitMarginPct);
+                    MakeReadOnly(nudSemiWholesaleMarginPct);
+                    MakeReadOnly(nudWholesaleMarginPct);
                     MakeReadOnly(nudTaxPct);
                     return;
                 }
@@ -739,6 +906,8 @@ namespace ChickenDist.Forms
                     LockPriceField(nudUnit1SalePrice);
                     LockPriceField(nudUnit2SalePrice);
                     LockPriceField(nudProfitMarginPct);
+                    LockPriceField(nudSemiWholesaleMarginPct);
+                    LockPriceField(nudWholesaleMarginPct);
                     LockPriceField(nudTaxPct);
 
                     if (btnRecalcAll != null) { btnRecalcAll.Enabled = false; btnRecalcAll.Visible = false; }
@@ -1070,6 +1239,18 @@ namespace ChickenDist.Forms
                 }
                 nudWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("WholesalePrice") && dr["WholesalePrice"] != DBNull.Value ? dr["WholesalePrice"] : 0);
                 nudSemiWholesalePrice.Value = Convert.ToDecimal(dr.Table.Columns.Contains("SemiWholesalePrice") && dr["SemiWholesalePrice"] != DBNull.Value ? dr["SemiWholesalePrice"] : 0);
+
+                nudSemiWholesaleMarginPct.Value = dr.Table.Columns.Contains("SemiWholesaleMarginPct") && dr["SemiWholesaleMarginPct"] != DBNull.Value ? Convert.ToDecimal(dr["SemiWholesaleMarginPct"]) : 0m;
+                if (nudSemiWholesaleMarginPct.Value == 0 && nudPurchasePrice.Value > 0 && nudSemiWholesalePrice.Value > nudPurchasePrice.Value)
+                {
+                    nudSemiWholesaleMarginPct.Value = Math.Round(((nudSemiWholesalePrice.Value - nudPurchasePrice.Value) / nudPurchasePrice.Value) * 100m, 2);
+                }
+
+                nudWholesaleMarginPct.Value = dr.Table.Columns.Contains("WholesaleMarginPct") && dr["WholesaleMarginPct"] != DBNull.Value ? Convert.ToDecimal(dr["WholesaleMarginPct"]) : 0m;
+                if (nudWholesaleMarginPct.Value == 0 && nudPurchasePrice.Value > 0 && nudWholesalePrice.Value > nudPurchasePrice.Value)
+                {
+                    nudWholesaleMarginPct.Value = Math.Round(((nudWholesalePrice.Value - nudPurchasePrice.Value) / nudPurchasePrice.Value) * 100m, 2);
+                }
                 nudMinStockLimit.Value = Convert.ToDecimal(dr["MinStockLimit"] == DBNull.Value ? 0 : dr["MinStockLimit"]);
                 txtDescription.Text = dr["Description"].ToString();
                 chkActive.Checked = Convert.ToBoolean(dr["IsActive"]);
@@ -1196,6 +1377,8 @@ namespace ChickenDist.Forms
             nudPurchasePrice.Value = 0;
             nudPrice.Value = 0;
             if (nudProfitMarginPct != null) nudProfitMarginPct.Value = 0;
+            if (nudSemiWholesaleMarginPct != null) nudSemiWholesaleMarginPct.Value = 0;
+            if (nudWholesaleMarginPct != null) nudWholesaleMarginPct.Value = 0;
             if (nudTaxPct != null) nudTaxPct.Value = 0;
             nudWholesalePrice.Value = 0;
             nudSemiWholesalePrice.Value = 0;
@@ -1484,7 +1667,8 @@ namespace ChickenDist.Forms
                     newU3Factor, chkIsQuickItem.Checked, producerVal,
                     chkHasExpiry != null && chkHasExpiry.Checked, chkHasExpiry != null && chkHasExpiry.Checked && nudDefaultExpiryDays != null ? (int?)nudDefaultExpiryDays.Value : null, cboDefaultSaleUnit.Text, sizeValStr, colorValStr, enNameVal, scalePLUVal,
                     _imageUrl1, _imageUrl2, _imageUrl3, (AppConfig.BusinessType == "Mobiles") && chkIsIMEI != null && chkIsIMEI.Checked,
-                    nudProfitMarginPct.Value, nudTaxPct.Value);
+                    nudProfitMarginPct.Value, nudTaxPct.Value,
+                    nudSemiWholesaleMarginPct.Value, nudWholesaleMarginPct.Value);
 
                 if (id > 0)
                 {
