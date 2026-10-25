@@ -4,7 +4,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.10";
+$VERSION = "4.4.11";
 $CHANGELOG = "v4.4.10 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): 1) تصحيح معادلة احتساب وحفظ تكلفة الشراء وسعر الشراء الأخير للأصناف ذات الوحدات المتعددة في فواتير الشراء وحمايتها من التضخم 2) حفظ نسب الربح والضريبة المعدلة على مستوى بنود فاتورة الشراء في كارت الصنف تلقائياً 3) تسجيل حركات تعديل الأسعار الفورية الناتجة عن المشتريات في سجل تاريخ الأسعار (PriceChangeHistory) 4) حماية تكلفة الوحدة الصغرى عند تعديل الأسعار وتوافق مسميات نشاط المنزلي وقطع الغيار في الإعدادات والشاشة الرئيسية."
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 

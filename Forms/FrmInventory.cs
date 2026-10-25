@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -140,6 +140,15 @@ namespace ChickenDist.Forms
             return pnl;
         }
 
+        private void ApplyPriceColumnsVisibility()
+        {
+            if (dgStock == null || !dgStock.Columns.Contains("SalePrice")) return;
+            int idx = cboPriceType != null ? cboPriceType.SelectedIndex : 0;
+            dgStock.Columns["SalePrice"].Visible = (idx == 0 || idx == 1);
+            dgStock.Columns["SemiWholesalePrice"].Visible = (idx == 0 || idx == 2);
+            dgStock.Columns["WholesalePrice"].Visible = (idx == 0 || idx == 3);
+        }
+
         private void BuildStockTab()
         {
             // Panel Left: Grid and filters (Dock Fill)
@@ -252,12 +261,13 @@ namespace ChickenDist.Forms
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold)
             };
-            cboPriceType.Items.Add("قطاعي");
-            cboPriceType.Items.Add("نص جملة");
-            cboPriceType.Items.Add("جملة");
+            cboPriceType.Items.Add("عرض الكل (الأسعار)");
+            cboPriceType.Items.Add("قطاعي فقط");
+            cboPriceType.Items.Add("نص جملة فقط");
+            cboPriceType.Items.Add("جملة فقط");
             cboPriceType.SelectedIndex = 0;
-            cboPriceType.SelectedIndexChanged += (s, e) => LoadStock();
-            var pnlPriceType = MakeFilterPanel("السعر:", cboPriceType, 75);
+            cboPriceType.SelectedIndexChanged += (s, e) => ApplyPriceColumnsVisibility();
+            var pnlPriceType = MakeFilterPanel("السعر:", cboPriceType, 110);
 
             cboMaxRows = new ComboBox { Width = 80, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboMaxRows.Items.AddRange(new object[] { "300 صنف", "500 صنف", "1000 صنف", "5000 صنف", "عرض الكل (الجميع)" });
@@ -487,7 +497,9 @@ namespace ChickenDist.Forms
                 Visible = Session.CanViewCost("Inventory"),
                 FlatStyle = FlatStyle.Flat
             });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر البيع", ReadOnly = false,  FillWeight = 40 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر القطاعي ✏️", ReadOnly = false,  FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SemiWholesalePrice", HeaderText = "سعر نص جملة ✏️", ReadOnly = false, FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "WholesalePrice",     HeaderText = "سعر الجملة ✏️", ReadOnly = false, FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",     HeaderText = "الرصيد الدفتري", ReadOnly = true,  FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",   HeaderText = "الرصيد الفعلي", ReadOnly = false, FillWeight = 55, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(255, 255, 225), ForeColor = Color.FromArgb(80, 50, 0) } });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty",     HeaderText = "الفارق",       ReadOnly = true,  FillWeight = 48 });
@@ -1111,6 +1123,7 @@ namespace ChickenDist.Forms
             if (lblTotalCost != null) lblTotalCost.Text = $"💰 إجمالي قيمة التكلفة (الشراء): {totalCost:N2} ج";
             if (lblTotalSale != null) lblTotalSale.Text = $"🏷️ إجمالي قيمة البيع: {totalSale:N2} ج";
 
+            ApplyPriceColumnsVisibility();
             dgStock.AutoSizeColumnsMode = oldMode;
             dgStock.ResumeLayout();
             ClearAdjustmentForm();
@@ -1158,6 +1171,9 @@ namespace ChickenDist.Forms
             string imei = null,
             int? purchaseItemId = null)
         {
+            decimal displayedSWP = (curFactor == majorFactor) ? baseSWP : (majorFactor > 0 ? (baseSWP / majorFactor) * curFactor : baseSWP);
+            decimal displayedWP  = (curFactor == majorFactor) ? baseWP  : (majorFactor > 0 ? (baseWP  / majorFactor) * curFactor : baseWP);
+
             int ri = dgStock.Rows.Add(
                 pid,
                 batchIdVal,
@@ -1170,6 +1186,8 @@ namespace ChickenDist.Forms
                 displayedPP.ToString("N2"),
                 "🧮",
                 displayedSP.ToString("N2"),
+                displayedSWP.ToString("N2"),
+                displayedWP.ToString("N2"),
                 displayedBookQty.ToString("N3"),
                 actualVal,
                 diffVal,
@@ -1178,6 +1196,13 @@ namespace ChickenDist.Forms
 
             dgStock.Rows[ri].Cells["PurchasePrice"].Tag = displayedPP;
             dgStock.Rows[ri].Cells["SalePrice"].Tag = displayedSP;
+            dgStock.Rows[ri].Cells["SemiWholesalePrice"].Tag = displayedSWP;
+            dgStock.Rows[ri].Cells["WholesalePrice"].Tag = displayedWP;
+
+            dgStock.Rows[ri].Cells["SemiWholesalePrice"].Style.BackColor = Color.FromArgb(238, 242, 255);
+            dgStock.Rows[ri].Cells["SemiWholesalePrice"].Style.ForeColor = Color.FromArgb(30, 40, 120);
+            dgStock.Rows[ri].Cells["WholesalePrice"].Style.BackColor = Color.FromArgb(243, 232, 255);
+            dgStock.Rows[ri].Cells["WholesalePrice"].Style.ForeColor = Color.FromArgb(80, 20, 100);
 
             dgStock.Rows[ri].Cells["BtnCostAudit"].Style.BackColor = Color.FromArgb(240, 248, 255);
             dgStock.Rows[ri].Cells["BtnCostAudit"].Style.ForeColor = Color.FromArgb(13, 110, 253);
@@ -1781,11 +1806,20 @@ namespace ChickenDist.Forms
             row.Cells["Unit"].Value = selectedUnit + " 🔽";
             row.Cells["CurrentFactor"].Value = factor;
             row.Cells["BookQty"].Value = newBookQty.ToString("N3");
+            decimal pieceSWP = majorFactor > 0 ? (baseSWP / majorFactor) : baseSWP;
+            decimal pieceWP  = majorFactor > 0 ? (baseWP / majorFactor)  : baseWP;
+            decimal newSWP   = factor == majorFactor ? baseSWP : (pieceSWP * factor);
+            decimal newWP    = factor == majorFactor ? baseWP  : (pieceWP * factor);
+
             row.Cells["PurchasePrice"].Value = newPP.ToString("N2");
             row.Cells["SalePrice"].Value = newSP.ToString("N2");
+            row.Cells["SemiWholesalePrice"].Value = newSWP.ToString("N2");
+            row.Cells["WholesalePrice"].Value = newWP.ToString("N2");
 
             row.Cells["PurchasePrice"].Tag = newPP;
             row.Cells["SalePrice"].Tag = newSP;
+            row.Cells["SemiWholesalePrice"].Tag = newSWP;
+            row.Cells["WholesalePrice"].Tag = newWP;
 
             // 5. تحويل وتحديث الرصيد الفعلي والفارق
             if (rowPid > 0 && _enteredActualQty.ContainsKey(rowKey))
@@ -2001,7 +2035,7 @@ namespace ChickenDist.Forms
                     if (Math.Round(curPurPrice, 2) != Math.Round(origPur, 2)) purModified = true;
                 }
 
-                // Check SalePrice
+                // Check SalePrice (قطاعي)
                 string saleVal = row.Cells["SalePrice"].Value?.ToString();
                 bool saleModified = false;
                 decimal curSalePrice = 0;
@@ -2011,10 +2045,36 @@ namespace ChickenDist.Forms
                     if (Math.Round(curSalePrice, 2) != Math.Round(origSale, 2)) saleModified = true;
                 }
 
-                if (hasActual || purModified || saleModified)
+                // Check SemiWholesalePrice (نص جملة)
+                string semiVal = row.Cells["SemiWholesalePrice"].Value?.ToString();
+                bool semiModified = false;
+                decimal curSemiPrice = 0;
+                if (decimal.TryParse(semiVal, numStyles, inv, out curSemiPrice))
+                {
+                    decimal origSemi = row.Cells["SemiWholesalePrice"].Tag != null ? (decimal)row.Cells["SemiWholesalePrice"].Tag : 0m;
+                    if (Math.Round(curSemiPrice, 2) != Math.Round(origSemi, 2)) semiModified = true;
+                }
+
+                // Check WholesalePrice (جملة)
+                string wholeVal = row.Cells["WholesalePrice"].Value?.ToString();
+                bool wholeModified = false;
+                decimal curWholePrice = 0;
+                if (decimal.TryParse(wholeVal, numStyles, inv, out curWholePrice))
+                {
+                    decimal origWhole = row.Cells["WholesalePrice"].Tag != null ? (decimal)row.Cells["WholesalePrice"].Tag : 0m;
+                    if (Math.Round(curWholePrice, 2) != Math.Round(origWhole, 2)) wholeModified = true;
+                }
+
+                decimal majorFac = row.Cells["MajorFactor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["MajorFactor"].Value) : 1m;
+                decimal u2Fac = row.Cells["Unit2Factor"].Value != DBNull.Value ? Convert.ToDecimal(row.Cells["Unit2Factor"].Value) : 1m;
+
+                if (hasActual || purModified || saleModified || semiModified || wholeModified)
                 {
                     decimal origPur = row.Cells["PurchasePrice"].Tag != null ? (decimal)row.Cells["PurchasePrice"].Tag : 0m;
                     decimal origSale = row.Cells["SalePrice"].Tag != null ? (decimal)row.Cells["SalePrice"].Tag : 0m;
+                    decimal origSemi = row.Cells["SemiWholesalePrice"].Tag != null ? (decimal)row.Cells["SemiWholesalePrice"].Tag : 0m;
+                    decimal origWhole = row.Cells["WholesalePrice"].Tag != null ? (decimal)row.Cells["WholesalePrice"].Tag : 0m;
+
                     decimal bq = row.Cells["BookQty"].Value != null && decimal.TryParse(row.Cells["BookQty"].Value.ToString(), numStyles, inv, out decimal bqVal) ? bqVal : 0m;
                     decimal baseBq = row.Cells["BaseBookQty"].Value != null ? Convert.ToDecimal(row.Cells["BaseBookQty"].Value) : (bq * factor);
 
@@ -2027,15 +2087,25 @@ namespace ChickenDist.Forms
                         ShelfLocation = row.Cells["ShelfLocation"].Value?.ToString() ?? "",
                         DisplayUnit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "").Trim() ?? "",
                         Factor = factor,
+                        MajorFactor = majorFac > 0 ? majorFac : 1m,
+                        Unit2Factor = u2Fac > 0 ? u2Fac : 1m,
                         BaseBookQty = baseBq,
                         DisplayedBookQty = bq,
                         ActualEntered = hasActual ? actualEntered : (decimal?)null,
                         BaseActual = hasActual ? (actualEntered * factor) : baseBq,
                         OriginalPurchasePrice = origPur,
                         OriginalSalePrice = origSale,
+                        OriginalSemiWholesalePrice = origSemi,
+                        OriginalWholesalePrice = origWhole,
                         NewPurchasePrice = curPurPrice,
                         NewSalePrice = curSalePrice,
-                        IsPriceModified = purModified || saleModified,
+                        NewSemiWholesalePrice = curSemiPrice,
+                        NewWholesalePrice = curWholePrice,
+                        IsPurchasePriceModified = purModified,
+                        IsSalePriceModified = saleModified,
+                        IsSemiWholesalePriceModified = semiModified,
+                        IsWholesalePriceModified = wholeModified,
+                        IsPriceModified = purModified || saleModified || semiModified || wholeModified,
                         IsQtyModified = hasActual,
                         HasExpiry = row.Cells["HasExpiry"].Value != DBNull.Value && Convert.ToBoolean(row.Cells["HasExpiry"].Value),
                         ExpiryDate = DbHelper.ParseExpiryInput(row.Cells["ExpiryDate"].Value?.ToString()),
@@ -2065,13 +2135,21 @@ namespace ChickenDist.Forms
 
                     if (item.IsPriceModified)
                     {
-                        if (Math.Round(item.NewPurchasePrice, 2) != Math.Round(item.OriginalPurchasePrice, 2))
+                        if (item.IsPurchasePriceModified)
                         {
                             msg += $"شراء ({item.OriginalPurchasePrice:N2} ➔ {item.NewPurchasePrice:N2}) ";
                         }
-                        if (Math.Round(item.NewSalePrice, 2) != Math.Round(item.OriginalSalePrice, 2))
+                        if (item.IsSalePriceModified)
                         {
-                            msg += $"بيع ({item.OriginalSalePrice:N2} ➔ {item.NewSalePrice:N2}) ";
+                            msg += $"قطاعي ({item.OriginalSalePrice:N2} ➔ {item.NewSalePrice:N2}) ";
+                        }
+                        if (item.IsSemiWholesalePriceModified)
+                        {
+                            msg += $"نص جملة ({item.OriginalSemiWholesalePrice:N2} ➔ {item.NewSemiWholesalePrice:N2}) ";
+                        }
+                        if (item.IsWholesalePriceModified)
+                        {
+                            msg += $"جملة ({item.OriginalWholesalePrice:N2} ➔ {item.NewWholesalePrice:N2}) ";
                         }
                     }
 
@@ -2142,32 +2220,95 @@ namespace ChickenDist.Forms
                                 }
                                 else if (mainItem != null && mainItem.IsPriceModified)
                                 {
-                                    if (Math.Round(mainItem.NewPurchasePrice, 2) != Math.Round(mainItem.OriginalPurchasePrice, 2))
+                                    decimal majorFactor = mainItem.MajorFactor > 0 ? mainItem.MajorFactor : 1m;
+                                    decimal u2Factor = mainItem.Unit2Factor > 0 ? mainItem.Unit2Factor : 1m;
+                                    bool isMajorUnit = (mainItem.Factor == majorFactor) || (mainItem.Factor > 1m && majorFactor > 1m && Math.Abs(mainItem.Factor - majorFactor) < 0.001m);
+
+                                    // 1. سعر الشراء / التكلفة
+                                    if (mainItem.IsPurchasePriceModified)
                                     {
-                                        decimal basePurPrice = mainItem.NewPurchasePrice / mainItem.Factor;
+                                        decimal baseMajorBuy = isMajorUnit ? mainItem.NewPurchasePrice : (mainItem.NewPurchasePrice * majorFactor);
+                                        decimal unit1Buy = Math.Round(baseMajorBuy / majorFactor, 4);
+                                        decimal unit2Buy = u2Factor > 0 ? Math.Round((baseMajorBuy / majorFactor) * u2Factor, 4) : 0m;
+
                                         string purSql = AppConfig.UseLastPurchasePriceAsCost
-                                            ? "UPDATE Products SET PurchasePrice = @pur, LastPurchasePrice = @pur, CostPrice = @pur WHERE ProductID = @pid"
-                                            : "UPDATE Products SET PurchasePrice = @pur WHERE ProductID = @pid";
-                                        ProductDAL.RecordPriceChange(pid, "CostPrice", mainItem.OriginalPurchasePrice / mainItem.Factor, basePurPrice, "تعديل تكلفة من شاشة الجرد", trans);
+                                            ? "UPDATE Products SET PurchasePrice = @pur, LastPurchasePrice = @pur, CostPrice = @u1pp, Unit1PurchasePrice = @u1pp, Unit2PurchasePrice = @u2pp WHERE ProductID = @pid"
+                                            : "UPDATE Products SET PurchasePrice = @pur, Unit1PurchasePrice = @u1pp, Unit2PurchasePrice = @u2pp WHERE ProductID = @pid";
+
+                                        ProductDAL.RecordPriceChange(pid, "PurchasePrice (شراء)", mainItem.OriginalPurchasePrice, mainItem.NewPurchasePrice, "تعديل سعر شراء من شاشة الجرد", trans);
                                         DbHelper.ExecuteTrans(trans, purSql,
-                                            DbHelper.P("@pur", basePurPrice),
+                                            DbHelper.P("@pur", baseMajorBuy),
+                                            DbHelper.P("@u1pp", unit1Buy),
+                                            DbHelper.P("@u2pp", unit2Buy),
                                             DbHelper.P("@pid", pid));
                                     }
 
-                                    if (Math.Round(mainItem.NewSalePrice, 2) != Math.Round(mainItem.OriginalSalePrice, 2))
+                                    // 2. سعر القطاعي
+                                    if (mainItem.IsSalePriceModified)
                                     {
-                                        decimal baseSalePrice = mainItem.NewSalePrice / mainItem.Factor;
-                                        ProductDAL.RecordPriceChange(pid, "SalePrice", mainItem.OriginalSalePrice / mainItem.Factor, baseSalePrice, "تعديل سعر بيع من شاشة الجرد", trans);
-                                        DbHelper.ExecuteTrans(trans, "UPDATE Products SET SalePrice = @sale WHERE ProductID = @pid",
-                                            DbHelper.P("@sale", baseSalePrice),
+                                        decimal baseMajorSale = isMajorUnit ? mainItem.NewSalePrice : (mainItem.NewSalePrice * majorFactor);
+                                        decimal unit1Sale = Math.Round(baseMajorSale / majorFactor, 2);
+                                        decimal unit2Sale = u2Factor > 0 ? Math.Round((baseMajorSale / majorFactor) * u2Factor, 2) : 0m;
+
+                                        ProductDAL.RecordPriceChange(pid, "SalePrice (قطاعي)", mainItem.OriginalSalePrice, mainItem.NewSalePrice, "تعديل سعر قطاعي من شاشة الجرد", trans);
+                                        DbHelper.ExecuteTrans(trans,
+                                            @"UPDATE Products 
+                                              SET SalePrice = @sale, 
+                                                  Unit1SalePrice = @u1sale, 
+                                                  Unit2SalePrice = CASE WHEN @u2Factor > 0 THEN @u2sale ELSE Unit2SalePrice END 
+                                              WHERE ProductID = @pid",
+                                            DbHelper.P("@sale", baseMajorSale),
+                                            DbHelper.P("@u1sale", unit1Sale),
+                                            DbHelper.P("@u2sale", unit2Sale),
+                                            DbHelper.P("@u2Factor", u2Factor),
                                             DbHelper.P("@pid", pid));
 
                                         DbHelper.ExecuteTrans(trans,
                                             @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
-                                              VALUES (@pid, @old, @new, 'InventoryAdjust', NULL, @uid, N'تعديل السعر من شاشة جرد وتعديل الأسعار')",
+                                              VALUES (@pid, @old, @new, 'InventoryAdjust', NULL, @uid, N'تعديل سعر القطاعي من شاشة جرد وتعديل الأسعار')",
                                             DbHelper.P("@pid", pid),
-                                            DbHelper.P("@old", mainItem.OriginalSalePrice / mainItem.Factor),
-                                            DbHelper.P("@new", baseSalePrice),
+                                            DbHelper.P("@old", mainItem.OriginalSalePrice),
+                                            DbHelper.P("@new", mainItem.NewSalePrice),
+                                            DbHelper.P("@uid", Session.EmpID));
+                                    }
+
+                                    // 3. سعر نص جملة
+                                    if (mainItem.IsSemiWholesalePriceModified)
+                                    {
+                                        decimal baseMajorSemi = isMajorUnit ? mainItem.NewSemiWholesalePrice : (mainItem.NewSemiWholesalePrice * majorFactor);
+
+                                        ProductDAL.RecordPriceChange(pid, "SemiWholesalePrice (نص جملة)", mainItem.OriginalSemiWholesalePrice, mainItem.NewSemiWholesalePrice, "تعديل سعر نص جملة من شاشة الجرد", trans);
+                                        DbHelper.ExecuteTrans(trans,
+                                            "UPDATE Products SET SemiWholesalePrice = @swp WHERE ProductID = @pid",
+                                            DbHelper.P("@swp", baseMajorSemi),
+                                            DbHelper.P("@pid", pid));
+
+                                        DbHelper.ExecuteTrans(trans,
+                                            @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                              VALUES (@pid, @old, @new, 'InventoryAdjust_SemiWholesale', NULL, @uid, N'تعديل سعر نص جملة من شاشة جرد وتعديل الأسعار')",
+                                            DbHelper.P("@pid", pid),
+                                            DbHelper.P("@old", mainItem.OriginalSemiWholesalePrice),
+                                            DbHelper.P("@new", mainItem.NewSemiWholesalePrice),
+                                            DbHelper.P("@uid", Session.EmpID));
+                                    }
+
+                                    // 4. سعر الجملة
+                                    if (mainItem.IsWholesalePriceModified)
+                                    {
+                                        decimal baseMajorWhole = isMajorUnit ? mainItem.NewWholesalePrice : (mainItem.NewWholesalePrice * majorFactor);
+
+                                        ProductDAL.RecordPriceChange(pid, "WholesalePrice (جملة)", mainItem.OriginalWholesalePrice, mainItem.NewWholesalePrice, "تعديل سعر جملة من شاشة الجرد", trans);
+                                        DbHelper.ExecuteTrans(trans,
+                                            "UPDATE Products SET WholesalePrice = @wp WHERE ProductID = @pid",
+                                            DbHelper.P("@wp", baseMajorWhole),
+                                            DbHelper.P("@pid", pid));
+
+                                        DbHelper.ExecuteTrans(trans,
+                                            @"INSERT INTO PriceChangesLog (ProductID, OldPrice, NewPrice, ChangeSource, SourceRefID, UserID, Notes)
+                                              VALUES (@pid, @old, @new, 'InventoryAdjust_Wholesale', NULL, @uid, N'تعديل سعر جملة من شاشة جرد وتعديل الأسعار')",
+                                            DbHelper.P("@pid", pid),
+                                            DbHelper.P("@old", mainItem.OriginalWholesalePrice),
+                                            DbHelper.P("@new", mainItem.NewWholesalePrice),
                                             DbHelper.P("@uid", Session.EmpID));
                                     }
                                 }
@@ -2428,9 +2569,19 @@ namespace ChickenDist.Forms
             public decimal BaseActual { get; set; }
             public decimal OriginalPurchasePrice { get; set; }
             public decimal OriginalSalePrice { get; set; }
+            public decimal OriginalSemiWholesalePrice { get; set; }
+            public decimal OriginalWholesalePrice { get; set; }
             public decimal NewPurchasePrice { get; set; }
             public decimal NewSalePrice { get; set; }
+            public decimal NewSemiWholesalePrice { get; set; }
+            public decimal NewWholesalePrice { get; set; }
+            public bool IsPurchasePriceModified { get; set; }
+            public bool IsSalePriceModified { get; set; }
+            public bool IsSemiWholesalePriceModified { get; set; }
+            public bool IsWholesalePriceModified { get; set; }
             public bool IsPriceModified { get; set; }
+            public decimal MajorFactor { get; set; } = 1m;
+            public decimal Unit2Factor { get; set; } = 1m;
             public bool IsQtyModified { get; set; }
             public bool HasExpiry { get; set; }
             public DateTime? ExpiryDate { get; set; }

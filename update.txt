@@ -1,5 +1,5 @@
-version=4.4.10
+version=4.4.11
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.10&t=1792923045
-sha256=B0AFD8505A7DA136BA9014A00637B6A14FE9002BB1FA5DDC8DF8AA7E7F5E451E
-changelog=v4.4.10 - 2026-10-25: 1) تصحيح معادلة احتساب وحفظ تكلفة الشراء وسعر الشراء الأخير للأصناف ذات الوحدات المتعددة في فواتير الشراء وحمايتها من التضخم 2) حفظ نسب الربح والضريبة المعدلة على مستوى بنود فاتورة الشراء في كارت الصنف تلقائياً 3) تسجيل حركات تعديل الأسعار الفورية الناتجة عن المشتريات في سجل تاريخ الأسعار (PriceChangeHistory) 4) حماية تكلفة الوحدة الصغرى عند تعديل الأسعار وتوافق مسميات نشاط المنزلي وقطع الغيار في الإعدادات والشاشة الرئيسية.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.11&t=1792964993
+sha256=397789658EC38A2E984C1AA0A3A6E6D268FC70FEDB1A6EBEDF5C29652FCCC7FA
+changelog=v4.4.10 - 2026-10-26: 1) تصحيح معادلة احتساب وحفظ تكلفة الشراء وسعر الشراء الأخير للأصناف ذات الوحدات المتعددة في فواتير الشراء وحمايتها من التضخم 2) حفظ نسب الربح والضريبة المعدلة على مستوى بنود فاتورة الشراء في كارت الصنف تلقائياً 3) تسجيل حركات تعديل الأسعار الفورية الناتجة عن المشتريات في سجل تاريخ الأسعار (PriceChangeHistory) 4) حماية تكلفة الوحدة الصغرى عند تعديل الأسعار وتوافق مسميات نشاط المنزلي وقطع الغيار في الإعدادات والشاشة الرئيسية.

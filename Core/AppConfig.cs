@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -523,6 +523,55 @@ namespace ChickenDist.Core
         {
             get => Get("Store_OrderNotificationWhatsApp", "");
             set => Set("Store_OrderNotificationWhatsApp", value);
+        }
+
+        // ==================== إعدادات منيو المطاعم وباركود الطاولات QR ====================
+        public static string Menu_Title
+        {
+            get => Get("Menu_Title", CompanyName);
+            set => Set("Menu_Title", value);
+        }
+
+        public static string Menu_Subtitle
+        {
+            get => Get("Menu_Subtitle", "قائمة طعام مميزة بأعلى معايير الجودة والضيافة");
+            set => Set("Menu_Subtitle", value);
+        }
+
+        public static string Menu_BannerPath
+        {
+            get => Get("Menu_BannerPath", "");
+            set => Set("Menu_BannerPath", value);
+        }
+
+        public static string Menu_LogoPath
+        {
+            get => Get("Menu_LogoPath", "");
+            set => Set("Menu_LogoPath", value);
+        }
+
+        public static string Menu_WiFiSSID
+        {
+            get => Get("Menu_WiFiSSID", "");
+            set => Set("Menu_WiFiSSID", value);
+        }
+
+        public static string Menu_WiFiPassword
+        {
+            get => Get("Menu_WiFiPassword", "");
+            set => Set("Menu_WiFiPassword", value);
+        }
+
+        public static bool Menu_IsMenuOnly
+        {
+            get => Get("Menu_IsMenuOnly", "true") == "true";
+            set => Set("Menu_IsMenuOnly", value ? "true" : "false");
+        }
+
+        public static bool Menu_AllowTableOrders
+        {
+            get => Get("Menu_AllowTableOrders", "false") == "true";
+            set => Set("Menu_AllowTableOrders", value ? "true" : "false");
         }
 
         /// <summary>إظهار عمود الخصم في جدول أصناف الريسيت</summary>
