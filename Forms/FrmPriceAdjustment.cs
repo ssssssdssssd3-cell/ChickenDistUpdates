@@ -40,57 +40,51 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── 1. Top Filter Panel ──
-            var pnlFilters = new Panel
+            var pnlFilters = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 65,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(12, 14, 12, 8)
+                Padding = new Padding(12, 10, 12, 8)
             };
 
-            int fx = 12;
+            var lblWh = new Label { Text = "المخزن:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 7, 6, 3) };
+            cboWarehouse = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, Margin = new Padding(3, 4, 12, 3) };
 
-            var lblWh = new Label { Text = "المخزن:", Location = new Point(fx, 20), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            fx += 55;
-            cboWarehouse = new ComboBox { Location = new Point(fx, 17), Width = 140, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            fx += 150;
+            var lblSupp = new Label { Text = "المورد:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 7, 6, 3) };
+            cboSupplier = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, Margin = new Padding(3, 4, 12, 3) };
 
-            var lblSupp = new Label { Text = "المورد:", Location = new Point(fx, 20), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            fx += 55;
-            cboSupplier = new ComboBox { Location = new Point(fx, 17), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            fx += 190;
+            var lblCat = new Label { Text = "التصنيف:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 7, 6, 3) };
+            cboCategory = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, Margin = new Padding(3, 4, 12, 3) };
 
-            var lblCat = new Label { Text = "التصنيف:", Location = new Point(fx, 20), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            fx += 65;
-            cboCategory = new ComboBox { Location = new Point(fx, 17), Width = 150, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
-            fx += 160;
-
-            var lblSrch = new Label { Text = "بحث:", Location = new Point(fx, 20), AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            fx += 45;
-            txtSearch = new TextBox { Location = new Point(fx, 17), Width = 160, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain };
+            var lblSrch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 7, 6, 3) };
+            txtSearch = new TextBox { Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, Margin = new Padding(3, 4, 12, 3) };
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadProducts(); };
-            fx += 170;
 
-            btnLoad = Theme.MakeButton("🔍 جلب الأصناف", fx, 14, 125, 34, Theme.Accent);
+            btnLoad = Theme.MakeButton("🔍 جلب الأصناف", 0, 0, 120, 32, Theme.Accent);
+            btnLoad.Margin = new Padding(3, 2, 6, 3);
             btnLoad.Click += (s, e) => LoadProducts();
 
             pnlFilters.Controls.AddRange(new Control[] { lblWh, cboWarehouse, lblSupp, cboSupplier, lblCat, cboCategory, lblSrch, txtSearch, btnLoad });
             this.Controls.Add(pnlFilters);
 
             // ── 2. Adjustment Rules Bar ──
-            var pnlRules = new Panel
+            var pnlRules = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 70,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true,
                 BackColor = Color.FromArgb(30, 41, 59),
-                Padding = new Padding(12, 14, 12, 8)
+                Padding = new Padding(12, 10, 12, 8)
             };
 
-            int rx = 12;
-
-            var lblRule = new Label { Text = "قاعدة التعديل:", Location = new Point(rx, 22), AutoSize = true, ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            rx += 95;
-            cboAdjustmentMode = new ComboBox { Location = new Point(rx, 18), Width = 280, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            var lblRule = new Label { Text = "قاعدة التعديل:", AutoSize = true, ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 7, 6, 3) };
+            cboAdjustmentMode = new ComboBox { Width = 260, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 4, 12, 3) };
             cboAdjustmentMode.Items.AddRange(new string[]
             {
                 "📈 حساب سعر البيع = سعر الشراء + نسبة ربح %",
@@ -106,24 +100,19 @@ namespace ChickenDist.Forms
             {
                 nudValue.Enabled = cboAdjustmentMode.SelectedIndex != 6;
             };
-            rx += 290;
 
-            var lblVal = new Label { Text = "القيمة / النسبة:", Location = new Point(rx, 22), AutoSize = true, ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            rx += 95;
-            nudValue = new NumericUpDown { Location = new Point(rx, 18), Width = 80, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Value = 20, TextAlign = HorizontalAlignment.Center, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.FromArgb(254, 240, 138), Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            rx += 90;
+            var lblVal = new Label { Text = "القيمة / النسبة:", AutoSize = true, ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 7, 6, 3) };
+            nudValue = new NumericUpDown { Width = 75, Minimum = 0, Maximum = 999999, DecimalPlaces = 2, Value = 20, TextAlign = HorizontalAlignment.Center, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.FromArgb(254, 240, 138), Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 4, 12, 3) };
 
-            var lblRound = new Label { Text = "التقريب:", Location = new Point(rx, 22), AutoSize = true, ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            rx += 60;
-            cboRounding = new ComboBox { Location = new Point(rx, 18), Width = 145, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = Theme.FontMain };
+            var lblRound = new Label { Text = "التقريب:", AutoSize = true, ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 7, 6, 3) };
+            cboRounding = new ComboBox { Width = 130, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = Theme.FontMain, Margin = new Padding(3, 4, 12, 3) };
             cboRounding.Items.AddRange(new string[] { "بدون تقريب (عشري)", "لأقرب 1 جنيه", "للأعلى لأقرب 1 جنيه", "لأقرب 5 جنيه" });
             cboRounding.SelectedIndex = 0;
-            rx += 155;
 
-            chkUpdateSubUnits = new CheckBox { Text = "تحديث أسعار الوحدات الفرعية تلقائياً", Location = new Point(rx, 21), AutoSize = true, ForeColor = Color.FromArgb(254, 240, 138), Checked = true, Font = new Font(Theme.FontMain, FontStyle.Bold) };
-            rx += 240;
+            chkUpdateSubUnits = new CheckBox { Text = "تحديث أسعار الوحدات الفرعية تلقائياً", AutoSize = true, ForeColor = Color.FromArgb(254, 240, 138), Checked = true, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(6, 7, 12, 3) };
 
-            btnPreview = Theme.MakeButton("⚡ تطبيق المعادلة", rx, 14, 150, 36, Color.FromArgb(14, 116, 144));
+            btnPreview = Theme.MakeButton("⚡ تطبيق المعادلة", 0, 0, 135, 32, Color.FromArgb(14, 116, 144));
+            btnPreview.Margin = new Padding(3, 2, 6, 3);
             btnPreview.Click += (s, e) => ApplyAdjustmentRule();
 
             pnlRules.Controls.AddRange(new Control[] { lblRule, cboAdjustmentMode, lblVal, nudValue, lblRound, cboRounding, chkUpdateSubUnits, btnPreview });
@@ -183,19 +172,30 @@ namespace ChickenDist.Forms
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 65,
+                Height = 60,
                 BackColor = Theme.BgCard,
-                Padding = new Padding(15, 12, 15, 12)
+                Padding = new Padding(12, 8, 12, 8)
+            };
+
+            var pnlBottomRight = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 8, 0, 0)
             };
 
             chkSelectAll = new CheckBox
             {
                 Text = "تحديد الكل",
-                Location = new Point(15, 20),
                 AutoSize = true,
                 Checked = true,
                 ForeColor = Theme.TextMain,
-                Font = new Font(Theme.FontMain, FontStyle.Bold)
+                Font = new Font(Theme.FontMain, FontStyle.Bold),
+                Margin = new Padding(3, 5, 12, 3)
             };
             chkSelectAll.CheckedChanged += (s, e) =>
             {
@@ -208,36 +208,47 @@ namespace ChickenDist.Forms
 
             lblSummary = new Label
             {
-                Text = "إجمالي: 0 | المحدد: 0",
-                Location = new Point(130, 20),
+                Text = "إجمالي الأصناف: 0 | المحدد: 0",
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
-                Font = new Font(Theme.FontMain, FontStyle.Bold)
+                Font = new Font(Theme.FontMain, FontStyle.Bold),
+                Margin = new Padding(3, 7, 10, 3)
             };
 
-            int bx = pnlBottom.ClientSize.Width - 15;
+            pnlBottomRight.Controls.AddRange(new Control[] { chkSelectAll, lblSummary });
 
-            btnClose = Theme.MakeButton("❌ إغلاق", 15, 14, 100, 36, Color.FromArgb(100, 116, 139));
-            btnClose.Click += (s, e) => this.Close();
+            var pnlBottomLeft = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Padding = new Padding(0, 4, 0, 0)
+            };
 
-            btnHistory = Theme.MakeButton("📜 سجل تغيرات الأسعار", 125, 14, 185, 36, Color.FromArgb(71, 85, 105));
-            btnHistory.Click += (s, e) => new FrmPriceChangeHistory().ShowDialog();
-
-            btnPrintBarcodes = Theme.MakeButton("🖨️ طباعة باركود المعدل", 320, 14, 180, 36, Color.FromArgb(30, 64, 175));
-            btnPrintBarcodes.Click += BtnPrintBarcodes_Click;
-
-            btnSavePrices = Theme.MakeButton("💾 اعتماد وحفظ الأسعار الجديدة", 510, 14, 230, 36, Theme.Accent);
+            btnSavePrices = Theme.MakeButton("💾 اعتماد وحفظ الأسعار الجديدة", 0, 0, 210, 36, Theme.Accent);
+            btnSavePrices.Margin = new Padding(4, 0, 4, 0);
             btnSavePrices.Click += BtnSavePrices_Click;
 
-            pnlBottom.Controls.AddRange(new Control[] { chkSelectAll, lblSummary, btnClose, btnHistory, btnPrintBarcodes, btnSavePrices });
-            this.Controls.Add(pnlBottom);
+            btnPrintBarcodes = Theme.MakeButton("🖨️ طباعة باركود المعدل", 0, 0, 160, 36, Color.FromArgb(30, 64, 175));
+            btnPrintBarcodes.Margin = new Padding(4, 0, 4, 0);
+            btnPrintBarcodes.Click += BtnPrintBarcodes_Click;
 
-            pnlBottom.Resize += (s, e) =>
-            {
-                btnSavePrices.Left = pnlBottom.ClientSize.Width - btnSavePrices.Width - 15;
-                btnPrintBarcodes.Left = btnSavePrices.Left - btnPrintBarcodes.Width - 10;
-                btnHistory.Left = btnPrintBarcodes.Left - btnHistory.Width - 10;
-            };
+            btnHistory = Theme.MakeButton("📜 سجل تغيرات الأسعار", 0, 0, 160, 36, Color.FromArgb(71, 85, 105));
+            btnHistory.Margin = new Padding(4, 0, 4, 0);
+            btnHistory.Click += (s, e) => new FrmPriceChangeHistory().ShowDialog();
+
+            btnClose = Theme.MakeButton("❌ إغلاق", 0, 0, 90, 36, Color.FromArgb(100, 116, 139));
+            btnClose.Margin = new Padding(4, 0, 4, 0);
+            btnClose.Click += (s, e) => this.Close();
+
+            pnlBottomLeft.Controls.AddRange(new Control[] { btnSavePrices, btnPrintBarcodes, btnHistory, btnClose });
+
+            pnlBottom.Controls.Add(pnlBottomRight);
+            pnlBottom.Controls.Add(pnlBottomLeft);
+            this.Controls.Add(pnlBottom);
 
             dgvProducts.BringToFront();
 

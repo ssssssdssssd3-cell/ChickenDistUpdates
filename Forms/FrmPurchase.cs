@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -745,7 +745,8 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 Dock = DockStyle.Top,
                 Height = 36,
                 BackColor = Color.FromArgb(241, 245, 249),
-                Padding = new Padding(6, 3, 6, 3)
+                Padding = new Padding(6, 3, 6, 3),
+                Visible = AppConfig.IsPartsAndHomeMargin
             };
 
             var flowBulk = new FlowLayoutPanel
@@ -1060,8 +1061,8 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiscountPct",  HeaderText = "خصم %",       FillWeight = 45 });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",   HeaderText = "الإجمالي",    ReadOnly = true, FillWeight = 65, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(240, 253, 244), ForeColor = Color.FromArgb(21, 128, 61), Font = new Font("Segoe UI", 10f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "SuggestedSalePrice", HeaderText = "سعر البيع", FillWeight = 60 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش %",    ReadOnly = false, FillWeight = 50 });
-            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TaxPct",       HeaderText = "ضريبة %",     ReadOnly = false, FillWeight = 45 });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "MarginPct",    HeaderText = "الهامش %",    ReadOnly = false, FillWeight = 50, Visible = AppConfig.IsPartsAndHomeMargin });
+            dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TaxPct",       HeaderText = "ضريبة %",     ReadOnly = false, FillWeight = 45, Visible = AppConfig.IsPartsAndHomeMargin });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 85, MinimumWidth = 180, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
@@ -4992,6 +4993,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 if (col.Name == "Delete") continue;
                 if (isClothingMode && (col.Name == "CarModel" || col.Name == "Brand")) continue;
                 if (AppConfig.BusinessType != "Mobiles" && col.Name == "IMEI") continue;
+                if (!AppConfig.IsPartsAndHomeMargin && (col.Name == "MarginPct" || col.Name == "TaxPct")) continue;
                 clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
             }
 
@@ -5076,6 +5078,12 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 if (dgItems.Columns.Contains("Delete"))
                     dgItems.Columns["Delete"].DisplayIndex = dgItems.ColumnCount - 1;
 
+                if (!AppConfig.IsPartsAndHomeMargin)
+                {
+                    if (dgItems.Columns.Contains("MarginPct")) dgItems.Columns["MarginPct"].Visible = false;
+                    if (dgItems.Columns.Contains("TaxPct")) dgItems.Columns["TaxPct"].Visible = false;
+                }
+
                 SaveColumnSettings(orderedNames, hiddenNames);
             }
         }
@@ -5121,7 +5129,15 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 string orderVal  = Core.LicenseManager.ReadIniValue("PurchaseGridColumns", "Order",  "");
                 string hiddenVal = Core.LicenseManager.ReadIniValue("PurchaseGridColumns", "Hidden", "");
 
-                if (string.IsNullOrWhiteSpace(orderVal)) return;
+                if (string.IsNullOrWhiteSpace(orderVal))
+                {
+                    if (!AppConfig.IsPartsAndHomeMargin)
+                    {
+                        if (dgItems.Columns.Contains("MarginPct")) dgItems.Columns["MarginPct"].Visible = false;
+                        if (dgItems.Columns.Contains("TaxPct")) dgItems.Columns["TaxPct"].Visible = false;
+                    }
+                    return;
+                }
 
                 var ordered = new System.Collections.Generic.List<string>(
                     orderVal.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries));
@@ -5131,6 +5147,12 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
                 if (AppConfig.BusinessType != "Mobiles" && !hidden.Contains("IMEI"))
                     hidden.Add("IMEI");
+
+                if (!AppConfig.IsPartsAndHomeMargin)
+                {
+                    if (!hidden.Contains("MarginPct")) hidden.Add("MarginPct");
+                    if (!hidden.Contains("TaxPct")) hidden.Add("TaxPct");
+                }
 
                 // تأمين: أي أعمدة موجودة في الجدول برمجياً وغير مسجلة في الإعدادات (ترقية جديدة)، نقوم بإضافتها
                 foreach (System.Windows.Forms.DataGridViewColumn col in dgItems.Columns)
@@ -5159,6 +5181,12 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
                 if (dgItems.Columns.Contains("Delete"))
                     dgItems.Columns["Delete"].DisplayIndex = dgItems.ColumnCount - 1;
+
+                if (!AppConfig.IsPartsAndHomeMargin)
+                {
+                    if (dgItems.Columns.Contains("MarginPct")) dgItems.Columns["MarginPct"].Visible = false;
+                    if (dgItems.Columns.Contains("TaxPct")) dgItems.Columns["TaxPct"].Visible = false;
+                }
             }
             catch { }
         }

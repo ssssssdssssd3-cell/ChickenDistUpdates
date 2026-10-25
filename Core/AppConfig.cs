@@ -75,7 +75,18 @@ namespace ChickenDist.Core
             get => BusinessType == "Factories" || BusinessType == "Manufacturing";
         }
 
-        public static bool IsPartsAndHomeMargin => BusinessType == "PartsAndHomeMargin" || BusinessType == "SparePartsHomeMargin";
+        public static bool IsPartsAndHomeMargin
+        {
+            get
+            {
+                string b = BusinessType ?? "";
+                return b.Equals("PartsAndHomeMargin", StringComparison.OrdinalIgnoreCase)
+                    || b.Equals("SparePartsHomeMargin", StringComparison.OrdinalIgnoreCase)
+                    || b.Equals("HomeAppliances", StringComparison.OrdinalIgnoreCase)
+                    || b.Equals("HomeMargin", StringComparison.OrdinalIgnoreCase)
+                    || b.Equals("SparePartsMargin", StringComparison.OrdinalIgnoreCase);
+            }
+        }
         public static bool UseLastPurchasePriceAsCost
         {
             get

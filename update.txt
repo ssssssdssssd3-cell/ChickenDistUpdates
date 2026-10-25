@@ -1,5 +1,5 @@
-version=4.4.8
+version=4.4.9
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.8&t=1792916478
-sha256=CBA5F005F57814AC4D731FD948B6CD05FC351ED86A8B4212249BAB5EE39DF025
-changelog=v4.4.8 - 2026-10-25: 1) إصلاح شاشة تعديل الأسعار وعرض جميع الأصناف بعد تصحيح استعلام المشتريات 2) حل مشكلة إغلاق البرنامج عند كتابة هامش الربح في المشتريات بحماية التكرار اللانهائي 3) شريط أدوات مستقل ومخصص دائم الظهور للتسعير الجماعي والضريبة 4) زر تطبيق نسبة ربح كارت الصنف لكل صنف تلقائياً.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.9&t=1792920611
+sha256=1E8D6BAADC3DB17644173FEAAB58ECC7DAF5B0BFE7FF5ACAB4C8071AE8E55107
+changelog=v4.4.9 - 2026-10-25: 1) تخصيص شريط وأعمدة نسب الربح والضريبة لنشاط المنزلي وقطع الغيار بنسب ربح فقط وإخفاؤها لباقي الأنشطة 2) إصلاح تداخل العناصر في شاشة تعديل الأسعار وتنسيق شريط الإجراءات 3) إصلاح الشاشة البيضاء في سجل تعديل الأسعار بالمخازن وتوحيد السجلات.

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -1516,8 +1516,8 @@ namespace ChickenDist.Forms
             form.Dock = DockStyle.Fill;
             form.FormBorderStyle = FormBorderStyle.None;
             form.RightToLeft = RightToLeft.Yes;
-            form.RightToLeftLayout = true;
             Theme.ApplyFormRTL(form);
+            form.RightToLeftLayout = false;
 
             var tab = _AddTab(form);
             if (tab != null && !(form is FrmDashboard))

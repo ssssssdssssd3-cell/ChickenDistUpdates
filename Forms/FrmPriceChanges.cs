@@ -14,6 +14,7 @@ namespace ChickenDist.Forms
         private TextBox txtSearch;
         private Button btnSearch, btnReset;
         private DataGridView dgLogs;
+        private Label lblEmptyNotice;
 
         public FrmPriceChanges()
         {
@@ -27,7 +28,7 @@ namespace ChickenDist.Forms
             this.Size = new Size(1000, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
-            this.RightToLeftLayout = true;
+            this.RightToLeftLayout = false;
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
@@ -40,20 +41,20 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            int x = 15;
+            // السطر الأول: التواريخ والمصدر
             pnlTop.Controls.Add(new Label
             {
                 Text = "من تاريخ:",
-                Location = new Point(x, 15),
-                Width = 70,
+                Location = new Point(15, 15),
+                Width = 65,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
                 TextAlign = ContentAlignment.MiddleLeft
             });
             dtpFrom = new DateTimePicker
             {
-                Location = new Point(x + 75, 12),
-                Width = 190,
+                Location = new Point(85, 12),
+                Width = 165,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Today.AddDays(-30)
@@ -64,16 +65,16 @@ namespace ChickenDist.Forms
             pnlTop.Controls.Add(new Label
             {
                 Text = "إلى تاريخ:",
-                Location = new Point(x + 275, 15),
-                Width = 70,
+                Location = new Point(265, 15),
+                Width = 65,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
                 TextAlign = ContentAlignment.MiddleLeft
             });
             dtpTo = new DateTimePicker
             {
-                Location = new Point(x + 350, 12),
-                Width = 190,
+                Location = new Point(335, 12),
+                Width = 165,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "yyyy/MM/dd   hh:mm tt",
                 Value = DateTime.Now
@@ -84,15 +85,15 @@ namespace ChickenDist.Forms
             pnlTop.Controls.Add(new Label
             {
                 Text = "المصدر:",
-                Location = new Point(x + 420, 15),
-                Width = 60,
+                Location = new Point(515, 15),
+                Width = 55,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
                 TextAlign = ContentAlignment.MiddleLeft
             });
             cboSource = new ComboBox
             {
-                Location = new Point(x + 485, 12),
+                Location = new Point(575, 12),
                 Width = 140,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Theme.BgInput,
@@ -100,21 +101,23 @@ namespace ChickenDist.Forms
             };
             cboSource.Items.AddRange(new object[] { "الكل", "كارت الصنف", "فاتورة شراء", "فاتورة بيع" });
             cboSource.SelectedIndex = 0;
+            cboSource.SelectedIndexChanged += (s, e) => LoadLogs();
             pnlTop.Controls.Add(cboSource);
 
+            // السطر الثاني: البحث والأزرار
             pnlTop.Controls.Add(new Label
             {
                 Text = "بحث بالمنتج:",
-                Location = new Point(x, 48),
-                Width = 85,
+                Location = new Point(15, 48),
+                Width = 80,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
                 TextAlign = ContentAlignment.MiddleLeft
             });
             txtSearch = new TextBox
             {
-                Location = new Point(x + 90, 46),
-                Width = 315,
+                Location = new Point(95, 46),
+                Width = 300,
                 BackColor = Theme.BgInput,
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle
@@ -122,8 +125,8 @@ namespace ChickenDist.Forms
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadLogs(); };
             pnlTop.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("🔍 بحث وفلترة", x + 420, 44, 115, 30, Theme.Accent);
-            btnReset = Theme.MakeButton("🔄 إعادة تعيين", x + 545, 44, 110, 30, Color.FromArgb(70, 70, 70));
+            btnSearch = Theme.MakeButton("🔍 بحث وفلترة", 410, 44, 115, 30, Theme.Accent);
+            btnReset = Theme.MakeButton("🔄 إعادة تعيين", 535, 44, 110, 30, Color.FromArgb(70, 70, 70));
 
             btnSearch.Click += (s, e) => LoadLogs();
             btnReset.Click += (s, e) =>
@@ -136,6 +139,18 @@ namespace ChickenDist.Forms
             };
 
             pnlTop.Controls.AddRange(new Control[] { btnSearch, btnReset });
+
+            // Empty state notice
+            lblEmptyNotice = new Label
+            {
+                Text = "ℹ️ لا توجد حركات تعديل أسعار مسجلة في هذه الفترة.",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Theme.TextSub,
+                Font = new Font(Theme.FontMain.FontFamily, 12f, FontStyle.Bold),
+                BackColor = Theme.BgCard,
+                Visible = false
+            };
 
             // Grid Layout
             dgLogs = new DataGridView
@@ -179,10 +194,14 @@ namespace ChickenDist.Forms
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "User", HeaderText = "المستخدم", FillWeight = 85 });
             dgLogs.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات وتفاصيل", FillWeight = 180 });
 
+            this.Controls.Add(lblEmptyNotice);
             this.Controls.Add(dgLogs);
             this.Controls.Add(pnlTop);
 
+            dgLogs.BringToFront();
+
             Theme.ApplyFormRTL(this);
+            this.RightToLeftLayout = false;
         }
 
         private void LoadLogs()
@@ -283,6 +302,63 @@ namespace ChickenDist.Forms
                 {
                     cellDiff.Style.ForeColor = Color.FromArgb(255, 100, 100);
                 }
+            }
+
+            // إذا لم توجد سجلات في PriceChangesLog، نعرض سجلات PriceChangeHistory الشاملة
+            if (dt.Rows.Count == 0)
+            {
+                try
+                {
+                    DbHelper.EnsurePriceMarginAndHistorySchema();
+                    string histSql = @"
+                        SELECT ChangeDate, ProductCode, ProductName, N'---' AS Unit,
+                               ChangeType AS ChangeSource, ChangeID AS SourceRefID,
+                               OldSalePrice AS OldPrice, NewSalePrice AS NewPrice,
+                               (NewSalePrice - OldSalePrice) AS PriceDiff,
+                               UserName AS EmpName, Notes, N'#' + CAST(ChangeID AS NVARCHAR) AS RefCode
+                        FROM PriceChangeHistory WITH (NOLOCK)
+                        WHERE ChangeDate BETWEEN @from AND @to
+                          AND (@term = '' OR ProductName LIKE @term OR ProductCode LIKE @term)
+                        ORDER BY ChangeDate DESC";
+
+                    var dtHist = DbHelper.Query(histSql,
+                        DbHelper.P("@from", f),
+                        DbHelper.P("@to", t),
+                        DbHelper.P("@term", string.IsNullOrEmpty(searchPattern) ? "" : "%" + searchPattern + "%"));
+
+                    foreach (DataRow r in dtHist.Rows)
+                    {
+                        decimal oldPrice = Convert.ToDecimal(r["OldPrice"] == DBNull.Value ? 0 : r["OldPrice"]);
+                        decimal newPrice = Convert.ToDecimal(r["NewPrice"] == DBNull.Value ? 0 : r["NewPrice"]);
+                        decimal diff = newPrice - oldPrice;
+
+                        int ri = dgLogs.Rows.Add(
+                            Convert.ToDateTime(r["ChangeDate"]).ToString("yyyy-MM-dd HH:mm"),
+                            r["ProductCode"]?.ToString() ?? "---",
+                            r["ProductName"]?.ToString() ?? "---",
+                            r["Unit"]?.ToString() ?? "---",
+                            r["ChangeSource"]?.ToString() ?? "تعديل أسعار",
+                            r["RefCode"]?.ToString() ?? "---",
+                            oldPrice.ToString("N2") + " ج",
+                            newPrice.ToString("N2") + " ج",
+                            (diff > 0 ? "+" : "") + diff.ToString("N2") + " ج",
+                            r["EmpName"]?.ToString() ?? "---",
+                            r["Notes"]?.ToString() ?? "---"
+                        );
+
+                        var cellDiff = dgLogs.Rows[ri].Cells["Diff"];
+                        if (diff > 0) cellDiff.Style.ForeColor = Color.FromArgb(100, 220, 100);
+                        else if (diff < 0) cellDiff.Style.ForeColor = Color.FromArgb(255, 100, 100);
+                    }
+                }
+                catch { }
+            }
+
+            if (lblEmptyNotice != null)
+            {
+                lblEmptyNotice.Visible = (dgLogs.Rows.Count == 0);
+                dgLogs.Visible = (dgLogs.Rows.Count > 0);
+                if (lblEmptyNotice.Visible) lblEmptyNotice.BringToFront();
             }
         }
     }

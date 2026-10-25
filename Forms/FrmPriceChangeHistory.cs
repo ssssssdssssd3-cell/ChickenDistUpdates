@@ -15,7 +15,7 @@ namespace ChickenDist.Forms
         private ComboBox cboChangeType;
         private Button btnFilter, btnExportExcel, btnClose;
         private DataGridView dgvHistory;
-        private Label lblCount;
+        private Label lblCount, lblEmptyNotice;
 
         public FrmPriceChangeHistory(int? initialProductId = null)
         {
@@ -120,6 +120,18 @@ namespace ChickenDist.Forms
             dgvHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "UserName", HeaderText = "المستخدم", FillWeight = 55 });
             dgvHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 90 });
 
+            lblEmptyNotice = new Label
+            {
+                Text = "ℹ️ لا توجد تعديلات أسعار مسجلة خلال الفترة المحددة.\nيمكنك توسيع نطاق التاريخ أو استخدام زر [تغيير أسعار البيع والتكلفة] لتطبيق أسعار جديدة.",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Theme.TextSub,
+                Font = new Font(Theme.FontMain.FontFamily, 12f, FontStyle.Bold),
+                BackColor = Theme.BgCard,
+                Visible = false
+            };
+
+            this.Controls.Add(lblEmptyNotice);
             this.Controls.Add(dgvHistory);
 
             // ── Bottom Panel ──
@@ -147,6 +159,8 @@ namespace ChickenDist.Forms
 
             pnlBottom.Controls.AddRange(new Control[] { lblCount, btnClose });
             this.Controls.Add(pnlBottom);
+
+            dgvHistory.BringToFront();
 
             Theme.ApplyFormRTL(this);
             this.RightToLeftLayout = false;
@@ -224,6 +238,12 @@ namespace ChickenDist.Forms
                 }
 
                 lblCount.Text = $"عدد العمليات المسجلة: {dt.Rows.Count}";
+                if (lblEmptyNotice != null)
+                {
+                    lblEmptyNotice.Visible = (dt.Rows.Count == 0);
+                    dgvHistory.Visible = (dt.Rows.Count > 0);
+                    if (lblEmptyNotice.Visible) lblEmptyNotice.BringToFront();
+                }
             }
             catch (Exception ex)
             {
