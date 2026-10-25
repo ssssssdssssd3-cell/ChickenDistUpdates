@@ -293,7 +293,7 @@ namespace ChickenDist.Forms
             {
                 "Mobiles"   => "كود الموديل",
                 "Clothing"  => "كود الموديل",
-                "SpareParts" => "رقم القطعة",
+                "SpareParts" or "PartsAndHomeMargin" => "رقم القطعة",
                 _           => "الكود"
             });
             dgItems.Columns.Add("Name", AppConfig.BusinessType switch

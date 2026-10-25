@@ -259,7 +259,7 @@ namespace ChickenDist.Forms
                 "General" => "نشاط تجاري عام / تجزئة (عام بدون خانات مخصصة)",
                 "Restaurant" => "مطعم وكافيه (طاولات، تحضير مطبخ، تيك أواي، توصيل)",
                 "Factories" or "Manufacturing" => "مصانع وإنتاج (أوامر تشغيل، خطوط إنتاج، خامات وتكاليف)",
-                "PartsAndHomeMargin" or "SparePartsHomeMargin" => "قطع غيار ومنزلي (نسبة ربح وضريبة)",
+                "PartsAndHomeMargin" or "SparePartsHomeMargin" or "HomeAppliances" or "HomeMargin" or "SparePartsMargin" => "قطع غيار ومنزلي (نسبة ربح وضريبة)",
                 _ => "سوبر ماركت (المواد الغذائية والصلاحية)"
             };
             pnlBody.Controls.Add(cboBusinessType);

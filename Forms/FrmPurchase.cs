@@ -4323,15 +4323,45 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     {
                         foreach (var item in _items)
                         {
-                            decimal factor = item.Factor > 0 ? item.Factor : 1m;
-                            decimal majorUnitPrice = item.UnitPrice * factor;
-                            decimal baseCost = item.NetUnitPrice;
+                            var dtP = DbHelper.Query(
+                                "SELECT Unit, Unit1Name, Unit2Name, ISNULL(Unit2Factor, 1) AS Unit2Factor, ISNULL(Unit3Factor, 1) AS Unit3Factor FROM Products WHERE ProductID = @pid",
+                                DbHelper.P("@pid", item.ProductID));
+
+                            decimal u2f = 1m;
+                            decimal u3f = 1m;
+                            if (dtP.Rows.Count > 0)
+                            {
+                                var pRow = dtP.Rows[0];
+                                u2f = Convert.ToDecimal(pRow["Unit2Factor"]);
+                                u3f = Convert.ToDecimal(pRow["Unit3Factor"]);
+                                if (u2f <= 0m) u2f = 1m;
+                                if (u3f <= 0m) u3f = 1m;
+                            }
+                            decimal totalFactor = u2f * u3f;
+                            if (totalFactor <= 0m) totalFactor = 1m;
+
+                            decimal itemFactor = item.Factor > 0m ? item.Factor : 1m;
+                            decimal baseGrossBuy = itemFactor > 0m ? (item.UnitPrice / itemFactor) : item.UnitPrice;
+                            decimal baseNetCost = itemFactor > 0m ? (item.NetUnitPrice / itemFactor) : item.NetUnitPrice;
+
+                            decimal majorGrossBuy = Math.Round(baseGrossBuy * totalFactor, 2);
+                            decimal majorNetCost = Math.Round(baseNetCost * totalFactor, 2);
+                            decimal u1GrossBuy = Math.Round(baseGrossBuy, 2);
+                            decimal u2GrossBuy = Math.Round(baseGrossBuy * u2f, 2);
 
                             DbHelper.Execute(
                                 @"UPDATE Products 
-                                  SET LastPurchasePrice = CASE WHEN @mup > 0 THEN @mup ELSE LastPurchasePrice END
+                                  SET LastPurchasePrice = CASE WHEN @mup > 0 THEN @mup ELSE LastPurchasePrice END,
+                                      Unit1PurchasePrice = CASE WHEN @u1pp > 0 THEN @u1pp ELSE Unit1PurchasePrice END,
+                                      Unit2PurchasePrice = CASE WHEN @u2pp > 0 THEN @u2pp ELSE Unit2PurchasePrice END,
+                                      ProfitMarginPct = CASE WHEN @m > 0 THEN @m ELSE ProfitMarginPct END,
+                                      TaxPct = CASE WHEN @t > 0 THEN @t ELSE TaxPct END
                                   WHERE ProductID = @pid",
-                                DbHelper.P("@mup", majorUnitPrice),
+                                DbHelper.P("@mup", majorGrossBuy),
+                                DbHelper.P("@u1pp", u1GrossBuy),
+                                DbHelper.P("@u2pp", u2GrossBuy),
+                                DbHelper.P("@m", item.ProfitMarginPct),
+                                DbHelper.P("@t", item.TaxPct),
                                 DbHelper.P("@pid", item.ProductID));
 
                             if (AppConfig.UseLastPurchasePriceAsCost)
@@ -4341,8 +4371,8 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                                       SET CostPrice = CASE WHEN @bc > 0 THEN @bc ELSE CostPrice END,
                                           PurchasePrice = CASE WHEN @mup > 0 THEN @mup ELSE PurchasePrice END
                                       WHERE ProductID = @pid",
-                                    DbHelper.P("@bc", baseCost),
-                                    DbHelper.P("@mup", majorUnitPrice),
+                                    DbHelper.P("@bc", baseNetCost),
+                                    DbHelper.P("@mup", majorGrossBuy),
                                     DbHelper.P("@pid", item.ProductID));
                             }
                         }

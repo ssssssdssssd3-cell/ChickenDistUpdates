@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -926,8 +926,8 @@ namespace ChickenDist.DAL
 
                     decimal oldBuy = (changeField == "CostPrice" || changeField == "PurchasePrice") ? oldValue : curBuy;
                     decimal newBuy = (changeField == "CostPrice" || changeField == "PurchasePrice") ? newValue : curBuy;
-                    decimal oldSale = (changeField == "SalePrice") ? oldValue : curSale;
-                    decimal newSale = (changeField == "SalePrice") ? newValue : curSale;
+                    decimal oldSale = (changeField == "SalePrice" || changeField == "Unit1SalePrice" || changeField == "Unit2SalePrice") ? oldValue : curSale;
+                    decimal newSale = (changeField == "SalePrice" || changeField == "Unit1SalePrice" || changeField == "Unit2SalePrice") ? newValue : curSale;
 
                     decimal pct = 0m;
                     if (oldValue > 0)
@@ -1279,6 +1279,15 @@ namespace ChickenDist.DAL
                           VALUES (@pid, @old, @new, 'PurchaseInvoice', @ref, @uid, @notes)",
                         DbHelper.P("@pid", productID), DbHelper.P("@old", currentSalePrice), DbHelper.P("@new", pendingPrice),
                         DbHelper.P("@ref", purchaseID.HasValue ? (object)purchaseID.Value : DBNull.Value), DbHelper.P("@uid", Session.EmpID), DbHelper.P("@notes", notes));
+
+                    try
+                    {
+                        RecordPriceChange(productID, saleCol, currentSalePrice, pendingPrice, notes);
+                    }
+                    catch (Exception exLog)
+                    {
+                        AppLogger.Error("RecordPriceChange in SetPendingPrice", exLog);
+                    }
                 }
             }
             else

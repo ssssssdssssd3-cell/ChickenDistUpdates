@@ -524,7 +524,7 @@ namespace ChickenDist.Forms
                 var trimmed = scr.Trim();
                 if (trimmed == "_SEP_") return false;
                 if ((trimmed == "ClothingMatrix" || trimmed == "ModelLookup") && !AppConfig.IsClothing) return false;
-                if (trimmed == "SerialStockReport" && AppConfig.BusinessType != "Mobiles") return false;
+                if (trimmed == "SerialStockReport" && AppConfig.BusinessType != "Mobiles" && !AppConfig.IsPartsAndHomeMargin && AppConfig.BusinessType != "SpareParts") return false;
                 if (trimmed == "Vehicles" && (AppConfig.BusinessType == "Mobiles" || AppConfig.IsClothing || AppConfig.IsRestaurant || AppConfig.BusinessType == "Supermarket")) return false;
                 if (!Session.CanAccess(trimmed)) return false;
             }
@@ -714,7 +714,7 @@ namespace ChickenDist.Forms
                 }),
             };
 
-            if (AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "SpareParts" || AppConfig.BusinessType == "CarService" || AppConfig.BusinessType == "MaintenanceCenter" || AppConfig.BusinessType == "Maintenance")
+            if (AppConfig.BusinessType == "Mobiles" || AppConfig.BusinessType == "SpareParts" || AppConfig.BusinessType == "CarService" || AppConfig.BusinessType == "MaintenanceCenter" || AppConfig.BusinessType == "Maintenance" || AppConfig.IsPartsAndHomeMargin)
             {
                 groups.Insert(groups.Count - 1, ("🔧", "الصيانة", Color.FromArgb(13, 148, 136), new[] {
                     ("🔧 تذاكر وشاشة الصيانة", "Maintenance", (Action)(() => NavigateTo(new FrmMaintenance()))),
@@ -2695,6 +2695,7 @@ namespace ChickenDist.Forms
                 "Clothing" => "ملابس وأحذية",
                 "CarService" => "غيار زيت وصيانة سيارات",
                 "Restaurant" => "مطاعم وكافيهات",
+                "PartsAndHomeMargin" or "SparePartsHomeMargin" or "HomeAppliances" or "HomeMargin" or "SparePartsMargin" => "قطع غيار ومنزلي (نسب ربح وضريبة)",
                 _ => string.IsNullOrWhiteSpace(AppConfig.BusinessType) ? "نشاط عام" : AppConfig.BusinessType
             };
             addBadge($"🏢 النشاط: {bizLabel}", "#059669");

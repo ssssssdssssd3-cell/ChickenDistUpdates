@@ -1,5 +1,5 @@
-version=4.4.9
+version=4.4.10
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.9&t=1792920611
-sha256=1E8D6BAADC3DB17644173FEAAB58ECC7DAF5B0BFE7FF5ACAB4C8071AE8E55107
-changelog=v4.4.9 - 2026-10-25: 1) تخصيص شريط وأعمدة نسب الربح والضريبة لنشاط المنزلي وقطع الغيار بنسب ربح فقط وإخفاؤها لباقي الأنشطة 2) إصلاح تداخل العناصر في شاشة تعديل الأسعار وتنسيق شريط الإجراءات 3) إصلاح الشاشة البيضاء في سجل تعديل الأسعار بالمخازن وتوحيد السجلات.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.10&t=1792923045
+sha256=B0AFD8505A7DA136BA9014A00637B6A14FE9002BB1FA5DDC8DF8AA7E7F5E451E
+changelog=v4.4.10 - 2026-10-25: 1) تصحيح معادلة احتساب وحفظ تكلفة الشراء وسعر الشراء الأخير للأصناف ذات الوحدات المتعددة في فواتير الشراء وحمايتها من التضخم 2) حفظ نسب الربح والضريبة المعدلة على مستوى بنود فاتورة الشراء في كارت الصنف تلقائياً 3) تسجيل حركات تعديل الأسعار الفورية الناتجة عن المشتريات في سجل تاريخ الأسعار (PriceChangeHistory) 4) حماية تكلفة الوحدة الصغرى عند تعديل الأسعار وتوافق مسميات نشاط المنزلي وقطع الغيار في الإعدادات والشاشة الرئيسية.

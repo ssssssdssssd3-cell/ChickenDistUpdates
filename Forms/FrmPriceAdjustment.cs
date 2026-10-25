@@ -641,6 +641,7 @@ namespace ChickenDist.Forms
                                 CostPrice = CASE WHEN @useLastCost = 1 THEN @u1pp ELSE CostPrice END
                             WHERE ProductID = @pid",
                             DbHelper.P("@np", newBuy),
+                            DbHelper.P("@bc", totalFactor > 1m ? Math.Round(newBuy / totalFactor, 4) : newBuy),
                             DbHelper.P("@nsp", newSale),
                             DbHelper.P("@margin", margin),
                             DbHelper.P("@u2sp", newU2Sale),
@@ -658,9 +659,10 @@ namespace ChickenDist.Forms
                                 LastPurchasePrice = @np,
                                 SalePrice = @nsp,
                                 ProfitMarginPct = @margin,
-                                CostPrice = CASE WHEN @useLastCost = 1 THEN @np ELSE CostPrice END
+                                CostPrice = CASE WHEN @useLastCost = 1 THEN @bc ELSE CostPrice END
                             WHERE ProductID = @pid",
                             DbHelper.P("@np", newBuy),
+                            DbHelper.P("@bc", totalFactor > 1m ? Math.Round(newBuy / totalFactor, 4) : newBuy),
                             DbHelper.P("@nsp", newSale),
                             DbHelper.P("@margin", margin),
                             DbHelper.P("@useLastCost", AppConfig.UseLastPurchasePriceAsCost ? 1 : 0),
