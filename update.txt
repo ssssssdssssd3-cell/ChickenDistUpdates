@@ -1,5 +1,5 @@
-version=4.4.13
+version=4.4.14
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.13&t=1792968963
-sha256=E0F73ABD59343A20E1CC0A8D5E30EA8BAA74560B962AF38DC8F5975FB7680EA8
-changelog=v4.4.13 - 2026-10-26: 1) القضاء التام على بطء وتجميد الحفظ (7 دقائق) عند تعديل أسعار القطاعي ونصف الجملة والجملة من شاشة الجرد وحفظها في أجزاء من الثانية. 2) معالجة القفل المتبادل (Deadlock) في قاعدة البيانات بتمرير الـ SqlTransaction واستخدام (NOLOCK). 3) تسريع عمليات تسجيل تغييرات الأسعار ومنع فحص DDL المتكرر. 4) إنشاء جدول IncompleteDrafts تلقائياً وحمايته.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.14&t=1792971196
+sha256=107BEAF8349C063EB010474E525691841077A9EBE3D49B736E99D7576B59A6A4
+changelog=v4.4.14 - 2026-10-26: 1) تفعيل حساب نسبة الخصم % بدقة في شاشة البحث المتقدم وفي بنود فاتورة المشتريات وإجماليات الفاتورة. 2) إضافة خانة هامش الربح % لشاشة البحث المتقدم لإمكانية تعديل الشراء والخصم والربح وسعر البيع بشكل تفاعلي وفوري قبل إنزال الصنف. 3) ربط وتعديل نسب الشراء والخصم والربح والبيع في شبكة المشتريات بشكل تكاملي مع احتساب التكلفة الصافية بدقة.

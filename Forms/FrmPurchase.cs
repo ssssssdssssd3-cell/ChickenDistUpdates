@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -573,6 +573,7 @@ namespace ChickenDist.Forms
                                 decimal purchasePrice = dlgSearch.SelectedPurchasePrice > 0 ? dlgSearch.SelectedPurchasePrice : dlgSearch.SelectedPrice;
                                 decimal salePrice = dlgSearch.SelectedSalePrice > 0 ? dlgSearch.SelectedSalePrice : dlgSearch.SelectedPrice;
                                 decimal discount = dlgSearch.SelectedDiscount;
+                                decimal margin = dlgSearch.SelectedMargin;
 
                                 int matchedUnit = 3;
                                 if (prodItem != null)
@@ -590,15 +591,19 @@ namespace ChickenDist.Forms
                                     if (prodItem != null)
                                     {
                                         decimal majorCost = prodItem.PurchasePrice > 0 ? prodItem.PurchasePrice : prodItem.Extra;
-                                        if (dlgSearch.SelectedUnitName == prodItem.BaseUnitName || string.IsNullOrEmpty(dlgSearch.SelectedUnitName))
+                                        if (dlgSearch.SelectedPurchasePrice > 0)
                                         {
-                                            purchasePrice = dlgSearch.SelectedPurchasePrice > 0 ? dlgSearch.SelectedPurchasePrice : majorCost;
+                                            purchasePrice = dlgSearch.SelectedPurchasePrice;
+                                        }
+                                        else if (dlgSearch.SelectedUnitName == prodItem.BaseUnitName || string.IsNullOrEmpty(dlgSearch.SelectedUnitName))
+                                        {
+                                            purchasePrice = majorCost;
                                         }
                                         else
                                         {
                                             purchasePrice = majorCost > 0 ? majorCost : dlgSearch.SelectedPurchasePrice;
                                         }
-                                        salePrice = prodItem.Price > 0 ? prodItem.Price : dlgSearch.SelectedSalePrice;
+                                        salePrice = dlgSearch.SelectedSalePrice > 0 ? dlgSearch.SelectedSalePrice : (prodItem.Price > 0 ? prodItem.Price : 0m);
                                     }
                                 }
                                 _pendingMatchedUnit = matchedUnit;
@@ -610,7 +615,8 @@ namespace ChickenDist.Forms
                                     qty,
                                     purchasePrice,
                                     discount,
-                                    salePrice
+                                    salePrice,
+                                    margin
                                 );
 
                                 if (_items.Count > 0)
@@ -625,13 +631,19 @@ namespace ChickenDist.Forms
                                             decimal u3f = prodItem != null && prodItem.Unit3Factor > 0 ? prodItem.Unit3Factor : 1m;
                                             lastItem.Factor = u2f * u3f;
                                             lastItem.UnitPrice = purchasePrice;
+                                            lastItem.DiscountPct = discount;
                                             lastItem.SuggestedSalePrice = salePrice;
+                                            if (margin > 0) lastItem.ProfitMarginPct = margin;
                                         }
                                         else if (!string.IsNullOrEmpty(dlgSearch.SelectedUnitName))
                                         {
                                             lastItem.UnitName = dlgSearch.SelectedUnitName;
                                             if (dlgSearch.SelectedFactor > 0)
                                                 lastItem.Factor = dlgSearch.SelectedFactor;
+                                            lastItem.UnitPrice = purchasePrice;
+                                            lastItem.DiscountPct = discount;
+                                            lastItem.SuggestedSalePrice = salePrice;
+                                            if (margin > 0) lastItem.ProfitMarginPct = margin;
                                         }
                                         RefreshGrid();
                                     }
@@ -2409,7 +2421,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
         // ══════════════════════════════════════════════════════════════════════
         // إضافة صنف
-        private void AddProductToGrid(int prodId, string prodCode, string prodName, decimal qty, decimal price, decimal disc, decimal salePrice)
+        private void AddProductToGrid(int prodId, string prodCode, string prodName, decimal qty, decimal price, decimal disc, decimal salePrice, decimal marginPct = 0m)
         {
             if (prodId <= 0) return;
             if (!ValidateSupplierAndInvoiceBeforeAddingItem(false)) return;
@@ -2527,14 +2539,6 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             {
                 defaultPrice = Math.Round(defaultSalePrice * (1m - disc / 100m), 2);
             }
-            else if (disc > 0 && defaultSalePrice > 0 && Math.Abs((defaultSalePrice - defaultPrice) / defaultSalePrice * 100m - disc) > 0.01m)
-            {
-                defaultPrice = Math.Round(defaultSalePrice * (1m - disc / 100m), 2);
-            }
-            else if (defaultSalePrice > 0 && defaultPrice > 0 && defaultPrice < defaultSalePrice && disc == 0)
-            {
-                disc = Math.Round((defaultSalePrice - defaultPrice) / defaultSalePrice * 100m, 2);
-            }
 
             // دمج إذا كان الصنف موجوداً مسبقاً بنفس الوحدة ونفس سعر الشراء والخصم (لا يدمج إذا كان نشاط محمول أو يوجد سيريال محدد للصنف أو صنف IMEI)
             bool allowMerge = (AppConfig.BusinessType != "Mobiles") && (product == null || !product.IsIMEI);
@@ -2576,11 +2580,17 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
             }
 
-            decimal itemMargin = product != null && product.ProfitMarginPct > 0 ? product.ProfitMarginPct : 0m;
-            decimal? finalSalePrice = defaultSalePrice;
-            if ((!finalSalePrice.HasValue || finalSalePrice.Value <= 0) && defaultPrice > 0 && itemMargin > 0)
+            decimal itemMargin = marginPct > 0m ? marginPct : (product != null && product.ProfitMarginPct > 0m ? product.ProfitMarginPct : 0m);
+            decimal? finalSalePrice = defaultSalePrice > 0m ? defaultSalePrice : (decimal?)null;
+            decimal effectiveCost = disc > 0m ? Math.Round(defaultPrice * (1m - disc / 100m), 4) : defaultPrice;
+
+            if ((!finalSalePrice.HasValue || finalSalePrice.Value <= 0m) && effectiveCost > 0m && itemMargin > 0m)
             {
-                finalSalePrice = Math.Round(defaultPrice * (1m + itemMargin / 100m), 2);
+                finalSalePrice = Math.Round(effectiveCost * (1m + itemMargin / 100m), 2);
+            }
+            else if (finalSalePrice.HasValue && finalSalePrice.Value > 0m && itemMargin <= 0m && effectiveCost > 0m)
+            {
+                itemMargin = Math.Round(((finalSalePrice.Value - effectiveCost) / effectiveCost) * 100m, 1);
             }
 
             _items.Add(new PurchaseItemDTO
@@ -3448,10 +3458,11 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     if (decimal.TryParse(cellVal, out decimal p) && p >= 0)
                     {
                         item.UnitPrice = p;
+                        decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : (item.DiscountPct > 0 ? p * (1m - item.DiscountPct / 100m) : p);
                         string curMarginStr = dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value?.ToString()?.Replace("%", "")?.Trim();
                         if (decimal.TryParse(curMarginStr, out decimal existingMargin) && existingMargin > 0)
                         {
-                            decimal newSuggested = Math.Round(p * (1m + existingMargin / 100m), 2);
+                            decimal newSuggested = Math.Round(netBuy * (1m + existingMargin / 100m), 2);
                             item.SuggestedSalePrice = newSuggested;
                             item.ProfitMarginPct = existingMargin;
                             dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
@@ -3459,7 +3470,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                         }
                         else if (item.SuggestedSalePrice.HasValue && item.SuggestedSalePrice.Value > 0)
                         {
-                            decimal margin = p > 0 ? Math.Round((item.SuggestedSalePrice.Value - p) / p * 100m, 1) : 0m;
+                            decimal margin = netBuy > 0 ? Math.Round((item.SuggestedSalePrice.Value - netBuy) / netBuy * 100m, 1) : 0m;
                             item.ProfitMarginPct = margin;
                             dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                         }
@@ -3474,6 +3485,19 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     {
                         item.DiscountPct = d;
                         item.DiscountAmt = 0m;
+                        decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : (d > 0 ? item.UnitPrice * (1m - d / 100m) : item.UnitPrice);
+                        if (item.ProfitMarginPct > 0 && netBuy > 0)
+                        {
+                            decimal newSuggested = Math.Round(netBuy * (1m + item.ProfitMarginPct / 100m), 2);
+                            item.SuggestedSalePrice = newSuggested;
+                            dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
+                        }
+                        else if (item.SuggestedSalePrice.HasValue && item.SuggestedSalePrice.Value > 0 && netBuy > 0)
+                        {
+                            decimal margin = Math.Round((item.SuggestedSalePrice.Value - netBuy) / netBuy * 100m, 1);
+                            item.ProfitMarginPct = margin;
+                            dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                        }
                         dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
                     }
                     else
@@ -3484,8 +3508,8 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
                     {
                         item.SuggestedSalePrice = s;
-                        decimal buy = item.UnitPrice;
-                        decimal margin = buy > 0 ? Math.Round((s - buy) / buy * 100m, 1) : 0m;
+                        decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : (item.DiscountPct > 0 ? item.UnitPrice * (1m - item.DiscountPct / 100m) : item.UnitPrice);
+                        decimal margin = netBuy > 0 ? Math.Round((s - netBuy) / netBuy * 100m, 1) : 0m;
                         item.ProfitMarginPct = margin;
                         dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                     }
@@ -3525,9 +3549,10 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     if (decimal.TryParse(cleanMargin, out decimal m) && m >= 0)
                     {
                         item.ProfitMarginPct = m;
-                        if (item.UnitPrice > 0)
+                        decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : (item.DiscountPct > 0 ? item.UnitPrice * (1m - item.DiscountPct / 100m) : item.UnitPrice);
+                        if (netBuy > 0)
                         {
-                            decimal newSuggested = Math.Round(item.UnitPrice * (1m + m / 100m), 2);
+                            decimal newSuggested = Math.Round(netBuy * (1m + m / 100m), 2);
                             item.SuggestedSalePrice = newSuggested;
                             dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
                         }

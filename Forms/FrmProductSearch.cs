@@ -12,8 +12,10 @@ namespace ChickenDist.Forms
     public class FrmProductSearch : Form
     {
         private TextBox txtSearch, txtBrandFilter, txtColorFilter, txtCompanyFilter, txtPriceFrom, txtPriceTo;
-        private TextBox txtSelectedQty, txtSelectedPurchasePrice, txtSelectedSalePrice, txtSelectedDiscount;
+        private TextBox txtSelectedQty, txtSelectedPurchasePrice, txtSelectedSalePrice, txtSelectedDiscount, txtSelectedMargin;
+        private Label lblMargin;
         private Label lblPricePermissionNotice;
+        private bool _isRecalculatingPrices = false;
         private ComboBox cboCategory, cboUnits;
         private CheckBox chkShowZeroStock;
         private DataGridView dgProducts;
@@ -45,6 +47,7 @@ namespace ChickenDist.Forms
         public decimal SelectedPurchasePrice { get; private set; } = 0m;
         public decimal SelectedSalePrice { get; private set; } = 0m;
         public decimal SelectedDiscount { get; private set; } = 0m;
+        public decimal SelectedMargin { get; private set; } = 0m;
 
         private class UnitComboItem
         {
@@ -346,31 +349,45 @@ namespace ChickenDist.Forms
             cboUnits.MouseClick += (s, e) => { cboUnits.DroppedDown = true; };
             cboUnits.Enter += (s, e) => { this.BeginInvoke((MethodInvoker)delegate { cboUnits.DroppedDown = true; }); };
 
-            var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(635, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedQty = new TextBox { Location = new Point(555, 9), Width = 75, Text = "1.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            var lblQty = new Label { Text = "📦 الكمية:", Location = new Point(640, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedQty = new TextBox { Location = new Point(570, 9), Width = 65, Text = "1.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
             bool showPurchasePrice = _isPurchaseMode && Session.CanViewCost("Purchases");
-            var lblPurchasePrice = new Label { Text = "💰 الشراء:", Location = new Point(475, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Visible = showPurchasePrice };
-            txtSelectedPurchasePrice = new TextBox { Location = new Point(365, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = showPurchasePrice };
+            var lblPurchasePrice = new Label { Text = "💰 الشراء:", Location = new Point(505, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Visible = showPurchasePrice };
+            txtSelectedPurchasePrice = new TextBox { Location = new Point(430, 9), Width = 70, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = showPurchasePrice };
 
-            int salePriceLabelX = showPurchasePrice ? 285 : 465;
-            int salePriceTxtX = showPurchasePrice ? 175 : 355;
+            var lblDiscount = new Label { Text = "🎁 خصم %:", Location = new Point(365, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            txtSelectedDiscount = new TextBox { Location = new Point(305, 9), Width = 55, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+
+            lblMargin = new Label { Text = "📈 ربح %:", Location = new Point(240, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Visible = showPurchasePrice };
+            txtSelectedMargin = new TextBox { Location = new Point(180, 9), Width = 55, Text = "0.0", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center, Visible = showPurchasePrice };
+
+            int salePriceLabelX = showPurchasePrice ? 120 : 320;
+            int salePriceTxtX = showPurchasePrice ? 25 : 225;
 
             var lblSalePrice = new Label { Text = "🏷️ البيع:", Location = new Point(salePriceLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedSalePrice = new TextBox { Location = new Point(salePriceTxtX, 9), Width = 105, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
+            txtSelectedSalePrice = new TextBox { Location = new Point(salePriceTxtX, 9), Width = 90, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
 
-            int discLabelX = showPurchasePrice ? 100 : 265;
-            int discTxtX = showPurchasePrice ? 15 : 180;
+            if (!showPurchasePrice)
+            {
+                lblDiscount.Location = new Point(160, 13);
+                txtSelectedDiscount.Location = new Point(95, 9);
+                txtSelectedDiscount.Width = 60;
+            }
 
-            var lblDiscount = new Label { Text = "🎁 الخصم %:", Location = new Point(discLabelX, 13), AutoSize = true, ForeColor = labelDark, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
-            txtSelectedDiscount = new TextBox { Location = new Point(discTxtX, 9), Width = 80, Text = "0.00", BackColor = Color.White, ForeColor = textDark, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), TextAlign = HorizontalAlignment.Center };
             txtSelectedQty.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
             txtSelectedPurchasePrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
-            txtSelectedSalePrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
             txtSelectedDiscount.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
+            txtSelectedMargin.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
+            txtSelectedSalePrice.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.Handled = true; SelectAndClose(); } };
 
-            int permNoticeX = showPurchasePrice ? 175 : 355;
-            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 32), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
+            txtSelectedPurchasePrice.TextChanged += (s, e) => RecalcSearchPrices("PurchasePrice");
+            txtSelectedDiscount.TextChanged += (s, e) => RecalcSearchPrices("Discount");
+            txtSelectedMargin.TextChanged += (s, e) => RecalcSearchPrices("Margin");
+            txtSelectedSalePrice.TextChanged += (s, e) => RecalcSearchPrices("SalePrice");
+
+            int permNoticeX = showPurchasePrice ? 25 : 225;
+            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 33), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
 
             bool canEditPrice = _isPurchaseMode 
                 ? (Session.IsAdmin || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Purchases"))
@@ -381,6 +398,12 @@ namespace ChickenDist.Forms
                 txtSelectedPurchasePrice.ReadOnly = true;
                 txtSelectedPurchasePrice.BackColor = Color.FromArgb(30, 50, 75);
                 txtSelectedPurchasePrice.ForeColor = Color.FromArgb(130, 160, 200);
+                txtSelectedDiscount.ReadOnly = true;
+                txtSelectedDiscount.BackColor = Color.FromArgb(30, 50, 75);
+                txtSelectedDiscount.ForeColor = Color.FromArgb(130, 160, 200);
+                txtSelectedMargin.ReadOnly = true;
+                txtSelectedMargin.BackColor = Color.FromArgb(30, 50, 75);
+                txtSelectedMargin.ForeColor = Color.FromArgb(130, 160, 200);
                 txtSelectedSalePrice.ReadOnly = true;
                 txtSelectedSalePrice.BackColor = Color.FromArgb(30, 50, 75);
                 txtSelectedSalePrice.ForeColor = Color.FromArgb(130, 160, 200);
@@ -395,8 +418,9 @@ namespace ChickenDist.Forms
                 lblUnitSelect, cboUnits,
                 lblQty, txtSelectedQty,
                 lblPurchasePrice, txtSelectedPurchasePrice,
-                lblSalePrice, txtSelectedSalePrice,
                 lblDiscount, txtSelectedDiscount,
+                lblMargin, txtSelectedMargin,
+                lblSalePrice, txtSelectedSalePrice,
                 lblPricePermissionNotice
             });
 
@@ -636,6 +660,7 @@ namespace ChickenDist.Forms
             if (txtSelectedSalePrice != null) txtSelectedSalePrice.Text = "0.00";
             if (txtSelectedPurchasePrice != null) txtSelectedPurchasePrice.Text = "0.00";
             if (txtSelectedDiscount != null) txtSelectedDiscount.Text = "0.00";
+            if (txtSelectedMargin != null) txtSelectedMargin.Text = "0.0";
             if (cboUnits != null) cboUnits.Items.Clear();
         }
 
@@ -800,6 +825,7 @@ namespace ChickenDist.Forms
                 if (txtSelectedSalePrice != null) txtSelectedSalePrice.Text = "0.00";
                 if (txtSelectedPurchasePrice != null) txtSelectedPurchasePrice.Text = "0.00";
                 if (txtSelectedDiscount != null) txtSelectedDiscount.Text = "0.00";
+                if (txtSelectedMargin != null) txtSelectedMargin.Text = "0.0";
                 if (cboUnits != null) cboUnits.Items.Clear();
                 return;
             }
@@ -1072,39 +1098,114 @@ namespace ChickenDist.Forms
             }
         }
 
+        private void RecalcSearchPrices(string origin)
+        {
+            if (_isRecalculatingPrices || !_isPurchaseMode) return;
+            if (txtSelectedPurchasePrice == null || txtSelectedSalePrice == null || txtSelectedDiscount == null || txtSelectedMargin == null) return;
+
+            _isRecalculatingPrices = true;
+            try
+            {
+                decimal pp = decimal.TryParse(txtSelectedPurchasePrice.Text.Trim(), out decimal pVal) ? Math.Max(0m, pVal) : 0m;
+                decimal disc = decimal.TryParse(txtSelectedDiscount.Text.Replace("%", "").Trim(), out decimal dVal) ? Math.Max(0m, Math.Min(100m, dVal)) : 0m;
+                decimal netCost = Math.Round(pp * (1m - disc / 100m), 4);
+
+                if (origin == "PurchasePrice" || origin == "Discount")
+                {
+                    decimal margin = decimal.TryParse(txtSelectedMargin.Text.Replace("%", "").Trim(), out decimal mVal) ? Math.Max(0m, mVal) : 0m;
+                    if (margin > 0m && netCost > 0m)
+                    {
+                        decimal newSale = Math.Round(netCost * (1m + margin / 100m), 2);
+                        txtSelectedSalePrice.Text = newSale.ToString("F2");
+                    }
+                    else if (decimal.TryParse(txtSelectedSalePrice.Text.Trim(), out decimal curSale) && curSale > 0m && netCost > 0m)
+                    {
+                        decimal newMargin = Math.Round(((curSale - netCost) / netCost) * 100m, 1);
+                        txtSelectedMargin.Text = newMargin.ToString("F1");
+                    }
+                }
+                else if (origin == "Margin")
+                {
+                    decimal margin = decimal.TryParse(txtSelectedMargin.Text.Replace("%", "").Trim(), out decimal mVal) ? Math.Max(0m, mVal) : 0m;
+                    if (netCost > 0m)
+                    {
+                        decimal newSale = Math.Round(netCost * (1m + margin / 100m), 2);
+                        txtSelectedSalePrice.Text = newSale.ToString("F2");
+                    }
+                }
+                else if (origin == "SalePrice")
+                {
+                    decimal sale = decimal.TryParse(txtSelectedSalePrice.Text.Trim(), out decimal sVal) ? Math.Max(0m, sVal) : 0m;
+                    if (netCost > 0m && sale > 0m)
+                    {
+                        decimal newMargin = Math.Round(((sale - netCost) / netCost) * 100m, 1);
+                        txtSelectedMargin.Text = newMargin.ToString("F1");
+                    }
+                }
+            }
+            catch { }
+            finally
+            {
+                _isRecalculatingPrices = false;
+            }
+        }
+
         private void UpdateSelectedInputFields()
         {
             if (txtSelectedPurchasePrice == null || txtSelectedSalePrice == null) return;
 
             decimal sp = 0m;
             decimal pp = 0m;
+            decimal margin = 0m;
+            decimal disc = 0m;
+
+            DataGridViewRow row = null;
+            if (dgProducts != null && dgProducts.SelectedRows.Count > 0)
+                row = dgProducts.SelectedRows[0];
+            else if (dgProducts != null && dgProducts.CurrentRow != null)
+                row = dgProducts.CurrentRow;
+
+            DataRow prodRow = (row?.DataBoundItem is DataRowView drv) ? drv.Row : null;
 
             if (cboUnits != null && cboUnits.SelectedItem is UnitComboItem uItem)
             {
                 sp = uItem.SalePrice;
                 pp = uItem.PurchasePrice;
             }
-            else
+            else if (row != null && row.Cells["SalePrice"].Value != null)
             {
-                DataGridViewRow row = null;
-                if (dgProducts != null && dgProducts.SelectedRows.Count > 0)
-                    row = dgProducts.SelectedRows[0];
-                else if (dgProducts != null && dgProducts.CurrentRow != null)
-                    row = dgProducts.CurrentRow;
-
-                if (row != null && row.Cells["SalePrice"].Value != null)
+                decimal.TryParse(row.Cells["SalePrice"].Value.ToString(), out sp);
+                if (prodRow != null && prodRow.Table.Columns.Contains("PurchasePrice") && prodRow["PurchasePrice"] != DBNull.Value)
                 {
-                    decimal.TryParse(row.Cells["SalePrice"].Value.ToString(), out sp);
-
-                    if (row.DataBoundItem is DataRowView drv && drv.Row.Table.Columns.Contains("PurchasePrice") && drv.Row["PurchasePrice"] != DBNull.Value)
-                    {
-                        pp = Convert.ToDecimal(drv.Row["PurchasePrice"]);
-                    }
+                    pp = Convert.ToDecimal(prodRow["PurchasePrice"]);
                 }
             }
 
-            txtSelectedPurchasePrice.Text = pp.ToString("F2");
-            txtSelectedSalePrice.Text = sp.ToString("F2");
+            if (prodRow != null)
+            {
+                if (prodRow.Table.Columns.Contains("ProfitMarginPct") && prodRow["ProfitMarginPct"] != DBNull.Value)
+                {
+                    margin = Convert.ToDecimal(prodRow["ProfitMarginPct"]);
+                }
+            }
+
+            if (margin <= 0m && pp > 0m && sp > 0m)
+            {
+                margin = Math.Round(((sp - pp) / pp) * 100m, 1);
+            }
+
+            _isRecalculatingPrices = true;
+            try
+            {
+                txtSelectedPurchasePrice.Text = pp.ToString("F2");
+                txtSelectedSalePrice.Text = sp.ToString("F2");
+                if (txtSelectedDiscount != null) txtSelectedDiscount.Text = disc.ToString("F2");
+                if (txtSelectedMargin != null) txtSelectedMargin.Text = margin.ToString("F1");
+            }
+            finally
+            {
+                _isRecalculatingPrices = false;
+            }
         }
 
         private void BtnSelect_Click(object sender, EventArgs e)
@@ -1220,9 +1321,14 @@ namespace ChickenDist.Forms
                 SelectedSalePrice = SelectedPrice;
 
             if (txtSelectedDiscount != null && decimal.TryParse(txtSelectedDiscount.Text.Replace("%", "").Trim(), out decimal dVal))
-                SelectedDiscount = dVal;
+                SelectedDiscount = Math.Max(0m, dVal);
             else
                 SelectedDiscount = 0m;
+
+            if (txtSelectedMargin != null && decimal.TryParse(txtSelectedMargin.Text.Replace("%", "").Trim(), out decimal mVal))
+                SelectedMargin = Math.Max(0m, mVal);
+            else
+                SelectedMargin = 0m;
 
             this.DialogResult = DialogResult.OK;
             this.Close();
