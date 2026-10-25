@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -1512,12 +1512,14 @@ namespace ChickenDist.Forms
 
         public void NavigateTo(Form form)
         {
+            form.WindowState = FormWindowState.Normal;
             form.TopLevel = false;
             form.Dock = DockStyle.Fill;
             form.FormBorderStyle = FormBorderStyle.None;
             form.RightToLeft = RightToLeft.Yes;
             Theme.ApplyFormRTL(form);
             form.RightToLeftLayout = false;
+            form.WindowState = FormWindowState.Normal;
 
             var tab = _AddTab(form);
             if (tab != null && !(form is FrmDashboard))

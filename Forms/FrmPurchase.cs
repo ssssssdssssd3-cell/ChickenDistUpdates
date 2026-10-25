@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -1089,6 +1089,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             dgItems.CellValueChanged  += DgItems_CellValueChanged;
             dgItems.CellClick         += DgItems_CellClick;
             dgItems.CellEndEdit       += DgItems_CellEndEdit_Purchase;
+            dgItems.DataError += (s, e) => { e.ThrowException = false; e.Cancel = true; };
             dgItems.EditingControlShowing += DgItems_EditingControlShowing;
             dgItems.CellEnter += (s, e) =>
             {
@@ -2929,7 +2930,9 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
         private void BarcodeTimer_Tick(object sender, EventArgs e)
         {
-            _barcodeTimer.Stop();
+            try
+            {
+                _barcodeTimer.Stop();
             string text = cboProduct.Text?.Trim();
             if (string.IsNullOrWhiteSpace(text) || text.Length < BARCODE_MIN_LENGTH) return;
 
@@ -3040,6 +3043,11 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 {
                     _isScanningBarcode = false;
                 }
+            }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("BarcodeTimer_Tick error", ex, "FrmPurchase");
             }
         }
 
@@ -3191,7 +3199,10 @@ pnlGridToolbar.Controls.Add(flowToolbar);
         private void HandleUnitChange(DataGridViewRow row, PurchaseItemDTO dto, string newUnit)
         {
             if (string.IsNullOrEmpty(newUnit)) return;
-            ComboItem prod = GetProductComboItem(dto.ProductID);
+            try
+            {
+                _isUpdatingGrid = true;
+                ComboItem prod = GetProductComboItem(dto.ProductID);
             if (prod == null) return;
 
             if (AppConfig.LockPurchaseToMajorUnit)
@@ -3269,7 +3280,16 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
             row.Cells["MarginPct"].Value = margin.ToString("F1") + "%";
 
-            RecalcTotals();
+                RecalcTotals();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("HandleUnitChange error", ex, "FrmPurchase");
+            }
+            finally
+            {
+                _isUpdatingGrid = false;
+            }
         }
 
         private void SetupGridContextMenu()

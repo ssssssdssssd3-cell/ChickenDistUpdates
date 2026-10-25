@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -1500,12 +1500,24 @@ namespace ChickenDist.DAL
     {
         public static DataTable GetAll(bool activeOnly = false)
         {
-            string sql = @"SELECT s.SupplierID, s.SupplierCode, s.SupplierName, s.Phone, s.Address,
-                           s.OpeningBalance, s.IsActive, ISNULL(sb.Balance, s.OpeningBalance) AS Balance
-                           FROM Suppliers s
-                           LEFT JOIN vw_SupplierBalance sb ON s.SupplierID = sb.SupplierID
-                           " + (activeOnly ? "WHERE s.IsActive=1" : "") + " ORDER BY s.SupplierName";
-            return DbHelper.Query(sql);
+            try
+            {
+                string sql = @"SELECT s.SupplierID, s.SupplierCode, s.SupplierName, s.Phone, s.Address,
+                               s.OpeningBalance, s.IsActive, ISNULL(sb.Balance, s.OpeningBalance) AS Balance
+                               FROM Suppliers s
+                               LEFT JOIN vw_SupplierBalance sb ON s.SupplierID = sb.SupplierID
+                               " + (activeOnly ? "WHERE s.IsActive=1" : "") + " ORDER BY s.SupplierName";
+                return DbHelper.Query(sql);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("SupplierDAL.GetAll fallback to table", ex, "SupplierDAL");
+                string fallback = @"SELECT s.SupplierID, s.SupplierCode, s.SupplierName, s.Phone, s.Address,
+                                     s.OpeningBalance, s.IsActive, s.OpeningBalance AS Balance
+                                     FROM Suppliers s
+                                     " + (activeOnly ? "WHERE s.IsActive=1" : "") + " ORDER BY s.SupplierName";
+                return DbHelper.Query(fallback);
+            }
         }
         public static DataRow GetByID(int id)
         {
@@ -1839,18 +1851,35 @@ namespace ChickenDist.DAL
     {
         public static DataTable GetAll(bool activeOnly = false)
         {
-            string sql = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
-                           c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
-                           COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
-                           COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
-                           ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
-                           COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
-                           ISNULL(ccb.CratesBalance, COALESCE(c.OpeningCrates, 0)) AS CratesBalance
-                           FROM Clients c
-                           LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
-                           LEFT JOIN vw_ClientCratesBalance ccb ON c.ClientID = ccb.ClientID
-                           " + (activeOnly ? "WHERE c.IsActive=1" : "") + " ORDER BY c.ClientName";
-            return DbHelper.Query(sql);
+            try
+            {
+                string sql = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
+                               c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
+                               COALESCE(c.DefaultPriceTier, N'Ù‚Ø·Ø§Ø¹ÙŠ') AS DefaultPriceTier,
+                               COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
+                               ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
+                               COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
+                               ISNULL(ccb.CratesBalance, COALESCE(c.OpeningCrates, 0)) AS CratesBalance
+                               FROM Clients c
+                               LEFT JOIN vw_ClientBalance cb ON c.ClientID = cb.ClientID
+                               LEFT JOIN vw_ClientCratesBalance ccb ON c.ClientID = ccb.ClientID
+                               " + (activeOnly ? "WHERE c.IsActive=1" : "") + " ORDER BY c.ClientName";
+                return DbHelper.Query(sql);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("ClientDAL.GetAll fallback to table", ex, "ClientDAL");
+                string fallback = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
+                                     c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
+                                     COALESCE(c.DefaultPriceTier, N'Ù‚Ø·Ø§Ø¹ÙŠ') AS DefaultPriceTier,
+                                     COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
+                                     c.OpeningBalance AS Balance,
+                                     COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
+                                     COALESCE(c.OpeningCrates, 0) AS CratesBalance
+                                     FROM Clients c
+                                     " + (activeOnly ? "WHERE c.IsActive=1" : "") + " ORDER BY c.ClientName";
+                return DbHelper.Query(fallback);
+            }
         }
 
         public static DataTable Search(string term, string searchType = "all")

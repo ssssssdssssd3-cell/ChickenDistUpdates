@@ -660,19 +660,15 @@ namespace ChickenDist.Core
 
         public static void SetPrinter(System.Drawing.Printing.PrintDocument pd, string printerName)
         {
-            if (string.IsNullOrEmpty(printerName)) return;
+            if (string.IsNullOrEmpty(printerName) || pd == null) return;
             try
             {
-                foreach (string p in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
-                {
-                    if (string.Equals(p, printerName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        pd.PrinterSettings.PrinterName = p;
-                        break;
-                    }
-                }
+                pd.PrinterSettings.PrinterName = printerName;
             }
-            catch { /* Ignored */ }
+            catch (Exception ex)
+            {
+                AppLogger.Error("AppConfig.SetPrinter failed", ex, "Printer");
+            }
         }
 
         public static void SetPaperSize(System.Drawing.Printing.PrintDocument pd, string sizeKey)

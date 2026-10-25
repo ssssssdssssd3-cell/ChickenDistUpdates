@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
@@ -1623,12 +1623,12 @@ namespace ChickenDist.Core
                     c.ClientName,
                     c.Phone,
                     c.OpeningBalance,
-                    ISNULL(SUM(CASE WHEN ct.TransType IN (''''Sale'''',''''DriverLoad'''') THEN ct.Debit ELSE 0 END), 0) AS TotalSales,
-                    ISNULL(SUM(CASE WHEN ct.TransType = ''''Payment'''' THEN ct.Credit ELSE 0 END), 0) AS TotalPayments,
+                    ISNULL(SUM(CASE WHEN ct.TransType IN (''Sale'',''DriverLoad'') THEN ct.Debit ELSE 0 END), 0) AS TotalSales,
+                    ISNULL(SUM(CASE WHEN ct.TransType = ''Payment'' THEN ct.Credit ELSE 0 END), 0) AS TotalPayments,
                     c.OpeningBalance
-                        + ISNULL(SUM(CASE WHEN ct.TransType <> ''''Opening'''' THEN ct.Debit ELSE 0 END), 0)
-                        - ISNULL(SUM(CASE WHEN ct.TransType <> ''''Opening'''' THEN ct.Credit ELSE 0 END), 0)
-                        + CASE WHEN ISNULL(c.OpeningBalance, 0) = 0 THEN ISNULL(SUM(CASE WHEN ct.TransType = ''''Opening'''' THEN ct.Debit - ct.Credit ELSE 0 END), 0) ELSE 0 END AS Balance
+                        + ISNULL(SUM(CASE WHEN ct.TransType <> ''Opening'' THEN ct.Debit ELSE 0 END), 0)
+                        - ISNULL(SUM(CASE WHEN ct.TransType <> ''Opening'' THEN ct.Credit ELSE 0 END), 0)
+                        + CASE WHEN ISNULL(c.OpeningBalance, 0) = 0 THEN ISNULL(SUM(CASE WHEN ct.TransType = ''Opening'' THEN ct.Debit - ct.Credit ELSE 0 END), 0) ELSE 0 END AS Balance
                 FROM Clients c
                 LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
                 GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance');");
@@ -1642,11 +1642,11 @@ namespace ChickenDist.Core
                     s.SupplierName,
                     s.Phone,
                     s.OpeningBalance,
-                    ISNULL(SUM(CASE WHEN st.TransType <> ''''Opening'''' THEN st.Debit ELSE 0 END),0)  AS TotalDebit,
-                    ISNULL(SUM(CASE WHEN st.TransType <> ''''Opening'''' THEN st.Credit ELSE 0 END),0) AS TotalCredit,
+                    ISNULL(SUM(CASE WHEN st.TransType <> ''Opening'' THEN st.Debit ELSE 0 END),0)  AS TotalDebit,
+                    ISNULL(SUM(CASE WHEN st.TransType <> ''Opening'' THEN st.Credit ELSE 0 END),0) AS TotalCredit,
                     s.OpeningBalance 
-                        + ISNULL(SUM(CASE WHEN st.TransType <> ''''Opening'''' THEN st.Credit - st.Debit ELSE 0 END),0)
-                        + CASE WHEN ISNULL(s.OpeningBalance, 0) = 0 THEN ISNULL(SUM(CASE WHEN st.TransType = ''''Opening'''' THEN st.Credit - st.Debit ELSE 0 END), 0) ELSE 0 END AS Balance
+                        + ISNULL(SUM(CASE WHEN st.TransType <> ''Opening'' THEN st.Credit - st.Debit ELSE 0 END),0)
+                        + CASE WHEN ISNULL(s.OpeningBalance, 0) = 0 THEN ISNULL(SUM(CASE WHEN st.TransType = ''Opening'' THEN st.Credit - st.Debit ELSE 0 END), 0) ELSE 0 END AS Balance
                 FROM Suppliers s
                 LEFT JOIN SupplierTransactions st ON s.SupplierID = st.SupplierID
                 GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance');");
@@ -1667,10 +1667,10 @@ namespace ChickenDist.Core
                     )
                     UPDATE c
                     SET c.CurrentDebt = c.OpeningBalance
-                        + ISNULL((SELECT SUM(CASE WHEN ct.TransType <> ''''Opening'''' THEN ct.Debit - ct.Credit ELSE 0 END)
+                        + ISNULL((SELECT SUM(CASE WHEN ct.TransType <> ''Opening'' THEN ct.Debit - ct.Credit ELSE 0 END)
                                   FROM ClientTransactions ct
                                   WHERE ct.ClientID = c.ClientID), 0)
-                        + CASE WHEN ISNULL(c.OpeningBalance, 0) = 0 THEN ISNULL((SELECT SUM(ct.Debit - ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = ''''Opening''''), 0) ELSE 0 END
+                        + CASE WHEN ISNULL(c.OpeningBalance, 0) = 0 THEN ISNULL((SELECT SUM(ct.Debit - ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = ''Opening''), 0) ELSE 0 END
                     FROM Clients c
                     WHERE c.ClientID IN (SELECT ClientID FROM affected);
                 END');");

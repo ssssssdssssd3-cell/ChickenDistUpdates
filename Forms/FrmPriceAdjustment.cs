@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
             this.Size = new Size(1300, 780);
             this.MinimumSize = new Size(1050, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
+            this.WindowState = FormWindowState.Normal;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = false;
             this.BackColor = Theme.BgMain;
@@ -311,7 +311,9 @@ namespace ChickenDist.Forms
                            ISNULL(c.CategoryName, N'-- بدون --') AS CategoryName,
                            ISNULL(p.PurchasePrice, 0) AS PurchasePrice,
                            ISNULL(p.LastPurchasePrice, ISNULL(p.PurchasePrice, 0)) AS EffectiveBuyPrice,
-                           ISNULL(p.SalePrice, 0) AS SalePrice,
+                           ISNULL(p.SalePrice, 0) AS SalePrice,
+                           ISNULL(p.SemiWholesalePrice, 0) AS SemiWholesalePrice,
+                           ISNULL(p.WholesalePrice, 0) AS WholesalePrice,
                            ISNULL(p.ProfitMarginPct, 0) AS ProfitMarginPct,
                            ISNULL(p.Unit2Factor, 1) AS Unit2Factor,
                            ISNULL(p.Unit3Factor, 1) AS Unit3Factor,
@@ -368,6 +370,8 @@ namespace ChickenDist.Forms
                     decimal buy = Convert.ToDecimal(r["EffectiveBuyPrice"]);
                     if (buy <= 0) buy = Convert.ToDecimal(r["PurchasePrice"]);
                     decimal sale = Convert.ToDecimal(r["SalePrice"]);
+                    decimal semi = Convert.ToDecimal(r["SemiWholesalePrice"]);
+                    decimal whole = Convert.ToDecimal(r["WholesalePrice"]);
                     decimal margin = buy > 0 && sale > buy ? Math.Round((sale - buy) / buy * 100m, 1) : 0m;
 
                     dgvProducts.Rows.Add(
@@ -383,6 +387,10 @@ namespace ChickenDist.Forms
                         buy.ToString("N2"),
                         sale.ToString("N2"),
                         sale.ToString("N2"),
+                        semi.ToString("N2"),
+                        semi.ToString("N2"),
+                        whole.ToString("N2"),
+                        whole.ToString("N2"),
                         "0.00",
                         margin.ToString("G29") + "%",
                         r["ProfitMarginPct"],
@@ -525,7 +533,7 @@ namespace ChickenDist.Forms
             if (_isApplyingRule || e.RowIndex < 0) return;
             var colName = dgvProducts.Columns[e.ColumnIndex].Name;
 
-            if (colName == "NewSalePrice" || colName == "NewBuyPrice")
+            if (colName == "NewSalePrice" || colName == "NewBuyPrice" || colName == "NewSemiPrice" || colName == "NewWholePrice")
             {
                 var row = dgvProducts.Rows[e.RowIndex];
                 decimal oldSale = Convert.ToDecimal(row.Cells["OldSalePrice"].Value ?? 0);
@@ -569,10 +577,14 @@ namespace ChickenDist.Forms
                 {
                     decimal oldBuy = Convert.ToDecimal(r.Cells["OldBuyPrice"].Value ?? 0);
                     decimal oldSale = Convert.ToDecimal(r.Cells["OldSalePrice"].Value ?? 0);
+                    decimal oldSemi = Convert.ToDecimal(r.Cells["OldSemiPrice"].Value ?? 0);
+                    decimal oldWhole = Convert.ToDecimal(r.Cells["OldWholePrice"].Value ?? 0);
                     decimal.TryParse(r.Cells["NewBuyPrice"].Value?.ToString(), out decimal newBuy);
                     decimal.TryParse(r.Cells["NewSalePrice"].Value?.ToString(), out decimal newSale);
+                    decimal.TryParse(r.Cells["NewSemiPrice"].Value?.ToString(), out decimal newSemi);
+                    decimal.TryParse(r.Cells["NewWholePrice"].Value?.ToString(), out decimal newWhole);
 
-                    if (Math.Abs(newBuy - oldBuy) > 0.005m || Math.Abs(newSale - oldSale) > 0.005m)
+                    if (Math.Abs(newBuy - oldBuy) > 0.005m || Math.Abs(newSale - oldSale) > 0.005m || Math.Abs(newSemi - oldSemi) > 0.005m || Math.Abs(newWhole - oldWhole) > 0.005m)
                     {
                         rowsToSave.Add(r);
                     }

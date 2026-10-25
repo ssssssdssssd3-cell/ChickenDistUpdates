@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -29,6 +29,13 @@ namespace ChickenDist.Forms
         private List<BarcodePrintItem> _printList;
         private int _currentItemIndex = 0;
         private int _currentLabelIndex = 0;
+        private bool _printPriceFlag = true;
+        private bool _printCompanyNameFlag = true;
+        private string _printCompanyNameText = "";
+        private string _printStickerSize = "50x30";
+        private bool _printCatInsteadFlag = false;
+        private string _printTemplate = "Standard";
+        private string _printEncoding = "Code128";
 
         public FrmPrintPurchaseBarcodes(int purchaseID, string purchaseCode)
         {
@@ -434,41 +441,11 @@ namespace ChickenDist.Forms
             }
 
             var g = e.Graphics;
+            string template = _printTemplate;
+            string encoding = _printEncoding;
+            bool printCatInstead = _printCatInsteadFlag;
 
-            string template = "Standard";
-            string encoding = "Code128";
-            bool printCatInstead = chkPrintCategoryInsteadOfName != null && chkPrintCategoryInsteadOfName.Checked;
-            
-            if (cboBarcodeTemplate.SelectedItem != null)
-            {
-                string tmplText = cboBarcodeTemplate.SelectedItem.ToString();
-                if (tmplText.Contains("كود الصنف علي العرض") || tmplText.Contains("كود الصنف على العرض") || tmplText == "CodeOnSide")
-                    template = "CodeOnSide";
-                else
-                if (tmplText.Contains("MobileIMEI") || tmplText.Contains("الموبايل") || tmplText.Contains("IMEI"))
-                    template = "MobileIMEI";
-                else if (tmplText.Contains("سعر بارز"))
-                    template = "PriceHeavy";
-                else if (tmplText.Contains("ملصق صغير"))
-                    template = "Small";
-                else if (tmplText.Contains("ملصق الرف"))
-                    template = "Shelf";
-                else if (tmplText.Contains("بدون سعر"))
-                    template = "NoPrice";
-                else
-                    template = "Standard";
-            }
-            if (cboBarcodeEncoding.SelectedIndex >= 0)
-            {
-                var encList = BarcodeEngine.GetAvailableEncodings();
-                if (cboBarcodeEncoding.SelectedIndex < encList.Count)
-                {
-                    encoding = encList[cboBarcodeEncoding.SelectedIndex].Item1;
-                    AppConfig.BarcodeEncoding = encoding;
-                }
-            }
-
-            string labelType = (AppConfig.BarcodeStickerSize == "38x26_double") ? "Split" : "Full";
+            string labelType = (_printStickerSize == "38x26_double") ? "Split" : "Full";
             int labelsPerRow = (labelType == "Split") ? 2 : 1;
 
             float pageWidth = e.PageBounds.Width;
@@ -479,7 +456,7 @@ namespace ChickenDist.Forms
             float labelWidth = labelType == "Full" ? pageWidth : (pageWidth / labelsPerRow);
             float labelHeight = pageHeight - (topMargin * 2);
 
-            bool isSmallSticker = (AppConfig.BarcodeStickerSize == "38x26" || AppConfig.BarcodeStickerSize == "38x26_double");
+            bool isSmallSticker = (_printStickerSize == "38x26" || _printStickerSize == "38x26_double");
 
             var fCompany  = new Font("Arial", isSmallSticker ? 6.5f : 8f, FontStyle.Bold);
             var fName     = new Font("Arial", isSmallSticker ? 6.5f : 7.5f, FontStyle.Bold);
@@ -519,10 +496,10 @@ namespace ChickenDist.Forms
                 if (template == "CodeOnSide")
                 {
                     // نموذج مخصص: كود الصنف علي العرض (كود الصنف يميناً + كود المورد يساراً بالعرض بجانب الباركود)
-                    if (chkPrintCompanyName.Checked && !string.IsNullOrWhiteSpace(AppConfig.CompanyName))
+                    if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(_printCompanyNameText))
                     {
                         var fCompanyHuge = new Font("Segoe UI", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
-                        g.DrawString(AppConfig.CompanyName, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 12 : 15), center);
+                        g.DrawString(_printCompanyNameText, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 12 : 15), center);
                         y += isSmallSticker ? 12 : 15;
                     }
 
@@ -561,7 +538,7 @@ namespace ChickenDist.Forms
                     string imeiDisplay = (barcodeToPrint.Length == 15 && barcodeToPrint.All(char.IsDigit)) ? $"IMEI: {barcodeToPrint}" : barcodeToPrint;
                     float imeiH = isSmallSticker ? 12 : 14;
 
-                    if (chkPrintPrice.Checked && item.Price > 0)
+                    if (_printPriceFlag && item.Price > 0)
                     {
                         g.DrawString(imeiDisplay, fIMEIText, Brushes.Black, new RectangleF(x, y, w, imeiH), center);
                         y += imeiH + 1;
@@ -577,10 +554,10 @@ namespace ChickenDist.Forms
                 }
                 else if (template == "MobileIMEI")
                 {
-                    if (chkPrintCompanyName.Checked && !string.IsNullOrWhiteSpace(AppConfig.CompanyName))
+                    if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(_printCompanyNameText))
                     {
                         var fCompanyHuge = new Font("Segoe UI", isSmallSticker ? 8.5f : 10.5f, FontStyle.Bold);
-                        g.DrawString(AppConfig.CompanyName, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 12 : 16), center);
+                        g.DrawString(_printCompanyNameText, fCompanyHuge, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 12 : 16), center);
                         y += isSmallSticker ? 12 : 16;
                     }
 
@@ -609,7 +586,7 @@ namespace ChickenDist.Forms
                     var fPriceSmall = new Font("Segoe UI", isSmallSticker ? 7.5f : 9f, FontStyle.Bold);
                     float priceH = isSmallSticker ? 14f : 17f;
 
-                    if (chkPrintPrice.Checked && item.Price > 0)
+                    if (_printPriceFlag && item.Price > 0)
                     {
                         string priceStr = $"السعر: {item.Price:N0} ج";
                         string fullBottom = !string.IsNullOrEmpty(extraCodes) ? $"{priceStr}  •  {extraCodes}" : priceStr;
@@ -622,14 +599,14 @@ namespace ChickenDist.Forms
                 }
                 else if (template == "Shelf")
                 {
-                    if (chkPrintCompanyName.Checked)
+                    if (_printCompanyNameFlag)
                     {
-                        g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Gray, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        g.DrawString(_printCompanyNameText, fCompany, Brushes.Gray, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                         y += isSmallSticker ? 11 : 14;
                     }
                     g.DrawString(titleToPrint, fNameLarge, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 22 : 30), center);
                     y += isSmallSticker ? 24 : 32;
-                    if (chkPrintPrice.Checked)
+                    if (_printPriceFlag)
                     {
                         g.DrawString($"{item.Price:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(x, y, w, isSmallSticker ? 18 : 24), center);
                         y += isSmallSticker ? 20 : 26;
@@ -652,14 +629,14 @@ namespace ChickenDist.Forms
                     g.DrawString(item.ProductCode, new Font("Courier New", isSmallSticker ? 6f : 6.5f), Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 8 : 10), center);
                     y += isSmallSticker ? 8 : 10;
 
-                    if (chkPrintPrice.Checked)
+                    if (_printPriceFlag)
                     {
                         g.DrawString($"{item.Price:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                     }
                 }
                 else if (template == "PriceHeavy")
                 {
-                    if (chkPrintPrice.Checked)
+                    if (_printPriceFlag)
                     {
                         g.DrawString($"{item.Price:N2} ج", fPriceLarge, Brushes.DarkRed, new RectangleF(x + 5, y, w - 10, isSmallSticker ? 18 : 22), center);
                         y += isSmallSticker ? 20 : 24;
@@ -680,9 +657,9 @@ namespace ChickenDist.Forms
                 }
                 else if (template == "NoPrice" || template == "NoPriceBigName")
                 {
-                    if (chkPrintCompanyName.Checked && !string.IsNullOrWhiteSpace(AppConfig.CompanyName))
+                    if (_printCompanyNameFlag && !string.IsNullOrWhiteSpace(_printCompanyNameText))
                     {
-                        g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        g.DrawString(_printCompanyNameText, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                         y += isSmallSticker ? 10 : 12;
                     }
 
@@ -709,9 +686,9 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    if (chkPrintCompanyName.Checked)
+                    if (_printCompanyNameFlag)
                     {
-                        g.DrawString(AppConfig.CompanyName, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
+                        g.DrawString(_printCompanyNameText, fCompany, Brushes.Black, new RectangleF(x, y, w, isSmallSticker ? 10 : 12), center);
                         y += isSmallSticker ? 10 : 12;
                     }
                     g.DrawString(titleToPrint, fName, Brushes.Black, new RectangleF(x + 2, y, w - 4, isSmallSticker ? 16 : 24), center);
@@ -726,7 +703,7 @@ namespace ChickenDist.Forms
                     y += isSmallSticker ? 10 : 12;
 
                     float bottomY = y;
-                    if (chkPrintPrice.Checked)
+                    if (_printPriceFlag)
                     {
                         g.DrawString($"السعر: {item.Price:N2} ج", fPrice, Brushes.DarkRed, new RectangleF(x + 5, bottomY, w / 2 - 5, isSmallSticker ? 11 : 14), leftFormat);
                     }
