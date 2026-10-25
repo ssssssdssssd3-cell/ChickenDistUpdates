@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
@@ -1713,6 +1713,7 @@ public static void EnsureDatabaseSchema()
             PurchaseOrderDAL.EnsureSchema();
             EnsurePriceMarginAndHistorySchema();
             EnsureBalanceIntegritySchema();
+            DraftManager.EnsureDraftsTable();
 
             try
             {

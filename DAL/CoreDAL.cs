@@ -881,16 +881,18 @@ namespace ChickenDist.DAL
             Services.CloudSyncService.TriggerStoreCatalogSyncDebounced();
         }
 
-        public static void RecordPriceChange(int productId, string code, string name, decimal oldBuy, decimal newBuy, decimal oldSale, decimal newSale, string changeType, decimal changePct, int? supplierId, string supplierName, int? warehouseId, string userName, string notes)
+        public static void RecordPriceChange(int productId, string code, string name, decimal oldBuy, decimal newBuy, decimal oldSale, decimal newSale, string changeType, decimal changePct, int? supplierId, string supplierName, int? warehouseId, string userName, string notes, SqlTransaction trans = null)
         {
             try
             {
-                DbHelper.EnsurePriceMarginAndHistorySchema();
-                DbHelper.Execute(@"
+                string sql = @"
                     INSERT INTO PriceChangeHistory 
                     (ChangeDate, ProductID, ProductCode, ProductName, OldPurchasePrice, NewPurchasePrice, OldSalePrice, NewSalePrice, ChangeType, ChangePct, SupplierID, SupplierName, WarehouseID, UserName, Notes)
                     VALUES 
-                    (GETDATE(), @pid, @code, @name, @oldBuy, @newBuy, @oldSale, @newSale, @ctype, @cpct, @supId, @supName, @whId, @user, @notes)",
+                    (GETDATE(), @pid, @code, @name, @oldBuy, @newBuy, @oldSale, @newSale, @ctype, @cpct, @supId, @supName, @whId, @user, @notes)";
+
+                var prms = new[]
+                {
                     DbHelper.P("@pid", productId),
                     DbHelper.P("@code", string.IsNullOrEmpty(code) ? (object)DBNull.Value : code),
                     DbHelper.P("@name", string.IsNullOrEmpty(name) ? (object)DBNull.Value : name),
@@ -904,7 +906,17 @@ namespace ChickenDist.DAL
                     DbHelper.P("@supName", string.IsNullOrEmpty(supplierName) ? (object)DBNull.Value : supplierName),
                     DbHelper.P("@whId", warehouseId.HasValue ? (object)warehouseId.Value : DBNull.Value),
                     DbHelper.P("@user", string.IsNullOrEmpty(userName) ? (Session.EmpName ?? "المستخدم") : userName),
-                    DbHelper.P("@notes", string.IsNullOrEmpty(notes) ? (object)DBNull.Value : notes));
+                    DbHelper.P("@notes", string.IsNullOrEmpty(notes) ? (object)DBNull.Value : notes)
+                };
+
+                if (trans != null)
+                {
+                    DbHelper.ExecuteTrans(trans, sql, prms);
+                }
+                else
+                {
+                    DbHelper.Execute(sql, prms);
+                }
             }
             catch (Exception ex)
             {
@@ -916,7 +928,25 @@ namespace ChickenDist.DAL
         {
             try
             {
-                var dt = DbHelper.Query("SELECT ProductCode, ProductName, PurchasePrice, SalePrice FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", productId));
+                string sql = "SELECT ProductCode, ProductName, PurchasePrice, SalePrice FROM Products WITH (NOLOCK) WHERE ProductID = @pid";
+                DataTable dt;
+                if (trans != null && trans.Connection != null)
+                {
+                    using (var cmd = new SqlCommand(sql, trans.Connection, trans))
+                    {
+                        cmd.Parameters.Add(DbHelper.P("@pid", productId));
+                        using (var da = new SqlDataAdapter(cmd))
+                        {
+                            dt = new DataTable();
+                            da.Fill(dt);
+                        }
+                    }
+                }
+                else
+                {
+                    dt = DbHelper.Query(sql, DbHelper.P("@pid", productId));
+                }
+
                 if (dt.Rows.Count > 0)
                 {
                     string code = dt.Rows[0]["ProductCode"]?.ToString() ?? "";
@@ -933,7 +963,7 @@ namespace ChickenDist.DAL
                     if (oldValue > 0)
                         pct = Math.Round(((newValue - oldValue) / oldValue) * 100m, 2);
 
-                    RecordPriceChange(productId, code, name, oldBuy, newBuy, oldSale, newSale, notes, pct, null, null, null, Session.EmpName ?? "المستخدم", notes);
+                    RecordPriceChange(productId, code, name, oldBuy, newBuy, oldSale, newSale, notes, pct, null, null, null, Session.EmpName ?? "المستخدم", notes, trans);
                 }
             }
             catch (Exception ex)

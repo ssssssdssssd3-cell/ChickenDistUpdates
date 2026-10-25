@@ -2235,7 +2235,9 @@ namespace ChickenDist.Forms
                                             ? "UPDATE Products SET PurchasePrice = @pur, LastPurchasePrice = @pur, CostPrice = @u1pp, Unit1PurchasePrice = @u1pp, Unit2PurchasePrice = @u2pp WHERE ProductID = @pid"
                                             : "UPDATE Products SET PurchasePrice = @pur, Unit1PurchasePrice = @u1pp, Unit2PurchasePrice = @u2pp WHERE ProductID = @pid";
 
-                                        ProductDAL.RecordPriceChange(pid, "PurchasePrice (شراء)", mainItem.OriginalPurchasePrice, mainItem.NewPurchasePrice, "تعديل سعر شراء من شاشة الجرد", trans);
+                                        decimal buyPct = mainItem.OriginalPurchasePrice > 0 ? Math.Round(((mainItem.NewPurchasePrice - mainItem.OriginalPurchasePrice) / mainItem.OriginalPurchasePrice) * 100m, 2) : 0m;
+                                        ProductDAL.RecordPriceChange(pid, mainItem.ProductCode, mainItem.ProductName, mainItem.OriginalPurchasePrice, mainItem.NewPurchasePrice, mainItem.OriginalSalePrice, mainItem.OriginalSalePrice, "تعديل سعر شراء من شاشة الجرد", buyPct, null, null, wid, Session.EmpName ?? "المستخدم", "تعديل سعر شراء من شاشة الجرد", trans);
+
                                         DbHelper.ExecuteTrans(trans, purSql,
                                             DbHelper.P("@pur", baseMajorBuy),
                                             DbHelper.P("@u1pp", unit1Buy),
@@ -2250,7 +2252,9 @@ namespace ChickenDist.Forms
                                         decimal unit1Sale = Math.Round(baseMajorSale / majorFactor, 2);
                                         decimal unit2Sale = u2Factor > 0 ? Math.Round((baseMajorSale / majorFactor) * u2Factor, 2) : 0m;
 
-                                        ProductDAL.RecordPriceChange(pid, "SalePrice (قطاعي)", mainItem.OriginalSalePrice, mainItem.NewSalePrice, "تعديل سعر قطاعي من شاشة الجرد", trans);
+                                        decimal salePct = mainItem.OriginalSalePrice > 0 ? Math.Round(((mainItem.NewSalePrice - mainItem.OriginalSalePrice) / mainItem.OriginalSalePrice) * 100m, 2) : 0m;
+                                        ProductDAL.RecordPriceChange(pid, mainItem.ProductCode, mainItem.ProductName, mainItem.OriginalPurchasePrice, mainItem.OriginalPurchasePrice, mainItem.OriginalSalePrice, mainItem.NewSalePrice, "تعديل سعر قطاعي من شاشة الجرد", salePct, null, null, wid, Session.EmpName ?? "المستخدم", "تعديل سعر قطاعي من شاشة الجرد", trans);
+
                                         DbHelper.ExecuteTrans(trans,
                                             @"UPDATE Products 
                                               SET SalePrice = @sale, 
@@ -2277,7 +2281,9 @@ namespace ChickenDist.Forms
                                     {
                                         decimal baseMajorSemi = isMajorUnit ? mainItem.NewSemiWholesalePrice : (mainItem.NewSemiWholesalePrice * majorFactor);
 
-                                        ProductDAL.RecordPriceChange(pid, "SemiWholesalePrice (نص جملة)", mainItem.OriginalSemiWholesalePrice, mainItem.NewSemiWholesalePrice, "تعديل سعر نص جملة من شاشة الجرد", trans);
+                                        decimal semiPct = mainItem.OriginalSemiWholesalePrice > 0 ? Math.Round(((mainItem.NewSemiWholesalePrice - mainItem.OriginalSemiWholesalePrice) / mainItem.OriginalSemiWholesalePrice) * 100m, 2) : 0m;
+                                        ProductDAL.RecordPriceChange(pid, mainItem.ProductCode, mainItem.ProductName, mainItem.OriginalPurchasePrice, mainItem.OriginalPurchasePrice, mainItem.OriginalSemiWholesalePrice, mainItem.NewSemiWholesalePrice, "تعديل سعر نص جملة من شاشة الجرد", semiPct, null, null, wid, Session.EmpName ?? "المستخدم", "تعديل سعر نص جملة من شاشة الجرد", trans);
+
                                         DbHelper.ExecuteTrans(trans,
                                             "UPDATE Products SET SemiWholesalePrice = @swp WHERE ProductID = @pid",
                                             DbHelper.P("@swp", baseMajorSemi),
@@ -2297,7 +2303,9 @@ namespace ChickenDist.Forms
                                     {
                                         decimal baseMajorWhole = isMajorUnit ? mainItem.NewWholesalePrice : (mainItem.NewWholesalePrice * majorFactor);
 
-                                        ProductDAL.RecordPriceChange(pid, "WholesalePrice (جملة)", mainItem.OriginalWholesalePrice, mainItem.NewWholesalePrice, "تعديل سعر جملة من شاشة الجرد", trans);
+                                        decimal wholePct = mainItem.OriginalWholesalePrice > 0 ? Math.Round(((mainItem.NewWholesalePrice - mainItem.OriginalWholesalePrice) / mainItem.OriginalWholesalePrice) * 100m, 2) : 0m;
+                                        ProductDAL.RecordPriceChange(pid, mainItem.ProductCode, mainItem.ProductName, mainItem.OriginalPurchasePrice, mainItem.OriginalPurchasePrice, mainItem.OriginalWholesalePrice, mainItem.NewWholesalePrice, "تعديل سعر جملة من شاشة الجرد", wholePct, null, null, wid, Session.EmpName ?? "المستخدم", "تعديل سعر جملة من شاشة الجرد", trans);
+
                                         DbHelper.ExecuteTrans(trans,
                                             "UPDATE Products SET WholesalePrice = @wp WHERE ProductID = @pid",
                                             DbHelper.P("@wp", baseMajorWhole),
