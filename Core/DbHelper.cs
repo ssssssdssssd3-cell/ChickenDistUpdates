@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
@@ -1609,7 +1609,99 @@ namespace ChickenDist.Core
             }
         }
 
-        public static void EnsureDatabaseSchema()
+        
+        public static void EnsureBalanceIntegritySchema()
+        {
+            try
+            {
+                // 1. Client Balance View with Duplicate Opening Guard
+                Execute(@"
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientBalance') DROP VIEW vw_ClientBalance;
+                EXEC('CREATE VIEW vw_ClientBalance AS
+                SELECT
+                    c.ClientID,
+                    c.ClientName,
+                    c.Phone,
+                    c.OpeningBalance,
+                    ISNULL(SUM(CASE WHEN ct.TransType IN (''''Sale'''',''''DriverLoad'''') THEN ct.Debit ELSE 0 END), 0) AS TotalSales,
+                    ISNULL(SUM(CASE WHEN ct.TransType = ''''Payment'''' THEN ct.Credit ELSE 0 END), 0) AS TotalPayments,
+                    c.OpeningBalance
+                        + ISNULL(SUM(CASE WHEN ct.TransType <> ''''Opening'''' THEN ct.Debit ELSE 0 END), 0)
+                        - ISNULL(SUM(CASE WHEN ct.TransType <> ''''Opening'''' THEN ct.Credit ELSE 0 END), 0)
+                        + CASE WHEN ISNULL(c.OpeningBalance, 0) = 0 THEN ISNULL(SUM(CASE WHEN ct.TransType = ''''Opening'''' THEN ct.Debit - ct.Credit ELSE 0 END), 0) ELSE 0 END AS Balance
+                FROM Clients c
+                LEFT JOIN ClientTransactions ct ON c.ClientID = ct.ClientID
+                GROUP BY c.ClientID, c.ClientName, c.Phone, c.OpeningBalance');");
+
+                // 2. Supplier Balance View with Duplicate Opening Guard
+                Execute(@"
+                IF EXISTS (SELECT * FROM sys.views WHERE name = 'vw_SupplierBalance') DROP VIEW vw_SupplierBalance;
+                EXEC('CREATE VIEW vw_SupplierBalance AS
+                SELECT
+                    s.SupplierID,
+                    s.SupplierName,
+                    s.Phone,
+                    s.OpeningBalance,
+                    ISNULL(SUM(CASE WHEN st.TransType <> ''''Opening'''' THEN st.Debit ELSE 0 END),0)  AS TotalDebit,
+                    ISNULL(SUM(CASE WHEN st.TransType <> ''''Opening'''' THEN st.Credit ELSE 0 END),0) AS TotalCredit,
+                    s.OpeningBalance 
+                        + ISNULL(SUM(CASE WHEN st.TransType <> ''''Opening'''' THEN st.Credit - st.Debit ELSE 0 END),0)
+                        + CASE WHEN ISNULL(s.OpeningBalance, 0) = 0 THEN ISNULL(SUM(CASE WHEN st.TransType = ''''Opening'''' THEN st.Credit - st.Debit ELSE 0 END), 0) ELSE 0 END AS Balance
+                FROM Suppliers s
+                LEFT JOIN SupplierTransactions st ON s.SupplierID = st.SupplierID
+                GROUP BY s.SupplierID, s.SupplierName, s.Phone, s.OpeningBalance');");
+
+                // 3. Trigger for Client CurrentDebt with Duplicate Opening Guard
+                Execute(@"
+                IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'tr_UpdateClientCurrentDebt') DROP TRIGGER tr_UpdateClientCurrentDebt;
+                EXEC('CREATE TRIGGER tr_UpdateClientCurrentDebt
+                ON ClientTransactions
+                AFTER INSERT, UPDATE, DELETE
+                AS
+                BEGIN
+                    SET NOCOUNT ON;
+                    ;WITH affected AS (
+                        SELECT ClientID FROM inserted
+                        UNION
+                        SELECT ClientID FROM deleted
+                    )
+                    UPDATE c
+                    SET c.CurrentDebt = c.OpeningBalance
+                        + ISNULL((SELECT SUM(CASE WHEN ct.TransType <> ''''Opening'''' THEN ct.Debit - ct.Credit ELSE 0 END)
+                                  FROM ClientTransactions ct
+                                  WHERE ct.ClientID = c.ClientID), 0)
+                        + CASE WHEN ISNULL(c.OpeningBalance, 0) = 0 THEN ISNULL((SELECT SUM(ct.Debit - ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID AND ct.TransType = ''''Opening''''), 0) ELSE 0 END
+                    FROM Clients c
+                    WHERE c.ClientID IN (SELECT ClientID FROM affected);
+                END');");
+
+                // 4. Data Cleanup: Remove redundant opening transactions if OpeningBalance is already on Client/Supplier card
+                Execute(@"
+                DELETE ct FROM ClientTransactions ct
+                JOIN Clients c ON ct.ClientID = c.ClientID
+                WHERE ct.TransType = 'Opening' AND ISNULL(c.OpeningBalance, 0) <> 0;
+
+                DELETE st FROM SupplierTransactions st
+                JOIN Suppliers s ON st.SupplierID = s.SupplierID
+                WHERE st.TransType = 'Opening' AND ISNULL(s.OpeningBalance, 0) <> 0;
+
+                UPDATE c
+                SET c.CurrentDebt = c.OpeningBalance + ISNULL((SELECT SUM(ct.Debit - ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0),
+                    c.Balance = c.OpeningBalance + ISNULL((SELECT SUM(ct.Debit - ct.Credit) FROM ClientTransactions ct WHERE ct.ClientID = c.ClientID), 0)
+                FROM Clients c;
+
+                UPDATE s
+                SET s.Balance = s.OpeningBalance + ISNULL((SELECT SUM(st.Credit - st.Debit) FROM SupplierTransactions st WHERE st.SupplierID = s.SupplierID), 0)
+                FROM Suppliers s;
+                ");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("DbHelper.EnsureBalanceIntegritySchema", ex);
+            }
+        }
+
+public static void EnsureDatabaseSchema()
         {
             EnsureCashBoxColumnsExist();
             EnsureIsIMEIColumnExists();
@@ -1620,6 +1712,7 @@ namespace ChickenDist.Core
             DeviceSessionManager.EnsureSchema();
             PurchaseOrderDAL.EnsureSchema();
             EnsurePriceMarginAndHistorySchema();
+            EnsureBalanceIntegritySchema();
 
             try
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -527,6 +527,13 @@ namespace ChickenDist.Forms
 
             flowBottom.Controls.Add(btnCloseShift);
             flowBottom.Controls.Add(btnApproveShift);
+            var btnShiftItemsSales = Theme.MakeButton("📦 مبيعات الأصناف", Color.FromArgb(16, 185, 129), new Point(0, 0), new Size(160, 42));
+            btnShiftItemsSales.Margin = new Padding(6, 0, 0, 0);
+            btnShiftItemsSales.Click += (s, e) => {
+                int? sid = _openShift != null ? Convert.ToInt32(_openShift["ShiftID"]) : (int?)null;
+                using (var dlg = new FrmShiftProductSales(sid)) { dlg.ShowDialog(this); }
+            };
+            flowBottom.Controls.Add(btnShiftItemsSales);
             flowBottom.Controls.Add(btnDetailedReport);
             flowBottom.Controls.Add(btnPrintReport);
             flowBottom.Controls.Add(btnRefresh);

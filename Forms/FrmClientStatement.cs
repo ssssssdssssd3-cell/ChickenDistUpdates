@@ -580,11 +580,18 @@ namespace ChickenDist.Forms
 
             foreach (DataRow r in _dt.Rows)
             {
+                string typeStr = r["TransType"].ToString();
                 decimal deb = Convert.ToDecimal(r["Debit"]);
                 decimal cred = Convert.ToDecimal(r["Credit"]);
-                _runBalance = _runBalance + deb - cred;
+                // حماية برمجية دائمة من تكرار الرصيد الافتتاحي
+                decimal clientOpenBal = 0m;
+                try { clientOpenBal = Convert.ToDecimal(DbHelper.Scalar("SELECT ISNULL(OpeningBalance, 0) FROM Clients WHERE ClientID = @id", DbHelper.P("@id", _clientID)) ?? 0m); } catch { }
+                bool isDupOpening = typeStr == "Opening" && clientOpenBal != 0m;
+                if (!isDupOpening)
+                {
+                    _runBalance = _runBalance + deb - cred;
+                }
 
-                string typeStr = r["TransType"].ToString();
                 int refID = r["RefID"] != DBNull.Value ? Convert.ToInt32(r["RefID"]) : 0;
                 string baseNotes = r["Notes"].ToString();
                 string detailedNotes = baseNotes;

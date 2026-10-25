@@ -1112,7 +1112,7 @@ namespace ChickenDist.Forms
                 cboProductFilter.Items.Add(new ComboItem(pid, pname + pcode));
 
                 var ci = new ComboItem(pid, pname + pcode);
-                ci.Extra = r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m;
+                ci.Extra = (r.Table.Columns.Contains("LastPurchasePrice") && r["LastPurchasePrice"] != DBNull.Value && Convert.ToDecimal(r["LastPurchasePrice"]) > 0) ? Convert.ToDecimal(r["LastPurchasePrice"]) : (r["PurchasePrice"] != DBNull.Value ? Convert.ToDecimal(r["PurchasePrice"]) : 0m);
                 cboAllProducts.Items.Add(ci);
             }
             cboProductFilter.DisplayMember = "Text";
@@ -1429,7 +1429,7 @@ namespace ChickenDist.Forms
         {
             var dtP = DbHelper.Query(@"
                 SELECT ProductID, ProductName, 
-                       COALESCE(PurchasePrice, Unit1PurchasePrice, 0) AS PurchasePrice, 
+                       COALESCE(NULLIF(LastPurchasePrice, 0), PurchasePrice, Unit1PurchasePrice, 0) AS PurchasePrice, 
                        COALESCE(Unit, Unit1Name, DefaultPurchaseUnit, '') AS UnitName 
                 FROM Products 
                 WHERE ProductID=@id", DbHelper.P("@id", productID));
@@ -1517,7 +1517,7 @@ namespace ChickenDist.Forms
 
             var dtP = DbHelper.Query(@"
                 SELECT ProductID, ProductName, 
-                       COALESCE(PurchasePrice, Unit1PurchasePrice, 0) AS PurchasePrice, 
+                       COALESCE(NULLIF(LastPurchasePrice, 0), PurchasePrice, Unit1PurchasePrice, 0) AS PurchasePrice, 
                        COALESCE(Unit, Unit1Name, DefaultPurchaseUnit, '') AS UnitName 
                 FROM Products 
                 WHERE ProductID=@id", DbHelper.P("@id", productID));

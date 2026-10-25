@@ -520,13 +520,20 @@ namespace ChickenDist.Forms
 
             foreach (DataRow r in _dt.Rows)
             {
+                string typeStr = r["TransType"] != DBNull.Value ? r["TransType"].ToString() : "";
                 // Credit = مشتريات = علينا (يزيد المديونية)
                 // Debit  = مدفوعات ومرتجعات = سددنا (يقلل المديونية)
                 decimal cred = Convert.ToDecimal(r["Credit"]);
                 decimal deb = Convert.ToDecimal(r["Debit"]);
-                _runBalance = _runBalance + cred - deb;
 
-                string typeStr = r["TransType"].ToString();
+                // حماية برمجية دائمة من تكرار الرصيد الافتتاحي
+                decimal suppOpenBal = 0m;
+                try { suppOpenBal = Convert.ToDecimal(DbHelper.Scalar("SELECT ISNULL(OpeningBalance, 0) FROM Suppliers WHERE SupplierID = @id", DbHelper.P("@id", _supplierID)) ?? 0m); } catch { }
+                bool isDupOpening = typeStr == "Opening" && suppOpenBal != 0m;
+                if (!isDupOpening)
+                {
+                    _runBalance = _runBalance + cred - deb;
+                }
                 int refID = r["RefID"] != DBNull.Value ? Convert.ToInt32(r["RefID"]) : 0;
                 string baseNotes = r["Notes"].ToString();
                 string detailedNotes = baseNotes;

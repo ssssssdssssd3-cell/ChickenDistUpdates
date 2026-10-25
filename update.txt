@@ -1,5 +1,5 @@
-version=4.4.5
+version=4.4.7
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.5&t=1792834578
-sha256=60DD903C96BCE53BD0A420AC62351FF0C95B0845659F6FDB971BCAF5EE34F935
-changelog=v4.4.5 - 2026-10-24: Add semi-wholesale and wholesale profit margin percentages to Product Card with distinctive color coding (Emerald Retail, Amber Semi-Wholesale, Sky Blue Wholesale, Violet Tax), full bidirectional live recalculation, and database schema persistence.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.7&t=1792914627
+sha256=05B285B175A32B25685F2D7BAB4603399285A2F3C9C20DC0658AF2F93165C860
+changelog=v4.4.6 - 2026-10-25: 1) حماية برمجية دائمة من تكرار الأرصدة الافتتاحية في كشوف الحسابات 2) تقرير إجمالي مبيعات أصناف الوردية في شاشة مستقلة ومطبوعة وتصدير إكسيل 3) قفل تعديل المصروفات التشغيلية لغير المصرح لهم.

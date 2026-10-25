@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -1613,6 +1613,21 @@ namespace ChickenDist.Forms
             cboExpType.Text = row.Cells["ExpenseType"].Value?.ToString();
             if (decimal.TryParse(row.Cells["Amount"].Value?.ToString(), out decimal amt)) txtExpAmount.Text = amt.ToString("N2");
             txtExpNotes.Text = row.Cells["Notes"].Value?.ToString();
+
+            // 🔒 حماية أمنية: قفل تعديل المصروفات السابقة لغير المصرح لهم
+            bool canEditExp = Session.IsAdmin || Session.CanEdit("CashBox") || Session.CanEdit("Expenses");
+            bool canDelExp  = Session.IsAdmin || Session.CanDelete("CashBox") || Session.CanDelete("Expenses");
+
+            txtExpAmount.ReadOnly = !canEditExp;
+            txtExpNotes.ReadOnly  = !canEditExp;
+            cboExpType.Enabled    = canEditExp;
+            cboExpVehicle.Enabled = canEditExp;
+            if (cboExpSafeAccount != null) cboExpSafeAccount.Enabled = canEditExp;
+            dtpExpDate.Enabled    = canEditExp;
+
+            btnSaveExp.Enabled = canEditExp;
+            btnSaveExp.Text    = canEditExp ? "💾 تعديل المصروف" : "🔒 تعديل مقفل";
+            btnDelExp.Enabled  = canDelExp;
             
             // select vehicle if present
             if (cboExpVehicle.Items.Count > 0)
@@ -1652,6 +1667,15 @@ namespace ChickenDist.Forms
         private void ClearExp()
         {
             _selectedExpID = 0;
+            txtExpAmount.ReadOnly = false;
+            txtExpNotes.ReadOnly  = false;
+            cboExpType.Enabled    = true;
+            cboExpVehicle.Enabled = true;
+            if (cboExpSafeAccount != null) cboExpSafeAccount.Enabled = true;
+            dtpExpDate.Enabled    = true;
+            btnSaveExp.Enabled    = Session.CanAdd("CashBox") || Session.IsAdmin;
+            btnSaveExp.Text       = "💾 حفظ المصروف";
+            btnDelExp.Enabled     = false;
             dtpExpDate.Value = DateTime.Today;
             cboExpType.Text = "";
             txtExpAmount.Text = "";
@@ -1675,7 +1699,22 @@ namespace ChickenDist.Forms
 
         private void BtnSaveExp_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedExpID > 0)
+            {
+                if (!Session.IsAdmin && !Session.CanEdit("CashBox") && !Session.CanEdit("Expenses"))
+                {
+                    MessageBox.Show("⛔ غير مصرح لك بتعديل قيود المصروفات المسجلة سابقاً.\nتعديل المصروفات مقفل بصلاحية المدير العام فقط لمنع التلاعب في الخزنة.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+            else
+            {
+                if (!Session.CanAdd("CashBox") && !Session.IsAdmin)
+                {
+                    MessageBox.Show("⛔ ليس لديك صلاحية حفظ المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
             if (string.IsNullOrWhiteSpace(cboExpType.Text)) { MessageBox.Show("اختر نوع المصروف"); return; }
             if (!decimal.TryParse(txtExpAmount.Text.Trim(), out decimal expAmt) || expAmt <= 0) { MessageBox.Show("أدخل مبلغاً أكبر من صفر"); return; }
             int? supplierID = null;
@@ -1716,7 +1755,11 @@ namespace ChickenDist.Forms
         private void BtnDelExp_Click(object sender, EventArgs e)
         {
             if (_selectedExpID == 0) return;
-            if (!Session.CanDelete("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.IsAdmin && !Session.CanDelete("CashBox") && !Session.CanDelete("Expenses"))
+            {
+                MessageBox.Show("⛔ غير مصرح لك بحذف قيود المصروفات. يتطلب صلاحية المدير العام.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (MessageBox.Show("حذف المصروف؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)
             { AccountDAL.DeleteExpense(_selectedExpID); ClearExp(); LoadExpenses(); LoadCashBox(); }
         }

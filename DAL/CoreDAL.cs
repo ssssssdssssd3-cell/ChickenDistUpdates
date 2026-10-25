@@ -1765,8 +1765,8 @@ namespace ChickenDist.DAL
             var txResult = DbHelper.Scalar(
                 @"SELECT ISNULL(SUM(Credit),0) - ISNULL(SUM(Debit),0)
                   FROM SupplierTransactions
-                  WHERE SupplierID=@id AND CAST(TransDate AS DATE) < @d",
-                DbHelper.P("@id", supplierID),
+                  WHERE SupplierID=@id AND CAST(TransDate AS DATE) < @d AND (TransType <> 'Opening' OR @openBal = 0)",
+                DbHelper.P("@id", supplierID), DbHelper.P("@openBal", opening),
                 DbHelper.P("@d", before.Date));
             decimal txBalance = txResult != null ? Convert.ToDecimal(txResult) : 0;
 
@@ -2128,7 +2128,7 @@ namespace ChickenDist.DAL
             var dt = DbHelper.Query(@"
                 SELECT 
                     c.OpeningBalance + 
-                    ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID=@id AND CAST(TransDate AS DATE) < @dt), 0) AS PrevBal
+                    ISNULL((SELECT SUM(Debit) - SUM(Credit) FROM ClientTransactions WHERE ClientID=@id AND CAST(TransDate AS DATE) < @dt AND (TransType <> 'Opening' OR ISNULL(c.OpeningBalance, 0) = 0)), 0) AS PrevBal
                 FROM Clients c WHERE c.ClientID=@id", 
                 DbHelper.P("@id", clientID), DbHelper.P("@dt", beforeDate.Date));
             if (dt.Rows.Count > 0 && dt.Rows[0]["PrevBal"] != DBNull.Value)
@@ -2144,7 +2144,7 @@ namespace ChickenDist.DAL
                     ISNULL((
                         SELECT SUM(ct.Debit) - SUM(ct.Credit) 
                         FROM ClientTransactions ct
-                        WHERE ct.ClientID = @cid 
+                        WHERE ct.ClientID = @cid AND (ct.TransType <> 'Opening' OR ISNULL(c.OpeningBalance, 0) = 0) 
                           AND ct.TransID < ISNULL((SELECT TOP 1 t.TransID FROM ClientTransactions t WHERE t.ClientID = @cid AND t.TransType = 'Sale' AND t.RefID = @sid ORDER BY t.TransID DESC), 999999999)
                     ), 0) AS PrevBal
                 FROM Clients c WHERE c.ClientID = @cid", 

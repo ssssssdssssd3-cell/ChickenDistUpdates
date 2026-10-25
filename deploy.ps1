@@ -1,11 +1,11 @@
-# ============================================================
+﻿# ============================================================
 #  Ã°Å¸Å¡â‚¬ Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.5";
-$CHANGELOG = "v4.4.5 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): Add semi-wholesale and wholesale profit margin percentages to Product Card with distinctive color coding (Emerald Retail, Amber Semi-Wholesale, Sky Blue Wholesale, Violet Tax), full bidirectional live recalculation, and database schema persistence."
+$VERSION = "4.4.7";
+$CHANGELOG = "v4.4.6 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): 1) حماية برمجية دائمة من تكرار الأرصدة الافتتاحية في كشوف الحسابات 2) تقرير إجمالي مبيعات أصناف الوردية في شاشة مستقلة ومطبوعة وتصدير إكسيل 3) قفل تعديل المصروفات التشغيلية لغير المصرح لهم."
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

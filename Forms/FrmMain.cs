@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -551,6 +551,7 @@ namespace ChickenDist.Forms
 
                     // 2. الورديات والرقابة
                     ("🔄 إدارة وإغلاق الوردية", "ShiftClose",  (Action)(() => { var f = new FrmShiftClose(); f.ShowDialog(); })),
+                    ("📦 مبيعات أصناف الوردية", "ShiftProductSales", (Action)(() => { var f = new FrmShiftProductSales(); f.ShowDialog(); })),
                     ("📊 سجل وتقارير الورديات", "ShiftsHistory", (Action)(() => NavigateTo(new FrmReports("ShiftsHistory")))),
                     ("📡 بوابة المحاسب",  "AccountantPortal", (Action)(() => NavigateTo(new FrmAccountantPortal()))),
                     ("📑 سجل التعديلات","SalesAudit", (Action)(() => NavigateTo(new FrmSalesAuditList()))),

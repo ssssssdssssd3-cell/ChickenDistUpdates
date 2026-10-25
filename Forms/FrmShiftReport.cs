@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -216,6 +216,17 @@ namespace ChickenDist.Forms
             btnRefresh.Margin = new Padding(6, 0, 0, 0);
             btnClose.Margin   = new Padding(6, 0, 0, 0);
 
+            var btnShiftItems = Theme.MakeButton("📦 مبيعات الأصناف", Color.FromArgb(16, 185, 129), new Point(0, 0), new Size(150, 40));
+            btnShiftItems.Margin = new Padding(6, 0, 0, 0);
+            btnShiftItems.Click += (s, e) => {
+                int? sid = _targetShiftID;
+                if ((!sid.HasValue || sid.Value <= 0) && cboShifts.SelectedItem is ComboItem sc)
+                {
+                    sid = sc.ID;
+                }
+                using (var dlg = new FrmShiftProductSales(sid)) { dlg.ShowDialog(this); }
+            };
+            flowBottom.Controls.Add(btnShiftItems);
             flowBottom.Controls.Add(btnPrint);
             flowBottom.Controls.Add(btnRefresh);
             flowBottom.Controls.Add(btnClose);
