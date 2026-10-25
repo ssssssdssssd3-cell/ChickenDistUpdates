@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -30,7 +30,7 @@ namespace ChickenDist.Forms
 
         // ── جدول الأصناف ───────────────────────────────────────────────────────
         private DataGridView dgItems;
-        private Panel pnlItems, pnlFooter;
+        private Panel pnlItems, pnlFooter, pnlBulkPricingBar;
         private Button btnCustomizeCols; // زر تخصيص الأعمدة
 
         // ── الذيل — خصم الفاتورة ───────────────────────────────────────────────
@@ -63,6 +63,7 @@ namespace ChickenDist.Forms
         private bool _isDirty = false;
         private bool _isScanningBarcode = false;
         private bool _isRefreshingGrid = false;
+        private bool _isUpdatingGrid = false;
         private bool _searchSessionActive = false;
         private bool _isProcessingScan = false;
         private decimal? _pendingBarcodeWeight = null;
@@ -734,96 +735,255 @@ namespace ChickenDist.Forms
             flowToolbar.Controls.Add(cboProduct);
             flowToolbar.Controls.Add(btnCustomizeCols);
 
-            // ── أدوات تطبيق هامش الربح والضريبة جماعياً على الأصناف ──
-            var lblBulkMargin = new Label { Text = "هامش %:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(6, 6, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            var nudBulkMargin = new NumericUpDown { Size = new Size(60, 28), Minimum = 0, Maximum = 9999, DecimalPlaces = 1, Value = 20, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 2, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+pnlGridToolbar.Controls.Add(flowToolbar);
+
+            // ══════════════════════════════════════════════════════════════════
+            // ── شريط أدوات التسعير والضريبة لجميع أصناف الفاتورة ────────────
+            // ══════════════════════════════════════════════════════════════════
+            pnlBulkPricingBar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(241, 245, 249),
+                Padding = new Padding(6, 3, 6, 3)
+            };
+
+            var flowBulk = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+
+            var lblBulkTitle = new Label
+            {
+                Text = "🏷️ التسعير الجماعي لأصناف الفاتورة:",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Margin = new Padding(4, 7, 8, 0),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+
+            var lblBulkMargin = new Label
+            {
+                Text = "هامش الربح %:",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Margin = new Padding(4, 7, 2, 0),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+
+            var nudBulkMargin = new NumericUpDown
+            {
+                Size = new Size(65, 28),
+                Minimum = 0,
+                Maximum = 9999,
+                DecimalPlaces = 1,
+                Value = 20,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Margin = new Padding(2, 3, 2, 0),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+
             var btnApplyBulkMargin = new Button
             {
-                Text = "⚡ تطبيق الربح على الكل",
-                Size = new Size(150, 30),
+                Text = "⚡ تطبيق نسبة الربح على الكل",
+                Size = new Size(175, 30),
                 BackColor = Color.FromArgb(14, 116, 144),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(2, 0, 6, 0)
+                Margin = new Padding(2, 1, 8, 0)
             };
             btnApplyBulkMargin.FlatAppearance.BorderSize = 0;
             btnApplyBulkMargin.Click += (s, e) =>
             {
-                if (dgItems.Rows.Count == 0)
+                if (dgItems.Rows.Count == 0 || _items.Count == 0)
                 {
                     MessageBox.Show("لا توجد أصناف في الفاتورة لتطبيق نسبة الربح عليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
                 decimal marginPct = nudBulkMargin.Value;
                 int updatedCount = 0;
-                for (int r = 0; r < dgItems.Rows.Count; r++)
+                try
                 {
-                    var row = dgItems.Rows[r];
-                    if (row.IsNewRow || r >= _items.Count) continue;
-                    var item = _items[r];
-                    decimal unitPrice = item.UnitPrice > 0 ? item.UnitPrice : (decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal up) ? up : 0m);
-                    row.Cells["MarginPct"].Value = marginPct.ToString("G29");
-                    if (unitPrice > 0)
+                    _isUpdatingGrid = true;
+                    dgItems.CellValueChanged -= DgItems_CellValueChanged;
+                    for (int r = 0; r < dgItems.Rows.Count; r++)
                     {
-                        decimal suggested = Math.Round(unitPrice * (1m + marginPct / 100m), 2);
-                        item.SuggestedSalePrice = suggested;
-                        row.Cells["SuggestedSalePrice"].Value = suggested.ToString("N2");
+                        var row = dgItems.Rows[r];
+                        if (row.IsNewRow || r >= _items.Count) continue;
+                        var item = _items[r];
+                        decimal unitPrice = item.UnitPrice > 0 ? item.UnitPrice : (decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal up) ? up : 0m);
+                        item.ProfitMarginPct = marginPct;
+                        row.Cells["MarginPct"].Value = marginPct.ToString("G29") + "%";
+                        if (unitPrice > 0)
+                        {
+                            decimal suggested = Math.Round(unitPrice * (1m + marginPct / 100m), 2);
+                            item.SuggestedSalePrice = suggested;
+                            row.Cells["SuggestedSalePrice"].Value = suggested.ToString("N2");
+                        }
+                        updatedCount++;
                     }
-                    updatedCount++;
                 }
+                finally
+                {
+                    dgItems.CellValueChanged += DgItems_CellValueChanged;
+                    _isUpdatingGrid = false;
+                }
+                _isDirty = true;
                 MessageBox.Show($"✅ تم تطبيق نسبة ربح ({marginPct}%) وحساب سعر البيع المقترح لجميع أصناف الفاتورة بنجاح ({updatedCount} صنف).", "تطبيق الربح جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            var lblBulkTax = new Label { Text = "ضريبة %:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(4, 6, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-            var nudBulkTax = new NumericUpDown { Size = new Size(55, 28), Minimum = 0, Maximum = 100, DecimalPlaces = 1, Value = 14, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Margin = new Padding(2, 2, 2, 0), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            var btnApplyCardMargin = new Button
+            {
+                Text = "📋 تطبيق ربح كارت الصنف",
+                Size = new Size(165, 30),
+                BackColor = Color.FromArgb(99, 102, 241),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(2, 1, 8, 0)
+            };
+            btnApplyCardMargin.FlatAppearance.BorderSize = 0;
+            btnApplyCardMargin.Click += (s, e) =>
+            {
+                if (dgItems.Rows.Count == 0 || _items.Count == 0)
+                {
+                    MessageBox.Show("لا توجد أصناف في الفاتورة لتطبيق نسبة ربح كارت الصنف عليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                int updatedCount = 0;
+                try
+                {
+                    _isUpdatingGrid = true;
+                    dgItems.CellValueChanged -= DgItems_CellValueChanged;
+                    for (int r = 0; r < dgItems.Rows.Count; r++)
+                    {
+                        var row = dgItems.Rows[r];
+                        if (row.IsNewRow || r >= _items.Count) continue;
+                        var item = _items[r];
+                        ComboItem prod = GetProductComboItem(item.ProductID);
+                        decimal cardMargin = prod != null && prod.ProfitMarginPct > 0 ? prod.ProfitMarginPct : 0m;
+                        if (cardMargin <= 0)
+                        {
+                            var dtMargin = DbHelper.Query("SELECT ISNULL(ProfitMarginPct, 0) FROM Products WHERE ProductID = @pid", DbHelper.P("@pid", item.ProductID));
+                            if (dtMargin.Rows.Count > 0)
+                                cardMargin = Convert.ToDecimal(dtMargin.Rows[0][0]);
+                        }
+                        if (cardMargin > 0)
+                        {
+                            decimal unitPrice = item.UnitPrice > 0 ? item.UnitPrice : (decimal.TryParse(row.Cells["UnitPrice"].Value?.ToString(), out decimal up) ? up : 0m);
+                            item.ProfitMarginPct = cardMargin;
+                            row.Cells["MarginPct"].Value = cardMargin.ToString("G29") + "%";
+                            if (unitPrice > 0)
+                            {
+                                decimal suggested = Math.Round(unitPrice * (1m + cardMargin / 100m), 2);
+                                item.SuggestedSalePrice = suggested;
+                                row.Cells["SuggestedSalePrice"].Value = suggested.ToString("N2");
+                            }
+                            updatedCount++;
+                        }
+                    }
+                }
+                finally
+                {
+                    dgItems.CellValueChanged += DgItems_CellValueChanged;
+                    _isUpdatingGrid = false;
+                }
+                _isDirty = true;
+                MessageBox.Show($"✅ تم تطبيق نسبة ربح كارت الصنف وتحديث أسعار البيع المقترحة لـ ({updatedCount}) صنف مسجل لهم نسبة ربح.", "تطبيق ربح كارت الصنف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+
+            var lblBulkTax = new Label
+            {
+                Text = "ضريبة الشراء %:",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Margin = new Padding(4, 7, 2, 0),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+
+            var nudBulkTax = new NumericUpDown
+            {
+                Size = new Size(60, 28),
+                Minimum = 0,
+                Maximum = 100,
+                DecimalPlaces = 1,
+                Value = 14,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Margin = new Padding(2, 3, 2, 0),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+
             var btnApplyBulkTax = new Button
             {
                 Text = "⚡ تطبيق الضريبة على الكل",
-                Size = new Size(155, 30),
+                Size = new Size(165, 30),
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(2, 0, 4, 0)
+                Margin = new Padding(2, 1, 4, 0)
             };
             btnApplyBulkTax.FlatAppearance.BorderSize = 0;
             btnApplyBulkTax.Click += (s, e) =>
             {
-                if (dgItems.Rows.Count == 0)
+                if (dgItems.Rows.Count == 0 || _items.Count == 0)
                 {
                     MessageBox.Show("لا توجد أصناف في الفاتورة لتطبيق الضريبة عليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
                 decimal taxPctVal = nudBulkTax.Value;
                 int updatedCount = 0;
-                foreach (DataGridViewRow row in dgItems.Rows)
+                try
                 {
-                    if (row.IsNewRow) continue;
-                    if (dgItems.Columns.Contains("TaxPct"))
+                    _isUpdatingGrid = true;
+                    dgItems.CellValueChanged -= DgItems_CellValueChanged;
+                    for (int r = 0; r < dgItems.Rows.Count; r++)
                     {
-                        row.Cells["TaxPct"].Value = taxPctVal.ToString("G29");
-                        updatedCount++;
+                        var row = dgItems.Rows[r];
+                        if (row.IsNewRow || r >= _items.Count) continue;
+                        if (dgItems.Columns.Contains("TaxPct"))
+                        {
+                            row.Cells["TaxPct"].Value = taxPctVal.ToString("G29");
+                            _items[r].TaxPct = taxPctVal;
+                            updatedCount++;
+                        }
                     }
+                }
+                finally
+                {
+                    dgItems.CellValueChanged += DgItems_CellValueChanged;
+                    _isUpdatingGrid = false;
                 }
                 if (nudTaxPct != null)
                 {
                     nudTaxPct.Value = taxPctVal;
                 }
+                _isDirty = true;
                 RecalcTotals();
-                MessageBox.Show($"✅ تم تطبيق نسبة الضريبة ({taxPctVal}%) على أصناف الفاتورة بنجاح.", "تطبيق الضريبة جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"✅ تم تطبيق نسبة الضريبة ({taxPctVal}%) على جميع أصناف الفاتورة بنجاح ({updatedCount} صنف).", "تطبيق الضريبة جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            flowToolbar.Controls.Add(lblBulkMargin);
-            flowToolbar.Controls.Add(nudBulkMargin);
-            flowToolbar.Controls.Add(btnApplyBulkMargin);
-            flowToolbar.Controls.Add(lblBulkTax);
-            flowToolbar.Controls.Add(nudBulkTax);
-            flowToolbar.Controls.Add(btnApplyBulkTax);
+            flowBulk.Controls.Add(lblBulkTitle);
+            flowBulk.Controls.Add(lblBulkMargin);
+            flowBulk.Controls.Add(nudBulkMargin);
+            flowBulk.Controls.Add(btnApplyBulkMargin);
+            flowBulk.Controls.Add(btnApplyCardMargin);
+            flowBulk.Controls.Add(lblBulkTax);
+            flowBulk.Controls.Add(nudBulkTax);
+            flowBulk.Controls.Add(btnApplyBulkTax);
 
-            pnlGridToolbar.Controls.Add(flowToolbar);
+            pnlBulkPricingBar.Controls.Add(flowBulk);
 
             // ── جدول الأصناف (عرض كامل 100% مريح للعين) ─────────────────────────
             pnlItems = new Panel
@@ -993,8 +1153,10 @@ namespace ChickenDist.Forms
             };
 
             pnlItems.Controls.Add(dgItems);
+            pnlItems.Controls.Add(pnlBulkPricingBar);
             pnlItems.Controls.Add(pnlGridToolbar);
             pnlGridToolbar.SendToBack();
+            pnlBulkPricingBar.BringToFront();
             dgItems.BringToFront();
 
             // تحميل إعدادات الأعمدة المحفوظة
@@ -2095,6 +2257,8 @@ namespace ChickenDist.Forms
                     ci.HasExpiry = r.Table.Columns.Contains("HasExpiry") && r["HasExpiry"] != DBNull.Value && Convert.ToBoolean(r["HasExpiry"]);
                     ci.DefaultExpiryDays = r.Table.Columns.Contains("DefaultExpiryDays") && r["DefaultExpiryDays"] != DBNull.Value ? Convert.ToInt32(r["DefaultExpiryDays"]) : (int?)null;
                     ci.IsIMEI = r.Table.Columns.Contains("IsIMEI") && r["IsIMEI"] != DBNull.Value && Convert.ToBoolean(r["IsIMEI"]);
+                    ci.ProfitMarginPct = r.Table.Columns.Contains("ProfitMarginPct") && r["ProfitMarginPct"] != DBNull.Value ? Convert.ToDecimal(r["ProfitMarginPct"]) : 0m;
+                    ci.TaxPct = r.Table.Columns.Contains("TaxPct") && r["TaxPct"] != DBNull.Value ? Convert.ToDecimal(r["TaxPct"]) : 0m;
 
                     productItems.Add(ci);
                 }
@@ -2410,6 +2574,13 @@ namespace ChickenDist.Forms
                 }
             }
 
+            decimal itemMargin = product != null && product.ProfitMarginPct > 0 ? product.ProfitMarginPct : 0m;
+            decimal? finalSalePrice = defaultSalePrice;
+            if ((!finalSalePrice.HasValue || finalSalePrice.Value <= 0) && defaultPrice > 0 && itemMargin > 0)
+            {
+                finalSalePrice = Math.Round(defaultPrice * (1m + itemMargin / 100m), 2);
+            }
+
             _items.Add(new PurchaseItemDTO
             {
                 ProductID    = prodId,
@@ -2419,7 +2590,9 @@ namespace ChickenDist.Forms
                 Quantity     = qty,
                 UnitPrice    = defaultPrice,
                 DiscountPct  = disc,
-                SuggestedSalePrice = defaultSalePrice,
+                SuggestedSalePrice = finalSalePrice,
+                ProfitMarginPct = itemMargin,
+                TaxPct = product?.TaxPct ?? 0m,
                 UnitName = defaultUnit,
                 Factor = defaultFactor,
                 ExpiryDate = defaultExpiry
@@ -2928,7 +3101,13 @@ namespace ChickenDist.Forms
             {
                 decimal netBuy = item.Quantity > 0 ? item.TotalPrice / item.Quantity : item.UnitPrice;
                 decimal sell = item.SuggestedSalePrice ?? 0m;
-                decimal margin = netBuy > 0 ? (sell - netBuy) / netBuy * 100m : 0m;
+                decimal margin = netBuy > 0 && sell > 0 ? Math.Round((sell - netBuy) / netBuy * 100m, 1) : (item.ProfitMarginPct > 0 ? item.ProfitMarginPct : 0m);
+                if (sell <= 0 && item.ProfitMarginPct > 0 && netBuy > 0)
+                {
+                    sell = Math.Round(netBuy * (1m + item.ProfitMarginPct / 100m), 2);
+                    item.SuggestedSalePrice = sell;
+                    margin = item.ProfitMarginPct;
+                }
                 string catName = !string.IsNullOrWhiteSpace(item.CategoryName)
                     ? item.CategoryName
                     : (GetProductComboItem(item.ProductID)?.CategoryName ?? "");
@@ -3209,166 +3388,158 @@ namespace ChickenDist.Forms
         // تعديل الكميات/الأسعار/الخصم من الجدول مباشرة
         private void DgItems_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
+            if (_isRefreshingGrid || _isUpdatingGrid) return;
             if (e.RowIndex < 0 || e.RowIndex >= _items.Count) return;
-            var item    = _items[e.RowIndex];
-            var colName = dgItems.Columns[e.ColumnIndex].Name;
-            var cellVal = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
 
-            if (colName == "UnitName")
+            try
             {
-                this.BeginInvoke((MethodInvoker)delegate
-                {
-                    if (e.RowIndex >= 0 && e.RowIndex < _items.Count)
-                        HandleUnitChange(dgItems.Rows[e.RowIndex], _items[e.RowIndex], cellVal);
-                });
-                return;
-            }
+                _isUpdatingGrid = true;
+                var item    = _items[e.RowIndex];
+                var colName = dgItems.Columns[e.ColumnIndex].Name;
+                var cellVal = dgItems.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
 
-            if (colName == "Quantity")
-            {
-                if (decimal.TryParse(cellVal, out decimal q) && q > 0)
-                    item.Quantity = q;
-                else
-                    dgItems.Rows[e.RowIndex].Cells["Quantity"].Value = item.Quantity.ToString("F3");
-            }
-            else if (colName == "BonusQuantity")
-            {
-                if (decimal.TryParse(cellVal, out decimal b) && b >= 0)
-                    item.BonusQuantity = b;
-                else
-                    dgItems.Rows[e.RowIndex].Cells["BonusQuantity"].Value = item.BonusQuantity.ToString("F3");
-            }
-            else if (colName == "UnitPrice")
-            {
-                if (decimal.TryParse(cellVal, out decimal p) && p >= 0)
+                if (colName == "UnitName")
                 {
-                    item.UnitPrice = p;
-                    decimal sell = item.SuggestedSalePrice ?? 0m;
-                    if (sell > 0 && sell >= p)
+                    this.BeginInvoke((MethodInvoker)delegate
                     {
-                        item.DiscountPct = Math.Round((sell - p) / sell * 100m, 2);
+                        if (e.RowIndex >= 0 && e.RowIndex < _items.Count)
+                            HandleUnitChange(dgItems.Rows[e.RowIndex], _items[e.RowIndex], cellVal);
+                    });
+                    return;
+                }
+
+                if (colName == "Quantity")
+                {
+                    if (decimal.TryParse(cellVal, out decimal q) && q > 0)
+                        item.Quantity = q;
+                    else
+                        dgItems.Rows[e.RowIndex].Cells["Quantity"].Value = item.Quantity.ToString("F3");
+                }
+                else if (colName == "BonusQuantity")
+                {
+                    if (decimal.TryParse(cellVal, out decimal b) && b >= 0)
+                        item.BonusQuantity = b;
+                    else
+                        dgItems.Rows[e.RowIndex].Cells["BonusQuantity"].Value = item.BonusQuantity.ToString("F3");
+                }
+                else if (colName == "UnitPrice")
+                {
+                    if (decimal.TryParse(cellVal, out decimal p) && p >= 0)
+                    {
+                        item.UnitPrice = p;
+                        string curMarginStr = dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value?.ToString()?.Replace("%", "")?.Trim();
+                        if (decimal.TryParse(curMarginStr, out decimal existingMargin) && existingMargin > 0)
+                        {
+                            decimal newSuggested = Math.Round(p * (1m + existingMargin / 100m), 2);
+                            item.SuggestedSalePrice = newSuggested;
+                            item.ProfitMarginPct = existingMargin;
+                            dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
+                            dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = existingMargin.ToString("G29") + "%";
+                        }
+                        else if (item.SuggestedSalePrice.HasValue && item.SuggestedSalePrice.Value > 0)
+                        {
+                            decimal margin = p > 0 ? Math.Round((item.SuggestedSalePrice.Value - p) / p * 100m, 1) : 0m;
+                            item.ProfitMarginPct = margin;
+                            dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                        }
+                        dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
+                    }
+                    else
+                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
+                }
+                else if (colName == "DiscountPct")
+                {
+                    if (decimal.TryParse(cellVal, out decimal d) && d >= 0 && d <= 100)
+                    {
+                        item.DiscountPct = d;
+                        item.DiscountAmt = 0m;
+                        dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
+                    }
+                    else
                         dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
-                    }
-                    else if (sell > 0 && p > sell)
+                }
+                else if (colName == "SuggestedSalePrice")
+                {
+                    if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
                     {
-                        item.DiscountPct = 0m;
-                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = "0.00";
+                        item.SuggestedSalePrice = s;
+                        decimal buy = item.UnitPrice;
+                        decimal margin = buy > 0 ? Math.Round((s - buy) / buy * 100m, 1) : 0m;
+                        item.ProfitMarginPct = margin;
+                        dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
                     }
-                    string curMarginStr = dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value?.ToString()?.Replace("%", "")?.Trim();
-                    if (decimal.TryParse(curMarginStr, out decimal existingMargin) && existingMargin > 0)
+                    else
+                        dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = (item.SuggestedSalePrice ?? 0m).ToString("F2");
+                }
+                else if (colName == "ExpiryDate")
+                {
+                    var parsedDate = DbHelper.ParseExpiryInput(cellVal);
+                    if (parsedDate.HasValue)
                     {
-                        decimal newSuggested = Math.Round(p * (1m + existingMargin / 100m), 2);
-                        item.SuggestedSalePrice = newSuggested;
-                        dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
-                        dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = existingMargin.ToString("G29");
+                        item.ExpiryDate = parsedDate.Value;
+                        this.BeginInvoke((MethodInvoker)delegate
+                        {
+                            if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
+                            {
+                                dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = parsedDate.Value.ToString("yyyy-MM-dd");
+                            }
+                        });
+                    }
+                    else if (string.IsNullOrWhiteSpace(cellVal))
+                    {
+                        item.ExpiryDate = null;
                     }
                     else
                     {
-                        decimal margin = p > 0 ? (sell - p) / p * 100m : 0m;
-                        dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                        dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "";
                     }
-                    dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
                 }
-                else
-                    dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
-            }
-            else if (colName == "DiscountPct")
-            {
-                if (decimal.TryParse(cellVal, out decimal d) && d >= 0 && d <= 100)
+                else if (colName == "IMEI")
                 {
-                    item.DiscountPct = d;
-                    item.DiscountAmt = 0m; // مسح القيمة المباشرة عند وجود نسبة
-                    decimal sell = item.SuggestedSalePrice ?? 0m;
-                    if (sell > 0)
-                    {
-                        item.UnitPrice = Math.Round(sell * (1m - d / 100m), 2);
-                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
-                    }
-                    decimal buy = item.UnitPrice;
-                    decimal margin = buy > 0 ? (sell - buy) / buy * 100m : 0m;
-                    dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
-                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
+                    item.IMEI = cellVal?.Trim() ?? "";
                 }
-                else
-                    dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
-            }
-            else if (colName == "SuggestedSalePrice")
-            {
-                if (decimal.TryParse(cellVal, out decimal s) && s >= 0)
+                else if (colName == "MarginPct")
                 {
-                    item.SuggestedSalePrice = s;
-                    if (item.DiscountPct > 0)
+                    string cleanMargin = (cellVal ?? "").Replace("%", "").Trim();
+                    if (decimal.TryParse(cleanMargin, out decimal m) && m >= 0)
                     {
-                        item.UnitPrice = Math.Round(s * (1m - item.DiscountPct / 100m), 2);
-                        dgItems.Rows[e.RowIndex].Cells["UnitPrice"].Value = item.UnitPrice.ToString("F2");
-                    }
-                    else if (item.UnitPrice > 0 && s >= item.UnitPrice)
-                    {
-                        item.DiscountPct = Math.Round((s - item.UnitPrice) / s * 100m, 2);
-                        dgItems.Rows[e.RowIndex].Cells["DiscountPct"].Value = item.DiscountPct.ToString("F2");
-                    }
-                    decimal buy = item.UnitPrice;
-                    decimal margin = buy > 0 ? (s - buy) / buy * 100m : 0m;
-                    dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
-                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = margin.ToString("F1") + "%";
-                }
-                else
-                    dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = (item.SuggestedSalePrice ?? 0m).ToString("F2");
-            }
-            else if (colName == "ExpiryDate")
-            {
-                var parsedDate = DbHelper.ParseExpiryInput(cellVal);
-                if (parsedDate.HasValue)
-                {
-                    item.ExpiryDate = parsedDate.Value;
-                    this.BeginInvoke((MethodInvoker)delegate
-                    {
-                        if (e.RowIndex >= 0 && e.RowIndex < dgItems.Rows.Count)
+                        item.ProfitMarginPct = m;
+                        if (item.UnitPrice > 0)
                         {
-                            dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = parsedDate.Value.ToString("yyyy-MM-dd");
+                            decimal newSuggested = Math.Round(item.UnitPrice * (1m + m / 100m), 2);
+                            item.SuggestedSalePrice = newSuggested;
+                            dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
                         }
-                    });
-                }
-                else if (string.IsNullOrWhiteSpace(cellVal))
-                {
-                    item.ExpiryDate = null;
-                }
-                else
-                {
-                    dgItems.Rows[e.RowIndex].Cells["ExpiryDate"].Value = item.ExpiryDate?.ToString("yyyy-MM-dd") ?? "";
-                }
-            }
-            else if (colName == "IMEI")
-            {
-                item.IMEI = cellVal?.Trim() ?? "";
-            }
-            else if (colName == "MarginPct")
-            {
-                string cleanMargin = (cellVal ?? "").Replace("%", "").Trim();
-                if (decimal.TryParse(cleanMargin, out decimal m) && m >= 0)
-                {
-                    if (item.UnitPrice > 0)
-                    {
-                        decimal newSuggested = Math.Round(item.UnitPrice * (1m + m / 100m), 2);
-                        item.SuggestedSalePrice = newSuggested;
-                        dgItems.Rows[e.RowIndex].Cells["SuggestedSalePrice"].Value = newSuggested.ToString("N2");
+                        dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = m.ToString("G29") + "%";
                     }
-                    dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = m.ToString("G29");
+                    else
+                    {
+                        dgItems.Rows[e.RowIndex].Cells["MarginPct"].Value = (item.ProfitMarginPct > 0 ? item.ProfitMarginPct.ToString("G29") : "0") + "%";
+                    }
                 }
-            }
-            else if (colName == "TaxPct")
-            {
-                string cleanTax = (cellVal ?? "").Replace("%", "").Trim();
-                if (decimal.TryParse(cleanTax, out decimal t) && t >= 0 && t <= 100)
+                else if (colName == "TaxPct")
                 {
-                    dgItems.Rows[e.RowIndex].Cells["TaxPct"].Value = t.ToString("G29");
+                    string cleanTax = (cellVal ?? "").Replace("%", "").Trim();
+                    if (decimal.TryParse(cleanTax, out decimal t) && t >= 0 && t <= 100)
+                    {
+                        item.TaxPct = t;
+                        dgItems.Rows[e.RowIndex].Cells["TaxPct"].Value = t.ToString("G29");
+                    }
+                    else
+                    {
+                        dgItems.Rows[e.RowIndex].Cells["TaxPct"].Value = item.TaxPct.ToString("G29");
+                    }
                 }
-            }
 
-            // تحديث عمود الإجمالي
-            dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
-            _isDirty = true;
-            RecalcTotals();
+                // تحديث عمود الإجمالي
+                dgItems.Rows[e.RowIndex].Cells["TotalPrice"].Value = item.TotalPrice.ToString("F2");
+                _isDirty = true;
+                RecalcTotals();
+            }
+            finally
+            {
+                _isUpdatingGrid = false;
+            }
         }
 
         // حذف صف بضغطة الزر

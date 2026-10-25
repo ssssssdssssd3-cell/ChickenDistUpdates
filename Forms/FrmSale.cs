@@ -9165,6 +9165,8 @@ namespace ChickenDist.Forms
 		public int? DefaultExpiryDays { get; set; } = null;
 		public string DefaultSaleUnit { get; set; } = "";
 		public bool IsIMEI { get; set; } = false;
+		public decimal ProfitMarginPct { get; set; } = 0m;
+		public decimal TaxPct { get; set; } = 0m;
 
 		// ─── بيانات الوحدات المتعددة ───────────────────────────────────────────
 		/// <summary>اسم الوحدة الأساسية (Unit) — الوحدة الكبرى المستخدمة عند الإضافة</summary>

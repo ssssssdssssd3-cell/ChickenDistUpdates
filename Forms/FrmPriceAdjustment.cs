@@ -239,6 +239,8 @@ namespace ChickenDist.Forms
                 btnHistory.Left = btnPrintBarcodes.Left - btnHistory.Width - 10;
             };
 
+            dgvProducts.BringToFront();
+
             Theme.ApplyFormRTL(this);
             this.RightToLeftLayout = false;
         }
@@ -311,7 +313,7 @@ namespace ChickenDist.Forms
                         FROM PurchaseItems pi WITH (NOLOCK)
                         JOIN Purchases pur WITH (NOLOCK) ON pi.PurchaseID = pur.PurchaseID
                         JOIN Suppliers s WITH (NOLOCK) ON pur.SupplierID = s.SupplierID
-                        WHERE pi.ProductID = p.ProductID AND pur.IsDraft = 0
+                        WHERE pi.ProductID = p.ProductID
                         ORDER BY pur.PurchaseDate DESC, pur.PurchaseID DESC
                     ) supp
                     OUTER APPLY (
