@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -433,7 +433,7 @@ namespace ChickenDist.Forms
             }
 
             int totalW = 1050;
-            int headerH = 160;
+            int headerH = 180;
             int notesH = string.IsNullOrWhiteSpace(txtPosterNotes.Text) ? 0 : 50;
             int tableHeaderH = 35;
             int footerH = 60;
@@ -549,8 +549,9 @@ namespace ChickenDist.Forms
                 else if (bannerStyle == 3) bannerBgColor = Color.FromArgb(127, 29, 29); // Crimson Red
                 else if (bannerStyle == 4) bannerBgColor = Color.FromArgb(120, 53, 15); // Golden Amber
 
-                // Draw banner rectangle
-                var bannerRect = new RectangleF(40, yCur, totalW - 80, 110);
+                // Draw banner rectangle with ample height to prevent any text clipping or overlap
+                float bannerH = 145f;
+                var bannerRect = new RectangleF(40, yCur, totalW - 80, bannerH);
                 using (var brushBanner = new SolidBrush(bannerBgColor))
                 {
                     g.FillRectangle(brushBanner, bannerRect);
@@ -563,7 +564,7 @@ namespace ChickenDist.Forms
                     {
                         using (var img = Image.FromFile(AppConfig.ShopLogoPath))
                         {
-                            g.DrawImage(img, 50, yCur + 15, 80, 80);
+                            g.DrawImage(img, 55, yCur + 22, 100, 100);
                         }
                     }
                     catch {}
@@ -572,12 +573,18 @@ namespace ChickenDist.Forms
                 // Draw Text inside the banner
                 using (var brushBannerText = new SolidBrush(bannerTextColor))
                 {
-                    float textY = yCur + 15;
-                    g.DrawString(AppConfig.CompanyName, fComp, brushBannerText, new RectangleF(0, textY, totalW, 25), center);
-                    textY += 25;
+                    var bannerCenter = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center
+                    };
 
-                    g.DrawString(txtPosterTitle.Text, fTitle, brushBannerText, new RectangleF(0, textY, totalW, 35), center);
-                    textY += 35;
+                    float textY = yCur + 10;
+                    g.DrawString(AppConfig.CompanyName, fComp, brushBannerText, new RectangleF(40, textY, totalW - 80, 40), bannerCenter);
+                    textY += 42;
+
+                    g.DrawString(txtPosterTitle.Text, fTitle, brushBannerText, new RectangleF(40, textY, totalW - 80, 52), bannerCenter);
+                    textY += 50;
 
                     string infoStr = $"التاريخ: {DateTime.Today:dd/MM/yyyy}";
                     string phoneStr = "";
@@ -589,10 +596,10 @@ namespace ChickenDist.Forms
                     }
                     if (phoneStr != "") infoStr += $"  |  هاتف: {phoneStr}";
 
-                    g.DrawString(infoStr, fSub, brushBannerText, new RectangleF(0, textY, totalW, 20), center);
+                    g.DrawString(infoStr, fSub, brushBannerText, new RectangleF(40, textY, totalW - 80, 32), bannerCenter);
                 }
 
-                yCur += 120;
+                yCur += bannerH + 15;
 
                 // Notes Box (if any)
                 if (notesH > 0)
@@ -883,7 +890,7 @@ namespace ChickenDist.Forms
                 else if (bannerStyle == 4) bannerBgColor = Color.FromArgb(120, 53, 15); // Golden Amber
 
                 // Draw banner
-                var bannerRect = new RectangleF(xStart + 20, yCur + 10, pageWidth - 40, 90);
+                var bannerRect = new RectangleF(xStart + 20, yCur + 10, pageWidth - 40, 102);
                 using (var brushBanner = new SolidBrush(bannerBgColor))
                 {
                     g.FillRectangle(brushBanner, bannerRect);
@@ -906,10 +913,10 @@ namespace ChickenDist.Forms
                 using (var brushWhite = new SolidBrush(Color.White))
                 {
                     float textY = yCur + 20;
-                    g.DrawString(AppConfig.CompanyName, fComp, brushWhite, new RectangleF(xStart, textY, pageWidth, 20), center);
-                    textY += 20;
-                    g.DrawString(txtPosterTitle.Text, fTitle, brushWhite, new RectangleF(xStart, textY, pageWidth, 30), center);
-                    textY += 28;
+                    g.DrawString(AppConfig.CompanyName, fComp, brushWhite, new RectangleF(xStart + 20, textY, pageWidth - 40, 26), center);
+                    textY += 26;
+                    g.DrawString(txtPosterTitle.Text, fTitle, brushWhite, new RectangleF(xStart + 20, textY, pageWidth - 40, 36), center);
+                    textY += 34;
 
                     string infoStr = $"التاريخ: {DateTime.Today:dd/MM/yyyy}";
                     string phoneStr = "";
@@ -921,10 +928,10 @@ namespace ChickenDist.Forms
                     }
                     if (phoneStr != "") infoStr += $"  |  هاتف: {phoneStr}";
 
-                    g.DrawString(infoStr, fSub, brushWhite, new RectangleF(xStart, textY, pageWidth, 18), center);
+                    g.DrawString(infoStr, fSub, brushWhite, new RectangleF(xStart + 20, textY, pageWidth - 40, 24), center);
                 }
 
-                yCur += 110;
+                yCur += 122;
 
                 // Notes Box
                 if (!string.IsNullOrWhiteSpace(txtPosterNotes.Text))
