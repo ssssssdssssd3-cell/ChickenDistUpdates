@@ -38,3 +38,15 @@ Desktop.ini
 *.docstates
 *.bak
 
+## Source Code Protection (لا ترفع الكود المصدري لمستودع التحديثات العام)
+*.cs
+*.csproj
+*.sln
+obfuscar.xml
+Core/
+DAL/
+Forms/
+Services/
+Models/
+Properties/
+

@@ -1,5 +1,5 @@
-version=4.4.19
+version=4.4.20
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.19&t=1793007004
-sha256=7F060C688E2732786BD320AAC5A51E76057AD6018ADBD62EE0B2EF640B8801A9
-changelog=v4.4.19 - 2026-10-26: إزالة كافة الإيموجيات والرموز غير المدعومة من جميع شاشات البرنامج والأزرار والتبويبات والتقارير المطبوعة ورسائل التنبيه (أكثر من 5600 موضع في 167 ملف) لمنع ظهور المربعات وتنسيق جميع النصوص والأزرار بشكل نظيف واحترافي.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.20&t=1793016510
+sha256=369DD715D7EB0932E54B6F3598F555BB1099916F0D4DEAA6F2EDD872858632EB
+changelog=v4.4.20 - 2026-10-26: ترقية معمارية ومحاسبية وأمنية شاملة (إصلاح تسريب مقابض GDI+ والخطوط، تسريع إقلاع البرنامج والتنقل بين التبويبات، تأمين التراخيص والكود المصدري، ضبط حسابات تكلفة الوحدات المتعددة وصافي الربح وتقفيل الوردية والمرتجعات، ومنع تعارض السندات والأقساط المتزامنة).

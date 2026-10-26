@@ -1,16 +1,16 @@
 ﻿# ============================================================
-#  Ã°Å¸Å¡â‚¬ Auto-Build and Deploy Script - ChickenDist
+#  Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.19";
-$CHANGELOG = "v4.4.19 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): إزالة كافة الإيموجيات والرموز غير المدعومة من جميع شاشات البرنامج والأزرار والتبويبات والتقارير المطبوعة ورسائل التنبيه (أكثر من 5600 موضع في 167 ملف) لمنع ظهور المربعات وتنسيق جميع النصوص والأزرار بشكل نظيف واحترافي.";
+$VERSION = "4.4.20";
+$CHANGELOG = "v4.4.20 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): ترقية معمارية ومحاسبية وأمنية شاملة (إصلاح تسريب مقابض GDI+ والخطوط، تسريع إقلاع البرنامج والتنقل بين التبويبات، تأمين التراخيص والكود المصدري، ضبط حسابات تكلفة الوحدات المتعددة وصافي الربح وتقفيل الوردية والمرتجعات، ومنع تعارض السندات والأقساط المتزامنة).";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# ðŸ“ Paths
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ────────────────────────────────────────────────────────────
+#  Paths
+# ────────────────────────────────────────────────────────────
 $REPO_ROOT    = $PSScriptRoot
 $PROJECT_DIR  = $REPO_ROOT
 $CSPROJ       = Join-Path $PROJECT_DIR "ChickenDist.csproj"
@@ -38,6 +38,7 @@ Write-OK "Project found: $CSPROJ"
 
 # Step 1.5: Patch Version in UpdateManager.cs
 Write-Step "Patching Version in UpdateManager.cs to $VERSION"
+$utf8Bom = New-Object System.Text.UTF8Encoding($true)
 $updateManagerPaths = @(
     "$PROJECT_DIR\Core\UpdateManager.cs",
     "$REPO_ROOT\Core\UpdateManager.cs"
@@ -46,7 +47,7 @@ foreach ($path in $updateManagerPaths) {
     if (Test-Path $path) {
         $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
         $content = $content -replace 'public const string CurrentVersion = "[^"]+";', "public const string CurrentVersion = `"$VERSION`";"
-        [System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText($path, $content, $utf8Bom)
         Write-OK "Patched $path"
     }
 }
@@ -120,8 +121,9 @@ Write-OK "SHA256: $sha256"
 
 # Step 5.5: Copy MobileApp files to release destinations & Firebase bot public folder
 Write-Step "Updating MobileApp release folders & bot public folder"
+$baseRoot = Split-Path (Split-Path $REPO_ROOT -Parent) -Parent
 $releaseDestinations = @(
-    "D:\Ù‚Ø·Ø¹ ØºÙŠØ§Ø± ÙˆØªÙˆØ²ÙŠØ¹\Ù‚Ø·Ø¹ ØºÙŠØ§Ø± ÙˆØªÙˆØ²ÙŠØ¹\FINAL_RELEASE\ChickenDist_Program\MobileApp",
+    (Join-Path $baseRoot "FINAL_RELEASE\ChickenDist_Program\MobileApp"),
     "D:\prosoft\MobileApp"
 )
 foreach ($dest in $releaseDestinations) {
@@ -165,7 +167,6 @@ if (Test-Path $mobileImagesSrc) {
 }
 
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory
-$baseRoot = Split-Path (Split-Path $REPO_ROOT -Parent) -Parent
 $finalReleaseExe = Join-Path $baseRoot "FINAL_RELEASE\ChickenDist_Program\ChickenDist.exe"
 if (Test-Path (Split-Path $finalReleaseExe -Parent)) {
     Write-Step "Updating FINAL_RELEASE"
@@ -208,6 +209,9 @@ Set-Location $REPO_ROOT
 $prevEAP = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 
+# Ensure C# source files are untracked from the public update repo index (kept locally on disk)
+git rm -r --cached --ignore-unmatch Core DAL Forms Services Models Properties *.cs *.csproj *.sln obfuscar.xml 2>$null | Out-Null
+
 git add -A
 if ($LASTEXITCODE -ne 0) { Write-Fail "git add failed" }
 Write-OK "git add ok"
@@ -242,34 +246,3 @@ Write-Host "==========================================" -ForegroundColor Green
 Write-Host ""
 
 Remove-Item $OUT_DIR -Recurse -Force -ErrorAction SilentlyContinue
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
