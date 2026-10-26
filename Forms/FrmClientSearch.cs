@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -29,7 +29,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🔍 بحث عن عميل";
+            this.Text = "بحث عن عميل";
             this.Size = new Size(860, 550);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -54,7 +54,7 @@ namespace ChickenDist.Forms
 
             var lblSearch = new Label
             {
-                Text = "🔍 نوع البحث:",
+                Text = "نوع البحث:",
                 Location = new Point(690, 22),
                 Width = 130,
                 ForeColor = Color.FromArgb(30, 41, 59),
@@ -73,7 +73,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 RightToLeft = RightToLeft.Yes
             };
-            cboSearchType.Items.AddRange(new object[] { "🔍 الكل (شامل)", "👤 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchType.Items.AddRange(new object[] { "الكل (شامل)", "بالاسم", "برقم الهاتف", "بالكود" });
             cboSearchType.SelectedIndex = 0;
             cboSearchType.SelectedIndexChanged += (s, e) => ApplyFilter();
 
@@ -155,11 +155,11 @@ namespace ChickenDist.Forms
                 BackColor = Color.FromArgb(241, 245, 249)
             };
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 14, 100, 34, Color.FromArgb(148, 163, 184));
+            btnCancel = Theme.MakeButton("إلغاء", 20, 14, 100, 34, Color.FromArgb(148, 163, 184));
             btnCancel.ForeColor = Color.FromArgb(30, 41, 59);
             btnCancel.Click += (s, e) => this.Close();
 
-            btnSelect = Theme.MakeButton("✅ اختيار", 130, 14, 120, 34, Theme.Accent);
+            btnSelect = Theme.MakeButton("اختيار", 130, 14, 120, 34, Theme.Accent);
             btnSelect.Click += (s, e) => SelectClient();
 
             pnlFooter.Controls.Add(btnCancel);

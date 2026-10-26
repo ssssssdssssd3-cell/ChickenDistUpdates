@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -31,7 +31,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📊 التفاصيل والإحصائيات السريعة للنظام";
+            this.Text = "التفاصيل والإحصائيات السريعة للنظام";
             this.Size = new Size(950, 720);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -52,14 +52,14 @@ namespace ChickenDist.Forms
             };
             var lblTitle = new Label
             {
-                Text = "📊 التفاصيل والإحصائيات السريعة والتحليلات",
+                Text = "التفاصيل والإحصائيات السريعة والتحليلات",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Theme.Accent,
                 AutoSize = true,
                 Location = new Point(15, 15)
             };
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث البيانات", Theme.Primary, new Point(780, 12), new Size(135, 34));
+            btnRefresh = Theme.MakeButton("تحديث البيانات", Theme.Primary, new Point(780, 12), new Size(135, 34));
             btnRefresh.Click += async (s, e) => await LoadDataAsync();
 
             pnlHeader.Controls.Add(lblTitle);
@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
 
             // 3a. Recent Invoices DataGridView
             var pnlRecentGroup = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(10), Margin = new Padding(5) };
-            var lblRecentTitle = new Label { Text = "📋 آخر 10 فواتير مبيعات محررة اليوم", Dock = DockStyle.Top, Height = 30, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
+            var lblRecentTitle = new Label { Text = "آخر 10 فواتير مبيعات محررة اليوم", Dock = DockStyle.Top, Height = 30, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
             
             dgRecent = new DataGridView
             {
@@ -172,17 +172,17 @@ namespace ChickenDist.Forms
                 pnlCards.Controls.Clear();
 
                 if (Session.CanAccess("DashTreasury"))
-                    pnlCards.Controls.Add(MakeCard("💰 رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
+                    pnlCards.Controls.Add(MakeCard("رصيد الخزنة الحالي", cashBal.ToString("N2") + " ج", Theme.Success));
 
                 if (Session.CanAccess("DashSales"))
-                    pnlCards.Controls.Add(MakeCard("🛒 مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
+                    pnlCards.Controls.Add(MakeCard("مبيعات اليوم", todaySales.ToString("N2") + " ج", Theme.Accent));
 
                 if (Session.CanAccess("DashLoads"))
-                    pnlCards.Controls.Add(MakeCard("🚚 حمولات مفتوحة حالياً", openLoadsCount + " حمولة", Color.FromArgb(52, 152, 219)));
+                    pnlCards.Controls.Add(MakeCard("حمولات مفتوحة حالياً", openLoadsCount + " حمولة", Color.FromArgb(52, 152, 219)));
 
                 if (Session.CanAccess("DashBelowMin"))
                 {
-                    var cardBelowMin = MakeCard("🔴 أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
+                    var cardBelowMin = MakeCard("أصناف تحت حد الطلب", belowMinCount + " صنف", Theme.Danger);
                     if (_navigateAction != null)
                     {
                         cardBelowMin.Click += (s, e) => { this.Close(); _navigateAction(new FrmInventory(true)); };
@@ -267,7 +267,7 @@ namespace ChickenDist.Forms
             int chartW = w - padLeft - padRight;
             int chartH = h - padTop - padBottom;
 
-            g.DrawString("📈 مؤشر حركة المبيعات لآخر 7 أيام", new Font("Segoe UI", 9.5f, FontStyle.Bold), new SolidBrush(Theme.TextMain), 15, 8);
+            g.DrawString("مؤشر حركة المبيعات لآخر 7 أيام", new Font("Segoe UI", 9.5f, FontStyle.Bold), new SolidBrush(Theme.TextMain), 15, 8);
 
             decimal maxVal = 1000;
             foreach (var val in _chartValues) if (val > maxVal) maxVal = val;

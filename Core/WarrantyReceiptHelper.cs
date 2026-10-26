@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
@@ -155,7 +155,7 @@ namespace ChickenDist.Core
                 // ── 3. CUSTOMER DETAILS ──
                 if (!isMeasureOnly)
                 {
-                    g.DrawString("👤 بيانات العميل:", fSection, brNavy, new RectangleF(pad, curY, contentWidth, 18f * factor), SfRight);
+                    g.DrawString("بيانات العميل:", fSection, brNavy, new RectangleF(pad, curY, contentWidth, 18f * factor), SfRight);
                 }
                 curY += 20f * factor;
 
@@ -196,7 +196,7 @@ namespace ChickenDist.Core
                 // ── 4. DEVICE DETAILS ──
                 if (!isMeasureOnly)
                 {
-                    g.DrawString("📦 بيانات الجهاز المسلّم:", fSection, brNavy, new RectangleF(pad, curY, contentWidth, 18f * factor), SfRight);
+                    g.DrawString("بيانات الجهاز المسلّم:", fSection, brNavy, new RectangleF(pad, curY, contentWidth, 18f * factor), SfRight);
                 }
                 curY += 20f * factor;
 
@@ -255,7 +255,7 @@ namespace ChickenDist.Core
                 // ── 5. COMPLAINT & ACCESSORIES ──
                 if (!isMeasureOnly)
                 {
-                    g.DrawString("🛠️ العطل وشكوى العميل:", fSection, brNavy, new RectangleF(pad, curY, contentWidth, 18f * factor), SfRight);
+                    g.DrawString("العطل وشكوى العميل:", fSection, brNavy, new RectangleF(pad, curY, contentWidth, 18f * factor), SfRight);
                 }
                 curY += 19f * factor;
 
@@ -325,7 +325,7 @@ namespace ChickenDist.Core
                         g.FillRectangle(brBox, rectTerms);
                         g.DrawRectangle(penBox, rectTerms.X, rectTerms.Y, rectTerms.Width, rectTerms.Height);
 
-                        g.DrawString("⚠️ تنبيهات وشروط الاستلام:", fBold, brText, new RectangleF(pad + (5f * factor), curY + (3f * factor), contentWidth - (10f * factor), 15f * factor), SfRight);
+                        g.DrawString("تنبيهات وشروط الاستلام:", fBold, brText, new RectangleF(pad + (5f * factor), curY + (3f * factor), contentWidth - (10f * factor), 15f * factor), SfRight);
                         g.DrawString(fullTerms, fTerms, brMuted, new RectangleF(pad + (5f * factor), curY + (18f * factor), contentWidth - (10f * factor), szTerms.Height), sfWrapNear);
                     }
                 }
@@ -366,7 +366,7 @@ namespace ChickenDist.Core
                 // ── 9. FOOTER ──
                 if (!isMeasureOnly)
                 {
-                    g.DrawString("نسعد بخدمتكم دائماً - نشكركم لثقتكم بنا! 🙏", fFooter, brNavy, new RectangleF(pad, curY, contentWidth, 16f * factor), SfCenter);
+                    g.DrawString("نسعد بخدمتكم دائماً - نشكركم لثقتكم بنا!", fFooter, brNavy, new RectangleF(pad, curY, contentWidth, 16f * factor), SfCenter);
                 }
                 curY += 17f * factor;
 
@@ -439,33 +439,33 @@ namespace ChickenDist.Core
             if (string.IsNullOrWhiteSpace(company)) company = "مركز المبيعات والصيانة";
 
             var sb = new StringBuilder();
-            sb.AppendLine($"🛡️ *إيصال استلام جهاز (ضمان وصيانة)*");
-            sb.AppendLine($"🏢 *{company}*");
+            sb.AppendLine($"*إيصال استلام جهاز (ضمان وصيانة)*");
+            sb.AppendLine($"*{company}*");
             sb.AppendLine("----------------------------------------");
-            sb.AppendLine($"📄 *رقم الإيصال:* {ticket.TicketCode}");
-            sb.AppendLine($"📅 *تاريخ الاستلام:* {ticket.ReceiveDate:yyyy-MM-dd  hh:mm tt}");
-            sb.AppendLine($"👤 *اسم العميل:* {ticket.CustomerName}");
+            sb.AppendLine($"*رقم الإيصال:* {ticket.TicketCode}");
+            sb.AppendLine($"*تاريخ الاستلام:* {ticket.ReceiveDate:yyyy-MM-dd  hh:mm tt}");
+            sb.AppendLine($"*اسم العميل:* {ticket.CustomerName}");
             if (!string.IsNullOrWhiteSpace(ticket.CustomerPhone))
-                sb.AppendLine($"📱 *الهاتف:* {ticket.CustomerPhone}");
+                sb.AppendLine($"*الهاتف:* {ticket.CustomerPhone}");
             if (!string.IsNullOrWhiteSpace(ticket.CustomerAddress))
-                sb.AppendLine($"📍 *العنوان:* {ticket.CustomerAddress}");
+                sb.AppendLine($"*العنوان:* {ticket.CustomerAddress}");
             sb.AppendLine("----------------------------------------");
-            sb.AppendLine($"📦 *الجهاز / الصنف:* {ticket.ProductName} {(string.IsNullOrWhiteSpace(ticket.Brand) ? "" : "(" + ticket.Brand + ")")}");
+            sb.AppendLine($"*الجهاز / الصنف:* {ticket.ProductName} {(string.IsNullOrWhiteSpace(ticket.Brand) ? "" : "(" + ticket.Brand + ")")}");
             if (!string.IsNullOrWhiteSpace(ticket.SerialNumber))
-                sb.AppendLine($"🔢 *السيريال / IMEI:* `{ticket.SerialNumber}`");
+                sb.AppendLine($"*السيريال / IMEI:* `{ticket.SerialNumber}`");
             if (!string.IsNullOrWhiteSpace(ticket.InvoiceNumber))
-                sb.AppendLine($"🧾 *فاتورة الشراء:* {ticket.InvoiceNumber}");
+                sb.AppendLine($"*فاتورة الشراء:* {ticket.InvoiceNumber}");
             sb.AppendLine("----------------------------------------");
-            sb.AppendLine($"🛠️ *العطل وشكوى العميل:*");
+            sb.AppendLine($"*العطل وشكوى العميل:*");
             sb.AppendLine($"   {ticket.ProblemDescription}");
-            sb.AppendLine($"🔌 *المشتملات:* {(string.IsNullOrWhiteSpace(ticket.Accessories) ? "الجهاز فقط" : ticket.Accessories)}");
-            sb.AppendLine($"🔍 *الحالة الظاهرية:* {(string.IsNullOrWhiteSpace(ticket.DeviceCondition) ? "جيدة" : ticket.DeviceCondition)}");
-            sb.AppendLine($"⚡ *الحالة الحالية:* {ticket.Status}");
+            sb.AppendLine($"*المشتملات:* {(string.IsNullOrWhiteSpace(ticket.Accessories) ? "الجهاز فقط" : ticket.Accessories)}");
+            sb.AppendLine($"*الحالة الظاهرية:* {(string.IsNullOrWhiteSpace(ticket.DeviceCondition) ? "جيدة" : ticket.DeviceCondition)}");
+            sb.AppendLine($"*الحالة الحالية:* {ticket.Status}");
             sb.AppendLine("----------------------------------------");
-            sb.AppendLine("⚠️ *تنبيه هام:* يرجى الاحتفاظ بنسخة هذا الإيصال لإبرازها عند استلام الجهاز بعد انتهاء الصيانة أو فحص الضمان.");
+            sb.AppendLine("*تنبيه هام:* يرجى الاحتفاظ بنسخة هذا الإيصال لإبرازها عند استلام الجهاز بعد انتهاء الصيانة أو فحص الضمان.");
             if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
-                sb.AppendLine($"📞 *للاستفسار والمتابعة:* {AppConfig.CompanyPhone}");
-            sb.AppendLine("\n🙏 *شكراً لتعاملكم معنا ونسعد بخدمتكم دائماً.*");
+                sb.AppendLine($"*للاستفسار والمتابعة:* {AppConfig.CompanyPhone}");
+            sb.AppendLine("\n*شكراً لتعاملكم معنا ونسعد بخدمتكم دائماً.*");
 
             return sb.ToString();
         }
@@ -487,7 +487,7 @@ namespace ChickenDist.Core
                     phone,
                     msg,
                     () => GenerateReceiptImage(ticket, 560),
-                    "📱 إرسال إيصال استلام الضمان عبر الواتساب"
+                    "إرسال إيصال استلام الضمان عبر الواتساب"
                 );
             }
             catch (Exception ex)

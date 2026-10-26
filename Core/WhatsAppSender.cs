@@ -143,7 +143,7 @@ namespace ChickenDist.Core
                 OpenWhatsAppChat(phone);
 
                 MessageBox.Show(
-                    "✅ تم تصميم الصورة بنجاح ونسخها إلى حافظة الويندوز (Clipboard)!\n\n" +
+                    "تم تصميم الصورة بنجاح ونسخها إلى حافظة الويندوز (Clipboard)!\n\n" +
                     "عند فتح محادثة الواتساب للعميل:\n" +
                     "1. اضغط (Ctrl + V) داخل مربع الكتابة للصق الصورة فوراً.\n" +
                     "2. اضغط Enter للإرسال.",
@@ -161,7 +161,7 @@ namespace ChickenDist.Core
         /// <summary>
         /// نافذة حوار موحدة تقدم زري الاختيار المباشرين (إرسال نص أو إرسال صورة) مع معاينة حية ودعم الصفحات المتعددة وملفات الـ PDF
         /// </summary>
-        public static void ShowWhatsAppSendOptionsDialog(Form parentForm, string clientPhone, string textMessage, Func<Image> imageGenerator = null, string dialogTitle = "📱 إرسال عبر الواتساب", Func<string> pdfGenerator = null, Func<System.Collections.Generic.List<Bitmap>> multiImageGenerator = null)
+        public static void ShowWhatsAppSendOptionsDialog(Form parentForm, string clientPhone, string textMessage, Func<Image> imageGenerator = null, string dialogTitle = "إرسال عبر الواتساب", Func<string> pdfGenerator = null, Func<System.Collections.Generic.List<Bitmap>> multiImageGenerator = null)
         {
             using (var dlg = new Form())
             {
@@ -182,7 +182,7 @@ namespace ChickenDist.Core
                 int y = 72;
 
                 // Client Phone Panel
-                var lblPhone = new Label { Text = "📱 رقم هاتف العميل (واتساب):", Location = new Point(20, y), Width = 190, Height = 22, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
+                var lblPhone = new Label { Text = "رقم هاتف العميل (واتساب):", Location = new Point(20, y), Width = 190, Height = 22, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 dlg.Controls.Add(lblPhone);
 
                 var txtPhone = new TextBox { Text = clientPhone ?? "", Location = new Point(220, y - 2), Width = 520, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42), BorderStyle = BorderStyle.FixedSingle };
@@ -206,7 +206,7 @@ namespace ChickenDist.Core
 
                 var btnSendText = new Button
                 {
-                    Text = "💬 إرسال (نص تفصيلي)",
+                    Text = "إرسال (نص تفصيلي)",
                     Dock = DockStyle.Fill,
                     Margin = new Padding(3),
                     FlatStyle = FlatStyle.Flat,
@@ -219,7 +219,7 @@ namespace ChickenDist.Core
 
                 var btnSendImage = new Button
                 {
-                    Text = "🖼️ إرسال (صورة تفصيلية)",
+                    Text = "إرسال (صورة تفصيلية)",
                     Dock = DockStyle.Fill,
                     Margin = new Padding(3),
                     FlatStyle = FlatStyle.Flat,
@@ -235,7 +235,7 @@ namespace ChickenDist.Core
                 {
                     btnSendPdf = new Button
                     {
-                        Text = "📄 إرسال (ملف PDF)",
+                        Text = "إرسال (ملف PDF)",
                         Dock = DockStyle.Fill,
                         Margin = new Padding(3),
                         FlatStyle = FlatStyle.Flat,
@@ -255,19 +255,19 @@ namespace ChickenDist.Core
 
                 // ── Preview Section with Tab switcher & Multi-Page Controls ──
                 var pnlPreviewHeader = new Panel { Location = new Point(20, y), Size = new Size(720, 30), BackColor = Color.Transparent };
-                var lblPreviewTitle = new Label { Text = "📋 معاينة المحتوى:", Location = new Point(580, 4), Width = 135, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Theme.TextMain };
+                var lblPreviewTitle = new Label { Text = "معاينة المحتوى:", Location = new Point(580, 4), Width = 135, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Theme.TextMain };
                 
-                var btnShowText = new Button { Text = "معاينة النص 📝", Location = new Point(455, 0), Size = new Size(115, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
+                var btnShowText = new Button { Text = "معاينة النص", Location = new Point(455, 0), Size = new Size(115, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f, FontStyle.Bold), BackColor = Theme.Primary, ForeColor = Color.White, Cursor = Cursors.Hand };
                 btnShowText.FlatAppearance.BorderSize = 0;
 
-                var btnShowImg = new Button { Text = "معاينة الصورة 🖼️", Location = new Point(330, 0), Size = new Size(120, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), ForeColor = Theme.TextMain, Cursor = Cursors.Hand };
+                var btnShowImg = new Button { Text = "معاينة الصورة", Location = new Point(330, 0), Size = new Size(120, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), ForeColor = Theme.TextMain, Cursor = Cursors.Hand };
                 btnShowImg.FlatAppearance.BorderSize = 0;
 
                 var pnlPageNav = new Panel { Location = new Point(0, 0), Size = new Size(250, 28), BackColor = Color.Transparent, Visible = false };
-                var btnPrevPage = new Button { Text = "▶ سابقة", Location = new Point(160, 0), Size = new Size(80, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), Cursor = Cursors.Hand };
+                var btnPrevPage = new Button { Text = "سابقة", Location = new Point(160, 0), Size = new Size(80, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), Cursor = Cursors.Hand };
                 btnPrevPage.FlatAppearance.BorderSize = 0;
                 var lblPageInd = new Label { Text = "صفحة 1 من 1", Location = new Point(70, 5), Size = new Size(85, 20), TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Theme.Primary };
-                var btnNextPage = new Button { Text = "تالية ◀", Location = new Point(0, 0), Size = new Size(65, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), Cursor = Cursors.Hand };
+                var btnNextPage = new Button { Text = "تالية", Location = new Point(0, 0), Size = new Size(65, 28), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 8f, FontStyle.Bold), BackColor = Color.FromArgb(226, 232, 240), Cursor = Cursors.Hand };
                 btnNextPage.FlatAppearance.BorderSize = 0;
 
                 pnlPageNav.Controls.Add(btnPrevPage);
@@ -399,7 +399,7 @@ namespace ChickenDist.Core
                 }
 
                 // ── Footer Buttons (Copy & Cancel) ──
-                var btnCopy = Theme.MakeButton("📋 نسخ المعروض للحافظة", 520, y, 220, 38, Color.FromArgb(70, 80, 100));
+                var btnCopy = Theme.MakeButton("نسخ المعروض للحافظة", 520, y, 220, 38, Color.FromArgb(70, 80, 100));
                 btnCopy.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
                 btnCopy.Click += (s, e) =>
                 {
@@ -411,13 +411,13 @@ namespace ChickenDist.Core
                             if (cachedImages != null && cachedImages.Count > currentImageIndex)
                             {
                                 Clipboard.SetImage(cachedImages[currentImageIndex]);
-                                MessageBox.Show($"✅ تم نسخ [صورة الصفحة {currentImageIndex + 1}] إلى الحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                MessageBox.Show($"تم نسخ [صورة الصفحة {currentImageIndex + 1}] إلى الحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
                         }
                         else
                         {
                             Clipboard.SetText(txtPreview.Text);
-                            MessageBox.Show("✅ تم نسخ نص الرسالة إلى الحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("تم نسخ نص الرسالة إلى الحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
                     catch (Exception ex)
@@ -427,7 +427,7 @@ namespace ChickenDist.Core
                 };
                 dlg.Controls.Add(btnCopy);
 
-                var btnClose = Theme.MakeButton("❌ إغلاق", 20, y, 100, 38, Color.FromArgb(120, 130, 140));
+                var btnClose = Theme.MakeButton("إغلاق", 20, y, 100, 38, Color.FromArgb(120, 130, 140));
                 btnClose.Click += (s, e) => dlg.Close();
                 dlg.Controls.Add(btnClose);
 
@@ -461,7 +461,7 @@ namespace ChickenDist.Core
                     {
                         if (cachedImages.Count == 1)
                         {
-                            SendImage(targetPhone, cachedImages[0], "📄 إشعار إلكتروني");
+                            SendImage(targetPhone, cachedImages[0], "إشعار إلكتروني");
                             dlg.Close();
                         }
                         else
@@ -473,8 +473,8 @@ namespace ChickenDist.Core
                                 OpenWhatsAppChat(targetPhone);
 
                                 var res = MessageBox.Show(
-                                    $"✅ تم نسخ [الصفحة الأولى] إلى الحافظة بنجاح!\n\n" +
-                                    "📱 تم فتح محادثة الواتساب للعميل:\n" +
+                                    $"تم نسخ [الصفحة الأولى] إلى الحافظة بنجاح!\n\n" +
+                                    "تم فتح محادثة الواتساب للعميل:\n" +
                                     "1. اضغط (Ctrl + V) داخل شات الواتساب للصق الصفحة الأولى وإرسالها.\n" +
                                     "2. اضغط زر (موافق) هنا لنسخ [الصفحة الثانية] فوراً ولصقها أيضاً.\n\n" +
                                     "هل ترغب في نسخ الصفحة الثانية الآن؟",
@@ -485,7 +485,7 @@ namespace ChickenDist.Core
                                 if (res == DialogResult.OK && cachedImages.Count > 1)
                                 {
                                     Clipboard.SetImage(cachedImages[1]);
-                                    MessageBox.Show("✅ تم نسخ [الصفحة الثانية] للحافظة!\n\nاضغط الآن (Ctrl + V) داخل شات الواتساب للصقها.", "تم نسخ الصفحة الثانية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    MessageBox.Show("تم نسخ [الصفحة الثانية] للحافظة!\n\nاضغط الآن (Ctrl + V) داخل شات الواتساب للصقها.", "تم نسخ الصفحة الثانية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                 }
                             }
                             catch (Exception ex)
@@ -533,10 +533,10 @@ namespace ChickenDist.Core
 
                             // Notify user and provide open option
                             var res = MessageBox.Show(
-                                "✅ تم إنشاء ملف الـ PDF ونسخه للحافظة بنجاح!\n\n" +
-                                $"📄 الملف: {Path.GetFileName(pdfPath)}\n\n" +
-                                "📱 تم فتح محادثة الواتساب للعميل.\n" +
-                                "👉 يمكنك الآن الضغط على (Ctrl + V) داخل شات الواتساب للصق وإرسال الملف فوراً.\n\n" +
+                                "تم إنشاء ملف الـ PDF ونسخه للحافظة بنجاح!\n\n" +
+                                $"الملف: {Path.GetFileName(pdfPath)}\n\n" +
+                                "تم فتح محادثة الواتساب للعميل.\n" +
+                                "يمكنك الآن الضغط على (Ctrl + V) داخل شات الواتساب للصق وإرسال الملف فوراً.\n\n" +
                                 "هل ترغب في فتح ملف الـ PDF الآن؟",
                                 "تم تجهيز ملف الـ PDF للإرسال",
                                 MessageBoxButtons.YesNo,
@@ -599,16 +599,16 @@ namespace ChickenDist.Core
 
                 // تجهيز نص رسالة المرتجع
                 var sb = new StringBuilder();
-                sb.AppendLine($"🧾 *إشعار مرتجع مبيعات* ↩️");
-                sb.AppendLine($"🏢 *{AppConfig.CompanyName}*");
+                sb.AppendLine($"*إشعار مرتجع مبيعات*");
+                sb.AppendLine($"*{AppConfig.CompanyName}*");
                 if (!string.IsNullOrEmpty(AppConfig.CompanyPhone))
-                    sb.AppendLine($"📞 هاتف: {AppConfig.CompanyPhone}");
+                    sb.AppendLine($"هاتف: {AppConfig.CompanyPhone}");
                 sb.AppendLine("───────────────────");
-                sb.AppendLine($"👤 العميل: *{clientName}*");
-                sb.AppendLine($"🔢 رقم المرتجع: *#{returnCode}*");
-                sb.AppendLine($"📄 الفاتورة الأصلية: *#{saleCode}*");
-                sb.AppendLine($"📅 التاريخ: {Convert.ToDateTime(row["ReturnDate"]):yyyy/MM/dd hh:mm tt}");
-                sb.AppendLine($"💳 طريقة رد القيمة: *{payTypeFormatted}*");
+                sb.AppendLine($"العميل: *{clientName}*");
+                sb.AppendLine($"رقم المرتجع: *#{returnCode}*");
+                sb.AppendLine($"الفاتورة الأصلية: *#{saleCode}*");
+                sb.AppendLine($"التاريخ: {Convert.ToDateTime(row["ReturnDate"]):yyyy/MM/dd hh:mm tt}");
+                sb.AppendLine($"طريقة رد القيمة: *{payTypeFormatted}*");
                 sb.AppendLine("───────────────────");
 
                 var dtItems = DbHelper.Query(@"
@@ -623,7 +623,7 @@ namespace ChickenDist.Core
 
                 if (dtItems.Rows.Count > 0)
                 {
-                    sb.AppendLine("📦 *الأصناف المرتجعة:*");
+                    sb.AppendLine("*الأصناف المرتجعة:*");
                     foreach (DataRow ir in dtItems.Rows)
                     {
                         string pName = ir["ProductName"]?.ToString();
@@ -634,23 +634,23 @@ namespace ChickenDist.Core
                         decimal p = Convert.ToDecimal(ir["UnitPrice"]);
                         decimal t = Convert.ToDecimal(ir["TotalPrice"]);
                         string uStr = !string.IsNullOrEmpty(u) ? $" {u}" : "";
-                        sb.AppendLine($"▫️ {pName}{imeiStr}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*");
+                        sb.AppendLine($"{pName}{imeiStr}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*");
                     }
                     sb.AppendLine("───────────────────");
                 }
 
-                sb.AppendLine($"💰 *إجمالي قيمة المرتجع:* *{totalAmount:N2} جنيه*");
+                sb.AppendLine($"*إجمالي قيمة المرتجع:* *{totalAmount:N2} جنيه*");
                 string notes = row["Notes"]?.ToString();
                 if (!string.IsNullOrWhiteSpace(notes))
-                    sb.AppendLine($"📝 ملاحظات: {notes}");
-                sb.AppendLine("✨ شكراً لتعاملكم معنا!");
+                    sb.AppendLine($"ملاحظات: {notes}");
+                sb.AppendLine("شكراً لتعاملكم معنا!");
 
                 ShowWhatsAppSendOptionsDialog(
                     parentForm,
                     phone,
                     sb.ToString(),
                     () => ReceiptImageGenerator.GenerateReturnReceiptImage(returnID, "الطارق"),
-                    "📱 إرسال إيصال المرتجع عبر الواتساب (نموذج الطارق)"
+                    "إرسال إيصال المرتجع عبر الواتساب (نموذج الطارق)"
                 );
             }
             catch (Exception ex)
@@ -698,7 +698,7 @@ namespace ChickenDist.Core
                 {
                     using (var inputDlg = new Form())
                     {
-                        inputDlg.Text = "📱 رقم واتساب المورد";
+                        inputDlg.Text = "رقم واتساب المورد";
                         inputDlg.Size = new Size(380, 160);
                         inputDlg.StartPosition = FormStartPosition.CenterParent;
                         inputDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -711,7 +711,7 @@ namespace ChickenDist.Core
 
                         var lbl = new Label { Text = $"رقم موبايل/واتساب المورد ({suppName}):", Location = new Point(15, 15), AutoSize = true, ForeColor = Theme.TextMain };
                         var txt = new TextBox { Location = new Point(15, 40), Width = 330, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-                        var btn = Theme.MakeButton("متابعة الإرسال 📱", 200, 75, 145, 32, Theme.Success);
+                        var btn = Theme.MakeButton("متابعة الإرسال", 200, 75, 145, 32, Theme.Success);
                         btn.Click += (s, e) => { inputDlg.DialogResult = DialogResult.OK; inputDlg.Close(); };
 
                         inputDlg.Controls.AddRange(new Control[] { lbl, txt, btn });
@@ -735,21 +735,21 @@ namespace ChickenDist.Core
                 var dtItems = PurchaseDAL.GetItems(purchaseID);
 
                 var sb = new StringBuilder();
-                sb.AppendLine($"🧾 *فاتورة مشتريات بضاعة* 📦");
-                sb.AppendLine($"🏢 *{shopName}*");
+                sb.AppendLine($"*فاتورة مشتريات بضاعة*");
+                sb.AppendLine($"*{shopName}*");
                 if (!string.IsNullOrEmpty(AppConfig.CompanyPhone))
-                    sb.AppendLine($"📞 هاتف: {AppConfig.CompanyPhone}");
+                    sb.AppendLine($"هاتف: {AppConfig.CompanyPhone}");
                 sb.AppendLine("───────────────────");
-                sb.AppendLine($"👤 المورد: *{suppName}*");
-                sb.AppendLine($"🔢 رقم الفاتورة: *{purCode}*");
-                sb.AppendLine($"📅 التاريخ: {purDate}");
-                sb.AppendLine($"💳 طريقة السداد: *{pType}*");
-                sb.AppendLine($"🏢 المستودع: {warehouse}");
+                sb.AppendLine($"المورد: *{suppName}*");
+                sb.AppendLine($"رقم الفاتورة: *{purCode}*");
+                sb.AppendLine($"التاريخ: {purDate}");
+                sb.AppendLine($"طريقة السداد: *{pType}*");
+                sb.AppendLine($"المستودع: {warehouse}");
                 sb.AppendLine("───────────────────");
 
                 if (dtItems != null && dtItems.Rows.Count > 0)
                 {
-                    sb.AppendLine("📦 *الأصناف والكميات الواردة:*");
+                    sb.AppendLine("*الأصناف والكميات الواردة:*");
                     foreach (DataRow ir in dtItems.Rows)
                     {
                         string pName = ir["ProductName"]?.ToString() ?? "صنف";
@@ -760,20 +760,20 @@ namespace ChickenDist.Core
                         decimal t = ir["TotalPrice"] != DBNull.Value ? Convert.ToDecimal(ir["TotalPrice"]) : (q * p);
                         string uStr = !string.IsNullOrEmpty(u) ? $" {u}" : "";
                         string bonusStr = bonus > 0 ? $" (بونص: {bonus:0.##})" : "";
-                        sb.AppendLine($"▫️ {pName}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*{bonusStr}");
+                        sb.AppendLine($"{pName}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*{bonusStr}");
                         string imei = ir.Table.Columns.Contains("IMEI") ? (ir["IMEI"]?.ToString()?.Trim() ?? "") : "";
                         if (!string.IsNullOrWhiteSpace(imei))
                         {
-                            sb.AppendLine($"   🔹 السيريال (IMEI): `{imei}`");
+                            sb.AppendLine($"   السيريال (IMEI): `{imei}`");
                         }
                     }
                     sb.AppendLine("───────────────────");
                 }
 
-                sb.AppendLine($"💰 *إجمالي الفاتورة:* *{totalAmount:N2} جنيه*");
-                sb.AppendLine($"💵 *المدفوع / المسدد:* *{paidAmount:N2} جنيه*");
+                sb.AppendLine($"*إجمالي الفاتورة:* *{totalAmount:N2} جنيه*");
+                sb.AppendLine($"*المدفوع / المسدد:* *{paidAmount:N2} جنيه*");
                 if (remainingAmount > 0)
-                    sb.AppendLine($"⏳ *المتبقي:* *{remainingAmount:N2} جنيه*");
+                    sb.AppendLine($"*المتبقي:* *{remainingAmount:N2} جنيه*");
 
                 int suppId = row["SupplierID"] != DBNull.Value ? Convert.ToInt32(row["SupplierID"]) : 0;
                 if (suppId > 0)
@@ -781,23 +781,23 @@ namespace ChickenDist.Core
                     try
                     {
                         decimal suppBal = SupplierDAL.GetBalance(suppId);
-                        sb.AppendLine($"⚖️ *رصيد الحساب الحالي طرفنا:* *{suppBal:N2} جنيه*");
+                        sb.AppendLine($"*رصيد الحساب الحالي طرفنا:* *{suppBal:N2} جنيه*");
                     }
                     catch { }
                 }
 
                 string notes = row["Notes"]?.ToString();
                 if (!string.IsNullOrWhiteSpace(notes))
-                    sb.AppendLine($"📝 ملاحظات: {notes}");
+                    sb.AppendLine($"ملاحظات: {notes}");
 
-                sb.AppendLine("🙏 شكراً لحسن تعاونكم المستمر معنا!");
+                sb.AppendLine("شكراً لحسن تعاونكم المستمر معنا!");
 
                 ShowWhatsAppSendOptionsDialog(
                     parentForm,
                     phone,
                     sb.ToString(),
                     () => ReceiptImageGenerator.GeneratePurchaseReceiptImage(purchaseID),
-                    "📱 إرسال فاتورة المشتريات عبر الواتساب"
+                    "إرسال فاتورة المشتريات عبر الواتساب"
                 );
             }
             catch (Exception ex)

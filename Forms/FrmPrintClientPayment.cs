@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -237,21 +237,21 @@ namespace ChickenDist.Forms
 
             string amountTafqeet = TafqeetHelper.ConvertToArabicWords(_amount);
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("🧾 *إشعار وسند تحصيل نقدية*");
+            sb.AppendLine("*إشعار وسند تحصيل نقدية*");
             sb.AppendLine("===============================");
-            sb.AppendLine($"👤 *اسم العميل:* {_clientName}");
-            sb.AppendLine($"🔢 *رقم السند:* {_voucherCode}");
-            sb.AppendLine($"📅 *التاريخ:* {_transDate:dd/MM/yyyy HH:mm}");
+            sb.AppendLine($"*اسم العميل:* {_clientName}");
+            sb.AppendLine($"*رقم السند:* {_voucherCode}");
+            sb.AppendLine($"*التاريخ:* {_transDate:dd/MM/yyyy HH:mm}");
             sb.AppendLine("-------------------------------");
-            sb.AppendLine($"💵 *المبلغ المحصَّل:* {_amount:N2} ج");
-            sb.AppendLine($"💬 *تفييد المبلغ:* ({amountTafqeet})");
+            sb.AppendLine($"*المبلغ المحصَّل:* {_amount:N2} ج");
+            sb.AppendLine($"*تفييد المبلغ:* ({amountTafqeet})");
             sb.AppendLine("-------------------------------");
-            sb.AppendLine($"📊 *الرصيد السابق قبل التوريد:* {_prevBalance:N2} ج");
-            sb.AppendLine($"📌 *الرصيد النهائي المتبقي:* {_currentBalance:N2} ج");
+            sb.AppendLine($"*الرصيد السابق قبل التوريد:* {_prevBalance:N2} ج");
+            sb.AppendLine($"*الرصيد النهائي المتبقي:* {_currentBalance:N2} ج");
             if (!string.IsNullOrWhiteSpace(_notes))
-                sb.AppendLine($"📝 *البيان:* {_notes}");
+                sb.AppendLine($"*البيان:* {_notes}");
             sb.AppendLine("===============================");
-            sb.AppendLine("✨ *شكراً لتعاملكم معنا!*");
+            sb.AppendLine("*شكراً لتعاملكم معنا!*");
 
             WhatsAppSender.OpenWhatsApp(_clientPhone, sb.ToString());
         }
@@ -269,7 +269,7 @@ namespace ChickenDist.Forms
                 using (Bitmap bmp = DrawVoucherBitmap())
                     Clipboard.SetImage(bmp);
 
-                MessageBox.Show("✅ تم تصميم إشعار التوريد ونسخ الصورة للحافظة بنجاح!\nسيتم فتح محادثة الواتساب للعميل الآن، فقط اضغط (Ctrl+V) للصق وإرسال الصورة.",
+                MessageBox.Show("تم تصميم إشعار التوريد ونسخ الصورة للحافظة بنجاح!\nسيتم فتح محادثة الواتساب للعميل الآن، فقط اضغط (Ctrl+V) للصق وإرسال الصورة.",
                     "تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 WhatsAppSender.OpenWhatsAppChat(_clientPhone);
             }
@@ -404,7 +404,7 @@ namespace ChickenDist.Forms
                 y += 10;
                 g.DrawLine(new Pen(Color.FromArgb(16, 100, 75), 1.5f), lx, y, rx, y);
                 y += 10;
-                g.DrawString("✨ شكراً لتعاملكم معنا", fSmall,
+                g.DrawString("شكراً لتعاملكم معنا", fSmall,
                     new SolidBrush(Color.FromArgb(16, 100, 75)),
                     new RectangleF(lx, y, rx - lx, 20), sfC);
             }

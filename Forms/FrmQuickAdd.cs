@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "⚡ الإدخال السريع للأصناف";
+            this.Text = "الإدخال السريع للأصناف";
             this.Size = new Size(500, 610);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
 
-            var pnlTitle = Theme.MakeTitleBar("⚡ الإدخال السريع للأصناف", "إضافة أصناف جديدة متتالية بسرعة فائقة مع التحقق التلقائي.");
+            var pnlTitle = Theme.MakeTitleBar("الإدخال السريع للأصناف", "إضافة أصناف جديدة متتالية بسرعة فائقة مع التحقق التلقائي.");
             this.Controls.Add(pnlTitle);
 
             var pnlForm = new Panel
@@ -144,7 +144,7 @@ namespace ChickenDist.Forms
             // صنف بيع سريع
             chkIsQuickItem = new CheckBox
             {
-                Text = "📌 صنف بيع سريع (شاشة POS)",
+                Text = "صنف بيع سريع (شاشة POS)",
                 Location = new Point(20, y),
                 Width = 280,
                 Height = 24,
@@ -161,7 +161,7 @@ namespace ChickenDist.Forms
             // صنف يباع بالسالب
             chkIsService = new CheckBox
             {
-                Text = "⚡ صنف يباع بالسالب (خدمات / مصروفات)",
+                Text = "صنف يباع بالسالب (خدمات / مصروفات)",
                 Location = new Point(20, y),
                 Width = 280,
                 Height = 24,
@@ -177,7 +177,7 @@ namespace ChickenDist.Forms
 
             chkIsIMEI = new CheckBox
             {
-                Text = "📱 صنف ذو سيريال / IMEI (إلزامي بالشراء)",
+                Text = "صنف ذو سيريال / IMEI (إلزامي بالشراء)",
                 Location = new Point(20, y),
                 Width = 320,
                 Height = 24,
@@ -206,12 +206,12 @@ namespace ChickenDist.Forms
             this.Controls.Add(lblStatus);
 
             // الأزرار
-            btnSave = Theme.MakeButton("💾 حفظ الصنف (Ctrl+S)", 250, 515, 215, 38, Theme.Success);
+            btnSave = Theme.MakeButton("حفظ الصنف (Ctrl+S)", 250, 515, 215, 38, Theme.Success);
             btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            btnClose = Theme.MakeButton("إغلاق ↩", 20, 515, 220, 38, Color.FromArgb(70, 80, 95));
+            btnClose = Theme.MakeButton("إغلاق", 20, 515, 220, 38, Color.FromArgb(70, 80, 95));
             btnClose.Click += (s, e) => {
                 this.DialogResult = DialogResult.OK;
                 this.Close();
@@ -387,7 +387,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.IsAdmin && !Session.CanAdd("Products") && !Session.CanAdd("ProductCard"))
             {
-                ShowStatus("❌ لا تملك صلاحية إضافة أصناف جديدة", Theme.Danger);
+                ShowStatus("لا تملك صلاحية إضافة أصناف جديدة", Theme.Danger);
                 return;
             }
 
@@ -403,7 +403,7 @@ namespace ChickenDist.Forms
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                ShowStatus("❌ يرجى إدخال اسم الصنف", Theme.Danger);
+                ShowStatus("يرجى إدخال اسم الصنف", Theme.Danger);
                 txtName.Focus();
                 return;
             }
@@ -416,14 +416,14 @@ namespace ChickenDist.Forms
 
             if (nudPrice.Value < 0 || nudPurchasePrice.Value < 0)
             {
-                ShowStatus("❌ لا يمكن إدخال أسعار سالبة", Theme.Danger);
+                ShowStatus("لا يمكن إدخال أسعار سالبة", Theme.Danger);
                 return;
             }
 
             // التحقق من تكرار الباركود
             if (!string.IsNullOrEmpty(code) && ProductDAL.IsCodeExists(code, 0))
             {
-                ShowStatus($"❌ الباركود '{code}' مستخدم لصنف آخر", Theme.Danger);
+                ShowStatus($"الباركود '{code}' مستخدم لصنف آخر", Theme.Danger);
                 txtCode.Focus();
                 txtCode.SelectAll();
                 return;
@@ -432,7 +432,7 @@ namespace ChickenDist.Forms
             // التحقق من تكرار الاسم
             if (ProductDAL.IsNameExists(name, 0))
             {
-                ShowStatus($"❌ اسم الصنف '{name}' مستخدم بالفعل", Theme.Danger);
+                ShowStatus($"اسم الصنف '{name}' مستخدم بالفعل", Theme.Danger);
                 txtName.Focus();
                 txtName.SelectAll();
                 return;
@@ -471,11 +471,11 @@ namespace ChickenDist.Forms
                             OnProductSavedToInvoice.Invoke(id, code, name, nudQuantity.Value, nudPurchasePrice.Value, nudPrice.Value);
                         }
                         catch { }
-                        ShowStatus($"✅ تم حفظ '{name}' وإدراجه بالفاتورة! جاهز للصنف التالي", Theme.Success);
+                        ShowStatus($"تم حفظ '{name}' وإدراجه بالفاتورة! جاهز للصنف التالي", Theme.Success);
                     }
                     else
                     {
-                        ShowStatus($"✅ تم حفظ '{name}' بنجاح!", Theme.Success);
+                        ShowStatus($"تم حفظ '{name}' بنجاح!", Theme.Success);
                     }
 
                     if (AutoCloseOnSave)
@@ -489,12 +489,12 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    ShowStatus("❌ فشل حفظ الصنف في قاعدة البيانات", Theme.Danger);
+                    ShowStatus("فشل حفظ الصنف في قاعدة البيانات", Theme.Danger);
                 }
             }
             catch (Exception ex)
             {
-                ShowStatus("❌ خطأ: " + ex.Message, Theme.Danger);
+                ShowStatus("خطأ: " + ex.Message, Theme.Danger);
             }
         }
     }

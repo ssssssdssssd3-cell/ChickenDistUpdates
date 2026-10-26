@@ -714,7 +714,7 @@ namespace ChickenDist.Core
                             {
                                 g.DrawLine(pAccent, 20, y, width - 20, y);
                                 y += 8;
-                                g.DrawString("🙏 شكراً لتعاملكم معنا ونتمنى لكم دوام التوفيق والنجاح", fSub, brPrimary, new RectangleF(0, y, width, 24), SfCenter);
+                                g.DrawString("شكراً لتعاملكم معنا ونتمنى لكم دوام التوفيق والنجاح", fSub, brPrimary, new RectangleF(0, y, width, 24), SfCenter);
                                 y += 24;
                             }
 
@@ -738,7 +738,7 @@ namespace ChickenDist.Core
                             // System signature
                             using (var fPromo = new Font("Segoe UI", 8.5f, FontStyle.Regular))
                             {
-                                g.DrawString("✨ تم إنشاء هذا المستند آلياً بواسطة Pro System لإدارة المبيعات والتوزيع", fPromo, Brushes.Gray, new RectangleF(0, y, width, 20), SfCenter);
+                                g.DrawString("تم إنشاء هذا المستند آلياً بواسطة Pro System لإدارة المبيعات والتوزيع", fPromo, Brushes.Gray, new RectangleF(0, y, width, 20), SfCenter);
                             }
                         }
                     }
@@ -1067,9 +1067,9 @@ namespace ChickenDist.Core
                         g.DrawString(companyName, fComp, Brushes.White, new RectangleF(200, 12, width - 230, 44), SfRtlRight);
 
                         string subLine = "";
-                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress)) subLine += "📍 " + AppConfig.CompanyAddress.Trim();
+                        if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress)) subLine += "" + AppConfig.CompanyAddress.Trim();
                         if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
-                            subLine += (subLine.Length > 0 ? "   |   " : "") + "📞 هاتف: " + AppConfig.CompanyPhone.Trim();
+                            subLine += (subLine.Length > 0 ? "   |   " : "") + "هاتف: " + AppConfig.CompanyPhone.Trim();
                         if (string.IsNullOrWhiteSpace(subLine))
                             subLine = "إيصال مالي رسمي معتمد وموثق إلكترونياً";
 
@@ -1652,7 +1652,7 @@ namespace ChickenDist.Core
                                 g.FillRectangle(brHeader, 12, 12, width - 24, 75);
                                 string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة للأنظمة والتجارة";
                                 g.DrawString(comp, fTitle, Brushes.White, new RectangleF(20, 18, width - 40, 32), SfCenter);
-                                g.DrawString("📋 كشف حساب مالي تفصيلي للمعاملات والمديونية", fSub, Brushes.LightCyan, new RectangleF(20, 50, width - 40, 24), SfCenter);
+                                g.DrawString("كشف حساب مالي تفصيلي للمعاملات والمديونية", fSub, Brushes.LightCyan, new RectangleF(20, 50, width - 40, 24), SfCenter);
 
                                 int y = 96;
 
@@ -1661,13 +1661,13 @@ namespace ChickenDist.Core
                                 g.DrawRectangle(penGrid, 20, y, 840, 58);
                                 g.DrawLine(penGrid, width / 2, y, width / 2, y + 58);
 
-                                g.DrawString($"👤 العميل: {clientName}" + (!string.IsNullOrWhiteSpace(phone) ? $" | 📱 {phone}" : ""), fBold, brNavy, new RectangleF(width / 2 + 10, y + 6, width / 2 - 30, 24), SfRtlRight);
-                                g.DrawString($"📅 الفترة: من {fromDate:yyyy/MM/dd} إلى {toDate:yyyy/MM/dd}", fNorm, Brushes.DarkSlateGray, new RectangleF(width / 2 + 10, y + 30, width / 2 - 30, 22), SfRtlRight);
+                                g.DrawString($"العميل: {clientName}" + (!string.IsNullOrWhiteSpace(phone) ? $" | {phone}" : ""), fBold, brNavy, new RectangleF(width / 2 + 10, y + 6, width / 2 - 30, 24), SfRtlRight);
+                                g.DrawString($"الفترة: من {fromDate:yyyy/MM/dd} إلى {toDate:yyyy/MM/dd}", fNorm, Brushes.DarkSlateGray, new RectangleF(width / 2 + 10, y + 30, width / 2 - 30, 22), SfRtlRight);
 
-                                g.DrawString($"🕒 تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}", fSmall, Brushes.Gray, new RectangleF(30, y + 6, width / 2 - 50, 22), SfRtlRight);
+                                g.DrawString($"تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}", fSmall, Brushes.Gray, new RectangleF(30, y + 6, width / 2 - 50, 22), SfRtlRight);
                                 if (totalPages > 1)
                                 {
-                                    g.DrawString($"📄 صفحة {pageIdx + 1} من {totalPages}", fBold, brNavy, new RectangleF(30, y + 30, width / 2 - 50, 22), SfRtlRight);
+                                    g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fBold, brNavy, new RectangleF(30, y + 30, width / 2 - 50, 22), SfRtlRight);
                                 }
 
                                 y += 66;
@@ -1729,8 +1729,8 @@ namespace ChickenDist.Core
                                     g.FillRectangle(brAlt, tLeft, y, 840, 78);
                                     g.DrawRectangle(penBorder, tLeft, y, 840, 78);
 
-                                    g.DrawString($"🔴 إجمالي المبيعات: {totalSales:N2} ج", fBold, brRed, new RectangleF(tLeft + 560, y + 8, 260, 26), SfRtlRight);
-                                    g.DrawString($"🟢 إجمالي التحصيلات: {totalPayments:N2} ج" + (totalReturns > 0 ? $" | 🔄 مرتجع: {totalReturns:N2} ج" : ""), fBold, brGreen, new RectangleF(tLeft + 560, y + 42, 260, 26), SfRtlRight);
+                                    g.DrawString($"إجمالي المبيعات: {totalSales:N2} ج", fBold, brRed, new RectangleF(tLeft + 560, y + 8, 260, 26), SfRtlRight);
+                                    g.DrawString($"إجمالي التحصيلات: {totalPayments:N2} ج" + (totalReturns > 0 ? $" | مرتجع: {totalReturns:N2} ج" : ""), fBold, brGreen, new RectangleF(tLeft + 560, y + 42, 260, 26), SfRtlRight);
 
                                     // Final Balance Highlight Box
                                     string balTitle = balance > 0 ? "الرصيد المستحق (مديونية مطلوبة):" : (balance < 0 ? "الرصيد المتبقي (دائن لصالح العميل):" : "الرصيد النهائي:");
@@ -1745,7 +1745,7 @@ namespace ChickenDist.Core
                                 }
 
                                 // Footer
-                                g.DrawString("شكراً لتعاملكم ونتمنى لكم دوام التوفيق والنجاح 🙏", fSmall, Brushes.Gray, new RectangleF(20, y + 4, 840, 20), SfCenter);
+                                g.DrawString("شكراً لتعاملكم ونتمنى لكم دوام التوفيق والنجاح", fSmall, Brushes.Gray, new RectangleF(20, y + 4, 840, 20), SfCenter);
                             }
                         }
                         pages.Add(bmp);
@@ -1855,7 +1855,7 @@ namespace ChickenDist.Core
                                 g.FillRectangle(brHeader, 12, 12, width - 24, 75);
                                 string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة للأنظمة والتجارة";
                                 g.DrawString(comp, fTitle, Brushes.White, new RectangleF(20, 18, width - 40, 32), SfCenter);
-                                g.DrawString("📋 كشف حساب مالي تفصيلي للمورد", fSub, Brushes.LightYellow, new RectangleF(20, 50, width - 40, 24), SfCenter);
+                                g.DrawString("كشف حساب مالي تفصيلي للمورد", fSub, Brushes.LightYellow, new RectangleF(20, 50, width - 40, 24), SfCenter);
 
                                 int y = 96;
 
@@ -1864,13 +1864,13 @@ namespace ChickenDist.Core
                                 g.DrawRectangle(penGrid, 20, y, 840, 58);
                                 g.DrawLine(penGrid, width / 2, y, width / 2, y + 58);
 
-                                g.DrawString($"👤 المورد: {supplierName}" + (!string.IsNullOrWhiteSpace(phone) ? $" | 📱 {phone}" : ""), fBold, brAmber, new RectangleF(width / 2 + 10, y + 6, width / 2 - 30, 24), SfRtlRight);
-                                g.DrawString($"📅 الفترة: من {fromDate:yyyy/MM/dd} إلى {toDate:yyyy/MM/dd}", fNorm, Brushes.DarkSlateGray, new RectangleF(width / 2 + 10, y + 30, width / 2 - 30, 22), SfRtlRight);
+                                g.DrawString($"المورد: {supplierName}" + (!string.IsNullOrWhiteSpace(phone) ? $" | {phone}" : ""), fBold, brAmber, new RectangleF(width / 2 + 10, y + 6, width / 2 - 30, 24), SfRtlRight);
+                                g.DrawString($"الفترة: من {fromDate:yyyy/MM/dd} إلى {toDate:yyyy/MM/dd}", fNorm, Brushes.DarkSlateGray, new RectangleF(width / 2 + 10, y + 30, width / 2 - 30, 22), SfRtlRight);
 
-                                g.DrawString($"🕒 تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}", fSmall, Brushes.Gray, new RectangleF(30, y + 6, width / 2 - 50, 22), SfRtlRight);
+                                g.DrawString($"تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}", fSmall, Brushes.Gray, new RectangleF(30, y + 6, width / 2 - 50, 22), SfRtlRight);
                                 if (totalPages > 1)
                                 {
-                                    g.DrawString($"📄 صفحة {pageIdx + 1} من {totalPages}", fBold, brAmber, new RectangleF(30, y + 30, width / 2 - 50, 22), SfRtlRight);
+                                    g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fBold, brAmber, new RectangleF(30, y + 30, width / 2 - 50, 22), SfRtlRight);
                                 }
 
                                 y += 66;
@@ -1932,8 +1932,8 @@ namespace ChickenDist.Core
                                     g.FillRectangle(brAlt, tLeft, y, 840, 78);
                                     g.DrawRectangle(penBorder, tLeft, y, 840, 78);
 
-                                    g.DrawString($"📥 إجمالي المشتريات: {totalPurchases:N2} ج", fBold, brRed, new RectangleF(tLeft + 560, y + 8, 260, 26), SfRtlRight);
-                                    g.DrawString($"📤 إجمالي المسدد: {totalPayments:N2} ج", fBold, brGreen, new RectangleF(tLeft + 560, y + 42, 260, 26), SfRtlRight);
+                                    g.DrawString($"إجمالي المشتريات: {totalPurchases:N2} ج", fBold, brRed, new RectangleF(tLeft + 560, y + 8, 260, 26), SfRtlRight);
+                                    g.DrawString($"إجمالي المسدد: {totalPayments:N2} ج", fBold, brGreen, new RectangleF(tLeft + 560, y + 42, 260, 26), SfRtlRight);
 
                                     string balTitle = balance > 0 ? "الرصيد المستحق للمورد:" : (balance < 0 ? "رصيد دائن لصالحنا:" : "الرصيد النهائي:");
                                     Brush balBr = balance > 0 ? brRed : brGreen;
@@ -1946,7 +1946,7 @@ namespace ChickenDist.Core
                                     y += 88;
                                 }
 
-                                g.DrawString("مع تحيات إدارة الحسابات 🙏", fSmall, Brushes.Gray, new RectangleF(20, y + 4, 840, 20), SfCenter);
+                                g.DrawString("مع تحيات إدارة الحسابات", fSmall, Brushes.Gray, new RectangleF(20, y + 4, 840, 20), SfCenter);
                             }
                         }
                         pages.Add(bmp);
@@ -2046,7 +2046,7 @@ namespace ChickenDist.Core
                             g.DrawString($"موبايل: {compPhone}{addrStr}", fSmall, Brushes.DarkSlateGray, new RectangleF(20 + logoW, y, headerRightW, 20), SfRtlRight);
                         }
                         y += 22;
-                        g.DrawString("📋 بيان أسعار وعرض أسعار معتمد", fSub, brAccent, new RectangleF(15, y, width - 30, 22), SfCenter);
+                        g.DrawString("بيان أسعار وعرض أسعار معتمد", fSub, brAccent, new RectangleF(15, y, width - 30, 22), SfCenter);
                         y += 24;
                         g.DrawLine(pThick, 20, y, width - 20, y);
                         y += 8;
@@ -2179,12 +2179,12 @@ namespace ChickenDist.Core
                         {
                             g.FillRectangle(new SolidBrush(Color.FromArgb(254, 252, 232)), tLeft, y, tWidth, 24);
                             g.DrawRectangle(pThin, tLeft, y, tWidth, 24);
-                            g.DrawString($"📝 ملاحظات: {notes}", fSmall, Brushes.DarkSlateGray, new RectangleF(tLeft + 10, y + 3, tWidth - 20, 20), SfRtlRight);
+                            g.DrawString($"ملاحظات: {notes}", fSmall, Brushes.DarkSlateGray, new RectangleF(tLeft + 10, y + 3, tWidth - 20, 20), SfRtlRight);
                             y += 28;
                         }
 
                         // Disclaimer
-                        g.DrawString("📌 بيان تقديري استرشادي - الأسعار سارية حتى انتهاء الكميات أو تحديث الأسعار", fSmall, Brushes.Gray, new RectangleF(tLeft, y, tWidth, 20), SfCenter);
+                        g.DrawString("بيان تقديري استرشادي - الأسعار سارية حتى انتهاء الكميات أو تحديث الأسعار", fSmall, Brushes.Gray, new RectangleF(tLeft, y, tWidth, 20), SfCenter);
                         y += 22;
 
                         // Signatures
@@ -2195,10 +2195,10 @@ namespace ChickenDist.Core
                         // Separator & Footer
                         g.DrawLine(pAccent, 20, y, width - 20, y);
                         y += 6;
-                        g.DrawString("🙏 شكراً لتعاملكم معنا ونتشرف بخدمتكم دائماً", fSub, brPrimary, new RectangleF(0, y, width, 22), SfCenter);
+                        g.DrawString("شكراً لتعاملكم معنا ونتشرف بخدمتكم دائماً", fSub, brPrimary, new RectangleF(0, y, width, 22), SfCenter);
                         using (var fPromo = new Font("Segoe UI", 8.5f, FontStyle.Regular))
                         {
-                            g.DrawString("✨ تم إنشاء هذا المستند آلياً بواسطة Pro System لإدارة المبيعات والتوزيع", fPromo, Brushes.Gray, new RectangleF(0, y + 22, width, 18), SfCenter);
+                            g.DrawString("تم إنشاء هذا المستند آلياً بواسطة Pro System لإدارة المبيعات والتوزيع", fPromo, Brushes.Gray, new RectangleF(0, y + 22, width, 18), SfCenter);
                         }
                     }
                 }
@@ -2319,7 +2319,7 @@ namespace ChickenDist.Core
                                 g.DrawString($"موبايل: {compPhone}{addrStr}", fSmall, Brushes.DarkSlateGray, new RectangleF(20 + logoW, y, headerRightW, 20), SfRtlRight);
                             }
                             y += 22;
-                            g.DrawString($"📋 بيان أسعار وعرض أسعار معتمد (صفحة {pageIdx + 1} من {totalPages})", fSub, brAccent, new RectangleF(15, y, width - 30, 22), SfCenter);
+                            g.DrawString($"بيان أسعار وعرض أسعار معتمد (صفحة {pageIdx + 1} من {totalPages})", fSub, brAccent, new RectangleF(15, y, width - 30, 22), SfCenter);
                             y += 24;
                             g.DrawLine(pThick, 20, y, width - 20, y);
                             y += 8;
@@ -2443,11 +2443,11 @@ namespace ChickenDist.Core
                                 {
                                     g.FillRectangle(new SolidBrush(Color.FromArgb(254, 252, 232)), tLeft, y, tWidth, 24);
                                     g.DrawRectangle(pThin, tLeft, y, tWidth, 24);
-                                    g.DrawString($"📝 ملاحظات: {notes}", fSmall, Brushes.DarkSlateGray, new RectangleF(tLeft + 10, y + 3, tWidth - 20, 20), SfRtlRight);
+                                    g.DrawString($"ملاحظات: {notes}", fSmall, Brushes.DarkSlateGray, new RectangleF(tLeft + 10, y + 3, tWidth - 20, 20), SfRtlRight);
                                     y += 28;
                                 }
 
-                                g.DrawString("📌 بيان تقديري استرشادي - الأسعار سارية حتى انتهاء الكميات أو تحديث الأسعار", fSmall, Brushes.Gray, new RectangleF(tLeft, y, tWidth, 20), SfCenter);
+                                g.DrawString("بيان تقديري استرشادي - الأسعار سارية حتى انتهاء الكميات أو تحديث الأسعار", fSmall, Brushes.Gray, new RectangleF(tLeft, y, tWidth, 20), SfCenter);
                                 y += 22;
 
                                 g.DrawString("توقيع المستلم: ...............................", fSmall, Brushes.Black, new RectangleF(30, y, 220, 20), SfRtlRight);
@@ -2456,16 +2456,16 @@ namespace ChickenDist.Core
 
                                 g.DrawLine(pAccent, 20, y, width - 20, y);
                                 y += 6;
-                                g.DrawString("🙏 شكراً لتعاملكم معنا ونتشرف بخدمتكم دائماً", fSub, brPrimary, new RectangleF(0, y, width, 22), SfCenter);
+                                g.DrawString("شكراً لتعاملكم معنا ونتشرف بخدمتكم دائماً", fSub, brPrimary, new RectangleF(0, y, width, 22), SfCenter);
                                 using (var fPromo = new Font("Segoe UI", 8.5f, FontStyle.Regular))
                                 {
-                                    g.DrawString("✨ تم إنشاء هذا المستند آلياً بواسطة Pro System لإدارة المبيعات والتوزيع", fPromo, Brushes.Gray, new RectangleF(0, y + 22, width, 18), SfCenter);
+                                    g.DrawString("تم إنشاء هذا المستند آلياً بواسطة Pro System لإدارة المبيعات والتوزيع", fPromo, Brushes.Gray, new RectangleF(0, y + 22, width, 18), SfCenter);
                                 }
                             }
                             else
                             {
                                 y += 14;
-                                g.DrawString("📄 يتبع باقي بنود عرض الأسعار في الصفحة التالية ◀", fBold, brPrimary, new RectangleF(20, y, width - 40, 24), SfCenter);
+                                g.DrawString("يتبع باقي بنود عرض الأسعار في الصفحة التالية", fBold, brPrimary, new RectangleF(20, y, width - 40, 24), SfCenter);
                             }
                         }
                     }
@@ -2596,7 +2596,7 @@ namespace ChickenDist.Core
                             g.DrawString($"هاتف: {compPhone}{addrStr}", fSmall, Brushes.DarkSlateGray, new RectangleF(20 + logoW, y, headerRightW, 20), SfRtlRight);
                         }
                         y += 22;
-                        g.DrawString("🧾 إيصال مرتجع مبيعات معتمد", fSub, brAccent, new RectangleF(15, y, width - 30, 24), SfCenter);
+                        g.DrawString("إيصال مرتجع مبيعات معتمد", fSub, brAccent, new RectangleF(15, y, width - 30, 24), SfCenter);
                         y += 26;
                         g.DrawLine(pThick, 20, y, width - 20, y);
                         y += 8;
@@ -2694,7 +2694,7 @@ namespace ChickenDist.Core
                         int totalBoxH = 34;
                         g.FillRectangle(new SolidBrush(Color.FromArgb(254, 242, 242)), tLeft, y, tWidth, totalBoxH);
                         g.DrawRectangle(new Pen(cAccent, 1.8f), tLeft, y, tWidth, totalBoxH);
-                        g.DrawString($"💰 إجمالي قيمة المرتجع المسترد:  {returnTotalAmount:N2} جنيه", fBig, brAccent, new RectangleF(tLeft + 10, y + 2, tWidth - 20, totalBoxH - 4), SfRtlRight);
+                        g.DrawString($"إجمالي قيمة المرتجع المسترد:  {returnTotalAmount:N2} جنيه", fBig, brAccent, new RectangleF(tLeft + 10, y + 2, tWidth - 20, totalBoxH - 4), SfRtlRight);
 
                         y += totalBoxH + 6;
                         g.DrawString($"عدد الأصناف المرتجعة: {itemCount} صنف  |  إجمالي كميات المرتجع: {totalQty:0.##}", fBold, Brushes.DarkSlateGray, new RectangleF(tLeft, y, tWidth, 22), SfCenter);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
@@ -117,7 +117,7 @@ namespace ChickenDist.Forms
 
             var btnSave = new Button
             {
-                Text = "💾 حفظ إعدادات الطباعة",
+                Text = "حفظ إعدادات الطباعة",
                 Size = new Size(230, 40),
                 Location = new Point(20, 10),
                 BackColor = Color.FromArgb(5, 150, 105),
@@ -814,7 +814,7 @@ namespace ChickenDist.Forms
 
             var lblA4Hint = new Label
             {
-                Text = "💡 اضبط الإزاحة لتوسيط جدول الفاتورة تماماً على ورقة A4 (الافتراضي 0 أو بين 1.0 و 3.0 سم)",
+                Text = "اضبط الإزاحة لتوسيط جدول الفاتورة تماماً على ورقة A4 (الافتراضي 0 أو بين 1.0 و 3.0 سم)",
                 Location = new Point(20, 210),
                 Size = new Size(580, 20),
                 ForeColor = Color.FromArgb(100, 116, 139),
@@ -1351,7 +1351,7 @@ namespace ChickenDist.Forms
         private void BtnSave_Click(object sender, EventArgs e)
         {
             ApplyCurrentToAppConfig();
-            MessageBox.Show("✅ تم حفظ إعدادات الطابعات ونماذج الفواتير بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("تم حفظ إعدادات الطابعات ونماذج الفواتير بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
     }

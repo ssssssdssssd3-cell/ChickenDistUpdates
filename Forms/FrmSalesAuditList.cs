@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -101,19 +101,19 @@ namespace ChickenDist.Forms
 
             txtSearch = new TextBox { Width = 160, RightToLeft = RightToLeft.Yes };
 
-            btnLoad = MkBtn("🔍 عرض السجل", Theme.Accent, 120, 30);
+            btnLoad = MkBtn("عرض السجل", Theme.Accent, 120, 30);
             btnLoad.Margin = new Padding(6, 2, 4, 2);
             btnLoad.Click += (s, e) => LoadAuditLogs();
 
-            var btnPrint = MkBtn("🖨️ طباعة", Color.FromArgb(40, 100, 180), 95, 30);
+            var btnPrint = MkBtn("طباعة", Color.FromArgb(40, 100, 180), 95, 30);
             btnPrint.Margin = new Padding(4, 2, 4, 2);
             btnPrint.Click += BtnPrint_Click;
 
-            var btnExportExcel = MkBtn("📥 إكسيل", Color.FromArgb(0, 120, 80), 95, 30);
+            var btnExportExcel = MkBtn("إكسيل", Color.FromArgb(0, 120, 80), 95, 30);
             btnExportExcel.Margin = new Padding(4, 2, 4, 2);
             btnExportExcel.Click += BtnExportExcel_Click;
 
-            var btnExportPdf = MkBtn("📄 PDF", Color.FromArgb(200, 40, 40), 85, 30);
+            var btnExportPdf = MkBtn("PDF", Color.FromArgb(200, 40, 40), 85, 30);
             btnExportPdf.Margin = new Padding(4, 2, 4, 2);
             btnExportPdf.Click += BtnExportPdf_Click;
 
@@ -177,7 +177,7 @@ namespace ChickenDist.Forms
             var pnlOld = new Panel { Dock = DockStyle.Fill };
             lblOldTitle = new Label
             {
-                Text = "📋 الأصناف قبل التعديل",
+                Text = "الأصناف قبل التعديل",
                 Dock = DockStyle.Top, Height = 26,
                 Font = Theme.FontBold, ForeColor = Color.OrangeRed,
                 BackColor = Color.FromArgb(50, 30, 30),
@@ -192,7 +192,7 @@ namespace ChickenDist.Forms
             var pnlNew = new Panel { Dock = DockStyle.Fill };
             lblNewTitle = new Label
             {
-                Text = "✅ الأصناف بعد التعديل",
+                Text = "الأصناف بعد التعديل",
                 Dock = DockStyle.Top, Height = 26,
                 Font = Theme.FontBold, ForeColor = Color.LightGreen,
                 BackColor = Color.FromArgb(20, 50, 30),
@@ -322,9 +322,9 @@ namespace ChickenDist.Forms
 
                     // ألوان العمليات
                     var cellAct = dgAudit.Rows[rIdx].Cells["ActionType"];
-                    if      (act == "CREATE") { cellAct.Style.ForeColor = Color.LightGreen;  cellAct.Value = "✅ CREATE"; }
-                    else if (act == "DELETE") { cellAct.Style.ForeColor = Color.Tomato;       cellAct.Value = "🗑 DELETE"; }
-                    else if (act == "EDIT")   { cellAct.Style.ForeColor = Color.Orange;       cellAct.Value = "✏ EDIT"; }
+                    if      (act == "CREATE") { cellAct.Style.ForeColor = Color.LightGreen;  cellAct.Value = "CREATE"; }
+                    else if (act == "DELETE") { cellAct.Style.ForeColor = Color.Tomato;       cellAct.Value = "DELETE"; }
+                    else if (act == "EDIT")   { cellAct.Style.ForeColor = Color.Orange;       cellAct.Value = "EDIT"; }
                 }
             }
             catch (Exception ex)
@@ -334,7 +334,7 @@ namespace ChickenDist.Forms
         }
 
         // ══════════════════════════════════════════════
-        //  عند اختيار سجل → تحميل المقارنة تلقائياً
+        //  عند اختيار سجل تحميل المقارنة تلقائياً
         // ══════════════════════════════════════════════
         private void DgAudit_SelectionChanged(object sender, EventArgs e)
         {
@@ -347,7 +347,7 @@ namespace ChickenDist.Forms
             int    saleID     = Convert.ToInt32(row.Cells["SaleID"].Value);
             string saleCode   = row.Cells["SaleCode"].Value?.ToString() ?? "";
             string actionType = row.Cells["ActionType"].Value?.ToString()
-                                    .Replace("✅ ", "").Replace("🗑 ", "").Replace("✏ ", "") ?? "";
+                                    .Trim() ?? "";
 
             try
             {
@@ -369,7 +369,7 @@ namespace ChickenDist.Forms
             dgOld.Rows.Clear();
             dgNew.Rows.Clear();
 
-            lblCompareTitle.Text = $"  📊 مقارنة بنود الفاتورة: {saleCode}  |  العملية: {actionType}";
+            lblCompareTitle.Text = $"  مقارنة بنود الفاتورة: {saleCode}  |  العملية: {actionType}";
 
             // ─── 1. جلب الأصناف القديمة (المؤرشفة) ───
             var dtOld = DbHelper.Query(
@@ -454,7 +454,7 @@ namespace ChickenDist.Forms
                     {
                         decimal oldQty = Convert.ToDecimal(oldMap[pid]["Quantity"]);
                         decimal diff = newQty - oldQty;
-                        qtyDisplay += diff >= 0 ? $"  (▲{diff:N2})" : $"  (▼{Math.Abs(diff):N2})";
+                        qtyDisplay += diff >= 0 ? $"  ({diff:N2})" : $"  ({Math.Abs(diff):N2})";
                     }
 
                     int ri = dgNew.Rows.Add(
@@ -469,7 +469,7 @@ namespace ChickenDist.Forms
             }
             else if (actionType == "DELETE")
             {
-                lblNewTitle.Text = "🗑 لا توجد أصناف حالية (تم حذف الفاتورة)";
+                lblNewTitle.Text = "لا توجد أصناف حالية (تم حذف الفاتورة)";
                 lblNewTitle.ForeColor = Color.Tomato;
             }
 
@@ -478,7 +478,7 @@ namespace ChickenDist.Forms
             int removed  = CountStatus(dgOld, Color.FromArgb(80, 20, 20));
             int modified = CountStatus(dgNew, Color.FromArgb(80, 60, 10));
             lblSummary.Text = $"  ملخص: {dgOld.Rows.Count} صنف قبل | {(dtNew?.Rows.Count ?? 0)} صنف بعد" +
-                              $"   |   🟢 مُضاف: {added}   |   🔴 محذوف: {removed}   |   🟡 معدّل: {modified}";
+                              $"   |   مُضاف: {added}   |   محذوف: {removed}   |   معدّل: {modified}";
         }
 
         // ══════════════════════════════════════════════
@@ -582,7 +582,7 @@ namespace ChickenDist.Forms
                     try
                     {
                         FrmReports.ExportDataGridViewToXls(dgAudit, sfd.FileName, "سجل تعديلات وعمليات الفواتير", AppConfig.CompanyName);
-                        var res = MessageBox.Show("✅ تم تصدير ملف Excel بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير ملف Excel بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             System.Diagnostics.Process.Start(sfd.FileName);
@@ -617,7 +617,7 @@ namespace ChickenDist.Forms
                     {
                         var pages = GenerateAuditPagesBitmaps();
                         PdfReportHelper.SaveBitmapsAsPdf(pages, sfd.FileName);
-                        var res = MessageBox.Show("✅ تم تصدير ملف PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير ملف PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             System.Diagnostics.Process.Start(sfd.FileName);
@@ -742,7 +742,7 @@ namespace ChickenDist.Forms
 
                     string code = r.Cells["SaleCode"].Value?.ToString() ?? "";
                     string date = r.Cells["EditDate"].Value?.ToString() ?? "";
-                    string act  = r.Cells["ActionType"].Value?.ToString()?.Replace("✅ ", "")?.Replace("🗑 ", "")?.Replace("✏ ", "") ?? "";
+                    string act  = r.Cells["ActionType"].Value?.ToString()?.Trim() ?? "";
                     string user = r.Cells["UserName"].Value?.ToString() ?? "";
                     string oldT = r.Cells["OldTotal"].Value?.ToString() ?? "";
                     string newT = r.Cells["NewTotal"].Value?.ToString() ?? "";

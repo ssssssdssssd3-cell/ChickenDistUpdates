@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -44,7 +44,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💳 تقسيط وجدولة مديونية عميل";
+            this.Text = "تقسيط وجدولة مديونية عميل";
             this.Size = new Size(1020, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -66,7 +66,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "💳 تقسيط وجدولة مديونية عميل قائمة (تحويل الرصيد الآجل إلى أقساط مجدولة)",
+                Text = "تقسيط وجدولة مديونية عميل قائمة (تحويل الرصيد الآجل إلى أقساط مجدولة)",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
@@ -87,7 +87,7 @@ namespace ChickenDist.Forms
             int y = 15;
 
             // 1. اختيار العميل
-            pnlRight.Controls.Add(new Label { Text = "👤 اختر العميل:", Location = new Point(330, y), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain });
+            pnlRight.Controls.Add(new Label { Text = "اختر العميل:", Location = new Point(330, y), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain });
             cboClient = new ComboBox
             {
                 Location = new Point(20, y + 24),
@@ -145,7 +145,7 @@ namespace ChickenDist.Forms
             y += 42;
 
             // 4. صافي المبلغ الممول (المقسط)
-            pnlRight.Controls.Add(new Label { Text = "💰 صافي المبلغ الإجمالي للأقساط:", Location = new Point(210, y), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.Primary });
+            pnlRight.Controls.Add(new Label { Text = "صافي المبلغ الإجمالي للأقساط:", Location = new Point(210, y), AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.Primary });
             y += 24;
             txtFinancedAmount = new TextBox
             {
@@ -228,7 +228,7 @@ namespace ChickenDist.Forms
             y += 55;
 
             // زر توليد الجدول
-            btnGenerateSchedule = Theme.MakeButton("⚡ احتساب وتوليد جدول الأقساط", 20, y, 410, 38, Theme.Primary);
+            btnGenerateSchedule = Theme.MakeButton("احتساب وتوليد جدول الأقساط", 20, y, 410, 38, Theme.Primary);
             btnGenerateSchedule.Click += (s, e) => GenerateSchedule();
             pnlRight.Controls.Add(btnGenerateSchedule);
 
@@ -245,9 +245,9 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            lblSummaryContract = new Label { Text = "📋 إجمالي العقد: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(5, 0, 18, 0) };
-            lblSummaryInstallment = new Label { Text = "💵 قيمة القسط: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(5, 0, 18, 0) };
-            lblSummaryEndDate = new Label { Text = "📅 تاريخ الانتهاء: —", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.DarkBlue, Margin = new Padding(5, 0, 18, 0) };
+            lblSummaryContract = new Label { Text = "إجمالي العقد: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(5, 0, 18, 0) };
+            lblSummaryInstallment = new Label { Text = "قيمة القسط: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(5, 0, 18, 0) };
+            lblSummaryEndDate = new Label { Text = "تاريخ الانتهاء: —", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.DarkBlue, Margin = new Padding(5, 0, 18, 0) };
 
             pnlSummary.Controls.AddRange(new Control[] { lblSummaryContract, lblSummaryInstallment, lblSummaryEndDate });
 
@@ -261,10 +261,10 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnSaveContract = Theme.MakeButton("💾 اعتماد وإنشاء عقد التقسيط", 0, 0, 220, 36, Theme.Success);
+            btnSaveContract = Theme.MakeButton("اعتماد وإنشاء عقد التقسيط", 0, 0, 220, 36, Theme.Success);
             btnSaveContract.Click += BtnSaveContract_Click;
 
-            btnPrintContract = Theme.MakeButton("🖨️ طباعة إقرار وعقد التقسيط", 0, 0, 190, 36, Theme.Secondary);
+            btnPrintContract = Theme.MakeButton("طباعة إقرار وعقد التقسيط", 0, 0, 190, 36, Theme.Secondary);
             btnPrintContract.Click += BtnPrintContract_Click;
 
             btnCancel = Theme.MakeButton("إلغاء", 0, 0, 90, 36, Color.FromArgb(100, 116, 139));
@@ -486,9 +486,9 @@ namespace ChickenDist.Forms
                     currentDate = currentDate.AddYears(1);
             }
 
-            lblSummaryContract.Text = $"📋 إجمالي العقد: {financed + down:N2} ج";
-            lblSummaryInstallment.Text = $"💵 قيمة القسط: {rawMonthly:N2} ج";
-            lblSummaryEndDate.Text = $"📅 تاريخ الانتهاء: {_generatedSchedule[count - 1].DueDate:yyyy/MM/dd}";
+            lblSummaryContract.Text = $"إجمالي العقد: {financed + down:N2} ج";
+            lblSummaryInstallment.Text = $"قيمة القسط: {rawMonthly:N2} ج";
+            lblSummaryEndDate.Text = $"تاريخ الانتهاء: {_generatedSchedule[count - 1].DueDate:yyyy/MM/dd}";
         }
 
         private void BtnSaveContract_Click(object sender, EventArgs e)
@@ -547,7 +547,7 @@ namespace ChickenDist.Forms
 
                     if (contractID > 0)
                     {
-                        MessageBox.Show($"✅ تم اعتماد وإنشاء عقد تقسيط المديونية بنجاح برقم [{contractID}].\nتم تسجيل جدول الأقساط وقيد الحسابات والتأثير على الخزينة.", "تم الاعتماد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"تم اعتماد وإنشاء عقد تقسيط المديونية بنجاح برقم [{contractID}].\nتم تسجيل جدول الأقساط وقيد الحسابات والتأثير على الخزينة.", "تم الاعتماد", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                         if (MessageBox.Show("هل ترغب في طباعة عقد التقسيط وإقرار السداد الآن؟", "طباعة العقد", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
@@ -620,7 +620,7 @@ namespace ChickenDist.Forms
                 y += 52;
 
                 // جدول الأقساط
-                g.DrawString("📅 جدول استحقاق ومواعيد سداد الأقساط:", fontSub, Brushes.Black, 40, y);
+                g.DrawString("جدول استحقاق ومواعيد سداد الأقساط:", fontSub, Brushes.Black, 40, y);
                 y += 24;
 
                 float[] colWidths = { 60, 140, 110, 160, 110 };

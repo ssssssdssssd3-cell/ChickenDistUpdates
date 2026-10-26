@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -27,7 +27,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            Text = "📋 قائمة عروض وبيانات الأسعار المعلقة";
+            Text = "قائمة عروض وبيانات الأسعار المعلقة";
             Size = new Size(950, 560);
             StartPosition = FormStartPosition.CenterScreen;
             RightToLeft = RightToLeft.Yes;
@@ -59,7 +59,7 @@ namespace ChickenDist.Forms
 
             var lblSearch = new Label
             {
-                Text = "🔍 بحث:",
+                Text = "بحث:",
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 Font = Theme.FontBold,
@@ -138,16 +138,16 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            btnRecall = Theme.MakeButton("📥 استرجاع للتعديل (Enter)", 10, 10, 200, 36, Theme.Accent);
+            btnRecall = Theme.MakeButton("استرجاع للتعديل (Enter)", 10, 10, 200, 36, Theme.Accent);
             btnRecall.Click += (s, e) => DoRecall();
 
-            btnConvertToSale = Theme.MakeButton("🔄 تحويل لفاتورة بيع", 220, 10, 180, 36, Theme.Success);
+            btnConvertToSale = Theme.MakeButton("تحويل لفاتورة بيع", 220, 10, 180, 36, Theme.Success);
             btnConvertToSale.Click += (s, e) => DoConvertToSale();
 
-            btnDelete = Theme.MakeButton("🗑️ حذف العرض", 410, 10, 130, 36, Color.Brown);
+            btnDelete = Theme.MakeButton("حذف العرض", 410, 10, 130, 36, Color.Brown);
             btnDelete.Click += (s, e) => DoDelete();
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 550, 10, 100, 36, Color.Gray);
+            btnRefresh = Theme.MakeButton("تحديث", 550, 10, 100, 36, Color.Gray);
             btnRefresh.Click += (s, e) => LoadData();
 
             btnClose = Theme.MakeButton("إغلاق", 660, 10, 100, 36, Color.DarkSlateGray);

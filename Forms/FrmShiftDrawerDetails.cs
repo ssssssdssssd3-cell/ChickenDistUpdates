@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -25,7 +25,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanViewShiftDetails())
             {
-                MessageBox.Show("⛔ غير مصرح لك بعرض تفاصيل وحركة درج الوردية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بعرض تفاصيل وحركة درج الوردية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Load += (s, e) => this.Close();
                 return;
             }
@@ -36,7 +36,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = $"🔍 تفاصيل حركة الدرج للوردية #{_shiftID}";
+            this.Text = $"تفاصيل حركة الدرج للوردية #{_shiftID}";
             this.Size = new Size(860, 640);
             this.MinimumSize = new Size(800, 580);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -55,7 +55,7 @@ namespace ChickenDist.Forms
             };
             Label lblTitle = new Label
             {
-                Text = $"🔍 حركة وتفاصيل صندوق/درج الوردية #{_shiftID}",
+                Text = $"حركة وتفاصيل صندوق/درج الوردية #{_shiftID}",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -86,17 +86,17 @@ namespace ChickenDist.Forms
             tblKpi.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             tblKpi.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
-            lblOpeningCashVal = MakeCard(tblKpi, "💵 رصيد فتح الوردية", "0.00 ج", Theme.TextMain, 0, 0);
-            lblCashSalesVal   = MakeCard(tblKpi, "🛒 مبيعات فواتير الكاش", "0.00 ج", Theme.Success, 1, 0);
-            lblCashInVal      = MakeCard(tblKpi, "➕ توريدات وتحويلات واردة", "0.00 ج", Color.FromArgb(52, 152, 219), 2, 0);
-            lblReturnsVal     = MakeCard(tblKpi, "↩ مرتجعات المبيعات", "0.00 ج", Theme.Danger, 3, 0);
+            lblOpeningCashVal = MakeCard(tblKpi, "رصيد فتح الوردية", "0.00 ج", Theme.TextMain, 0, 0);
+            lblCashSalesVal   = MakeCard(tblKpi, "مبيعات فواتير الكاش", "0.00 ج", Theme.Success, 1, 0);
+            lblCashInVal      = MakeCard(tblKpi, "توريدات وتحويلات واردة", "0.00 ج", Color.FromArgb(52, 152, 219), 2, 0);
+            lblReturnsVal     = MakeCard(tblKpi, "مرتجعات المبيعات", "0.00 ج", Theme.Danger, 3, 0);
 
-            lblExpensesVal    = MakeCard(tblKpi, "💸 مصروفات وتحويلات صادرة", "0.00 ج", Color.FromArgb(230, 126, 34), 0, 1);
-            lblNetMovementVal = MakeCard(tblKpi, "⚖️ صافي حركة الدرج", "0.00 ج", Color.FromArgb(155, 89, 182), 1, 1);
-            lblExpectedVal    = MakeCard(tblKpi, "💰 الصافي المتوقع بالدرج", "0.00 ج", Theme.Accent, 2, 1);
+            lblExpensesVal    = MakeCard(tblKpi, "مصروفات وتحويلات صادرة", "0.00 ج", Color.FromArgb(230, 126, 34), 0, 1);
+            lblNetMovementVal = MakeCard(tblKpi, "صافي حركة الدرج", "0.00 ج", Color.FromArgb(155, 89, 182), 1, 1);
+            lblExpectedVal    = MakeCard(tblKpi, "الصافي المتوقع بالدرج", "0.00 ج", Theme.Accent, 2, 1);
             
             // Card 4 Row 1 (Empty space or note)
-            MakeCard(tblKpi, "📋 معادلة الدرج", "(كاش + وارد) - (صادر + مرتجع)", Theme.TextSub, 3, 1);
+            MakeCard(tblKpi, "معادلة الدرج", "(كاش + وارد) - (صادر + مرتجع)", Theme.TextSub, 3, 1);
 
             // 3. Ledger Grid
             dgDrawerDetails = new DataGridView
@@ -139,8 +139,8 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 8, 15, 8)
             };
 
-            btnClose = Theme.MakeButton("❌ إغلاق", Theme.Danger, new Point(0, 0), new Size(110, 38));
-            btnPrint = Theme.MakeButton("🖨️ طباعة الحركة", Theme.Primary, new Point(0, 0), new Size(140, 38));
+            btnClose = Theme.MakeButton("إغلاق", Theme.Danger, new Point(0, 0), new Size(110, 38));
+            btnPrint = Theme.MakeButton("طباعة الحركة", Theme.Primary, new Point(0, 0), new Size(140, 38));
 
             btnClose.Click += (s, e) => this.Close();
             btnPrint.Click += BtnPrint_Click;
@@ -228,7 +228,7 @@ namespace ChickenDist.Forms
                 int drawerSafeID = _shiftRow["SafeAccountID"] != DBNull.Value ? Convert.ToInt32(_shiftRow["SafeAccountID"]) : 1;
                 int openedByEmpID = _shiftRow["OpenedBy"] != DBNull.Value ? Convert.ToInt32(_shiftRow["OpenedBy"]) : Session.EmpID;
 
-                lblHeaderInfo.Text = $"👤 الكاشير: {emp}  |  🏦 الدرج: {safe}  |  📅 وقت الفتح: {openTime:yyyy-MM-dd HH:mm}";
+                lblHeaderInfo.Text = $"الكاشير: {emp}  |  الدرج: {safe}  |  وقت الفتح: {openTime:yyyy-MM-dd HH:mm}";
 
                 // 1. فواتير البيع الكاش للدرج والكاشير
                 var dtSales = DbHelper.Query(@"

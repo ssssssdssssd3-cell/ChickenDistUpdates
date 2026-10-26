@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
             {
                 foreach (var item in initialItems)
                 {
-                    dgItems.Rows.Add(item.ProductID, item.ProductName, item.ProductCode, item.Price.ToString("F2"), item.PrintQty > 0 ? item.PrintQty : 1, item.ShelfLocation, "\ud83d\uddd1");
+                    dgItems.Rows.Add(item.ProductID, item.ProductName, item.ProductCode, item.Price.ToString("F2"), item.PrintQty > 0 ? item.PrintQty : 1, item.ShelfLocation, "حذف");
                 }
                 UpdateSummaryBadges();
             }
@@ -85,7 +85,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "🏷️ طباعة باركود الأصناف (مجمع)";
+            this.Text = "طباعة باركود الأصناف (مجمع)";
             this.Size = new Size(1150, 750);
             this.MinimumSize = new Size(950, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -97,7 +97,7 @@ namespace ChickenDist.Forms
             this.KeyDown += FrmBulkPrintBarcodes_KeyDown;
 
             // ── 1. Title Header (شريط العنوان المدمج) ────────────────────────
-            var pnlTop = Theme.MakeTitleBar("🏷️ طباعة باركود الأصناف (مجمع)", "قم بإضافة الأصناف وتحديد سعر الطباعة وكمية الملصقات لكل منها.");
+            var pnlTop = Theme.MakeTitleBar("طباعة باركود الأصناف (مجمع)", "قم بإضافة الأصناف وتحديد سعر الطباعة وكمية الملصقات لكل منها.");
 
             // ── 2. Top Card: Single compact unified panel for item add, category add & badges ──
             pnlTopCard = new Panel
@@ -111,7 +111,7 @@ namespace ChickenDist.Forms
             // Row 1 Controls: Individual Product Selection & Search
             lblSelect = new Label
             {
-                Text = "🏷️ الصنف:",
+                Text = "الصنف:",
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
@@ -129,7 +129,7 @@ namespace ChickenDist.Forms
 
             btnSearchProduct = new Button
             {
-                Text = "🔍 بحث متقدم (F3)",
+                Text = "بحث متقدم (F3)",
                 Height = 28,
                 BackColor = Theme.Accent,
                 ForeColor = Color.White,
@@ -171,7 +171,7 @@ namespace ChickenDist.Forms
 
             btnAdd = new Button
             {
-                Text = "➕ إضافة للقائمة",
+                Text = "إضافة للقائمة",
                 Height = 28,
                 BackColor = Theme.Success,
                 ForeColor = Color.White,
@@ -185,7 +185,7 @@ namespace ChickenDist.Forms
             // Row 2 Controls: Category Filter + Summary Badges + Clear All
             lblCat = new Label
             {
-                Text = "📂 تصنيف كامل:",
+                Text = "تصنيف كامل:",
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
@@ -220,7 +220,7 @@ namespace ChickenDist.Forms
 
             btnAddCategory = new Button
             {
-                Text = "➕ إضافة التصنيف",
+                Text = "إضافة التصنيف",
                 Height = 26,
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -233,7 +233,7 @@ namespace ChickenDist.Forms
 
             lblTotalProductsCount = new Label
             {
-                Text = "📦 الأصناف: 0",
+                Text = "الأصناف: 0",
                 AutoSize = true,
                 ForeColor = Theme.Primary,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
@@ -241,7 +241,7 @@ namespace ChickenDist.Forms
 
             lblTotalLabelsCount = new Label
             {
-                Text = "🏷️ الملصقات: 0",
+                Text = "الملصقات: 0",
                 AutoSize = true,
                 ForeColor = Color.FromArgb(217, 119, 6),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
@@ -249,7 +249,7 @@ namespace ChickenDist.Forms
 
             btnClearAll = new Button
             {
-                Text = "🗑️ مسح الكل",
+                Text = "مسح الكل",
                 Height = 26,
                 BackColor = Color.FromArgb(239, 68, 68),
                 ForeColor = Color.White,
@@ -371,7 +371,7 @@ namespace ChickenDist.Forms
             {
                 Name = "Delete",
                 HeaderText = "حذف",
-                Text = "❌",
+                Text = "X",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 35
             };
@@ -398,7 +398,7 @@ namespace ChickenDist.Forms
             };
 
             // Settings Controls
-            lblPrinter = new Label { Text = "🖨️ طابعة:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            lblPrinter = new Label { Text = "طابعة:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboPrinters = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -420,7 +420,7 @@ namespace ChickenDist.Forms
             }
             catch { }
 
-            lblTemplate = new Label { Text = "📐 الشكل:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            lblTemplate = new Label { Text = "الشكل:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboBarcodeTemplate = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -432,7 +432,7 @@ namespace ChickenDist.Forms
             cboBarcodeTemplate.Items.Add("كود الصنف علي العرض");
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
-                "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
+                "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
@@ -440,15 +440,15 @@ namespace ChickenDist.Forms
                 "اسم صنف كبير + باركود (بدون سعر)"
             });
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "CodeOnSide" ? "كود الصنف علي العرض"
-                                            : AppConfig.BarcodeTemplate == "MobileIMEI" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
+                                            : AppConfig.BarcodeTemplate == "MobileIMEI" ? "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
                                             : AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
                                             : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
                                             : (AppConfig.BarcodeTemplate == "NoPrice" || AppConfig.BarcodeTemplate == "NoPriceBigName") ? "اسم صنف كبير + باركود (بدون سعر)"
-                                            : (AppConfig.BusinessType == "Mobiles" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)");
+                                            : (AppConfig.BusinessType == "Mobiles" ? "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)");
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
 
-            lblEncoding = new Label { Text = "🔒 التشفير:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            lblEncoding = new Label { Text = "التشفير:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             cboBarcodeEncoding = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -493,17 +493,17 @@ namespace ChickenDist.Forms
             };
 
             // Action Buttons
-            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة (Ctrl+P)", Theme.Success);
+            btnPrint = Theme.MakeButton("طباعة مباشرة (Ctrl+P)", Theme.Success);
             btnPrint.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnPrint.Height = 36;
             btnPrint.Click += (s, e) => StartPrintJob(false);
 
-            btnPreview = Theme.MakeButton("معاينة 👁️", Theme.Accent);
+            btnPreview = Theme.MakeButton("معاينة", Theme.Accent);
             btnPreview.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnPreview.Height = 36;
             btnPreview.Click += (s, e) => StartPrintJob(true);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", Color.FromArgb(100, 116, 139));
+            btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(100, 116, 139));
             btnCancel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnCancel.Height = 36;
             btnCancel.Click += (s, e) => CloseOrNavigateBack();
@@ -955,8 +955,8 @@ namespace ChickenDist.Forms
                     totalLabels += q;
                 }
             }
-            lblTotalProductsCount.Text = $"📦 الأصناف المضافة: {totalProducts}";
-            lblTotalLabelsCount.Text = $"🏷️ إجمالي الملصقات: {totalLabels} ملصق";
+            lblTotalProductsCount.Text = $"الأصناف المضافة: {totalProducts}";
+            lblTotalLabelsCount.Text = $"إجمالي الملصقات: {totalLabels} ملصق";
         }
 
         private void DgItems_CellClick(object sender, DataGridViewCellEventArgs e)

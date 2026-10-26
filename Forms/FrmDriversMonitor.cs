@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -61,7 +61,7 @@ namespace ChickenDist.Forms
             // شريط العنوان مع لمسات عصرية
             var pnlTitle = Theme.MakeTitleBar("لوحة المراقبة اللحظية للمناديب", "متابعة حركة وحمولات المناديب النشطين في السوق، الكميات المباعة، والمبالغ المحصلة لحظة بلحظة");
             
-            var btnRefresh = Theme.MakeButton("🔄 تحديث تلقائي (15ث)", Theme.Success);
+            var btnRefresh = Theme.MakeButton("تحديث تلقائي (15ث)", Theme.Success);
             btnRefresh.Size = new Size(150, 32);
             btnRefresh.Location = new Point(20, 20);
             btnRefresh.Anchor = AnchorStyles.Top | AnchorStyles.Left;
@@ -121,7 +121,7 @@ namespace ChickenDist.Forms
             {
                 var lblNoData = new Label
                 {
-                    Text = "📭 لا توجد حمولات نشطة أو مناديب في السوق حالياً.",
+                    Text = "لا توجد حمولات نشطة أو مناديب في السوق حالياً.",
                     Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                     ForeColor = Theme.TextSub,
                     AutoSize = true,
@@ -180,7 +180,7 @@ namespace ChickenDist.Forms
             // اسم المندوب بخط عريض ذهبي
             var lblDriver = new Label
             {
-                Text = "🚚 " + driverName,
+                Text = "" + driverName,
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Theme.Accent,
                 Location = new Point(15, 15),

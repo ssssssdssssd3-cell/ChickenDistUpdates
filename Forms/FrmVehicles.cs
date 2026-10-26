@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -31,7 +31,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ====== Title Bar ======
-            var pnlTop = Theme.MakeTitleBar("🚗 المركبات", "سجل المركبات وأنواع العربيات للمصروفات والمهام اللوجستية");
+            var pnlTop = Theme.MakeTitleBar("المركبات", "سجل المركبات وأنواع العربيات للمصروفات والمهام اللوجستية");
             pnlTop.Dock = DockStyle.Top;
 
             // ====== Main Split: Left = details, Right = grid ======
@@ -91,7 +91,7 @@ namespace ChickenDist.Forms
             txtVehicleName   = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Height = 28 };
             txtLicensePlate  = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Height = 28 };
             txtNotes         = new TextBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Multiline = true, Height = 70 };
-            chkActive        = new CheckBox { Text = "نشطة ✅", ForeColor = Theme.TextMain, Font = Theme.FontBold, Checked = true, Dock = DockStyle.Fill };
+            chkActive        = new CheckBox { Text = "نشطة", ForeColor = Theme.TextMain, Font = Theme.FontBold, Checked = true, Dock = DockStyle.Fill };
 
             formTbl.RowStyles.Clear();
             addRow("نوع العربية:", txtVehicleType,  0);
@@ -122,9 +122,9 @@ namespace ChickenDist.Forms
                 Padding       = new Padding(0, 10, 0, 0)
             };
 
-            btnNewVehicle    = new Button { Text = "🆕 جديد",         Width = 90,  Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(60,100,60),   ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand, Margin = new Padding(0,0,6,0) };
-            btnSaveVehicle   = new Button { Text = "💾 حفظ المركبة",   Width = 140, Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent,                ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand, Margin = new Padding(0,0,6,0) };
-            btnDeleteVehicle = new Button { Text = "🗑 حذف",           Width = 80,  Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(140,40,40),   ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand };
+            btnNewVehicle    = new Button { Text = "جديد",         Width = 90,  Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(60,100,60),   ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand, Margin = new Padding(0,0,6,0) };
+            btnSaveVehicle   = new Button { Text = "حفظ المركبة",   Width = 140, Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent,                ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand, Margin = new Padding(0,0,6,0) };
+            btnDeleteVehicle = new Button { Text = "حذف",           Width = 80,  Height = 36, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(140,40,40),   ForeColor = Color.White, Font = Theme.FontBold, Cursor = Cursors.Hand };
             foreach (var b in new[] { btnNewVehicle, btnSaveVehicle, btnDeleteVehicle })
                 b.FlatAppearance.BorderSize = 0;
 
@@ -206,12 +206,12 @@ namespace ChickenDist.Forms
             int id = VehicleDAL.Save(_selectedVehicleID, txtVehicleType.Text.Trim(), txtVehicleName.Text.Trim(), txtLicensePlate.Text.Trim(), txtNotes.Text.Trim(), chkActive.Checked);
             if (id > 0)
             {
-                MessageBox.Show("✅ تم حفظ بيانات المركبة بنجاح!");
+                MessageBox.Show("تم حفظ بيانات المركبة بنجاح!");
                 LoadVehicles();
             }
             else
             {
-                MessageBox.Show("❌ فشل حفظ بيانات المركبة");
+                MessageBox.Show("فشل حفظ بيانات المركبة");
             }
         }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -324,7 +324,7 @@ namespace ChickenDist.Core
                         int footY = height - 70;
                         g.DrawLine(pThin, 40, footY, width - 40, footY);
                         g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfCenter);
-                        g.DrawString("✨ تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
+                        g.DrawString("تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
                     }
                 }
                 pages.Add(bmp);
@@ -493,7 +493,7 @@ namespace ChickenDist.Core
                         int footY = height - 70;
                         g.DrawLine(pThin, 40, footY, width - 40, footY);
                         g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfCenter);
-                        g.DrawString("✨ تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
+                        g.DrawString("تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
                     }
                 }
                 pages.Add(bmp);
@@ -684,7 +684,7 @@ namespace ChickenDist.Core
                         int footY = height - 70;
                         g.DrawLine(pThin, 40, footY, width - 40, footY);
                         g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfCenter);
-                        g.DrawString("✨ تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
+                        g.DrawString("تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
                     }
                 }
                 pages.Add(bmp);
@@ -851,7 +851,7 @@ namespace ChickenDist.Core
                         int footY = height - 70;
                         g.DrawLine(pThin, 40, footY, width - 40, footY);
                         g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfCenter);
-                        g.DrawString("✨ تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
+                        g.DrawString("تم إنشاء هذا التقرير آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
                     }
                 }
                 pages.Add(bmp);
@@ -956,7 +956,7 @@ namespace ChickenDist.Core
                         g.DrawString(comp, fTitle, Brushes.White, new RectangleF(30, y, width - 60, 40), sfCenter);
                         using (var brGold = new SolidBrush(cAccent))
                         {
-                            g.DrawString($"📋 بيان أسعار وعرض أسعار معتمد (Price Quotation)" + (!string.IsNullOrEmpty(quoteCode) ? $" - #{quoteCode}" : ""), fSub, brGold, new RectangleF(30, y + 44, width - 60, 28), sfCenter);
+                            g.DrawString($"بيان أسعار وعرض أسعار معتمد (Price Quotation)" + (!string.IsNullOrEmpty(quoteCode) ? $" - #{quoteCode}" : ""), fSub, brGold, new RectangleF(30, y + 44, width - 60, 28), sfCenter);
                         }
                         y += 105;
 
@@ -969,7 +969,7 @@ namespace ChickenDist.Core
                         g.DrawString($"فئة السعر: {priceTier}" + (!string.IsNullOrWhiteSpace(clientPhone) ? $" | الهاتف: {clientPhone}" : ""), fNorm, Brushes.Black, new RectangleF(width / 2 + 20, y + 42, width / 2 - 60, 28), sfRight);
 
                         g.DrawString($"تاريخ العرض: {DateTime.Now:yyyy/MM/dd hh:mm tt}", fBold, Brushes.DarkSlateGray, new RectangleF(50, y + 10, width / 2 - 80, 28), sfRight);
-                        g.DrawString("📌 بيان تقديري استرشادي - أسعار سارية حتى نفاذ الكمية", fSmall, Brushes.Gray, new RectangleF(50, y + 42, width / 2 - 80, 28), sfRight);
+                        g.DrawString("بيان تقديري استرشادي - أسعار سارية حتى نفاذ الكمية", fSmall, Brushes.Gray, new RectangleF(50, y + 42, width / 2 - 80, 28), sfRight);
 
                         y += 95;
 
@@ -1051,7 +1051,7 @@ namespace ChickenDist.Core
                         int footY = height - 70;
                         g.DrawLine(pThin, 40, footY, width - 40, footY);
                         g.DrawString($"صفحة {pageIdx + 1} من {totalPages}", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfCenter);
-                        g.DrawString("✨ تم إنشاء هذا البيان آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
+                        g.DrawString("تم إنشاء هذا البيان آلياً بواسطة Pro System", fSmall, Brushes.Gray, new RectangleF(40, footY + 10, width - 80, 24), sfRight);
                     }
                 }
                 pages.Add(bmp);

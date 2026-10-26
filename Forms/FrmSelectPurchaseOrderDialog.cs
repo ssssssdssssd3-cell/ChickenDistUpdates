@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📋 استدعاء طلبية مشتريات معلقة إلى فاتورة الشراء";
+            this.Text = "استدعاء طلبية مشتريات معلقة إلى فاتورة الشراء";
             this.Size = new Size(1000, 620);
             this.MinimumSize = new Size(880, 500);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -53,7 +53,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "📋 استدعاء وتحويل طلبية مشتريات معلقة",
+                Text = "استدعاء وتحويل طلبية مشتريات معلقة",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -82,7 +82,7 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            var lblSearch = new Label { Text = "🔍 بحث:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 6, 2, 0) };
+            var lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 6, 2, 0) };
             txtSearch = new TextBox { Width = 220, Height = 26, Margin = new Padding(2, 4, 15, 4) };
             txtSearch.TextChanged += (s, e) => FilterOrders();
 
@@ -110,7 +110,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 8, 15, 8)
             };
 
-            btnSelect = Theme.MakeButton("✅ استدعاء وتعبئة الفاتورة", 0, 0, 190, 36, Color.FromArgb(5, 150, 105));
+            btnSelect = Theme.MakeButton("استدعاء وتعبئة الفاتورة", 0, 0, 190, 36, Color.FromArgb(5, 150, 105));
             btnSelect.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSelect.Dock = DockStyle.Left;
             btnSelect.Click += (s, e) => ConfirmSelection();
@@ -154,7 +154,7 @@ namespace ChickenDist.Forms
             var pnlPreview = new Panel { Dock = DockStyle.Fill, BackColor = Theme.BgCard, Padding = new Padding(8, 4, 8, 4) };
             lblPreviewTitle = new Label
             {
-                Text = "📦 الأصناف المتضمنة في الطلبية المحددة:",
+                Text = "الأصناف المتضمنة في الطلبية المحددة:",
                 Dock = DockStyle.Top,
                 Height = 24,
                 Font = Theme.FontBold,
@@ -192,13 +192,13 @@ namespace ChickenDist.Forms
         {
             dgvOrders.Columns.Clear();
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderID", HeaderText = "#", Width = 55, Visible = false });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderCode", HeaderText = "كود الطلبية 🔖", Width = 135, DefaultCellStyle = { Font = Theme.FontBold, Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderDate", HeaderText = "تاريخ الطلب 📅", Width = 140, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd hh:mm tt" } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "SupplierName", HeaderText = "المورد 👤", Width = 180 });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalItemsCount", HeaderText = "عدد الأصناف 📦", Width = 100, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderCode", HeaderText = "كود الطلبية", Width = 135, DefaultCellStyle = { Font = Theme.FontBold, Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OrderDate", HeaderText = "تاريخ الطلب", Width = 140, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd hh:mm tt" } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "SupplierName", HeaderText = "المورد", Width = 180 });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalItemsCount", HeaderText = "عدد الأصناف", Width = 100, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalQuantity", HeaderText = "إجمالي الكمية", Width = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2" } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalEstimatedCost", HeaderText = "التكلفة التقديرية 💰", Width = 125, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Status", HeaderText = "الحالة 📶", Width = 95, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(180, 83, 9) } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "TotalEstimatedCost", HeaderText = "التكلفة التقديرية", Width = 125, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Status", HeaderText = "الحالة", Width = 95, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(180, 83, 9) } });
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Notes", HeaderText = "الملاحظات", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
         }
 
@@ -243,7 +243,7 @@ namespace ChickenDist.Forms
             dgvItemsPreview.Rows.Clear();
             if (dgvOrders.CurrentRow == null)
             {
-                lblPreviewTitle.Text = "📦 لم يتم تحديد أي طلبية.";
+                lblPreviewTitle.Text = "لم يتم تحديد أي طلبية.";
                 return;
             }
 
@@ -254,7 +254,7 @@ namespace ChickenDist.Forms
             string orderCode = drv["OrderCode"]?.ToString() ?? "";
             string supName = drv["SupplierName"]?.ToString() ?? "";
 
-            lblPreviewTitle.Text = $"📦 أصناف الطلبية رقم [{orderCode}] للمورد [{supName}]:";
+            lblPreviewTitle.Text = $"أصناف الطلبية رقم [{orderCode}] للمورد [{supName}]:";
 
             var items = PurchaseOrderDAL.GetOrderItems(orderId);
             foreach (var item in items)

@@ -38,7 +38,7 @@ namespace ChickenDist.Forms
                 private void InitUI()
         {
             bool isCar = AppConfig.BusinessType == "CarService";
-            this.Text = _ticketID > 0 ? (isCar ? "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u062a\u0630\u0643\u0631\u0629 \u0627\u0644\u0635\u064a\u0627\u0646\u0629") : (isCar ? "\u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629 \u062c\u062f\u064a\u062f" : "\u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629 \u062c\u062f\u064a\u062f\u0629");
+            this.Text = _ticketID > 0 ? (isCar ? "\u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\u062a\u0639\u062f\u064a\u0644 \u062a\u0630\u0643\u0631\u0629 \u0627\u0644\u0635\u064a\u0627\u0646\u0629") : (isCar ? "\u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629 \u062c\u062f\u064a\u062f" : "\u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629 \u062c\u062f\u064a\u062f\u0629");
             this.Size = new Size(480, 580);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -48,7 +48,7 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
             this.BackColor = Theme.BgCard;
 
-            var pnlTitle = Theme.MakeTitleBar(_ticketID > 0 ? (isCar ? "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u062a\u0630\u0643\u0631\u0629 \u0627\u0644\u0635\u064a\u0627\u0646\u0629") : (isCar ? "\u2795 \u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629" : "\u2795 \u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629"), isCar ? "\u0625\u062f\u062e\u0627\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0633\u062a\u0644\u0627\u0645 \u0635\u064a\u0627\u0646\u0629 \u0627\u0644\u0633\u064a\u0627\u0631\u0629" : "\u0625\u062f\u062e\u0627\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062c\u0647\u0627\u0632 \u0648\u0627\u0644\u0639\u0645\u064a\u0644 \u0648\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0635\u064a\u0627\u0646\u0629");
+            var pnlTitle = Theme.MakeTitleBar(_ticketID > 0 ? (isCar ? "\u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\u062a\u0639\u062f\u064a\u0644 \u062a\u0630\u0643\u0631\u0629 \u0627\u0644\u0635\u064a\u0627\u0646\u0629") : (isCar ? "\u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629" : "\u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629"), isCar ? "\u0625\u062f\u062e\u0627\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0633\u062a\u0644\u0627\u0645 \u0635\u064a\u0627\u0646\u0629 \u0627\u0644\u0633\u064a\u0627\u0631\u0629" : "\u0625\u062f\u062e\u0627\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062c\u0647\u0627\u0632 \u0648\u0627\u0644\u0639\u0645\u064a\u0644 \u0648\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0635\u064a\u0627\u0646\u0629");
             this.Controls.Add(pnlTitle);
 
             int y = 80;
@@ -61,7 +61,7 @@ namespace ChickenDist.Forms
 
             var btnSearchClient = new Button
             {
-                Text = "ðŸ”",
+                Text = "بحث",
                 Location = new Point(20, y),
                 Size = new Size(35, 23),
                 FlatStyle = FlatStyle.Flat,
@@ -227,16 +227,16 @@ namespace ChickenDist.Forms
             y += 45;
 
             // أزرار الحفظ والواتساب والإلغاء
-            btnSave = Theme.MakeButton("💾 حفظ", 330, y, 120, 36, Theme.Accent);
+            btnSave = Theme.MakeButton("حفظ", 330, y, 120, 36, Theme.Accent);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            var btnWhatsApp = Theme.MakeButton("📱 واتساب للعميل", 170, y, 150, 36, Color.FromArgb(37, 211, 102));
+            var btnWhatsApp = Theme.MakeButton("واتساب للعميل", 170, y, 150, 36, Color.FromArgb(37, 211, 102));
             btnWhatsApp.ForeColor = Color.White;
             btnWhatsApp.Click += (s, e) => SendMaintenanceWhatsApp();
             this.Controls.Add(btnWhatsApp);
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 30, y, 130, 36, Color.FromArgb(100, 110, 120));
+            btnCancel = Theme.MakeButton("إلغاء", 30, y, 130, 36, Color.FromArgb(100, 110, 120));
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
         }
@@ -443,13 +443,13 @@ namespace ChickenDist.Forms
                     }
                 });
 
-                MessageBox.Show("✅ تم الحفظ بنجاح وتسجيل الحركة بالخزينة");
+                MessageBox.Show("تم الحفظ بنجاح وتسجيل الحركة بالخزينة");
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ فشل الحفظ: " + ex.Message);
+                MessageBox.Show("فشل الحفظ: " + ex.Message);
             }
         }
 
@@ -464,20 +464,20 @@ namespace ChickenDist.Forms
                 decimal cost = nudCost != null ? nudCost.Value : 0m;
 
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"🔧 *تحديث حالة كرت الصيانة - {AppConfig.CompanyName}*");
-                sb.AppendLine($"📄 *رقم الكرت/التذكرة:* #{_ticketID}");
-                sb.AppendLine($"👤 *العميل:* {clientName}");
-                sb.AppendLine($"📱 *الجهاز/المركبة:* {device}");
-                sb.AppendLine($"⚡ *حالة الصيانة:* {status}");
-                sb.AppendLine($"💵 *إجمالي التكلفة:* {cost:N2} ج");
-                sb.AppendLine("\nشكراً لتعاملكم معنا ونتمنى لكم يوماً سعيداً! 🙏");
+                sb.AppendLine($"*تحديث حالة كرت الصيانة - {AppConfig.CompanyName}*");
+                sb.AppendLine($"*رقم الكرت/التذكرة:* #{_ticketID}");
+                sb.AppendLine($"*العميل:* {clientName}");
+                sb.AppendLine($"*الجهاز/المركبة:* {device}");
+                sb.AppendLine($"*حالة الصيانة:* {status}");
+                sb.AppendLine($"*إجمالي التكلفة:* {cost:N2} ج");
+                sb.AppendLine("\nشكراً لتعاملكم معنا ونتمنى لكم يوماً سعيداً!");
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
                     phone,
                     sb.ToString(),
                     null,
-                    "📱 إرسال كرت الصيانة عبر الواتساب");
+                    "إرسال كرت الصيانة عبر الواتساب");
             }
             catch (Exception ex)
             {

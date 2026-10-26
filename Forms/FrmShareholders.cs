@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -46,7 +46,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🤝 إدارة الشركاء والمساهمين وحسابات رأس المال وتوزيع الأرباح";
+            this.Text = "إدارة الشركاء والمساهمين وحسابات رأس المال وتوزيع الأرباح";
             this.Size = new Size(1180, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -65,14 +65,14 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 6, 10, 6)
             };
 
-            pnlMetrics.Controls.Add(MakeMetricCard("💰 إجمالي رأس المال", out lblTotalCapVal, Theme.Primary));
-            pnlMetrics.Controls.Add(MakeMetricCard("👥 عدد الشركاء النشطين", out lblPartnerCountVal, Color.FromArgb(52, 152, 219)));
-            pnlMetrics.Controls.Add(MakeMetricCard("💸 إجمالي المسحوبات الشخصية", out lblTotalDrawingsVal, Theme.Danger));
-            pnlMetrics.Controls.Add(MakeMetricCard("📈 إجمالي الأرباح الموزعة", out lblTotalDividendsVal, Theme.Success));
+            pnlMetrics.Controls.Add(MakeMetricCard("إجمالي رأس المال", out lblTotalCapVal, Theme.Primary));
+            pnlMetrics.Controls.Add(MakeMetricCard("عدد الشركاء النشطين", out lblPartnerCountVal, Color.FromArgb(52, 152, 219)));
+            pnlMetrics.Controls.Add(MakeMetricCard("إجمالي المسحوبات الشخصية", out lblTotalDrawingsVal, Theme.Danger));
+            pnlMetrics.Controls.Add(MakeMetricCard("إجمالي الأرباح الموزعة", out lblTotalDividendsVal, Theme.Success));
 
             var btnGuide = new Button
             {
-                Text = "📖 شرح واستخدام الشاشة",
+                Text = "شرح واستخدام الشاشة",
                 Width = 175,
                 Height = 56,
                 BackColor = Color.FromArgb(124, 58, 237),
@@ -93,9 +93,9 @@ namespace ChickenDist.Forms
                 Font = Theme.FontMain
             };
 
-            tabPartners = new TabPage("👥 دليل الشركاء ورؤوس الأموال") { BackColor = Theme.BgMain };
-            tabStatement = new TabPage("📊 كشف حساب وحركات الشريك") { BackColor = Theme.BgMain };
-            tabDividends = new TabPage("💰 محرك احتساب وتوزيع وصرف الأرباح") { BackColor = Theme.BgMain };
+            tabPartners = new TabPage("دليل الشركاء ورؤوس الأموال") { BackColor = Theme.BgMain };
+            tabStatement = new TabPage("كشف حساب وحركات الشريك") { BackColor = Theme.BgMain };
+            tabDividends = new TabPage("محرك احتساب وتوزيع وصرف الأرباح") { BackColor = Theme.BgMain };
 
             BuildPartnersTab(tabPartners);
             BuildStatementTab(tabStatement);
@@ -171,11 +171,11 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnAddPartner = Theme.MakeButton("➕ إضافة شريك جديد", 0, 0, 150, 32, Theme.Primary);
+            btnAddPartner = Theme.MakeButton("إضافة شريك جديد", 0, 0, 150, 32, Theme.Primary);
             btnAddPartner.Click += (s, e) => OpenPartnerEditor(0);
             pnlTop.Controls.Add(btnAddPartner);
 
-            btnPrintPartners = Theme.MakeButton("🖨️ طباعة دليل الشركاء", 0, 0, 150, 32, Theme.Secondary);
+            btnPrintPartners = Theme.MakeButton("طباعة دليل الشركاء", 0, 0, 150, 32, Theme.Secondary);
             btnPrintPartners.Click += BtnPrintPartners_Click;
             pnlTop.Controls.Add(btnPrintPartners);
 
@@ -189,19 +189,19 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnEditPartner = Theme.MakeButton("✏️ تعديل البيانات", 0, 0, 120, 32, Theme.Accent);
+            btnEditPartner = Theme.MakeButton("تعديل البيانات", 0, 0, 120, 32, Theme.Accent);
             btnEditPartner.Click += (s, e) => { if (GetSelectedPartnerID() > 0) OpenPartnerEditor(GetSelectedPartnerID()); };
 
-            btnDepositCap = Theme.MakeButton("💰 إيداع رأس مال", 0, 0, 130, 32, Theme.Success);
+            btnDepositCap = Theme.MakeButton("إيداع رأس مال", 0, 0, 130, 32, Theme.Success);
             btnDepositCap.Click += (s, e) => OpenQuickTransDialog("CapitalDeposit");
 
-            btnPartnerDrawing = Theme.MakeButton("💸 مسحوبات شخصية", 0, 0, 135, 32, Theme.Danger);
+            btnPartnerDrawing = Theme.MakeButton("مسحوبات شخصية", 0, 0, 135, 32, Theme.Danger);
             btnPartnerDrawing.Click += (s, e) => OpenQuickTransDialog("PersonalDrawing");
 
-            btnLiquidatePartner = Theme.MakeButton("🤝 تصفية وخروج شريك", 0, 0, 160, 32, Color.FromArgb(190, 60, 30));
+            btnLiquidatePartner = Theme.MakeButton("تصفية وخروج شريك", 0, 0, 160, 32, Color.FromArgb(190, 60, 30));
             btnLiquidatePartner.Click += (s, e) => OpenLiquidationDialog();
 
-            btnPartnerStatement = Theme.MakeButton("📊 كشف الحساب", 0, 0, 120, 32, Color.FromArgb(70, 70, 70));
+            btnPartnerStatement = Theme.MakeButton("كشف الحساب", 0, 0, 120, 32, Color.FromArgb(70, 70, 70));
             btnPartnerStatement.Click += (s, e) =>
             {
                 int pid = GetSelectedPartnerID();
@@ -212,7 +212,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnDeletePartner = Theme.MakeButton("🗑️ حذف", 0, 0, 85, 32, Color.FromArgb(153, 27, 27));
+            btnDeletePartner = Theme.MakeButton("حذف", 0, 0, 85, 32, Color.FromArgb(153, 27, 27));
             btnDeletePartner.Click += BtnDeletePartner_Click;
 
             pnlBottom.Controls.AddRange(new Control[] { btnEditPartner, btnDepositCap, btnPartnerDrawing, btnLiquidatePartner, btnPartnerStatement, btnDeletePartner });
@@ -286,7 +286,7 @@ namespace ChickenDist.Forms
         {
             using (var dlg = new Form())
             {
-                dlg.Text = partnerID > 0 ? "✏️ تعديل بيانات الشريك وحصته" : "➕ إضافة شريك مساهم جديد";
+                dlg.Text = partnerID > 0 ? "تعديل بيانات الشريك وحصته" : "إضافة شريك مساهم جديد";
                 dlg.Size = new Size(500, 620);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -379,12 +379,12 @@ namespace ChickenDist.Forms
                         decimal diff = curCap - originalCap;
                         if (diff > 0)
                         {
-                            lblCapDiff.Text = $"🟢 زيادة برأس المال (+{diff:N2} ج): سيتم توريد الفرق للخزينة المحددة.";
+                            lblCapDiff.Text = $"زيادة برأس المال (+{diff:N2} ج): سيتم توريد الفرق للخزينة المحددة.";
                             lblCapDiff.ForeColor = Color.DarkGreen;
                         }
                         else if (diff < 0)
                         {
-                            lblCapDiff.Text = $"🔴 تخفيض برأس المال (-{Math.Abs(diff):N2} ج): سيتم صرف الفرق للشريك من الخزينة المحددة.";
+                            lblCapDiff.Text = $"تخفيض برأس المال (-{Math.Abs(diff):N2} ج): سيتم صرف الفرق للشريك من الخزينة المحددة.";
                             lblCapDiff.ForeColor = Color.Firebrick;
                         }
                         else
@@ -395,12 +395,12 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        lblCapDiff.Text = curCap > 0 ? $"🟢 سيتم توريد رأس المال المبدئي ({curCap:N2} ج) إلى الخزينة المحددة." : "رأس مال مبدئي (0.00 ج) بدون إيداع نقدي.";
+                        lblCapDiff.Text = curCap > 0 ? $"سيتم توريد رأس المال المبدئي ({curCap:N2} ج) إلى الخزينة المحددة." : "رأس مال مبدئي (0.00 ج) بدون إيداع نقدي.";
                         lblCapDiff.ForeColor = curCap > 0 ? Color.DarkGreen : Color.DarkSlateGray;
                     }
                 };
 
-                var btnSave = Theme.MakeButton("💾 حفظ بيانات وتأثير الخزينة", 210, y, 250, 38, Theme.Success);
+                var btnSave = Theme.MakeButton("حفظ بيانات وتأثير الخزينة", 210, y, 250, 38, Theme.Success);
                 var btnCancel = Theme.MakeButton("إلغاء", 20, y, 100, 38, Color.FromArgb(100, 116, 139));
                 btnCancel.Click += (s, e) => dlg.Close();
 
@@ -414,7 +414,7 @@ namespace ChickenDist.Forms
                         ShareholdersDAL.SavePartner(partnerID, txtCode.Text.Trim(), txtName.Text.Trim(), txtPhone.Text.Trim(),
                             "", nudPct.Value, cap, true, txtNotes.Text.Trim(), Session.EmpID, selectedSafeID);
 
-                        MessageBox.Show("✅ تم حفظ بيانات الشريك وتحديث رصيد الخزينة والحسابات بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم حفظ بيانات الشريك وتحديث رصيد الخزينة والحسابات بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         dlg.DialogResult = DialogResult.OK;
                         dlg.Close();
                     }
@@ -442,7 +442,7 @@ namespace ChickenDist.Forms
             var r = ShareholdersDAL.GetPartnerByID(pid);
             if (r == null) return;
 
-            string title = transType == "CapitalDeposit" ? "💰 إيداع وتوريد رأس مال للشريك" : "💸 تسجيل مسحوبات شخصية للشريك";
+            string title = transType == "CapitalDeposit" ? "إيداع وتوريد رأس مال للشريك" : "تسجيل مسحوبات شخصية للشريك";
 
             using (var dlg = new Form())
             {
@@ -477,7 +477,7 @@ namespace ChickenDist.Forms
                 var txtNotes = new TextBox { Location = new Point(20, 164), Width = 380, Height = 45, Multiline = true, Text = transType == "CapitalDeposit" ? "توريد رأس مال إضافي للشريك" : "مسحوبات شخصية للشريك" };
                 dlg.Controls.Add(txtNotes);
 
-                var btnSave = Theme.MakeButton("✅ تنفيذ وتأثير الخزينة", 190, 230, 210, 36, Theme.Success);
+                var btnSave = Theme.MakeButton("تنفيذ وتأثير الخزينة", 190, 230, 210, 36, Theme.Success);
                 btnSave.Click += (s, ev) =>
                 {
                     try
@@ -504,7 +504,7 @@ namespace ChickenDist.Forms
                         }
 
                         ShareholdersDAL.AddPartnerTransaction(pid, transType, dr, cr, txtNotes.Text.Trim(), safeID, null, Session.EmpID);
-                        MessageBox.Show("✅ تم تسجيل الحركة والتأثير على الخزينة ورصيد الشريك بنجاح.", "تمت العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تسجيل الحركة والتأثير على الخزينة ورصيد الشريك بنجاح.", "تمت العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         dlg.DialogResult = DialogResult.OK;
                         dlg.Close();
                     }
@@ -542,7 +542,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = $"🤝 تصفية حساب وخروج الشريك / المساهم [{pName}]";
+                dlg.Text = $"تصفية حساب وخروج الشريك / المساهم [{pName}]";
                 dlg.Size = new Size(520, 510);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -559,11 +559,11 @@ namespace ChickenDist.Forms
                     BackColor = Color.FromArgb(240, 243, 248),
                     BorderStyle = BorderStyle.FixedSingle
                 };
-                pnlSummaryBox.Controls.Add(new Label { Text = $"👤 اسم الشريك: {pName}", Location = new Point(10, 8), AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) });
-                pnlSummaryBox.Controls.Add(new Label { Text = $"💰 رأس المال المكتتب: {cap:N2} ج    |    📈 الرصيد الجاري الحالي: {bal:N2} ج", Location = new Point(10, 36), AutoSize = true, Font = Theme.FontMain });
+                pnlSummaryBox.Controls.Add(new Label { Text = $"اسم الشريك: {pName}", Location = new Point(10, 8), AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) });
+                pnlSummaryBox.Controls.Add(new Label { Text = $"رأس المال المكتتب: {cap:N2} ج    |    الرصيد الجاري الحالي: {bal:N2} ج", Location = new Point(10, 36), AutoSize = true, Font = Theme.FontMain });
                 var lblEntitle = new Label
                 {
-                    Text = $"💵 صافي إجمالي المستحق للشريك: {totalEntitlement:N2} ج",
+                    Text = $"صافي إجمالي المستحق للشريك: {totalEntitlement:N2} ج",
                     Location = new Point(10, 64),
                     AutoSize = true,
                     Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -615,7 +615,7 @@ namespace ChickenDist.Forms
 
                 var chkPrint = new CheckBox
                 {
-                    Text = "🖨️ طباعة سند صرف تصفية ومخالصة مالية فورية بعد الحفظ",
+                    Text = "طباعة سند صرف تصفية ومخالصة مالية فورية بعد الحفظ",
                     Location = new Point(25, y),
                     AutoSize = true,
                     Checked = true,
@@ -625,7 +625,7 @@ namespace ChickenDist.Forms
                 dlg.Controls.Add(chkPrint);
                 y += 35;
 
-                var btnExecute = Theme.MakeButton("✅ اعتماد التصفية والصرف والخروج", 220, y, 260, 38, Color.FromArgb(180, 40, 20));
+                var btnExecute = Theme.MakeButton("اعتماد التصفية والصرف والخروج", 220, y, 260, 38, Color.FromArgb(180, 40, 20));
                 var btnCancel = Theme.MakeButton("إلغاء", 20, y, 100, 38, Color.FromArgb(100, 116, 139));
                 btnCancel.Click += (s, e) => dlg.Close();
 
@@ -650,7 +650,7 @@ namespace ChickenDist.Forms
                         }
                     }
 
-                    string confirmMsg = $"⚠️ تحذير تصفية وتخارج:\n\nهل أنت متأكد من تصفية الشريك [{pName}] بالكامل؟\n" +
+                    string confirmMsg = $"تحذير تصفية وتخارج:\n\nهل أنت متأكد من تصفية الشريك [{pName}] بالكامل؟\n" +
                                        $"- سيتم صرف مبلغ ({payout:N2} ج) نقداً من الخزينة.\n" +
                                        $"- سيتم تصفير حصة ورأس مال الشريك ورصيده الجاري.\n" +
                                        $"- سيتم تحويل حالة الشريك إلى (غير نشط / متخارج).\n\nهل ترغب في الاستمرار؟";
@@ -661,7 +661,7 @@ namespace ChickenDist.Forms
                         {
                             ShareholdersDAL.LiquidatePartnerAccount(pid, payout, safeID, txtNotes.Text.Trim(), Session.EmpID);
 
-                            MessageBox.Show("✅ تم اعتماد وتوثيق تصفية الشريك بنجاح، وخصم المبلغ من الخزينة وتصفير حسابه.", "تمت التصفية بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("تم اعتماد وتوثيق تصفية الشريك بنجاح، وخصم المبلغ من الخزينة وتصفير حسابه.", "تمت التصفية بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                             if (chkPrint.Checked)
                             {
@@ -801,7 +801,7 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            pnlTop.Controls.Add(new Label { Text = "👤 اختر الشريك:", AutoSize = true, Margin = new Padding(3, 7, 0, 0), Font = Theme.FontBold });
+            pnlTop.Controls.Add(new Label { Text = "اختر الشريك:", AutoSize = true, Margin = new Padding(3, 7, 0, 0), Font = Theme.FontBold });
             cboStatementPartner = new ComboBox { Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, Margin = new Padding(3, 4, 10, 0) };
             cboStatementPartner.SelectedIndexChanged += (s, e) => LoadStatementGrid();
             pnlTop.Controls.Add(cboStatementPartner);
@@ -814,15 +814,15 @@ namespace ChickenDist.Forms
             dtpTo = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today, Margin = new Padding(3, 4, 10, 0) };
             pnlTop.Controls.Add(dtpTo);
 
-            btnRefreshStmt = Theme.MakeButton("🔄 عرض", 0, 0, 90, 30, Theme.Primary);
+            btnRefreshStmt = Theme.MakeButton("عرض", 0, 0, 90, 30, Theme.Primary);
             btnRefreshStmt.Click += (s, e) => LoadStatementGrid();
             pnlTop.Controls.Add(btnRefreshStmt);
 
-            btnAddTrans = Theme.MakeButton("➕ تسجيل حركة", 0, 0, 130, 30, Theme.Accent);
+            btnAddTrans = Theme.MakeButton("تسجيل حركة", 0, 0, 130, 30, Theme.Accent);
             btnAddTrans.Click += (s, e) => OpenQuickTransDialog("CapitalDeposit");
             pnlTop.Controls.Add(btnAddTrans);
 
-            btnPrintStmt = Theme.MakeButton("🖨️ طباعة كشف الحساب", 0, 0, 160, 30, Theme.Secondary);
+            btnPrintStmt = Theme.MakeButton("طباعة كشف الحساب", 0, 0, 160, 30, Theme.Secondary);
             btnPrintStmt.Click += BtnPrintStmt_Click;
             pnlTop.Controls.Add(btnPrintStmt);
 
@@ -945,7 +945,7 @@ namespace ChickenDist.Forms
             var pnlRight = new Panel { Dock = DockStyle.Right, Width = 380, BackColor = Theme.BgCard, Padding = new Padding(15), AutoScroll = true };
             int y = 10;
 
-            pnlRight.Controls.Add(new Label { Text = "📅 تحديد فترة احتساب الأرباح:", Location = new Point(190, y), AutoSize = true, Font = Theme.FontBold });
+            pnlRight.Controls.Add(new Label { Text = "تحديد فترة احتساب الأرباح:", Location = new Point(190, y), AutoSize = true, Font = Theme.FontBold });
             y += 24;
 
             pnlRight.Controls.Add(new Label { Text = "من:", Location = new Point(340, y), AutoSize = true });
@@ -955,7 +955,7 @@ namespace ChickenDist.Forms
             pnlRight.Controls.AddRange(new Control[] { dtpDivFrom, dtpDivTo });
             y += 38;
 
-            btnCalculateProfit = Theme.MakeButton("⚡ جلب صافي أرباح المنشأة المحققة", 15, y, 350, 36, Theme.Primary);
+            btnCalculateProfit = Theme.MakeButton("جلب صافي أرباح المنشأة المحققة", 15, y, 350, 36, Theme.Primary);
             btnCalculateProfit.Click += (s, e) =>
             {
                 decimal profit = ShareholdersDAL.CalculateBusinessNetProfit(dtpDivFrom.Value.Date, dtpDivTo.Value.Date.AddDays(1).AddSeconds(-1));
@@ -977,7 +977,7 @@ namespace ChickenDist.Forms
             pnlRight.Controls.Add(txtRetainedPct);
             y += 55;
 
-            pnlRight.Controls.Add(new Label { Text = "💰 المبلغ الصافي الموزع على الشركاء (ج):", Location = new Point(120, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Success });
+            pnlRight.Controls.Add(new Label { Text = "المبلغ الصافي الموزع على الشركاء (ج):", Location = new Point(120, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Success });
             txtDistributedAmt = new TextBox { Location = new Point(15, y + 20), Width = 350, Font = new Font("Segoe UI", 12f, FontStyle.Bold), Text = "0.00", ForeColor = Color.DarkGreen, TextAlign = HorizontalAlignment.Center };
             pnlRight.Controls.Add(txtDistributedAmt);
             y += 58;
@@ -987,7 +987,7 @@ namespace ChickenDist.Forms
             pnlRight.Controls.Add(txtDivNotes);
             y += 72;
 
-            btnPreviewDividends = Theme.MakeButton("⚡ احتساب نصيب كل شريك", 15, y, 350, 36, Color.FromArgb(79, 70, 229));
+            btnPreviewDividends = Theme.MakeButton("احتساب نصيب كل شريك", 15, y, 350, 36, Color.FromArgb(79, 70, 229));
             btnPreviewDividends.Click += (s, e) => RunDividendsPreview();
             pnlRight.Controls.Add(btnPreviewDividends);
 
@@ -1001,13 +1001,13 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnPostDividends = Theme.MakeButton("💾 اعتماد وتوزيع الأرباح على حسابات الشركاء", 0, 0, 290, 32, Theme.Success);
+            btnPostDividends = Theme.MakeButton("اعتماد وتوزيع الأرباح على حسابات الشركاء", 0, 0, 290, 32, Theme.Success);
             btnPostDividends.Click += BtnPostDividends_Click;
 
-            btnDisburseDividends = Theme.MakeButton("💵 صرف أرباح نقدي للشريك من الخزينة", 0, 0, 240, 32, Theme.Primary);
+            btnDisburseDividends = Theme.MakeButton("صرف أرباح نقدي للشريك من الخزينة", 0, 0, 240, 32, Theme.Primary);
             btnDisburseDividends.Click += BtnDisburseDividends_Click;
 
-            btnPrintDivReport = Theme.MakeButton("🖨️ طباعة محضر التوزيع", 0, 0, 160, 32, Theme.Secondary);
+            btnPrintDivReport = Theme.MakeButton("طباعة محضر التوزيع", 0, 0, 160, 32, Theme.Secondary);
             btnPrintDivReport.Click += BtnPrintDivReport_Click;
 
             pnlBottom.Controls.AddRange(new Control[] { btnPostDividends, btnDisburseDividends, btnPrintDivReport });
@@ -1091,7 +1091,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "⚖️ اعتماد وترحيل وتوزيع الأرباح";
+                dlg.Text = "اعتماد وترحيل وتوزيع الأرباح";
                 dlg.Size = new Size(500, 380);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -1115,7 +1115,7 @@ namespace ChickenDist.Forms
 
                 var rbDisburseCash = new RadioButton
                 {
-                    Text = "💵 صرف نقدي فوري (خصم إجمالي مبالغ الأرباح من الخزينة الآن وسداد الشركاء)",
+                    Text = "صرف نقدي فوري (خصم إجمالي مبالغ الأرباح من الخزينة الآن وسداد الشركاء)",
                     Location = new Point(25, y),
                     Width = 440,
                     Checked = true,
@@ -1127,7 +1127,7 @@ namespace ChickenDist.Forms
 
                 var rbLedgerOnly = new RadioButton
                 {
-                    Text = "📝 ترحيل دفتري فقط (إضافة كأرصدة دائنة في الحسابات الجارية للشركاء دون صرف من الخزينة)",
+                    Text = "ترحيل دفتري فقط (إضافة كأرصدة دائنة في الحسابات الجارية للشركاء دون صرف من الخزينة)",
                     Location = new Point(25, y),
                     Width = 440,
                     Checked = false,
@@ -1160,7 +1160,7 @@ namespace ChickenDist.Forms
                 dlg.Controls.Add(pnlSafeSelect);
                 y += 85;
 
-                var btnConfirm = Theme.MakeButton("✅ اعتماد التوزيع الآن", 220, y, 240, 38, Theme.Success);
+                var btnConfirm = Theme.MakeButton("اعتماد التوزيع الآن", 220, y, 240, 38, Theme.Success);
                 var btnCancel = Theme.MakeButton("إلغاء", 20, y, 100, 38, Color.FromArgb(100, 116, 139));
                 btnCancel.Click += (s, ev) => dlg.Close();
 
@@ -1186,11 +1186,11 @@ namespace ChickenDist.Forms
                         if (rbDisburseCash.Checked)
                         {
                             ShareholdersDAL.DisburseAllDividendsFromSafe(distID, safeID, txtDivNotes.Text.Trim(), Session.EmpID);
-                            MessageBox.Show($"✅ تم اعتماد وترحيل توزيع الأرباح وصرفها نقداً بنجاح برقم جلسة [{distID}].\nتم خصم إجمالي الأرباح ({dist:N2} ج) من الخزينة المحددة.", "تم التوزيع والصرف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show($"تم اعتماد وترحيل توزيع الأرباح وصرفها نقداً بنجاح برقم جلسة [{distID}].\nتم خصم إجمالي الأرباح ({dist:N2} ج) من الخزينة المحددة.", "تم التوزيع والصرف", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                         else
                         {
-                            MessageBox.Show($"✅ تم اعتماد وترحيل توزيع الأرباح دفترياً بنجاح برقم جلسة [{distID}].\nتمت إضافة الأرباح إلى الحسابات الجارية للشركاء دون خصم من الخزينة.", "تم الاعتماد الدفتري", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show($"تم اعتماد وترحيل توزيع الأرباح دفترياً بنجاح برقم جلسة [{distID}].\nتمت إضافة الأرباح إلى الحسابات الجارية للشركاء دون خصم من الخزينة.", "تم الاعتماد الدفتري", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
 
                         dlg.DialogResult = DialogResult.OK;
@@ -1227,7 +1227,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = $"💵 صرف أرباح نقدية للشريك [{name}]";
+                dlg.Text = $"صرف أرباح نقدية للشريك [{name}]";
                 dlg.Size = new Size(450, 350);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -1257,7 +1257,7 @@ namespace ChickenDist.Forms
                 var txtNotes = new TextBox { Location = new Point(20, 168), Width = 390, Height = 45, Multiline = true, Text = $"صرف أرباح نقدية للشريك [{name}] عن فترة {dtpDivFrom.Value:yyyy/MM/dd} إلى {dtpDivTo.Value:yyyy/MM/dd}" };
                 dlg.Controls.Add(txtNotes);
 
-                var btnSave = Theme.MakeButton("✅ صرف النقدية وخصم الخزينة", 180, 235, 230, 36, Theme.Success);
+                var btnSave = Theme.MakeButton("صرف النقدية وخصم الخزينة", 180, 235, 230, 36, Theme.Success);
                 btnSave.Click += (s, ev) =>
                 {
                     try
@@ -1278,7 +1278,7 @@ namespace ChickenDist.Forms
                         }
 
                         ShareholdersDAL.DisbursePartnerDividends(0, pid, amt, safeID, txtNotes.Text.Trim(), Session.EmpID);
-                        MessageBox.Show("✅ تم صرف الأرباح نقدياً وخصمها من الخزينة وحساب الشريك بنجاح.", "تم الصرف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم صرف الأرباح نقدياً وخصمها من الخزينة وحساب الشريك بنجاح.", "تم الصرف", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         dlg.DialogResult = DialogResult.OK;
                         dlg.Close();
                     }
@@ -1506,22 +1506,22 @@ namespace ChickenDist.Forms
         {
             new FrmGuideModal("دليل وشرح إدارة الشركاء والمساهمين وتوزيع الأرباح", rtb =>
             {
-                FrmGuideModal.AppendHeader1(rtb, "🤝 ما هو مديول الشركاء والمساهمين في النظام؟");
+                FrmGuideModal.AppendHeader1(rtb, "ما هو مديول الشركاء والمساهمين في النظام؟");
                 FrmGuideModal.AppendParagraph(rtb, "هذه الشاشة مخصصة لإدارة وضبط حقوق الملكية ورؤوس أموال الشركاء في المنشأة، وتسجيل مساهماتهم المالية، والمسحوبات الشخصية الدورية لكل شريك، واحتساب الأرباح المحققة وتوزيعها بنسب عادلة وصرفها نقدياً أو بنكياً بكل دقة وشفافية.");
 
-                FrmGuideModal.AppendHeader1(rtb, "👥 1. التبويب الأول: دليل الشركاء ورؤوس الأموال");
-                FrmGuideModal.AppendStep(rtb, "1", "إضافة شريك جديد (زر ➕ إضافة شريك):", 
+                FrmGuideModal.AppendHeader1(rtb, "1. التبويب الأول: دليل الشركاء ورؤوس الأموال");
+                FrmGuideModal.AppendStep(rtb, "1", "إضافة شريك جديد (زر إضافة شريك):", 
                     "تسجيل بيانات الشريك (الاسم، الهاتف، الرقم القومي)، وتحديد رأس المال المكتتب به، ونسبة الشراكة (تُحسب تلقائياً من إجمالي رأس مال المنشأة أو تُحدد يدوياً)، والرصيد الافتتاحي.");
-                FrmGuideModal.AppendStep(rtb, "2", "إيداع / زيادة رأس مال (زر 💰 إيداع رأس مال):", 
+                FrmGuideModal.AppendStep(rtb, "2", "إيداع / زيادة رأس مال (زر إيداع رأس مال):", 
                     "عند قيام الشريك بضخ مبالغ نقدية جديدة لزيادة حصته في النشاط، يتم توريد المبلغ للخزينة أو الحساب البنكي وزيادة رأس مال الشريك رسمياً.");
-                FrmGuideModal.AppendStep(rtb, "3", "مسحوبات شخصية للشريك (زر 💸 مسحوبات شريك):", 
+                FrmGuideModal.AppendStep(rtb, "3", "مسحوبات شخصية للشريك (زر مسحوبات شريك):", 
                     "تسجيل مبالغ نقدية يسحبها الشريك على ذمة الأرباح لمصاريفه الشخصية؛ يتم صرفها من الخزينة وتسجيلها كمديونية ومسحوبات في حسابه الجاري.");
-                FrmGuideModal.AppendStep(rtb, "4", "تصفية وتسوية حساب شريك (زر ⚖️ تصفية شريك):", 
+                FrmGuideModal.AppendStep(rtb, "4", "تصفية وتسوية حساب شريك (زر تصفية شريك):", 
                     "في حالة تخارج شريك أو إنهاء الشراكة، يتم حساب صافي مستحقاته (رأس المال + الأرباح المستحقة - المسحوبات) وصرفها وإيقاف حسابه.");
-                FrmGuideModal.AppendStep(rtb, "5", "طباعة قائمة الشركاء (زر 🖨️):", 
+                FrmGuideModal.AppendStep(rtb, "5", "طباعة قائمة الشركاء (زر):", 
                     "طباعة كشف مجمع بأسماء الشركاء وحصصهم ورؤوس أموالهم ونسبهم وصافي الأرصدة.");
 
-                FrmGuideModal.AppendHeader1(rtb, "📊 2. التبويب الثاني: كشف حساب وحركات الشريك");
+                FrmGuideModal.AppendHeader1(rtb, "2. التبويب الثاني: كشف حساب وحركات الشريك");
                 FrmGuideModal.AppendParagraph(rtb, "سجل مالي مفصل كحساب بنكي لكل شريك يوثق كافة معاملاته المالية بالتاريخ والوقت ورقم السند:");
                 FrmGuideModal.AppendStep(rtb, "1", "اختيار الشريك والفترة الزمنية:", 
                     "اختر اسم الشريك وحدد الفترة (من تاريخ / إلى تاريخ) ثم اضغط تحديث.");
@@ -1529,22 +1529,22 @@ namespace ChickenDist.Forms
                     "يعرض الكشف كافة الإيداعات (دائن)، والمسحوبات الشخصية (مدين)، والأرباح الدورية الموزعة (دائن)، وحركات الصرف النقدي.");
                 FrmGuideModal.AppendStep(rtb, "3", "صافي الرصيد الحالي:", 
                     "إذا كان الرصيد (له / دائن) فهذا يعني وجود مستحقات للشريك لم تُصرف بعد. وإذا كان الرصيد (عليه / مدين) فهذا يعني أنه سحب مبالغ تزيد عن أرباحه المستحقة.");
-                FrmGuideModal.AppendStep(rtb, "4", "طباعة كشف الحساب (زر 🖨️):", 
+                FrmGuideModal.AppendStep(rtb, "4", "طباعة كشف الحساب (زر):", 
                     "طباعة كشف حساب رسمي ومختوم لتسليمه للشريك لمراجعة ومطابقة الحسابات.");
 
-                FrmGuideModal.AppendHeader1(rtb, "💰 3. التبويب الثالث: محرك احتساب وتوزيع وصرف الأرباح");
+                FrmGuideModal.AppendHeader1(rtb, "3. التبويب الثالث: محرك احتساب وتوزيع وصرف الأرباح");
                 FrmGuideModal.AppendParagraph(rtb, "محرك ذكي ومحكم لاحتساب وتوزيع الأرباح السنوية أو الربع سنوية بخطوات قياسية:");
                 FrmGuideModal.AppendStep(rtb, "1", "تحديد فترة توزيع الأرباح:", 
                     "حدد بداية ونهاية الفترة المالية (مثلاً من 01/01/2026 إلى 31/12/2026).");
-                FrmGuideModal.AppendStep(rtb, "2", "جلب صافي الأرباح (زر 📈 جلب الأرباح):", 
+                FrmGuideModal.AppendStep(rtb, "2", "جلب صافي الأرباح (زر جلب الأرباح):", 
                     "يقوم النظام تلقائياً بقراءة صافي أرباح المنشأة من فواتير البيع والمصروفات والإيرادات خلال الفترة المحددة، مع إمكانية تعديل المبلغ يدوياً بالزيادة أو النقصان.");
                 FrmGuideModal.AppendStep(rtb, "3", "تحديد الأرباح المحتجزة / الاحتياطي:", 
                     "يمكنك تحديد نسبة مئوية (مثلاً 10% أو 20%) لحجزها كاحتياطي لتطوير النشاط وشراء بضاعة، ويقوم النظام باحتساب المبلغ الصافي القابل للتوزيع.");
-                FrmGuideModal.AppendStep(rtb, "4", "معاينة التوزيع (زر ⚡ معاينة التوزيع):", 
+                FrmGuideModal.AppendStep(rtb, "4", "معاينة التوزيع (زر معاينة التوزيع):", 
                     "يعرض جدولاً بنصيب كل شريك من الأرباح وفق نسبة مساهمته في رأس المال تماماً بالقرش والمليم.");
-                FrmGuideModal.AppendStep(rtb, "5", "ترحيل التوزيع (زر 💾 ترحيل الأرباح):", 
+                FrmGuideModal.AppendStep(rtb, "5", "ترحيل التوزيع (زر ترحيل الأرباح):", 
                     "يقيد الأرباح في الحسابات الجارية للشركاء ويُظهرها كأرباح مستحقة في كشف حساب كل شريك.");
-                FrmGuideModal.AppendStep(rtb, "6", "صرف الأرباح نقداً (زر 💵 صرف الأرباح):", 
+                FrmGuideModal.AppendStep(rtb, "6", "صرف الأرباح نقداً (زر صرف الأرباح):", 
                     "عند الرغبة في تسليم الشريك أرباحه نقداً، اضغط صرف الأرباح ليتم خصمها من الخزينة فوراً وتخفيض رصيد أرباحه المستحقة.");
 
                 FrmGuideModal.AppendTip(rtb, "يمكن لأي شريك معرفة رصيده وأرباحه ومسحوباته في أي لحظة من خلال كشف الحساب التفصيلي مع ضمان عدم تداخل الحسابات الشخصية مع أموال التجارة والتشغيل.");

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -128,57 +128,57 @@ namespace ChickenDist.Forms
 		private static readonly Dictionary<string, (string title, string desc)> ReportDescriptions = new Dictionary<string, (string title, string desc)>(StringComparer.OrdinalIgnoreCase)
 		{
 			// Sales
-			{ "DailySalesSummary", ("📅 تقرير المبيعات اليومية", "عرض ملخص إجمالي لمبيعات اليوم الحالي أو يوم محدد، ومجموع المبيعات النقدية والآجلة والفيزا، مع إجمالي الخصومات وصافي دخل اليومية.") },
-			{ "SalesByPeriod", ("📈 تقرير المبيعات خلال فترة", "مقارنة وتحليل حركة المبيعات وتطورها على مدار فترة زمنية محددة (أيام / أسابيع / شهور) مع الرسوم البيانية والإحصائيات.") },
-			{ "DetailedSales", ("🧾 سجل فواتير المبيعات", "استعراض ومراجعة كافة فواتير المبيعات الصادرة مع تفاصيل كل فاتورة وإمكانية إعادة الطباعة (A4 / ريسيت) أو الإرسال واتساب للعميل.") },
-			{ "DetailedSaleItems", ("📦 تفاصيل سطور وأصناف المبيعات", "حصر تفصيلي لكل صنف تم بيعه داخل الفواتير مع الكميات المباعة وسعر كل حركة ونسبة الخصم والإجمالي.") },
-			{ "SalesByProduct", ("📊 مبيعات الأصناف والربحية", "معرفة الأصناف الأكثر مبيعاً والأعلى تحقيقاً للأرباح، وحساب هامش ربح كل صنف ونسبته من إجمالي المبيعات.") },
-			{ "SalesByCategory", ("🏢 مبيعات المجموعات والأقسام", "تحليل المبيعات حسب التصنيفات والأقسام لمعرفة أي الأقسام الأكثر رواجاً ونشاطاً في المبيعات.") },
-			{ "SalesByClient", ("👥 مبيعات العملاء والمسدد", "كشف مبيعات وسحوبات كل عميل على حدة مع إجمالي المبالغ المسددة والمتبقية كديون ومعدل تكرار الشراء.") },
-			{ "SalesByUser", ("👔 مبيعات المستخدمين والكاشير", "تقييم إنتاجية ومبيعات كل مستخدم أو كاشير أو بائع، ومتابعة حركات البيع الصادرة من كل موظف.") },
-			{ "SalesByPaymentMethod", ("💳 طرق الدفع والتحصيل", "تفصيل وتوزيع المبيعات حسب طريقة التحصيل (نقدي / فيزا وبطاقات / آجل / دفع مختلط) لمطابقة النقدية والخزائن.") },
-			{ "SalesDiscounts", ("🏷️ الخصومات والتخفيضات", "حصر شامل لجميع الخصومات والتخفيضات الممنوحة على الفواتير أو الأصناف لمعرفة التكلفة الإجمالية للخصومات.") },
-			{ "DetailedReturns", ("🔄 مرتجعات المبيعات", "متابعة وتحليل فواتير وأصناف مرتجع المبيعات وأسباب الإرجاع وطريقة رد المبالغ للعملاء.") },
-			{ "SalesProfitability", ("💰 أرباح وهامش المبيعات", "حساب صافي الأرباح المحققة بعد خصم تكلفة الشراء والخصومات، وتحديد نسبة الربحية الدقيقة للمبيعات.") },
-			{ "StagnantProducts", ("💤 الأصناف الراكدة (مشتراة ولم تُباع)", "كشف الأصناف المخزنة التي لم تسجل أي حركة بيع خلال الفترة المحددة للمساعدة في التصفية وتنشيط المبيعات.") },
+			{ "DailySalesSummary", ("تقرير المبيعات اليومية", "عرض ملخص إجمالي لمبيعات اليوم الحالي أو يوم محدد، ومجموع المبيعات النقدية والآجلة والفيزا، مع إجمالي الخصومات وصافي دخل اليومية.") },
+			{ "SalesByPeriod", ("تقرير المبيعات خلال فترة", "مقارنة وتحليل حركة المبيعات وتطورها على مدار فترة زمنية محددة (أيام / أسابيع / شهور) مع الرسوم البيانية والإحصائيات.") },
+			{ "DetailedSales", ("سجل فواتير المبيعات", "استعراض ومراجعة كافة فواتير المبيعات الصادرة مع تفاصيل كل فاتورة وإمكانية إعادة الطباعة (A4 / ريسيت) أو الإرسال واتساب للعميل.") },
+			{ "DetailedSaleItems", ("تفاصيل سطور وأصناف المبيعات", "حصر تفصيلي لكل صنف تم بيعه داخل الفواتير مع الكميات المباعة وسعر كل حركة ونسبة الخصم والإجمالي.") },
+			{ "SalesByProduct", ("مبيعات الأصناف والربحية", "معرفة الأصناف الأكثر مبيعاً والأعلى تحقيقاً للأرباح، وحساب هامش ربح كل صنف ونسبته من إجمالي المبيعات.") },
+			{ "SalesByCategory", ("مبيعات المجموعات والأقسام", "تحليل المبيعات حسب التصنيفات والأقسام لمعرفة أي الأقسام الأكثر رواجاً ونشاطاً في المبيعات.") },
+			{ "SalesByClient", ("مبيعات العملاء والمسدد", "كشف مبيعات وسحوبات كل عميل على حدة مع إجمالي المبالغ المسددة والمتبقية كديون ومعدل تكرار الشراء.") },
+			{ "SalesByUser", ("مبيعات المستخدمين والكاشير", "تقييم إنتاجية ومبيعات كل مستخدم أو كاشير أو بائع، ومتابعة حركات البيع الصادرة من كل موظف.") },
+			{ "SalesByPaymentMethod", ("طرق الدفع والتحصيل", "تفصيل وتوزيع المبيعات حسب طريقة التحصيل (نقدي / فيزا وبطاقات / آجل / دفع مختلط) لمطابقة النقدية والخزائن.") },
+			{ "SalesDiscounts", ("الخصومات والتخفيضات", "حصر شامل لجميع الخصومات والتخفيضات الممنوحة على الفواتير أو الأصناف لمعرفة التكلفة الإجمالية للخصومات.") },
+			{ "DetailedReturns", ("مرتجعات المبيعات", "متابعة وتحليل فواتير وأصناف مرتجع المبيعات وأسباب الإرجاع وطريقة رد المبالغ للعملاء.") },
+			{ "SalesProfitability", ("أرباح وهامش المبيعات", "حساب صافي الأرباح المحققة بعد خصم تكلفة الشراء والخصومات، وتحديد نسبة الربحية الدقيقة للمبيعات.") },
+			{ "StagnantProducts", ("الأصناف الراكدة (مشتراة ولم تُباع)", "كشف الأصناف المخزنة التي لم تسجل أي حركة بيع خلال الفترة المحددة للمساعدة في التصفية وتنشيط المبيعات.") },
 
 			// Purchases
-			{ "DailyPurchasesSummary", ("📅 تقرير المشتريات اليومية", "ملخص مشتريات اليوم والتوريدات النقدية والآجلة وتكلفة البضاعة المشتراة.") },
-			{ "PurchasesByPeriod", ("📈 تقرير المشتريات خلال فترة", "تحليل ومتابعة المشتريات وتطور تكاليف التوريد خلال فترة محددة.") },
-			{ "DetailedPurchases", ("🧾 سجل فواتير المشتريات", "استعراض سجل فواتير الشراء وأرقامها والموردين ومراجعة الأسعار وتفاصيل الفاتورة.") },
-			{ "DetailedPurchaseItems", ("📦 تفاصيل سطور وأصناف المشتريات", "حصر الأصناف المشتراة مع الكميات الواردة وأسعار الشراء وتكاليف التوريد.") },
-			{ "PurchasesBySupplier", ("🤝 مشتريات الموردين والمسدد", "حجم التعاملات والمشتريات لكل مورد مع إجمالي المسدد والمتبقي في الحساب.") },
-			{ "PurchasesByProduct", ("📊 مشتريات الأصناف ومتوسط التكلفة", "متابعة كميات شراء كل صنف ومتوسط تكلفة الشراء عبر التوريدات المختلفة.") },
-			{ "PurchasesByCategory", ("🏢 مشتريات الأقسام والتصنيفات", "توزيع تكاليف المشتريات حسب الأقسام والتصنيفات المخزنية.") },
-			{ "DetailedPurchaseReturns", ("🔄 مرتجعات المشتريات", "حصر البضاعة المسترجعة للموردين واسترداد قيمتها نقداً أو خصماً من الرصيد.") },
-			{ "SupplierPayments", ("💵 المدفوعات للموردين والتسويات", "سجل سندات الصرف والتحويلات المالية المسددة للموردين لتسوية الأرصدة.") },
-			{ "PurchasePricesTracking", ("📈 أسعار الشراء وتغير الأسعار", "مراقبة تقلبات وتغيرات أسعار شراء الأصناف عبر الزمن لتفادي ارتفاع التكاليف.") },
-			{ "CreditPurchases", ("⏳ المشتريات الآجلة والمديونيات", "حصر المشتريات الآجلة ومتابعة مواعيد استحقاق السداد للموردين.") },
-			{ "PurchaseBonusReport", ("🎁 تقرير بونص المشتريات والموردين", "متابعة وتحليل بونص المشتريات (الكميات المجانية الممنوحة من الموردين) ومعرفة أكثر الموردين تقديماً للبونص ونسبته وقيمته التقديرية.") },
+			{ "DailyPurchasesSummary", ("تقرير المشتريات اليومية", "ملخص مشتريات اليوم والتوريدات النقدية والآجلة وتكلفة البضاعة المشتراة.") },
+			{ "PurchasesByPeriod", ("تقرير المشتريات خلال فترة", "تحليل ومتابعة المشتريات وتطور تكاليف التوريد خلال فترة محددة.") },
+			{ "DetailedPurchases", ("سجل فواتير المشتريات", "استعراض سجل فواتير الشراء وأرقامها والموردين ومراجعة الأسعار وتفاصيل الفاتورة.") },
+			{ "DetailedPurchaseItems", ("تفاصيل سطور وأصناف المشتريات", "حصر الأصناف المشتراة مع الكميات الواردة وأسعار الشراء وتكاليف التوريد.") },
+			{ "PurchasesBySupplier", ("مشتريات الموردين والمسدد", "حجم التعاملات والمشتريات لكل مورد مع إجمالي المسدد والمتبقي في الحساب.") },
+			{ "PurchasesByProduct", ("مشتريات الأصناف ومتوسط التكلفة", "متابعة كميات شراء كل صنف ومتوسط تكلفة الشراء عبر التوريدات المختلفة.") },
+			{ "PurchasesByCategory", ("مشتريات الأقسام والتصنيفات", "توزيع تكاليف المشتريات حسب الأقسام والتصنيفات المخزنية.") },
+			{ "DetailedPurchaseReturns", ("مرتجعات المشتريات", "حصر البضاعة المسترجعة للموردين واسترداد قيمتها نقداً أو خصماً من الرصيد.") },
+			{ "SupplierPayments", ("المدفوعات للموردين والتسويات", "سجل سندات الصرف والتحويلات المالية المسددة للموردين لتسوية الأرصدة.") },
+			{ "PurchasePricesTracking", ("أسعار الشراء وتغير الأسعار", "مراقبة تقلبات وتغيرات أسعار شراء الأصناف عبر الزمن لتفادي ارتفاع التكاليف.") },
+			{ "CreditPurchases", ("المشتريات الآجلة والمديونيات", "حصر المشتريات الآجلة ومتابعة مواعيد استحقاق السداد للموردين.") },
+			{ "PurchaseBonusReport", ("تقرير بونص المشتريات والموردين", "متابعة وتحليل بونص المشتريات (الكميات المجانية الممنوحة من الموردين) ومعرفة أكثر الموردين تقديماً للبونص ونسبته وقيمته التقديرية.") },
 
 			// Financials & Shifts
-			{ "DailyClosing", ("📑 تقرير التقفيل اليومي", "مراجعة واعتماد إقفال اليومية ومطابقة النقدية الفعلية مع مبيعات البرنامج.") },
-			{ "ShiftsHistory", ("📊 سجل وتقارير الورديات", "استعراض تفاصيل الورديات المغلقة ومبيعات كل كاشير والعجز أو الزيادة في الدرج.") },
-			{ "ShiftVsCalendarComparison", ("⚖️ مقارنة الورديات بالأيام التقويمية", "مطابقة مبيعات الورديات مع التاريخ الفعلي لليوم لمنع أي تداخل بين الأيام.") },
-			{ "IncomeStatementAndProfitability", ("📊 قائمة الدخل والربحية", "قائمة الدخل الشاملة: المبيعات - تكلفة المبيعات - المصروفات = صافي الربح.") },
-			{ "OperatingExpenses", ("💸 تقرير مصروفات التشغيل", "حصر وتفصيل كافة المصروفات التشغيلية والنثرية والسيارات خلال الفترة مع إجمالي المبالغ وتصفية البحث.") },
-			{ "FinancialSummary", ("📊 الملخص المالي العام", "نظرة عامة وشاملة على الموقف المالي وحركة الخزائن والديون والأرباح.") },
+			{ "DailyClosing", ("تقرير التقفيل اليومي", "مراجعة واعتماد إقفال اليومية ومطابقة النقدية الفعلية مع مبيعات البرنامج.") },
+			{ "ShiftsHistory", ("سجل وتقارير الورديات", "استعراض تفاصيل الورديات المغلقة ومبيعات كل كاشير والعجز أو الزيادة في الدرج.") },
+			{ "ShiftVsCalendarComparison", ("مقارنة الورديات بالأيام التقويمية", "مطابقة مبيعات الورديات مع التاريخ الفعلي لليوم لمنع أي تداخل بين الأيام.") },
+			{ "IncomeStatementAndProfitability", ("قائمة الدخل والربحية", "قائمة الدخل الشاملة: المبيعات - تكلفة المبيعات - المصروفات = صافي الربح.") },
+			{ "OperatingExpenses", ("تقرير مصروفات التشغيل", "حصر وتفصيل كافة المصروفات التشغيلية والنثرية والسيارات خلال الفترة مع إجمالي المبالغ وتصفية البحث.") },
+			{ "FinancialSummary", ("الملخص المالي العام", "نظرة عامة وشاملة على الموقف المالي وحركة الخزائن والديون والأرباح.") },
 
 			// Clients & Drivers
-			{ "SalesByDriver", ("🚚 مبيعات المناديب والسيارات", "حجم مبيعات وتحصيلات كل مندوب وسيارة توزيع وعمولاتهم.") },
-			{ "ClientBalances", ("👥 أرصدة ومديونيات العملاء", "كشف كامل بأرصدة وديون جميع العملاء وإمكانية إرسال كشوف الحساب عبر واتساب.") },
-			{ "DebtAging", ("⏳ أعمار الديون", "تصنيف مديونيات العملاء حسب الفترة الزمنية (أقل من 30 يوم، 60 يوم، 90+ يوم) لمتابعة التحصيل.") },
-			{ "ClientProductSales", ("📊 مسحوبات العملاء من الأصناف", "تحليل الأصناف والكميات التي يسحبها كل عميل بانتظام.") },
-			{ "Handovers", ("📋 تسليم وتصفية المناديب", "متابعة حركات تسليم العهد والبضائع المحملة للمناديب وتصفيتها.") },
+			{ "SalesByDriver", ("مبيعات المناديب والسيارات", "حجم مبيعات وتحصيلات كل مندوب وسيارة توزيع وعمولاتهم.") },
+			{ "ClientBalances", ("أرصدة ومديونيات العملاء", "كشف كامل بأرصدة وديون جميع العملاء وإمكانية إرسال كشوف الحساب عبر واتساب.") },
+			{ "DebtAging", ("أعمار الديون", "تصنيف مديونيات العملاء حسب الفترة الزمنية (أقل من 30 يوم، 60 يوم، 90+ يوم) لمتابعة التحصيل.") },
+			{ "ClientProductSales", ("مسحوبات العملاء من الأصناف", "تحليل الأصناف والكميات التي يسحبها كل عميل بانتظام.") },
+			{ "Handovers", ("تسليم وتصفية المناديب", "متابعة حركات تسليم العهد والبضائع المحملة للمناديب وتصفيتها.") },
 
 			// Stores & Inventory
-			{ "ProductSerialsStock", ("📱 تقرير كميات وسيريلات الأجهزة", "جرد وتفاصيل الأجهزة والسيريلات والـ IMEI المتاحة والمباعة وتتبع حركتها وأسعارها.") },
-			{ "ProductQtyDetail", ("📦 تفاصيل أرصدة المخازن", "استعراض أرصدة وكميات الأصناف داخل كل مخزن مع مواقع الأرفف وحد الطلب.") },
-			{ "WastageLoss", ("🗑️ الهوالك والتالف", "سجل الأصناف التالفة والهالكة وأسباب التلف وتكلفتها الإجمالية.") },
-			{ "DetailedInventoryValuation", ("💰 تقييم بضاعة المخزن", "حساب القيمة المالية الإجمالية للمخزون بسعر التكلفة وسعر البيع المتوقع.") },
-			{ "SupplierItemActivity", ("📊 حركة أصناف الموردين", "متابعة حركة الأصناف الخاصة بكل مورد وتوريداتها ومبيعاتها.") },
-			{ "ExpiryReport", ("⏳ تواريخ الصلاحية", "كشف الأصناف القريبة من انتهاء الصلاحية لتصريفها قبل التلف.") },
-			{ "InventoryVariance", ("⚖️ عجز وفروق الجرد", "مقارنة الرصيد الفعلي بعد الجرد مع الرصيد الدفتري وحساب الفروق.") }
+			{ "ProductSerialsStock", ("تقرير كميات وسيريلات الأجهزة", "جرد وتفاصيل الأجهزة والسيريلات والـ IMEI المتاحة والمباعة وتتبع حركتها وأسعارها.") },
+			{ "ProductQtyDetail", ("تفاصيل أرصدة المخازن", "استعراض أرصدة وكميات الأصناف داخل كل مخزن مع مواقع الأرفف وحد الطلب.") },
+			{ "WastageLoss", ("الهوالك والتالف", "سجل الأصناف التالفة والهالكة وأسباب التلف وتكلفتها الإجمالية.") },
+			{ "DetailedInventoryValuation", ("تقييم بضاعة المخزن", "حساب القيمة المالية الإجمالية للمخزون بسعر التكلفة وسعر البيع المتوقع.") },
+			{ "SupplierItemActivity", ("حركة أصناف الموردين", "متابعة حركة الأصناف الخاصة بكل مورد وتوريداتها ومبيعاتها.") },
+			{ "ExpiryReport", ("تواريخ الصلاحية", "كشف الأصناف القريبة من انتهاء الصلاحية لتصريفها قبل التلف.") },
+			{ "InventoryVariance", ("عجز وفروق الجرد", "مقارنة الرصيد الفعلي بعد الجرد مع الرصيد الدفتري وحساب الفروق.") }
 		};
 
 		public FrmReports(string targetModule = null, int preFilteredID = 0, string defaultTabTag = null)
@@ -242,14 +242,14 @@ namespace ChickenDist.Forms
 			cboDatePresets.Items.Clear();
 			cboDatePresets.Items.AddRange(new object[]
 			{
-				"📅 مخصص",
-				"⚡ اليوم",
-				"⚡ أمس",
-				"⚡ هذا الأسبوع",
-				"⚡ هذا الشهر",
-				"⚡ الشهر السابق",
-				"⚡ العام الحالي",
-				"⚡ كل الفترات"
+				"مخصص",
+				"اليوم",
+				"أمس",
+				"هذا الأسبوع",
+				"هذا الشهر",
+				"الشهر السابق",
+				"العام الحالي",
+				"كل الفترات"
 			});
 			cboDatePresets.SelectedIndex = 0;
 
@@ -580,12 +580,12 @@ namespace ChickenDist.Forms
 			};
 			cboReportSearchType.Items.AddRange(new object[]
 			{
-				"🔍 بحث شامل (الكل)",
-				"🏷️ اسم الصنف",
-				"🔢 كود الصنف",
-				"🧾 رقم الفاتورة / السند",
-				"👥 اسم العميل / المورد",
-				"📝 الملاحظات / البيان"
+				"بحث شامل (الكل)",
+				"اسم الصنف",
+				"كود الصنف",
+				"رقم الفاتورة / السند",
+				"اسم العميل / المورد",
+				"الملاحظات / البيان"
 			});
 			cboReportSearchType.SelectedIndex = 0;
 			cboReportSearchType.SelectedIndexChanged += (s, e) => ApplyAllFilters();
@@ -601,7 +601,7 @@ namespace ChickenDist.Forms
 			};
 			txtSearchClient.TextChanged += (s, e) => ApplyAllFilters();
 
-			btnResetFilters = Theme.MakeButton("🔄 مسح الفلاتر", Color.FromArgb(71, 85, 105));
+			btnResetFilters = Theme.MakeButton("مسح الفلاتر", Color.FromArgb(71, 85, 105));
 			btnResetFilters.Size = new Size(98, 34);
 			btnResetFilters.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
 			btnResetFilters.Margin = new Padding(2, 2, 3, 2);
@@ -615,11 +615,11 @@ namespace ChickenDist.Forms
 				Font = new Font("Segoe UI", 9f, FontStyle.Bold),
 				Padding = new Padding(8, 6, 8, 6),
 				Margin = new Padding(4, 3, 4, 3),
-				Text = "📊 السجلات: 0",
+				Text = "السجلات: 0",
 				Tag = "CustomStyle"
 			};
 
-			btnLoad = Theme.MakeButton("🔍 عرض التقرير", Color.FromArgb(16, 185, 129));
+			btnLoad = Theme.MakeButton("عرض التقرير", Color.FromArgb(16, 185, 129));
 			btnLoad.Size = new Size(120, 36);
 			btnLoad.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 			btnLoad.Margin = new Padding(3, 2, 3, 2);
@@ -636,25 +636,25 @@ namespace ChickenDist.Forms
 				}
 			};
 
-			btnPrint = Theme.MakeButton("🖨️ طباعة", Color.FromArgb(37, 99, 235));
+			btnPrint = Theme.MakeButton("طباعة", Color.FromArgb(37, 99, 235));
 			btnPrint.Size = new Size(95, 36);
 			btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnPrint.Margin = new Padding(3, 2, 3, 2);
 			btnPrint.Click += BtnPrint_Click;
 
-			btnExportPdf = Theme.MakeButton("📄 PDF", Color.FromArgb(220, 38, 38));
+			btnExportPdf = Theme.MakeButton("PDF", Color.FromArgb(220, 38, 38));
 			btnExportPdf.Size = new Size(90, 36);
 			btnExportPdf.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnExportPdf.Margin = new Padding(3, 2, 3, 2);
 			btnExportPdf.Click += BtnExportPdf_Click;
 
-			btnExportExcel = Theme.MakeButton("📥 إكسيل", Color.FromArgb(16, 185, 129));
+			btnExportExcel = Theme.MakeButton("إكسيل", Color.FromArgb(16, 185, 129));
 			btnExportExcel.Size = new Size(95, 36);
 			btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnExportExcel.Margin = new Padding(3, 2, 3, 2);
 			btnExportExcel.Click += BtnExportExcel_Click;
 
-			btnWhatsAppReport = Theme.MakeButton("📲 واتساب", Color.FromArgb(37, 211, 102));
+			btnWhatsAppReport = Theme.MakeButton("واتساب", Color.FromArgb(37, 211, 102));
 			btnWhatsAppReport.Size = new Size(105, 36);
 			btnWhatsAppReport.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnWhatsAppReport.Margin = new Padding(3, 2, 3, 2);
@@ -686,7 +686,7 @@ namespace ChickenDist.Forms
 				Tag = "LTR"
 			};
 
-			btnDailyInvoicesSheet = Theme.MakeButton("📑 شيت فواتير اليومية", Color.FromArgb(14, 165, 233));
+			btnDailyInvoicesSheet = Theme.MakeButton("شيت فواتير اليومية", Color.FromArgb(14, 165, 233));
 			btnDailyInvoicesSheet.Size = new Size(155, 36);
 			btnDailyInvoicesSheet.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
 			btnDailyInvoicesSheet.Margin = new Padding(3, 2, 3, 2);
@@ -720,7 +720,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(125, 211, 252), // Calm Sky Blue
 				Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
 				TextAlign = ContentAlignment.MiddleRight,
-				Text = "📊 تقارير المبيعات الشاملة",
+				Text = "تقارير المبيعات الشاملة",
 				Tag = "CustomStyle"
 			};
 
@@ -730,7 +730,7 @@ namespace ChickenDist.Forms
 				ForeColor = Color.FromArgb(203, 213, 225), // Light Slate
 				Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
 				TextAlign = ContentAlignment.MiddleRight,
-				Text = "💡 استخدام التقرير: استعراض ومتابعة حركة المبيعات والأرباح وفواتير العملاء مع إمكانية التصدير والطباعة والبحث السريع.",
+				Text = "استخدام التقرير: استعراض ومتابعة حركة المبيعات والأرباح وفواتير العملاء مع إمكانية التصدير والطباعة والبحث السريع.",
 				Tag = "CustomStyle"
 			};
 
@@ -778,18 +778,18 @@ namespace ChickenDist.Forms
 			};
 
 			// الصف الأول (من اليمين لليسار): الفترة الزمنية -> من -> إلى -> المخزن -> طريقة الدفع -> التصنيف
-			flowRow1.Controls.Add(MakeFilterPanel("⚡ الفترة:", cboDatePresets, 105));
-			flowRow1.Controls.Add(MakeFilterPanel("📅 من:", dtpFrom, 106));
-			flowRow1.Controls.Add(MakeFilterPanel("📅 إلى:", dtpTo, 106));
-			flowRow1.Controls.Add(MakeFilterPanel("🏢 المخزن:", cboWarehouse, 115));
-			flowRow1.Controls.Add(MakeFilterPanel("💳 الدفع:", cboPayType, 115));
-			flowRow1.Controls.Add(MakeFilterPanel("📂 التصنيف:", cboCategoryFilter, 135));
+			flowRow1.Controls.Add(MakeFilterPanel("الفترة:", cboDatePresets, 105));
+			flowRow1.Controls.Add(MakeFilterPanel("من:", dtpFrom, 106));
+			flowRow1.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 106));
+			flowRow1.Controls.Add(MakeFilterPanel("المخزن:", cboWarehouse, 115));
+			flowRow1.Controls.Add(MakeFilterPanel("الدفع:", cboPayType, 115));
+			flowRow1.Controls.Add(MakeFilterPanel("التصنيف:", cboCategoryFilter, 135));
 
 			// الصف الثاني (من اليمين لليسار): العميل/المورد -> الموظف/الكاشير -> نطاق البحث -> نص البحث الفوري -> مسح الفلاتر
-			flowRow2.Controls.Add(MakeFilterPanel("👥 العميل/المورد:", cboPartyFilter, 155));
-			flowRow2.Controls.Add(MakeFilterPanel("👔 الموظف/الكاشير:", cboEmployee, 125));
-			flowRow2.Controls.Add(MakeFilterPanel("🔍 نطاق البحث:", cboReportSearchType, 135));
-			flowRow2.Controls.Add(MakeFilterPanel("🔎 بحث فوري:", txtSearchClient, 165, Color.FromArgb(125, 211, 252)));
+			flowRow2.Controls.Add(MakeFilterPanel("العميل/المورد:", cboPartyFilter, 155));
+			flowRow2.Controls.Add(MakeFilterPanel("الموظف/الكاشير:", cboEmployee, 125));
+			flowRow2.Controls.Add(MakeFilterPanel("نطاق البحث:", cboReportSearchType, 135));
+			flowRow2.Controls.Add(MakeFilterPanel("بحث فوري:", txtSearchClient, 165, Color.FromArgb(125, 211, 252)));
 			flowRow2.Controls.Add(btnResetFilters);
 
 			// في WinForms، الكنترول المضاف أخيراً بـ DockStyle.Top يظهر في الأعلى، لذلك نضيف الصف الثاني ثم الأول
@@ -824,64 +824,64 @@ namespace ChickenDist.Forms
 				// ══════════════════════════════════════════════════════════════
 				// تقارير المبيعات الشاملة
 				// ══════════════════════════════════════════════════════════════
-				("📅 تقرير المبيعات اليومية", "DailySalesSummary"),
-				("📈 تقرير المبيعات خلال فترة", "SalesByPeriod"),
-				("🧾 سجل فواتير المبيعات", "DetailedSales"),
-				("📦 تفاصيل سطور وأصناف المبيعات", "DetailedSaleItems"),
-				("📊 مبيعات الأصناف والربحية", "SalesByProduct"),
-				("🏢 مبيعات المجموعات والأقسام", "SalesByCategory"),
-				("👥 مبيعات العملاء والمسدد", "SalesByClient"),
-				("👔 مبيعات المستخدمين والكاشير", "SalesByUser"),
-				("💳 طرق الدفع والتحصيل", "SalesByPaymentMethod"),
-				("🏷️ الخصومات والتخفيضات", "SalesDiscounts"),
-				("🔄 مرتجعات المبيعات", "DetailedReturns"),
-				("💰 أرباح وهامش المبيعات", "SalesProfitability"),
-				("💤 الأصناف الراكدة (مشتراة ولم تُباع)", "StagnantProducts"),
+				("تقرير المبيعات اليومية", "DailySalesSummary"),
+				("تقرير المبيعات خلال فترة", "SalesByPeriod"),
+				("سجل فواتير المبيعات", "DetailedSales"),
+				("تفاصيل سطور وأصناف المبيعات", "DetailedSaleItems"),
+				("مبيعات الأصناف والربحية", "SalesByProduct"),
+				("مبيعات المجموعات والأقسام", "SalesByCategory"),
+				("مبيعات العملاء والمسدد", "SalesByClient"),
+				("مبيعات المستخدمين والكاشير", "SalesByUser"),
+				("طرق الدفع والتحصيل", "SalesByPaymentMethod"),
+				("الخصومات والتخفيضات", "SalesDiscounts"),
+				("مرتجعات المبيعات", "DetailedReturns"),
+				("أرباح وهامش المبيعات", "SalesProfitability"),
+				("الأصناف الراكدة (مشتراة ولم تُباع)", "StagnantProducts"),
 
 				// ══════════════════════════════════════════════════════════════
 				// تقارير المشتريات الشاملة
 				// ══════════════════════════════════════════════════════════════
-				("📅 تقرير المشتريات اليومية", "DailyPurchasesSummary"),
-				("📈 تقرير المشتريات خلال فترة", "PurchasesByPeriod"),
-				("🧾 سجل فواتير المشتريات", "DetailedPurchases"),
-				("📦 تفاصيل سطور وأصناف المشتريات", "DetailedPurchaseItems"),
-				("🤝 مشتريات الموردين والمسدد", "PurchasesBySupplier"),
-				("📊 مشتريات الأصناف ومتوسط التكلفة", "PurchasesByProduct"),
-				("🏢 مشتريات الأقسام والتصنيفات", "PurchasesByCategory"),
-				("🔄 مرتجعات المشتريات", "DetailedPurchaseReturns"),
-				("💵 المدفوعات للموردين والتسويات", "SupplierPayments"),
-				("📈 أسعار الشراء وتغير الأسعار", "PurchasePricesTracking"),
-				("⏳ المشتريات الآجلة والمديونيات", "CreditPurchases"),
-				("🎁 تقرير بونص المشتريات", "PurchaseBonusReport"),
+				("تقرير المشتريات اليومية", "DailyPurchasesSummary"),
+				("تقرير المشتريات خلال فترة", "PurchasesByPeriod"),
+				("سجل فواتير المشتريات", "DetailedPurchases"),
+				("تفاصيل سطور وأصناف المشتريات", "DetailedPurchaseItems"),
+				("مشتريات الموردين والمسدد", "PurchasesBySupplier"),
+				("مشتريات الأصناف ومتوسط التكلفة", "PurchasesByProduct"),
+				("مشتريات الأقسام والتصنيفات", "PurchasesByCategory"),
+				("مرتجعات المشتريات", "DetailedPurchaseReturns"),
+				("المدفوعات للموردين والتسويات", "SupplierPayments"),
+				("أسعار الشراء وتغير الأسعار", "PurchasePricesTracking"),
+				("المشتريات الآجلة والمديونيات", "CreditPurchases"),
+				("تقرير بونص المشتريات", "PurchaseBonusReport"),
 
 				// ══════════════════════════════════════════════════════════════
 				// تقارير الحسابات والمالية والتقفيل
 				// ══════════════════════════════════════════════════════════════
-				("📑 تقرير التقفيل اليومي", "DailyClosing"),
-				("📊 سجل وتقارير الورديات", "ShiftsHistory"),
-				("⚖️ مقارنة الورديات بالأيام التقويمية", "ShiftVsCalendarComparison"),
-				("📊 قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
-				("💸 تقرير مصروفات التشغيل", "OperatingExpenses"),
+				("تقرير التقفيل اليومي", "DailyClosing"),
+				("سجل وتقارير الورديات", "ShiftsHistory"),
+				("مقارنة الورديات بالأيام التقويمية", "ShiftVsCalendarComparison"),
+				("قائمة الدخل والربحية", "IncomeStatementAndProfitability"),
+				("تقرير مصروفات التشغيل", "OperatingExpenses"),
 
 				// ══════════════════════════════════════════════════════════════
 				// تقارير العملاء والمناديب
 				// ══════════════════════════════════════════════════════════════
-				("🚚 مبيعات المناديب", "SalesByDriver"),
-				("⚖️ أرصدة وبيانات العملاء", "ClientBalances"),
-				("⏳ أعمار الديون (الديون الراكدة)", "DebtAging"),
-				("📑 مبيعات عميل تفصيلي", "ClientProductSales"),
-				("📋 سجل تقفيل المناديب", "Handovers"),
+				("مبيعات المناديب", "SalesByDriver"),
+				("أرصدة وبيانات العملاء", "ClientBalances"),
+				("أعمار الديون (الديون الراكدة)", "DebtAging"),
+				("مبيعات عميل تفصيلي", "ClientProductSales"),
+				("سجل تقفيل المناديب", "Handovers"),
 
 				// ══════════════════════════════════════════════════════════════
 				// تقارير المخازن والجرد
 				// ══════════════════════════════════════════════════════════════
-				("📱 تقرير كميات وسيريلات الأجهزة", "ProductSerialsStock"),
-				("📊 كميات الأصناف التفصيلي", "ProductQtyDetail"),
-				("🚨 تقرير الهالك والتالف", "WastageLoss"),
-				("📦 تقييم المخزن التفصيلي", "DetailedInventoryValuation"),
-				("📊 حركة أصناف الموردين", "SupplierItemActivity"),
-				("⚠️ تقرير انتهاء الصلاحية", "ExpiryReport"),
-				("📊 تقرير فروق الجرد والعجز", "InventoryVariance")
+				("تقرير كميات وسيريلات الأجهزة", "ProductSerialsStock"),
+				("كميات الأصناف التفصيلي", "ProductQtyDetail"),
+				("تقرير الهالك والتالف", "WastageLoss"),
+				("تقييم المخزن التفصيلي", "DetailedInventoryValuation"),
+				("حركة أصناف الموردين", "SupplierItemActivity"),
+				("تقرير انتهاء الصلاحية", "ExpiryReport"),
+				("تقرير فروق الجرد والعجز", "InventoryVariance")
 			};
 
 			var filteredReports = new List<(string name, string tag)>();
@@ -996,30 +996,30 @@ namespace ChickenDist.Forms
 						AutoScroll = true
 					};
 
-					var btnEditSale = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
+					var btnEditSale = Theme.MakeButton("تعديل الفاتورة", Theme.Accent);
 					btnEditSale.Size = new Size(195, 34);
 					btnEditSale.Margin = new Padding(0, 0, 0, 8);
 
-					var btnCopySale = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
+					var btnCopySale = Theme.MakeButton("نسخ الفاتورة", Color.FromArgb(40, 120, 180));
 					btnCopySale.Size = new Size(195, 34);
 					btnCopySale.Margin = new Padding(0, 0, 0, 8);
 
-					var btnPrintReceipt = Theme.MakeButton("🧾 طباعة ريسيت حراري", Theme.Primary);
+					var btnPrintReceipt = Theme.MakeButton("طباعة ريسيت حراري", Theme.Primary);
 					btnPrintReceipt.Size = new Size(195, 34);
 					btnPrintReceipt.Margin = new Padding(0, 0, 0, 8);
 
-					var btnPrintA4 = Theme.MakeButton("📄 طباعة فاتورة (A4/A5)", Color.FromArgb(40, 120, 180));
+					var btnPrintA4 = Theme.MakeButton("طباعة فاتورة (A4/A5)", Color.FromArgb(40, 120, 180));
 					btnPrintA4.Size = new Size(195, 34);
 					btnPrintA4.Margin = new Padding(0, 0, 0, 8);
 
-					var btnSendWhatsApp = Theme.MakeButton("📱 إرسال واتساب للعميل", Color.FromArgb(37, 211, 102));
+					var btnSendWhatsApp = Theme.MakeButton("إرسال واتساب للعميل", Color.FromArgb(37, 211, 102));
 					btnSendWhatsApp.Size = new Size(195, 34);
 					btnSendWhatsApp.ForeColor = Color.White;
 					btnSendWhatsApp.Margin = new Padding(0, 0, 0, 12);
 
 					Label lblItemsHeader = new Label
 					{
-						Text = "📦 الأصناف المسحوبة بالفاتورة:",
+						Text = "الأصناف المسحوبة بالفاتورة:",
 						Size = new Size(195, 40),
 						ForeColor = Theme.TextSub,
 						Font = Theme.FontBold,
@@ -1039,9 +1039,9 @@ namespace ChickenDist.Forms
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف", FillWeight = 90f });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName", HeaderText = "الوحدة", FillWeight = 35f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(15, 118, 110) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity", HeaderText = "الكمية المباعة", FillWeight = 40f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
-					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnedQty", HeaderText = "كمية المرتجع ↩", FillWeight = 42f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(239, 68, 68), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnedQty", HeaderText = "كمية المرتجع", FillWeight = 42f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(239, 68, 68), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice", HeaderText = "سعر الوحدة", FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال / IMEI 📱", FillWeight = 55f, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(14, 165, 233), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI", HeaderText = "السيريال / IMEI", FillWeight = 55f, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(14, 165, 233), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount", HeaderText = "الخصم", FillWeight = 35f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(249, 115, 22) } });
 					dgDetailedSaleItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice", HeaderText = "الإجمالي", FillWeight = 48f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
 
@@ -1054,7 +1054,7 @@ namespace ChickenDist.Forms
 						dgDetailedSaleItems.Rows.Clear();
 						if (dgDetailedSales.SelectedRows.Count == 0 && dgDetailedSales.CurrentRow == null)
 						{
-							lblItemsHeader.Text = "📦 الأصناف المسحوبة بالفاتورة:";
+							lblItemsHeader.Text = "الأصناف المسحوبة بالفاتورة:";
 							return;
 						}
 						var selectedRow = dgDetailedSales.SelectedRows.Count > 0 ? dgDetailedSales.SelectedRows[0] : dgDetailedSales.CurrentRow;
@@ -1123,11 +1123,11 @@ namespace ChickenDist.Forms
 								}
 							}
 							string qtyDisplay = (totalQtySum % 1 == 0) ? totalQtySum.ToString("N0") : totalQtySum.ToString("N2");
-							lblItemsHeader.Text = $"📦 الأصناف: ({items.Rows.Count} أصناف | {qtyDisplay} قطعة)";
+							lblItemsHeader.Text = $"الأصناف: ({items.Rows.Count} أصناف | {qtyDisplay} قطعة)";
 						}
 						else
 						{
-							lblItemsHeader.Text = "📦 الأصناف المسحوبة بالفاتورة:";
+							lblItemsHeader.Text = "الأصناف المسحوبة بالفاتورة:";
 						}
 					};
 
@@ -1467,7 +1467,7 @@ namespace ChickenDist.Forms
 
 					GroupBox grpPL = new GroupBox
 					{
-						Text = "📊 قائمة الدخل وقيمة الربحية",
+						Text = "قائمة الدخل وقيمة الربحية",
 						Dock = DockStyle.Fill,
 						Font = Theme.FontBold,
 						ForeColor = Theme.TextMain,
@@ -1491,7 +1491,7 @@ namespace ChickenDist.Forms
 						RightToLeft = RightToLeft.Yes
 					};
 					
-					TabPage subTabProduct = new TabPage("📦 ربحية الأصناف")
+					TabPage subTabProduct = new TabPage("ربحية الأصناف")
 					{
 						BackColor = Theme.BgMain
 					};
@@ -1505,7 +1505,7 @@ namespace ChickenDist.Forms
 					subTabProduct.Controls.Add(dgProdProfit);
 					subTab.TabPages.Add(subTabProduct);
 
-					TabPage subTabClient = new TabPage("👥 ربحية العملاء")
+					TabPage subTabClient = new TabPage("ربحية العملاء")
 					{
 						BackColor = Theme.BgMain
 					};
@@ -1624,12 +1624,12 @@ namespace ChickenDist.Forms
 						Padding = new Padding(6, 6, 6, 4)
 					};
 
-					Label lblMode = new Label { Text = "🔍 نوع التقرير:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4, 7, 0, 0), Font = Theme.FontBold };
+					Label lblMode = new Label { Text = "نوع التقرير:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(4, 7, 0, 0), Font = Theme.FontBold };
 					ComboBox cboMode = new ComboBox { Name = "cboFilterStagnantMode", Width = 235, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat, Margin = new Padding(4, 4, 0, 0) };
-					cboMode.Items.Add(new ComboItem(0, "🛒 تم شراؤه ولم يُباع نهائياً (مبيعات = 0)"));
-					cboMode.Items.Add(new ComboItem(1, "⏳ لم يُباع خلال الفترة (رصيد بالمخزن)"));
-					cboMode.Items.Add(new ComboItem(2, "💤 لم يُباع إطلاقاً (كل الوقت)"));
-					cboMode.Items.Add(new ComboItem(3, "📉 بطيء الحركة (مبيعات ضعيفة <= 3)"));
+					cboMode.Items.Add(new ComboItem(0, "تم شراؤه ولم يُباع نهائياً (مبيعات = 0)"));
+					cboMode.Items.Add(new ComboItem(1, "لم يُباع خلال الفترة (رصيد بالمخزن)"));
+					cboMode.Items.Add(new ComboItem(2, "لم يُباع إطلاقاً (كل الوقت)"));
+					cboMode.Items.Add(new ComboItem(3, "بطيء الحركة (مبيعات ضعيفة <= 3)"));
 					cboMode.DisplayMember = "Text";
 					cboMode.SelectedIndex = 0;
 					cboMode.SelectedIndexChanged += (s, e) => { if (_isInitialized) LoadCurrentTab(); };
@@ -1714,7 +1714,7 @@ namespace ChickenDist.Forms
 						ForeColor = Theme.Accent,
 						Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
 						TextAlign = ContentAlignment.MiddleLeft,
-						Text = "📊 إجمالي الأصناف الراكدة: 0 | إجمالي كميات الرصيد: 0.00 | إجمالي قيمة البضاعة الراكدة بالتكلفة: 0.00 ج.م"
+						Text = "إجمالي الأصناف الراكدة: 0 | إجمالي كميات الرصيد: 0.00 | إجمالي قيمة البضاعة الراكدة بالتكلفة: 0.00 ج.م"
 					};
 					pnlSummary.Controls.Add(lblStagnantSummary);
 					layout.Controls.Add(pnlSummary, 0, 2);
@@ -1772,13 +1772,13 @@ namespace ChickenDist.Forms
 			if (!string.IsNullOrEmpty(text) && ReportDescriptions.TryGetValue(text, out var rptInfo))
 			{
 				if (lblReportHeaderTitle != null) lblReportHeaderTitle.Text = rptInfo.title;
-				if (lblReportHeaderDesc != null) lblReportHeaderDesc.Text = "💡 استخدام التقرير: " + rptInfo.desc;
+				if (lblReportHeaderDesc != null) lblReportHeaderDesc.Text = "استخدام التقرير: " + rptInfo.desc;
 				this.Text = rptInfo.title;
 			}
 			else
 			{
 				if (lblReportHeaderTitle != null) lblReportHeaderTitle.Text = tabReports.SelectedTab.Text;
-				if (lblReportHeaderDesc != null) lblReportHeaderDesc.Text = "💡 استعراض بيانات التقرير المختار مع إمكانية الفلترة والتصدير والطباعة.";
+				if (lblReportHeaderDesc != null) lblReportHeaderDesc.Text = "استعراض بيانات التقرير المختار مع إمكانية الفلترة والتصدير والطباعة.";
 				this.Text = tabReports.SelectedTab.Text;
 			}
 
@@ -1831,7 +1831,7 @@ namespace ChickenDist.Forms
 						("OpeningCash", "افتتاحي الدرج"),
 						("CashSales", "مبيعات كاش الوردية"),
 						("TotalSales", "إجمالي مبيعات الوردية"),
-						("CalendarSales", "مبيعات اليوم التقويمي 📅"),
+						("CalendarSales", "مبيعات اليوم التقويمي"),
 						("ExpectedCash", "النقدية المتوقعة"),
 						("ActualCash", "النقدية الفعلية"),
 						("Difference", "العجز / الزيادة"),
@@ -1851,7 +1851,7 @@ namespace ChickenDist.Forms
 						("OpenTime", "تاريخ ووقت فتح الوردية"),
 						("CloseTime", "تاريخ ووقت إغلاق الوردية"),
 						("ShiftSales", "إجمالي مبيعات فترة الوردية (الشيفت)"),
-						("CalendarSales", "إجمالي مبيعات اليوم التقويمي (من 12 ص لـ 12 م) 📅"),
+						("CalendarSales", "إجمالي مبيعات اليوم التقويمي (من 12 ص لـ 12 م)"),
 						("Difference", "الفارق الحسابي"),
 						("Explanation", "توضيح الفارق بين التقريرين")
 					}, dataGridView);
@@ -1871,12 +1871,12 @@ namespace ChickenDist.Forms
 						("ItemsCount", "عدد الأصناف"),
 						("TotalQty", "إجمالي القطع"),
 						("TotalBeforeDiscount", "قبل الخصم"),
-						("DiscountAmount", "الخصم ✂"),
+						("DiscountAmount", "الخصم"),
 						("TotalAmount", "بعد الخصم (قبل المرتجع)"),
 						("ShippingCharge", "خدمة شحن"),
-						("ReturnAmount", "المرتجع ↩"),
-						("NetAmount", "الصافي النهائي ✔"),
-						("NetProfit", "ربح الفاتورة 💰"),
+						("ReturnAmount", "المرتجع"),
+						("NetAmount", "الصافي النهائي"),
+						("NetProfit", "ربح الفاتورة"),
 						("CreatedByName", "القائم بالحركة"),
 						("Notes", "الملاحظات"),
 						("SaleID", "معرف الفاتورة")
@@ -1946,7 +1946,7 @@ namespace ChickenDist.Forms
 						("SupplierName", "المورد / الجهة"),
 						("ProductCode", "كود الصنف"),
 						("ProductName", "اسم الصنف المرتجع"),
-						("IMEI", "السيريال / IMEI 📱"),
+						("IMEI", "السيريال / IMEI"),
 						("ReturnedQty", "الكمية المرتجعة"),
 						("UnitName", "الوحدة"),
 						("UnitPrice", "سعر الوحدة"),
@@ -1964,7 +1964,7 @@ namespace ChickenDist.Forms
 						("SaleDay", "اليوم / التاريخ"),
 						("InvoiceCount", "عدد الفواتير"),
 						("GrossSales", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات النهائي"),
@@ -1983,7 +1983,7 @@ namespace ChickenDist.Forms
 						("VisaSales", "مبيعات فيزا"),
 						("CreditSales", "مبيعات آجل"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات"),
@@ -2001,13 +2001,13 @@ namespace ChickenDist.Forms
 						("ClientName", "العميل"),
 						("ProductCode", "كود الصنف"),
 						("ProductName", "اسم الصنف"),
-						("IMEI", "السيريال / IMEI 📱"),
+						("IMEI", "السيريال / IMEI"),
 						("CategoryName", "القسم / المجموعة"),
 						("Quantity", "الكمية"),
 						("UnitName", "الوحدة"),
 						("UnitPrice", "سعر البيع"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("DiscountAmt", "الخصم ✂"),
+						("DiscountAmt", "الخصم"),
 						("TotalPrice", "الإجمالي بعد الخصم"),
 						("ItemCost", "التكلفة"),
 						("ItemProfit", "الربح"),
@@ -2025,7 +2025,7 @@ namespace ChickenDist.Forms
 						("DistinctProductsCount", "عدد الأصناف المباعة"),
 						("TotalQtySold", "صافي الكميات المباعة"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات"),
@@ -2044,7 +2044,7 @@ namespace ChickenDist.Forms
 						("VisaSales", "مبيعات فيزا"),
 						("CreditSales", "مبيعات آجل"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات")
@@ -2083,7 +2083,7 @@ namespace ChickenDist.Forms
 					{
 						("SaleDay", "اليوم / التاريخ"),
 						("GrossSales", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalReturns", "المرتجعات"),
 						("NetSales", "صافي المبيعات"),
@@ -2161,7 +2161,7 @@ namespace ChickenDist.Forms
 							if (r["CurrentStock"] != DBNull.Value) totalQty += Convert.ToDecimal(r["CurrentStock"]);
 							if (r["StagnantStockValue"] != DBNull.Value) totalVal += Convert.ToDecimal(r["StagnantStockValue"]);
 						}
-						lblSummary.Text = $"📊 إجمالي الأصناف الراكدة: {count:N0} صنف | إجمالي كميات الرصيد: {totalQty:N2} | إجمالي قيمة البضاعة الراكدة بالتكلفة: {totalVal:N2} ج.م";
+						lblSummary.Text = $"إجمالي الأصناف الراكدة: {count:N0} صنف | إجمالي كميات الرصيد: {totalQty:N2} | إجمالي قيمة البضاعة الراكدة بالتكلفة: {totalVal:N2} ج.م";
 					}
 					break;
 				}
@@ -2204,7 +2204,7 @@ namespace ChickenDist.Forms
 						("SupplierName", "المورد"),
 						("ProductCode", "كود الصنف"),
 						("ProductName", "اسم الصنف"),
-						("IMEI", "السيريال / IMEI 📱"),
+						("IMEI", "السيريال / IMEI"),
 						("CategoryName", "القسم / التصنيف"),
 						("Quantity", "الكمية"),
 						("UnitName", "الوحدة"),
@@ -2284,7 +2284,7 @@ namespace ChickenDist.Forms
 						("ProductCode", "كود الصنف"),
 						("ProductName", "الصنف الحاصل على البونص"),
 						("PurchasedQty", "الكمية المشتراة"),
-						("BonusQty", "كمية البونص المجاني 🎁"),
+						("BonusQty", "كمية البونص المجاني"),
 						("UnitName", "الوحدة"),
 						("UnitPrice", "سعر الشراء"),
 						("EstimatedBonusValue", "القيمة التقديرية للبونص"),
@@ -2357,7 +2357,7 @@ namespace ChickenDist.Forms
 						("CreditTotal", "مبيعات آجل"),
 						("LoadTotal", "حمولات مناديب"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalCost", "إجمالي التكلفة"),
 						("NetProfit", "صافي الربح")
@@ -2372,7 +2372,7 @@ namespace ChickenDist.Forms
 						("CashTotal", "مبيعات نقدي"),
 						("CreditTotal", "مبيعات آجل"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("TotalCost", "التكلفة"),
 						("NetProfit", "الربح")
@@ -2388,7 +2388,7 @@ namespace ChickenDist.Forms
 						("CashTotal", "شراء نقدي"),
 						("CreditTotal", "شراء آجل"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("ReturnsTotal", "إجمالي مرتجعاته"),
 						("NetSales", "صافي المشتريات"),
@@ -2408,7 +2408,7 @@ namespace ChickenDist.Forms
 						("AvgPrice", "متوسط سعر البيع"),
 						("TotalQty", "الكمية المباعة"),
 						("TotalBeforeDiscount", "إجمالي قبل الخصم"),
-						("TotalDiscounts", "الخصومات ✂"),
+						("TotalDiscounts", "الخصومات"),
 						("TotalAfterDiscount", "الإجمالي بعد الخصم"),
 						("ReturnedQty", "الكمية المرتجعة"),
 						("ReturnedAmount", "إجمالي المرتجعات"),
@@ -2679,11 +2679,11 @@ namespace ChickenDist.Forms
 							("تاريخ الفاتورة", "التاريخ والوقت"),
 							("العميل", "العميل"),
 							("الصنف", "الصنف"),
-							("السيريال", "السيريال / IMEI 📱"),
+							("السيريال", "السيريال / IMEI"),
 							("الكمية", "الكمية"),
 							("سعر الوحدة", "سعر الوحدة"),
 							("قبل الخصم", "قبل الخصم"),
-							("الخصم", "الخصم ✂"),
+							("الخصم", "الخصم"),
 							("الصافي", "الإجمالي بعد الخصم"),
 							("نوع البيع", "نوع البيع"),
 							("ملاحظات", "ملاحظات")
@@ -3264,7 +3264,7 @@ namespace ChickenDist.Forms
 			{
 				if (dg.Rows.Count == 0 && dg.Columns.Count == 0)
 				{
-					string msg = "💡 يرجى تحديد معايير التقرير ثم الضغط على زر [ 🔍 عرض التقرير ] لعرض البيانات";
+					string msg = "يرجى تحديد معايير التقرير ثم الضغط على زر [ عرض التقرير ] لعرض البيانات";
 					using (var font = new Font("Segoe UI", 11.5f, FontStyle.Bold))
 					using (var brush = new SolidBrush(Color.FromArgb(100, 116, 139)))
 					{
@@ -3426,18 +3426,18 @@ namespace ChickenDist.Forms
 					decimal num6 = num - num2;
 					decimal num7 = num6 - num3;
 					decimal num8 = num4 - num5;
-					AddIndicatorRow(dg, "\ud83d\udcca إجمالي قيمة المبيعات خلال الفترة (شامل)", num, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udcb5 المبيعات النقدية المباشرة", val, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udcb3 المبيعات الآجلة للعملاء", val2, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\ude9a مبيعات حمولات المناديب الصادرة", val3, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udd04 إجمالي قيمة مرتجعات البيع", num2, isNegative: true);
-					AddIndicatorRow(dg, "\ud83d\udcc8 صافي المبيعات (المبيعات - المرتجعات)", num6, isNegative: false, Color.FromArgb(30, 45, 60));
-					AddIndicatorRow(dg, "\ud83d\udce5 إجمالي تحصيلات ومسددات العملاء الآجل", val4, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udcb8 إجمالي المصروفات العامة والتشغيلية", num3, isNegative: true);
-					AddIndicatorRow(dg, "\ud83d\udcb0 إجمالي مقبوضات الخزينة (وارد)", num4, isNegative: false);
-					AddIndicatorRow(dg, "\ud83d\udce4 إجمالي مدفوعات الخزينة (صادر)", num5, isNegative: true);
-					AddIndicatorRow(dg, "⚖\ufe0f صافي التدفق النقدي بالخزينة (وارد - صادر)", num8, num8 < 0m, Color.FromArgb(45, 45, 30));
-					AddIndicatorRow(dg, "\ud83c\udfc6 صافي الأرباح التشغيلية التقريبية (الصافي - المصاريف)", num7, num7 < 0m, Color.FromArgb(30, 60, 30));
+					AddIndicatorRow(dg, "إجمالي قيمة المبيعات خلال الفترة (شامل)", num, isNegative: false);
+					AddIndicatorRow(dg, "المبيعات النقدية المباشرة", val, isNegative: false);
+					AddIndicatorRow(dg, "المبيعات الآجلة للعملاء", val2, isNegative: false);
+					AddIndicatorRow(dg, "مبيعات حمولات المناديب الصادرة", val3, isNegative: false);
+					AddIndicatorRow(dg, "إجمالي قيمة مرتجعات البيع", num2, isNegative: true);
+					AddIndicatorRow(dg, "صافي المبيعات (المبيعات - المرتجعات)", num6, isNegative: false, Color.FromArgb(30, 45, 60));
+					AddIndicatorRow(dg, "إجمالي تحصيلات ومسددات العملاء الآجل", val4, isNegative: false);
+					AddIndicatorRow(dg, "إجمالي المصروفات العامة والتشغيلية", num3, isNegative: true);
+					AddIndicatorRow(dg, "إجمالي مقبوضات الخزينة (وارد)", num4, isNegative: false);
+					AddIndicatorRow(dg, "إجمالي مدفوعات الخزينة (صادر)", num5, isNegative: true);
+					AddIndicatorRow(dg, "صافي التدفق النقدي بالخزينة (وارد - صادر)", num8, num8 < 0m, Color.FromArgb(45, 45, 30));
+					AddIndicatorRow(dg, "صافي الأرباح التشغيلية التقريبية (الصافي - المصاريف)", num7, num7 < 0m, Color.FromArgb(30, 60, 30));
 				}
 				return;
 			}
@@ -4402,9 +4402,9 @@ namespace ChickenDist.Forms
 			}
 
 			var sb = new System.Text.StringBuilder();
-			sb.AppendLine("📋 *تقرير أرصدة وبيانات العملاء*");
-			sb.AppendLine($"🏢 {AppConfig.CompanyName}");
-			sb.AppendLine($"📅 التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}");
+			sb.AppendLine("*تقرير أرصدة وبيانات العملاء*");
+			sb.AppendLine($"{AppConfig.CompanyName}");
+			sb.AppendLine($"التاريخ: {DateTime.Now:dd/MM/yyyy HH:mm}");
 			sb.AppendLine("──────────────────────");
 
 			decimal grandTotalBalance = 0;
@@ -4427,7 +4427,7 @@ namespace ChickenDist.Forms
 			}
 
 			sb.AppendLine("──────────────────────");
-			sb.AppendLine($"📊 إجمالي مديونيات العملاء: {grandTotalBalance:N2} ج.م");
+			sb.AppendLine($"إجمالي مديونيات العملاء: {grandTotalBalance:N2} ج.م");
 			sb.AppendLine("──────────────────────");
 
 			WhatsAppSender.ShowWhatsAppSendOptionsDialog(
@@ -4435,7 +4435,7 @@ namespace ChickenDist.Forms
 				"",
 				sb.ToString(),
 				() => ReceiptImageGenerator.GenerateTextCardImage("تقرير أرصدة العملاء", sb.ToString()),
-				"📱 إرسال تقرير أرصدة العملاء عبر الواتساب");
+				"إرسال تقرير أرصدة العملاء عبر الواتساب");
 		}
 
 		private static void SendWhatsApp(string phone, string message)
@@ -4450,13 +4450,13 @@ namespace ChickenDist.Forms
 				{
 					Clipboard.SetText(message);
 					MessageBox.Show(
-						"⚠️ نظراً لأن التقرير طويل جداً، تم نسخه بالكامل إلى الحافظة (Clipboard) تلقائياً.\n" +
+						"نظراً لأن التقرير طويل جداً، تم نسخه بالكامل إلى الحافظة (Clipboard) تلقائياً.\n" +
 						"يرجى الضغط على لصق (Ctrl + V) داخل محادثة الواتساب التي ستفتح الآن لإرساله.",
 						"تم نسخ التقرير", MessageBoxButtons.OK, MessageBoxIcon.Information,
 						MessageBoxDefaultButton.Button1,
 						MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 						
-					encoded = Uri.EscapeDataString("📋 تقرير أرصدة العملاء (تم نسخ التفاصيل للحافظة، يرجى اللصق وإرسال)");
+					encoded = Uri.EscapeDataString("تقرير أرصدة العملاء (تم نسخ التفاصيل للحافظة، يرجى اللصق وإرسال)");
 				}
 				else
 				{
@@ -4739,7 +4739,7 @@ namespace ChickenDist.Forms
 					}
 
 					var result = MessageBox.Show(
-						"✅ تم تصدير التقرير إلى PDF بنجاح!\n\nهل تريد فتح الملف الآن؟",
+						"تم تصدير التقرير إلى PDF بنجاح!\n\nهل تريد فتح الملف الآن؟",
 						"تم التصدير بنجاح", MessageBoxButtons.YesNo, MessageBoxIcon.Information,
 						MessageBoxDefaultButton.Button1,
 						MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
@@ -4752,7 +4752,7 @@ namespace ChickenDist.Forms
 				catch (Exception ex)
 				{
 					AppLogger.Error("FrmReports.ExportToPdf", ex);
-					MessageBox.Show("❌ فشل تصدير ملف PDF:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					MessageBox.Show("فشل تصدير ملف PDF:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 				}
 			}
 		}
@@ -4791,7 +4791,7 @@ namespace ChickenDist.Forms
 							AppConfig.CompanyName ?? "التقرير");
 
 						var result = MessageBox.Show(
-							"✅ تم تصدير التقرير بنجاح!\nهل تريد فتح الملف الآن؟",
+							"تم تصدير التقرير بنجاح!\nهل تريد فتح الملف الآن؟",
 							"تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information,
 							MessageBoxDefaultButton.Button1,
 							MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
@@ -4801,7 +4801,7 @@ namespace ChickenDist.Forms
 					}
 					catch (Exception ex)
 					{
-						MessageBox.Show("❌ فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						MessageBox.Show("فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					}
 				}
 			}
@@ -5109,7 +5109,7 @@ namespace ChickenDist.Forms
 					if (hasQuery)
 					{
 						int searchType = cboReportSearchType != null ? cboReportSearchType.SelectedIndex : 0;
-						if (searchType == 1) // 🏷️ اسم الصنف فقط
+						if (searchType == 1) // اسم الصنف فقط
 						{
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
@@ -5127,7 +5127,7 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
-						else if (searchType == 2) // 🔢 كود الصنف فقط
+						else if (searchType == 2) // كود الصنف فقط
 						{
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
@@ -5145,7 +5145,7 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
-						else if (searchType == 3) // 🧾 رقم الفاتورة / السند فقط
+						else if (searchType == 3) // رقم الفاتورة / السند فقط
 						{
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
@@ -5163,7 +5163,7 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
-						else if (searchType == 4) // 👥 اسم العميل / المورد
+						else if (searchType == 4) // اسم العميل / المورد
 						{
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
@@ -5181,7 +5181,7 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
-						else if (searchType == 5) // 📝 الملاحظات / البيان
+						else if (searchType == 5) // الملاحظات / البيان
 						{
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
@@ -5199,7 +5199,7 @@ namespace ChickenDist.Forms
 								}
 							}
 						}
-						else // 🔍 بحث شامل (في كل الحقول)
+						else // بحث شامل (في كل الحقول)
 						{
 							matchQuery = false;
 							foreach (DataGridViewCell cell in row.Cells)
@@ -5382,7 +5382,7 @@ namespace ChickenDist.Forms
 
 				if (lblFilterMatchCount != null)
 				{
-					lblFilterMatchCount.Text = $"📊 السجلات: {visibleCount:N0}";
+					lblFilterMatchCount.Text = $"السجلات: {visibleCount:N0}";
 				}
 
 				if (totalRow != null)

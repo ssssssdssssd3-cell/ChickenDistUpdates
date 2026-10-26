@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "📱 رمز المتجر الإلكتروني (Store QR Code) | طباعة ومشاركة";
+            this.Text = "رمز المتجر الإلكتروني (Store QR Code) | طباعة ومشاركة";
             this.Size = new Size(760, 680);
             this.MinimumSize = new Size(700, 620);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -80,7 +80,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "📱 رمز الاستجابة السريع للمتجر (Store QR Code)",
+                Text = "رمز الاستجابة السريع للمتجر (Store QR Code)",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Top,
@@ -144,7 +144,7 @@ namespace ChickenDist.Forms
 
             var lblStoreName = new Label
             {
-                Text = "🏪 " + _companyName,
+                Text = "" + _companyName,
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(248, 250, 252),
                 Location = new Point(16, 12),
@@ -174,7 +174,7 @@ namespace ChickenDist.Forms
 
             btnOpenBrowser = new Button
             {
-                Text = "🌐 فتح",
+                Text = "فتح",
                 Size = new Size(75, 30),
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
@@ -188,7 +188,7 @@ namespace ChickenDist.Forms
 
             btnCopyUrl = new Button
             {
-                Text = "📋 نسخ الرابط",
+                Text = "نسخ الرابط",
                 Size = new Size(110, 30),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -235,13 +235,13 @@ namespace ChickenDist.Forms
             pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
-            btnPrintPoster = CreateActionButton("🖨️ طباعة بوستر للمحل (A4)", Color.FromArgb(37, 99, 235), (s, e) => PrintA4Poster());
-            btnPrintThermal = CreateActionButton("🧾 طباعة إيصال حراري (80mm)", Color.FromArgb(13, 148, 136), (s, e) => PrintThermalReceipt());
-            btnShareWhatsApp = CreateActionButton("💬 مشاركة عبر واتساب", Color.FromArgb(34, 197, 94), (s, e) => ShareViaWhatsApp());
+            btnPrintPoster = CreateActionButton("طباعة بوستر للمحل (A4)", Color.FromArgb(37, 99, 235), (s, e) => PrintA4Poster());
+            btnPrintThermal = CreateActionButton("طباعة إيصال حراري (80mm)", Color.FromArgb(13, 148, 136), (s, e) => PrintThermalReceipt());
+            btnShareWhatsApp = CreateActionButton("مشاركة عبر واتساب", Color.FromArgb(34, 197, 94), (s, e) => ShareViaWhatsApp());
 
-            btnCopyImage = CreateActionButton("📋 نسخ صورة الرمز (للحافظة)", Color.FromArgb(147, 51, 234), (s, e) => CopyImageToClipboard());
-            btnSaveImage = CreateActionButton("💾 حفظ الرمز كصورة (PNG)", Color.FromArgb(217, 119, 6), (s, e) => SaveImageAsPng());
-            var btnDirectWeb = CreateActionButton("🚀 تجربة المتجر في المتصفح", Color.FromArgb(71, 85, 105), (s, e) => OpenInBrowser());
+            btnCopyImage = CreateActionButton("نسخ صورة الرمز (للحافظة)", Color.FromArgb(147, 51, 234), (s, e) => CopyImageToClipboard());
+            btnSaveImage = CreateActionButton("حفظ الرمز كصورة (PNG)", Color.FromArgb(217, 119, 6), (s, e) => SaveImageAsPng());
+            var btnDirectWeb = CreateActionButton("تجربة المتجر في المتصفح", Color.FromArgb(71, 85, 105), (s, e) => OpenInBrowser());
 
             pnlActions.Controls.Add(btnPrintPoster, 0, 0);
             pnlActions.Controls.Add(btnPrintThermal, 1, 0);
@@ -295,7 +295,7 @@ namespace ChickenDist.Forms
             try
             {
                 Clipboard.SetText(_storeUrl);
-                MessageBox.Show("تم نسخ رابط المتجر الإلكتروني للحافظة بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ رابط المتجر الإلكتروني للحافظة بنجاح", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -325,7 +325,7 @@ namespace ChickenDist.Forms
             try
             {
                 Clipboard.SetImage(_qrBitmap);
-                MessageBox.Show("تم نسخ صورة رمز الـ QR للحافظة بنجاح! 📋\nيمكنك الآن لصقها في واتساب ويب أو أي برنامج آخر (Ctrl + V).", "تم نسخ الصورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ صورة رمز الـ QR للحافظة بنجاح!\nيمكنك الآن لصقها في واتساب ويب أو أي برنامج آخر (Ctrl + V).", "تم نسخ الصورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -361,11 +361,11 @@ namespace ChickenDist.Forms
         {
             try
             {
-                string msg = $"مرحباً بكم في متجرنا الإلكتروني ({_companyName})! 🛒✨\n\n" +
+                string msg = $"مرحباً بكم في متجرنا الإلكتروني ({_companyName})!\n\n" +
                              "يمكنكم الآن تصفح كافة منتجاتنا والأسعار والطلب أونلاين بكل سهولة وسرعة عبر الرابط التالي:\n" +
                              $"{_storeUrl}\n\n" +
-                             (!string.IsNullOrEmpty(_announcement) ? $"📢 {_announcement}\n\n" : "") +
-                             "خدمة التوصيل والمتابعة متوفرة 🚀";
+                             (!string.IsNullOrEmpty(_announcement) ? $"{_announcement}\n\n" : "") +
+                             "خدمة التوصيل والمتابعة متوفرة";
 
                 string encoded = Uri.EscapeDataString(msg);
                 string waUrl = $"https://api.whatsapp.com/send?text={encoded}";
@@ -450,7 +450,7 @@ namespace ChickenDist.Forms
                             LineAlignment = StringAlignment.Center,
                             FormatFlags = StringFormatFlags.DirectionRightToLeft
                         };
-                        g.DrawString("🛒 اطلب أونلاين بكل سهولة وسرعة من متجرنا الإلكتروني", fontSub, brushSky, new RectangleF(45, 125, pageWidth - 90, 45), sfCenter);
+                        g.DrawString("اطلب أونلاين بكل سهولة وسرعة من متجرنا الإلكتروني", fontSub, brushSky, new RectangleF(45, 125, pageWidth - 90, 45), sfCenter);
                     }
 
                     // 3. كود الـ QR الكبير في المنتصف
@@ -479,7 +479,7 @@ namespace ChickenDist.Forms
                             LineAlignment = StringAlignment.Center,
                             FormatFlags = StringFormatFlags.DirectionRightToLeft
                         };
-                        g.DrawString("📱 وجّه كاميرا هاتفك نحو الرمز للتصفح والطلب الفوري", fontGuide, brushDark, new RectangleF(50, textY, pageWidth - 100, 45), sf);
+                        g.DrawString("وجّه كاميرا هاتفك نحو الرمز للتصفح والطلب الفوري", fontGuide, brushDark, new RectangleF(50, textY, pageWidth - 100, 45), sf);
                     }
 
                     // 5. رابط المتجر النصي
@@ -508,7 +508,7 @@ namespace ChickenDist.Forms
                             LineAlignment = StringAlignment.Center,
                             FormatFlags = StringFormatFlags.DirectionRightToLeft
                         };
-                        string phoneText = !string.IsNullOrEmpty(_storePhone) ? $"📞 للطلب والاستفسار أو الدعم عبر واتساب: {_storePhone}" : "🚀 خدمة التوصيل متوفرة لجميع المناطق";
+                        string phoneText = !string.IsNullOrEmpty(_storePhone) ? $"للطلب والاستفسار أو الدعم عبر واتساب: {_storePhone}" : "خدمة التوصيل متوفرة لجميع المناطق";
                         g.DrawString(phoneText, fontPhone, brushPhone, new RectangleF(80, infoY + 12, pageWidth - 160, 40), sf);
                     }
 
@@ -602,7 +602,7 @@ namespace ChickenDist.Forms
                     using (var fontSub = new Font("Segoe UI", 9.5f, FontStyle.Bold))
                     using (var brush = new SolidBrush(Color.Black))
                     {
-                        g.DrawString("📱 متجرنا الإلكتروني أونلاين", fontSub, brush, new RectangleF(0, y, printableWidth, 22), sfCenter);
+                        g.DrawString("متجرنا الإلكتروني أونلاين", fontSub, brush, new RectangleF(0, y, printableWidth, 22), sfCenter);
                     }
                     y += 24;
 
@@ -625,7 +625,7 @@ namespace ChickenDist.Forms
                     {
                         g.DrawString("امسح الرمز بكاميرا الهاتف", fontGuide, brush, new RectangleF(0, y, printableWidth, 20), sfCenter);
                         y += 20;
-                        g.DrawString("وتصفح الأسعار واطلب فوراً ✨", fontGuide, brush, new RectangleF(0, y, printableWidth, 20), sfCenter);
+                        g.DrawString("وتصفح الأسعار واطلب فوراً", fontGuide, brush, new RectangleF(0, y, printableWidth, 20), sfCenter);
                     }
                     y += 24;
 
@@ -659,7 +659,7 @@ namespace ChickenDist.Forms
                 };
 
                 pd.Print();
-                MessageBox.Show("تم إرسال إيصال كود المتجر إلى الطابعة الحرارية بنجاح ✅", "تمت الطباعة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم إرسال إيصال كود المتجر إلى الطابعة الحرارية بنجاح", "تمت الطباعة", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {

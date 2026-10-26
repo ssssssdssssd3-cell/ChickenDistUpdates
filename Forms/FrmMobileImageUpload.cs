@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📱 تصوير ورفع صور الصنف من الموبايل";
+            this.Text = "تصوير ورفع صور الصنف من الموبايل";
             this.Size = new Size(560, 640);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -79,7 +79,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = $"📦 {_productName}   [كود: {_productCode}]",
+                Text = $"{_productName}   [كود: {_productCode}]",
                 Font = new Font(Theme.FontMain.FontFamily, 11f, FontStyle.Bold),
                 ForeColor = Theme.Primary,
                 Location = new Point(15, 10),
@@ -129,9 +129,9 @@ namespace ChickenDist.Forms
             // --- Step-by-Step Instructions ---
             var lblSteps = new Label
             {
-                Text = "1️⃣ وجّه كاميرا الموبايل إلى رمز الـ QR أعلاه وافتح الرابط\n" +
-                       "2️⃣ التقط صور الصنف من الكاميرا أو الألبوم واضغط (حفظ ورفع فوراً)\n" +
-                       "3️⃣ سيتم استلام الصور وحفظها في جهازك والمتجر الإلكتروني تلقائياً",
+                Text = "1 وجّه كاميرا الموبايل إلى رمز الـ QR أعلاه وافتح الرابط\n" +
+                       "2 التقط صور الصنف من الكاميرا أو الألبوم واضغط (حفظ ورفع فوراً)\n" +
+                       "3 سيتم استلام الصور وحفظها في جهازك والمتجر الإلكتروني تلقائياً",
                 Font = new Font(Theme.FontMain.FontFamily, 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(203, 213, 225),
                 Location = new Point(30, 385),
@@ -141,21 +141,21 @@ namespace ChickenDist.Forms
             this.Controls.Add(lblSteps);
 
             // --- Action Buttons ---
-            btnCopyLink = Theme.MakeButton("📋 نسخ رابط الرفع", 360, 465, 165, 34, Color.FromArgb(51, 65, 85));
+            btnCopyLink = Theme.MakeButton("نسخ رابط الرفع", 360, 465, 165, 34, Color.FromArgb(51, 65, 85));
             btnCopyLink.Click += (s, e) =>
             {
                 try
                 {
                     Clipboard.SetText(_uploadUrl);
-                    btnCopyLink.Text = "✅ تم النسخ!";
+                    btnCopyLink.Text = "تم النسخ!";
                     var t = new System.Windows.Forms.Timer { Interval = 2000 };
-                    t.Tick += (ts, te) => { btnCopyLink.Text = "📋 نسخ رابط الرفع"; t.Stop(); t.Dispose(); };
+                    t.Tick += (ts, te) => { btnCopyLink.Text = "نسخ رابط الرفع"; t.Stop(); t.Dispose(); };
                     t.Start();
                 }
                 catch { }
             };
 
-            btnOpenBrowser = Theme.MakeButton("🌐 فتح في المتصفح", 185, 465, 165, 34, Color.FromArgb(37, 99, 235));
+            btnOpenBrowser = Theme.MakeButton("فتح في المتصفح", 185, 465, 165, 34, Color.FromArgb(37, 99, 235));
             btnOpenBrowser.Click += (s, e) =>
             {
                 try
@@ -168,7 +168,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnCancel = Theme.MakeButton("❌ إغلاق", 30, 465, 145, 34, Color.FromArgb(100, 116, 139));
+            btnCancel = Theme.MakeButton("إغلاق", 30, 465, 145, 34, Color.FromArgb(100, 116, 139));
             btnCancel.Click += (s, e) =>
             {
                 StopPolling();
@@ -189,7 +189,7 @@ namespace ChickenDist.Forms
 
             lblStatus = new Label
             {
-                Text = "⏳ بانتظار مسح الرمز والتقاط الصور من الهاتف...",
+                Text = "بانتظار مسح الرمز والتقاط الصور من الهاتف...",
                 Font = new Font(Theme.FontMain.FontFamily, 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(250, 204, 21), // Amber
                 Dock = DockStyle.Fill,
@@ -226,7 +226,7 @@ namespace ChickenDist.Forms
             // Animate dots while waiting
             _dotCounter = (_dotCounter + 1) % 4;
             string dots = new string('.', _dotCounter);
-            lblStatus.Text = $"⏳ بانتظار مسح الرمز والتقاط الصور من الهاتف{dots}";
+            lblStatus.Text = $"بانتظار مسح الرمز والتقاط الصور من الهاتف{dots}";
 
             try
             {
@@ -236,7 +236,7 @@ namespace ChickenDist.Forms
                     _isProcessing = true;
                     StopPolling();
 
-                    lblStatus.Text = "📥 تم استلام الصور من الهاتف! جاري الضغط والمعالجة المحلية...";
+                    lblStatus.Text = "تم استلام الصور من الهاتف! جاري الضغط والمعالجة المحلية...";
                     lblStatus.ForeColor = Color.FromArgb(56, 189, 248); // Sky blue
                     this.Refresh();
 
@@ -283,7 +283,7 @@ namespace ChickenDist.Forms
 
                     try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
 
-                    lblStatus.Text = "🎉 تم استلام وحفظ صور الصنف بنجاح تام!";
+                    lblStatus.Text = "تم استلام وحفظ صور الصنف بنجاح تام!";
                     lblStatus.ForeColor = Color.FromArgb(74, 222, 128); // Emerald Green
                     this.Refresh();
 

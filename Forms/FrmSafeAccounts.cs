@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -20,7 +20,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.IsAdmin && !Session.CanAccess("SafeAccounts"))
             {
-                MessageBox.Show("⛔ غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Load += (s, e) => this.Close();
                 return;
             }
@@ -153,15 +153,15 @@ namespace ChickenDist.Forms
             bool canEdit = Session.IsAdmin || Session.CanEdit("SafeAccounts");
             bool canDelete = Session.IsAdmin || Session.CanDelete("SafeAccounts");
 
-            btnNew = Theme.MakeButton("➕ إضافة", 20, 280, 80, 38, Color.FromArgb(60, 100, 60));
+            btnNew = Theme.MakeButton("إضافة", 20, 280, 80, 38, Color.FromArgb(60, 100, 60));
             btnNew.Visible = canAdd;
             btnNew.Click += (s, e) => ClearFields();
 
-            btnSave = Theme.MakeButton("➕ حفظ الحساب", 110, 280, 110, 38, Theme.Accent);
+            btnSave = Theme.MakeButton("حفظ الحساب", 110, 280, 110, 38, Theme.Accent);
             btnSave.Visible = canAdd || canEdit;
             btnSave.Click += BtnSave_Click;
 
-            btnDelete = Theme.MakeButton("🗑 حذف", 230, 280, 80, 38, Color.FromArgb(140, 40, 40));
+            btnDelete = Theme.MakeButton("حذف", 230, 280, 80, 38, Color.FromArgb(140, 40, 40));
             btnDelete.Visible = canDelete;
             btnDelete.Click += BtnDelete_Click;
 
@@ -258,7 +258,7 @@ namespace ChickenDist.Forms
                     btnDelete.Enabled = canDelete;
                 }
 
-                if (btnSave != null) btnSave.Text = "💾 حفظ الحساب";
+                if (btnSave != null) btnSave.Text = "حفظ الحساب";
             }
         }
 
@@ -266,7 +266,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.IsAdmin && !Session.CanAdd("SafeAccounts"))
             {
-                MessageBox.Show("⛔ غير مصرح لك بإضافة خزائن أو حسابات جديدة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بإضافة خزائن أو حسابات جديدة.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -282,7 +282,7 @@ namespace ChickenDist.Forms
             chkActive.Checked = true;
             chkActive.Enabled = true;
             btnDelete.Enabled = false;
-            if (btnSave != null) btnSave.Text = "➕ حفظ الحساب";
+            if (btnSave != null) btnSave.Text = "حفظ الحساب";
             txtName.Focus();
         }
 
@@ -292,7 +292,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanAdd("SafeAccounts"))
                 {
-                    MessageBox.Show("⛔ غير مصرح لك بإضافة خزينة أو حساب جديد.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("غير مصرح لك بإضافة خزينة أو حساب جديد.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -300,7 +300,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanEdit("SafeAccounts"))
                 {
-                    MessageBox.Show("⛔ غير مصرح لك بتعديل بيانات الخزينة أو الحساب.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("غير مصرح لك بتعديل بيانات الخزينة أو الحساب.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -338,7 +338,7 @@ namespace ChickenDist.Forms
                         DbHelper.P("@op", opening),
                         DbHelper.P("@act", active));
 
-                    MessageBox.Show("✅ تم إضافة الحساب بنجاح!");
+                    MessageBox.Show("تم إضافة الحساب بنجاح!");
                 }
                 else
                 {
@@ -361,7 +361,7 @@ namespace ChickenDist.Forms
                         DbHelper.P("@act", active),
                         DbHelper.P("@id", _selectedAccountID));
 
-                    MessageBox.Show("✅ تم تحديث بيانات الحساب بنجاح!");
+                    MessageBox.Show("تم تحديث بيانات الحساب بنجاح!");
                 }
 
                 ClearFields();
@@ -369,7 +369,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ فشل الحفظ: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل الحفظ: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -378,16 +378,16 @@ namespace ChickenDist.Forms
             if (_selectedAccountID == 0) return;
             if (!Session.IsAdmin && !Session.CanDelete("SafeAccounts"))
             {
-                MessageBox.Show("⛔ غير مصرح لك بحذف الخزائن أو الحسابات.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بحذف الخزائن أو الحسابات.", "رفض العملية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (_selectedAccountID == 1)
             {
-                MessageBox.Show("❌ خطأ: يمنع تماماً حذف الخزينة الرئيسية للنظام.", "حظر عملية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("خطأ: يمنع تماماً حذف الخزينة الرئيسية للنظام.", "حظر عملية", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (MessageBox.Show("⚠️ هل أنت متأكد من حذف هذا الحساب نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (MessageBox.Show("هل أنت متأكد من حذف هذا الحساب نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 try
                 {
@@ -395,7 +395,7 @@ namespace ChickenDist.Forms
                     var hasTrans = DbHelper.Scalar("SELECT COUNT(*) FROM CashBox WHERE AccountID=@id", DbHelper.P("@id", _selectedAccountID));
                     if (hasTrans != null && Convert.ToInt32(hasTrans) > 0)
                     {
-                        MessageBox.Show("❌ لا يمكن حذف هذا الحساب لوجود حركات مالية مسجلة عليه.\n\nيرجى إلغاء تفعيله (جعله غير نشط) بدلاً من الحذف لتجنب الأخطاء المحاسبية.", "حظر عملية الحذف", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                        MessageBox.Show("لا يمكن حذف هذا الحساب لوجود حركات مالية مسجلة عليه.\n\nيرجى إلغاء تفعيله (جعله غير نشط) بدلاً من الحذف لتجنب الأخطاء المحاسبية.", "حظر عملية الحذف", MessageBoxButtons.OK, MessageBoxIcon.Hand);
                         return;
                     }
 
@@ -403,18 +403,18 @@ namespace ChickenDist.Forms
                     var hasExp = DbHelper.Scalar("SELECT COUNT(*) FROM Expenses WHERE SafeAccountID=@id", DbHelper.P("@id", _selectedAccountID));
                     if (hasExp != null && Convert.ToInt32(hasExp) > 0)
                     {
-                        MessageBox.Show("❌ لا يمكن حذف هذا الحساب لوجود مصروفات مسجلة عليه.\n\nيرجى إلغاء تفعيله (جعله غير نشط) بدلاً من الحذف لتجنب الأخطاء المحاسبية.", "حظر عملية الحذف", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                        MessageBox.Show("لا يمكن حذف هذا الحساب لوجود مصروفات مسجلة عليه.\n\nيرجى إلغاء تفعيله (جعله غير نشط) بدلاً من الحذف لتجنب الأخطاء المحاسبية.", "حظر عملية الحذف", MessageBoxButtons.OK, MessageBoxIcon.Hand);
                         return;
                     }
 
                     DbHelper.Execute("DELETE FROM SafeAccounts WHERE AccountID=@id", DbHelper.P("@id", _selectedAccountID));
-                    MessageBox.Show("✅ تم حذف الحساب بنجاح.");
+                    MessageBox.Show("تم حذف الحساب بنجاح.");
                     ClearFields();
                     LoadAccounts();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ فشل الحذف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل الحذف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

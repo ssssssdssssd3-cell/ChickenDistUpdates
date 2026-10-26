@@ -1,5 +1,5 @@
-version=4.4.18
+version=4.4.19
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.18&t=1793004301
-sha256=40143D907A299DFFBEAF180103286B77AC8656297358973D197D11EEE319E97E
-changelog=v4.4.18 - 2026-10-26: إصلاح تشوه واقتطاع نصوص البانر العلوي (اسم المنشأة وعنوان القائمة والتاريخ) في صورة لستة الأصناف والأسعار (FrmPricePoster) المرسلة عبر الواتساب، وضبط أبعاد وتوزيع نصوص الترويسة رأسياً وأفقياً بدقة فائقة لمنع أي تداخل أو اقتطاع للحروف.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.19&t=1793007004
+sha256=7F060C688E2732786BD320AAC5A51E76057AD6018ADBD62EE0B2EF640B8801A9
+changelog=v4.4.19 - 2026-10-26: إزالة كافة الإيموجيات والرموز غير المدعومة من جميع شاشات البرنامج والأزرار والتبويبات والتقارير المطبوعة ورسائل التنبيه (أكثر من 5600 موضع في 167 ملف) لمنع ظهور المربعات وتنسيق جميع النصوص والأزرار بشكل نظيف واحترافي.

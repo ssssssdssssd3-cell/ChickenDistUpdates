@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -42,7 +42,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📷 إدارة صور الصنف للمتجر الإلكتروني (الحد الأقصى 3 صور)";
+            this.Text = "إدارة صور الصنف للمتجر الإلكتروني (الحد الأقصى 3 صور)";
             this.Size = new Size(820, 540);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -64,7 +64,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = $"📦 صنف: {_productName}  [كود: {_productCode}]",
+                Text = $"صنف: {_productName}  [كود: {_productCode}]",
                 Font = new Font(Theme.FontMain.FontFamily, 11f, FontStyle.Bold),
                 ForeColor = Theme.Primary,
                 Location = new Point(15, 10),
@@ -73,7 +73,7 @@ namespace ChickenDist.Forms
 
             var lblTip = new Label
             {
-                Text = "⚡ حماية باقة الإنترنت: يتم تصغير وضغط كل صورة تلقائياً لحجم فائق الخفة (~25-35 KB) لتحميل فوري دون استهلاك الباقة.",
+                Text = "حماية باقة الإنترنت: يتم تصغير وضغط كل صورة تلقائياً لحجم فائق الخفة (~25-35 KB) لتحميل فوري دون استهلاك الباقة.",
                 Font = new Font(Theme.FontMain.FontFamily, 8.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(74, 222, 128), // Soft Emerald
                 Location = new Point(15, 42),
@@ -104,19 +104,19 @@ namespace ChickenDist.Forms
             int gap = 12;
 
             // Slot 1: الغلاف
-            var grp1 = CreateSlotGroup("⭐ 1. الصورة الرئيسية (الغلاف)", 5, slotWidth,
+            var grp1 = CreateSlotGroup("1. الصورة الرئيسية (الغلاف)", 5, slotWidth,
                 out picSlot1, out lblSlot1Info, out btnSlot1Choose, out btnSlot1Paste, out btnSlot1Url, out btnSlot1Delete,
                 1);
             pnlContent.Controls.Add(grp1);
 
             // Slot 2: صورة إضافية 1
-            var grp2 = CreateSlotGroup("🖼️ 2. صورة إضافية (معرض)", 5 + slotWidth + gap, slotWidth,
+            var grp2 = CreateSlotGroup("2. صورة إضافية (معرض)", 5 + slotWidth + gap, slotWidth,
                 out picSlot2, out lblSlot2Info, out btnSlot2Choose, out btnSlot2Paste, out btnSlot2Url, out btnSlot2Delete,
                 2);
             pnlContent.Controls.Add(grp2);
 
             // Slot 3: صورة إضافية 2
-            var grp3 = CreateSlotGroup("🖼️ 3. صورة إضافية (معرض)", 5 + (slotWidth + gap) * 2, slotWidth,
+            var grp3 = CreateSlotGroup("3. صورة إضافية (معرض)", 5 + (slotWidth + gap) * 2, slotWidth,
                 out picSlot3, out lblSlot3Info, out btnSlot3Choose, out btnSlot3Paste, out btnSlot3Url, out btnSlot3Delete,
                 3);
             pnlContent.Controls.Add(grp3);
@@ -131,13 +131,13 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard
             };
 
-            btnSave = Theme.MakeButton("💾 اعتماد وحفظ الصور", 430, 12, 190, 36, Theme.Accent);
+            btnSave = Theme.MakeButton("اعتماد وحفظ الصور", 430, 12, 190, 36, Theme.Accent);
             btnSave.Click += BtnSave_Click;
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 290, 12, 130, 36, Color.FromArgb(100, 110, 120));
+            btnCancel = Theme.MakeButton("إلغاء", 290, 12, 130, 36, Color.FromArgb(100, 110, 120));
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
-            var btnMobile = Theme.MakeButton("📱 تصوير ورفع من الموبايل (QR)", 15, 12, 260, 36, Color.FromArgb(16, 185, 129));
+            var btnMobile = Theme.MakeButton("تصوير ورفع من الموبايل (QR)", 15, 12, 260, 36, Color.FromArgb(16, 185, 129));
             btnMobile.Click += BtnMobile_Click;
 
             pnlFooter.Controls.AddRange(new Control[] { btnSave, btnCancel, btnMobile });
@@ -185,11 +185,11 @@ namespace ChickenDist.Forms
             int by1 = 215;
             int by2 = 255;
 
-            btnChoose = Theme.MakeButton("📂 اختيار ملف", 15, by1, btnW, 32, Color.FromArgb(37, 99, 235));
-            btnPaste = Theme.MakeButton("📋 لصق حافظة", 20 + btnW, by1, btnW, 32, Color.FromArgb(59, 130, 246));
+            btnChoose = Theme.MakeButton("اختيار ملف", 15, by1, btnW, 32, Color.FromArgb(37, 99, 235));
+            btnPaste = Theme.MakeButton("لصق حافظة", 20 + btnW, by1, btnW, 32, Color.FromArgb(59, 130, 246));
 
-            btnUrl = Theme.MakeButton("🌐 رابط مباشر", 15, by2, btnW, 32, Color.FromArgb(71, 85, 105));
-            btnDel = Theme.MakeButton("🗑️ حذف الصورة", 20 + btnW, by2, btnW, 32, Color.FromArgb(225, 29, 72));
+            btnUrl = Theme.MakeButton("رابط مباشر", 15, by2, btnW, 32, Color.FromArgb(71, 85, 105));
+            btnDel = Theme.MakeButton("حذف الصورة", 20 + btnW, by2, btnW, 32, Color.FromArgb(225, 29, 72));
 
             int curSlot = slotNumber;
             btnChoose.Click += (s, e) => HandleChooseFile(curSlot);
@@ -216,7 +216,7 @@ namespace ChickenDist.Forms
             if (string.IsNullOrWhiteSpace(pathOrUrl))
             {
                 if (pic.Image != null) { var old = pic.Image; pic.Image = null; old.Dispose(); }
-                lbl.Text = "⚪ لا توجد صورة";
+                lbl.Text = "لا توجد صورة";
                 lbl.ForeColor = Color.FromArgb(148, 163, 184);
                 return;
             }
@@ -229,18 +229,18 @@ namespace ChickenDist.Forms
                     if (pic.Image != null) { var old = pic.Image; pic.Image = null; old.Dispose(); }
                     pic.Image = img;
                     string sizeStr = ProductImageService.GetFileSizeString(pathOrUrl);
-                    lbl.Text = $"✅ {img.Width}x{img.Height} px {(string.IsNullOrEmpty(sizeStr) ? "" : $"| {sizeStr}")}";
+                    lbl.Text = $"{img.Width}x{img.Height} px {(string.IsNullOrEmpty(sizeStr) ? "" : $"| {sizeStr}")}";
                     lbl.ForeColor = Color.FromArgb(74, 222, 128);
                 }
                 else
                 {
-                    lbl.Text = "⚠️ تعذر معاينة الصورة محلياً";
+                    lbl.Text = "تعذر معاينة الصورة محلياً";
                     lbl.ForeColor = Color.FromArgb(251, 191, 36);
                 }
             }
             catch (Exception ex)
             {
-                lbl.Text = "❌ خطأ في المعاينة: " + ex.Message;
+                lbl.Text = "خطأ في المعاينة: " + ex.Message;
                 lbl.ForeColor = Color.FromArgb(248, 113, 113);
             }
         }
@@ -285,7 +285,7 @@ namespace ChickenDist.Forms
                             {
                                 SetSlotUrl(slot, savedRelPath);
                                 UpdateSlotDisplay(slot, savedRelPath);
-                                MessageBox.Show("✅ تم لصق الصورة وضغطها بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                MessageBox.Show("تم لصق الصورة وضغطها بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                 return;
                             }
                         }
@@ -301,13 +301,13 @@ namespace ChickenDist.Forms
                         {
                             SetSlotUrl(slot, savedRelPath);
                             UpdateSlotDisplay(slot, savedRelPath);
-                            MessageBox.Show("✅ تم استيراد الصورة من الملف المنسوخ وضغطها بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("تم استيراد الصورة من الملف المنسوخ وضغطها بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             return;
                         }
                     }
                 }
 
-                MessageBox.Show("⚠️ لا توجد صورة في الحافظة!\nيرجى نسخ صورة (أو استخدام أداة التقاط الشاشة Snipping Tool ثم نسخ) والمحاولة مرة أخرى.", "تنبيه الحافظة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("لا توجد صورة في الحافظة!\nيرجى نسخ صورة (أو استخدام أداة التقاط الشاشة Snipping Tool ثم نسخ) والمحاولة مرة أخرى.", "تنبيه الحافظة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
@@ -363,8 +363,8 @@ namespace ChickenDist.Forms
 
                 var lbl = new Label { Text = prompt, Location = new Point(15, 15), Size = new Size(450, 25), AutoSize = false };
                 var txt = new TextBox { Text = defaultValue ?? "", Location = new Point(15, 45), Size = new Size(450, 26), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
-                var btnOk = Theme.MakeButton("✅ موافق", 260, 85, 100, 32, Theme.Accent);
-                var btnCancel = Theme.MakeButton("❌ إلغاء", 140, 85, 100, 32, Color.FromArgb(100, 110, 120));
+                var btnOk = Theme.MakeButton("موافق", 260, 85, 100, 32, Theme.Accent);
+                var btnCancel = Theme.MakeButton("إلغاء", 140, 85, 100, 32, Color.FromArgb(100, 110, 120));
 
                 btnOk.DialogResult = DialogResult.OK;
                 btnCancel.DialogResult = DialogResult.Cancel;
@@ -446,7 +446,7 @@ namespace ChickenDist.Forms
                         ImageUrl3 = frm.SavedImageUrl3;
                         UpdateSlotDisplay(3, ImageUrl3);
                     }
-                    MessageBox.Show("✅ تم استلام الصور المرفوعة من الموبايل وتحديث كارت الصنف والمتجر بنجاح!", "نجاح الاستلام", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم استلام الصور المرفوعة من الموبايل وتحديث كارت الصنف والمتجر بنجاح!", "نجاح الاستلام", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }

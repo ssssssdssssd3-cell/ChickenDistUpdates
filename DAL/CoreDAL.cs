@@ -746,7 +746,7 @@ namespace ChickenDist.DAL
                 if (dtCheck.Rows.Count > 0)
                 {
                     string existingName = dtCheck.Rows[0]["ProductName"].ToString();
-                    throw new Exception($"⚠️ كود الميزان (PLU) [{cleanPLU}] مخصص بالفعل لصنف آخر: [{existingName}]!\nلا يمكن تكرار نفس كود الميزان لصنفين مختلفين.");
+                    throw new Exception($"كود الميزان (PLU) [{cleanPLU}] مخصص بالفعل لصنف آخر: [{existingName}]!\nلا يمكن تكرار نفس كود الميزان لصنفين مختلفين.");
                 }
             }
             decimal safeU2f = (unit2Factor.HasValue && unit2Factor.Value > 0) ? unit2Factor.Value : 1m;
@@ -802,7 +802,7 @@ namespace ChickenDist.DAL
                 bool wasService = oldSrvVal != null && oldSrvVal != DBNull.Value && Convert.ToBoolean(oldSrvVal);
                 if (wasService && !isService)
                 {
-                    throw new Exception("⚠️ غير مسموح بتحويل الصنف الخدمي إلى صنف مخزني عادي مرة أخرى!\nالأصناف الخدمية تُباع بالسالب ولا يتم احتساب مخزون لها، وتحويلها لصنف مخزني عادي يسبب خللاً في الأرصدة والجرد.");
+                    throw new Exception("غير مسموح بتحويل الصنف الخدمي إلى صنف مخزني عادي مرة أخرى!\nالأصناف الخدمية تُباع بالسالب ولا يتم احتساب مخزون لها، وتحويلها لصنف مخزني عادي يسبب خللاً في الأرصدة والجرد.");
                 }
 
                 decimal oldPrice = 0m;
@@ -1190,7 +1190,7 @@ namespace ChickenDist.DAL
                 if (BarcodeMatches(ic, code)) return 3;
             }
 
-            // 4. كود الصنف أو رقم القطعة = إدخال يدوي → يُطبق DefaultSaleUnit
+            // 4. كود الصنف أو رقم القطعة = إدخال يدوي يُطبق DefaultSaleUnit
             bool matchedByManualCode = false;
             if (dr.Table.Columns.Contains("ProductCode") && dr["ProductCode"] != DBNull.Value)
             {
@@ -1409,7 +1409,7 @@ namespace ChickenDist.DAL
 
         /// <summary>
         /// يُستدعى تلقائياً بعد كل عملية بيع للتحقق هل يجب تفعيل السعر المعلق.
-        /// إذا أصبح المخزون ≤ PendingQtyThreshold → يُفعَّل السعر الجديد.
+        /// إذا أصبح المخزون ≤ PendingQtyThreshold يُفعَّل السعر الجديد.
         /// </summary>
         public static void CheckAndActivatePendingPrice(int productID)
         {
@@ -1425,7 +1425,7 @@ namespace ChickenDist.DAL
             // احسب المخزون الحالي
             decimal currentStock = InventoryDAL.GetProductStock(productID);
 
-            // إذا المخزون وصل للحد أو أقل → فعّل السعر الجديد
+            // إذا المخزون وصل للحد أو أقل فعّل السعر الجديد
             if (currentStock <= 0 || currentStock <= threshold)
             {
                 ActivatePendingPrice(productID);
@@ -1885,7 +1885,7 @@ namespace ChickenDist.DAL
             {
                 string sql = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
                                c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
-                               COALESCE(c.DefaultPriceTier, N'Ù‚Ø·Ø§Ø¹ÙŠ') AS DefaultPriceTier,
+                               COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
                                COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
                                ISNULL(cb.Balance, c.OpeningBalance) AS Balance,
                                COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
@@ -1901,7 +1901,7 @@ namespace ChickenDist.DAL
                 AppLogger.Error("ClientDAL.GetAll fallback to table", ex, "ClientDAL");
                 string fallback = @"SELECT c.ClientID, c.ClientCode, c.ClientName, c.Phone, c.Phone2, c.Address,
                                      c.OpeningBalance, c.IsActive, c.DriverID, c.MaxCreditLimit, c.Notes,
-                                     COALESCE(c.DefaultPriceTier, N'Ù‚Ø·Ø§Ø¹ÙŠ') AS DefaultPriceTier,
+                                     COALESCE(c.DefaultPriceTier, N'قطاعي') AS DefaultPriceTier,
                                      COALESCE(c.DefaultPaymentType, N'Any') AS DefaultPaymentType,
                                      c.OpeningBalance AS Balance,
                                      COALESCE(c.OpeningCrates, 0) AS OpeningCrates,
@@ -2318,7 +2318,7 @@ namespace ChickenDist.DAL
                         ELSE N'-'
                     END AS TransferredToSafeName,
                     ISNULL(s.RemainingInDrawer, 0) AS RemainingInDrawer,
-                    CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة 🟢' END AS StatusArabic,
+                    CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة' END AS StatusArabic,
                     s.Notes
                 FROM Shifts s
                 LEFT JOIN Employees eOpen ON s.OpenedBy = eOpen.EmpID
@@ -2340,7 +2340,7 @@ namespace ChickenDist.DAL
             string sql = @"
                 SELECT 
                     s.ShiftID,
-                    CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة 🟢' END AS StatusArabic,
+                    CASE WHEN s.Status = 'Closed' THEN N'مغلقة' ELSE N'مفتوحة' END AS StatusArabic,
                     s.OpenTime,
                     ISNULL(s.CloseTime, GETDATE()) AS CloseTime,
                     CASE 
@@ -2798,7 +2798,7 @@ namespace ChickenDist.DAL
             if (currentBalance < requiredAmount)
             {
                 string accName = DbHelper.ScalarTrans(trans, "SELECT AccountName FROM SafeAccounts WHERE AccountID=@id", DbHelper.P("@id", accountID))?.ToString() ?? "الخزنة / الدرج";
-                throw new Exception($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nالرصيد المتاح حالياً في [{accName}] هو ({currentBalance:N2} ج) فقط، بينما المبلغ المطلوب لـ ({operationName}) هو ({requiredAmount:N2} ج).\nالعملية مرفوضة نهائياً.");
+                throw new Exception($"غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nالرصيد المتاح حالياً في [{accName}] هو ({currentBalance:N2} ج) فقط، بينما المبلغ المطلوب لـ ({operationName}) هو ({requiredAmount:N2} ج).\nالعملية مرفوضة نهائياً.");
             }
         }
 

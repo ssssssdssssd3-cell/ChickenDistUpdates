@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -76,7 +76,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🌿 شجرة ومكونات التصنيع (BOM) - تحديد وتعديل وصفات الإنتاج المعيارية";
+            this.Text = "شجرة ومكونات التصنيع (BOM) - تحديد وتعديل وصفات الإنتاج المعيارية";
             this.Size = new Size(1260, 780);
             this.MinimumSize = new Size(1080, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -143,7 +143,7 @@ namespace ChickenDist.Forms
             var pnlFinishedHeader = new Panel { Dock = DockStyle.Top, Height = 28, BackColor = Color.Transparent };
             var lblFpTitle = new Label
             {
-                Text = "🎯 بيانات المنتج النهائي المصنع (المعياري):",
+                Text = "بيانات المنتج النهائي المصنع (المعياري):",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -153,7 +153,7 @@ namespace ChickenDist.Forms
 
             lblHeaderUnitCostBadge = new Label
             {
-                Text = "🏷️ تكلفة الوحدة المصنعة: 0.00 ج.م",
+                Text = "تكلفة الوحدة المصنعة: 0.00 ج.م",
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -187,7 +187,7 @@ namespace ChickenDist.Forms
             tblFinished.Controls.Add(new Label { Text = "الصنف النهائي (كود/اسم/بحث):", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomRight }, 0, 0);
             tblFinished.Controls.Add(new Label { Text = "الكمية المعيارية:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 1, 0);
             tblFinished.Controls.Add(new Label { Text = "الوحدة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 2, 0);
-            tblFinished.Controls.Add(new Label { Text = "⏱️ مدة التصنيع:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 3, 0);
+            tblFinished.Controls.Add(new Label { Text = "مدة التصنيع:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomCenter }, 3, 0);
             tblFinished.Controls.Add(new Label { Text = "ملاحظات الوصفة:", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.FromArgb(51, 65, 85), TextAlign = ContentAlignment.BottomRight }, 4, 0);
 
             // Controls Row
@@ -216,7 +216,7 @@ namespace ChickenDist.Forms
             };
             txtFinishedProduct.KeyDown += TxtFinishedProduct_KeyDown;
             
-            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 70, 30, Theme.Primary);
+            btnBrowseFinished = Theme.MakeButton("بحث", 0, 0, 70, 30, Theme.Primary);
             btnBrowseFinished.Dock = DockStyle.Fill;
             btnBrowseFinished.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnBrowseFinished.Margin = new Padding(0, 0, 2, 0);
@@ -304,7 +304,7 @@ namespace ChickenDist.Forms
             var pnlRawHeader = new Panel { Dock = DockStyle.Top, Height = 24, BackColor = Color.Transparent };
             var lblRawSectionTitle = new Label
             {
-                Text = "📦 اختيار وإضافة مواد وخامات التصنيع (المكونات):",
+                Text = "اختيار وإضافة مواد وخامات التصنيع (المكونات):",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -314,7 +314,7 @@ namespace ChickenDist.Forms
 
             var lblRawHint = new Label
             {
-                Text = "💡 اضغط Enter في أي خانة لإضافة الخامة فوراً",
+                Text = "اضغط Enter في أي خانة لإضافة الخامة فوراً",
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Italic),
@@ -377,7 +377,7 @@ namespace ChickenDist.Forms
             };
             txtRawProduct.KeyDown += TxtRawProduct_KeyDown;
             
-            btnBrowseRaw = Theme.MakeButton("🔍 خامات", 0, 0, 70, 30, Color.FromArgb(71, 85, 105));
+            btnBrowseRaw = Theme.MakeButton("خامات", 0, 0, 70, 30, Color.FromArgb(71, 85, 105));
             btnBrowseRaw.Dock = DockStyle.Fill;
             btnBrowseRaw.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnBrowseRaw.Margin = new Padding(0, 0, 2, 0);
@@ -450,7 +450,7 @@ namespace ChickenDist.Forms
             tblQuick.Controls.Add(lblRawTotalPreview, 4, 1);
 
             // 5: زر الإضافة الكبير
-            btnAddRaw = Theme.MakeButton("➕ إضافة للشجرة", 0, 0, 130, 32, Color.FromArgb(16, 185, 129));
+            btnAddRaw = Theme.MakeButton("إضافة للشجرة", 0, 0, 130, 32, Color.FromArgb(16, 185, 129));
             btnAddRaw.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnAddRaw.Dock = DockStyle.Fill;
             btnAddRaw.Margin = new Padding(0, 2, 0, 0);
@@ -518,7 +518,7 @@ namespace ChickenDist.Forms
             {
                 Name = "colDelete",
                 HeaderText = "حذف",
-                Text = "🗑️",
+                Text = "حذف",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 8
             };
@@ -578,25 +578,25 @@ namespace ChickenDist.Forms
             };
             tblBottom.Controls.Add(pnlActionsRight, 0, 0);
 
-            btnSave = Theme.MakeButton("💾 حفظ الشجرة", 0, 0, 130, 36, Color.FromArgb(16, 185, 129));
+            btnSave = Theme.MakeButton("حفظ الشجرة", 0, 0, 130, 36, Color.FromArgb(16, 185, 129));
             btnSave.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSave.Margin = new Padding(0, 2, 6, 0);
             btnSave.Click += (s, e) => SaveCurrentBOM();
             pnlActionsRight.Controls.Add(btnSave);
 
-            btnNew = Theme.MakeButton("➕ وصفة جديدة", 0, 0, 115, 36, Color.FromArgb(71, 85, 105));
+            btnNew = Theme.MakeButton("وصفة جديدة", 0, 0, 115, 36, Color.FromArgb(71, 85, 105));
             btnNew.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnNew.Margin = new Padding(0, 2, 6, 0);
             btnNew.Click += (s, e) => ResetForm();
             pnlActionsRight.Controls.Add(btnNew);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة", 0, 0, 85, 36, Color.FromArgb(2, 132, 199));
+            btnPrint = Theme.MakeButton("طباعة", 0, 0, 85, 36, Color.FromArgb(2, 132, 199));
             btnPrint.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnPrint.Margin = new Padding(0, 2, 6, 0);
             btnPrint.Click += (s, e) => PrintBOM();
             pnlActionsRight.Controls.Add(btnPrint);
 
-            btnDelete = Theme.MakeButton("🗑️ حذف", 0, 0, 80, 36, Color.FromArgb(239, 68, 68));
+            btnDelete = Theme.MakeButton("حذف", 0, 0, 80, 36, Color.FromArgb(239, 68, 68));
             btnDelete.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnDelete.Margin = new Padding(0, 2, 0, 0);
             btnDelete.Click += (s, e) => DeleteCurrentBOM();
@@ -613,13 +613,13 @@ namespace ChickenDist.Forms
             };
             tblBottom.Controls.Add(pnlSummaryLeft, 1, 0);
 
-            lblUnitCost = CreateBadge("🏷️ تكلفة الوحدة: 0.00 ج.م", Color.FromArgb(16, 185, 129), Color.FromArgb(236, 253, 245));
+            lblUnitCost = CreateBadge("تكلفة الوحدة: 0.00 ج.م", Color.FromArgb(16, 185, 129), Color.FromArgb(236, 253, 245));
             pnlSummaryLeft.Controls.Add(lblUnitCost);
 
-            lblTotalRawCost = CreateBadge("💰 الخامات: 0.00 ج.م", Color.FromArgb(217, 119, 6), Color.FromArgb(254, 243, 199));
+            lblTotalRawCost = CreateBadge("الخامات: 0.00 ج.م", Color.FromArgb(217, 119, 6), Color.FromArgb(254, 243, 199));
             pnlSummaryLeft.Controls.Add(lblTotalRawCost);
 
-            lblItemsCount = CreateBadge("📦 الأصناف: 0", Color.FromArgb(71, 85, 105), Color.FromArgb(241, 245, 249));
+            lblItemsCount = CreateBadge("الأصناف: 0", Color.FromArgb(71, 85, 105), Color.FromArgb(241, 245, 249));
             pnlSummaryLeft.Controls.Add(lblItemsCount);
 
             tblEditorLayout.Controls.Add(tblBottom, 0, 3);
@@ -647,7 +647,7 @@ namespace ChickenDist.Forms
             
             var lblSideTitle = new Label
             {
-                Text = "📋 شجر الإنتاج والوصفات المسجلة",
+                Text = "شجر الإنتاج والوصفات المسجلة",
                 Dock = DockStyle.Top,
                 Height = 26,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -999,7 +999,7 @@ namespace ChickenDist.Forms
                 tot.ToString("N2"),
                 "0.0%",
                 "",
-                "🗑️"
+                "حذف"
             );
 
             if (newIdx >= 0 && newIdx < dgItems.Rows.Count)
@@ -1110,10 +1110,10 @@ namespace ChickenDist.Forms
             decimal outQty = numOutputQty.Value > 0 ? numOutputQty.Value : 1m;
             decimal unitCost = totalCost / outQty;
 
-            lblItemsCount.Text = $"📦 المكونات: {count} صنف";
-            lblTotalRawCost.Text = $"💰 إجمالي الخامات: {totalCost:N2} ج.م";
-            lblUnitCost.Text = $"🏷️ تكلفة الوحدة: {unitCost:N2} ج.م";
-            lblHeaderUnitCostBadge.Text = $"🏷️ تكلفة الوحدة المصنعة: {unitCost:N2} ج.م";
+            lblItemsCount.Text = $"المكونات: {count} صنف";
+            lblTotalRawCost.Text = $"إجمالي الخامات: {totalCost:N2} ج.م";
+            lblUnitCost.Text = $"تكلفة الوحدة: {unitCost:N2} ج.م";
+            lblHeaderUnitCostBadge.Text = $"تكلفة الوحدة المصنعة: {unitCost:N2} ج.م";
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -1177,12 +1177,12 @@ namespace ChickenDist.Forms
             try
             {
                 _currentBOMID = ProductionDAL.SaveBOM(bom);
-                MessageBox.Show("✅ تم حفظ شجرة ومكونات التصنيع بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم حفظ شجرة ومكونات التصنيع بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadSavedBOMsList();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل حفظ شجرة التصنيع:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل حفظ شجرة التصنيع:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1251,7 +1251,7 @@ namespace ChickenDist.Forms
                     itm.TotalCost.ToString("N2"),
                     "0.0%",
                     itm.Notes,
-                    "🗑️"
+                    "حذف"
                 );
             }
 
@@ -1290,7 +1290,7 @@ namespace ChickenDist.Forms
             {
                 if (ProductionDAL.DeleteBOM(_currentBOMID))
                 {
-                    MessageBox.Show("✅ تم حذف شجرة التصنيع بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم حذف شجرة التصنيع بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     ResetForm();
                     LoadSavedBOMsList();
                 }

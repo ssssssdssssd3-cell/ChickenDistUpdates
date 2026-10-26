@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -113,25 +113,25 @@ namespace ChickenDist.Forms
                 FlowDirection = FlowDirection.TopDown
             };
 
-            btnAdd = Theme.MakeButton(isCar ? "\u2795 \u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629" : "\u2795 \u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629", Color.FromArgb(40, 150, 80));
+            btnAdd = Theme.MakeButton(isCar ? "\u0625\u0636\u0627\u0641\u0629 \u0643\u0631\u062a \u0635\u064a\u0627\u0646\u0629" : "\u0625\u0636\u0627\u0641\u0629 \u062a\u0630\u0643\u0631\u0629 \u0635\u064a\u0627\u0646\u0629", Color.FromArgb(40, 150, 80));
             btnAdd.Size = new Size(160, 36);
             btnAdd.Margin = new Padding(0, 0, 0, 10);
             btnAdd.Click += (s, e) => { if (new FrmMaintenanceCard().ShowDialog() == DialogResult.OK) LoadTickets(); };
             actionPanel.Controls.Add(btnAdd);
 
-            btnEdit = Theme.MakeButton(isCar ? "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udcdd \u062a\u0639\u062f\u064a\u0644 \u0627\u0644\u062a\u0630\u0643\u0631\u0629", Theme.Accent);
+            btnEdit = Theme.MakeButton(isCar ? "\u062a\u0639\u062f\u064a\u0644 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\u062a\u0639\u062f\u064a\u0644 \u0627\u0644\u062a\u0630\u0643\u0631\u0629", Theme.Accent);
             btnEdit.Size = new Size(160, 36);
             btnEdit.Margin = new Padding(0, 0, 0, 10);
             btnEdit.Click += BtnEdit_Click;
             actionPanel.Controls.Add(btnEdit);
 
-            btnDelete = Theme.MakeButton(isCar ? "\ud83d\uddd1\ufe0f \u062d\u0630\u0641 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\uddd1\ufe0f \u062d\u0630\u0641 \u0627\u0644\u062a\u0630\u0643\u0631\u0629", Theme.Danger);
+            btnDelete = Theme.MakeButton(isCar ? "\u062d\u0630\u0641 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\u062d\u0630\u0641 \u0627\u0644\u062a\u0630\u0643\u0631\u0629", Theme.Danger);
             btnDelete.Size = new Size(160, 36);
             btnDelete.Margin = new Padding(0, 0, 0, 10);
             btnDelete.Click += BtnDelete_Click;
             actionPanel.Controls.Add(btnDelete);
 
-            btnPrint = Theme.MakeButton(isCar ? "\ud83d\udda8\ufe0f \u0637\u0628\u0627\u0639\u0629 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udda8\ufe0f \u0637\u0628\u0627\u0639\u0629 \u0625\u064a\u0635\u0627\u0644 \u0635\u064a\u0627\u0646\u0629", Color.FromArgb(30, 80, 180));
+            btnPrint = Theme.MakeButton(isCar ? "\u0637\u0628\u0627\u0639\u0629 \u0643\u0631\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\u0637\u0628\u0627\u0639\u0629 \u0625\u064a\u0635\u0627\u0644 \u0635\u064a\u0627\u0646\u0629", Color.FromArgb(30, 80, 180));
             btnPrint.Size = new Size(160, 36);
             btnPrint.Margin = new Padding(0, 0, 0, 10);
             btnPrint.Click += BtnPrint_Click;
@@ -154,10 +154,10 @@ namespace ChickenDist.Forms
             pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlStats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            pnlStats.Controls.Add(MakeStatLabel(isCar ? "\ud83d\udd27 \u0625\u062c\u0645\u0627\u0644\u064a \u0643\u0631\u0648\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\ud83d\udd27 \u0625\u062c\u0645\u0627\u0644\u064a \u062a\u0630\u0627\u0643\u0631 \u0627\u0644\u0635\u064a\u0627\u0646\u0629", "0", Theme.TextMain, out lblValTotal), 0, 0);
-            pnlStats.Controls.Add(MakeStatLabel("\u23f3 \u0642\u064a\u062f \u0627\u0644\u0625\u0635\u0644\u0627\u062d", "0", Color.Orange, out lblValRepair), 1, 0);
-            pnlStats.Controls.Add(MakeStatLabel("\u2705 \u062c\u0627\u0647\u0632 \u0644\u0644\u062a\u0633\u0644\u064a\u0645", "0", Color.LimeGreen, out lblValReady), 2, 0);
-            pnlStats.Controls.Add(MakeStatLabel("\ud83d\udcb5 \u0625\u062c\u0645\u0627\u0644\u064a \u0625\u064a\u0631\u0627\u062f\u0627\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629 (\u0627\u0644\u0645\u0633\u0644\u0645\u0629)", "0.00 \u062c", Theme.Success, out lblValRevenue), 3, 0);
+            pnlStats.Controls.Add(MakeStatLabel(isCar ? "\u0625\u062c\u0645\u0627\u0644\u064a \u0643\u0631\u0648\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629" : "\u0625\u062c\u0645\u0627\u0644\u064a \u062a\u0630\u0627\u0643\u0631 \u0627\u0644\u0635\u064a\u0627\u0646\u0629", "0", Theme.TextMain, out lblValTotal), 0, 0);
+            pnlStats.Controls.Add(MakeStatLabel("\u0642\u064a\u062f \u0627\u0644\u0625\u0635\u0644\u0627\u062d", "0", Color.Orange, out lblValRepair), 1, 0);
+            pnlStats.Controls.Add(MakeStatLabel("\u062c\u0627\u0647\u0632 \u0644\u0644\u062a\u0633\u0644\u064a\u0645", "0", Color.LimeGreen, out lblValReady), 2, 0);
+            pnlStats.Controls.Add(MakeStatLabel("\u0625\u062c\u0645\u0627\u0644\u064a \u0625\u064a\u0631\u0627\u062f\u0627\u062a \u0627\u0644\u0635\u064a\u0627\u0646\u0629 (\u0627\u0644\u0645\u0633\u0644\u0645\u0629)", "0.00 \u062c", Theme.Success, out lblValRevenue), 3, 0);
 
             mainLayout.Controls.Add(pnlStats, 0, 2);
 
@@ -365,17 +365,17 @@ namespace ChickenDist.Forms
                 return;
             }
             int ticketID = Convert.ToInt32(dgTickets.SelectedRows[0].Cells["TicketID"].Value);
-            if (MessageBox.Show("⚠️ هل أنت متأكد من حذف هذه التذكرة نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (MessageBox.Show("هل أنت متأكد من حذف هذه التذكرة نهائياً؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 try
                 {
                     DbHelper.Execute("DELETE FROM MaintenanceTickets WHERE TicketID = @tid", DbHelper.P("@tid", ticketID));
-                    MessageBox.Show("✅ تم حذف التذكرة بنجاح");
+                    MessageBox.Show("تم حذف التذكرة بنجاح");
                     LoadTickets();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ فشل عملية الحذف: " + ex.Message);
+                    MessageBox.Show("فشل عملية الحذف: " + ex.Message);
                 }
             }
         }
@@ -415,7 +415,7 @@ namespace ChickenDist.Forms
                 Font fontVal = new Font("Segoe UI", 10f);
 
                 ev.Graphics.DrawString(company, fontTitle, Brushes.Black, new PointF(100, y)); y += 40;
-                                ev.Graphics.DrawString(isCar ? "\u0625\u064a\u0635\u0627\u0644 \u0635\u064a\u0627\u0646\u0629 \u0633\u064a\u0627\u0631\u0629 \u0648\u063a\u064a\u0627\u0631 \u0632\u064a\u062a" : "\ud83e\uddfe \u0625\u064a\u0635\u0627\u0644 \u0627\u0633\u062a\u0644\u0627\u0645 \u0635\u064a\u0627\u0646\u0629 \u062c\u0647\u0627\u0632", fontLabel, Brushes.Black, new PointF(80, y)); y += 30;
+                                ev.Graphics.DrawString(isCar ? "\u0625\u064a\u0635\u0627\u0644 \u0635\u064a\u0627\u0646\u0629 \u0633\u064a\u0627\u0631\u0629 \u0648\u063a\u064a\u0627\u0631 \u0632\u064a\u062a" : "\u0625\u064a\u0635\u0627\u0644 \u0627\u0633\u062a\u0644\u0627\u0645 \u0635\u064a\u0627\u0646\u0629 \u062c\u0647\u0627\u0632", fontLabel, Brushes.Black, new PointF(80, y)); y += 30;
                 ev.Graphics.DrawLine(Pens.Black, 20, y, 280, y); y += 15;
 
                 ev.Graphics.DrawString(isCar ? $"\u0631\u0642\u0645 \u0627\u0644\u0643\u0631\u062a: {ticketID}" : $"\u0631\u0642\u0645 \u0627\u0644\u062a\u0630\u0643\u0631\u0629: {ticketID}", fontLabel, Brushes.Black, new PointF(20, y)); y += 22;

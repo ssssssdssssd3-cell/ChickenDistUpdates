@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -22,7 +22,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "🛠️ دليل وبرمجة أجهزة الاسكانر — قراءة IMEI فقط وتجاهل الكود الدولي";
+            this.Text = "دليل وبرمجة أجهزة الاسكانر — قراءة IMEI فقط وتجاهل الكود الدولي";
             this.Size = new Size(820, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -44,7 +44,7 @@ namespace ChickenDist.Forms
 
             var lblHeaderTitle = new Label
             {
-                Text = "📱 حل تداخل قراءة الباركود في نشاط الموبايلات",
+                Text = "حل تداخل قراءة الباركود في نشاط الموبايلات",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 Location = new Point(20, 12),
@@ -74,7 +74,7 @@ namespace ChickenDist.Forms
 
             btnPrintGuide = new Button
             {
-                Text = "🖨️ طباعة ورقة باركودات ضبط الاسكانر (A4 / طابعة)",
+                Text = "طباعة ورقة باركودات ضبط الاسكانر (A4 / طابعة)",
                 Dock = DockStyle.Left,
                 Width = 320,
                 BackColor = Color.FromArgb(16, 185, 129),
@@ -114,9 +114,9 @@ namespace ChickenDist.Forms
             int curY = 10;
 
             // كارت 1: الحل الأسهل والأمثل (استيكر IMEI الموحد)
-            var pnlCard1 = CreateCard("🎯 الطريقة الأولى (الأسهل والأدق): استخدام استيكر IMEI الموحد للمحل",
+            var pnlCard1 = CreateCard("الطريقة الأولى (الأسهل والأدق): استخدام استيكر IMEI الموحد للمحل",
                 "• تم تزويد البرنامج بنموذج طباعة مخصص للهواتف (استيكر IMEI الموحد).\n" +
-                "• عند استلام كراتين الموبايل، اضغط زر [🖨️ طباعة الباركود] لطباعة ملصق حراري لكل جهاز.\n" +
+                "• عند استلام كراتين الموبايل، اضغط زر [طباعة الباركود] لطباعة ملصق حراري لكل جهاز.\n" +
                 "• الاستيكر يحتوي على: اسم المحل بخط كبير وواضح + اسم الجهاز + باركود واحد فقط للـ IMEI.\n" +
                 "• بمجرد لصقه على الكرتونة، يقرأه أي اسكانر في العالم في أقل من جزء من الثانية وبدون أي تشتيت!",
                 Color.FromArgb(238, 242, 255), Color.FromArgb(79, 70, 229));
@@ -126,7 +126,7 @@ namespace ChickenDist.Forms
             curY += pnlCard1.Height + 15;
 
             // كارت 2: برمجة جهاز الاسكانر نفسه (Hardware Configuration)
-            var pnlCard2 = CreateCard("⚙️ الطريقة الثانية (الجذرية): برمجة الاسكانر ليتجاهل الكود الدولي هاردوير",
+            var pnlCard2 = CreateCard("الطريقة الثانية (الجذرية): برمجة الاسكانر ليتجاهل الكود الدولي هاردوير",
                 "أجهزة الاسكانر الحديثة تحتوي على شريحة داخلية يمكن برمجتها بمسح باركود من الكتالوج:\n" +
                 "1. تعطيل قراءة الباركود الدولي (Disable EAN-13 / UPC): الاسكانر يصبح أعمى عن كود العلبة الدولي ولا يرسله للكمبيوتر نهائياً.\n" +
                 "2. رفع الحد الأدنى لطول الكود إلى 14 رقماً (Min Code 128 Length = 14): الاسكانر يتجاهل كود S/N ولا يقرأ إلا الـ IMEI (15 رقم).\n" +
@@ -150,7 +150,7 @@ namespace ChickenDist.Forms
 
             var lblBcTitle = new Label
             {
-                Text = "⚡ باركودات ضبط الاسكانر (يمكنك توجيه الاسكانر ومسحها مباشرة من الشاشة):",
+                Text = "باركودات ضبط الاسكانر (يمكنك توجيه الاسكانر ومسحها مباشرة من الشاشة):",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42),
                 Location = new Point(12, 10),
@@ -178,7 +178,7 @@ namespace ChickenDist.Forms
             curY += pnlBarcodes.Height + 15;
 
             // كارت 4: نصائح سريعة للاسكانر
-            var pnlCard4 = CreateCard("💡 نصيحة سريعة أثناء المسح على العلبة الأصلية",
+            var pnlCard4 = CreateCard("نصيحة سريعة أثناء المسح على العلبة الأصلية",
                 "• الفلترة الذكية في البرنامج أصبحت الآن صامتة وفورية 100%: عند مرور شعاع الاسكانر على الكود الدولي أو S/N، يتم تجاوزهما تلقائياً وبدون صوت خطأ، وبمجرد لمس شعاع الليزر لكود IMEI 1 يتم تسجيله فوراً.\n" +
                 "• يمكنك وضع إصبعك أو لاصق ورقي صغير فوق الكود الدولي على الكرتونة لمنع شعاع الليزر من التقاطه نهائياً.",
                 Color.FromArgb(254, 243, 199), Color.FromArgb(217, 119, 6));
@@ -332,7 +332,7 @@ namespace ChickenDist.Forms
             float printableWidth = e.PageBounds.Width - (margin * 2);
 
             // رأس الصفحة
-            g.DrawString("📱 ورقة ضبط وبرمجة أجهزة الاسكانر — نشاط الموبايلات", titleFont, Brushes.Navy, new RectangleF(margin, y, printableWidth, 30), centerFormat);
+            g.DrawString("ورقة ضبط وبرمجة أجهزة الاسكانر — نشاط الموبايلات", titleFont, Brushes.Navy, new RectangleF(margin, y, printableWidth, 30), centerFormat);
             y += 35;
             g.DrawString("توجيه الاسكانر لقراءة كود IMEI 1 فقط (15 رقم) وتجاوز الكود الدولي و S/N", subFont, Brushes.Gray, new RectangleF(margin, y, printableWidth, 20), centerFormat);
             y += 30;

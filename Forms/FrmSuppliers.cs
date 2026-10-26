@@ -67,12 +67,12 @@ namespace ChickenDist.Forms
                 ForeColor = Color.FromArgb(241, 196, 15),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(8, 8, 0, 0),
-                Text = "👥 إجمالي الموردين: --  |  💰 إجمالي المستحقات: -- ج"
+                Text = "إجمالي الموردين: --  |  إجمالي المستحقات: -- ج"
             };
 
             var lblSearch = new Label
             {
-                Text = "🔍 بحث الموردين:",
+                Text = "بحث الموردين:",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -90,7 +90,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
-            cboSearchFilter.Items.AddRange(new object[] { "🔍 الكل (شامل)", "🏢 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchFilter.Items.AddRange(new object[] { "الكل (شامل)", "بالاسم", "برقم الهاتف", "بالكود" });
             cboSearchFilter.SelectedIndex = 0;
             cboSearchFilter.SelectedIndexChanged += (s, e) =>
             {
@@ -120,7 +120,7 @@ namespace ChickenDist.Forms
                 LoadSuppliers(searchVal);
             };
 
-            var btnSearchIcon = Theme.MakeButton("🔍", Color.FromArgb(37, 99, 235));
+            var btnSearchIcon = Theme.MakeButton("بحث", Color.FromArgb(37, 99, 235));
             btnSearchIcon.Dock = DockStyle.Right;
             btnSearchIcon.Width = 45;
             btnSearchIcon.Click += (s, e) =>
@@ -209,7 +209,7 @@ namespace ChickenDist.Forms
             int y = 10;
             var lblDetailsTitle = new Label
             {
-                Text = "📋 بطاقة وتفاصيل المورد",
+                Text = "بطاقة وتفاصيل المورد",
                 Location = new Point(10, y),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(241, 196, 15),
@@ -253,22 +253,22 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(lblBalance);
             y += 46;
 
-            btnSave = Theme.MakeButton("➕ حفظ المورد", 215, y, 100, 36, Color.FromArgb(16, 185, 129));
-            btnNew = Theme.MakeButton("➕ إضافة", 115, y, 95, 36, Color.FromArgb(37, 99, 235));
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 100, 36, Color.FromArgb(239, 68, 68));
+            btnSave = Theme.MakeButton("حفظ المورد", 215, y, 100, 36, Color.FromArgb(16, 185, 129));
+            btnNew = Theme.MakeButton("إضافة", 115, y, 95, 36, Color.FromArgb(37, 99, 235));
+            btnDelete = Theme.MakeButton("إيقاف", 10, y, 100, 36, Color.FromArgb(239, 68, 68));
             y += 42;
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
             btnDelete.Click += BtnDelete_Click;
 
-            var btnExpense = Theme.MakeButton("💸 صرف دفعة", 215, y, 100, 34, Color.FromArgb(5, 150, 105));
+            var btnExpense = Theme.MakeButton("صرف دفعة", 215, y, 100, 34, Color.FromArgb(5, 150, 105));
             btnExpense.Click += BtnExpense_Click;
 
-            var btnAdjustment = Theme.MakeButton("⚖️ تسوية رصيد", 115, y, 95, 34, Color.FromArgb(71, 85, 105));
+            var btnAdjustment = Theme.MakeButton("تسوية رصيد", 115, y, 95, 34, Color.FromArgb(71, 85, 105));
             btnAdjustment.Click += BtnAdjustment_Click;
 
-            btnStatement = Theme.MakeButton("📋 كشف حساب", 10, y, 100, 34, Color.FromArgb(37, 99, 235));
+            btnStatement = Theme.MakeButton("كشف حساب", 10, y, 100, 34, Color.FromArgb(37, 99, 235));
             btnStatement.Click += (s, e) =>
             {
                 if (_selectedID == 0) { MessageBox.Show("اختر مورداً من القائمة أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
@@ -276,10 +276,10 @@ namespace ChickenDist.Forms
             };
             y += 40;
 
-            btnItemMovementReport = Theme.MakeButton("📊 حركة الأصناف الموردة", 165, y, 150, 34, Color.FromArgb(2, 132, 199));
+            btnItemMovementReport = Theme.MakeButton("حركة الأصناف الموردة", 165, y, 150, 34, Color.FromArgb(2, 132, 199));
             btnItemMovementReport.Click += BtnItemMovementReport_Click;
 
-            var btnWhatsApp = Theme.MakeButton("📲 إرسال كشف الحساب واتساب", 10, y, 150, 34, Color.FromArgb(37, 211, 102));
+            var btnWhatsApp = Theme.MakeButton("إرسال كشف الحساب واتساب", 10, y, 150, 34, Color.FromArgb(37, 211, 102));
             btnWhatsApp.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnWhatsApp.ForeColor = Color.White;
             btnWhatsApp.Click += (s, e) =>
@@ -295,18 +295,18 @@ namespace ChickenDist.Forms
                 }
                 catch { }
 
-                string msg = $"📊 *كشف حساب مورد - {AppConfig.CompanyName}*\n" +
-                             $"👤 *المورد:* {name}\n" +
-                             $"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n" +
-                             $"💵 *الرصيد المستحق للمورد:* {bal:N2} ج\n" +
-                             $"\nشاكرين ومقدرين حسن تعاونكم معنا! 🙏";
+                string msg = $"*كشف حساب مورد - {AppConfig.CompanyName}*\n" +
+                             $"*المورد:* {name}\n" +
+                             $"*التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n" +
+                             $"*الرصيد المستحق للمورد:* {bal:N2} ج\n" +
+                             $"\nشاكرين ومقدرين حسن تعاونكم معنا!";
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
                     phone,
                     msg,
                     () => ReceiptImageGenerator.GenerateTextCardImage("كشف حساب مورد", msg),
-                    "📱 إرسال كشف حساب المورد عبر الواتساب");
+                    "إرسال كشف حساب المورد عبر الواتساب");
             };
 
             pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnExpense, btnAdjustment, btnStatement, btnItemMovementReport, btnWhatsApp });
@@ -417,7 +417,7 @@ namespace ChickenDist.Forms
 
             if (lblSummary != null)
             {
-                lblSummary.Text = string.Format("👥 إجمالي الموردين: {0:N0}  |  💰 إجمالي المستحقات: {1:N2} ج", count, totalDue);
+                lblSummary.Text = string.Format("إجمالي الموردين: {0:N0}  |  إجمالي المستحقات: {1:N2} ج", count, totalDue);
             }
 
             dgSuppliers.AutoSizeColumnsMode = oldMode;
@@ -446,7 +446,7 @@ namespace ChickenDist.Forms
 
             if (btnSave != null)
             {
-                btnSave.Text = "💾 حفظ التعديل";
+                btnSave.Text = "حفظ التعديل";
                 btnSave.BackColor = Color.FromArgb(245, 158, 11);
             }
         }
@@ -461,7 +461,7 @@ namespace ChickenDist.Forms
 
             if (btnSave != null)
             {
-                btnSave.Text = "➕ حفظ المورد";
+                btnSave.Text = "حفظ المورد";
                 btnSave.BackColor = Color.FromArgb(16, 185, 129);
             }
         }
@@ -470,12 +470,12 @@ namespace ChickenDist.Forms
         {
             if (_selectedID == 0 && !Session.CanAdd("Suppliers"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية إضافة موردين جُدد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية إضافة موردين جُدد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (_selectedID > 0 && !Session.CanEdit("Suppliers"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية تعديل بيانات الموردين!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية تعديل بيانات الموردين!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم المورد"); return; }
@@ -484,11 +484,11 @@ namespace ChickenDist.Forms
             if (SupplierDAL.CheckDuplicateName(txtName.Text.Trim(), _selectedID, out string dupName, out string dupCode, out string dupReason))
             {
                 MessageBox.Show(
-                    $"⚠️ لا يمكن الحفظ لمنع التكرار والتضارب المحاسبي:\n\n" +
+                    $"لا يمكن الحفظ لمنع التكرار والتضارب المحاسبي:\n\n" +
                     $"يوجد مورد مسجل مسبقاً ({dupReason}):\n" +
                     $"• الاسم المسجل: \"{dupName}\"\n" +
                     $"• كود المورد: {dupCode}\n\n" +
-                    $"💡 للتسجيل: يرجى كتابة الاسم ثلاثياً أو إضافة تمييز لاسم المورد الجديد.",
+                    $"للتسجيل: يرجى كتابة الاسم ثلاثياً أو إضافة تمييز لاسم المورد الجديد.",
                     "تكرار اسم المورد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtName.Focus();
                 return;
@@ -499,7 +499,7 @@ namespace ChickenDist.Forms
             {
                 if (SupplierDAL.IsDuplicatePhone(txtPhone.Text.Trim(), _selectedID))
                 {
-                    MessageBox.Show($"⚠️ رقم الهاتف \"{txtPhone.Text.Trim()}\" مسجَّل لمورد آخر بالفعل.\nيرجى التحقق من الرقم أو البحث عن المورد الموجود.",
+                    MessageBox.Show($"رقم الهاتف \"{txtPhone.Text.Trim()}\" مسجَّل لمورد آخر بالفعل.\nيرجى التحقق من الرقم أو البحث عن المورد الموجود.",
                         "تكرار رقم الهاتف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtPhone.Focus();
                     return;
@@ -508,8 +508,8 @@ namespace ChickenDist.Forms
 
             int id = SupplierDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text,
                 txtAddress.Text, nudOpening.Value, chkActive.Checked);
-            if (id > 0) { SupplierCache.Refresh(); MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadSuppliers(); }
-            else MessageBox.Show("❌ فشل الحفظ");
+            if (id > 0) { SupplierCache.Refresh(); MessageBox.Show("تم الحفظ"); _selectedID = id; LoadSuppliers(); }
+            else MessageBox.Show("فشل الحفظ");
         }
 
 
@@ -517,7 +517,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanDelete("Suppliers"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية حذف وإيقاف الموردين!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية حذف وإيقاف الموردين!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (_selectedID == 0) return;
@@ -545,7 +545,7 @@ namespace ChickenDist.Forms
             // نافذة الصرف
             var dlg = new Form
             {
-                Text = "💸 صرف نقدي وسداد دفعة للمورد - " + supplierName,
+                Text = "صرف نقدي وسداد دفعة للمورد - " + supplierName,
                 Size = new Size(420, 435),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -611,7 +611,7 @@ namespace ChickenDist.Forms
             // اسم المورد
             dlg.Controls.Add(new Label
             {
-                Text = "🏢 المورد: " + supplierName,
+                Text = "المورد: " + supplierName,
                 Location = new Point(15, dy),
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
@@ -715,8 +715,8 @@ namespace ChickenDist.Forms
             dlg.Controls.Add(txtNote);
             dy += 50;
 
-            var btnOk = Theme.MakeButton("✅ تأكيد الصرف", 215, dy, 175, 38, Color.FromArgb(180, 83, 9));
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 115, dy, 90, 38, Color.FromArgb(90, 90, 90));
+            var btnOk = Theme.MakeButton("تأكيد الصرف", 215, dy, 175, 38, Color.FromArgb(180, 83, 9));
+            var btnCancel = Theme.MakeButton("إلغاء", 115, dy, 90, 38, Color.FromArgb(90, 90, 90));
             btnOk.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 
             btnOk.Click += (s2, e2) =>
@@ -782,7 +782,7 @@ namespace ChickenDist.Forms
         {
             var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
-            var miStatement = new ToolStripMenuItem("📑 كشف حساب تفصيلي", null, (s, e) =>
+            var miStatement = new ToolStripMenuItem("كشف حساب تفصيلي", null, (s, e) =>
             {
                 if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
                 {
@@ -792,7 +792,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miMovement = new ToolStripMenuItem("📊 تقرير حركة أصناف المورد", null, (s, e) =>
+            var miMovement = new ToolStripMenuItem("تقرير حركة أصناف المورد", null, (s, e) =>
             {
                 if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
                 {
@@ -800,7 +800,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miPayment = new ToolStripMenuItem("💵 سند صرف سريع", null, (s, e) =>
+            var miPayment = new ToolStripMenuItem("سند صرف سريع", null, (s, e) =>
             {
                 if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
                 {
@@ -808,7 +808,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miWhatsApp = new ToolStripMenuItem("📱 مراسلة واتساب للمورد", null, (s, e) =>
+            var miWhatsApp = new ToolStripMenuItem("مراسلة واتساب للمورد", null, (s, e) =>
             {
                 if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("SupplierID"))
                 {
@@ -828,7 +828,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miCopyPhone = new ToolStripMenuItem("📋 نسخ رقم الهاتف", null, (s, e) =>
+            var miCopyPhone = new ToolStripMenuItem("نسخ رقم الهاتف", null, (s, e) =>
             {
                 if (dgSuppliers.SelectedRows.Count > 0 && dgSuppliers.Columns.Contains("Phone"))
                 {

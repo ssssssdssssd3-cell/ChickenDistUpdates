@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📋 سجل واسترجاع عمليات الجرد المخزني وطباعة باركود الزيادات";
+            this.Text = "سجل واسترجاع عمليات الجرد المخزني وطباعة باركود الزيادات";
             this.Size = new Size(1200, 750);
             this.MinimumSize = new Size(1000, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -47,7 +47,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── 1. شريط العنوان ──
-            var pnlTitle = Theme.MakeTitleBar("📋 استرجاع عمليات الجرد المخزني وطباعة الباركود", "يمكنك اختيار أي عملية جرد سابقة برقمها لاستعراض تفاصيلها وطباعة باركود الأصناف التي تمت زيادتها.");
+            var pnlTitle = Theme.MakeTitleBar("استرجاع عمليات الجرد المخزني وطباعة الباركود", "يمكنك اختيار أي عملية جرد سابقة برقمها لاستعراض تفاصيلها وطباعة باركود الأصناف التي تمت زيادتها.");
 
             // ── 2. شريط الفلتر العلوي ──
             var pnlFilter = new FlowLayoutPanel
@@ -78,18 +78,18 @@ namespace ChickenDist.Forms
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadSessions(); };
             pnlFilter.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("🔍 عرض العمليات", Theme.Primary);
+            btnSearch = Theme.MakeButton("عرض العمليات", Theme.Primary);
             btnSearch.Size = new Size(120, 32);
             btnSearch.Click += (s, e) => LoadSessions();
             pnlFilter.Controls.Add(btnSearch);
 
-            btnPrintOperationBarcodes = Theme.MakeButton("🏷️ طباعة باركود زيادات العملية", Color.FromArgb(39, 174, 96));
+            btnPrintOperationBarcodes = Theme.MakeButton("طباعة باركود زيادات العملية", Color.FromArgb(39, 174, 96));
             btnPrintOperationBarcodes.Size = new Size(210, 32);
             btnPrintOperationBarcodes.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPrintOperationBarcodes.Click += BtnPrintOperationBarcodes_Click;
             pnlFilter.Controls.Add(btnPrintOperationBarcodes);
 
-            btnPrintOperationReport = Theme.MakeButton("🖨️ طباعة كشف العملية", Theme.Secondary);
+            btnPrintOperationReport = Theme.MakeButton("طباعة كشف العملية", Theme.Secondary);
             btnPrintOperationReport.Size = new Size(140, 32);
             btnPrintOperationReport.Click += BtnPrintOperationReport_Click;
             pnlFilter.Controls.Add(btnPrintOperationReport);
@@ -107,7 +107,7 @@ namespace ChickenDist.Forms
 
             // ── Upper Panel: Master Sessions Grid ──
             var pnlUpperHeader = new Panel { Dock = DockStyle.Top, Height = 32, BackColor = Theme.BgCard, Padding = new Padding(10, 6, 10, 0) };
-            lblSessionsCount = new Label { Text = "📋 قائمة عمليات وجلسات الجرد المنفذة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Accent };
+            lblSessionsCount = new Label { Text = "قائمة عمليات وجلسات الجرد المنفذة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Accent };
             pnlUpperHeader.Controls.Add(lblSessionsCount);
 
             dgSessions = MakeGrid();
@@ -116,8 +116,8 @@ namespace ChickenDist.Forms
             dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "WarehouseName",  HeaderText = "المخزن",             FillWeight = 70 });
             dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedBy",      HeaderText = "القائم بالجرد",       FillWeight = 65 });
             dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalItems",     HeaderText = "عدد الأصناف",        FillWeight = 45 });
-            dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "SurplusItems",   HeaderText = "أصناف زيادة (➕)",    FillWeight = 50 });
-            dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShortageItems",  HeaderText = "أصناف عجز (➖)",     FillWeight = 50 });
+            dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "SurplusItems",   HeaderText = "أصناف زيادة ()",    FillWeight = 50 });
+            dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShortageItems",  HeaderText = "أصناف عجز ()",     FillWeight = 50 });
             dgSessions.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalSurplusQty",HeaderText = "إجمالي كمية الزيادة", FillWeight = 55 });
             Theme.AdjustGridHeaders(dgSessions);
 
@@ -128,7 +128,7 @@ namespace ChickenDist.Forms
 
             // ── Lower Panel: Detail Items Grid ──
             var pnlLowerHeader = new Panel { Dock = DockStyle.Top, Height = 35, BackColor = Theme.BgCard, Padding = new Padding(10, 6, 10, 0) };
-            lblDetailsTitle = new Label { Text = "🔍 تفاصيل الأصناف والفروق لعملية الجرد المحددة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Primary };
+            lblDetailsTitle = new Label { Text = "تفاصيل الأصناف والفروق لعملية الجرد المحددة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Primary };
             lblSessionSummary = new Label { Text = "", AutoSize = true, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(40, 120, 60), Location = new Point(450, 8) };
             pnlLowerHeader.Controls.AddRange(new Control[] { lblDetailsTitle, lblSessionSummary });
 
@@ -147,7 +147,7 @@ namespace ChickenDist.Forms
 
             // Context menu for Details grid
             var cmsDetails = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            cmsDetails.Items.Add("🏷️ طباعة استيكر باركود للصنف المحدد", null, (s, e) =>
+            cmsDetails.Items.Add("طباعة استيكر باركود للصنف المحدد", null, (s, e) =>
             {
                 if (dgDetails.SelectedRows.Count > 0)
                 {
@@ -164,7 +164,7 @@ namespace ChickenDist.Forms
                     new FrmBulkPrintBarcodes(new List<BarcodePrintItem> { item }).ShowDialog(this);
                 }
             });
-            cmsDetails.Items.Add("🔍 فتح كارت الصنف", null, (s, e) =>
+            cmsDetails.Items.Add("فتح كارت الصنف", null, (s, e) =>
             {
                 if (dgDetails.SelectedRows.Count > 0)
                 {
@@ -311,7 +311,7 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                lblSessionsCount.Text = $"📋 عمليات وجلسات الجرد المنفذة: ({dgSessions.Rows.Count:N0} عملية)";
+                lblSessionsCount.Text = $"عمليات وجلسات الجرد المنفذة: ({dgSessions.Rows.Count:N0} عملية)";
 
                 if (dgSessions.Rows.Count > 0 && dgSessions.SelectedRows.Count == 0)
                 {
@@ -406,8 +406,8 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                lblDetailsTitle.Text = $"🔍 تفاصيل العملية [{batchCode}] - المخزن: {_selectedWarehouseName} (إجمالي {dt.Rows.Count} صنف)";
-                lblSessionSummary.Text = $"🏷️ أصناف الزيادة القابلة للطباعة: {plusCount} صنف (إجمالي كمية +{totalPlusQty:N2})";
+                lblDetailsTitle.Text = $"تفاصيل العملية [{batchCode}] - المخزن: {_selectedWarehouseName} (إجمالي {dt.Rows.Count} صنف)";
+                lblSessionSummary.Text = $"أصناف الزيادة القابلة للطباعة: {plusCount} صنف (إجمالي كمية +{totalPlusQty:N2})";
             }
             catch (Exception ex)
             {

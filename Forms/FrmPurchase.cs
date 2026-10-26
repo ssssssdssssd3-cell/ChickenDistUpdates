@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -210,8 +210,8 @@ namespace ChickenDist.Forms
             tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
 
             // ── صف 0: جهة الشراء | المورد | التاريخ | نوع الفاتورة ────────────────────────
-            btnTypeCredit = Theme.MakeButton("📋 آجل",  0, 0, 95, 30, Color.FromArgb(37, 99, 235));
-            btnTypeCash   = Theme.MakeButton("💵 نقدي", 0, 0, 95, 30, Color.FromArgb(51, 65, 85));
+            btnTypeCredit = Theme.MakeButton("آجل",  0, 0, 95, 30, Color.FromArgb(37, 99, 235));
+            btnTypeCash   = Theme.MakeButton("نقدي", 0, 0, 95, 30, Color.FromArgb(51, 65, 85));
             btnTypeCredit.Margin = new Padding(2);
             btnTypeCash.Margin   = new Padding(2);
             btnTypeCredit.Click += (s, e) => { _purchaseType = "Credit"; ToggleType(); };
@@ -245,8 +245,8 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(2, 5, 2, 3)
             };
-            cboPurchaseSource.Items.Add("🏭 مورد");
-            cboPurchaseSource.Items.Add("👤 عميل");
+            cboPurchaseSource.Items.Add("مورد");
+            cboPurchaseSource.Items.Add("عميل");
             cboPurchaseSource.SelectedIndex = 0;
             cboPurchaseSource.SelectedIndexChanged += (s, e) => LoadCombos();
 
@@ -267,7 +267,7 @@ namespace ChickenDist.Forms
 
             btnSupplierAdd = new Button
             {
-                Text = "➕",
+                Text = "+",
                 Width = 30,
                 Font = Theme.FontBold,
                 FlatStyle = FlatStyle.Flat,
@@ -311,7 +311,7 @@ namespace ChickenDist.Forms
 
             var btnSupplierSearch = new Button
             {
-                Text = "🔍",
+                Text = "بحث",
                 Width = 34,
                 Font = Theme.FontBold,
                 FlatStyle = FlatStyle.Flat,
@@ -502,7 +502,7 @@ namespace ChickenDist.Forms
 
             var lblBarcode = new Label
             {
-                Text = "📷 باركود / كود الصنف (الاسكنر):",
+                Text = "باركود / كود الصنف (الاسكنر):",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
@@ -520,7 +520,7 @@ namespace ChickenDist.Forms
 
             btnSearchProduct = new Button
             {
-                Text = "🔍 بحث سريع عن الأصناف (F3)",
+                Text = "بحث سريع عن الأصناف (F3)",
                 Size = new Size(200, 30),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -679,7 +679,7 @@ namespace ChickenDist.Forms
 
             var btnQuickAddProduct = new Button
             {
-                Text = "⚡ صنف جديد (F9)",
+                Text = "صنف جديد (F9)",
                 Size = new Size(135, 30),
                 BackColor = Color.FromArgb(13, 148, 136),
                 ForeColor = Color.White,
@@ -693,7 +693,7 @@ namespace ChickenDist.Forms
 
             var btnManualAdd = new Button
             {
-                Text = "➕ سطر إدخال جديد (Ins)",
+                Text = "سطر إدخال جديد (Ins)",
                 Size = new Size(155, 30),
                 BackColor = Color.FromArgb(51, 65, 85),
                 ForeColor = Color.White,
@@ -725,7 +725,7 @@ namespace ChickenDist.Forms
 
             btnCustomizeCols = new Button
             {
-                Text      = "⚙️ تخصيص الأعمدة",
+                Text      = "تخصيص الأعمدة",
                 Size      = new Size(130, 30),
                 BackColor = Color.FromArgb(51, 65, 85),
                 ForeColor = Color.White,
@@ -773,7 +773,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var lblBulkTitle = new Label
             {
-                Text = "🏷️ التسعير الجماعي لأصناف الفاتورة:",
+                Text = "التسعير الجماعي لأصناف الفاتورة:",
                 AutoSize = true,
                 ForeColor = Color.FromArgb(15, 23, 42),
                 Margin = new Padding(4, 7, 8, 0),
@@ -804,7 +804,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var btnApplyBulkMargin = new Button
             {
-                Text = "⚡ تطبيق نسبة الربح على الكل",
+                Text = "تطبيق نسبة الربح على الكل",
                 Size = new Size(175, 30),
                 BackColor = Color.FromArgb(14, 116, 144),
                 ForeColor = Color.White,
@@ -850,12 +850,12 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     _isUpdatingGrid = false;
                 }
                 _isDirty = true;
-                MessageBox.Show($"✅ تم تطبيق نسبة ربح ({marginPct}%) وحساب سعر البيع المقترح لجميع أصناف الفاتورة بنجاح ({updatedCount} صنف).", "تطبيق الربح جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تطبيق نسبة ربح ({marginPct}%) وحساب سعر البيع المقترح لجميع أصناف الفاتورة بنجاح ({updatedCount} صنف).", "تطبيق الربح جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             var btnApplyCardMargin = new Button
             {
-                Text = "📋 تطبيق ربح كارت الصنف",
+                Text = "تطبيق ربح كارت الصنف",
                 Size = new Size(165, 30),
                 BackColor = Color.FromArgb(99, 102, 241),
                 ForeColor = Color.White,
@@ -911,7 +911,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     _isUpdatingGrid = false;
                 }
                 _isDirty = true;
-                MessageBox.Show($"✅ تم تطبيق نسبة ربح كارت الصنف وتحديث أسعار البيع المقترحة لـ ({updatedCount}) صنف مسجل لهم نسبة ربح.", "تطبيق ربح كارت الصنف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تطبيق نسبة ربح كارت الصنف وتحديث أسعار البيع المقترحة لـ ({updatedCount}) صنف مسجل لهم نسبة ربح.", "تطبيق ربح كارت الصنف", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             var lblBulkTax = new Label
@@ -938,7 +938,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var btnApplyBulkTax = new Button
             {
-                Text = "⚡ تطبيق الضريبة على الكل",
+                Text = "تطبيق الضريبة على الكل",
                 Size = new Size(165, 30),
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
@@ -984,7 +984,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
                 _isDirty = true;
                 RecalcTotals();
-                MessageBox.Show($"✅ تم تطبيق نسبة الضريبة ({taxPctVal}%) على جميع أصناف الفاتورة بنجاح ({updatedCount} صنف).", "تطبيق الضريبة جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تطبيق نسبة الضريبة ({taxPctVal}%) على جميع أصناف الفاتورة بنجاح ({updatedCount} صنف).", "تطبيق الضريبة جماعياً", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             flowBulk.Controls.Add(lblBulkTitle);
@@ -1078,7 +1078,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",   HeaderText = "تاريخ الصلاحية", FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Format = "yyyy-MM-dd" } });
             dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "IMEI",         HeaderText = "السيريال",    ReadOnly = false, FillWeight = 85, MinimumWidth = 180, Visible = AppConfig.BusinessType == "Mobiles", DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) } });
             dgItems.Columns.Add(new DataGridViewButtonColumn  { Name = "Delete",       HeaderText = "حذف",
-                Text = "🗑️", UseColumnTextForButtonValue = true, FillWeight = 30 });
+                Text = "حذف", UseColumnTextForButtonValue = true, FillWeight = 30 });
             Theme.AdjustGridHeaders(dgItems);
 
             foreach (DataGridViewColumn col in dgItems.Columns)
@@ -1147,7 +1147,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
             };
 
-            // سهم لأسفل في آخر سطر → سطر كود جديد | Insert = نفس الشيء
+            // سهم لأسفل في آخر سطر سطر كود جديد | Insert = نفس الشيء
             dgItems.KeyDown += (s, ke) =>
             {
                 if (ke.KeyCode == Keys.Down && dgItems.CurrentCell != null)
@@ -1255,7 +1255,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             };
             var lblNetTitle = new Label
             {
-                Text = "💰 صافي الفاتورة المطلوب",
+                Text = "صافي الفاتورة المطلوب",
                 Dock = DockStyle.Top,
                 Height = 19,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -1394,7 +1394,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             pnlTaxInner.BringToFront();
 
             // 4. مصاريف الشحن
-            var pnlShipGrp = MakeSummaryCard("🚚 مصاريف الشحن", Color.FromArgb(14, 165, 233), out _);
+            var pnlShipGrp = MakeSummaryCard("مصاريف الشحن", Color.FromArgb(14, 165, 233), out _);
             var pnlShipInner = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -1447,10 +1447,10 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             pnlShipInner.BringToFront();
 
             // 5. استقطاعات المشتريات
-            var pnlDeductGrp = MakeSummaryCard("✂️ استقطاعات", Color.FromArgb(100, 116, 139), out _);
+            var pnlDeductGrp = MakeSummaryCard("استقطاعات", Color.FromArgb(100, 116, 139), out _);
             btnDeductions = new Button
             {
-                Text = "✂️ استقطاعات",
+                Text = "استقطاعات",
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(51, 65, 85),
                 ForeColor = Color.White,
@@ -1465,7 +1465,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             btnDeductions.BringToFront();
 
             // 6. عدد الأصناف
-            var pnlCountGrp = MakeSummaryCard("📦 عدد الأصناف", Color.FromArgb(139, 92, 246), out _);
+            var pnlCountGrp = MakeSummaryCard("عدد الأصناف", Color.FromArgb(139, 92, 246), out _);
             lblItemCount = new Label
             {
                 Text = "0",
@@ -1498,17 +1498,17 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             // ── أزرار التحكم السفلية الموحدة (RTL Flow) — متطابقة مع شاشة المبيعات ──
             Color secBtnBg = Color.FromArgb(51, 65, 85);
-            btnSave     = Theme.MakeButton("💾 حفظ الفاتورة (F5)", 0, 0, 240, 40, Color.FromArgb(5, 150, 105));
+            btnSave     = Theme.MakeButton("حفظ الفاتورة (F5)", 0, 0, 240, 40, Color.FromArgb(5, 150, 105));
             btnSave.Font = new Font("Segoe UI", 13f, FontStyle.Bold);
 
-            btnHold     = Theme.MakeButton("⏸️ تعليق (F7)",        0, 0, 105, 40, secBtnBg);
-            btnLoadHold = Theme.MakeButton("📂 معلقات (F8)",       0, 0, 110, 40, secBtnBg);
-            var btnIncompletePurchases = Theme.MakeButton("📂 فواتير لم تكتمل", 0, 0, 140, 40, secBtnBg);
-            btnLoadPurchaseOrder = Theme.MakeButton("📋 استدعاء طلبية شراء", 0, 0, 160, 40, Color.FromArgb(79, 70, 229));
+            btnHold     = Theme.MakeButton("تعليق (F7)",        0, 0, 105, 40, secBtnBg);
+            btnLoadHold = Theme.MakeButton("معلقات (F8)",       0, 0, 110, 40, secBtnBg);
+            var btnIncompletePurchases = Theme.MakeButton("فواتير لم تكتمل", 0, 0, 140, 40, secBtnBg);
+            btnLoadPurchaseOrder = Theme.MakeButton("استدعاء طلبية شراء", 0, 0, 160, 40, Color.FromArgb(79, 70, 229));
             btnLoadPurchaseOrder.Click += (s, e) => OpenPurchaseOrdersRecallDialog();
-            Button btnSarf = Theme.MakeButton("💵 صرف للمورد",     0, 0, 115, 40, Color.FromArgb(13, 148, 136));
-            btnNew      = Theme.MakeButton("🆕 جديد (F2)",         0, 0, 100, 40, secBtnBg);
-            btnPrint    = Theme.MakeButton("🖨️ طباعة باركود",      0, 0, 120, 40, secBtnBg);
+            Button btnSarf = Theme.MakeButton("صرف للمورد",     0, 0, 115, 40, Color.FromArgb(13, 148, 136));
+            btnNew      = Theme.MakeButton("جديد (F2)",         0, 0, 100, 40, secBtnBg);
+            btnPrint    = Theme.MakeButton("طباعة باركود",      0, 0, 120, 40, secBtnBg);
 
             btnSave.Click     += BtnSave_Click;
             btnHold.Click     += BtnHold_Click;
@@ -1579,7 +1579,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             btnNew.Margin = new Padding(3, 2, 3, 2);
             btnPrint.Margin = new Padding(3, 2, 3, 2);
 
-            var btnWhatsApp = Theme.MakeButton("📲 واتساب", 0, 0, 110, 40, Color.FromArgb(37, 211, 102));
+            var btnWhatsApp = Theme.MakeButton("واتساب", 0, 0, 110, 40, Color.FromArgb(37, 211, 102));
             btnWhatsApp.Margin = new Padding(3, 2, 3, 2);
             btnWhatsApp.Click += (s, e) =>
             {
@@ -1614,7 +1614,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             };
             var lblHotkeys = new Label
             {
-                Text = "⌨️ الاختصارات: [F5] حفظ الفاتورة  |  [F3] بحث الأصناف  |  [F9] صنف جديد  |  [F4] كومبو الصنف  |  [Ins / F12] سطر جديد  |  [F7] تعليق  |  [F8] المعلقات  |  [F2] فاتورة جديدة",
+                Text = "الاختصارات: [F5] حفظ الفاتورة  |  [F3] بحث الأصناف  |  [F9] صنف جديد  |  [F4] كومبو الصنف  |  [Ins / F12] سطر جديد  |  [F7] تعليق  |  [F8] المعلقات  |  [F2] فاتورة جديدة",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(71, 85, 105),
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
@@ -1734,7 +1734,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 								}
 								else
 								{
-									MessageBox.Show($"⚠️ الوحدة '{targetUnit}' غير متوفرة لهذا الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+									MessageBox.Show($"الوحدة '{targetUnit}' غير متوفرة لهذا الصنف.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 								}
 							}
 						}
@@ -2098,7 +2098,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     return;
                 }
             }
-            // ✅ حفظ ترتيب الأعمدة عند إغلاق الشاشة
+            // حفظ ترتيب الأعمدة عند إغلاق الشاشة
             if (!e.Cancel)
             {
                 SaveColumnSettings();
@@ -2146,7 +2146,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             try
             {
                 decimal cashBal = AccountDAL.GetCashBalance(safeId);
-                lblCashBalance.Text = $"💰 {cashBal:N2} ج";
+                lblCashBalance.Text = $"{cashBal:N2} ج";
                 lblCashBalance.ForeColor = cashBal > 0 ? Color.FromArgb(100, 180, 100) : Color.OrangeRed;
             }
             catch
@@ -3306,11 +3306,11 @@ pnlGridToolbar.Controls.Add(flowToolbar);
         {
             var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
-            var miCard = new ToolStripMenuItem("🔍 كارت الصنف وتعديل البيانات (F4)", null, (s, e) =>
+            var miCard = new ToolStripMenuItem("كارت الصنف وتعديل البيانات (F4)", null, (s, e) =>
             {
                 if (!Session.IsAdmin && !Session.CanAccess("ProductCard") && !Session.CanAccess("Products") && !Session.CanEdit("Products"))
                 {
-                    MessageBox.Show("❌ عفوًا: ليس لديك صلاحية الدخول على كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عفوًا: ليس لديك صلاحية الدخول على كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
@@ -3330,7 +3330,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
             });
 
-            var miStock = new ToolStripMenuItem("📊 رصيد وحركة الصنف بالمخازن", null, (s, e) =>
+            var miStock = new ToolStripMenuItem("رصيد وحركة الصنف بالمخازن", null, (s, e) =>
             {
                 if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
                 {
@@ -3338,7 +3338,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     if (item.ProductID > 0)
                     {
                         var dtWh = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
-                        string msg = $"📦 تفاصيل رصيد الصنف: {item.ProductName}\n" + new string('-', 40) + "\n";
+                        string msg = $"تفاصيل رصيد الصنف: {item.ProductName}\n" + new string('-', 40) + "\n";
                         decimal totalStock = 0;
                         foreach (DataRow r in dtWh.Rows)
                         {
@@ -3353,7 +3353,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
             });
 
-            var miBarcode = new ToolStripMenuItem("🏷️ طباعة باركود الصنف", null, (s, e) =>
+            var miBarcode = new ToolStripMenuItem("طباعة باركود الصنف", null, (s, e) =>
             {
                 if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
                 {
@@ -3376,7 +3376,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
             });
 
-            var miDel = new ToolStripMenuItem("🗑️ حذف الصنف من الفاتورة (Del)", null, (s, e) =>
+            var miDel = new ToolStripMenuItem("حذف الصنف من الفاتورة (Del)", null, (s, e) =>
             {
                 if (dgItems.CurrentRow != null && dgItems.CurrentRow.Index >= 0 && dgItems.CurrentRow.Index < _items.Count)
                 {
@@ -3385,7 +3385,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
             });
 
-            var miIMEI = new ToolStripMenuItem("📱 مسح / إدخال سيريالات الأجهزة (IMEI)...", null, (s, e) =>
+            var miIMEI = new ToolStripMenuItem("مسح / إدخال سيريالات الأجهزة (IMEI)...", null, (s, e) =>
             {
                 OpenBatchIMEIDialog();
             });
@@ -3748,12 +3748,12 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             decimal tot = _marketCommission + _freightCost + _porterageFee;
             if (tot > 0)
             {
-                btnDeductions.Text = $"✂️ {tot:N2} ج";
+                btnDeductions.Text = $"{tot:N2} ج";
                 btnDeductions.BackColor = Color.FromArgb(185, 28, 28);
             }
             else
             {
-                btnDeductions.Text = "✂️ استقطاعات";
+                btnDeductions.Text = "استقطاعات";
                 btnDeductions.BackColor = Color.FromArgb(51, 65, 85);
             }
         }
@@ -3884,20 +3884,20 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 if (draftID > 0)
                 {
                     MessageBox.Show(
-                        $"✅ تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر 📂 معلقات.",
+                        $"تم تعليق الفاتورة بنجاح.\nيمكنك استدعاؤها لاحقاً من زر معلقات.",
                         "تعليق", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     ClearInvoice();
                 }
                 else
                 {
-                    MessageBox.Show("❌ فشل تعليق الفاتورة.", "خطأ",
+                    MessageBox.Show("فشل تعليق الفاتورة.", "خطأ",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Error("فشل تعليق فاتورة المشتريات", ex, "FrmPurchase.BtnHold_Click");
-                MessageBox.Show("❌ حدث خطأ:\n" + ex.Message, "خطأ",
+                MessageBox.Show("حدث خطأ:\n" + ex.Message, "خطأ",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -3917,7 +3917,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             var dlg = new Form
             {
                 Width = 850, Height = 460,
-                Text = "📂 فواتير المشتريات المعلقة",
+                Text = "فواتير المشتريات المعلقة",
                 StartPosition = FormStartPosition.CenterParent,
                 RightToLeft = RightToLeft.Yes,
                 RightToLeftLayout = true,
@@ -3976,7 +3976,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 BackColor = Theme.BgCard, Padding = new Padding(8)
             };
 
-            var btnLoad = Theme.MakeButton("✅ استدعاء الفاتورة", 0, 6, 175, 35, Theme.Success);
+            var btnLoad = Theme.MakeButton("استدعاء الفاتورة", 0, 6, 175, 35, Theme.Success);
             btnLoad.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnLoad.Click += (s2, e2) =>
             {
@@ -4076,7 +4076,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 dlg.Close();
             };
 
-            var btnDelDraft = Theme.MakeButton("❌ حذف المعلقة", 185, 6, 145, 35,
+            var btnDelDraft = Theme.MakeButton("حذف المعلقة", 185, 6, 145, 35,
                 Color.FromArgb(180, 60, 60));
             btnDelDraft.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnDelDraft.Click += (s2, e2) =>
@@ -4104,7 +4104,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
         // حفظ الفاتورة النهائية
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("Purchases")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ فواتير الشراء.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("Purchases")) { MessageBox.Show("ليس لديك صلاحية حفظ فواتير الشراء.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             // مزامنة نسب الهامش والضريبة من الجدول إلى عناصر الفاتورة
             for (int r = 0; r < dgItems.Rows.Count; r++)
@@ -4153,7 +4153,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                         string majorUnit = !string.IsNullOrEmpty(prod.BaseUnitName) ? prod.BaseUnitName : "وحدة";
                         if (!string.IsNullOrEmpty(item.UnitName) && item.UnitName != majorUnit)
                         {
-                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" مسجل بوحدة ({item.UnitName})، بينما تم تفعيل قفل الشراء بالوحدة الكبرى فقط ({majorUnit})!\nيرجى تعديل الصنف إلى الوحدة الكبرى قبل الحفظ.", "قفل الشراء بالوحدة الكبرى", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"خطأ: الصنف \"{item.ProductName}\" مسجل بوحدة ({item.UnitName})، بينما تم تفعيل قفل الشراء بالوحدة الكبرى فقط ({majorUnit})!\nيرجى تعديل الصنف إلى الوحدة الكبرى قبل الحفظ.", "قفل الشراء بالوحدة الكبرى", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
                     }
@@ -4177,7 +4177,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     {
                         if (!item.ExpiryDate.HasValue)
                         {
-                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" له تاريخ صلاحية ويجب تسجيل تاريخ الصلاحية له قبل الحفظ!", "تنبيه تاريخ الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"خطأ: الصنف \"{item.ProductName}\" له تاريخ صلاحية ويجب تسجيل تاريخ الصلاحية له قبل الحفظ!", "تنبيه تاريخ الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
                     }
@@ -4214,7 +4214,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     {
                         if (string.IsNullOrWhiteSpace(item.IMEI))
                         {
-                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" تم تعريفه كـ (صنف IMEI / سيريال) ويشترط إدخال سيريال الجهاز قبل حفظ فاتورة الشراء!", "تنبيه سيريال الجهاز (IMEI)", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"خطأ: الصنف \"{item.ProductName}\" تم تعريفه كـ (صنف IMEI / سيريال) ويشترط إدخال سيريال الجهاز قبل حفظ فاتورة الشراء!", "تنبيه سيريال الجهاز (IMEI)", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             try
                             {
                                 dgItems.ClearSelection();
@@ -4231,7 +4231,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
                         if (item.Quantity > 1)
                         {
-                            MessageBox.Show($"❌ خطأ: الصنف \"{item.ProductName}\" صنف ذو سيريال/IMEI بكمية ({item.Quantity})، ويجب إدخال سيريال مستقل لكل جهاز عبر شاشة تفقيط السيريالات (الضغط على خانة السيريال) أو تقسيم الكمية!", "تنبيه كمية أجهزة IMEI", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show($"خطأ: الصنف \"{item.ProductName}\" صنف ذو سيريال/IMEI بكمية ({item.Quantity})، ويجب إدخال سيريال مستقل لكل جهاز عبر شاشة تفقيط السيريالات (الضغط على خانة السيريال) أو تقسيم الكمية!", "تنبيه كمية أجهزة IMEI", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             try
                             {
                                 dgItems.ClearSelection();
@@ -4256,7 +4256,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             string suppInvNoVal = txtSupplierInvoiceNo != null ? txtSupplierInvoiceNo.Text.Trim() : "";
             if (string.IsNullOrWhiteSpace(suppInvNoVal))
             {
-                MessageBox.Show("❌ إجباري: يرجى إدخال رقم فاتورة الشراء اليدوي (رقم فاتورة المورد) قبل حفظ الفاتورة!", "تنبيه رقم الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("إجباري: يرجى إدخال رقم فاتورة الشراء اليدوي (رقم فاتورة المورد) قبل حفظ الفاتورة!", "تنبيه رقم الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 if (txtSupplierInvoiceNo != null) txtSupplierInvoiceNo.Focus();
                 return;
             }
@@ -4470,9 +4470,9 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                     _activeDraftKey = null;
 
                     MessageBox.Show(
-                        $"✅ تم حفظ فاتورة المشتريات بنجاح\nرقم الفاتورة: {id}" +
+                        $"تم حفظ فاتورة المشتريات بنجاح\nرقم الفاتورة: {id}" +
                         (taxAmt > 0 ? $"\n(شاملة ضريبة {taxPct:N2}% = {taxAmt:N2} ج)" : "") +
-                        (priceDecision == "Pending" ? "\n⚠️ تم تعليق أسعار البيع الجديدة وسوف تتفعل تلقائياً عند نفاد الكميات الحالية." : ""),
+                        (priceDecision == "Pending" ? "\nتم تعليق أسعار البيع الجديدة وسوف تتفعل تلقائياً عند نفاد الكميات الحالية." : ""),
                         "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     
                     try
@@ -4506,14 +4506,14 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 }
                 else
                 {
-                    MessageBox.Show("❌ فشل حفظ الفاتورة", "خطأ",
+                    MessageBox.Show("فشل حفظ الفاتورة", "خطأ",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
                 AppLogger.Error("فشل حفظ فاتورة المشتريات", ex, "FrmPurchase.BtnSave_Click");
-                MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ",
+                MessageBox.Show($"حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -4605,7 +4605,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
                 RefreshGrid();
                 RecalcTotals();
-                MessageBox.Show($"✅ تم استرجاع فاتورة المشتريات غير المكتملة بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم استرجاع فاتورة المشتريات غير المكتملة بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -4689,7 +4689,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 {
                     bool isClientPurchase = cboPurchaseSource != null && cboPurchaseSource.SelectedIndex == 1;
                     string partyName = isClientPurchase ? "العميل" : "المورد";
-                    MessageBox.Show($"⚠️ يرجى اختيار {partyName} أولاً قبل إضافة الأصناف للفاتورة!", $"تنبيه اختيار {partyName}", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"يرجى اختيار {partyName} أولاً قبل إضافة الأصناف للفاتورة!", $"تنبيه اختيار {partyName}", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     if (cboSupplier != null)
                     {
                         this.BeginInvoke((MethodInvoker)delegate { cboSupplier.Focus(); });
@@ -4703,7 +4703,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
             {
                 if (showMessage)
                 {
-                    MessageBox.Show("⚠️ يرجى كتابة رقم فاتورة الشراء (رقم فاتورة المورد) أولاً قبل إضافة الأصناف للفاتورة!", "تنبيه رقم الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى كتابة رقم فاتورة الشراء (رقم فاتورة المورد) أولاً قبل إضافة الأصناف للفاتورة!", "تنبيه رقم الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     if (txtSupplierInvoiceNo != null)
                     {
                         this.BeginInvoke((MethodInvoker)delegate { txtSupplierInvoiceNo.Focus(); });
@@ -4848,7 +4848,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var dlg = new Form
             {
-                Text = "💵 سند صرف نقدية لمورد",
+                Text = "سند صرف نقدية لمورد",
                 Size = new Size(440, 390),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -4951,7 +4951,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var btnConfirm = new Button
             {
-                Text = "✅ إتمام الصرف وترحيل السند",
+                Text = "إتمام الصرف وترحيل السند",
                 Location = new Point(20, 185),
                 Width = 240,
                 Height = 38,
@@ -4965,7 +4965,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var btnCancel = new Button
             {
-                Text = "❌ إلغاء",
+                Text = "إلغاء",
                 Location = new Point(275, 185),
                 Width = 125,
                 Height = 38,
@@ -4994,13 +4994,13 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 try
                 {
                     string code = SupplierDAL.AddSupplierPayment(suppId, nudAmt.Value, txtNotes.Text.Trim());
-                    MessageBox.Show($"✅ تم تسجيل سند الصرف للمورد بنجاح!\n\nكود القيد: {code}\nالمبلغ: {nudAmt.Value:N2} ج.م\nالمورد: {suppName}", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم تسجيل سند الصرف للمورد بنجاح!\n\nكود القيد: {code}\nالمبلغ: {nudAmt.Value:N2} ج.م\nالمورد: {suppName}", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ حدث خطأ أثناء إجراء الصرف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("حدث خطأ أثناء إجراء الصرف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 
@@ -5028,7 +5028,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var dlg = new Form
             {
-                Text            = "⚙️ تخصيص أعمدة الفاتورة",
+                Text            = "تخصيص أعمدة الفاتورة",
                 Size            = new Size(360, 480),
                 StartPosition   = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -5042,7 +5042,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             var lblHint = new Label
             {
-                Text      = "✅ تفعيل/إيقاف الأعمدة  |  ▲▼ لتغيير الترتيب",
+                Text      = "تفعيل/إيقاف الأعمدة  |  لتغيير الترتيب",
                 Dock      = DockStyle.Top,
                 Height    = 32,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -5072,9 +5072,9 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
             }
 
-            // أزرار ▲▼
-            var btnUp   = new Button { Text = "▲ أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-            var btnDown = new Button { Text = "▼ أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            // أزرار
+            var btnUp   = new Button { Text = "أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnDown = new Button { Text = "أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
             btnUp.FlatAppearance.BorderSize = btnDown.FlatAppearance.BorderSize = 0;
 
             btnUp.Click += (s, e) =>
@@ -5100,8 +5100,8 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 clb.SelectedIndex = i + 1;
             };
 
-            var btnOk     = new Button { Text = "✅ حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
-            var btnCancel = new Button { Text = "❌ إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
+            var btnOk     = new Button { Text = "حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
+            var btnCancel = new Button { Text = "إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
             btnOk.FlatAppearance.BorderSize = btnCancel.FlatAppearance.BorderSize = 0;
 
             var pnlArrows = new FlowLayoutPanel
@@ -5468,7 +5468,7 @@ pnlGridToolbar.Controls.Add(flowToolbar);
 
             RefreshGrid();
             this.Text = $"فاتورة مشتريات (مستوردة من أمر الشراء رقم {order.OrderCode})";
-            MessageBox.Show($"✅ تم استيراد أصناف الطلبية رقم [{order.OrderCode}] بنجاح!\n\nيمكنك الآن مراجعة الكميات المستلمة والأسعار وتعديلها وفقاً للفاتورة الفعلية ثم الضغط على [حفظ].", "تم استيراد الطلبية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"تم استيراد أصناف الطلبية رقم [{order.OrderCode}] بنجاح!\n\nيمكنك الآن مراجعة الكميات المستلمة والأسعار وتعديلها وفقاً للفاتورة الفعلية ثم الضغط على [حفظ].", "تم استيراد الطلبية", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void OpenPurchaseOrdersRecallDialog()
@@ -5527,9 +5527,9 @@ pnlGridToolbar.Controls.Add(flowToolbar);
                 BorderStyle = BorderStyle.FixedSingle
             };
 
-            var btnApplyNow = Theme.MakeButton("⚡ تطبيق فوري", 15, 205, 130, 35, Theme.Success);
-            var btnPending = Theme.MakeButton("⏳ سعر معلق (حسب الكمية)", 155, 205, 190, 35, Theme.Accent);
-            var btnIgnore = Theme.MakeButton("❌ تجاهل التغييرات", 355, 205, 120, 35, Color.FromArgb(120, 120, 120));
+            var btnApplyNow = Theme.MakeButton("تطبيق فوري", 15, 205, 130, 35, Theme.Success);
+            var btnPending = Theme.MakeButton("سعر معلق (حسب الكمية)", 155, 205, 190, 35, Theme.Accent);
+            var btnIgnore = Theme.MakeButton("تجاهل التغييرات", 355, 205, 120, 35, Color.FromArgb(120, 120, 120));
 
             btnApplyNow.Click += (s, e) => { Decision = "ApplyNow"; this.DialogResult = DialogResult.OK; this.Close(); };
             btnPending.Click += (s, e) => { Decision = "Pending"; this.DialogResult = DialogResult.OK; this.Close(); };

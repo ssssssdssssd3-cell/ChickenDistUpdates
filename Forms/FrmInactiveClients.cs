@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -32,7 +32,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // Title Bar
-            var pnlTitle = Theme.MakeTitleBar("📢 تنشيط العملاء الرواكد", "عرض العملاء الذين انقطعوا عن الشراء لفترة وإرسال رسائل واتساب سريعة لهم");
+            var pnlTitle = Theme.MakeTitleBar("تنشيط العملاء الرواكد", "عرض العملاء الذين انقطعوا عن الشراء لفترة وإرسال رسائل واتساب سريعة لهم");
             this.Controls.Add(pnlTitle);
 
             // Filter Panel
@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
             };
             pnlFilter.Controls.Add(nudDays);
 
-            btnLoad = Theme.MakeButton("🔍 عرض العملاء", 400, 10, 130, 30, Theme.Primary);
+            btnLoad = Theme.MakeButton("عرض العملاء", 400, 10, 130, 30, Theme.Primary);
             btnLoad.Click += (s, e) => LoadInactiveClients();
             pnlFilter.Controls.Add(btnLoad);
 
@@ -146,7 +146,7 @@ namespace ChickenDist.Forms
             };
             pnlActions.Controls.Add(txtMessageTemplate);
 
-            btnSendWhatsApp = Theme.MakeButton("📱 إرسال واتساب", 15, 35, 170, 75, Theme.Success);
+            btnSendWhatsApp = Theme.MakeButton("إرسال واتساب", 15, 35, 170, 75, Theme.Success);
             btnSendWhatsApp.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnSendWhatsApp.Click += BtnSendWhatsApp_Click;
             pnlActions.Controls.Add(btnSendWhatsApp);

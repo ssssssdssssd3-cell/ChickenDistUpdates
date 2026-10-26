@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
@@ -577,7 +577,7 @@ namespace ChickenDist.DAL
                         if (bonus > 0)
                         {
                             totalCommission += bonus;
-                            dtResult.Rows.Add(0, "---", to.ToString("yyyy-MM-dd"), "---", "🎁 مكافأة تحقيق شريحة وتارجت المبيعات", 1, bonus, bonus, $"تحقيق مبيعات ({totalSalesAmount:N2} ج)", bonus);
+                            dtResult.Rows.Add(0, "---", to.ToString("yyyy-MM-dd"), "---", "مكافأة تحقيق شريحة وتارجت المبيعات", 1, bonus, bonus, $"تحقيق مبيعات ({totalSalesAmount:N2} ج)", bonus);
                         }
                         break;
                     }

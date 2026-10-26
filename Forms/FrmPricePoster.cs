@@ -172,7 +172,7 @@ namespace ChickenDist.Forms
 
             chkOnlyInStock = new CheckBox
             {
-                Text = "📦 أصناف لها رصيد فقط (المتوفر > 0)",
+                Text = "أصناف لها رصيد فقط (المتوفر > 0)",
                 Location = new Point(10, y),
                 Width = 280,
                 Height = 25,
@@ -249,18 +249,18 @@ namespace ChickenDist.Forms
             pnlControls.Controls.Add(clbProducts);
             y += 230;
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث المعاينة", 10, y, 280, 36, Theme.Primary);
+            btnRefresh = Theme.MakeButton("تحديث المعاينة", 10, y, 280, 36, Theme.Primary);
             btnRefresh.Click += (s, e) => GeneratePoster();
             pnlControls.Controls.Add(btnRefresh);
             y += 42;
 
-            btnCopy = Theme.MakeButton("📋 نسخ الصورة للحافظة", 10, y, 280, 38, Theme.Success);
+            btnCopy = Theme.MakeButton("نسخ الصورة للحافظة", 10, y, 280, 38, Theme.Success);
             btnCopy.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnCopy.Click += BtnCopy_Click;
             pnlControls.Controls.Add(btnCopy);
             y += 44;
 
-            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب", 10, y, 280, 38, Color.FromArgb(18, 140, 126));
+            var btnWhatsApp = Theme.MakeButton("إرسال واتساب", 10, y, 280, 38, Color.FromArgb(18, 140, 126));
             btnWhatsApp.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnWhatsApp.Click += (s, e) =>
             {
@@ -275,19 +275,19 @@ namespace ChickenDist.Forms
                     "",
                     $"{AppConfig.CompanyName}\n*{txtPosterTitle.Text}*\nتاريخ: {DateTime.Today:dd/MM/yyyy}\n(مرفق صورة لستة الأصناف والأسعار)",
                     () => _posterBitmap,
-                    "📱 إرسال لستة الأصناف والأسعار عبر الواتساب"
+                    "إرسال لستة الأصناف والأسعار عبر الواتساب"
                 );
             };
             pnlControls.Controls.Add(btnWhatsApp);
             y += 44;
 
-            btnExportExcel = Theme.MakeButton("📊 تصدير إكسيل (Excel)", 10, y, 280, 38, Color.FromArgb(30, 96, 64));
+            btnExportExcel = Theme.MakeButton("تصدير إكسيل (Excel)", 10, y, 280, 38, Color.FromArgb(30, 96, 64));
             btnExportExcel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnExportExcel.Click += BtnExportExcel_Click;
             pnlControls.Controls.Add(btnExportExcel);
             y += 44;
 
-            btnExportPdf = Theme.MakeButton("🖨️ طباعة وتصدير PDF", 10, y, 280, 38, Color.FromArgb(70, 80, 95));
+            btnExportPdf = Theme.MakeButton("طباعة وتصدير PDF", 10, y, 280, 38, Color.FromArgb(70, 80, 95));
             btnExportPdf.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnExportPdf.Click += BtnExportPdf_Click;
             pnlControls.Controls.Add(btnExportPdf);
@@ -711,7 +711,7 @@ namespace ChickenDist.Forms
             try
             {
                 Clipboard.SetImage(_posterBitmap);
-                MessageBox.Show("✅ تم نسخ ملصق الأسعار للحافظة بنجاح!\nيمكنك الآن لصقه مباشرة (Ctrl+V) في الواتساب أو الفيس بوك لإرساله للعملاء.",
+                MessageBox.Show("تم نسخ ملصق الأسعار للحافظة بنجاح!\nيمكنك الآن لصقه مباشرة (Ctrl+V) في الواتساب أو الفيس بوك لإرساله للعملاء.",
                                 "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information,
                                 MessageBoxDefaultButton.Button1,
                                 MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
@@ -813,7 +813,7 @@ namespace ChickenDist.Forms
                         sb.AppendLine("</html>");
 
                         System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-                        MessageBox.Show("✅ تم تصدير الملف بنجاح!", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تصدير الملف بنجاح!", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {

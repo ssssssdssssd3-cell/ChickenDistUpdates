@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -129,16 +129,16 @@ namespace ChickenDist.DAL
                         decimal curStock = InventoryDAL.GetProductStock(pid);
                         r["AvailableStock"] = curStock;
                         if (curStock <= 0)
-                            r["StockStatus"] = "❌ غير متوفر";
+                            r["StockStatus"] = "غير متوفر";
                         else if (curStock < qty)
-                            r["StockStatus"] = "⚠️ عجز بالرصيد";
+                            r["StockStatus"] = "عجز بالرصيد";
                         else
-                            r["StockStatus"] = "✅ متاح";
+                            r["StockStatus"] = "متاح";
                     }
                     else
                     {
                         r["AvailableStock"] = 0m;
-                        r["StockStatus"] = "❓ صنف يدوي";
+                        r["StockStatus"] = "صنف يدوي";
                     }
                 }
             }

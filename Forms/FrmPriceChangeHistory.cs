@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -30,7 +30,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📜 سجل وتقرير تغيرات وتعديلات الأسعار";
+            this.Text = "سجل وتقرير تغيرات وتعديلات الأسعار";
             this.Size = new Size(1150, 680);
             this.MinimumSize = new Size(950, 550);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -72,11 +72,11 @@ namespace ChickenDist.Forms
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadHistory(); };
             x += 160;
 
-            btnFilter = Theme.MakeButton("🔍 بحث", x, 16, 95, 32, Theme.Accent);
+            btnFilter = Theme.MakeButton("بحث", x, 16, 95, 32, Theme.Accent);
             btnFilter.Click += (s, e) => LoadHistory();
             x += 105;
 
-            btnExportExcel = Theme.MakeButton("📊 تصدير إكسيل", x, 16, 120, 32, Color.FromArgb(16, 130, 80));
+            btnExportExcel = Theme.MakeButton("تصدير إكسيل", x, 16, 120, 32, Color.FromArgb(16, 130, 80));
             btnExportExcel.Click += BtnExportExcel_Click;
 
             pnlTop.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblType, cboChangeType, lblSrch, txtSearch, btnFilter, btnExportExcel });
@@ -122,7 +122,7 @@ namespace ChickenDist.Forms
 
             lblEmptyNotice = new Label
             {
-                Text = "ℹ️ لا توجد تعديلات أسعار مسجلة خلال الفترة المحددة.\nيمكنك توسيع نطاق التاريخ أو استخدام زر [تغيير أسعار البيع والتكلفة] لتطبيق أسعار جديدة.",
+                Text = "لا توجد تعديلات أسعار مسجلة خلال الفترة المحددة.\nيمكنك توسيع نطاق التاريخ أو استخدام زر [تغيير أسعار البيع والتكلفة] لتطبيق أسعار جديدة.",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = Theme.TextSub,
@@ -154,7 +154,7 @@ namespace ChickenDist.Forms
                 Font = new Font(Theme.FontMain, FontStyle.Bold)
             };
 
-            btnClose = Theme.MakeButton("❌ إغلاق", 15, 9, 100, 32, Color.FromArgb(100, 110, 120));
+            btnClose = Theme.MakeButton("إغلاق", 15, 9, 100, 32, Color.FromArgb(100, 110, 120));
             btnClose.Click += (s, e) => this.Close();
 
             pnlBottom.Controls.AddRange(new Control[] { lblCount, btnClose });
@@ -292,7 +292,7 @@ namespace ChickenDist.Forms
                         }
 
                         System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), System.Text.Encoding.UTF8);
-                        MessageBox.Show("✅ تم تصدير السجل بنجاح!\nالمسار: " + sfd.FileName, "نجاح التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تصدير السجل بنجاح!\nالمسار: " + sfd.FileName, "نجاح التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         try { System.Diagnostics.Process.Start(sfd.FileName); } catch { }
                     }
                 }

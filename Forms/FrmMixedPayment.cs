@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -46,7 +46,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💳💵 سداد مختلط (نقدي + فيزا)";
+            this.Text = "سداد مختلط (نقدي + فيزا)";
             this.Size = new Size(520, 480);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -68,7 +68,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "💳💵 توزيع السداد (جزء نقدي + جزء فيزا)",
+                Text = "توزيع السداد (جزء نقدي + جزء فيزا)",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Top,
@@ -98,11 +98,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            btnOk = Theme.MakeButton("✔️ تأكيد الحفظ (Enter)", 250, 10, 230, 40, Theme.Success);
+            btnOk = Theme.MakeButton("تأكيد الحفظ (Enter)", 250, 10, 230, 40, Theme.Success);
             btnOk.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnOk.Click += (s, e) => ConfirmPayment();
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 20, 10, 110, 40, Theme.Danger);
+            btnCancel = Theme.MakeButton("إلغاء", 20, 10, 110, 40, Theme.Danger);
             btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
@@ -136,7 +136,7 @@ namespace ChickenDist.Forms
             // Row 0: Cash Amount
             var lblCash = new Label
             {
-                Text = "💵 المبلغ المدفوع نقداً (كاش):",
+                Text = "المبلغ المدفوع نقداً (كاش):",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
@@ -169,7 +169,7 @@ namespace ChickenDist.Forms
             // Row 1: Safe Account
             var lblSafe = new Label
             {
-                Text = "🏦 خزينة الاستلام (الدرج):",
+                Text = "خزينة الاستلام (الدرج):",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Theme.TextSub,
@@ -188,7 +188,7 @@ namespace ChickenDist.Forms
             // Row 2: Visa Amount
             var lblVisa = new Label
             {
-                Text = "💳 المبلغ المدفوع فيزا (إلكتروني):",
+                Text = "المبلغ المدفوع فيزا (إلكتروني):",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
@@ -214,7 +214,7 @@ namespace ChickenDist.Forms
             // Row 3: Visa Account
             var lblVisaAcc = new Label
             {
-                Text = "💳 ماكينة / حساب الفيزا:",
+                Text = "ماكينة / حساب الفيزا:",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Theme.TextSub,
@@ -337,7 +337,7 @@ namespace ChickenDist.Forms
 
             if (rem <= 0.001m && rem >= -0.001m)
             {
-                lblRemaining.Text = "✅ المسدد مساوي للمطلوب";
+                lblRemaining.Text = "المسدد مساوي للمطلوب";
                 lblRemaining.ForeColor = Color.FromArgb(74, 222, 128);
             }
             else if (rem > 0)

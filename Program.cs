@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Threading;
 using System.Windows.Forms;
@@ -95,7 +95,7 @@ namespace ChickenDist
             // فحص تاريخ وساعة الويندوز للتأكد من سلامة التقارير
             if (!ChickenDist.Core.DbHelper.ValidateSystemDate(out string dateWarning))
             {
-                MessageBox.Show(dateWarning, "⚠️ تنبيه تاريخ الويندوز", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(dateWarning, "تنبيه تاريخ الويندوز", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
             // Pre-warm product, client, supplier, and stock caches asynchronously so opening screens is instant over LAN

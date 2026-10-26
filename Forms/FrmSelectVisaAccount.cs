@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💳 اختيار ماكينة / حساب الفيزا";
+            this.Text = "اختيار ماكينة / حساب الفيزا";
             this.Size = new Size(500, 420);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "💳 تحصيل السداد عبر الفيزا / الدفع الإلكتروني",
+                Text = "تحصيل السداد عبر الفيزا / الدفع الإلكتروني",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Top,
@@ -98,11 +98,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 8, 15, 8)
             };
 
-            btnOk = Theme.MakeButton("✅ تأكيد الحساب (Enter)", 270, 8, 195, 38, Color.FromArgb(39, 174, 96));
+            btnOk = Theme.MakeButton("تأكيد الحساب (Enter)", 270, 8, 195, 38, Color.FromArgb(39, 174, 96));
             btnOk.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnOk.Click += (s, e) => ConfirmSelection();
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", 15, 8, 120, 38, Theme.Danger);
+            btnCancel = Theme.MakeButton("إلغاء (Esc)", 15, 8, 120, 38, Theme.Danger);
             btnCancel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
@@ -120,7 +120,7 @@ namespace ChickenDist.Forms
 
             var lblSelectPrompt = new Label
             {
-                Text = "⚡ اختر الماكينة / الحساب المطلوب:",
+                Text = "اختر الماكينة / الحساب المطلوب:",
                 Font = Theme.FontBold,
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -162,7 +162,7 @@ namespace ChickenDist.Forms
 
             btnAddNew = new Button
             {
-                Text = "➕ ماكينة جديدة",
+                Text = "ماكينة جديدة",
                 Dock = DockStyle.Left,
                 Width = 115,
                 BackColor = Color.FromArgb(52, 73, 94),
@@ -178,7 +178,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanAdd("SafeAccounts"))
                 {
-                    MessageBox.Show("⛔ غير مصرح لك بإضافة ماكينات فيزا أو خزائن جديدة.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("غير مصرح لك بإضافة ماكينات فيزا أو خزائن جديدة.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 using (var frm = new FrmSafeAccounts())
@@ -241,7 +241,7 @@ namespace ChickenDist.Forms
 
                 var btnCard = new Button
                 {
-                    Text = $"{shortcutPrefix}💳 {accName}{displayNum}",
+                    Text = $"{shortcutPrefix} {accName}{displayNum}",
                     Height = 42,
                     Width = 430,
                     FlatStyle = FlatStyle.Flat,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -54,7 +54,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "📱 مسح وإدخال سيريالات الأجهزة (IMEI)";
+            this.Text = "مسح وإدخال سيريالات الأجهزة (IMEI)";
             this.Size = new Size(670, 590);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -76,7 +76,7 @@ namespace ChickenDist.Forms
 
             lblHeaderTitle = new Label
             {
-                Text = $"📦 الصنف: {_productName}",
+                Text = $"الصنف: {_productName}",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 Location = new Point(15, 12),
@@ -106,7 +106,7 @@ namespace ChickenDist.Forms
 
             var lblPrompt = new Label
             {
-                Text = "🔍 امسح السيريال بجهاز الاسكنر (IMEI) أو اكتبه واضغط Enter:",
+                Text = "امسح السيريال بجهاز الاسكنر (IMEI) أو اكتبه واضغط Enter:",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(51, 65, 85),
                 Location = new Point(15, 8),
@@ -125,7 +125,7 @@ namespace ChickenDist.Forms
 
             var btnAddManual = new Button
             {
-                Text = "➕ إضافة",
+                Text = "إضافة",
                 Location = new Point(352, 32),
                 Size = new Size(65, 34),
                 BackColor = Color.FromArgb(14, 165, 233),
@@ -139,7 +139,7 @@ namespace ChickenDist.Forms
 
             btnPaste = new Button
             {
-                Text = "📋 لصق",
+                Text = "لصق",
                 Location = new Point(422, 32),
                 Size = new Size(60, 34),
                 BackColor = Color.FromArgb(100, 116, 139),
@@ -153,7 +153,7 @@ namespace ChickenDist.Forms
 
             var btnScannerConfig = new Button
             {
-                Text = "⚙️ برمجة الاسكانر لـ IMEI",
+                Text = "برمجة الاسكانر لـ IMEI",
                 Location = new Point(488, 32),
                 Size = new Size(155, 34),
                 BackColor = Color.FromArgb(79, 70, 229),
@@ -173,7 +173,7 @@ namespace ChickenDist.Forms
 
             lblScanStatus = new Label
             {
-                Text = "💡 فلترة ذكية نشطة: يقبل كود IMEI 1 (15 رقم) ويتجاوز الباركود الدولي و S/N تلقائياً وبصمت.",
+                Text = "فلترة ذكية نشطة: يقبل كود IMEI 1 (15 رقم) ويتجاوز الباركود الدولي و S/N تلقائياً وبصمت.",
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(71, 85, 105),
                 Location = new Point(15, 75),
@@ -198,7 +198,7 @@ namespace ChickenDist.Forms
 
             btnApply = new Button
             {
-                Text = "✅ تطبيق واعتماد السيريالات",
+                Text = "تطبيق واعتماد السيريالات",
                 Dock = DockStyle.Right,
                 Width = 190,
                 BackColor = Color.FromArgb(16, 185, 129),
@@ -212,7 +212,7 @@ namespace ChickenDist.Forms
 
             var btnPrint = new Button
             {
-                Text = "🖨️ طباعة ملصقات الـ IMEI",
+                Text = "طباعة ملصقات الـ IMEI",
                 Dock = DockStyle.Left,
                 Width = 185,
                 BackColor = Color.FromArgb(14, 165, 233),
@@ -245,7 +245,7 @@ namespace ChickenDist.Forms
 
             btnClear = new Button
             {
-                Text = "🗑️ مسح الكل",
+                Text = "مسح الكل",
                 Dock = DockStyle.Left,
                 Width = 90,
                 BackColor = Color.FromArgb(241, 245, 249),
@@ -309,7 +309,7 @@ namespace ChickenDist.Forms
             {
                 Name = "Delete",
                 HeaderText = "إجراء",
-                Text = "❌ حذف",
+                Text = "حذف",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 20
             };
@@ -366,7 +366,7 @@ namespace ChickenDist.Forms
 
             if (AddSingleSerial(imei))
             {
-                lblScanStatus.Text = $"✅ تم تسجيل IMEI 1: [{imei}] بنجاح";
+                lblScanStatus.Text = $"تم تسجيل IMEI 1: [{imei}] بنجاح";
                 lblScanStatus.ForeColor = Color.FromArgb(16, 185, 129); // Green
                 try { SystemSounds.Asterisk.Play(); } catch { }
                 txtScan.Clear();
@@ -398,7 +398,7 @@ namespace ChickenDist.Forms
             if (string.IsNullOrEmpty(s) || !s.All(char.IsDigit))
             {
                 isIgnoredNonIMEI = true;
-                statusMessage = $"⚡ تم تجاوز كود السيريال ({raw}) تلقائياً — يرجى تمرير الاسكانر على باركود IMEI 1";
+                statusMessage = $"تم تجاوز كود السيريال ({raw}) تلقائياً — يرجى تمرير الاسكانر على باركود IMEI 1";
                 statusColor = Color.FromArgb(2, 132, 199); // Soft Blue
                 return false;
             }
@@ -407,7 +407,7 @@ namespace ChickenDist.Forms
             if (s.Length == 12 || s.Length == 13)
             {
                 isIgnoredNonIMEI = true;
-                statusMessage = $"⚡ تم تجاوز الباركود الدولي ({s}) تلقائياً — يرجى تمرير الاسكانر على باركود IMEI 1";
+                statusMessage = $"تم تجاوز الباركود الدولي ({s}) تلقائياً — يرجى تمرير الاسكانر على باركود IMEI 1";
                 statusColor = Color.FromArgb(2, 132, 199); // Soft Blue
                 return false;
             }
@@ -416,7 +416,7 @@ namespace ChickenDist.Forms
             if (s.Length < 14)
             {
                 isIgnoredNonIMEI = true;
-                statusMessage = $"⚡ تم تجاوز كود قصير ({s}) — بانتظار مسح باركود IMEI 1 المكون من 15 رقماً";
+                statusMessage = $"تم تجاوز كود قصير ({s}) — بانتظار مسح باركود IMEI 1 المكون من 15 رقماً";
                 statusColor = Color.FromArgb(2, 132, 199);
                 return false;
             }
@@ -425,7 +425,7 @@ namespace ChickenDist.Forms
             if (s.Length > 16)
             {
                 isIgnoredNonIMEI = true;
-                statusMessage = $"⚡ تم تجاوز كود طويل ({s.Length} رقم) — بانتظار مسح باركود IMEI 1 المكون من 15 رقماً";
+                statusMessage = $"تم تجاوز كود طويل ({s.Length} رقم) — بانتظار مسح باركود IMEI 1 المكون من 15 رقماً";
                 statusColor = Color.FromArgb(2, 132, 199);
                 return false;
             }
@@ -444,7 +444,7 @@ namespace ChickenDist.Forms
             if (ResultSerials.Any(existing => PurchaseDAL.GetCandidatePairedIMEIs(existing).Contains(s)))
             {
                 isIgnoredNonIMEI = true;
-                statusMessage = $"⚡ تم تجاهل IMEI 2 لنفس الهاتف الممسوح مسبقاً";
+                statusMessage = $"تم تجاهل IMEI 2 لنفس الهاتف الممسوح مسبقاً";
                 statusColor = Color.FromArgb(202, 138, 4); // Yellow/Gold
                 return false;
             }
@@ -467,7 +467,7 @@ namespace ChickenDist.Forms
                         if (ResultSerials.Contains(candidateIMEI1))
                         {
                             isIgnoredNonIMEI = true;
-                            statusMessage = $"⚡ تم تجاهل IMEI 2 لنفس الهاتف المسجل بالفعل ({candidateIMEI1})";
+                            statusMessage = $"تم تجاهل IMEI 2 لنفس الهاتف المسجل بالفعل ({candidateIMEI1})";
                             statusColor = Color.FromArgb(202, 138, 4);
                             return false;
                         }
@@ -480,7 +480,7 @@ namespace ChickenDist.Forms
             // 6. فحص التكرار المباشر في القائمة
             if (ResultSerials.Any(existing => string.Equals(existing, s, StringComparison.OrdinalIgnoreCase)))
             {
-                statusMessage = $"⚠️ السيريال [{s}] مسجل بالفعل في هذه القائمة";
+                statusMessage = $"السيريال [{s}] مسجل بالفعل في هذه القائمة";
                 statusColor = Color.FromArgb(202, 138, 4);
                 return false;
             }
@@ -497,7 +497,7 @@ namespace ChickenDist.Forms
             // فحص هل هو مسجل مسبقاً في قاعدة البيانات
             if (PurchaseDAL.IsIMEIAlreadyExists(imei, _currentPurchaseID))
             {
-                var choice = MessageBox.Show($"⚠️ تنبيه: السيريال [{imei}] مسجل بالفعل في فاتورة مشتريات سابقة بالنظام!\nهل أنت متأكد من تكرار إدخاله؟", "سيريال مسجل مسبقاً", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                var choice = MessageBox.Show($"تنبيه: السيريال [{imei}] مسجل بالفعل في فاتورة مشتريات سابقة بالنظام!\nهل أنت متأكد من تكرار إدخاله؟", "سيريال مسجل مسبقاً", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (choice != DialogResult.Yes)
                 {
                     txtScan.SelectAll();

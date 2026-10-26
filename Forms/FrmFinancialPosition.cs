@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -138,7 +138,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📊 موديول المحاسبة والموقف المالي المتكامل";
+            this.Text = "موديول المحاسبة والموقف المالي المتكامل";
             this.Size = new Size(1250, 780);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -147,10 +147,10 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── العنوان الرئيسي ──
-            var pnlTitle = Theme.MakeTitleBar("📊 لوحة الحسابات العامة والقوائم المالية", "النظام المحاسبي الموحد: الموقف المالي، قائمة الدخل، الميزانية العمومية، والتسويات الدفترية");
+            var pnlTitle = Theme.MakeTitleBar("لوحة الحسابات العامة والقوائم المالية", "النظام المحاسبي الموحد: الموقف المالي، قائمة الدخل، الميزانية العمومية، والتسويات الدفترية");
             pnlTitle.Dock = DockStyle.Top;
 
-            var btnPrintPosition = Theme.MakeButton("🖨️ طباعة الموقف المالي للمكان", 15, 10, 230, 36, Theme.Primary);
+            var btnPrintPosition = Theme.MakeButton("طباعة الموقف المالي للمكان", 15, 10, 230, 36, Theme.Primary);
             btnPrintPosition.Click += BtnPrintFinancialPosition_Click;
             pnlTitle.Controls.Add(btnPrintPosition);
             btnPrintPosition.BringToFront();
@@ -168,22 +168,22 @@ namespace ChickenDist.Forms
             tabMain.BringToFront();
 
             // 1. تبويب لوحة الملخص
-            tabDashboard = new TabPage("📊 ملخص الموقف والمؤشرات") { BackColor = Theme.BgMain };
+            tabDashboard = new TabPage("ملخص الموقف والمؤشرات") { BackColor = Theme.BgMain };
             InitDashboardTab();
             tabMain.TabPages.Add(tabDashboard);
 
             // 2. تبويب قائمة الدخل
-            tabIncomeStatement = new TabPage("📉 قائمة الدخل والربحية") { BackColor = Theme.BgMain };
+            tabIncomeStatement = new TabPage("قائمة الدخل والربحية") { BackColor = Theme.BgMain };
             InitPLTab();
             tabMain.TabPages.Add(tabIncomeStatement);
 
             // 3. تبويب الميزانية العمومية
-            tabBalanceSheet = new TabPage("⚖️ الميزانية العمومية") { BackColor = Theme.BgMain };
+            tabBalanceSheet = new TabPage("الميزانية العمومية") { BackColor = Theme.BgMain };
             InitBSTab();
             tabMain.TabPages.Add(tabBalanceSheet);
 
             // 4. تبويب التسويات الدفترية
-            tabAdjustments = new TabPage("⚙️ ضبط الحسابات الدفترية") { BackColor = Theme.BgMain };
+            tabAdjustments = new TabPage("ضبط الحسابات الدفترية") { BackColor = Theme.BgMain };
             InitAdjustmentsTab();
             tabMain.TabPages.Add(tabAdjustments);
             Theme.StyleTabControl(tabMain);
@@ -224,21 +224,21 @@ namespace ChickenDist.Forms
             mainLayout.Controls.Add(pnlCards, 0, 0);
 
             // صف كروت 1: سيولة وتشغيل
-            pnlCards.Controls.Add(CreateMiniCard("💵 النقدية بالخزائن والبنوك", "0.00 ج", Theme.Primary, "مجموع أرصدة الخزن + البنوك والفيزا", out lblTotalCash, out lblTotalCashHint), 0, 0);
-            pnlCards.Controls.Add(CreateMiniCard("📦 قيمة المخزون بالشراء", "0.00 ج", Theme.Accent, "بضاعة المخازن بسعر الشراء والتكلفة", out lblInventoryPurchase, out lblInventoryPurchaseHint), 1, 0);
-            pnlCards.Controls.Add(CreateMiniCard("👥 مديونيات العملاء طرفنا", "0.00 ج", Theme.Success, "إجمالي المبالغ المستحقة لنا طرف العملاء", out lblClientReceivables, out lblClientReceivablesHint), 2, 0);
-            pnlCards.Controls.Add(CreateMiniCard("🏢 مطلوبات الموردين منا", "0.00 ج", Theme.Danger, "إجمالي المبالغ المستحقة للموردين علينا", out lblSupplierPayables, out lblSupplierPayablesHint), 3, 0);
+            pnlCards.Controls.Add(CreateMiniCard("النقدية بالخزائن والبنوك", "0.00 ج", Theme.Primary, "مجموع أرصدة الخزن + البنوك والفيزا", out lblTotalCash, out lblTotalCashHint), 0, 0);
+            pnlCards.Controls.Add(CreateMiniCard("قيمة المخزون بالشراء", "0.00 ج", Theme.Accent, "بضاعة المخازن بسعر الشراء والتكلفة", out lblInventoryPurchase, out lblInventoryPurchaseHint), 1, 0);
+            pnlCards.Controls.Add(CreateMiniCard("مديونيات العملاء طرفنا", "0.00 ج", Theme.Success, "إجمالي المبالغ المستحقة لنا طرف العملاء", out lblClientReceivables, out lblClientReceivablesHint), 2, 0);
+            pnlCards.Controls.Add(CreateMiniCard("مطلوبات الموردين منا", "0.00 ج", Theme.Danger, "إجمالي المبالغ المستحقة للموردين علينا", out lblSupplierPayables, out lblSupplierPayablesHint), 3, 0);
 
             // صف كروت 2: أصول ورأس مال وربحية
-            pnlCards.Controls.Add(CreateMiniCard("🏛️ صافي الأصول الثابتة الدفترية", "0.00 ج", Color.FromArgb(30, 64, 175), "الأصول بعد خصم مجمع الإهلاك", out lblTotalFixedAssets, out lblTotalFixedAssetsHint), 0, 1);
-            pnlCards.Controls.Add(CreateMiniCard("🏆 إجمالي أصول النشاط الكلية", "0.00 ج", Color.FromArgb(15, 23, 42), "= نقدية + مخزون + عملاء + أصول ثابتة", out lblTotalAssets, out lblTotalAssetsHint), 1, 1);
-            pnlCards.Controls.Add(CreateMiniCard("⚖️ رأس المال العامل", "0.00 ج", Color.FromArgb(23, 162, 184), "= الأصول المتداولة - مطلوبات الموردين", out lblWorkingCapital, out lblWorkingCapitalHint), 2, 1);
-            pnlCards.Controls.Add(CreateMiniCard("📈 صافي أرباح الفترة", "0.00 ج", Color.FromArgb(111, 66, 193), "أرباح اليوم (المبيعات - التكلفة - المصروفات)", out lblNetProfitDashboard, out lblNetProfitDashboardHint), 3, 1);
+            pnlCards.Controls.Add(CreateMiniCard("صافي الأصول الثابتة الدفترية", "0.00 ج", Color.FromArgb(30, 64, 175), "الأصول بعد خصم مجمع الإهلاك", out lblTotalFixedAssets, out lblTotalFixedAssetsHint), 0, 1);
+            pnlCards.Controls.Add(CreateMiniCard("إجمالي أصول النشاط الكلية", "0.00 ج", Color.FromArgb(15, 23, 42), "= نقدية + مخزون + عملاء + أصول ثابتة", out lblTotalAssets, out lblTotalAssetsHint), 1, 1);
+            pnlCards.Controls.Add(CreateMiniCard("رأس المال العامل", "0.00 ج", Color.FromArgb(23, 162, 184), "= الأصول المتداولة - مطلوبات الموردين", out lblWorkingCapital, out lblWorkingCapitalHint), 2, 1);
+            pnlCards.Controls.Add(CreateMiniCard("صافي أرباح الفترة", "0.00 ج", Color.FromArgb(111, 66, 193), "أرباح اليوم (المبيعات - التكلفة - المصروفات)", out lblNetProfitDashboard, out lblNetProfitDashboardHint), 3, 1);
 
             // ── صف 2: المؤشرات المالية ونسب السيولة ──
             var grpRatios = new GroupBox
             {
-                Text = "⚡ مؤشرات السيولة ومعدلات الدوران",
+                Text = "مؤشرات السيولة ومعدلات الدوران",
                 Dock = DockStyle.Fill,
                 ForeColor = Theme.Accent,
                 Font = Theme.FontBold
@@ -275,25 +275,25 @@ namespace ChickenDist.Forms
             pnlDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f)); // الموردين
             mainLayout.Controls.Add(pnlDetails, 0, 2);
 
-            pnlDetails.Controls.Add(BuildDetailSection("🏦 أرصدة الخزائن والبنوك الحالية", out dgSafes, new[] {
+            pnlDetails.Controls.Add(BuildDetailSection("أرصدة الخزائن والبنوك الحالية", out dgSafes, new[] {
                 ("SafeName", "اسم الحساب/الخزنة", 120),
                 ("SafeType", "النوع", 80),
                 ("Balance", "الرصيد الحالي", 90)
             }), 0, 0);
 
-            pnlDetails.Controls.Add(BuildDetailSection("🏛️ ملخص الأصول الثابتة بالتصنيف", out dgFixedAssetsSummary, new[] {
+            pnlDetails.Controls.Add(BuildDetailSection("ملخص الأصول الثابتة بالتصنيف", out dgFixedAssetsSummary, new[] {
                 ("CatName", "تصنيف الأصل", 110),
                 ("AssetCount", "العدد", 40),
                 ("BookValue", "صافي القيمة", 80)
             }), 1, 0);
 
-            pnlDetails.Controls.Add(BuildDetailSection("👥 كبار العملاء (مدينون)", out dgTopClients, new[] {
+            pnlDetails.Controls.Add(BuildDetailSection("كبار العملاء (مدينون)", out dgTopClients, new[] {
                 ("ClientName", "اسم العميل", 120),
                 ("Phone", "الهاتف", 90),
                 ("Balance", "المبلغ المستحق", 90)
             }), 2, 0);
 
-            pnlDetails.Controls.Add(BuildDetailSection("🏢 كبار الموردين (دائنون)", out dgTopSuppliers, new[] {
+            pnlDetails.Controls.Add(BuildDetailSection("كبار الموردين (دائنون)", out dgTopSuppliers, new[] {
                 ("SupplierName", "اسم المورد", 120),
                 ("Phone", "الهاتف", 90),
                 ("Balance", "المطلوب سداده", 90)
@@ -326,7 +326,7 @@ namespace ChickenDist.Forms
             dtpPLTo = new DateTimePicker { Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Width = 180, Location = new Point(570, 12), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             dtpPLTo.Value = DateTime.Now;
 
-            btnReloadPL = Theme.MakeButton("🔄 تحديث قائمة الدخل", Theme.Primary);
+            btnReloadPL = Theme.MakeButton("تحديث قائمة الدخل", Theme.Primary);
             btnReloadPL.Location = new Point(480, 10);
             btnReloadPL.Width = 170;
             btnReloadPL.Height = 30;
@@ -386,7 +386,7 @@ namespace ChickenDist.Forms
             dtpBSDate = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 140, Location = new Point(840, 12), BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             dtpBSDate.Value = DateTime.Now;
 
-            btnReloadBS = Theme.MakeButton("🔄 تحديث الميزانية العمومية", Theme.Primary);
+            btnReloadBS = Theme.MakeButton("تحديث الميزانية العمومية", Theme.Primary);
             btnReloadBS.Location = new Point(640, 10);
             btnReloadBS.Width = 180;
             btnReloadBS.Height = 30;
@@ -440,7 +440,7 @@ namespace ChickenDist.Forms
 
             var lblNotice = new Label
             {
-                Text = "💡 ملاحظة محاسبية: الأصول الثابتة المسجلة في دليل الأصول (وكذلك أقساط إهلاكها) تُربط وتُحسب تلقائياً في الميزانية وقائمة الدخل دون الحاجة لإدخالها هنا. الأسطر أدناه مخصصة فقط للأرصدة الافتتاحية السابقة أو التسويات اليدوية وتُضاف تلقائياً للأصول.",
+                Text = "ملاحظة محاسبية: الأصول الثابتة المسجلة في دليل الأصول (وكذلك أقساط إهلاكها) تُربط وتُحسب تلقائياً في الميزانية وقائمة الدخل دون الحاجة لإدخالها هنا. الأسطر أدناه مخصصة فقط للأرصدة الافتتاحية السابقة أو التسويات اليدوية وتُضاف تلقائياً للأصول.",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(30, 64, 175),
                 Font = Theme.FontBold,
@@ -480,7 +480,7 @@ namespace ChickenDist.Forms
 
             layout.Controls.Add(dgAdjustments, 0, 1);
 
-            btnSaveAdjustments = Theme.MakeButton("💾 حفظ الأرصدة والتسويات الدفترية", Theme.Success);
+            btnSaveAdjustments = Theme.MakeButton("حفظ الأرصدة والتسويات الدفترية", Theme.Success);
             btnSaveAdjustments.Dock = DockStyle.Fill;
             btnSaveAdjustments.Click += (s, e) => SaveAdjustments();
             layout.Controls.Add(btnSaveAdjustments, 0, 2);
@@ -660,7 +660,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل تحميل الأرصدة الدفترية: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل تحميل الأرصدة الدفترية: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -684,12 +684,12 @@ namespace ChickenDist.Forms
                         DbHelper.P("@val", val), DbHelper.P("@key", key));
                 }
 
-                MessageBox.Show("✅ تم حفظ الأرصدة الدفترية والتسويات بنجاح وتحديث كافة التقارير!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم حفظ الأرصدة الدفترية والتسويات بنجاح وتحديث كافة التقارير!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadAdjustments();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -890,7 +890,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل تحميل بيانات الموقف المالي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل تحميل بيانات الموقف المالي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -956,11 +956,11 @@ namespace ChickenDist.Forms
             dt.Rows.Add("المبيعات الكلية", 0, grossSales, grossSales);
             dt.Rows.Add("مردودات المبيعات (-)", returns, 0, -returns);
             dt.Rows.Add("خصومات المبيعات (-)", discounts, 0, -discounts);
-            dt.Rows.Add("👉 صافي المبيعات", 0, netSales, netSales);
+            dt.Rows.Add("صافي المبيعات", 0, netSales, netSales);
             dt.Rows.Add("تكلفة المبيعات (COGS)", grossCOGS, 0, -grossCOGS);
             dt.Rows.Add("تكلفة المردودات المسترجعة (+)", 0, returnsCOGS, returnsCOGS);
-            dt.Rows.Add("👉 صافي تكلفة البضاعة المباعة", netCOGS, 0, -netCOGS);
-            dt.Rows.Add("📊 مجمل الربح (الخسارة) التجاري", 0, grossProfit, grossProfit);
+            dt.Rows.Add("صافي تكلفة البضاعة المباعة", netCOGS, 0, -netCOGS);
+            dt.Rows.Add("مجمل الربح (الخسارة) التجاري", 0, grossProfit, grossProfit);
             dt.Rows.Add("إيرادات تشغيلية أخرى", 0, otherOpRevenues, otherOpRevenues);
 
             var dtExps = DbHelper.Query(@"
@@ -974,7 +974,7 @@ namespace ChickenDist.Forms
             {
                 string expName = r["TypeName"].ToString();
                 decimal amt = Convert.ToDecimal(r["Total"]);
-                dt.Rows.Add($"   🔻 مصروف تشغيلي: {expName}", amt, 0, -amt);
+                dt.Rows.Add($"   مصروف تشغيلي: {expName}", amt, 0, -amt);
                 totalOperatingExpenses += amt;
             }
 
@@ -992,12 +992,12 @@ namespace ChickenDist.Forms
 
             if (periodDepreciation > 0)
             {
-                dt.Rows.Add("   🔻 إهلاك الأصول الثابتة للفترة", periodDepreciation, 0, -periodDepreciation);
+                dt.Rows.Add("   إهلاك الأصول الثابتة للفترة", periodDepreciation, 0, -periodDepreciation);
                 totalOperatingExpenses += periodDepreciation;
             }
 
             decimal operatingProfit = grossProfit + otherOpRevenues - totalOperatingExpenses;
-            dt.Rows.Add("⚖️ الربح (الخسارة) التشغيلي", 0, operatingProfit, operatingProfit);
+            dt.Rows.Add("الربح (الخسارة) التشغيلي", 0, operatingProfit, operatingProfit);
 
             // أرباح وخسائر بيع وتخريد الأصول الثابتة من سجل العمليات الفعلي
             decimal liveGainAssetSale = 0m;
@@ -1026,10 +1026,10 @@ namespace ChickenDist.Forms
             decimal otherRevenues = GetAdj("OtherRevenues");
             decimal totalOtherRevenues = gainAssetSale + interestEarned + fxGain + otherRevenues;
 
-            dt.Rows.Add("   ➕ أرباح بيع أصول رأسمالية", 0, gainAssetSale, gainAssetSale);
-            dt.Rows.Add("   ➕ فوائد دائنة محصلة", 0, interestEarned, interestEarned);
-            dt.Rows.Add("   ➕ أرباح فروق العملة", 0, fxGain, fxGain);
-            dt.Rows.Add("   ➕ إيرادات غير تشغيلية أخرى", 0, otherRevenues, otherRevenues);
+            dt.Rows.Add("   أرباح بيع أصول رأسمالية", 0, gainAssetSale, gainAssetSale);
+            dt.Rows.Add("   فوائد دائنة محصلة", 0, interestEarned, interestEarned);
+            dt.Rows.Add("   أرباح فروق العملة", 0, fxGain, fxGain);
+            dt.Rows.Add("   إيرادات غير تشغيلية أخرى", 0, otherRevenues, otherRevenues);
 
             // المصروفات الأخرى (غير تشغيلية) من العمليات والتسويات
             decimal interestPaid = GetAdj("InterestPaid");
@@ -1039,23 +1039,23 @@ namespace ChickenDist.Forms
             decimal otherExpenses = GetAdj("OtherExpenses");
             decimal totalOtherExpenses = interestPaid + fxLoss + lossAssetSale + finesPenalties + otherExpenses;
 
-            dt.Rows.Add("   ➖ فوائد مدينة مدفوعة", interestPaid, 0, -interestPaid);
-            dt.Rows.Add("   ➖ خسائر فروق العملة", fxLoss, 0, -fxLoss);
-            dt.Rows.Add("   ➖ خسائر بيع/تخريد أصول", lossAssetSale, 0, -lossAssetSale);
-            dt.Rows.Add("   ➖ غرامات وجزاءات حكومية", finesPenalties, 0, -finesPenalties);
-            dt.Rows.Add("   ➖ مصروفات غير تشغيلية أخرى", otherExpenses, 0, -otherExpenses);
+            dt.Rows.Add("   فوائد مدينة مدفوعة", interestPaid, 0, -interestPaid);
+            dt.Rows.Add("   خسائر فروق العملة", fxLoss, 0, -fxLoss);
+            dt.Rows.Add("   خسائر بيع/تخريد أصول", lossAssetSale, 0, -lossAssetSale);
+            dt.Rows.Add("   غرامات وجزاءات حكومية", finesPenalties, 0, -finesPenalties);
+            dt.Rows.Add("   مصروفات غير تشغيلية أخرى", otherExpenses, 0, -otherExpenses);
 
             // صافي الربح قبل الضريبة
             decimal profitBeforeTax = operatingProfit + totalOtherRevenues - totalOtherExpenses;
-            dt.Rows.Add("⚖️ صافي الربح (الخسارة) قبل الضريبة", 0, profitBeforeTax, profitBeforeTax);
+            dt.Rows.Add("صافي الربح (الخسارة) قبل الضريبة", 0, profitBeforeTax, profitBeforeTax);
 
             // ضريبة الدخل
             decimal incomeTax = GetAdj("IncomeTax");
-            dt.Rows.Add("   ➖ ضريبة الدخل المستقطعة", incomeTax, 0, -incomeTax);
+            dt.Rows.Add("   ضريبة الدخل المستقطعة", incomeTax, 0, -incomeTax);
 
             // صافي الربح النهائي بعد الضريبة
             decimal netProfitAfter = profitBeforeTax - incomeTax;
-            dt.Rows.Add("🏆 صافي الربح (الخسارة) النهائي بعد الضريبة", 0, netProfitAfter, netProfitAfter);
+            dt.Rows.Add("صافي الربح (الخسارة) النهائي بعد الضريبة", 0, netProfitAfter, netProfitAfter);
 
             return dt;
         }
@@ -1081,10 +1081,10 @@ namespace ChickenDist.Forms
                     );
 
                     // تنسيق صفوف التوتال
-                    if (name.StartsWith("👉") || name.StartsWith("⚖️") || name.StartsWith("📊") || name.StartsWith("🏆"))
+                    if (name.StartsWith("صافي ") || name.StartsWith("مجمل ") || name.StartsWith("الربح "))
                     {
                         dgPL.Rows[idx].DefaultCellStyle.Font = new Font(Theme.FontBold.FontFamily, 9.5f, FontStyle.Bold);
-                        if (name.StartsWith("🏆"))
+                        if (name.Contains("النهائي بعد الضريبة"))
                         {
                             dgPL.Rows[idx].DefaultCellStyle.BackColor = Theme.Primary;
                             dgPL.Rows[idx].DefaultCellStyle.ForeColor = Color.White;
@@ -1099,7 +1099,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل تحميل قائمة الدخل: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل تحميل قائمة الدخل: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1148,7 +1148,7 @@ namespace ChickenDist.Forms
                 // بناء كتل الأصول
                 List<KeyValuePair<string, decimal>> assets = new List<KeyValuePair<string, decimal>>
                 {
-                    new KeyValuePair<string, decimal>("🟢 الأصول المتداولة", 0m),
+                    new KeyValuePair<string, decimal>("الأصول المتداولة", 0m),
                     new KeyValuePair<string, decimal>("   النقدي بالخزائن والبنوك", liveCash),
                     new KeyValuePair<string, decimal>("   أرصدة العملاء (الذمم)", liveClients),
                     new KeyValuePair<string, decimal>("   أوراق القبض", GetAdj("NotesReceivable")),
@@ -1158,7 +1158,7 @@ namespace ChickenDist.Forms
                     new KeyValuePair<string, decimal>("   العهد والسلف", GetAdj("CustodiesAdvances"))
                 };
                 decimal totalCurrentAssets = liveCash + liveClients + GetAdj("NotesReceivable") + liveInventory + GetAdj("PrepaidExpenses") + GetAdj("AccruedRevenues") + GetAdj("CustodiesAdvances");
-                assets.Add(new KeyValuePair<string, decimal>("👉 إجمالي الأصول المتداولة", totalCurrentAssets));
+                assets.Add(new KeyValuePair<string, decimal>("إجمالي الأصول المتداولة", totalCurrentAssets));
 
                 // حساب الأصول الثابتة الحية حسب التصنيفات المحاسبية الفعلية
                 decimal catLand = 0m;
@@ -1210,7 +1210,7 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                assets.Add(new KeyValuePair<string, decimal>("🟢 الأصول غير المتداولة (الثابتة)", 0m));
+                assets.Add(new KeyValuePair<string, decimal>("الأصول غير المتداولة (الثابتة)", 0m));
                 assets.Add(new KeyValuePair<string, decimal>("   الأراضي", catLand + GetAdj("Land")));
                 assets.Add(new KeyValuePair<string, decimal>("   المباني والإنشاءات", catBuildings + GetAdj("Buildings")));
                 assets.Add(new KeyValuePair<string, decimal>("   الآلات والمعدات والماكينات", catMachinery + GetAdj("Machinery")));
@@ -1238,15 +1238,15 @@ namespace ChickenDist.Forms
                                          + catOther
                                          - totalAccumDep;
 
-                assets.Add(new KeyValuePair<string, decimal>("👉 إجمالي الأصول غير المتداولة (الصافي)", totalFixedAssets));
+                assets.Add(new KeyValuePair<string, decimal>("إجمالي الأصول غير المتداولة (الصافي)", totalFixedAssets));
 
                 decimal totalAssets = totalCurrentAssets + totalFixedAssets;
-                assets.Add(new KeyValuePair<string, decimal>("🏆 إجمالي الأصول الكلية", totalAssets));
+                assets.Add(new KeyValuePair<string, decimal>("إجمالي الأصول الكلية", totalAssets));
 
                 // بناء كتل الخصوم وحقوق الملكية
                 List<KeyValuePair<string, decimal>> liabilities = new List<KeyValuePair<string, decimal>>
                 {
-                    new KeyValuePair<string, decimal>("🔴 الخصوم المتداولة", 0m),
+                    new KeyValuePair<string, decimal>("الخصوم المتداولة", 0m),
                     new KeyValuePair<string, decimal>("   أرصدة الموردين (الحسابات الدائنة)", liveSuppliers),
                     new KeyValuePair<string, decimal>("   أوراق الدفع", GetAdj("NotesPayable")),
                     new KeyValuePair<string, decimal>("   القروض قصيرة الأجل", GetAdj("ShortTermLoans")),
@@ -1256,13 +1256,13 @@ namespace ChickenDist.Forms
                     new KeyValuePair<string, decimal>("   الإيرادات المقدمة (المؤجلة)", GetAdj("DeferredRevenues"))
                 };
                 decimal totalCurrentLiabilities = liveSuppliers + GetAdj("NotesPayable") + GetAdj("ShortTermLoans") + GetAdj("AccruedTax") + GetAdj("AccruedInsurance") + GetAdj("AccruedExpenses") + GetAdj("DeferredRevenues");
-                liabilities.Add(new KeyValuePair<string, decimal>("👉 إجمالي الخصوم المتداولة", totalCurrentLiabilities));
+                liabilities.Add(new KeyValuePair<string, decimal>("إجمالي الخصوم المتداولة", totalCurrentLiabilities));
 
-                liabilities.Add(new KeyValuePair<string, decimal>("🔴 الخصوم غير المتداولة (طويلة الأجل)", 0m));
+                liabilities.Add(new KeyValuePair<string, decimal>("الخصوم غير المتداولة (طويلة الأجل)", 0m));
                 liabilities.Add(new KeyValuePair<string, decimal>("   قروض بنكية طويلة الأجل", GetAdj("LongTermLoans")));
                 liabilities.Add(new KeyValuePair<string, decimal>("   التزامات طويلة الأجل أخرى", GetAdj("LongTermLiabilities")));
                 decimal totalLongTermLiabilities = GetAdj("LongTermLoans") + GetAdj("LongTermLiabilities");
-                liabilities.Add(new KeyValuePair<string, decimal>("👉 إجمالي الخصوم غير المتداولة", totalLongTermLiabilities));
+                liabilities.Add(new KeyValuePair<string, decimal>("إجمالي الخصوم غير المتداولة", totalLongTermLiabilities));
 
                 // جلب رأس مال الشركاء والمساهمين والمسحوبات الحية إن وجدت
                 object partnerCapObj = DbHelper.Scalar("SELECT ISNULL(SUM(CapitalContribution), 0) FROM Partners WHERE IsActive = 1");
@@ -1274,7 +1274,7 @@ namespace ChickenDist.Forms
                 decimal totalCapital = livePartnerCapital + GetAdj("Capital");
                 decimal totalDrawings = livePartnerDrawings + GetAdj("Drawings");
 
-                liabilities.Add(new KeyValuePair<string, decimal>("🔵 حقوق الملكية (رأس المال والاحتياطيات)", 0m));
+                liabilities.Add(new KeyValuePair<string, decimal>("حقوق الملكية (رأس المال والاحتياطيات)", 0m));
                 liabilities.Add(new KeyValuePair<string, decimal>("   رأس المال الافتتاحي للشركاء", totalCapital));
                 liabilities.Add(new KeyValuePair<string, decimal>("   الاحتياطي القانوني", GetAdj("LegalReserve")));
                 liabilities.Add(new KeyValuePair<string, decimal>("   الاحتياطي العام للمكان", GetAdj("GeneralReserve")));
@@ -1283,10 +1283,10 @@ namespace ChickenDist.Forms
                 liabilities.Add(new KeyValuePair<string, decimal>("   المسحوبات الشخصية للشركاء (-)", totalDrawings));
 
                 decimal totalEquity = totalCapital + GetAdj("LegalReserve") + GetAdj("GeneralReserve") + GetAdj("RetainedEarnings") + netPeriodProfit - totalDrawings;
-                liabilities.Add(new KeyValuePair<string, decimal>("👉 إجمالي حقوق الملكية الكلية", totalEquity));
+                liabilities.Add(new KeyValuePair<string, decimal>("إجمالي حقوق الملكية الكلية", totalEquity));
 
                 decimal totalLiabilitiesAndEquity = totalCurrentLiabilities + totalLongTermLiabilities + totalEquity;
-                liabilities.Add(new KeyValuePair<string, decimal>("🏆 إجمالي الخصوم وحقوق الملكية", totalLiabilitiesAndEquity));
+                liabilities.Add(new KeyValuePair<string, decimal>("إجمالي الخصوم وحقوق الملكية", totalLiabilitiesAndEquity));
 
                 // تعبئة البيانات جنباً إلى جنب في الـ DataGridView بالتزامن
                 dgBS.Rows.Clear();
@@ -1301,23 +1301,22 @@ namespace ChickenDist.Forms
                     if (i < assets.Count)
                     {
                         assetAcc = assets[i].Key;
-                        assetVal = assets[i].Value == 0m && (assets[i].Key.StartsWith("🟢") || assets[i].Key.Contains("الثابتة")) ? "" : assets[i].Value.ToString("N2") + " ج";
+                        assetVal = assets[i].Value == 0m && (!assets[i].Key.StartsWith(" ") && !assets[i].Key.StartsWith("إجمالي")) ? "" : assets[i].Value.ToString("N2") + " ج";
                     }
 
                     if (i < liabilities.Count)
                     {
                         liabAcc = liabilities[i].Key;
-                        liabVal = liabilities[i].Value == 0m && (liabilities[i].Key.StartsWith("🔴") || liabilities[i].Key.Contains("حقوق الملكية")) ? "" : liabilities[i].Value.ToString("N2") + " ج";
+                        liabVal = liabilities[i].Value == 0m && (!liabilities[i].Key.StartsWith(" ") && !liabilities[i].Key.StartsWith("إجمالي")) ? "" : liabilities[i].Value.ToString("N2") + " ج";
                     }
 
                     int idx = dgBS.Rows.Add(assetAcc, assetVal, liabAcc, liabVal);
 
                     // تنسيق صفوف التوتال
-                    if (assetAcc.StartsWith("🟢") || assetAcc.StartsWith("👉") || assetAcc.StartsWith("🏆") ||
-                        liabAcc.StartsWith("🔴") || liabAcc.StartsWith("🔵") || liabAcc.StartsWith("👉") || liabAcc.StartsWith("🏆"))
+                    if ((!string.IsNullOrEmpty(assetAcc) && !assetAcc.StartsWith(" ")) || (!string.IsNullOrEmpty(liabAcc) && !liabAcc.StartsWith(" ")))
                     {
                         dgBS.Rows[idx].DefaultCellStyle.Font = new Font(Theme.FontBold.FontFamily, 9.5f, FontStyle.Bold);
-                        if (assetAcc.StartsWith("🏆") || liabAcc.StartsWith("🏆"))
+                        if (assetAcc.Contains("الأصول الكلية") || liabAcc.Contains("الخصوم وحقوق الملكية"))
                         {
                             dgBS.Rows[idx].DefaultCellStyle.BackColor = Theme.Primary;
                             dgBS.Rows[idx].DefaultCellStyle.ForeColor = Color.White;
@@ -1332,7 +1331,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل تحميل الميزانية العمومية: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل تحميل الميزانية العمومية: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1382,21 +1381,21 @@ namespace ChickenDist.Forms
                     y += 68;
 
                     // ── 2. Key Financial Cards Grid (2 rows of 3 columns) ──
-                    g.DrawString("📌 أولاً: ملخص السيولة والموجودات والمطلوبات النقدية والمخزونية", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
+                    g.DrawString("أولاً: ملخص السيولة والموجودات والمطلوبات النقدية والمخزونية", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
                     y += 26;
 
                     int cardWidth = (tableWidth - 15) / 4;
                     int cardHeight = 44;
 
                     string[,] cards = {
-                        { "💵 إجمالي السيولة بالخزن", lblTotalCash.Text, "0" },
-                        { "📦 قيمة المخزون بالشراء", lblInventoryPurchase.Text, "1" },
-                        { "👥 مستحقات العملاء", lblClientReceivables.Text, "2" },
-                        { "🏢 ديون الموردين", lblSupplierPayables.Text, "3" },
-                        { "🏛️ صافي الأصول الثابتة", lblTotalFixedAssets.Text, "4" },
-                        { "🏆 إجمالي أصول النشاط", lblTotalAssets.Text, "5" },
-                        { "⚖️ رأس المال العامل", lblWorkingCapital.Text, "6" },
-                        { "📈 صافي أرباح الفترة", lblNetProfitDashboard.Text, "7" }
+                        { "إجمالي السيولة بالخزن", lblTotalCash.Text, "0" },
+                        { "قيمة المخزون بالشراء", lblInventoryPurchase.Text, "1" },
+                        { "مستحقات العملاء", lblClientReceivables.Text, "2" },
+                        { "ديون الموردين", lblSupplierPayables.Text, "3" },
+                        { "صافي الأصول الثابتة", lblTotalFixedAssets.Text, "4" },
+                        { "إجمالي أصول النشاط", lblTotalAssets.Text, "5" },
+                        { "رأس المال العامل", lblWorkingCapital.Text, "6" },
+                        { "صافي أرباح الفترة", lblNetProfitDashboard.Text, "7" }
                     };
 
                     for (int i = 0; i < 8; i++)
@@ -1419,7 +1418,7 @@ namespace ChickenDist.Forms
                     y += (cardHeight * 2) + 18;
 
                     // ── 3. Ratios & Performance Indicators ──
-                    g.DrawString("⚡ ثانياً: مؤشرات الكفاءة والسيولة المالية للمكان", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
+                    g.DrawString("ثانياً: مؤشرات الكفاءة والسيولة المالية للمكان", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
                     y += 24;
 
                     g.FillRectangle(new SolidBrush(Color.FromArgb(248, 249, 252)), leftMargin, y, tableWidth, 26);
@@ -1438,7 +1437,7 @@ namespace ChickenDist.Forms
                     y += 34;
 
                     // ── 4. Safe Accounts Liquidity Table ──
-                    g.DrawString("🏛️ ثالثاً: بيان تفصيلي بأرصدة الخزن والمحفظة النقدية والمصرفية", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
+                    g.DrawString("ثالثاً: بيان تفصيلي بأرصدة الخزن والمحفظة النقدية والمصرفية", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, tableWidth, 22), sfRight);
                     y += 24;
 
                     int[] safeCols = { leftMargin, leftMargin + 250, leftMargin + 450, rightMargin };
@@ -1477,8 +1476,8 @@ namespace ChickenDist.Forms
                     // ── 5. Top Clients & Suppliers Tables (Side by Side) ──
                     int halfWidth = (tableWidth - 15) / 2;
 
-                    g.DrawString("👥 كبار العملاء المدينين (حقوق المكان)", sectionFont, Brushes.DarkBlue, new RectangleF(rightMargin - halfWidth, y, halfWidth, 20), sfRight);
-                    g.DrawString("🏢 كبار الموردين الدائنين (التزامات المكان)", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, halfWidth, 20), sfRight);
+                    g.DrawString("كبار العملاء المدينين (حقوق المكان)", sectionFont, Brushes.DarkBlue, new RectangleF(rightMargin - halfWidth, y, halfWidth, 20), sfRight);
+                    g.DrawString("كبار الموردين الدائنين (التزامات المكان)", sectionFont, Brushes.DarkBlue, new RectangleF(leftMargin, y, halfWidth, 20), sfRight);
                     y += 22;
 
                     // Table headers
@@ -1536,7 +1535,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل إعداد أو طباعة تقرير الموقف المالي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل إعداد أو طباعة تقرير الموقف المالي: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

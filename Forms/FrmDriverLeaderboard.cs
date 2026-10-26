@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -42,7 +42,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            Text = "🏆 لوحة أداء ومنافسة المناديب";
+            Text = "لوحة أداء ومنافسة المناديب";
             Size = new Size(1300, 780);
             StartPosition = FormStartPosition.CenterScreen;
             RightToLeft = RightToLeft.Yes;
@@ -52,7 +52,7 @@ namespace ChickenDist.Forms
 
             // ===== شريط العنوان =====
             var pnlTitle = Theme.MakeTitleBar(
-                "🏆 لوحة أداء المناديب",
+                "لوحة أداء المناديب",
                 "مقارنة شاملة للمبيعات والتحصيل والعجز لكل مندوب — اختر الفترة الزمنية");
             pnlTitle.Dock = DockStyle.Top;
 
@@ -72,7 +72,7 @@ namespace ChickenDist.Forms
             var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = Theme.FontBold };
             dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
 
-            btnLoad = Theme.MakeButton("🔄 تحديث", Theme.Accent);
+            btnLoad = Theme.MakeButton("تحديث", Theme.Accent);
             btnLoad.Size = new Size(110, 34);
             btnLoad.Margin = new Padding(10, 2, 0, 0);
             btnLoad.Click += (s, e) => LoadData();
@@ -134,7 +134,7 @@ namespace ChickenDist.Forms
             foreach (DataRow row in _data.Rows)
             {
                 Color medalColor = rank == 1 ? Gold : rank == 2 ? Silver : rank == 3 ? Bronze : Theme.BgCard;
-                string medal = rank == 1 ? "🥇" : rank == 2 ? "🥈" : rank == 3 ? "🥉" : $"#{rank}";
+                string medal = $"#{rank}";
 
                 var card = BuildDriverCard(row, rank, medal, medalColor);
                 card.Location = new Point(x, 10);
@@ -207,25 +207,25 @@ namespace ChickenDist.Forms
             };
             yPos += 40;
 
-            var lblSales = MakeCardRow(card.Width, yPos, "📦 المبيعات:", $"{totalSales:N0} ج", Color.LightSkyBlue);
+            var lblSales = MakeCardRow(card.Width, yPos, "المبيعات:", $"{totalSales:N0} ج", Color.LightSkyBlue);
             yPos += 26;
 
-            var lblCash = MakeCardRow(card.Width, yPos, "💵 نقدي:", $"{cashSales:N0} ج ({cashPct:F0}%)", Color.LightGreen);
+            var lblCash = MakeCardRow(card.Width, yPos, "نقدي:", $"{cashSales:N0} ج ({cashPct:F0}%)", Color.LightGreen);
             yPos += 26;
 
-            var lblLoads = MakeCardRow(card.Width, yPos, "📋 حمولات:", $"{handovers}", Color.White);
+            var lblLoads = MakeCardRow(card.Width, yPos, "حمولات:", $"{handovers}", Color.White);
             yPos += 26;
 
             // النافق والعجز — ملوّن بالأحمر إذا > 0
-            var lblDead = MakeCardRow(card.Width, yPos, "☠️ النافق:", $"{totalDead:F1}", totalDead > 0 ? Color.OrangeRed : Color.Gray);
+            var lblDead = MakeCardRow(card.Width, yPos, "النافق:", $"{totalDead:F1}", totalDead > 0 ? Color.OrangeRed : Color.Gray);
             yPos += 26;
 
-            var lblDeficit = MakeCardRow(card.Width, yPos, "⚠️ العجز:", $"{totalDeficit:F1}", totalDeficit > 0 ? Color.FromArgb(255, 80, 80) : Color.Gray);
+            var lblDeficit = MakeCardRow(card.Width, yPos, "العجز:", $"{totalDeficit:F1}", totalDeficit > 0 ? Color.FromArgb(255, 80, 80) : Color.Gray);
             yPos += 26;
 
             if (debt > 0)
             {
-                var lblDebt = MakeCardRow(card.Width, yPos, "🔴 المديونية:", $"{debt:N2} ج", Color.FromArgb(255, 60, 60));
+                var lblDebt = MakeCardRow(card.Width, yPos, "المديونية:", $"{debt:N2} ج", Color.FromArgb(255, 60, 60));
                 card.Controls.Add(lblDebt);
             }
 
@@ -268,7 +268,7 @@ namespace ChickenDist.Forms
             DrawBarChart(g,
                 _data,
                 "TotalSales",
-                "📊 إجمالي المبيعات (ج)",
+                "إجمالي المبيعات (ج)",
                 new Rectangle(pad, 30, chartW / 3 - 15, chartH),
                 Color.FromArgb(70, 130, 220),
                 Color.FromArgb(130, 180, 255));
@@ -277,7 +277,7 @@ namespace ChickenDist.Forms
             DrawBarChart(g,
                 _data,
                 "CashSales",
-                "💵 التحصيل النقدي (ج)",
+                "التحصيل النقدي (ج)",
                 new Rectangle(pad + chartW / 3 + 10, 30, chartW / 3 - 15, chartH),
                 Color.FromArgb(46, 160, 80),
                 Color.FromArgb(100, 220, 130));
@@ -373,7 +373,7 @@ namespace ChickenDist.Forms
             using (var bTitle = new SolidBrush(Color.FromArgb(255, 120, 120)))
             {
                 var titleRect = new RectangleF(area.X, area.Y - 26, area.Width, 24);
-                g.DrawString("⚠️ النافق + العجز (أقل = أفضل)", fTitle, bTitle, titleRect, new StringFormat { Alignment = StringAlignment.Center });
+                g.DrawString("النافق + العجز (أقل = أفضل)", fTitle, bTitle, titleRect, new StringFormat { Alignment = StringAlignment.Center });
             }
 
             if (dt.Rows.Count == 0) return;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -62,7 +62,7 @@ namespace ChickenDist.Forms
             var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 8, 0, 0), Font = Theme.FontBold };
             dtpTo = new DateTimePicker { Width = 180, Height = 26, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
 
-            btnSearch = Theme.MakeButton("🔍 بحث حمولات", Theme.Accent);
+            btnSearch = Theme.MakeButton("بحث حمولات", Theme.Accent);
             btnSearch.Size = new Size(130, 28);
             btnSearch.Margin = new Padding(10, 0, 0, 0);
             btnSearch.Click += (s, e) => CboDriver_SelectedIndexChanged(null, null);
@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
             };
             cboLoad.SelectedIndexChanged += CboLoad_SelectedIndexChanged;
 
-            btnLoadItems = Theme.MakeButton("📋 تحميل البيانات", Theme.Accent);
+            btnLoadItems = Theme.MakeButton("تحميل البيانات", Theme.Accent);
             btnLoadItems.Size = new Size(140, 28);
             btnLoadItems.Margin = new Padding(20, 0, 0, 0);
             btnLoadItems.Click += BtnLoadItems_Click;
@@ -181,7 +181,7 @@ namespace ChickenDist.Forms
             lblExpCash  = AddHandoverSummaryCard(pnlSummaryTable, "المتوقع نقداً:",     "0.00", Color.LightSkyBlue,  3);
             lblTotExtra = AddHandoverSummaryCard(pnlSummaryTable, "الزيادة (كمية):",    "0.00", Color.Yellow,        4);
             lblTotDef   = AddHandoverSummaryCard(pnlSummaryTable, "العجز (كمية):",      "0.00", Color.Red,           5);
-            lblDeficitValue = AddHandoverSummaryCard(pnlSummaryTable, "💰 قيمة العجز:", "0.00 ج", Color.FromArgb(255, 80, 80), 6);
+            lblDeficitValue = AddHandoverSummaryCard(pnlSummaryTable, "قيمة العجز:", "0.00 ج", Color.FromArgb(255, 80, 80), 6);
 
             pnlFooter.Controls.Add(pnlSummaryTable);
 
@@ -201,13 +201,13 @@ namespace ChickenDist.Forms
             var lblNotesL = new Label { Text = "ملاحظات التقفيل:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 10, 5, 0) };
             txtNotes = new TextBox { Width = 260, Height = 32, Font = new Font("Segoe UI", 11), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, RightToLeft = RightToLeft.Yes, BorderStyle = BorderStyle.FixedSingle };
 
-            btnSave = Theme.MakeButton("💾 حفظ التقفيل", Theme.Accent);
+            btnSave = Theme.MakeButton("حفظ التقفيل", Theme.Accent);
             btnSave.Size = new Size(140, 32);
             btnSave.Margin = new Padding(20, 0, 0, 0);
             btnSave.Click += BtnSave_Click;
 
             // زر تصدير كشف التحصيل لواتساب
-            btnWhatsApp = Theme.MakeButton("📲 كشف واتساب", Color.FromArgb(37, 211, 102));
+            btnWhatsApp = Theme.MakeButton("كشف واتساب", Color.FromArgb(37, 211, 102));
             btnWhatsApp.Size = new Size(140, 32);
             btnWhatsApp.Margin = new Padding(15, 0, 0, 0);
             btnWhatsApp.Click += BtnWhatsApp_Click;
@@ -216,17 +216,17 @@ namespace ChickenDist.Forms
             var lblImportDate = new Label { Text = "تاريخ الاستيراد:", AutoSize = true, ForeColor = Theme.TextSub, Margin = new Padding(20, 10, 5, 0) };
             dtpImport = new DateTimePicker { Width = 110, Height = 28, Format = DateTimePickerFormat.Short, Value = DateTime.Today, Margin = new Padding(0, 6, 0, 0) };
 
-            btnExportJson = Theme.MakeButton("📱 تصدير بيانات الجوال", Color.FromArgb(30, 120, 200));
+            btnExportJson = Theme.MakeButton("تصدير بيانات الجوال", Color.FromArgb(30, 120, 200));
             btnExportJson.Size = new Size(170, 32);
             btnExportJson.Margin = new Padding(20, 0, 0, 0);
             btnExportJson.Click += BtnExportJson_Click;
 
-            btnImportCloud = Theme.MakeButton("☁️ استيراد من السحاب", Color.FromArgb(30, 120, 200));
+            btnImportCloud = Theme.MakeButton("استيراد من السحاب", Color.FromArgb(30, 120, 200));
             btnImportCloud.Size = new Size(170, 32);
             btnImportCloud.Margin = new Padding(10, 0, 0, 0);
             btnImportCloud.Click += BtnImportCloud_Click;
 
-            btnImportClipboard = Theme.MakeButton("📋 استيراد من الحافظة", Color.FromArgb(142, 68, 173));
+            btnImportClipboard = Theme.MakeButton("استيراد من الحافظة", Color.FromArgb(142, 68, 173));
             btnImportClipboard.Size = new Size(170, 32);
             btnImportClipboard.Margin = new Padding(10, 0, 0, 0);
             btnImportClipboard.Click += BtnImportClipboard_Click;
@@ -332,7 +332,7 @@ namespace ChickenDist.Forms
             string choice = null;
             using (var dlg = new Form())
             {
-                dlg.Text = "🚨 تحديد جهة تحمل بضائع النافق/الهالك";
+                dlg.Text = "تحديد جهة تحمل بضائع النافق/الهالك";
                 dlg.Size = new Size(480, 260);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -534,18 +534,18 @@ namespace ChickenDist.Forms
             {
                 if (item.DeadQty > item.LoadedQty)
                 {
-                    MessageBox.Show($"❌ خطأ: لا يمكن للنافق ({item.DeadQty:F2}) أن يزيد عن الكمية المحملة ({item.LoadedQty:F2}) للصنف: {item.ProductName}",
+                    MessageBox.Show($"خطأ: لا يمكن للنافق ({item.DeadQty:F2}) أن يزيد عن الكمية المحملة ({item.LoadedQty:F2}) للصنف: {item.ProductName}",
                         "خطأ في البيانات", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 if (item.ExtraQty > 0)
                 {
-                    var res = MessageBox.Show($"⚠️ تنبيه: يوجد زيادة بقيمة ({item.ExtraQty:F2}) في صنف ({item.ProductName}).\nهل هذه الزيادة صحيحة؟",
+                    var res = MessageBox.Show($"تنبيه: يوجد زيادة بقيمة ({item.ExtraQty:F2}) في صنف ({item.ProductName}).\nهل هذه الزيادة صحيحة؟",
                         "تأكيد الزيادة", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     if (res != DialogResult.Yes)
                     {
-                        MessageBox.Show("❌ تم إلغاء الحفظ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                        MessageBox.Show("تم إلغاء الحفظ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                         return;
                     }
                 }
@@ -566,7 +566,7 @@ namespace ChickenDist.Forms
                 string choice = ShowWastageBearingDialog(totalDeadValue);
                 if (choice == null)
                 {
-                    MessageBox.Show("❌ تم إلغاء حفظ التقفيل للتراجع وتعديل المدخلات.", "تم إلغاء الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("تم إلغاء حفظ التقفيل للتراجع وتعديل المدخلات.", "تم إلغاء الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 deadQtyHandling = choice;
@@ -591,7 +591,7 @@ namespace ChickenDist.Forms
                 var settlement = ShowDeficitSettlementDialog(totalDeficitValue);
                 if (settlement == null)
                 {
-                    MessageBox.Show("❌ تم إلغاء حفظ التقفيل للتراجع وتعديل المدخلات.", "تم إلغاء الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("تم إلغاء حفظ التقفيل للتراجع وتعديل المدخلات.", "تم إلغاء الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 settlementType = settlement.Type;
@@ -618,7 +618,7 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                MessageBox.Show($"✅ تم تقفيل الحمولة بنجاح!\nتم تسجيل مبلغ {cashCollected:N2} ج في الخزينة.{extraMsg}", "تم التقفيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تقفيل الحمولة بنجاح!\nتم تسجيل مبلغ {cashCollected:N2} ج في الخزينة.{extraMsg}", "تم التقفيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 CboDriver_SelectedIndexChanged(null, null);
                 dgItems.Rows.Clear();
                 _items.Clear();
@@ -626,7 +626,7 @@ namespace ChickenDist.Forms
                 txtNotes.Clear();
                 txtCashCollected.Text = "0.00";
             }
-            else MessageBox.Show("❌ فشل الحفظ، يرجى مراجعة اتصال قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else MessageBox.Show("فشل الحفظ، يرجى مراجعة اتصال قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private DeficitSettlementResult ShowDeficitSettlementDialog(decimal deficitValue)
@@ -634,7 +634,7 @@ namespace ChickenDist.Forms
             DeficitSettlementResult result = null;
             using (var dlg = new Form())
             {
-                dlg.Text = "💰 تسوية العجز المالي";
+                dlg.Text = "تسوية العجز المالي";
                 dlg.Size = new Size(500, 340);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -654,7 +654,7 @@ namespace ChickenDist.Forms
 
                 var lblTitle = new Label
                 {
-                    Text = $"⚠️ يوجد عجز مالي بقيمة: {deficitValue:N2} ج",
+                    Text = $"يوجد عجز مالي بقيمة: {deficitValue:N2} ج",
                     Font = new Font("Segoe UI", 13, FontStyle.Bold),
                     ForeColor = Color.FromArgb(255, 80, 80),
                     AutoSize = true,
@@ -670,7 +670,7 @@ namespace ChickenDist.Forms
                     Margin = new Padding(0, 0, 0, 15)
                 };
 
-                var btnAdvance = Theme.MakeButton("📋 سلفة / مديونية على المندوب", Theme.Primary);
+                var btnAdvance = Theme.MakeButton("سلفة / مديونية على المندوب", Theme.Primary);
                 btnAdvance.Size = new Size(420, 44);
                 btnAdvance.Margin = new Padding(0, 0, 0, 8);
                 btnAdvance.Click += (s, ev) =>
@@ -684,7 +684,7 @@ namespace ChickenDist.Forms
                     dlg.Close();
                 };
 
-                var btnCompany = Theme.MakeButton("🏢 تحميل على الشركة (مصروف تشغيلي)", Color.FromArgb(100, 100, 200));
+                var btnCompany = Theme.MakeButton("تحميل على الشركة (مصروف تشغيلي)", Color.FromArgb(100, 100, 200));
                 btnCompany.Size = new Size(420, 44);
                 btnCompany.Margin = new Padding(0, 0, 0, 8);
                 btnCompany.Click += (s, ev) =>
@@ -698,7 +698,7 @@ namespace ChickenDist.Forms
                     dlg.Close();
                 };
 
-                var btnDeduct = Theme.MakeButton("✂️ خصم من مستحقات المندوب", Color.FromArgb(200, 100, 0));
+                var btnDeduct = Theme.MakeButton("خصم من مستحقات المندوب", Color.FromArgb(200, 100, 0));
                 btnDeduct.Size = new Size(420, 44);
                 btnDeduct.Margin = new Padding(0, 0, 0, 8);
                 btnDeduct.Click += (s, ev) =>
@@ -761,7 +761,7 @@ namespace ChickenDist.Forms
                 Clipboard.SetText(encryptedJson);
 
                 MessageBox.Show(
-                    "✅ تم نسخ كود البيانات المشفر للمندوب بنجاح!\n\n" +
+                    "تم نسخ كود البيانات المشفر للمندوب بنجاح!\n\n" +
                     "الآن الكود موجود في الحافظة (Clipboard)، افتح محادثة المندوب على واتساب وألصق الرسالة (Ctrl+V) ليرسل له كود البيانات مباشرة دون حاجة لملفات.",
                     "تم النسخ بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
@@ -778,14 +778,14 @@ namespace ChickenDist.Forms
                         if (dlg.ShowDialog() == DialogResult.OK)
                         {
                             File.WriteAllText(dlg.FileName, json, System.Text.Encoding.UTF8);
-                            MessageBox.Show("✅ تم حفظ الملف بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("تم حفظ الملف بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ خطأ أثناء التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("خطأ أثناء التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -808,7 +808,7 @@ namespace ChickenDist.Forms
 
             string driverName = cboDriver.Text.Trim();
             var sb = new StringBuilder();
-            sb.AppendLine($"📋 كشف تحصيل يوم {DateTime.Today:dd/MM/yyyy}");
+            sb.AppendLine($"كشف تحصيل يوم {DateTime.Today:dd/MM/yyyy}");
             sb.AppendLine($"المندوب: {driverName}");
             sb.AppendLine(new string('─', 30));
 
@@ -822,8 +822,8 @@ namespace ChickenDist.Forms
                 totalBalance += bal;
 
                 sb.AppendLine($"{idx}. {name}");
-                sb.AppendLine($"   📞 {phone}");
-                sb.AppendLine($"   💰 الدين: {bal:N2} ج");
+                sb.AppendLine($"   {phone}");
+                sb.AppendLine($"   الدين: {bal:N2} ج");
                 sb.AppendLine();
                 idx++;
             }
@@ -835,7 +835,7 @@ namespace ChickenDist.Forms
             Clipboard.SetText(sb.ToString());
 
             MessageBox.Show(
-                $"✅ تم نسخ كشف التحصيل ({dt.Rows.Count} عملاء — إجمالي {totalBalance:N2} ج)\n\n" +
+                $"تم نسخ كشف التحصيل ({dt.Rows.Count} عملاء — إجمالي {totalBalance:N2} ج)\n\n" +
                 "الكشف موجود في الحافظة (Clipboard)، افتح واتساب ويب أو أي تطبيق وألصق النص مباشرةً.",
                 "كشف واتساب جاهز", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -849,7 +849,7 @@ namespace ChickenDist.Forms
             }
 
             string code = "";
-            if (ShowInputDialog("☁️ استيراد مبيعات المندوب من السحاب", "أدخل رمز الاستيراد المكون من 5 حروف أو أكثر:", ref code))
+            if (ShowInputDialog("استيراد مبيعات المندوب من السحاب", "أدخل رمز الاستيراد المكون من 5 حروف أو أكثر:", ref code))
             {
                 code = code.Trim();
                 if (string.IsNullOrEmpty(code)) return;
@@ -901,7 +901,7 @@ namespace ChickenDist.Forms
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ خطأ أثناء تحميل البيانات من السحاب:\n" + ex.Message, "خطأ الاستيراد السحابي", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("خطأ أثناء تحميل البيانات من السحاب:\n" + ex.Message, "خطأ الاستيراد السحابي", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -954,7 +954,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ فشل قراءة أو فك تشفير البيانات من الحافظة:\n" + ex.Message, "خطأ الاستيراد من الحافظة", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل قراءة أو فك تشفير البيانات من الحافظة:\n" + ex.Message, "خطأ الاستيراد من الحافظة", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

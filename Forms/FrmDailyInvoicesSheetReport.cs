@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -65,7 +65,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "📑 تقرير فواتير البيع التفصيلي اليومي (أصناف وفواتير)";
+            this.Text = "تقرير فواتير البيع التفصيلي اليومي (أصناف وفواتير)";
             this.Size = new Size(1280, 780);
             this.MinimumSize = new Size(1000, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -76,7 +76,7 @@ namespace ChickenDist.Forms
 
             // ── Title Bar ───────────────────────────────────────────────
             var titleBar = Theme.MakeTitleBar(
-                "📑 تقرير فواتير البيع التفصيلي اليومي",
+                "تقرير فواتير البيع التفصيلي اليومي",
                 "استخراج وطباعة فواتير البيع مع كافة الأصناف والخصومات والمرتجعات على هيئة شيت مطبوع A4");
             this.Controls.Add(titleBar);
 
@@ -101,12 +101,12 @@ namespace ChickenDist.Forms
             // Date From
             dtpFrom = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 110, Value = DateTime.Today };
             dtpFrom.ValueChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
-            flowFilters.Controls.Add(MakeFilterBox("📅 من:", dtpFrom, 110));
+            flowFilters.Controls.Add(MakeFilterBox("من:", dtpFrom, 110));
 
             // Date To
             dtpTo = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 110, Value = DateTime.Today };
             dtpTo.ValueChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
-            flowFilters.Controls.Add(MakeFilterBox("📅 إلى:", dtpTo, 110));
+            flowFilters.Controls.Add(MakeFilterBox("إلى:", dtpTo, 110));
 
             // Quick Preset Buttons
             var btnToday = Theme.MakeButton("اليوم", Color.FromArgb(71, 85, 105));
@@ -151,38 +151,38 @@ namespace ChickenDist.Forms
             // Warehouse
             cboWarehouse = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 120, Font = Theme.FontMain };
             cboWarehouse.SelectedIndexChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
-            flowFilters.Controls.Add(MakeFilterBox("🏢 المخزن:", cboWarehouse, 120));
+            flowFilters.Controls.Add(MakeFilterBox("المخزن:", cboWarehouse, 120));
 
             // Client
             cboClient = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 130, Font = Theme.FontMain };
             cboClient.SelectedIndexChanged += (s, e) => { if (!_isInitializing) LoadReportData(); };
-            flowFilters.Controls.Add(MakeFilterBox("👤 العميل:", cboClient, 130));
+            flowFilters.Controls.Add(MakeFilterBox("العميل:", cboClient, 130));
 
             // Search
             txtSearch = new TextBox { Width = 120, Font = Theme.FontBold, BackColor = Color.White, ForeColor = Color.FromArgb(15, 23, 42) };
             txtSearch.TextChanged += (s, e) => ApplySearchFilter();
-            flowFilters.Controls.Add(MakeFilterBox("🔍 بحث:", txtSearch, 120));
+            flowFilters.Controls.Add(MakeFilterBox("بحث:", txtSearch, 120));
 
             // Buttons
-            btnLoad = Theme.MakeButton("🔄 عرض", Color.FromArgb(245, 158, 11));
+            btnLoad = Theme.MakeButton("عرض", Color.FromArgb(245, 158, 11));
             btnLoad.Size = new Size(95, 36);
             btnLoad.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnLoad.Click += (s, e) => LoadReportData();
             flowFilters.Controls.Add(btnLoad);
 
-            btnPreview = Theme.MakeButton("🔍 معاينة A4", Color.FromArgb(14, 165, 233));
+            btnPreview = Theme.MakeButton("معاينة A4", Color.FromArgb(14, 165, 233));
             btnPreview.Size = new Size(110, 36);
             btnPreview.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPreview.Click += (s, e) => ShowPrintPreview();
             flowFilters.Controls.Add(btnPreview);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة فورية", Color.FromArgb(37, 99, 235));
+            btnPrint = Theme.MakeButton("طباعة فورية", Color.FromArgb(37, 99, 235));
             btnPrint.Size = new Size(115, 36);
             btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPrint.Click += (s, e) => DirectPrintReport();
             flowFilters.Controls.Add(btnPrint);
 
-            btnExportPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+            btnExportPdf = Theme.MakeButton("تصدير PDF", Color.FromArgb(220, 38, 38));
             btnExportPdf.Size = new Size(110, 36);
             btnExportPdf.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnExportPdf.Click += (s, e) => ExportToPdf();
@@ -208,11 +208,11 @@ namespace ChickenDist.Forms
                 WrapContents = false
             };
 
-            lblTotalInvoicesCount = MakeSummaryBadge("🧾 عدد الفواتير: 0", Color.FromArgb(59, 130, 246));
-            lblTotalItemsCount = MakeSummaryBadge("📦 إجمالي الأصناف: 0", Color.FromArgb(168, 85, 247));
-            lblTotalSalesSum = MakeSummaryBadge("💰 إجمالي المبيعات: 0.00 ج", Color.FromArgb(16, 185, 129));
-            lblTotalReturnsSum = MakeSummaryBadge("↩️ إجمالي المرتجعات: 0.00 ج", Color.FromArgb(239, 68, 68));
-            lblTotalNetSum = MakeSummaryBadge("✔ الصافي النهائي: 0.00 ج", Color.FromArgb(245, 158, 11));
+            lblTotalInvoicesCount = MakeSummaryBadge("عدد الفواتير: 0", Color.FromArgb(59, 130, 246));
+            lblTotalItemsCount = MakeSummaryBadge("إجمالي الأصناف: 0", Color.FromArgb(168, 85, 247));
+            lblTotalSalesSum = MakeSummaryBadge("إجمالي المبيعات: 0.00 ج", Color.FromArgb(16, 185, 129));
+            lblTotalReturnsSum = MakeSummaryBadge("إجمالي المرتجعات: 0.00 ج", Color.FromArgb(239, 68, 68));
+            lblTotalNetSum = MakeSummaryBadge("الصافي النهائي: 0.00 ج", Color.FromArgb(245, 158, 11));
 
             flowSummary.Controls.AddRange(new Control[] {
                 lblTotalInvoicesCount,
@@ -441,11 +441,11 @@ namespace ChickenDist.Forms
                 );
             }
 
-            lblTotalInvoicesCount.Text = $"🧾 عدد الفواتير: {_filteredInvoices.Count}";
-            lblTotalItemsCount.Text = $"📦 إجمالي الأصناف: {totalItems}";
-            lblTotalSalesSum.Text = $"💰 إجمالي المبيعات: {totalSales:N2} ج";
-            lblTotalReturnsSum.Text = $"↩️ إجمالي المرتجعات: {totalReturns:N2} ج";
-            lblTotalNetSum.Text = $"✔ الصافي النهائي: {totalNet:N2} ج";
+            lblTotalInvoicesCount.Text = $"عدد الفواتير: {_filteredInvoices.Count}";
+            lblTotalItemsCount.Text = $"إجمالي الأصناف: {totalItems}";
+            lblTotalSalesSum.Text = $"إجمالي المبيعات: {totalSales:N2} ج";
+            lblTotalReturnsSum.Text = $"إجمالي المرتجعات: {totalReturns:N2} ج";
+            lblTotalNetSum.Text = $"الصافي النهائي: {totalNet:N2} ج";
         }
 
         public static List<DailyInvoiceReportItem> LoadInvoicesFromDb(DateTime fromDate, DateTime toDate, int? warehouseID = null, int? clientID = null)
@@ -725,7 +725,7 @@ namespace ChickenDist.Forms
                         if (!string.IsNullOrWhiteSpace(inv.Notes) && inv.Notes != "POS" && inv.Notes != "POS_DRAFT")
                         {
                             var noteRect = new Rectangle(marginL + 2, y, pageW - 4, 16);
-                            g.DrawString($"📝 ملاحظات الفاتورة: {inv.Notes}", fCellB, Brushes.DarkBlue, noteRect, sfRtlRight);
+                            g.DrawString($"ملاحظات الفاتورة: {inv.Notes}", fCellB, Brushes.DarkBlue, noteRect, sfRtlRight);
                             y += 18;
                         }
 
@@ -932,7 +932,7 @@ namespace ChickenDist.Forms
                             pd.PrinterSettings.PrintFileName = sfd.FileName;
                             pd.Print();
 
-                            var res = MessageBox.Show("✅ تم تصدير ملف PDF بنجاح!\n\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                            var res = MessageBox.Show("تم تصدير ملف PDF بنجاح!\n\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                             if (res == DialogResult.Yes)
                             {
                                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(sfd.FileName) { UseShellExecute = true });

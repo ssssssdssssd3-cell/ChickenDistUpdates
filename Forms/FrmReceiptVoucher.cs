@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -113,7 +113,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
-            cboVoucherTypeFilter.Items.AddRange(new object[] { "الكل", "🟢 سند توريد (قبض)", "🔴 سند صرف (دفوعات)", "🔄 تحويل نقدية" });
+            cboVoucherTypeFilter.Items.AddRange(new object[] { "الكل", "سند توريد (قبض)", "سند صرف (دفوعات)", "تحويل نقدية" });
             cboVoucherTypeFilter.SelectedIndex = 0;
             cboVoucherTypeFilter.SelectedIndexChanged += (s, e) => LoadVouchers();
             pnlFilter.Controls.Add(MakeFilterPanel("نوع السند:", cboVoucherTypeFilter, 155));
@@ -140,7 +140,7 @@ namespace ChickenDist.Forms
             txtSearch.TextChanged += (s, e) => FilterGridLocally();
             pnlFilter.Controls.Add(MakeFilterPanel("بحث:", txtSearch, 150));
 
-            btnLoad = Theme.MakeButton("🔄 تحديث", Theme.Accent);
+            btnLoad = Theme.MakeButton("تحديث", Theme.Accent);
             btnLoad.Size = new Size(85, 30);
             btnLoad.Margin = new Padding(6, 2, 4, 2);
             btnLoad.Click += (s, e) => LoadVouchers();
@@ -159,55 +159,55 @@ namespace ChickenDist.Forms
                 WrapContents = true
             };
 
-            var btnNewDeposit = Theme.MakeButton("🟢 + سند توريد نقدي (قبض)", Color.FromArgb(40, 140, 80));
+            var btnNewDeposit = Theme.MakeButton("+ سند توريد نقدي (قبض)", Color.FromArgb(40, 140, 80));
             btnNewDeposit.Size = new Size(190, 38);
             btnNewDeposit.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnNewDeposit.Margin = new Padding(5, 0, 5, 0);
             btnNewDeposit.Click += (s, e) => ShowIssueVoucherModal(true);
             pnlActions.Controls.Add(btnNewDeposit);
 
-            var btnNewWithdraw = Theme.MakeButton("🔴 - سند صرف نقدي (دفع)", Color.FromArgb(190, 60, 60));
+            var btnNewWithdraw = Theme.MakeButton("- سند صرف نقدي (دفع)", Color.FromArgb(190, 60, 60));
             btnNewWithdraw.Size = new Size(180, 38);
             btnNewWithdraw.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnNewWithdraw.Margin = new Padding(5, 0, 5, 0);
             btnNewWithdraw.Click += (s, e) => ShowIssueVoucherModal(false);
             pnlActions.Controls.Add(btnNewWithdraw);
 
-            var btnNewTransfer = Theme.MakeButton("🔄 تحويل نقدية", Color.FromArgb(100, 70, 160));
+            var btnNewTransfer = Theme.MakeButton("تحويل نقدية", Color.FromArgb(100, 70, 160));
             btnNewTransfer.Size = new Size(130, 38);
             btnNewTransfer.Font = Theme.FontBold;
             btnNewTransfer.Margin = new Padding(5, 0, 5, 0);
             btnNewTransfer.Click += BtnTransfer_Click;
             pnlActions.Controls.Add(btnNewTransfer);
 
-            var btnPrintSelected = Theme.MakeButton("🖨️ طباعة السند المحدد", Color.FromArgb(16, 185, 129));
+            var btnPrintSelected = Theme.MakeButton("طباعة السند المحدد", Color.FromArgb(16, 185, 129));
             btnPrintSelected.Size = new Size(160, 38);
             btnPrintSelected.Font = Theme.FontBold;
             btnPrintSelected.Margin = new Padding(15, 0, 5, 0);
             btnPrintSelected.Click += BtnPrintSelected_Click;
 
             var ctxPrint = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            var miReceipt = new ToolStripMenuItem("🧾 طباعة ريسيت حراري (Receipt 80mm / 58mm)");
+            var miReceipt = new ToolStripMenuItem("طباعة ريسيت حراري (Receipt 80mm / 58mm)");
             miReceipt.Click += (s, e) => PrintVoucherWithFormat("Receipt");
             ctxPrint.Items.Add(miReceipt);
 
-            var miA4 = new ToolStripMenuItem("📄 طباعة ورق كامل A4");
+            var miA4 = new ToolStripMenuItem("طباعة ورق كامل A4");
             miA4.Click += (s, e) => PrintVoucherWithFormat("A4");
             ctxPrint.Items.Add(miA4);
 
-            var miA5 = new ToolStripMenuItem("📑 طباعة نصف صفحة A5");
+            var miA5 = new ToolStripMenuItem("طباعة نصف صفحة A5");
             miA5.Click += (s, e) => PrintVoucherWithFormat("A5");
             ctxPrint.Items.Add(miA5);
 
             ctxPrint.Items.Add(new ToolStripSeparator());
-            var miAsk = new ToolStripMenuItem("❓ اختيار المقاس عند الطباعة...");
+            var miAsk = new ToolStripMenuItem("اختيار المقاس عند الطباعة...");
             miAsk.Click += (s, e) => PrintVoucherWithFormat("Ask");
             ctxPrint.Items.Add(miAsk);
 
             btnPrintSelected.ContextMenuStrip = ctxPrint;
             pnlActions.Controls.Add(btnPrintSelected);
 
-            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب للعميل", Color.FromArgb(37, 211, 102));
+            var btnWhatsApp = Theme.MakeButton("إرسال واتساب للعميل", Color.FromArgb(37, 211, 102));
             btnWhatsApp.Size = new Size(170, 38);
             btnWhatsApp.Font = Theme.FontBold;
             btnWhatsApp.ForeColor = Color.White;
@@ -395,23 +395,23 @@ namespace ChickenDist.Forms
 
                 string typeArabic = rawType switch
                 {
-                    "Deposit" => "🟢 سند توريد",
-                    "Withdraw" => "🔴 سند صرف",
-                    "ClientPayment" => "🟢 تحصيل عميل",
-                    "SupplierPayment" => "🔴 صرف للمورد",
-                    "SaleIncome" => "🛒 بيع نقدي",
-                    "Sale" => notes.Contains("فيزا") ? "💳 بيع فيزا" : "🛒 بيع نقدي",
-                    "PurchaseExpense" => "📦 مشتريات نقدية",
-                    "ClientPurchaseCash" => "📦 شراء من عميل",
-                    "ReturnOutcome" => "↩️ مرتجع مبيعات",
-                    "VisaReturn" => "↩️ مرتجع مبيعات (فيزا)",
-                    "PurchaseReturn" => "↩️ مرتجع مشتريات",
-                    "Expense" => "🔴 مصروفات",
-                    "EmpAdvance" => "👤 سلفة موظف",
-                    "EmpPaymentOut" => "👤 مستحقات موظف",
-                    "EmpPaymentIn" => "👤 سداد موظف",
-                    "DriverHandover" => "🚚 عهدة مندوب",
-                    "Transfer" => "🔄 تحويل نقدية",
+                    "Deposit" => "سند توريد",
+                    "Withdraw" => "سند صرف",
+                    "ClientPayment" => "تحصيل عميل",
+                    "SupplierPayment" => "صرف للمورد",
+                    "SaleIncome" => "بيع نقدي",
+                    "Sale" => notes.Contains("فيزا") ? "بيع فيزا" : "بيع نقدي",
+                    "PurchaseExpense" => "مشتريات نقدية",
+                    "ClientPurchaseCash" => "شراء من عميل",
+                    "ReturnOutcome" => "مرتجع مبيعات",
+                    "VisaReturn" => "مرتجع مبيعات (فيزا)",
+                    "PurchaseReturn" => "مرتجع مشتريات",
+                    "Expense" => "مصروفات",
+                    "EmpAdvance" => "سلفة موظف",
+                    "EmpPaymentOut" => "مستحقات موظف",
+                    "EmpPaymentIn" => "سداد موظف",
+                    "DriverHandover" => "عهدة مندوب",
+                    "Transfer" => "تحويل نقدية",
                     _ => rawType
                 };
 
@@ -445,13 +445,13 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanAdd("ReceiptVoucher") && !Session.CanAdd("CashBox") && !Session.CanAccess("ReceiptVoucher") && !Session.CanAccess("CashBox"))
             {
-                MessageBox.Show("⛔ ليس لديك صلاحية إصدار سندات نقدية.", "تنفيذي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ليس لديك صلاحية إصدار سندات نقدية.", "تنفيذي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             var dlg = new Form
             {
-                Text = isDeposit ? "🟢 إصدار سند توريد نقدي (قبض)" : "🔴 إصدار سند صرف نقدي (دفع) / تحويل",
+                Text = isDeposit ? "إصدار سند توريد نقدي (قبض)" : "إصدار سند صرف نقدي (دفع) / تحويل",
                 Size = new Size(620, 720),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -471,7 +471,7 @@ namespace ChickenDist.Forms
             };
             var lblTitle = new Label
             {
-                Text = isDeposit ? "🟢 نموذج إصدار سند توريد نقدي (قبض)" : "🔴 نموذج إصدار سند صرف نقدي / تحويل بين الأدراج",
+                Text = isDeposit ? "نموذج إصدار سند توريد نقدي (قبض)" : "نموذج إصدار سند صرف نقدي / تحويل بين الأدراج",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Fill,
@@ -576,13 +576,13 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle,
                 ReadOnly = true,
-                Text = "-- اضغط 🔍 للبحث عن عميل --",
+                Text = "-- اضغط للبحث عن عميل --",
                 Cursor = Cursors.Hand,
                 Font = Theme.FontBold
             };
             var btnClientSearchPick = new Button
             {
-                Text = "🔍",
+                Text = "بحث",
                 Width = 38,
                 Dock = DockStyle.Left,
                 BackColor = Theme.Accent,
@@ -606,13 +606,13 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 BorderStyle = BorderStyle.FixedSingle,
                 ReadOnly = true,
-                Text = "-- اضغط 🔍 للبحث عن مورد --",
+                Text = "-- اضغط للبحث عن مورد --",
                 Cursor = Cursors.Hand,
                 Font = Theme.FontBold
             };
             var btnSupplierSearchPick = new Button
             {
-                Text = "🔍",
+                Text = "بحث",
                 Width = 38,
                 Dock = DockStyle.Left,
                 BackColor = Theme.Accent,
@@ -769,7 +769,7 @@ namespace ChickenDist.Forms
                         decimal afterBal = isDeposit ? (curBal - amt) : (curBal + amt);
                         string afterState = afterBal > 0 ? "عليه (مدين)" : (afterBal < 0 ? "له (دائن)" : "خالص (0.00 ج)");
 
-                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\n👤 رصيد العميل الحالي: {Math.Abs(curBal):N2} ج ({curState}) ➔ المتوقع: {Math.Abs(afterBal):N2} ج ({afterState})";
+                        lblPartyBalance.Text = $"رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nرصيد العميل الحالي: {Math.Abs(curBal):N2} ج ({curState}) - المتوقع: {Math.Abs(afterBal):N2} ج ({afterState})";
                         lblPartyBalance.ForeColor = Color.Gold;
                     }
                     else if (pIdx == 1 && selectedSupplierID > 0)
@@ -779,13 +779,13 @@ namespace ChickenDist.Forms
                         decimal afterBal = isDeposit ? (curBal + amt) : (curBal - amt);
                         string afterState = afterBal > 0 ? "له للمورد (دائن)" : (afterBal < 0 ? "عليه للمورد (مدين)" : "خالص (0.00 ج)");
 
-                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\n🏬 رصيد المورد الحالي: {Math.Abs(curBal):N2} ج ({curState}) ➔ المتوقع: {Math.Abs(afterBal):N2} ج ({afterState})";
+                        lblPartyBalance.Text = $"رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nرصيد المورد الحالي: {Math.Abs(curBal):N2} ج ({curState}) - المتوقع: {Math.Abs(afterBal):N2} ج ({afterState})";
                         lblPartyBalance.ForeColor = Color.Cyan;
                     }
                     else if (pIdx == 2)
                     {
                         string expName = cboExpenseType.Text;
-                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\n📋 بند المصروف التشغيلي: {expName}";
+                        lblPartyBalance.Text = $"رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nبند المصروف التشغيلي: {expName}";
                         lblPartyBalance.ForeColor = Color.Orange;
                     }
                     else if (pIdx == 3)
@@ -797,12 +797,12 @@ namespace ChickenDist.Forms
                         decimal srcAfter = srcBal - amt;
                         decimal targetAfter = targetBal + amt;
 
-                        lblPartyBalance.Text = $"📤 الدرج المصدر ({srcSafeName}): {srcBal:N2} ج (المتوقع: {srcAfter:N2} ج)\n📥 الدرج المستلم ({targetName}): {targetBal:N2} ج (المتوقع: {targetAfter:N2} ج)";
+                        lblPartyBalance.Text = $"الدرج المصدر ({srcSafeName}): {srcBal:N2} ج (المتوقع: {srcAfter:N2} ج)\nالدرج المستلم ({targetName}): {targetBal:N2} ج (المتوقع: {targetAfter:N2} ج)";
                         lblPartyBalance.ForeColor = Color.LightGreen;
                     }
                     else
                     {
-                        lblPartyBalance.Text = $"💰 رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nيرجى تحديد جهة التعامل لعرض تفاصيل الرصيد";
+                        lblPartyBalance.Text = $"رصيد الخزنة المصدر ({srcSafeName}): {srcBal:N2} ج\nيرجى تحديد جهة التعامل لعرض تفاصيل الرصيد";
                         lblPartyBalance.ForeColor = Color.White;
                     }
                 }
@@ -878,7 +878,7 @@ namespace ChickenDist.Forms
 
             // Bottom Save Buttons
             var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgSearchPanel, Padding = new Padding(15, 8, 15, 8) };
-            var btnSave = Theme.MakeButton(isDeposit ? "💾 إصدار سند التوريد" : "💾 إصدار سند الصرف / التحويل", isDeposit ? Color.FromArgb(40, 130, 70) : Color.FromArgb(170, 50, 50));
+            var btnSave = Theme.MakeButton(isDeposit ? "إصدار سند التوريد" : "إصدار سند الصرف / التحويل", isDeposit ? Color.FromArgb(40, 130, 70) : Color.FromArgb(170, 50, 50));
             btnSave.Size = new Size(220, 38);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSave.Dock = DockStyle.Left;
@@ -895,24 +895,24 @@ namespace ChickenDist.Forms
             {
                 if (nudAmount.Value <= 0)
                 {
-                    MessageBox.Show("⚠️ يرجى إدخال مبلغ أكبر من الصفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى إدخال مبلغ أكبر من الصفر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (!(cboSafe.SelectedItem is ComboItem safeItem))
                 {
-                    MessageBox.Show("⚠️ يرجى اختيار الحساب المالي / الخزنة المصدر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى اختيار الحساب المالي / الخزنة المصدر.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 // Validate party selection
                 int partyIdx0 = cboPartyType.SelectedIndex;
                 if (partyIdx0 == 0 && selectedClientID <= 0)
                 {
-                    MessageBox.Show("⚠️ يرجى البحث عن عميل واختياره أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى البحث عن عميل واختياره أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (partyIdx0 == 1 && selectedSupplierID <= 0)
                 {
-                    MessageBox.Show("⚠️ يرجى البحث عن مورد واختياره أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى البحث عن مورد واختياره أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -929,7 +929,7 @@ namespace ChickenDist.Forms
                         decimal safeBalance = AccountDAL.GetCashBalance(safeID);
                         if (safeBalance < amount)
                         {
-                            MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nالرصيد المتاح حالياً في [{safeItem.Text}] هو ({safeBalance:N2} ج) فقط، بينما مبلغ السند المطلوب صرفه هو ({amount:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة أخرى بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBox.Show($"غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nالرصيد المتاح حالياً في [{safeItem.Text}] هو ({safeBalance:N2} ج) فقط، بينما مبلغ السند المطلوب صرفه هو ({amount:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة أخرى بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
                     }
@@ -1018,7 +1018,7 @@ namespace ChickenDist.Forms
                     {
                         if (!(cboTargetSafe.SelectedItem is ComboItem targetItem))
                         {
-                            MessageBox.Show("⚠️ يرجى اختيار الدرج / الخزنة المستلمة المحول إليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBox.Show("يرجى اختيار الدرج / الخزنة المستلمة المحول إليها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
 
@@ -1067,13 +1067,13 @@ namespace ChickenDist.Forms
                     dlg.Close();
                     LoadVouchers();
 
-                    MessageBox.Show($"✅ تم إصدار السند بنجاح! رقم السند: #{newTransID}", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم إصدار السند بنجاح! رقم السند: #{newTransID}", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     // ── سؤال الطباعة ────────────────────────────────────────────
                     if (newTransID > 0)
                     {
                         var printResult = MessageBox.Show(
-                            $"🖨️ هل تريد طباعة السند رقم #{newTransID} الآن؟",
+                            $"هل تريد طباعة السند رقم #{newTransID} الآن؟",
                             "طباعة السند",
                             MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question,
@@ -1086,7 +1086,7 @@ namespace ChickenDist.Forms
 
                         // ── سؤال الإرسال عبر الواتساب ───────────────────────────
                         var waResult = MessageBox.Show(
-                            $"📱 هل تريد إرسال السند رقم #{newTransID} عبر الواتساب؟",
+                            $"هل تريد إرسال السند رقم #{newTransID} عبر الواتساب؟",
                             "إرسال الواتساب",
                             MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question,
@@ -1100,7 +1100,7 @@ namespace ChickenDist.Forms
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ فشل حفظ السند: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل حفظ السند: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 
@@ -1116,7 +1116,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanAdd("ReceiptVoucher") && !Session.CanAdd("CashBox") && !Session.CanAccess("ReceiptVoucher") && !Session.CanAccess("CashBox"))
             {
-                MessageBox.Show("⛔ ليس لديك صلاحية التحويل بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ليس لديك صلاحية التحويل بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             ShowIssueVoucherModal(isDeposit: false, defaultPartyType: 3);
@@ -1249,8 +1249,8 @@ namespace ChickenDist.Forms
                     decimal curBal = ClientDAL.GetBalance(refID);
                     decimal prevBal = isDeposit ? (curBal + amount) : (curBal - amount);
                     string curState = curBal > 0 ? "عليه (مدين)" : (curBal < 0 ? "له (دائن)" : "خالص");
-                    balanceLine = $"📊 *الرصيد السابق:* {Math.Abs(prevBal):N2} ج\n" +
-                                  $"📊 *الرصيد المتبقي الآن:* {Math.Abs(curBal):N2} ج ({curState})\n";
+                    balanceLine = $"*الرصيد السابق:* {Math.Abs(prevBal):N2} ج\n" +
+                                  $"*الرصيد المتبقي الآن:* {Math.Abs(curBal):N2} ج ({curState})\n";
                 }
                 else if (isSupplier && refID > 0)
                 {
@@ -1259,8 +1259,8 @@ namespace ChickenDist.Forms
                     decimal curBal = SupplierDAL.GetBalance(refID);
                     decimal prevBal = !isDeposit ? (curBal + amount) : (curBal - amount);
                     string curState = curBal > 0 ? "له (دائن)" : (curBal < 0 ? "عليه (مدين)" : "خالص");
-                    balanceLine = $"📊 *الرصيد السابق:* {Math.Abs(prevBal):N2} ج\n" +
-                                  $"📊 *الرصيد المتبقي الآن:* {Math.Abs(curBal):N2} ج ({curState})\n";
+                    balanceLine = $"*الرصيد السابق:* {Math.Abs(prevBal):N2} ج\n" +
+                                  $"*الرصيد المتبقي الآن:* {Math.Abs(curBal):N2} ج ({curState})\n";
                 }
 
                 string tafqeet = "";
@@ -1269,25 +1269,25 @@ namespace ChickenDist.Forms
                 string voucherLabel = isDeposit ? "سند توريد نقدي (قبض)" : "سند صرف نقدي (دفع)";
                 string compName = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "شركة برو سوفت" : AppConfig.CompanyName;
 
-                string msg = $"🏢 *{compName}*\n" +
-                             $"📄 *{voucherLabel} رقم: #{voucherID}*\n" +
+                string msg = $"*{compName}*\n" +
+                             $"*{voucherLabel} رقم: #{voucherID}*\n" +
                              $"━━━━━━━━━━━━━━━━━━━━\n" +
-                             $"📅 *التاريخ والوقت:* {vDate:yyyy/MM/dd hh:mm tt}\n" +
-                             $"👤 *الجهة:* {partyName}\n" +
-                             $"💵 *المبلغ:* {amount:N2} ج.م\n" +
-                             (!string.IsNullOrWhiteSpace(tafqeet) ? $"🔤 *فقط وقدره:* {tafqeet} لا غير\n" : "") +
-                             $"🏦 *الخزنة / الحساب:* {safeName}\n" +
-                             (!string.IsNullOrWhiteSpace(rawNotes) ? $"📝 *البيان:* {rawNotes}\n" : "") +
+                             $"*التاريخ والوقت:* {vDate:yyyy/MM/dd hh:mm tt}\n" +
+                             $"*الجهة:* {partyName}\n" +
+                             $"*المبلغ:* {amount:N2} ج.م\n" +
+                             (!string.IsNullOrWhiteSpace(tafqeet) ? $"*فقط وقدره:* {tafqeet} لا غير\n" : "") +
+                             $"*الخزنة / الحساب:* {safeName}\n" +
+                             (!string.IsNullOrWhiteSpace(rawNotes) ? $"*البيان:* {rawNotes}\n" : "") +
                              balanceLine +
                              $"━━━━━━━━━━━━━━━━━━━━\n" +
-                             $"شكراً لتعاملكم معنا! 🙏";
+                             $"شكراً لتعاملكم معنا!";
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
                     phone,
                     msg,
                     () => ReceiptImageGenerator.GenerateVoucherReceiptImage(voucherID),
-                    "📱 إرسال السند عبر الواتساب");
+                    "إرسال السند عبر الواتساب");
             }
             catch (Exception ex)
             {
@@ -1299,8 +1299,8 @@ namespace ChickenDist.Forms
         private void BtnDeleteSelected_Click(object sender, EventArgs e)
         {
             MessageBox.Show(
-                "⛔ نعتذر! غير مسموح بحذف أو إلغاء السندات المالية بعد إصدارها وإغلاقها محاسبياً للحفاظ على الرقابة المالية وسلامة القيود والدفاتر.\n\n" +
-                "💡 لتصحيح أي قيد أو تسوية مبلغ، يرجى إصدار (سند صرف) أو (سند توريد) جديد بقيمة التسوية بدلاً من الحذف المباشر.",
+                "نعتذر! غير مسموح بحذف أو إلغاء السندات المالية بعد إصدارها وإغلاقها محاسبياً للحفاظ على الرقابة المالية وسلامة القيود والدفاتر.\n\n" +
+                "لتصحيح أي قيد أو تسوية مبلغ، يرجى إصدار (سند صرف) أو (سند توريد) جديد بقيمة التسوية بدلاً من الحذف المباشر.",
                 "حظر حذف السندات المالي المحاسبي",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);

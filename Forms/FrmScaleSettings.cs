@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO.Ports;
 using System.Windows.Forms;
@@ -31,7 +31,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "⚖️ إعدادات الموازين والأجهزة";
+            this.Text = "إعدادات الموازين والأجهزة";
             this.Size = new Size(620, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -42,7 +42,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var pnlTop = Theme.MakeTitleBar("⚖️ إعدادات الموازين والأجهزة", "إعدادات الميزان الإلكتروني المتصل بالكاشير وميزان طباعة ملصقات الباركود");
+            var pnlTop = Theme.MakeTitleBar("إعدادات الموازين والأجهزة", "إعدادات الميزان الإلكتروني المتصل بالكاشير وميزان طباعة ملصقات الباركود");
             this.Controls.Add(pnlTop);
 
             var pnlBody = new Panel
@@ -59,7 +59,7 @@ namespace ChickenDist.Forms
             // ── 1. الميزان الإلكتروني (COM Port) ───────────────────
             var lblScaleTitle = new Label
             {
-                Text = "⚖️ إعدادات الميزان الإلكتروني اللحظي (Serial COM Port):",
+                Text = "إعدادات الميزان الإلكتروني اللحظي (Serial COM Port):",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -113,7 +113,7 @@ namespace ChickenDist.Forms
             pnlBody.Controls.Add(cboScaleBaud);
             y += 40;
 
-            btnTestScale = Theme.MakeButton("⚖️ اختبار قراءة الميزان", 15, y, 190, 36, Theme.Primary);
+            btnTestScale = Theme.MakeButton("اختبار قراءة الميزان", 15, y, 190, 36, Theme.Primary);
             btnTestScale.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnTestScale.Click += BtnTestScale_Click;
             pnlBody.Controls.Add(btnTestScale);
@@ -136,7 +136,7 @@ namespace ChickenDist.Forms
             // ── 2. ميزان الباركود (الاستيكرات) ─────────────────────
             var lblBarcodeScaleTitle = new Label
             {
-                Text = "🏷️ إعدادات ميزان الباركود الملصق (استيكرات الوزن):",
+                Text = "إعدادات ميزان الباركود الملصق (استيكرات الوزن):",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -215,7 +215,7 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(pnlFooter);
 
-            var btnSave = Theme.MakeButton("💾 حفظ إعدادات الموازين", 15, 8, 210, 38, Theme.Primary);
+            var btnSave = Theme.MakeButton("حفظ إعدادات الموازين", 15, 8, 210, 38, Theme.Primary);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             pnlFooter.Controls.Add(btnSave);
@@ -254,7 +254,7 @@ namespace ChickenDist.Forms
             if (ScaleService.Instance.IsConnected)
             {
                 ScaleService.Instance.Disconnect();
-                btnTestScale.Text = "⚖️ اختبار قراءة الميزان";
+                btnTestScale.Text = "اختبار قراءة الميزان";
                 btnTestScale.BackColor = Theme.Primary;
                 lblTestWeightResult.Text = "";
             }
@@ -266,7 +266,7 @@ namespace ChickenDist.Forms
                     return;
                 }
 
-                btnTestScale.Text = "🛑 إيقاف الاختبار";
+                btnTestScale.Text = "إيقاف الاختبار";
                 btnTestScale.BackColor = Theme.Danger;
                 lblTestWeightResult.Text = "جاري الاتصال بالميزان...";
                 lblTestWeightResult.ForeColor = Theme.Accent;
@@ -280,7 +280,7 @@ namespace ChickenDist.Forms
                             this.Invoke(new Action(() =>
                             {
                                 lblTestWeightResult.ForeColor = stable ? Theme.Success : Color.FromArgb(245, 158, 11);
-                                lblTestWeightResult.Text = $"الوزن الحي: {w:F3} كجم {(stable ? "✅ مستقر" : "⏳ غير مستقر")}";
+                                lblTestWeightResult.Text = $"الوزن الحي: {w:F3} كجم {(stable ? "مستقر" : "غير مستقر")}";
                             }));
                         }
                     };
@@ -288,8 +288,8 @@ namespace ChickenDist.Forms
                 else
                 {
                     lblTestWeightResult.ForeColor = Theme.Danger;
-                    lblTestWeightResult.Text = "❌ فشل الاتصال بالميزان. تأكد من الكابل ورقم المنفذ.";
-                    btnTestScale.Text = "⚖️ اختبار قراءة الميزان";
+                    lblTestWeightResult.Text = "فشل الاتصال بالميزان. تأكد من الكابل ورقم المنفذ.";
+                    btnTestScale.Text = "اختبار قراءة الميزان";
                     btnTestScale.BackColor = Theme.Primary;
                 }
             }
@@ -312,7 +312,7 @@ namespace ChickenDist.Forms
                 ScaleService.Instance.Connect(AppConfig.ScaleComPort, AppConfig.ScaleBaudRate);
             }
 
-            MessageBox.Show("✅ تم حفظ إعدادات الموازين والأجهزة بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("تم حفظ إعدادات الموازين والأجهزة بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -467,7 +467,7 @@ namespace ChickenDist.DAL
                                 purSupplierName = sObj.ToString().Trim();
                         }
 
-                        // آجل → أضف دائناً في حساب المورد
+                        // آجل أضف دائناً في حساب المورد
                         if (purchaseType == "Credit" && supplierID.HasValue)
                         {
                             DbHelper.ExecuteTrans(trans,
@@ -480,7 +480,7 @@ namespace ChickenDist.DAL
                                 DbHelper.P("@by",  Session.EmpID));
                         }
 
-                        // نقدي → اخصم من الخزنة
+                        // نقدي اخصم من الخزنة
                         if (purchaseType == "Cash")
                         {
                             AccountDAL.EnsureSufficientCashTrans(trans, accId, total, "فاتورة مشتريات نقدية");
@@ -1695,7 +1695,7 @@ namespace ChickenDist.DAL
                     pr.ProductCode,
                     pr.ProductName,
                     CASE 
-                        WHEN cur.PurchaseSource = 'Client' OR (cur.SupplierID IS NULL AND cur.ClientID IS NOT NULL) THEN (N'👤 ' + ISNULL(c.ClientName, N'عميل'))
+                        WHEN cur.PurchaseSource = 'Client' OR (cur.SupplierID IS NULL AND cur.ClientID IS NOT NULL) THEN (N'' + ISNULL(c.ClientName, N'عميل'))
                         WHEN s.SupplierName IS NOT NULL THEN s.SupplierName
                         ELSE N'مورد نقدي/عام'
                     END AS SupplierName,
@@ -2174,10 +2174,10 @@ namespace ChickenDist.DAL
             decimal finalAvgDisplay = Math.Round(finalAvgBase * displayUnitFactor, 2);
 
             var sbFormula = new System.Text.StringBuilder();
-            sbFormula.AppendLine("📐 معادلة احتساب متوسط تكلفة الشراء للرصيد المتاح:");
+            sbFormula.AppendLine("معادلة احتساب متوسط تكلفة الشراء للرصيد المتاح:");
             sbFormula.AppendLine("متوسط التكلفة = إجمالي القيمة الشرائية للكميات المغطية للرصيد ÷ إجمالي الكمية المغطية للرصيد");
             sbFormula.AppendLine();
-            sbFormula.AppendLine("📋 تفصيل الفواتير المعتمدة في تغطية الرصيد الحالي:");
+            sbFormula.AppendLine("تفصيل الفواتير المعتمدة في تغطية الرصيد الحالي:");
             if (coveredLinesSummary.Count > 0)
             {
                 foreach (var line in coveredLinesSummary)
@@ -2190,7 +2190,7 @@ namespace ChickenDist.DAL
                 if (remainingToCover > 0m)
                 {
                     decimal remDisplay = Math.Round(remainingToCover / displayUnitFactor, 2);
-                    sbFormula.AppendLine($"⚠️ تنبيه: يوجد رصيد قدره {remDisplay:G29} وحدة لم تغطه فواتير الشراء المسجلة (يُعامل برصيد/سعر البداية).");
+                    sbFormula.AppendLine($"تنبيه: يوجد رصيد قدره {remDisplay:G29} وحدة لم تغطه فواتير الشراء المسجلة (يُعامل برصيد/سعر البداية).");
                 }
             }
             else
@@ -2257,9 +2257,9 @@ namespace ChickenDist.DAL
 
         /// <summary>
         /// حفظ مرتجع مشتريات (مع ربط الخزينة والوردية وطريقة الدفع)
-        /// - شراء نقدي → يُعاد المبلغ للخزنة (AmountIn)
-        /// - شراء فيزا/بنك → يُعاد لحساب البنك/الفيزا
-        /// - شراء آجل  → يُقلَّل ما يستحقه المورد (Debit في SupplierTransactions)
+        /// - شراء نقدي يُعاد المبلغ للخزنة (AmountIn)
+        /// - شراء فيزا/بنك يُعاد لحساب البنك/الفيزا
+        /// - شراء آجل  يُقلَّل ما يستحقه المورد (Debit في SupplierTransactions)
         /// </summary>
         public static int SavePurchaseReturn(int purchaseID, int? supplierID, decimal total,
             string notes, List<PurchaseItemDTO> items, int? warehouseID = null, string returnType = "Credit", int? shiftID = null, int? targetAccountID = null)

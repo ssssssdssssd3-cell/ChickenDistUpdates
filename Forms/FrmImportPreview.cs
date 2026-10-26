@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -32,9 +32,9 @@ namespace ChickenDist.Forms
         private readonly string _driverName;
 
         // قاموس للمطابقة السريعة
-        private Dictionary<string, int> _clientMap;    // اسم صغير → ClientID
-        private Dictionary<string, int> _productMap;   // اسم صغير → ProductID
-        private Dictionary<int, decimal> _productPrice; // ProductID → SalePrice
+        private Dictionary<string, int> _clientMap;    // اسم صغير - ClientID
+        private Dictionary<string, int> _productMap;   // اسم صغير - ProductID
+        private Dictionary<int, decimal> _productPrice; // ProductID - SalePrice
 
         // قائمة الفواتير المستخلصة من CSV (مجمّعة)
         private List<DraftInvoice> _invoices = new List<DraftInvoice>();
@@ -270,7 +270,7 @@ namespace ChickenDist.Forms
             };
             lblTitle = new Label
             {
-                Text = "📥 مراجعة مبيعات المندوب قبل الترحيل",
+                Text = "مراجعة مبيعات المندوب قبل الترحيل",
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 AutoSize = true,
@@ -359,7 +359,7 @@ namespace ChickenDist.Forms
 
             var lblItemsTitle = new Label
             {
-                Text = "📦 بنود الفاتورة المحددة:",
+                Text = "بنود الفاتورة المحددة:",
                 Dock = DockStyle.Right,
                 Width = 200,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
@@ -367,7 +367,7 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleRight
             };
 
-            var btnAddItem = Theme.MakeButton("➕ إضافة صنف جديد للفاتورة", Color.FromArgb(40, 120, 80));
+            var btnAddItem = Theme.MakeButton("إضافة صنف جديد للفاتورة", Color.FromArgb(40, 120, 80));
             btnAddItem.Dock = DockStyle.Left;
             btnAddItem.Width = 220;
             btnAddItem.Click += BtnAddItem_Click;
@@ -422,7 +422,7 @@ namespace ChickenDist.Forms
             {
                 Name = "IColDelete",
                 HeaderText = "حذف",
-                Text = "❌",
+                Text = "X",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 30
             };
@@ -452,12 +452,12 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnImportAll = Theme.MakeButton("✅ ترحيل الفواتير المختارة", Theme.Accent);
+            btnImportAll = Theme.MakeButton("ترحيل الفواتير المختارة", Theme.Accent);
             btnImportAll.Size = new Size(200, 40);
             btnImportAll.Margin = new Padding(0, 8, 20, 0);
             btnImportAll.Click += BtnImportAll_Click;
 
-            btnClose = Theme.MakeButton("❌ إغلاق", Color.FromArgb(80, 80, 100));
+            btnClose = Theme.MakeButton("إغلاق", Color.FromArgb(80, 80, 100));
             btnClose.Size = new Size(120, 40);
             btnClose.Margin = new Padding(0, 8, 10, 0);
             btnClose.Click += (s, e) => this.Close();
@@ -525,7 +525,7 @@ namespace ChickenDist.Forms
             int idx = 1;
             foreach (var inv in _invoices)
             {
-                string status = inv.HasError ? "⚠️ يحتاج مراجعة" : "✅ جاهز";
+                string status = inv.HasError ? "يحتاج مراجعة" : "جاهز";
                 string clientFixed = inv.ClientID > 0
                     ? $"{inv.ClientID}|{inv.ClientNameResolved}"
                     : "-- غير محدد --";
@@ -536,7 +536,7 @@ namespace ChickenDist.Forms
                     inv.ClientNameCsv,
                     clientFixed,
                     inv.SaleDate.ToString("dd/MM/yyyy"),
-                    inv.PaymentType == "Cash" ? "💵 نقدي" : "📋 آجل",
+                    inv.PaymentType == "Cash" ? "نقدي" : "آجل",
                     inv.Items.Count,
                     inv.Total.ToString("N2") + " ج",
                     !inv.HasError   // تحديد تلقائي للجاهزين
@@ -578,7 +578,7 @@ namespace ChickenDist.Forms
 
             foreach (var item in inv.Items)
             {
-                string itemStatus = item.ProductID > 0 ? "✅" : "⚠️";
+                string itemStatus = item.ProductID > 0 ? "متاح" : "تنبيه";
                 string prodFixed = item.ProductID > 0
                     ? $"{item.ProductID}|{item.ProductNameResolved}"
                     : "-- غير محدد --";
@@ -634,7 +634,7 @@ namespace ChickenDist.Forms
         private void RefreshRowStyle(int rowIdx, DraftInvoice inv)
         {
             var row = dgInvoices.Rows[rowIdx];
-            row.Cells["ColStatus"].Value = inv.HasError ? "⚠️ يحتاج مراجعة" : "✅ جاهز";
+            row.Cells["ColStatus"].Value = inv.HasError ? "يحتاج مراجعة" : "جاهز";
             if (inv.IsImported)
             {
                 row.DefaultCellStyle.BackColor = Color.FromArgb(30, 80, 40);
@@ -683,7 +683,7 @@ namespace ChickenDist.Forms
             var toImport = GetSelectedInvoices();
             if (toImport.Count == 0)
             {
-                MessageBox.Show("لم تختر أي فاتورة للترحيل.\nتأكد من وضع علامة ✓ في عمود \"استيراد\".",
+                MessageBox.Show("لم تختر أي فاتورة للترحيل.\nتأكد من وضع علامة في عمود \"استيراد\".",
                     "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -692,7 +692,7 @@ namespace ChickenDist.Forms
             if (withErrors.Count > 0)
             {
                 var res = MessageBox.Show(
-                    $"⚠️ يوجد {withErrors.Count} فاتورة تحتوي على أخطاء (عميل أو صنف غير محدد).\n" +
+                    $"يوجد {withErrors.Count} فاتورة تحتوي على أخطاء (عميل أو صنف غير محدد).\n" +
                     "هل تريد ترحيل الفواتير الصحيحة فقط وتجاهل الأخطاء؟",
                     "فواتير بأخطاء", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (res != DialogResult.Yes) return;
@@ -751,8 +751,8 @@ namespace ChickenDist.Forms
             PopulateGrid();
 
             MessageBox.Show(
-                $"✅ تم ترحيل {success} فاتورة بنجاح!\n" +
-                (fail > 0 ? $"❌ فشل ترحيل {fail} فاتورة (راجع السجلات)." : ""),
+                $"تم ترحيل {success} فاتورة بنجاح!\n" +
+                (fail > 0 ? $"فشل ترحيل {fail} فاتورة (راجع السجلات)." : ""),
                 "نتيجة الترحيل", MessageBoxButtons.OK,
                 success > 0 && fail == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
         }
@@ -908,7 +908,7 @@ namespace ChickenDist.Forms
 
             // تحديث الإجمالي والرمز في السطر الحالي
             dgItems.Rows[e.RowIndex].Cells["IColTotal"].Value = (item.Qty * item.UnitPrice).ToString("N2") + " ج";
-            dgItems.Rows[e.RowIndex].Cells["IColStatus"].Value = item.ProductID > 0 ? "✅" : "⚠️";
+            dgItems.Rows[e.RowIndex].Cells["IColStatus"].Value = item.ProductID > 0 ? "متاح" : "تنبيه";
 
             if (item.ProductID == 0)
                 dgItems.Rows[e.RowIndex].DefaultCellStyle.BackColor = Color.FromArgb(80, 30, 30);

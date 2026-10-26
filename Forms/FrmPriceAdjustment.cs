@@ -29,7 +29,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "⚡ تغيير أسعار البيع والتكلفة للأصناف والمخازن";
+            this.Text = "تغيير أسعار البيع والتكلفة للأصناف والمخازن";
             this.Size = new Size(1300, 780);
             this.MinimumSize = new Size(1050, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -64,7 +64,7 @@ namespace ChickenDist.Forms
             txtSearch = new TextBox { Width = 140, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, Margin = new Padding(3, 4, 12, 3) };
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadProducts(); };
 
-            btnLoad = Theme.MakeButton("🔍 جلب الأصناف", 0, 0, 120, 32, Theme.Accent);
+            btnLoad = Theme.MakeButton("جلب الأصناف", 0, 0, 120, 32, Theme.Accent);
             btnLoad.Margin = new Padding(3, 2, 6, 3);
             btnLoad.Click += (s, e) => LoadProducts();
 
@@ -87,13 +87,13 @@ namespace ChickenDist.Forms
             cboAdjustmentMode = new ComboBox { Width = 260, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Color.FromArgb(15, 23, 42), ForeColor = Color.White, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(3, 4, 12, 3) };
             cboAdjustmentMode.Items.AddRange(new string[]
             {
-                "📈 حساب سعر البيع = سعر الشراء + نسبة ربح %",
-                "📈 زيادة سعر البيع الحالي بنسبة %",
-                "📉 تخفيض سعر البيع الحالي بنسبة %",
-                "💵 زيادة سعر البيع الحالي بمبلغ ثابت (ج.م)",
-                "💵 تخفيض سعر البيع الحالي بمبلغ ثابت (ج.م)",
-                "🏷️ تعديل سعر الشراء / التكلفة بنسبة %",
-                "⚡ تطبيق نسبة الربح المسجلة في كارت كل صنف"
+                "حساب سعر البيع = سعر الشراء + نسبة ربح %",
+                "زيادة سعر البيع الحالي بنسبة %",
+                "تخفيض سعر البيع الحالي بنسبة %",
+                "زيادة سعر البيع الحالي بمبلغ ثابت (ج.م)",
+                "تخفيض سعر البيع الحالي بمبلغ ثابت (ج.م)",
+                "تعديل سعر الشراء / التكلفة بنسبة %",
+                "تطبيق نسبة الربح المسجلة في كارت كل صنف"
             });
             cboAdjustmentMode.SelectedIndex = 0;
             cboAdjustmentMode.SelectedIndexChanged += (s, e) =>
@@ -111,7 +111,7 @@ namespace ChickenDist.Forms
 
             chkUpdateSubUnits = new CheckBox { Text = "تحديث أسعار الوحدات الفرعية تلقائياً", AutoSize = true, ForeColor = Color.FromArgb(254, 240, 138), Checked = true, Font = new Font(Theme.FontMain, FontStyle.Bold), Margin = new Padding(6, 7, 12, 3) };
 
-            btnPreview = Theme.MakeButton("⚡ تطبيق المعادلة", 0, 0, 135, 32, Color.FromArgb(14, 116, 144));
+            btnPreview = Theme.MakeButton("تطبيق المعادلة", 0, 0, 135, 32, Color.FromArgb(14, 116, 144));
             btnPreview.Margin = new Padding(3, 2, 6, 3);
             btnPreview.Click += (s, e) => ApplyAdjustmentRule();
 
@@ -141,7 +141,7 @@ namespace ChickenDist.Forms
             dgvProducts.ColumnHeadersHeight = 36;
             dgvProducts.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
 
-            var colSel = new DataGridViewCheckBoxColumn { Name = "colSelect", HeaderText = "✔", Width = 40, FillWeight = 25 };
+            var colSel = new DataGridViewCheckBoxColumn { Name = "colSelect", HeaderText = "تحديد", Width = 40, FillWeight = 25 };
             dgvProducts.Columns.Add(colSel);
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductID", Visible = false });
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductCode", HeaderText = "كود الصنف", ReadOnly = true, FillWeight = 55 });
@@ -151,9 +151,9 @@ namespace ChickenDist.Forms
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", HeaderText = "المورد", ReadOnly = true, FillWeight = 75 });
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "StockQty", HeaderText = "الرصيد", ReadOnly = true, FillWeight = 50, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "OldBuyPrice", HeaderText = "شراء حالي", ReadOnly = true, FillWeight = 55, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewBuyPrice", HeaderText = "شراء جديد ✏️", ReadOnly = false, FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, BackColor = Color.FromArgb(254, 249, 195), Font = new Font(Theme.FontMain, FontStyle.Bold) } });
+            dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewBuyPrice", HeaderText = "شراء جديد", ReadOnly = false, FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, BackColor = Color.FromArgb(254, 249, 195), Font = new Font(Theme.FontMain, FontStyle.Bold) } });
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "OldSalePrice", HeaderText = "بيع حالي", ReadOnly = true, FillWeight = 55, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewSalePrice", HeaderText = "بيع جديد ✏️", ReadOnly = false, FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, BackColor = Color.FromArgb(220, 252, 231), Font = new Font(Theme.FontMain, FontStyle.Bold) } });
+            dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewSalePrice", HeaderText = "بيع جديد", ReadOnly = false, FillWeight = 60, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, BackColor = Color.FromArgb(220, 252, 231), Font = new Font(Theme.FontMain, FontStyle.Bold) } });
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffAmount", HeaderText = "الفرق", ReadOnly = true, FillWeight = 45, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font(Theme.FontMain, FontStyle.Bold) } });
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "NewMarginPct", HeaderText = "نسبة الربح %", ReadOnly = true, FillWeight = 50, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter } });
             dgvProducts.Columns.Add(new DataGridViewTextBoxColumn { Name = "CardMarginPct", Visible = false });
@@ -228,19 +228,19 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 4, 0, 0)
             };
 
-            btnSavePrices = Theme.MakeButton("💾 اعتماد وحفظ الأسعار الجديدة", 0, 0, 210, 36, Theme.Accent);
+            btnSavePrices = Theme.MakeButton("اعتماد وحفظ الأسعار الجديدة", 0, 0, 210, 36, Theme.Accent);
             btnSavePrices.Margin = new Padding(4, 0, 4, 0);
             btnSavePrices.Click += BtnSavePrices_Click;
 
-            btnPrintBarcodes = Theme.MakeButton("🖨️ طباعة باركود المعدل", 0, 0, 160, 36, Color.FromArgb(30, 64, 175));
+            btnPrintBarcodes = Theme.MakeButton("طباعة باركود المعدل", 0, 0, 160, 36, Color.FromArgb(30, 64, 175));
             btnPrintBarcodes.Margin = new Padding(4, 0, 4, 0);
             btnPrintBarcodes.Click += BtnPrintBarcodes_Click;
 
-            btnHistory = Theme.MakeButton("📜 سجل تغيرات الأسعار", 0, 0, 160, 36, Color.FromArgb(71, 85, 105));
+            btnHistory = Theme.MakeButton("سجل تغيرات الأسعار", 0, 0, 160, 36, Color.FromArgb(71, 85, 105));
             btnHistory.Margin = new Padding(4, 0, 4, 0);
             btnHistory.Click += (s, e) => new FrmPriceChangeHistory().ShowDialog();
 
-            btnClose = Theme.MakeButton("❌ إغلاق", 0, 0, 90, 36, Color.FromArgb(100, 116, 139));
+            btnClose = Theme.MakeButton("إغلاق", 0, 0, 90, 36, Color.FromArgb(100, 116, 139));
             btnClose.Margin = new Padding(4, 0, 4, 0);
             btnClose.Click += (s, e) => this.Close();
 
@@ -504,7 +504,7 @@ namespace ChickenDist.Forms
                     countModified++;
                 }
 
-                MessageBox.Show($"✅ تم احتساب وتطبيق المعادلة على ({countModified}) صنف محدد.\nيمكنك مراجعة الأرقام بالجدول وتعديل أي صنف يدوياً، ثم الضغط على [اعتماد وحفظ الأسعار].",
+                MessageBox.Show($"تم احتساب وتطبيق المعادلة على ({countModified}) صنف محدد.\nيمكنك مراجعة الأرقام بالجدول وتعديل أي صنف يدوياً، ثم الضغط على [اعتماد وحفظ الأسعار].",
                     "معاينة الأسعار الجديدة", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             finally
@@ -700,7 +700,7 @@ namespace ChickenDist.Forms
                 StockCache.Invalidate();
                 FrmQuickAdd.RaiseProductSaved();
 
-                MessageBox.Show($"✅ تم اعتماد وتحديث أسعار ({savedCount}) صنف بنجاح في قاعدة البيانات وتسجيلها في سجل الأسعار.",
+                MessageBox.Show($"تم اعتماد وتحديث أسعار ({savedCount}) صنف بنجاح في قاعدة البيانات وتسجيلها في سجل الأسعار.",
                     "تم الحفظ بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 LoadProducts();

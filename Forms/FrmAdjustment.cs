@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -32,7 +32,7 @@ namespace ChickenDist.Forms
                 _currentBalance = 0m;
             }
 
-            this.Text = (_isClient ? "⚖️ تسوية حساب العميل: " : "⚖️ تسوية حساب المورد: ") + name;
+            this.Text = (_isClient ? "تسوية حساب العميل: " : "تسوية حساب المورد: ") + name;
             this.Size = new Size(420, 390);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -185,8 +185,8 @@ namespace ChickenDist.Forms
             y += 50;
 
             // 5. أزرار
-            btnOk = Theme.MakeButton("✅ تأكيد التسوية", 235, y, 155, 38, Theme.Accent);
-            btnCancel = Theme.MakeButton("❌ إلغاء", 140, y, 90, 38, Color.FromArgb(90, 90, 90));
+            btnOk = Theme.MakeButton("تأكيد التسوية", 235, y, 155, 38, Theme.Accent);
+            btnCancel = Theme.MakeButton("إلغاء", 140, y, 90, 38, Color.FromArgb(90, 90, 90));
             btnOk.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             
             btnOk.Click += BtnOk_Click;
@@ -236,19 +236,19 @@ namespace ChickenDist.Forms
                 if (_isClient)
                 {
                     ClientDAL.AddAdjustment(_id, amt, rdoDiscount.Checked, note);
-                    MessageBox.Show("✅ تم تسجيل تسوية العميل بنجاح (دون التأثير على الخزينة).", "تمت التسوية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم تسجيل تسوية العميل بنجاح (دون التأثير على الخزينة).", "تمت التسوية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
                     SupplierDAL.AddAdjustment(_id, amt, rdoDiscount.Checked, note);
-                    MessageBox.Show("✅ تم تسجيل تسوية المورد بنجاح (دون التأثير على الخزينة).", "تمت التسوية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم تسجيل تسوية المورد بنجاح (دون التأثير على الخزينة).", "تمت التسوية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ فشل تسجيل التسوية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل تسجيل التسوية:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

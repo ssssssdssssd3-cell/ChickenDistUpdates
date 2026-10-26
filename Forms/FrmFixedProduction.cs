@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🏭 أمر تصنيع ثابت (وفق الوصفة المعيارية BOM)";
+            this.Text = "أمر تصنيع ثابت (وفق الوصفة المعيارية BOM)";
             this.Size = new Size(1260, 780);
             this.MinimumSize = new Size(1080, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -134,7 +134,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "🏭 أمر تصنيع ثابت",
+                Text = "أمر تصنيع ثابت",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42),
@@ -156,7 +156,7 @@ namespace ChickenDist.Forms
 
             lblStatusBadge = new Label
             {
-                Text = "⏳ مسودة جديدة",
+                Text = "مسودة جديدة",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -176,7 +176,7 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent
             };
 
-            btnResume = Theme.MakeButton("🔄 استرجاع أمر معلق", 0, 0, 150, 32, Color.FromArgb(51, 65, 85));
+            btnResume = Theme.MakeButton("استرجاع أمر معلق", 0, 0, 150, 32, Color.FromArgb(51, 65, 85));
             btnResume.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnResume.Margin = new Padding(0, 2, 12, 0);
             btnResume.Click += (s, e) => ShowSuspendedOrdersDialog();
@@ -246,7 +246,7 @@ namespace ChickenDist.Forms
             var pnlFpHeader = new Panel { Dock = DockStyle.Top, Height = 22, BackColor = Color.Transparent };
             var lblFpTitle = new Label
             {
-                Text = "🎯 بيانات المنتج النهائي المراد تصنيعه:",
+                Text = "بيانات المنتج النهائي المراد تصنيعه:",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -256,7 +256,7 @@ namespace ChickenDist.Forms
 
             lblEstimatedDuration = new Label
             {
-                Text = "⏱️ مدة التصنيع: غير محددة",
+                Text = "مدة التصنيع: غير محددة",
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 ForeColor = Color.FromArgb(16, 185, 129),
@@ -335,13 +335,13 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnBrowseFinished = Theme.MakeButton("🔍 بحث", 0, 0, 64, 30, Theme.Primary);
+            btnBrowseFinished = Theme.MakeButton("بحث", 0, 0, 64, 30, Theme.Primary);
             btnBrowseFinished.Dock = DockStyle.Fill;
             btnBrowseFinished.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             btnBrowseFinished.Margin = new Padding(2, 0, 2, 0);
             btnBrowseFinished.Click += (s, e) => SelectFinishedProduct();
 
-            btnBrowseBOM = Theme.MakeButton("📋 الوصفات", 0, 0, 80, 30, Color.FromArgb(14, 116, 144));
+            btnBrowseBOM = Theme.MakeButton("الوصفات", 0, 0, 80, 30, Color.FromArgb(14, 116, 144));
             btnBrowseBOM.Dock = DockStyle.Fill;
             btnBrowseBOM.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             btnBrowseBOM.Margin = new Padding(0, 0, 2, 0);
@@ -441,7 +441,7 @@ namespace ChickenDist.Forms
 
             var lblExp = new Label
             {
-                Text = "⚡ مصاريف تشغيل إضافية:",
+                Text = "مصاريف تشغيل إضافية:",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(217, 119, 6),
@@ -486,7 +486,7 @@ namespace ChickenDist.Forms
             pnlExpRight.Controls.Add(txtExpensesNotes);
             tblExpenses.Controls.Add(pnlExpRight, 0, 0);
 
-            btnAddExtraRaw = Theme.MakeButton("➕ إضافة مادة خام إضافية", 0, 0, 185, 32, Color.FromArgb(51, 65, 85));
+            btnAddExtraRaw = Theme.MakeButton("إضافة مادة خام إضافية", 0, 0, 185, 32, Color.FromArgb(51, 65, 85));
             btnAddExtraRaw.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             btnAddExtraRaw.Dock = DockStyle.Fill;
             btnAddExtraRaw.Margin = new Padding(2, 0, 2, 0);
@@ -552,7 +552,7 @@ namespace ChickenDist.Forms
             {
                 Name = "colDelete",
                 HeaderText = "حذف",
-                Text = "🗑️",
+                Text = "حذف",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 10
             };
@@ -618,7 +618,7 @@ namespace ChickenDist.Forms
 
             lblUnitCost = new Label
             {
-                Text = "🏷️ تكلفة الوحدة: 0.00 ج.م",
+                Text = "تكلفة الوحدة: 0.00 ج.م",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(16, 185, 129),
@@ -630,7 +630,7 @@ namespace ChickenDist.Forms
 
             lblTotalCost = new Label
             {
-                Text = "💰 الإجمالي الكلي: 0.00 ج.م",
+                Text = "الإجمالي الكلي: 0.00 ج.م",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(217, 119, 6),
@@ -642,7 +642,7 @@ namespace ChickenDist.Forms
 
             lblExtraCost = new Label
             {
-                Text = "⚡ مصاريف تشغيل: 0.00 ج.م",
+                Text = "مصاريف تشغيل: 0.00 ج.م",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(180, 83, 9),
@@ -654,7 +654,7 @@ namespace ChickenDist.Forms
 
             lblRawCost = new Label
             {
-                Text = "📦 تكلفة الخامات: 0.00 ج.م",
+                Text = "تكلفة الخامات: 0.00 ج.م",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(71, 85, 105),
@@ -676,31 +676,31 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 2, 0, 0)
             };
 
-            btnComplete = Theme.MakeButton("✅ إتمام وترحيل التصنيع", 0, 0, 170, 38, Color.FromArgb(22, 163, 74));
+            btnComplete = Theme.MakeButton("إتمام وترحيل التصنيع", 0, 0, 170, 38, Color.FromArgb(22, 163, 74));
             btnComplete.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnComplete.Margin = new Padding(0, 0, 8, 0);
             btnComplete.Click += (s, e) => SaveOrder(true);
             pnlActions.Controls.Add(btnComplete);
 
-            btnSuspend = Theme.MakeButton("⏸️ تعليق (خروج الخامات)", 0, 0, 165, 38, Color.FromArgb(234, 88, 12));
+            btnSuspend = Theme.MakeButton("تعليق (خروج الخامات)", 0, 0, 165, 38, Color.FromArgb(234, 88, 12));
             btnSuspend.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSuspend.Margin = new Padding(0, 0, 8, 0);
             btnSuspend.Click += (s, e) => SaveOrder(false);
             pnlActions.Controls.Add(btnSuspend);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة إذن التشغيل", 0, 0, 145, 38, Color.FromArgb(2, 132, 199));
+            btnPrint = Theme.MakeButton("طباعة إذن التشغيل", 0, 0, 145, 38, Color.FromArgb(2, 132, 199));
             btnPrint.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnPrint.Margin = new Padding(0, 0, 8, 0);
             btnPrint.Click += (s, e) => PrintOrder();
             pnlActions.Controls.Add(btnPrint);
 
-            btnNew = Theme.MakeButton("➕ أمر جديد", 0, 0, 105, 38, Color.FromArgb(51, 65, 85));
+            btnNew = Theme.MakeButton("أمر جديد", 0, 0, 105, 38, Color.FromArgb(51, 65, 85));
             btnNew.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnNew.Margin = new Padding(0, 0, 8, 0);
             btnNew.Click += (s, e) => ResetForm();
             pnlActions.Controls.Add(btnNew);
 
-            btnCancelOrder = Theme.MakeButton("❌ إلغاء الأمر", 0, 0, 105, 38, Color.FromArgb(220, 53, 69));
+            btnCancelOrder = Theme.MakeButton("إلغاء الأمر", 0, 0, 105, 38, Color.FromArgb(220, 53, 69));
             btnCancelOrder.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnCancelOrder.Margin = new Padding(0, 0, 0, 0);
             btnCancelOrder.Click += (s, e) => CancelOrder();
@@ -758,7 +758,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "📋 اختيار من شجر ووصفات التصنيع المسجلة";
+                dlg.Text = "اختيار من شجر ووصفات التصنيع المسجلة";
                 dlg.Size = new Size(780, 480);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -769,7 +769,7 @@ namespace ChickenDist.Forms
                 dlg.Font = Theme.FontMain;
 
                 var pnlTop = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Theme.BgCard, Padding = new Padding(10, 8, 10, 8) };
-                var lblSearch = new Label { Text = "🔍 بحث في الوصفات:", AutoSize = true, Location = new Point(10, 14), ForeColor = Theme.TextMain };
+                var lblSearch = new Label { Text = "بحث في الوصفات:", AutoSize = true, Location = new Point(10, 14), ForeColor = Theme.TextMain };
                 pnlTop.Controls.Add(lblSearch);
 
                 var txtFilter = new TextBox { Location = new Point(150, 10), Width = 300, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
@@ -827,7 +827,7 @@ namespace ChickenDist.Forms
                 dg.BringToFront();
 
                 var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10) };
-                var btnSelect = Theme.MakeButton("✅ اختيار وتحميل المكونات", 10, 10, 190, 36, Theme.Primary);
+                var btnSelect = Theme.MakeButton("اختيار وتحميل المكونات", 10, 10, 190, 36, Theme.Primary);
                 var btnClose = Theme.MakeButton("إلغاء", 210, 10, 100, 36, Color.FromArgb(100, 116, 139));
 
                 Action selectRow = () =>
@@ -910,8 +910,8 @@ namespace ChickenDist.Forms
             if (lblEstimatedDuration != null)
             {
                 lblEstimatedDuration.Text = !string.IsNullOrEmpty(_currentBOM.EstimatedDuration)
-                    ? $"⏱️ مدة التصنيع: {_currentBOM.EstimatedDuration}"
-                    : "⏱️ مدة التصنيع: غير محددة";
+                    ? $"مدة التصنيع: {_currentBOM.EstimatedDuration}"
+                    : "مدة التصنيع: غير محددة";
             }
 
             decimal baseOutQty = _currentBOM.OutputQty > 0 ? _currentBOM.OutputQty : 1m;
@@ -943,7 +943,7 @@ namespace ChickenDist.Forms
                     cost.ToString("N2"),
                     totCost.ToString("N2"),
                     itm.Notes,
-                    "❌"
+                    "X"
                 );
             }
 
@@ -1017,7 +1017,7 @@ namespace ChickenDist.Forms
                             cost.ToString("N2"),
                             cost.ToString("N2"),
                             "مادة إضافية",
-                            "❌"
+                            "X"
                         );
 
                         RecalculateTotals();
@@ -1057,10 +1057,10 @@ namespace ChickenDist.Forms
             decimal pQty = numProducedQty.Value > 0 ? numProducedQty.Value : 1m;
             decimal unitCost = totalCost / pQty;
 
-            lblRawCost.Text = $"📦 تكلفة المواد الخام: {rawCost:N2} ج.م";
-            lblExtraCost.Text = $"⚡ مصاريف التشغيل: {extra:N2} ج.م";
-            lblTotalCost.Text = $"💰 إجمالي تكلفة الأمر: {totalCost:N2} ج.م";
-            lblUnitCost.Text = $"🏷️ تكلفة الوحدة المصنعة: {unitCost:N2} ج.م";
+            lblRawCost.Text = $"تكلفة المواد الخام: {rawCost:N2} ج.م";
+            lblExtraCost.Text = $"مصاريف التشغيل: {extra:N2} ج.م";
+            lblTotalCost.Text = $"إجمالي تكلفة الأمر: {totalCost:N2} ج.م";
+            lblUnitCost.Text = $"تكلفة الوحدة المصنعة: {unitCost:N2} ج.م";
         }
 
         private void SaveOrder(bool complete)
@@ -1163,8 +1163,8 @@ namespace ChickenDist.Forms
             if (lblEstimatedDuration != null)
             {
                 lblEstimatedDuration.Text = !string.IsNullOrEmpty(order.EstimatedDuration)
-                    ? $"⏱️ مدة التصنيع: {order.EstimatedDuration}"
-                    : "⏱️ مدة التصنيع: غير محددة";
+                    ? $"مدة التصنيع: {order.EstimatedDuration}"
+                    : "مدة التصنيع: غير محددة";
             }
 
             numExtraExpenses.Value = order.ExtraExpenses;
@@ -1186,7 +1186,7 @@ namespace ChickenDist.Forms
                     itm.UnitCost.ToString("N2"),
                     itm.TotalCost.ToString("N2"),
                     itm.Notes,
-                    "❌"
+                    "X"
                 );
             }
 
@@ -1206,15 +1206,15 @@ namespace ChickenDist.Forms
             switch (status)
             {
                 case "InPreparation":
-                    lblStatusBadge.Text = "⏳ تحت التحضير (المواد مخصومة بالمصنع)";
+                    lblStatusBadge.Text = "تحت التحضير (المواد مخصومة بالمصنع)";
                     lblStatusBadge.BackColor = Color.FromArgb(234, 88, 12);
                     break;
                 case "Completed":
-                    lblStatusBadge.Text = "✅ مكتمل ومرحل (المنتج بالمخزن)";
+                    lblStatusBadge.Text = "مكتمل ومرحل (المنتج بالمخزن)";
                     lblStatusBadge.BackColor = Color.FromArgb(22, 163, 74);
                     break;
                 case "Cancelled":
-                    lblStatusBadge.Text = "❌ أمر تصنيع ملغي";
+                    lblStatusBadge.Text = "أمر تصنيع ملغي";
                     lblStatusBadge.BackColor = Color.FromArgb(220, 53, 69);
                     break;
                 default:
@@ -1280,7 +1280,7 @@ namespace ChickenDist.Forms
             _selectedFinishedProductName = "";
 
             lblOrderCode.Text = $"كود الأمر: {_currentOrderCode}";
-            lblStatusBadge.Text = "⏳ مسودة جديدة";
+            lblStatusBadge.Text = "مسودة جديدة";
             lblStatusBadge.BackColor = Color.FromArgb(100, 116, 139);
             dtpOrderDate.Value = DateTime.Now;
 
@@ -1290,7 +1290,7 @@ namespace ChickenDist.Forms
             txtNotes.Clear();
             numExtraExpenses.Value = 0m;
             txtExpensesNotes.Clear();
-            if (lblEstimatedDuration != null) lblEstimatedDuration.Text = "⏱️ مدة التصنيع: غير محددة";
+            if (lblEstimatedDuration != null) lblEstimatedDuration.Text = "مدة التصنيع: غير محددة";
 
             dgItems.Rows.Clear();
             RecalculateTotals();

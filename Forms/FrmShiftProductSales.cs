@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -50,7 +50,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📦 تقرير إجمالي مبيعات أصناف الوردية";
+            this.Text = "تقرير إجمالي مبيعات أصناف الوردية";
             this.Size = new Size(1100, 750);
             this.MinimumSize = new Size(950, 650);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -70,7 +70,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "📦 تقرير إجمالي مبيعات كل صنف بالوردية",
+                Text = "تقرير إجمالي مبيعات كل صنف بالوردية",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -109,7 +109,7 @@ namespace ChickenDist.Forms
 
             var lblSelTitle = new Label
             {
-                Text = "🔍 اختر الوردية:",
+                Text = "اختر الوردية:",
                 Font = Theme.FontBold,
                 ForeColor = Theme.TextMain,
                 AutoSize = true,
@@ -130,7 +130,7 @@ namespace ChickenDist.Forms
 
             var lblSearchTitle = new Label
             {
-                Text = "🔎 بحث سريع بالصنف:",
+                Text = "بحث سريع بالصنف:",
                 Font = Theme.FontBold,
                 ForeColor = Theme.TextMain,
                 AutoSize = true,
@@ -147,7 +147,7 @@ namespace ChickenDist.Forms
             };
             txtSearch.TextChanged += (s, e) => FilterItemsGrid();
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", Color.FromArgb(60, 70, 85), new Point(0, 0), new Size(95, 32));
+            btnRefresh = Theme.MakeButton("تحديث", Color.FromArgb(60, 70, 85), new Point(0, 0), new Size(95, 32));
             btnRefresh.Margin = new Padding(8, 3, 4, 0);
             btnRefresh.Click += (s, e) => LoadShiftItemsData();
 
@@ -191,11 +191,11 @@ namespace ChickenDist.Forms
             };
             for (int i = 0; i < 5; i++) tblKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
 
-            lblTotalItemsVal    = MakeKpiCard(tblKpis, "📦 عدد الأصناف المباعة", "0 صنف", Theme.TextMain, 0);
-            lblTotalSoldQtyVal  = MakeKpiCard(tblKpis, "🔢 إجمالي كميات البيع", "0.00", Theme.Success, 1);
-            lblTotalReturnQtyVal= MakeKpiCard(tblKpis, "↩️ إجمالي كميات المرتجع", "0.00", Theme.Danger, 2);
-            lblNetQtyVal        = MakeKpiCard(tblKpis, "⚖️ صافي الكمية المباعة", "0.00", Color.FromArgb(52, 152, 219), 3);
-            lblNetTotalVal      = MakeKpiCard(tblKpis, "💰 صافي قيمة المبيعات", "0.00 ج", Color.FromArgb(245, 158, 11), 4);
+            lblTotalItemsVal    = MakeKpiCard(tblKpis, "عدد الأصناف المباعة", "0 صنف", Theme.TextMain, 0);
+            lblTotalSoldQtyVal  = MakeKpiCard(tblKpis, "إجمالي كميات البيع", "0.00", Theme.Success, 1);
+            lblTotalReturnQtyVal= MakeKpiCard(tblKpis, "إجمالي كميات المرتجع", "0.00", Theme.Danger, 2);
+            lblNetQtyVal        = MakeKpiCard(tblKpis, "صافي الكمية المباعة", "0.00", Color.FromArgb(52, 152, 219), 3);
+            lblNetTotalVal      = MakeKpiCard(tblKpis, "صافي قيمة المبيعات", "0.00 ج", Color.FromArgb(245, 158, 11), 4);
 
             pnlKpis.Controls.Add(tblKpis);
             tblMain.Controls.Add(pnlKpis, 0, 0);
@@ -247,9 +247,9 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 8, 15, 8)
             };
 
-            btnPrint  = Theme.MakeButton("🖨️ طباعة التقرير", Theme.Primary, new Point(0, 0), new Size(160, 40));
-            btnExport = Theme.MakeButton("📥 تصدير Excel", Color.FromArgb(16, 185, 129), new Point(0, 0), new Size(140, 40));
-            btnClose  = Theme.MakeButton("❌ إغلاق", Theme.Danger, new Point(0, 0), new Size(110, 40));
+            btnPrint  = Theme.MakeButton("طباعة التقرير", Theme.Primary, new Point(0, 0), new Size(160, 40));
+            btnExport = Theme.MakeButton("تصدير Excel", Color.FromArgb(16, 185, 129), new Point(0, 0), new Size(140, 40));
+            btnClose  = Theme.MakeButton("إغلاق", Theme.Danger, new Point(0, 0), new Size(110, 40));
 
             btnPrint.Click  += BtnPrint_Click;
             btnExport.Click += BtnExport_Click;
@@ -329,7 +329,7 @@ namespace ChickenDist.Forms
                 foreach (DataRow r in dt.Rows)
                 {
                     int sid = Convert.ToInt32(r["ShiftID"]);
-                    string status = r["Status"].ToString() == "Open" ? "🟢 مفتوحة" : "🔴 مغلقة";
+                    string status = r["Status"].ToString() == "Open" ? "مفتوحة" : "مغلقة";
                     string emp = r["EmpName"] != DBNull.Value ? r["EmpName"].ToString() : "كاشير";
                     DateTime dtOpen = Convert.ToDateTime(r["OpenTime"]);
                     string text = $"وردية #{sid} ({status}) - {emp} [{dtOpen:yyyy-MM-dd HH:mm}]";
@@ -417,7 +417,7 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("FrmShiftProductSales.LoadShiftItemsData", ex);
-                MessageBox.Show($"❌ حدث خطأ أثناء تحميل بيانات مبيعات أصناف الوردية:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"حدث خطأ أثناء تحميل بيانات مبيعات أصناف الوردية:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -516,11 +516,11 @@ namespace ChickenDist.Forms
                         }
 
                         File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-                        MessageBox.Show("✅ تم تصدير التقرير إلى Excel بنجاح.", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تصدير التقرير إلى Excel بنجاح.", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("❌ فشل التصدير: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل التصدير: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -575,7 +575,7 @@ namespace ChickenDist.Forms
                         y += 26;
 
                         string shiftTitle = cboShifts.SelectedItem != null ? cboShifts.SelectedItem.ToString() : "تقرير الوردية";
-                        g.DrawString($"📦 تقرير إجمالي مبيعات أصناف الوردية: {shiftTitle}", fontHeader, Brushes.DarkBlue, new RectangleF(left, y, width, 22), sfCenter);
+                        g.DrawString($"تقرير إجمالي مبيعات أصناف الوردية: {shiftTitle}", fontHeader, Brushes.DarkBlue, new RectangleF(left, y, width, 22), sfCenter);
                         y += 24;
 
                         g.DrawString($"تاريخ الطباعة: {DateTime.Now:yyyy-MM-dd HH:mm} | الأصناف: {lblTotalItemsVal.Text} | صافي القيمة: {lblNetTotalVal.Text}", fontSub, Brushes.Gray, new RectangleF(left, y, width, 18), sfCenter);
@@ -666,7 +666,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ خطأ أثناء الطباعة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("خطأ أثناء الطباعة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

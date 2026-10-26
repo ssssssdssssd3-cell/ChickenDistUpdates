@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -28,7 +28,7 @@ namespace ChickenDist.Forms
 
         private void InitUI(string clientName, string clientPhone)
         {
-            this.Text = "📋 اختيار جهاز / صنف من مشتريات العميل";
+            this.Text = "اختيار جهاز / صنف من مشتريات العميل";
             this.Size = new Size(920, 520);
             this.MinimumSize = new Size(780, 400);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -72,7 +72,7 @@ namespace ChickenDist.Forms
 
             Label lblTitle = new Label
             {
-                Text = "🛡️ قائمة الأجهزة والمشتريات المسجلة للعميل",
+                Text = "قائمة الأجهزة والمشتريات المسجلة للعميل",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 Location = new Point(15, 6),
@@ -106,7 +106,7 @@ namespace ChickenDist.Forms
 
             Label lblSearch = new Label
             {
-                Text = "🔍 تصفية في المشتريات:",
+                Text = "تصفية في المشتريات:",
                 Dock = DockStyle.Right,
                 Width = 145,
                 TextAlign = ContentAlignment.MiddleRight,
@@ -144,12 +144,12 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent
             };
 
-            btnSelect = Theme.MakeButton("اختيار الجهاز المحدد ✔ (Enter)", Theme.Success);
+            btnSelect = Theme.MakeButton("اختيار الجهاز المحدد (Enter)", Theme.Success);
             btnSelect.Size = new Size(220, 36);
             btnSelect.Margin = new Padding(10, 0, 0, 0);
             btnSelect.Click += (s, e) => SelectCurrentRow();
 
-            btnGeneralSearch = Theme.MakeButton("🔍 بحث في دليل كل الأصناف (F1)", Color.FromArgb(41, 128, 185));
+            btnGeneralSearch = Theme.MakeButton("بحث في دليل كل الأصناف (F1)", Color.FromArgb(41, 128, 185));
             btnGeneralSearch.Size = new Size(230, 36);
             btnGeneralSearch.Margin = new Padding(10, 0, 0, 0);
             btnGeneralSearch.Click += (s, e) =>
@@ -159,7 +159,7 @@ namespace ChickenDist.Forms
                 this.Close();
             };
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Color.FromArgb(100, 110, 120));
+            btnCancel = Theme.MakeButton("إلغاء (Esc)", Color.FromArgb(100, 110, 120));
             btnCancel.Size = new Size(110, 36);
             btnCancel.Margin = new Padding(10, 0, 0, 0);
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };

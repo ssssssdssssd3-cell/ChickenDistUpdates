@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -29,7 +29,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "تسجيل وتسوية الهوالك والتالف 🗑️";
+            this.Text = "تسجيل وتسوية الهوالك والتالف";
             this.Size = new Size(1000, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -74,13 +74,13 @@ namespace ChickenDist.Forms
                 Margin = new Padding(0, 10, 0, 0)
             };
 
-            btnSearchProduct = Theme.MakeButton("🔍 بحث بالاسم/الكود (F3)", Theme.Accent);
+            btnSearchProduct = Theme.MakeButton("بحث بالاسم/الكود (F3)", Theme.Accent);
             btnSearchProduct.Width = 180;
             btnSearchProduct.Height = 28;
             btnSearchProduct.Margin = new Padding(10, 10, 0, 0);
             btnSearchProduct.Click += BtnSearchProduct_Click;
 
-            btnAddItem = Theme.MakeButton("➕ إضافة صنف", Theme.Primary);
+            btnAddItem = Theme.MakeButton("إضافة صنف", Theme.Primary);
             btnAddItem.Width = 120;
             btnAddItem.Height = 28;
             btnAddItem.Margin = new Padding(10, 10, 0, 0);
@@ -96,7 +96,7 @@ namespace ChickenDist.Forms
             
             // Header panel for Grid
             var pnlGridHeader = new Panel { Dock = DockStyle.Top, Height = 40 };
-            var lblGridTitle = new Label { Text = "📦 بنود الأصناف التالفة:", Font = Theme.FontHeader, ForeColor = Theme.TextMain, AutoSize = true, Location = new Point(5, 10) };
+            var lblGridTitle = new Label { Text = "بنود الأصناف التالفة:", Font = Theme.FontHeader, ForeColor = Theme.TextMain, AutoSize = true, Location = new Point(5, 10) };
             pnlGridHeader.Controls.Add(lblGridTitle);
 
             dgItems = new DataGridView
@@ -131,7 +131,7 @@ namespace ChickenDist.Forms
             {
                 Name = "Delete",
                 HeaderText = "حذف",
-                Text = "❌",
+                Text = "X",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 30
             };
@@ -159,7 +159,7 @@ namespace ChickenDist.Forms
                 Visible = canSeeCost
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ مستند التالف", Color.FromArgb(160, 50, 50));
+            btnSave = Theme.MakeButton("حفظ مستند التالف", Color.FromArgb(160, 50, 50));
             btnSave.Dock = DockStyle.Left;
             btnSave.Width = 200;
             btnSave.Font = Theme.FontBold;
@@ -365,7 +365,7 @@ namespace ChickenDist.Forms
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("Wastage")) { MessageBox.Show("⛔ ليس لديك صلاحية تسجيل التالف والهالك.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("Wastage")) { MessageBox.Show("ليس لديك صلاحية تسجيل التالف والهالك.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (dgItems.Rows.Count == 0)
             {
@@ -459,13 +459,13 @@ namespace ChickenDist.Forms
                         }
 
                         trans.Commit();
-                        MessageBox.Show("✅ تم حفظ مستند التالف وتعديل كميات المخزن بنجاح.", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم حفظ مستند التالف وتعديل كميات المخزن بنجاح.", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         CloseOrNavigateBack();
                     }
                     catch (Exception ex)
                     {
                         trans.Rollback();
-                        MessageBox.Show($"❌ فشل حفظ المستند:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"فشل حفظ المستند:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }

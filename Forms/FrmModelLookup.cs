@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -26,7 +26,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom(string initialSearch)
         {
-            this.Text = "👗 فحص ألوان ومقاسات الموديل (الرصيد المتاح)";
+            this.Text = "فحص ألوان ومقاسات الموديل (الرصيد المتاح)";
             this.Size = new Size(840, 550);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
@@ -34,7 +34,7 @@ namespace ChickenDist.Forms
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
 
-            var pnlTop = Theme.MakeTitleBar("👗 فحص ألوان ومقاسات الموديل", "ادخل اسم الموديل أو امسح الباركود للتحقق من كافة الألوان والمقاسات المتاحة ورصيدها بالمخزن.");
+            var pnlTop = Theme.MakeTitleBar("فحص ألوان ومقاسات الموديل", "ادخل اسم الموديل أو امسح الباركود للتحقق من كافة الألوان والمقاسات المتاحة ورصيدها بالمخزن.");
             this.Controls.Add(pnlTop);
 
             var pnlSearch = new Panel
@@ -45,7 +45,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            var lbl = new Label { Text = "🔍 اسم الموديل / الباركود:", AutoSize = true, Location = new Point(610, 16), ForeColor = Theme.TextMain, Font = Theme.FontBold };
+            var lbl = new Label { Text = "اسم الموديل / الباركود:", AutoSize = true, Location = new Point(610, 16), ForeColor = Theme.TextMain, Font = Theme.FontBold };
             txtSearch = new TextBox
             {
                 Location = new Point(230, 12),
@@ -117,7 +117,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 8, 15, 8)
             };
 
-            btnSelect = Theme.MakeButton("✔️ اختيار الصنف المحدد للبيع", 15, 10, 220, 36, Theme.Success);
+            btnSelect = Theme.MakeButton("اختيار الصنف المحدد للبيع", 15, 10, 220, 36, Theme.Success);
             btnSelect.Click += (s, e) => SelectAndClose();
 
             btnClose = Theme.MakeButton("إغلاق", 245, 10, 100, 36, Color.FromArgb(100, 110, 120));

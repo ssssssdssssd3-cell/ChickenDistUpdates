@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🔍 أداة فحص ومعالجة وتصحيح الأكواد والباركودات المكررة";
+            this.Text = "أداة فحص ومعالجة وتصحيح الأكواد والباركودات المكررة";
             this.Size = new Size(1200, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "🔍 أداة فحص ومعالجة وتصحيح الأكواد والباركودات المكررة في قاعدة البيانات",
+                Text = "أداة فحص ومعالجة وتصحيح الأكواد والباركودات المكررة في قاعدة البيانات",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
@@ -95,7 +95,7 @@ namespace ChickenDist.Forms
             };
             cboFilterType.Items.AddRange(new object[]
             {
-                "⚡ كل الأكواد والباركودات المكررة",
+                "كل الأكواد والباركودات المكررة",
                 "كود الصنف الأساسي (ProductCode)",
                 "باركود الوحدات (Unit Barcodes)",
                 "كود الميزان الإلكتروني (ScalePLU)",
@@ -115,7 +115,7 @@ namespace ChickenDist.Forms
             txtSearch.TextChanged += (s, e) => RunScan();
             pnlFilters.Controls.Add(txtSearch);
 
-            btnScan = Theme.MakeButton("🔄 إعادة الفحص", 0, 0, 120, 30, Theme.Primary);
+            btnScan = Theme.MakeButton("إعادة الفحص", 0, 0, 120, 30, Theme.Primary);
             btnScan.Click += (s, e) => RunScan();
             pnlFilters.Controls.Add(btnScan);
 
@@ -139,22 +139,22 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnAutoFixCodes = Theme.MakeButton("⚡ حل تلقائي ذكي لجميع الأكواد المكررة", 0, 0, 260, 35, Theme.Success);
+            btnAutoFixCodes = Theme.MakeButton("حل تلقائي ذكي لجميع الأكواد المكررة", 0, 0, 260, 35, Theme.Success);
             btnAutoFixCodes.Click += BtnAutoFixCodes_Click;
 
-            btnAutoFixBarcodes = Theme.MakeButton("🏷️ حل وتفريغ الباركودات المكررة", 0, 0, 220, 35, Color.FromArgb(202, 138, 4));
+            btnAutoFixBarcodes = Theme.MakeButton("حل وتفريغ الباركودات المكررة", 0, 0, 220, 35, Color.FromArgb(202, 138, 4));
             btnAutoFixBarcodes.Click += BtnAutoFixBarcodes_Click;
 
-            btnMergeSelected = Theme.MakeButton("🔀 دمج صنفين مكررين", 0, 0, 160, 35, Color.FromArgb(79, 70, 229));
+            btnMergeSelected = Theme.MakeButton("دمج صنفين مكررين", 0, 0, 160, 35, Color.FromArgb(79, 70, 229));
             btnMergeSelected.Click += BtnMergeSelected_Click;
 
-            btnEditCode = Theme.MakeButton("✏️ تعديل كود الصنف", 0, 0, 140, 35, Theme.Accent);
+            btnEditCode = Theme.MakeButton("تعديل كود الصنف", 0, 0, 140, 35, Theme.Accent);
             btnEditCode.Click += BtnEditCode_Click;
 
-            btnModifiedBarcodeReport = Theme.MakeButton("🏷️ تقرير وطباعة باركود الأصناف المعدلة", 0, 0, 240, 35, Color.FromArgb(13, 148, 136));
+            btnModifiedBarcodeReport = Theme.MakeButton("تقرير وطباعة باركود الأصناف المعدلة", 0, 0, 240, 35, Color.FromArgb(13, 148, 136));
             btnModifiedBarcodeReport.Click += BtnModifiedBarcodeReport_Click;
 
-            btnPrintReport = Theme.MakeButton("🖨️ طباعة تقرير التكرار", 0, 0, 150, 35, Theme.Secondary);
+            btnPrintReport = Theme.MakeButton("طباعة تقرير التكرار", 0, 0, 150, 35, Theme.Secondary);
             btnPrintReport.Click += BtnPrintReport_Click;
 
             btnClose = Theme.MakeButton("إغلاق", 0, 0, 80, 35, Color.FromArgb(100, 116, 139));
@@ -225,7 +225,7 @@ namespace ChickenDist.Forms
 
                 if (dt.Rows.Count == 0)
                 {
-                    lblStats.Text = "✅ لا توجد أي أكواد أو باركودات مكررة مطابقة في قاعدة البيانات!";
+                    lblStats.Text = "لا توجد أي أكواد أو باركودات مكررة مطابقة في قاعدة البيانات!";
                     lblStats.ForeColor = Color.DarkGreen;
                     btnAutoFixCodes.Enabled = false;
                     btnAutoFixBarcodes.Enabled = false;
@@ -255,7 +255,7 @@ namespace ChickenDist.Forms
 
                     int hasT = r.Table.Columns.Contains("HasTransactions") ? Convert.ToInt32(r["HasTransactions"]) : 0;
                     int totalT = r.Table.Columns.Contains("TotalTransactions") ? Convert.ToInt32(r["TotalTransactions"]) : 0;
-                    string statusText = hasT == 1 ? $"🔒 له حركات ({totalT})" : "⚡ بدون حركات";
+                    string statusText = hasT == 1 ? $"له حركات ({totalT})" : "بدون حركات";
 
                     int rowIdx = dgDuplicates.Rows.Add(
                         r["ProductID"],
@@ -286,29 +286,29 @@ namespace ChickenDist.Forms
                 }
                 int withoutTransCount = dt.Rows.Count - withTransCount;
 
-                lblStats.Text = $"⚠️ تم اكتشاف [{dt.Rows.Count}] صنف مكرر: [{withTransCount}] محمي (له حركات/رصيد) و [{withoutTransCount}] قابل للتعديل (بدون أي حركات)!";
+                lblStats.Text = $"تم اكتشاف [{dt.Rows.Count}] صنف مكرر: [{withTransCount}] محمي (له حركات/رصيد) و [{withoutTransCount}] قابل للتعديل (بدون أي حركات)!";
                 lblStats.ForeColor = Color.FromArgb(185, 28, 28);
             }
             catch (Exception ex)
             {
-                lblStats.Text = "❌ خطأ أثناء فحص وتجميع الأكواد المكررة: " + ex.Message;
+                lblStats.Text = "خطأ أثناء فحص وتجميع الأكواد المكررة: " + ex.Message;
                 lblStats.ForeColor = Color.Red;
             }
         }
 
         private void BtnAutoFixCodes_Click(object sender, EventArgs e)
         {
-            string msg = "⚡ هل ترغب في إعادة ترقيم وتصحيح جميع الأكواد المكررة تلقائياً؟\n\n" +
-                         "📌 آلية الترقيم والتصحيح الذكية المعتمدة:\n" +
-                         "1️⃣ سيتم الاحتفاظ بالكود الأصلي للصنف الأساسي (الأكثر حركات ورصيداً على البرنامج).\n" +
-                         "2️⃣ الأصناف المكررة الأخرى (الأقل حركات) سيتم إعادة ترقيمها بأكواد تسلسلية جديدة فريدة تلي آخر كود في قائمة الأصناف.\n" +
-                         "3️⃣ سيتم تعديل وتحديث الكود الجديد في جميع حركات ومبيعات ومشتريات وتقارير الصنف تلقائياً لتعمل بكفاءة 100% وبدون أي تعارض.\n\n" +
+            string msg = "هل ترغب في إعادة ترقيم وتصحيح جميع الأكواد المكررة تلقائياً؟\n\n" +
+                         "آلية الترقيم والتصحيح الذكية المعتمدة:\n" +
+                         "1 سيتم الاحتفاظ بالكود الأصلي للصنف الأساسي (الأكثر حركات ورصيداً على البرنامج).\n" +
+                         "2 الأصناف المكررة الأخرى (الأقل حركات) سيتم إعادة ترقيمها بأكواد تسلسلية جديدة فريدة تلي آخر كود في قائمة الأصناف.\n" +
+                         "3 سيتم تعديل وتحديث الكود الجديد في جميع حركات ومبيعات ومشتريات وتقارير الصنف تلقائياً لتعمل بكفاءة 100% وبدون أي تعارض.\n\n" +
                          "هل تريد البدء في تصحيح وإعادة ترقيم الأكواد المكررة الآن؟";
 
             if (MessageBox.Show(msg, "تأكيد تصحيح وإعادة ترقيم الأكواد المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 var result = ProductDuplicateDAL.AutoFixDuplicateProductCodes("ProductCode", onlyModifyZeroTransactions: false);
-                MessageBox.Show($"✅ تمت معالجة وإعادة ترقيم [{result.totalFixed}] صنف مكرر بنجاح!\n\n" +
+                MessageBox.Show($"تمت معالجة وإعادة ترقيم [{result.totalFixed}] صنف مكرر بنجاح!\n\n" +
                                 $"• تم إبقاء الكود الأصلي للأصناف الأساسية الأكثر نشاطاً.\n" +
                                 $"• تم توليد أكواد تسلسلية جديدة للأصناف الأقل حركات وتحديث كافة حركاتها وتقاريرها.", 
                                 "تمت المعالجة بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -318,14 +318,14 @@ namespace ChickenDist.Forms
 
         private void BtnAutoFixBarcodes_Click(object sender, EventArgs e)
         {
-            string msg = "🏷️ هل ترغب في معالجة وتفريغ الباركودات المكررة؟\n\n" +
+            string msg = "هل ترغب في معالجة وتفريغ الباركودات المكررة؟\n\n" +
                          "• سيتم إبقاء الباركود على الصنف الأساسي.\n" +
                          "• سيتم تفريغ الباركود المكرر من الأصناف الثانوية لمنع تضارب قارئ الباركود (السكنر).";
 
             if (MessageBox.Show(msg, "تأكيد معالجة الباركودات", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 var result = ProductDuplicateDAL.AutoFixDuplicateBarcodes();
-                MessageBox.Show($"✅ تمت معالجة وتصحيح [{result.totalFixed}] باركود مكرر بنجاح.", "تمت المعالجة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تمت معالجة وتصحيح [{result.totalFixed}] باركود مكرر بنجاح.", "تمت المعالجة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 RunScan();
             }
         }
@@ -360,13 +360,13 @@ namespace ChickenDist.Forms
                              $"[ID: {sourceID} - {sourceName}]\n\n" +
                              $"إلى الصنف الأساسي المستمر:\n" +
                              $"[ID: {targetID} - {targetName}]؟\n\n" +
-                             $"⚡ سيتم ترحيل كافة كميات المخزون وفواتير البيع والشراء والمردودات إلى الصنف الأساسي وإلغاء الصنف المكرر.";
+                             $"سيتم ترحيل كافة كميات المخزون وفواتير البيع والشراء والمردودات إلى الصنف الأساسي وإلغاء الصنف المكرر.";
 
             if (MessageBox.Show(confirm, "تأكيد دمج الصنفين", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 if (ProductDuplicateDAL.MergeDuplicateProducts(targetID, sourceID, out string err))
                 {
-                    MessageBox.Show("✅ تم دمج الصنفين بنجاح وترحيل كافة الحركات والمخزون.", "تم الدمج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم دمج الصنفين بنجاح وترحيل كافة الحركات والمخزون.", "تم الدمج", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     RunScan();
                 }
                 else
@@ -391,7 +391,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = $"✏️ تعديل كود الصنف [{name}]";
+                dlg.Text = $"تعديل كود الصنف [{name}]";
                 dlg.Size = new Size(380, 220);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -403,12 +403,12 @@ namespace ChickenDist.Forms
                 var txtNew = new TextBox { Location = new Point(20, 50), Width = 320, Font = new Font("Segoe UI", 11f, FontStyle.Bold), Text = currentCode, TextAlign = HorizontalAlignment.Center };
                 dlg.Controls.Add(txtNew);
 
-                var btnSave = Theme.MakeButton("💾 حفظ وتحديث الكود", 170, 110, 170, 36, Theme.Success);
+                var btnSave = Theme.MakeButton("حفظ وتحديث الكود", 170, 110, 170, 36, Theme.Success);
                 btnSave.Click += (s, ev) =>
                 {
                     if (ProductDuplicateDAL.UpdateProductCodeDirect(productID, txtNew.Text.Trim(), out string err))
                     {
-                        MessageBox.Show("✅ تم تحديث كود الصنف بنجاح.", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تحديث كود الصنف بنجاح.", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         dlg.DialogResult = DialogResult.OK;
                         dlg.Close();
                     }
@@ -509,7 +509,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "🏷️ تقرير وطباعة ملصقات الباركود للأصناف المعدلة (تصنيف منزلي)";
+                dlg.Text = "تقرير وطباعة ملصقات الباركود للأصناف المعدلة (تصنيف منزلي)";
                 dlg.Size = new Size(1050, 680);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.RightToLeft = RightToLeft.Yes;
@@ -518,19 +518,19 @@ namespace ChickenDist.Forms
                 dlg.Font = Theme.FontMain;
 
                 var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Color.FromArgb(30, 41, 59), Padding = new Padding(15, 10, 15, 10) };
-                var lblT = new Label { Text = $"📦 قائمة الأصناف المعدلة التابعة لتصنيف منزلي (إجمالي {dt.Rows.Count} صنف بأكوادها الجديدة)", ForeColor = Color.White, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), AutoSize = true, Location = new Point(15, 12) };
+                var lblT = new Label { Text = $"قائمة الأصناف المعدلة التابعة لتصنيف منزلي (إجمالي {dt.Rows.Count} صنف بأكوادها الجديدة)", ForeColor = Color.White, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), AutoSize = true, Location = new Point(15, 12) };
                 pnlTop.Controls.Add(lblT);
 
                 var pnlBot = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 56, BackColor = Theme.BgCard, Padding = new Padding(10, 9, 10, 9), RightToLeft = RightToLeft.Yes };
 
-                var btnOpenBulk = Theme.MakeButton("🏷️ فتح في شاشة طباعة ملصقات الباركود", 0, 0, 260, 36, Theme.Success);
+                var btnOpenBulk = Theme.MakeButton("فتح في شاشة طباعة ملصقات الباركود", 0, 0, 260, 36, Theme.Success);
                 btnOpenBulk.Click += (s2, e2) =>
                 {
                     var frmBulk = new FrmBulkPrintBarcodes();
                     frmBulk.Show(this);
                 };
 
-                var btnPrintA4 = Theme.MakeButton("📄 طباعة تقرير جدول A4", 0, 0, 180, 36, Theme.Primary);
+                var btnPrintA4 = Theme.MakeButton("طباعة تقرير جدول A4", 0, 0, 180, 36, Theme.Primary);
                 btnPrintA4.Click += (s2, e2) =>
                 {
                     PrintDocument doc = new PrintDocument();

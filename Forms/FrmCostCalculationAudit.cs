@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -55,7 +55,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = $"🧮 مراجعة واحتساب متوسط تكلفة الصنف - {_productName}";
+            this.Text = $"مراجعة واحتساب متوسط تكلفة الصنف - {_productName}";
             this.Size = new Size(1020, 740);
             this.MinimumSize = new Size(900, 650);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
 
             // ── 1. العنوان الرئيسي ──────────────────────────────────────────
             var pnlTitle = Theme.MakeTitleBar(
-                "🧮 مراجعة وتدقيق معادلة متوسط تكلفة الشراء المرجح",
+                "مراجعة وتدقيق معادلة متوسط تكلفة الشراء المرجح",
                 $"{_productName}  |  كود: {_productCode}  |  الوحدة: {_unitName}  |  الرصيد المتاح: {_currentStock:G29} {_unitName}");
             pnlTitle.Dock = DockStyle.Top;
             this.Controls.Add(pnlTitle);
@@ -84,10 +84,10 @@ namespace ChickenDist.Forms
                 AutoScroll = false
             };
 
-            pnlCards.Controls.Add(MakeSummaryCard("📦 الرصيد المتاح حالياً", $"{_currentStock:N2} {_unitName}", Color.FromArgb(13, 110, 253), out lblStockVal));
-            pnlCards.Controls.Add(MakeSummaryCard("💵 متوسط التكلفة المسجل", $"{_currentCost:N2} ج", Color.FromArgb(108, 117, 125), out lblCurrentCostVal));
-            pnlCards.Controls.Add(MakeSummaryCard("💰 إجمالي قيمة المخزون", $"{(_currentStock * _currentCost):N2} ج", Color.FromArgb(25, 135, 84), out lblCurrentTotalVal));
-            pnlCards.Controls.Add(MakeSummaryCard("🧮 التكلفة المحسوبة دفترياً", "0.00 ج", Color.FromArgb(217, 119, 6), out lblCalcCostVal));
+            pnlCards.Controls.Add(MakeSummaryCard("الرصيد المتاح حالياً", $"{_currentStock:N2} {_unitName}", Color.FromArgb(13, 110, 253), out lblStockVal));
+            pnlCards.Controls.Add(MakeSummaryCard("متوسط التكلفة المسجل", $"{_currentCost:N2} ج", Color.FromArgb(108, 117, 125), out lblCurrentCostVal));
+            pnlCards.Controls.Add(MakeSummaryCard("إجمالي قيمة المخزون", $"{(_currentStock * _currentCost):N2} ج", Color.FromArgb(25, 135, 84), out lblCurrentTotalVal));
+            pnlCards.Controls.Add(MakeSummaryCard("التكلفة المحسوبة دفترياً", "0.00 ج", Color.FromArgb(217, 119, 6), out lblCalcCostVal));
 
             this.Controls.Add(pnlCards);
 
@@ -118,7 +118,7 @@ namespace ChickenDist.Forms
 
             btnApplyCost = new Button
             {
-                Text = "🔄 اعتماد وتحديث متوسط التكلفة للصنف",
+                Text = "اعتماد وتحديث متوسط التكلفة للصنف",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 BackColor = Color.FromArgb(25, 135, 84),
                 ForeColor = Color.White,
@@ -132,7 +132,7 @@ namespace ChickenDist.Forms
 
             btnCopyFormula = new Button
             {
-                Text = "📋 نسخ المعادلة",
+                Text = "نسخ المعادلة",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 BackColor = Color.FromArgb(108, 117, 125),
                 ForeColor = Color.White,
@@ -146,7 +146,7 @@ namespace ChickenDist.Forms
 
             btnClose = new Button
             {
-                Text = "❌ إغلاق",
+                Text = "إغلاق",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 BackColor = Color.FromArgb(220, 53, 69),
                 ForeColor = Color.White,
@@ -186,7 +186,7 @@ namespace ChickenDist.Forms
 
             var lblFormulaHeader = new Label
             {
-                Text = "📐 تفاصيل المعادلة الحسابية والتعويض الرقمي من واقع الفواتير:",
+                Text = "تفاصيل المعادلة الحسابية والتعويض الرقمي من واقع الفواتير:",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42),
                 Dock = DockStyle.Top,
@@ -219,7 +219,7 @@ namespace ChickenDist.Forms
 
             var lblGridHeader = new Label
             {
-                Text = "📋 سجل فواتير الشراء السابقة وحصة كل فاتورة في تغطية الرصيد المتاح:",
+                Text = "سجل فواتير الشراء السابقة وحصة كل فاتورة في تغطية الرصيد المتاح:",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42),
                 Dock = DockStyle.Top,
@@ -362,12 +362,12 @@ namespace ChickenDist.Forms
                 decimal diff = Math.Abs(_currentCost - _calculatedAvgDisplay);
                 if (diff < 0.015m)
                 {
-                    lblAuditStatus.Text = $"✅ متوسط التكلفة المسجل ({_currentCost:N2} ج) مطابق تماماً لحساب فواتير المشتريات.";
+                    lblAuditStatus.Text = $"متوسط التكلفة المسجل ({_currentCost:N2} ج) مطابق تماماً لحساب فواتير المشتريات.";
                     lblAuditStatus.ForeColor = Color.FromArgb(22, 101, 52);
                 }
                 else
                 {
-                    lblAuditStatus.Text = $"⚠️ يوجد فارق: المسجل ({_currentCost:N2} ج) مقابل المحسوب بالفواتير ({_calculatedAvgDisplay:N2} ج) بفارق ({diff:N2} ج).";
+                    lblAuditStatus.Text = $"يوجد فارق: المسجل ({_currentCost:N2} ج) مقابل المحسوب بالفواتير ({_calculatedAvgDisplay:N2} ج) بفارق ({diff:N2} ج).";
                     lblAuditStatus.ForeColor = Color.FromArgb(180, 83, 9);
                 }
             }
@@ -397,7 +397,7 @@ namespace ChickenDist.Forms
                 try
                 {
                     PurchaseDAL.ApplyCalculatedAverageCost(_productId, _calculatedAvgBase);
-                    Theme.ShowMsg("✅ تم تحديث وتصحيح متوسط التكلفة للصنف بنجاح.", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Theme.ShowMsg("تم تحديث وتصحيح متوسط التكلفة للصنف بنجاح.", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }

@@ -11,7 +11,7 @@ namespace ChickenDist
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.WriteLine("========================================");
-            Console.WriteLine("🐣 معالج تهيئة قاعدة بيانات شركة توزيع الكتاكيت");
+            Console.WriteLine("معالج تهيئة قاعدة بيانات شركة توزيع الكتاكيت");
             Console.WriteLine("========================================");
 
             string masterConnStr = "Data Source=.;Initial Catalog=master;Integrated Security=True;Connect Timeout=15;";
@@ -30,12 +30,12 @@ namespace ChickenDist
             if (!File.Exists(scriptPath))
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("❌ لم يتم العثور على ملف السكربت في: " + Path.GetFullPath(scriptPath));
+                Console.WriteLine("لم يتم العثور على ملف السكربت في: " + Path.GetFullPath(scriptPath));
                 Console.ResetColor();
                 return;
             }
 
-            Console.WriteLine("⚙️ قراءة ملف السكربت من: " + Path.GetFullPath(scriptPath));
+            Console.WriteLine("قراءة ملف السكربت من: " + Path.GetFullPath(scriptPath));
 
             try
             {
@@ -48,12 +48,12 @@ namespace ChickenDist
                     RegexOptions.Multiline | RegexOptions.IgnoreCase
                 );
 
-                Console.WriteLine("🔌 الاتصال بـ SQL Server...");
+                Console.WriteLine("الاتصال بـ SQL Server...");
                 using (var conn = new SqlConnection(masterConnStr))
                 {
                     conn.Open();
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("✅ تم الاتصال بخادم SQL Server بنجاح.");
+                    Console.WriteLine("تم الاتصال بخادم SQL Server بنجاح.");
                     Console.ResetColor();
 
                     int successCount = 0;
@@ -76,7 +76,7 @@ namespace ChickenDist
                         {
                             errorCount++;
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("⚠️ تنبيه أثناء تنفيذ جزء من الاستعلام:\n" + ex.Message);
+                            Console.WriteLine("تنبيه أثناء تنفيذ جزء من الاستعلام:\n" + ex.Message);
                             Console.ResetColor();
                         }
                     }
@@ -85,12 +85,12 @@ namespace ChickenDist
                     if (errorCount == 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("🎉 تم إنشاء وتهيئة قاعدة البيانات بنجاح تام!");
+                        Console.WriteLine("تم إنشاء وتهيئة قاعدة البيانات بنجاح تام!");
                     }
                     else
                     {
                         Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine("ℹ️ اكتمل التشغيل مع وجود " + errorCount + " تنبيهات/أخطاء بسيطة (غالباً بسبب إسقاط جداول غير موجودة سابقاً).");
+                        Console.WriteLine("اكتمل التشغيل مع وجود " + errorCount + " تنبيهات/أخطاء بسيطة (غالباً بسبب إسقاط جداول غير موجودة سابقاً).");
                     }
                     Console.ResetColor();
                     Console.WriteLine("========================================");
@@ -99,7 +99,7 @@ namespace ChickenDist
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("❌ حدث خطأ فادح أثناء تهيئة قاعدة البيانات:\n" + ex.Message);
+                Console.WriteLine("حدث خطأ فادح أثناء تهيئة قاعدة البيانات:\n" + ex.Message);
                 Console.ResetColor();
             }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -35,24 +35,24 @@ namespace ChickenDist.Core
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine(new string('=', 78));
-            sb.AppendLine($"⏰ التوقيت: {DateTime.Now:yyyy-MM-dd HH:mm:ss} | 🏷️ المصدر: {(string.IsNullOrEmpty(source) ? "عام" : source)}");
+            sb.AppendLine($"التوقيت: {DateTime.Now:yyyy-MM-dd HH:mm:ss} | المصدر: {(string.IsNullOrEmpty(source) ? "عام" : source)}");
             if (!string.IsNullOrEmpty(message))
             {
-                sb.AppendLine($"📌 البيان: {message}");
+                sb.AppendLine($"البيان: {message}");
             }
-            sb.AppendLine($"🔴 وصف الخطأ بالعربية: {diagnosis.ArabicTitle}");
-            sb.AppendLine($"💡 الحل وخطوات العلاج المقترحة:");
+            sb.AppendLine($"وصف الخطأ بالعربية: {diagnosis.ArabicTitle}");
+            sb.AppendLine($"الحل وخطوات العلاج المقترحة:");
             foreach (var step in diagnosis.ArabicSolutionSteps)
             {
-                sb.AppendLine($"   👉 {step}");
+                sb.AppendLine($"   {step}");
             }
             if (!string.IsNullOrEmpty(diagnosis.QuickActionSql))
             {
-                sb.AppendLine($"🛠️ الاستعلام / الإجراء السريع المقترح:");
+                sb.AppendLine($"الاستعلام / الإجراء السريع المقترح:");
                 sb.AppendLine($"   {diagnosis.QuickActionSql}");
             }
             sb.AppendLine(new string('-', 78));
-            sb.AppendLine($"⚙️ التفاصيل الفنية للمطور (Technical Details):");
+            sb.AppendLine($"التفاصيل الفنية للمطور (Technical Details):");
             sb.AppendLine($"   النوع: {ex?.GetType().FullName}");
             sb.AppendLine($"   الرسالة: {ex?.Message}");
             if (ex?.InnerException != null)

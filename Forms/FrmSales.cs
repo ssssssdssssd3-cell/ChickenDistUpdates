@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -172,7 +172,7 @@ namespace ChickenDist.Forms
 
 			Button btnClientSearchDlg = new Button
 			{
-				Text = "🔍",
+				Text = "بحث",
 				Width = 32,
 				Height = 26,
 				Font = Theme.FontBold,
@@ -226,7 +226,7 @@ namespace ChickenDist.Forms
 
 			Button btnProductSearchDlg = new Button
 			{
-				Text = "🔍",
+				Text = "بحث",
 				Width = 32,
 				Height = 26,
 				Font = Theme.FontBold,
@@ -346,7 +346,7 @@ namespace ChickenDist.Forms
 				RightToLeft = RightToLeft.Yes
 			};
 			txtSearch.TextChanged += delegate { FilterData(); };
-			flowLayoutPanel.Controls.Add(MakeFilterPanel("🔍 بحث سريع:", txtSearch, 110));
+			flowLayoutPanel.Controls.Add(MakeFilterPanel("بحث سريع:", txtSearch, 110));
 
 			chkOnlyShipping = new CheckBox
 			{
@@ -360,14 +360,14 @@ namespace ChickenDist.Forms
 			flowLayoutPanel.Controls.Add(chkOnlyShipping);
 
 			// زر عرض
-			btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
+			btnLoad = Theme.MakeButton("عرض", Theme.Accent);
 			btnLoad.Size = new Size(80, 34);
 			btnLoad.Margin = new Padding(4, 0, 0, 0);
 			btnLoad.Click += delegate { LoadSales(); };
 			flowLayoutPanel.Controls.Add(btnLoad);
 
 			// زر فاتورة جديدة
-			btnNewSale = Theme.MakeButton("➕ فاتورة جديدة", Color.FromArgb(40, 150, 80));
+			btnNewSale = Theme.MakeButton("فاتورة جديدة", Color.FromArgb(40, 150, 80));
 			btnNewSale.Size = new Size(130, 34);
 			btnNewSale.Margin = new Padding(4, 0, 4, 0);
 			btnNewSale.Click += delegate
@@ -379,7 +379,7 @@ namespace ChickenDist.Forms
 			flowLayoutPanel.Controls.Add(btnNewSale);
 
 			// زر تقرير الأصناف الراكدة
-			var btnStagnant = Theme.MakeButton("💤 الأصناف الراكدة", Color.FromArgb(140, 60, 160));
+			var btnStagnant = Theme.MakeButton("الأصناف الراكدة", Color.FromArgb(140, 60, 160));
 			btnStagnant.Size = new Size(130, 34);
 			btnStagnant.Margin = new Padding(4, 0, 4, 0);
 			btnStagnant.Click += delegate
@@ -389,7 +389,7 @@ namespace ChickenDist.Forms
 			flowLayoutPanel.Controls.Add(btnStagnant);
 
 			// زر تقرير فواتير اليومية المفصل (زي الشيت)
-			var btnDailyInvoicesSheet = Theme.MakeButton("📑 فواتير اليومية (شيت بالأصناف)", Color.FromArgb(14, 165, 233));
+			var btnDailyInvoicesSheet = Theme.MakeButton("فواتير اليومية (شيت بالأصناف)", Color.FromArgb(14, 165, 233));
 			btnDailyInvoicesSheet.Size = new Size(200, 34);
 			btnDailyInvoicesSheet.Margin = new Padding(4, 0, 4, 0);
 			btnDailyInvoicesSheet.Click += delegate
@@ -400,7 +400,7 @@ namespace ChickenDist.Forms
 			flowLayoutPanel.Controls.Add(btnDailyInvoicesSheet);
 
 			// زر تصدير سجل المبيعات PDF
-			var btnExportPdf = Theme.MakeButton("📤 تصدير PDF", Color.FromArgb(220, 38, 38));
+			var btnExportPdf = Theme.MakeButton("تصدير PDF", Color.FromArgb(220, 38, 38));
 			btnExportPdf.Size = new Size(120, 34);
 			btnExportPdf.Margin = new Padding(4, 0, 4, 0);
 			btnExportPdf.Click += delegate { ExportSalesListToPdf(); };
@@ -485,7 +485,7 @@ namespace ChickenDist.Forms
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "DiscountAmount",
-				HeaderText = "الخصم ✂",
+				HeaderText = "الخصم",
 				FillWeight = 40f,
 				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(249, 115, 22), Alignment = DataGridViewContentAlignment.MiddleRight }
 			});
@@ -506,21 +506,21 @@ namespace ChickenDist.Forms
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ReturnAmount",
-				HeaderText = "المرتجع ↩",
+				HeaderText = "المرتجع",
 				FillWeight = 40f,
 				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "NetAmount",
-				HeaderText = "الصافي النهائي ✔",
+				HeaderText = "الصافي النهائي",
 				FillWeight = 48f,
 				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleRight }
 			});
 			dgSales.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "NetProfit",
-				HeaderText = "ربح الفاتورة 💰",
+				HeaderText = "ربح الفاتورة",
 				FillWeight = 48f,
 				Visible = Session.CanViewCost("SalesList"),
 				DefaultCellStyle = new DataGridViewCellStyle { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleRight }
@@ -582,7 +582,7 @@ namespace ChickenDist.Forms
 
 			lblDetailTitle = new Label
 			{
-				Text = "📋 تفاصيل الأصناف بالفاتورة المحددة:",
+				Text = "تفاصيل الأصناف بالفاتورة المحددة:",
 				AutoSize = true,
 				ForeColor = Theme.TextSearchLabel,
 				Font = Theme.FontBold,
@@ -590,13 +590,13 @@ namespace ChickenDist.Forms
 			};
 			pnlDetailBar.Controls.Add(lblDetailTitle);
 
-			btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Theme.Primary);
+			btnPrint = Theme.MakeButton("طباعة الفاتورة", Theme.Primary);
 			btnPrint.Size = new Size(150, 30);
 			btnPrint.Margin = new Padding(0, 0, 10, 0);
 			btnPrint.Click += BtnPrint_Click;
 			pnlDetailBar.Controls.Add(btnPrint);
 
-			var btnWhatsApp = Theme.MakeButton("📱 إعادة إرسال واتساب", Color.FromArgb(37, 211, 102));
+			var btnWhatsApp = Theme.MakeButton("إعادة إرسال واتساب", Color.FromArgb(37, 211, 102));
 			btnWhatsApp.Size = new Size(165, 30);
 			btnWhatsApp.ForeColor = Color.White;
 			btnWhatsApp.Margin = new Padding(0, 0, 10, 0);
@@ -612,13 +612,13 @@ namespace ChickenDist.Forms
 			};
 			pnlDetailBar.Controls.Add(btnWhatsApp);
 
-			btnEdit = Theme.MakeButton("📝 تعديل الفاتورة", Theme.Accent);
+			btnEdit = Theme.MakeButton("تعديل الفاتورة", Theme.Accent);
 			btnEdit.Size = new Size(140, 30);
 			btnEdit.Margin = new Padding(0, 0, 10, 0);
 			btnEdit.Click += BtnEdit_Click;
 			pnlDetailBar.Controls.Add(btnEdit);
 
-			btnCopy = Theme.MakeButton("📄 نسخ الفاتورة", Color.FromArgb(40, 120, 180));
+			btnCopy = Theme.MakeButton("نسخ الفاتورة", Color.FromArgb(40, 120, 180));
 			btnCopy.Size = new Size(140, 30);
 			btnCopy.Margin = new Padding(0, 0, 10, 0);
 			btnCopy.Click += BtnCopy_Click;
@@ -649,7 +649,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "ReturnedQty",
-				HeaderText = "كمية المرتجع ↩",
+				HeaderText = "كمية المرتجع",
 				FillWeight = 42f,
 				DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(239, 68, 68), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) }
 			});
@@ -663,7 +663,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn
 			{
 				Name = "LastClientPrice",
-				HeaderText = "آخر سعر للعميل 🏷️",
+				HeaderText = "آخر سعر للعميل",
 				FillWeight = 50f,
 				DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(230, 126, 34), Font = new Font("Segoe UI", 9f, FontStyle.Bold), Alignment = DataGridViewContentAlignment.MiddleCenter }
 			});
@@ -719,16 +719,16 @@ namespace ChickenDist.Forms
 			}
 			tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			lblTotalBeforeDiscountSummary = AddDashboardCard(tableLayoutPanel, "إجمالي قبل الخصم:", "0.00 ج", Color.FromArgb(160, 175, 200), 0);
-			lblDiscountSummary             = AddDashboardCard(tableLayoutPanel, "إجمالي الخصومات: ✂", "0.00 ج", Color.FromArgb(249, 115, 22), 1);
+			lblDiscountSummary             = AddDashboardCard(tableLayoutPanel, "إجمالي الخصومات:", "0.00 ج", Color.FromArgb(249, 115, 22), 1);
 			lblTotalSummary               = AddDashboardCard(tableLayoutPanel, "بعد الخصم (قبل المرتجع):", "0.00 ج", Theme.Accent, 2);
-			lblReturnSummary              = AddDashboardCard(tableLayoutPanel, "إجمالي المرتجعات: ↩", "0.00 ج", Color.FromArgb(231, 76, 60), 3);
-			lblNetSummary                 = AddDashboardCard(tableLayoutPanel, "الصافي النهائي: ✔", "0.00 ج", Color.FromArgb(46, 204, 113), 4);
+			lblReturnSummary              = AddDashboardCard(tableLayoutPanel, "إجمالي المرتجعات:", "0.00 ج", Color.FromArgb(231, 76, 60), 3);
+			lblNetSummary                 = AddDashboardCard(tableLayoutPanel, "الصافي النهائي:", "0.00 ج", Color.FromArgb(46, 204, 113), 4);
 			lblCashSummary                = AddDashboardCard(tableLayoutPanel, "المبيعات النقدية:", "0.00 ج", Theme.Success, 5);
 			lblCreditSummary              = AddDashboardCard(tableLayoutPanel, "المبيعات الآجلة:", "0.00 ج", Color.FromArgb(52, 152, 219), 6);
 			lblShippingSummary            = AddDashboardCard(tableLayoutPanel, "إجمالي الشحن:", "0.00 ج", Color.FromArgb(243, 156, 18), 7);
 			if (canViewProfit)
 			{
-				lblProfitSummary          = AddDashboardCard(tableLayoutPanel, "إجمالي الأرباح: 💰", "0.00 ج", Color.FromArgb(16, 185, 129), 8);
+				lblProfitSummary          = AddDashboardCard(tableLayoutPanel, "إجمالي الأرباح:", "0.00 ج", Color.FromArgb(16, 185, 129), 8);
 			}
 
 			// تخطيط رئيسي متكامل (TableLayoutPanel) يضمن ظهور شريط الإجماليات دائماً ورفعه بمساحة مخصصة وثابتة أسفل الشاشة دون أي قص
@@ -1095,7 +1095,7 @@ namespace ChickenDist.Forms
 			dgItems.Rows.Clear();
 			if (dgSales.SelectedRows.Count == 0)
 			{
-				if (lblDetailTitle != null) lblDetailTitle.Text = "📋 تفاصيل الأصناف بالفاتورة المحددة:";
+				if (lblDetailTitle != null) lblDetailTitle.Text = "تفاصيل الأصناف بالفاتورة المحددة:";
 				return;
 			}
 			int saleID = Convert.ToInt32(dgSales.SelectedRows[0].Cells["SaleID"].Value);
@@ -1173,7 +1173,7 @@ namespace ChickenDist.Forms
 
 			string qtyFormat = (selectedSaleTotalQty % 1 == 0) ? selectedSaleTotalQty.ToString("N0") : selectedSaleTotalQty.ToString("N2");
 			if (lblDetailTitle != null)
-				lblDetailTitle.Text = $"📋 تفاصيل الأصناف بالفاتورة المحددة: ({items.Rows.Count} أصناف  |  إجمالي الكمية: {qtyFormat} قطعة)";
+				lblDetailTitle.Text = $"تفاصيل الأصناف بالفاتورة المحددة: ({items.Rows.Count} أصناف  |  إجمالي الكمية: {qtyFormat} قطعة)";
 		}
 
 		private void BtnPrint_Click(object sender, EventArgs e)
@@ -1187,25 +1187,25 @@ namespace ChickenDist.Forms
 
 			var menu = new ContextMenuStrip();
 			
-			var itemPrintReceipt = new ToolStripMenuItem("🖨️ طباعة ريسيت حراري (Receipt) - مباشر");
+			var itemPrintReceipt = new ToolStripMenuItem("طباعة ريسيت حراري (Receipt) - مباشر");
 			itemPrintReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt", showPreview: false);
 
-			var itemPreviewReceipt = new ToolStripMenuItem("🔍 معاينة ريسيت حراري (Receipt)");
+			var itemPreviewReceipt = new ToolStripMenuItem("معاينة ريسيت حراري (Receipt)");
 			itemPreviewReceipt.Click += (s2, e2) => new FrmPrintSale(saleID, "Receipt", showPreview: true);
 
-			var itemPrintA4 = new ToolStripMenuItem("📄 طباعة فاتورة ورق (A4 كامل) - مباشر");
+			var itemPrintA4 = new ToolStripMenuItem("طباعة فاتورة ورق (A4 كامل) - مباشر");
 			itemPrintA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: false);
 
-			var itemPreviewA4 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A4 كامل)");
+			var itemPreviewA4 = new ToolStripMenuItem("معاينة فاتورة ورق (A4 كامل)");
 			itemPreviewA4.Click += (s2, e2) => new FrmPrintSale(saleID, "A4", showPreview: true);
 
-			var itemPrintA5 = new ToolStripMenuItem("📑 طباعة فاتورة ورق (A5 نصف صفحة) - مباشر");
+			var itemPrintA5 = new ToolStripMenuItem("طباعة فاتورة ورق (A5 نصف صفحة) - مباشر");
 			itemPrintA5.Click += (s2, e2) => new FrmPrintSale(saleID, "A5", showPreview: false);
 
-			var itemPreviewA5 = new ToolStripMenuItem("🔍 معاينة فاتورة ورق (A5 نصف صفحة)");
+			var itemPreviewA5 = new ToolStripMenuItem("معاينة فاتورة ورق (A5 نصف صفحة)");
 			itemPreviewA5.Click += (s2, e2) => new FrmPrintSale(saleID, "A5", showPreview: true);
 
-			var itemPrintDailySheet = new ToolStripMenuItem("📑 تقرير فواتير اليومية الشامل (شيت A4 مع كافة الأصناف)");
+			var itemPrintDailySheet = new ToolStripMenuItem("تقرير فواتير اليومية الشامل (شيت A4 مع كافة الأصناف)");
 			itemPrintDailySheet.Click += (s2, e2) =>
 			{
 				var frm = new FrmDailyInvoicesSheetReport(dtpFrom.Value, dtpTo.Value);
@@ -1236,8 +1236,8 @@ namespace ChickenDist.Forms
 		private void BtnDelete_Click(object sender, EventArgs e)
 		{
 			MessageBox.Show(
-				"⛔ نعتذر! غير مسموح بحذف الفواتير الصادرة نهائياً من قاعدة البيانات بعد اعتمادها وإغلاقها للحفاظ على السلامة المالية والرقابة المحاسبية.\n\n" +
-				"💡 لتصحيح أي فاتورة، يرجى استخدام (شاشة مرتجع المبيعات) لعمل مرتجع كلي أو جزئي أو إصدار قيد تسوية.",
+				"نعتذر! غير مسموح بحذف الفواتير الصادرة نهائياً من قاعدة البيانات بعد اعتمادها وإغلاقها للحفاظ على السلامة المالية والرقابة المحاسبية.\n\n" +
+				"لتصحيح أي فاتورة، يرجى استخدام (شاشة مرتجع المبيعات) لعمل مرتجع كلي أو جزئي أو إصدار قيد تسوية.",
 				"حظر حذف الفواتير المحاسبي",
 				MessageBoxButtons.OK,
 				MessageBoxIcon.Warning);
@@ -1295,8 +1295,8 @@ namespace ChickenDist.Forms
 		{
 			var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
-			var miPrint = new ToolStripMenuItem("🖨️ طباعة الفاتورة", null, (s, e) => BtnPrint_Click(s, e));
-			var miWhatsApp = new ToolStripMenuItem("📱 إرسال الفاتورة عبر واتساب", null, (s, e) =>
+			var miPrint = new ToolStripMenuItem("طباعة الفاتورة", null, (s, e) => BtnPrint_Click(s, e));
+			var miWhatsApp = new ToolStripMenuItem("إرسال الفاتورة عبر واتساب", null, (s, e) =>
 			{
 				if (dgSales.SelectedRows.Count > 0 && dgSales.Columns.Contains("SaleID"))
 				{
@@ -1304,13 +1304,13 @@ namespace ChickenDist.Forms
 					FrmSale.SendSaleInvoiceWhatsApp(saleID, this);
 				}
 			});
-			var miEdit = new ToolStripMenuItem("📝 تعديل الفاتورة", null, (s, e) => BtnEdit_Click(s, e));
-			var miCopy = new ToolStripMenuItem("📄 نسخ الفاتورة", null, (s, e) => BtnCopy_Click(s, e));
-			var miReturn = new ToolStripMenuItem("↩️ فتح شاشة المرتجعات", null, (s, e) =>
+			var miEdit = new ToolStripMenuItem("تعديل الفاتورة", null, (s, e) => BtnEdit_Click(s, e));
+			var miCopy = new ToolStripMenuItem("نسخ الفاتورة", null, (s, e) => BtnCopy_Click(s, e));
+			var miReturn = new ToolStripMenuItem("فتح شاشة المرتجعات", null, (s, e) =>
 			{
 				new FrmReturn().ShowDialog(this);
 			});
-			var miStatement = new ToolStripMenuItem("👤 كشف حساب العميل", null, (s, e) =>
+			var miStatement = new ToolStripMenuItem("كشف حساب العميل", null, (s, e) =>
 			{
 				if (dgSales.SelectedRows.Count > 0 && dgSales.Columns.Contains("SaleID"))
 				{
@@ -1327,11 +1327,11 @@ namespace ChickenDist.Forms
 					}
 				}
 			});
-			var miAudit = new ToolStripMenuItem("🔒 سجل تعديلات وعمليات الفواتير", null, (s, e) =>
+			var miAudit = new ToolStripMenuItem("سجل تعديلات وعمليات الفواتير", null, (s, e) =>
 			{
 				new FrmSalesAuditList().ShowDialog(this);
 			});
-			var miCopyCode = new ToolStripMenuItem("📋 نسخ رقم الفاتورة", null, (s, e) =>
+			var miCopyCode = new ToolStripMenuItem("نسخ رقم الفاتورة", null, (s, e) =>
 			{
 				if (dgSales.SelectedRows.Count > 0 && dgSales.Columns.Contains("SaleCode"))
 				{
@@ -1373,7 +1373,7 @@ namespace ChickenDist.Forms
 		}
 
 		// ══════════════════════════════════════════════════════════════
-		//  📤 تصدير سجل المبيعات - PDF شبكي منظم
+		//  تصدير سجل المبيعات - PDF شبكي منظم
 		// ══════════════════════════════════════════════════════════════
 		private void ExportSalesListToPdf()
 		{
@@ -1397,7 +1397,7 @@ namespace ChickenDist.Forms
 				{
 					BuildSalesPdf(dlg.FileName);
 					var res = MessageBox.Show(
-						$"✅ تم تصدير التقرير بنجاح!\n\nالمسار: {dlg.FileName}\n\nهل تريد فتح الملف الآن؟",
+						$"تم تصدير التقرير بنجاح!\n\nالمسار: {dlg.FileName}\n\nهل تريد فتح الملف الآن؟",
 						"تم التصدير",
 						MessageBoxButtons.YesNo,
 						MessageBoxIcon.Information);
@@ -1436,15 +1436,15 @@ namespace ChickenDist.Forms
 				("عدد الأصناف",        0.045f),
 				("عدد القطع",          0.045f),
 				("قبل الخصم",          0.075f),
-				("الخصم ✂",            0.060f),
+				("الخصم",            0.060f),
 				("بعد الخصم",          0.075f),
 				("الشحن",              0.050f),
-				("المرتجع ↩",          0.060f),
-				("الصافي ✔",           0.075f),
+				("المرتجع",          0.060f),
+				("الصافي",           0.075f),
 			};
 			if (canViewProfit)
 			{
-				colsList.Add(("الربح 💰", 0.070f));
+				colsList.Add(("الربح", 0.070f));
 			}
 			colsList.Add(("الموظف",    0.090f));
 			colsList.Add(("الملاحظات", 0.065f));
@@ -1691,7 +1691,7 @@ namespace ChickenDist.Forms
 
 					using (var fb = new SolidBrush(Color.FromArgb(100, 110, 130)))
 					{
-						g.DrawString($"🏢 {company}  —  ProSoft ERP", fontFooter, fb,
+						g.DrawString($"{company}  —  ProSoft ERP", fontFooter, fb,
 							new RectangleF(x, footerY, tableW / 2, 20), sfRtl);
 						g.DrawString($"صفحة {p + 1} من {totalPages}  |  إجمالي الفواتير: {rows.Count}  |  الصافي الكلي: {sumNet:N2} ج", fontFooter, fb,
 							new RectangleF(x + tableW / 2, footerY, tableW / 2, 20), sfLtr);

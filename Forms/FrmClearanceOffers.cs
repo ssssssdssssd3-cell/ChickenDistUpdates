@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -38,7 +38,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🏷️ إدارة الأوكازيون والتصفيات والعروض";
+            this.Text = "إدارة الأوكازيون والتصفيات والعروض";
             this.Size = new Size(1180, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
             };
             var lblTitle = new Label
             {
-                Text = "🏷️ شاشة الأوكازيون والتخفيضات والعروض (تحديد فترة العرض والرجوع التلقائي للسعر الأصلي)",
+                Text = "شاشة الأوكازيون والتخفيضات والعروض (تحديد فترة العرض والرجوع التلقائي للسعر الأصلي)",
                 Font = new Font("Segoe UI", 13, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
@@ -74,7 +74,7 @@ namespace ChickenDist.Forms
             };
 
             // Row 1: Search & Filter
-            pnlTop.Controls.Add(new Label { Text = "🔍 بحث سريـع:", Location = new Point(1020, 15), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
+            pnlTop.Controls.Add(new Label { Text = "بحث سريـع:", Location = new Point(1020, 15), AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold });
             txtSearch = new TextBox { Location = new Point(800, 12), Width = 210, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
             txtSearch.TextChanged += (s, e) => FilterGrid();
             pnlTop.Controls.Add(txtSearch);
@@ -86,7 +86,7 @@ namespace ChickenDist.Forms
 
             chkOffersOnly = new CheckBox
             {
-                Text = "🎯 عرض أصناف الأوكازيون النشطة فقط",
+                Text = "عرض أصناف الأوكازيون النشطة فقط",
                 Location = new Point(280, 13),
                 Width = 260,
                 ForeColor = Theme.Accent,
@@ -96,9 +96,9 @@ namespace ChickenDist.Forms
             chkOffersOnly.CheckedChanged += (s, e) => FilterGrid();
             pnlTop.Controls.Add(chkOffersOnly);
 
-            btnSelectAll = Theme.MakeButton("☑️ تحديد الكل", 140, 10, 120, 30, Color.FromArgb(70, 80, 95));
+            btnSelectAll = Theme.MakeButton("تحديد الكل", 140, 10, 120, 30, Color.FromArgb(70, 80, 95));
             btnSelectAll.Click += (s, e) => SetAllCheckboxes(true);
-            btnDeselectAll = Theme.MakeButton("⬛ إلغاء الكل", 10, 10, 125, 30, Color.FromArgb(70, 80, 95));
+            btnDeselectAll = Theme.MakeButton("إلغاء الكل", 10, 10, 125, 30, Color.FromArgb(70, 80, 95));
             btnDeselectAll.Click += (s, e) => SetAllCheckboxes(false);
             pnlTop.Controls.AddRange(new Control[] { btnSelectAll, btnDeselectAll });
 
@@ -112,7 +112,7 @@ namespace ChickenDist.Forms
             };
 
             // Line 1 inside grpBulk: Discount % / Amount / Reset
-            grpBulk.Controls.Add(new Label { Text = "⚡ تطبيق خصم جماعي للمحدد:", Location = new Point(900, 12), AutoSize = true, ForeColor = Theme.Primary, Font = new Font(Theme.FontMain, FontStyle.Bold) });
+            grpBulk.Controls.Add(new Label { Text = "تطبيق خصم جماعي للمحدد:", Location = new Point(900, 12), AutoSize = true, ForeColor = Theme.Primary, Font = new Font(Theme.FontMain, FontStyle.Bold) });
 
             grpBulk.Controls.Add(new Label { Text = "نسبة الخصم %:", Location = new Point(790, 12), AutoSize = true, ForeColor = Theme.TextMain });
             nudBatchDiscPct = new NumericUpDown { Location = new Point(705, 10), Width = 75, Minimum = 0, Maximum = 99, DecimalPlaces = 1, Value = 10, Font = Theme.FontBold, TextAlign = HorizontalAlignment.Center };
@@ -126,14 +126,14 @@ namespace ChickenDist.Forms
             btnApplyBatchAmt.Click += BtnApplyBatchAmt_Click;
             grpBulk.Controls.AddRange(new Control[] { nudBatchDiscAmt, btnApplyBatchAmt });
 
-            btnResetOffers = Theme.MakeButton("🔄 إلغاء الأوكازيون واستعادة السعر الأصلي", 10, 7, 260, 32, Color.FromArgb(180, 50, 50));
+            btnResetOffers = Theme.MakeButton("إلغاء الأوكازيون واستعادة السعر الأصلي", 10, 7, 260, 32, Color.FromArgb(180, 50, 50));
             btnResetOffers.Click += BtnResetOffers_Click;
             grpBulk.Controls.Add(btnResetOffers);
 
             // Line 2 inside grpBulk: Offer Period (Start Date -> End Date)
             chkUsePeriod = new CheckBox
             {
-                Text = "📅 تحديد فترة الأوكازيون (يعود الصنف للسعر الأصلي تلقائياً بعد الانتهاء):",
+                Text = "تحديد فترة الأوكازيون (يعود الصنف للسعر الأصلي تلقائياً بعد الانتهاء):",
                 Location = new Point(655, 54),
                 Width = 465,
                 Checked = true,
@@ -171,7 +171,7 @@ namespace ChickenDist.Forms
             };
             grpBulk.Controls.Add(dtpOfferEnd);
 
-            btnApplyPeriod = Theme.MakeButton("📅 تطبيق الفترة للمحدد", 10, 50, 215, 32, Color.FromArgb(22, 101, 52));
+            btnApplyPeriod = Theme.MakeButton("تطبيق الفترة للمحدد", 10, 50, 215, 32, Color.FromArgb(22, 101, 52));
             btnApplyPeriod.Click += BtnApplyPeriod_Click;
             grpBulk.Controls.Add(btnApplyPeriod);
 
@@ -193,7 +193,7 @@ namespace ChickenDist.Forms
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
 
-            var colCheck = new DataGridViewCheckBoxColumn { Name = "colSelect", HeaderText = "اختيار 🏷️", FillWeight = 40 };
+            var colCheck = new DataGridViewCheckBoxColumn { Name = "colSelect", HeaderText = "اختيار", FillWeight = 40 };
             var colID = new DataGridViewTextBoxColumn { Name = "colProductID", Visible = false };
             var colCode = new DataGridViewTextBoxColumn { Name = "colCode", HeaderText = "كود الصنف", ReadOnly = true, FillWeight = 55 };
             var colName = new DataGridViewTextBoxColumn { Name = "colName", HeaderText = "اسم الصنف", ReadOnly = true, FillWeight = 140 };
@@ -233,7 +233,7 @@ namespace ChickenDist.Forms
                 AutoSize = true
             };
 
-            btnSaveOffers = Theme.MakeButton("💾 حفظ وتطبيق أسعار وفترة الأوكازيون", 15, 10, 290, 40, Theme.Accent);
+            btnSaveOffers = Theme.MakeButton("حفظ وتطبيق أسعار وفترة الأوكازيون", 15, 10, 290, 40, Theme.Accent);
             btnSaveOffers.Font = new Font("Segoe UI", 11, FontStyle.Bold);
             btnSaveOffers.Click += BtnSaveOffers_Click;
 
@@ -276,7 +276,7 @@ namespace ChickenDist.Forms
                 int expiredCount = DbHelper.SyncOfferPrices(force: true);
                 if (expiredCount > 0)
                 {
-                    MessageBox.Show($"ℹ️ تم تلقائياً إنهاء الأوكازيون واستعادة السعر الأصلي لعدد ({expiredCount}) صنف لانتهاء الفترة المحددة.", "انتهاء فترة الأوكازيون", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم تلقائياً إنهاء الأوكازيون واستعادة السعر الأصلي لعدد ({expiredCount}) صنف لانتهاء الفترة المحددة.", "انتهاء فترة الأوكازيون", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
 
                 string sql = @"
@@ -349,21 +349,21 @@ namespace ChickenDist.Forms
                 {
                     if (startDate.HasValue && startDate.Value.Date > DateTime.Today)
                     {
-                        statusText = $"⏳ مجدول ({startDate.Value:MM/dd})";
+                        statusText = $"مجدول ({startDate.Value:MM/dd})";
                     }
                     else if (endDate.HasValue)
                     {
                         int daysLeft = (endDate.Value.Date - DateTime.Today).Days;
                         if (daysLeft == 0)
-                            statusText = "🏷️ ينتهي اليوم";
+                            statusText = "ينتهي اليوم";
                         else if (daysLeft > 0)
-                            statusText = $"🏷️ باقي {daysLeft} يوم";
+                            statusText = $"باقي {daysLeft} يوم";
                         else
                             statusText = "منتهي";
                     }
                     else
                     {
-                        statusText = "🏷️ أوكازيون مفتوح";
+                        statusText = "أوكازيون مفتوح";
                     }
                 }
 
@@ -391,7 +391,7 @@ namespace ChickenDist.Forms
             }
             dgProducts.ResumeLayout();
 
-            lblSummary.Text = $"إجمالي الأصناف المعروضة: {dgProducts.Rows.Count} | الأصناف في الأوكازيون حالياً: {offerCount} صنف 🏷️";
+            lblSummary.Text = $"إجمالي الأصناف المعروضة: {dgProducts.Rows.Count} | الأصناف في الأوكازيون حالياً: {offerCount} صنف";
         }
 
         private void FilterGrid()
@@ -441,7 +441,7 @@ namespace ChickenDist.Forms
 
             if (count == 0)
             {
-                MessageBox.Show("يرجى تحديد الأصناف المراد تطبيق فترة الأوكازيون عليها أولاً بوضع علامة (✓) في خانة الاختيار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى تحديد الأصناف المراد تطبيق فترة الأوكازيون عليها أولاً بوضع علامة () في خانة الاختيار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -467,7 +467,7 @@ namespace ChickenDist.Forms
 
             if (count == 0)
             {
-                MessageBox.Show("يرجى تحديد الأصناف المراد تطبيق الخصم عليها أولاً بوضع علامة (✓) في خانة الاختيار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى تحديد الأصناف المراد تطبيق الخصم عليها أولاً بوضع علامة () في خانة الاختيار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -493,7 +493,7 @@ namespace ChickenDist.Forms
 
             if (count == 0)
             {
-                MessageBox.Show("يرجى تحديد الأصناف المراد تطبيق الخصم عليها أولاً بوضع علامة (✓) في خانة الاختيار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى تحديد الأصناف المراد تطبيق الخصم عليها أولاً بوضع علامة () في خانة الاختيار.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -615,13 +615,13 @@ namespace ChickenDist.Forms
                 }
 
                 ProductCache.Invalidate();
-                MessageBox.Show($"✅ تم تفعيل وحفظ عروض الأوكازيون بنجاح لـ ({updatedCount}) صنف!\nسيعود الصنف لسعره الأصلي تلقائياً فور انتهاء الفترة المحددة.", "تم التفعيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تفعيل وحفظ عروض الأوكازيون بنجاح لـ ({updatedCount}) صنف!\nسيعود الصنف لسعره الأصلي تلقائياً فور انتهاء الفترة المحددة.", "تم التفعيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadProducts();
             }
             catch (Exception ex)
             {
                 AppLogger.Error("BtnSaveOffers_Click failed", ex);
-                MessageBox.Show("❌ حدث خطأ أثناء حفظ عروض الأوكازيون: " + ex.Message);
+                MessageBox.Show("حدث خطأ أثناء حفظ عروض الأوكازيون: " + ex.Message);
             }
         }
 
@@ -657,13 +657,13 @@ namespace ChickenDist.Forms
                 }
 
                 ProductCache.Invalidate();
-                MessageBox.Show($"✅ تم إلغاء الأوكازيون وإعادة الأسعار الأصلية لـ ({resetCount}) صنف!", "تم الإلغاء", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم إلغاء الأوكازيون وإعادة الأسعار الأصلية لـ ({resetCount}) صنف!", "تم الإلغاء", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadProducts();
             }
             catch (Exception ex)
             {
                 AppLogger.Error("BtnResetOffers_Click failed", ex);
-                MessageBox.Show("❌ حدث خطأ أثناء إيقاف عروض الأوكازيون: " + ex.Message);
+                MessageBox.Show("حدث خطأ أثناء إيقاف عروض الأوكازيون: " + ex.Message);
             }
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -55,7 +55,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💼 نظام العمولات وشرائح البيع وعمولات الأصناف";
+            this.Text = "نظام العمولات وشرائح البيع وعمولات الأصناف";
             this.Size = new Size(1200, 740);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -74,7 +74,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "💼 محرك عمولات الموظفين والمناديب (عمولات الأصناف + شرائح البيع + الاحتساب الآلي)",
+                Text = "محرك عمولات الموظفين والمناديب (عمولات الأصناف + شرائح البيع + الاحتساب الآلي)",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
@@ -90,9 +90,9 @@ namespace ChickenDist.Forms
                 Padding = new Point(16, 8)
             };
 
-            var tabCalc = new TabPage("⚡ احتساب وترحيل العمولات من المبيعات");
-            var tabProdRules = new TabPage("🏷️ عمولات أصناف محددة للموظف");
-            var tabTiers = new TabPage("📈 شرائح المبيعات والتارجت");
+            var tabCalc = new TabPage("احتساب وترحيل العمولات من المبيعات");
+            var tabProdRules = new TabPage("عمولات أصناف محددة للموظف");
+            var tabTiers = new TabPage("شرائح المبيعات والتارجت");
 
             BuildCalcTab(tabCalc);
             BuildProductRulesTab(tabProdRules);
@@ -123,7 +123,7 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            var lblEmp = new Label { Text = "👤 الموظف / المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            var lblEmp = new Label { Text = "الموظف / المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
             cboCalcEmp = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200, Font = new Font("Segoe UI", 10f) };
 
             var lblFrom = new Label { Text = "من:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0) };
@@ -132,13 +132,13 @@ namespace ChickenDist.Forms
             var lblTo = new Label { Text = "إلى:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(10, 7, 0, 0) };
             dtpCalcTo = new DateTimePicker { Format = DateTimePickerFormat.Short, Value = DateTime.Today, Width = 120 };
 
-            btnRunCalc = Theme.MakeButton("⚡ احتساب العمولات الآن", 0, 0, 170, 36, Theme.Primary);
+            btnRunCalc = Theme.MakeButton("احتساب العمولات الآن", 0, 0, 170, 36, Theme.Primary);
             btnRunCalc.Click += (s, e) => RunCommissionsCalculation();
 
-            btnSettleCommission = Theme.MakeButton("💰 ترحيل العمولة لحساب الموظف", 0, 0, 220, 36, Theme.Success);
+            btnSettleCommission = Theme.MakeButton("ترحيل العمولة لحساب الموظف", 0, 0, 220, 36, Theme.Success);
             btnSettleCommission.Click += BtnSettleCommission_Click;
 
-            btnPrintCommReport = Theme.MakeButton("🖨️ طباعة التقرير", 0, 0, 120, 36, Theme.Secondary);
+            btnPrintCommReport = Theme.MakeButton("طباعة التقرير", 0, 0, 120, 36, Theme.Secondary);
             btnPrintCommReport.Click += BtnPrintCommReport_Click;
 
             pnlToolbar.Controls.AddRange(new Control[] { lblEmp, cboCalcEmp, lblFrom, dtpCalcFrom, lblTo, dtpCalcTo, btnRunCalc, btnSettleCommission, btnPrintCommReport });
@@ -153,9 +153,9 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            lblCalcTotalSales = new Label { Text = "🛒 إجمالي المبيعات: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Theme.Primary, Margin = new Padding(10, 0, 30, 0) };
-            lblCalcTotalCommission = new Label { Text = "💰 إجمالي العمولة المستحقة: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 30, 0) };
-            lblCalcInvoicesCount = new Label { Text = "📋 عدد الفواتير: 0", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 30, 0) };
+            lblCalcTotalSales = new Label { Text = "إجمالي المبيعات: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Theme.Primary, Margin = new Padding(10, 0, 30, 0) };
+            lblCalcTotalCommission = new Label { Text = "إجمالي العمولة المستحقة: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 30, 0) };
+            lblCalcInvoicesCount = new Label { Text = "عدد الفواتير: 0", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 30, 0) };
 
             pnlSummary.Controls.AddRange(new Control[] { lblCalcTotalSales, lblCalcTotalCommission, lblCalcInvoicesCount });
 
@@ -232,9 +232,9 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                lblCalcTotalSales.Text = $"🛒 إجمالي المبيعات: {res.TotalSalesAmount:N2} ج";
-                lblCalcTotalCommission.Text = $"💰 إجمالي العمولة المستحقة: {res.TotalCommission:N2} ج";
-                lblCalcInvoicesCount.Text = $"📋 عدد الفواتير: {countedSales.Count:N0}";
+                lblCalcTotalSales.Text = $"إجمالي المبيعات: {res.TotalSalesAmount:N2} ج";
+                lblCalcTotalCommission.Text = $"إجمالي العمولة المستحقة: {res.TotalCommission:N2} ج";
+                lblCalcInvoicesCount.Text = $"عدد الفواتير: {countedSales.Count:N0}";
 
                 if (dgCalcDetails.Rows.Count == 0)
                 {
@@ -270,7 +270,7 @@ namespace ChickenDist.Forms
                     // تسجيل قيد دائن في حساب الموظف
                     EmployeeDAL.SaveTransaction(_lastCalculatedEmpID, DateTime.Now, "Commission", 0, _lastCalculatedCommission, reason, affectCash: false);
 
-                    MessageBox.Show($"✅ تم ترحيل العمولة ({_lastCalculatedCommission:N2} ج) بنجاح إلى حساب الموظف ومسير رواتب شهر {pMonth}.", "تم الترحيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم ترحيل العمولة ({_lastCalculatedCommission:N2} ج) بنجاح إلى حساب الموظف ومسير رواتب شهر {pMonth}.", "تم الترحيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
@@ -295,14 +295,14 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            var lblEmp = new Label { Text = "👤 الموظف / المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            var lblEmp = new Label { Text = "الموظف / المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
             cboProdEmp = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220, Font = new Font("Segoe UI", 10f) };
             cboProdEmp.SelectedIndexChanged += (s, e) => LoadProductRules();
 
-            btnAddProdRule = Theme.MakeButton("➕ إضافة عمولة صنف جديد", 0, 0, 180, 36, Theme.Primary);
+            btnAddProdRule = Theme.MakeButton("إضافة عمولة صنف جديد", 0, 0, 180, 36, Theme.Primary);
             btnAddProdRule.Click += BtnAddProdRule_Click;
 
-            btnDeleteProdRule = Theme.MakeButton("🗑️ حذف العمولة المحددة", 0, 0, 160, 36, Color.FromArgb(185, 28, 28));
+            btnDeleteProdRule = Theme.MakeButton("حذف العمولة المحددة", 0, 0, 160, 36, Color.FromArgb(185, 28, 28));
             btnDeleteProdRule.Click += BtnDeleteProdRule_Click;
 
             pnlToolbar.Controls.AddRange(new Control[] { lblEmp, cboProdEmp, btnAddProdRule, btnDeleteProdRule });
@@ -417,14 +417,14 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            var lblEmp = new Label { Text = "👤 الموظف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            var lblEmp = new Label { Text = "الموظف:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
             cboTierEmp = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200, Font = new Font("Segoe UI", 10f) };
             cboTierEmp.SelectedIndexChanged += (s, e) => LoadTiers();
 
-            btnAddTier = Theme.MakeButton("➕ إضافة شريحة مبيعات جديدة", 0, 0, 200, 36, Theme.Primary);
+            btnAddTier = Theme.MakeButton("إضافة شريحة مبيعات جديدة", 0, 0, 200, 36, Theme.Primary);
             btnAddTier.Click += BtnAddTier_Click;
 
-            btnDeleteTier = Theme.MakeButton("🗑️ حذف الشريحة", 0, 0, 130, 36, Color.FromArgb(185, 28, 28));
+            btnDeleteTier = Theme.MakeButton("حذف الشريحة", 0, 0, 130, 36, Color.FromArgb(185, 28, 28));
             btnDeleteTier.Click += BtnDeleteTier_Click;
 
             pnlToolbar.Controls.AddRange(new Control[] { lblEmp, cboTierEmp, btnAddTier, btnDeleteTier });
@@ -484,7 +484,7 @@ namespace ChickenDist.Forms
 
             var dlg = new Form
             {
-                Text = "➕ إضافة شريحة مبيعات جديدة",
+                Text = "إضافة شريحة مبيعات جديدة",
                 Size = new Size(420, 320),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -505,7 +505,7 @@ namespace ChickenDist.Forms
             var lbl4 = new Label { Text = "مكافأة التارجت (ج.م):", Location = new Point(210, 140), AutoSize = true };
             var txtBonus = new TextBox { Location = new Point(210, 165), Width = 170, Font = new Font("Segoe UI", 10.5f), Text = "0" };
 
-            var btnSave = Theme.MakeButton("💾 حفظ الشريحة", 200, 220, 180, 36, Theme.Success);
+            var btnSave = Theme.MakeButton("حفظ الشريحة", 200, 220, 180, 36, Theme.Success);
             btnSave.Click += (s2, e2) =>
             {
                 if (decimal.TryParse(txtMin.Text.Trim(), out decimal min) &&
@@ -660,7 +660,7 @@ namespace ChickenDist.Forms
         public FrmAddProductCommissionDialog(int empID, string empName)
         {
             _empID = empID;
-            this.Text = $"➕ إضافة عمولة صنف للموظف: [{empName}]";
+            this.Text = $"إضافة عمولة صنف للموظف: [{empName}]";
             this.Size = new Size(460, 360);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -668,7 +668,7 @@ namespace ChickenDist.Forms
             this.RightToLeft = RightToLeft.Yes; this.RightToLeftLayout = true;
             this.BackColor = Theme.BgMain; this.Font = Theme.FontMain;
 
-            var lblP = new Label { Text = "📦 اختر الصنف:", Location = new Point(25, 20), AutoSize = true };
+            var lblP = new Label { Text = "اختر الصنف:", Location = new Point(25, 20), AutoSize = true };
             cboProduct = new ComboBox
             {
                 Location = new Point(25, 45),
@@ -697,7 +697,7 @@ namespace ChickenDist.Forms
             var lblN = new Label { Text = "ملاحظات:", Location = new Point(25, 215), AutoSize = true };
             txtNotes = new TextBox { Location = new Point(25, 240), Width = 390, Font = new Font("Segoe UI", 9.5f) };
 
-            btnSave = Theme.MakeButton("💾 حفظ العمولة", 235, 275, 180, 36, Theme.Success);
+            btnSave = Theme.MakeButton("حفظ العمولة", 235, 275, 180, 36, Theme.Success);
             btnCancel = Theme.MakeButton("إلغاء", 25, 275, 100, 36, Color.FromArgb(100, 110, 120));
 
             btnSave.Click += (s, e) =>

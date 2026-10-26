@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -290,8 +290,8 @@ namespace ChickenDist.DAL
                     ISNULL(SUM(jd.Debit), 0) AS [إجمالي المدين],
                     ISNULL(SUM(jd.Credit), 0) AS [إجمالي الدائن],
                     CASE 
-                        WHEN ABS(ISNULL(SUM(jd.Debit), 0) - ISNULL(SUM(jd.Credit), 0)) < 0.01 THEN N'متوازن ✅'
-                        ELSE N'غير متوازن ⚠️'
+                        WHEN ABS(ISNULL(SUM(jd.Debit), 0) - ISNULL(SUM(jd.Credit), 0)) < 0.01 THEN N'متوازن'
+                        ELSE N'غير متوازن'
                     END AS [الحالة]
                 FROM JournalEntries je
                 LEFT JOIN JournalDetails jd ON je.EntryID = jd.EntryID

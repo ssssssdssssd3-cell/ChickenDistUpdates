@@ -93,8 +93,8 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             tabMain = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontMain };
-            tabStock = new TabPage("📦 جرد وتعديل أسعار الأصناف") { BackColor = Theme.BgMain };
-            tabLogs = new TabPage("📜 سجل تسويات الجرد") { BackColor = Theme.BgMain };
+            tabStock = new TabPage("جرد وتعديل أسعار الأصناف") { BackColor = Theme.BgMain };
+            tabLogs = new TabPage("سجل تسويات الجرد") { BackColor = Theme.BgMain };
             tabMain.TabPages.AddRange(new[] { tabStock, tabLogs });
             Theme.StyleTabControl(tabMain);
             this.Controls.Add(tabMain);
@@ -221,7 +221,7 @@ namespace ChickenDist.Forms
 
             cboLocation = new ComboBox { Width = 85, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
             cboLocation.SelectedIndexChanged += (s, e) => LoadStock();
-            var pnlLoc = MakeFilterPanel("📍 الرف:", cboLocation, 85);
+            var pnlLoc = MakeFilterPanel("الرف:", cboLocation, 85);
 
             txtSearch = new TextBox { Width = 120, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             txtSearch.TextChanged += (s, e) => { _searchTimer.Stop(); _searchTimer.Start(); };
@@ -245,7 +245,7 @@ namespace ChickenDist.Forms
             };
             var pnlSch = MakeFilterPanel("بحث/أسكانر:", txtSearch, 120);
 
-            btnSearch = Theme.MakeButton("🔍 بحث", Color.FromArgb(60, 100, 60));
+            btnSearch = Theme.MakeButton("بحث", Color.FromArgb(60, 100, 60));
             btnSearch.Size = new Size(62, 26);
             btnSearch.Margin = new Padding(2, 2, 4, 0);
             btnSearch.Click += (s, e) => LoadStock();
@@ -277,7 +277,7 @@ namespace ChickenDist.Forms
 
             chkSmallestUnit = new CheckBox
             {
-                Text = "🔹 بالوحدة الصغرى",
+                Text = "بالوحدة الصغرى",
                 ForeColor = Color.FromArgb(96, 165, 250),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -302,7 +302,7 @@ namespace ChickenDist.Forms
             // ── فلاتر التصفية في الصف 2 ──────────────────────────────────────────
             chkUninventoriedOnly = new CheckBox
             {
-                Text = "⏳ لم تُجرد بعد",
+                Text = "لم تُجرد بعد",
                 ForeColor = Color.FromArgb(248, 113, 113),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -315,7 +315,7 @@ namespace ChickenDist.Forms
 
             chkHideZeroStock = new CheckBox
             {
-                Text = "🚫 بدون رصيد صفري",
+                Text = "بدون رصيد صفري",
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -327,7 +327,7 @@ namespace ChickenDist.Forms
 
             chkBelowMin = new CheckBox
             {
-                Text = "⚠️ حد الطلب",
+                Text = "حد الطلب",
                 ForeColor = Color.FromArgb(245, 158, 11),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -338,7 +338,7 @@ namespace ChickenDist.Forms
 
             chkExpiryOnly = new CheckBox
             {
-                Text = "📗 صلاحية فقط",
+                Text = "صلاحية فقط",
                 ForeColor = Color.FromArgb(52, 211, 153),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -350,7 +350,7 @@ namespace ChickenDist.Forms
 
             chkScaleOnly = new CheckBox
             {
-                Text = "⚖️ أصناف الميزان",
+                Text = "أصناف الميزان",
                 ForeColor = Color.FromArgb(192, 132, 252),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -362,7 +362,7 @@ namespace ChickenDist.Forms
 
             chkAutoIncrementScan = new CheckBox
             {
-                Text = "⚡ زيادة (+1) بالأسكانر",
+                Text = "زيادة (+1) بالأسكانر",
                 ForeColor = Color.FromArgb(45, 212, 191),
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -373,7 +373,7 @@ namespace ChickenDist.Forms
 
             lblInventoryStart = new Label
             {
-                Text = "📅 بدء الجرد: غير محدد",
+                Text = "بدء الجرد: غير محدد",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(245, 158, 11),
@@ -395,68 +395,68 @@ namespace ChickenDist.Forms
             });
 
             // ── الصف 3: أزرار العمليات والتقارير ──────────────────────────────────
-            btnStartInventory = Theme.MakeButton("🚀 بدء جرد جديد", Color.FromArgb(140, 80, 20));
+            btnStartInventory = Theme.MakeButton("بدء جرد جديد", Color.FromArgb(140, 80, 20));
             btnStartInventory.Size = new Size(105, 28);
             btnStartInventory.Margin = new Padding(2, 1, 3, 0);
             btnStartInventory.Click += BtnStartInventory_Click;
 
-            btnSaveAdj = Theme.MakeButton("💾 حفظ كل", Theme.Accent);
+            btnSaveAdj = Theme.MakeButton("حفظ كل", Theme.Accent);
             btnSaveAdj.Size = new Size(80, 28);
             btnSaveAdj.Margin = new Padding(2, 1, 3, 0);
             btnSaveAdj.Click += BtnSaveAdj_Click;
 
-            btnClearAdj = Theme.MakeButton("❌ إلغاء", Color.FromArgb(140, 40, 40));
+            btnClearAdj = Theme.MakeButton("إلغاء", Color.FromArgb(140, 40, 40));
             btnClearAdj.Size = new Size(65, 28);
             btnClearAdj.Margin = new Padding(2, 1, 3, 0);
             btnClearAdj.Click += (s, e) => ClearAdjustmentForm();
 
-            btnPrintStock = Theme.MakeButton("🖨 طباعة", Color.FromArgb(200, 100, 0));
+            btnPrintStock = Theme.MakeButton("طباعة", Color.FromArgb(200, 100, 0));
             btnPrintStock.Size = new Size(68, 28);
             btnPrintStock.Margin = new Padding(2, 1, 3, 0);
             btnPrintStock.Click += (s, e) => PrintStocktakeReport();
 
-            var btnPrintIncreaseBarcodes = Theme.MakeButton("🏷️ باركود الزيادات", Color.FromArgb(39, 174, 96));
+            var btnPrintIncreaseBarcodes = Theme.MakeButton("باركود الزيادات", Color.FromArgb(39, 174, 96));
             btnPrintIncreaseBarcodes.Size = new Size(110, 28);
             btnPrintIncreaseBarcodes.Margin = new Padding(2, 1, 3, 0);
             btnPrintIncreaseBarcodes.Click += BtnPrintIncreaseBarcodes_Click;
 
-            var btnVarianceReport = Theme.MakeButton("📊 تقرير فروق", Color.FromArgb(120, 50, 150));
+            var btnVarianceReport = Theme.MakeButton("تقرير فروق", Color.FromArgb(120, 50, 150));
             btnVarianceReport.Size = new Size(95, 28);
             btnVarianceReport.Margin = new Padding(2, 1, 3, 0);
             btnVarianceReport.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
 
-            btnMovement = Theme.MakeButton("📜 كشف حركة", Theme.Primary);
+            btnMovement = Theme.MakeButton("كشف حركة", Theme.Primary);
             btnMovement.Size = new Size(80, 28);
             btnMovement.Margin = new Padding(2, 1, 3, 0);
             btnMovement.Click += BtnMovement_Click;
 
-            btnAddExpiryRow = Theme.MakeButton("➕ إضافة صلاحية", Color.FromArgb(40, 120, 60));
+            btnAddExpiryRow = Theme.MakeButton("إضافة صلاحية", Color.FromArgb(40, 120, 60));
             btnAddExpiryRow.Size = new Size(105, 28);
             btnAddExpiryRow.Margin = new Padding(2, 1, 3, 0);
             btnAddExpiryRow.Click += BtnAddExpiryRow_Click;
             btnAddExpiryRow.Enabled = false;
 
-            var btnSessionsTabStock = Theme.MakeButton("📋 الجلسات", Color.FromArgb(70, 40, 130));
+            var btnSessionsTabStock = Theme.MakeButton("الجلسات", Color.FromArgb(70, 40, 130));
             btnSessionsTabStock.Size = new Size(80, 28);
             btnSessionsTabStock.Margin = new Padding(2, 1, 3, 0);
             btnSessionsTabStock.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
 
-            var btnIncompleteTabStock = Theme.MakeButton("📂 معلقة", Color.FromArgb(70, 40, 130));
+            var btnIncompleteTabStock = Theme.MakeButton("معلقة", Color.FromArgb(70, 40, 130));
             btnIncompleteTabStock.Size = new Size(70, 28);
             btnIncompleteTabStock.Margin = new Padding(2, 1, 3, 0);
             btnIncompleteTabStock.Click += (s, e) => OpenIncompleteInventoryDialog();
 
-            var btnScaleReport = Theme.MakeButton("⚖️ ميزان", Color.FromArgb(90, 40, 160));
+            var btnScaleReport = Theme.MakeButton("ميزان", Color.FromArgb(90, 40, 160));
             btnScaleReport.Size = new Size(70, 28);
             btnScaleReport.Margin = new Padding(2, 1, 3, 0);
             btnScaleReport.Click += (s, e) => PrintScaleProductsReport();
 
-            var btnSerialsStockReport = Theme.MakeButton("📱 جرد السيريلات", Color.FromArgb(13, 148, 136));
+            var btnSerialsStockReport = Theme.MakeButton("جرد السيريلات", Color.FromArgb(13, 148, 136));
             btnSerialsStockReport.Size = new Size(115, 28);
             btnSerialsStockReport.Margin = new Padding(2, 1, 3, 0);
             btnSerialsStockReport.Click += (s, e) => new FrmSerialStockReport().ShowDialog(this);
 
-            var btnPriceAdjustment = Theme.MakeButton("⚡ تعديل الأسعار جماعياً", Color.FromArgb(180, 80, 20));
+            var btnPriceAdjustment = Theme.MakeButton("تعديل الأسعار جماعياً", Color.FromArgb(180, 80, 20));
             btnPriceAdjustment.Size = new Size(135, 28);
             btnPriceAdjustment.Margin = new Padding(2, 1, 3, 0);
             btnPriceAdjustment.Click += (s, e) => new FrmPriceAdjustment().ShowDialog(this);
@@ -484,22 +484,22 @@ namespace ChickenDist.Forms
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName",   HeaderText = "اسم الصنف",  ReadOnly = true,  FillWeight = 85 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ShelfLocation", HeaderText = "المكان/الرف", ReadOnly = true,  FillWeight = 45 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpiryDate",    HeaderText = "تاريخ الصلاحية", ReadOnly = false, FillWeight = 55 });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",          HeaderText = "الوحدة 🔽", ReadOnly = true,  FillWeight = 42 });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unit",          HeaderText = "الوحدة", ReadOnly = true,  FillWeight = 42 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "PurchasePrice", HeaderText = AppConfig.UseLastPurchasePriceAsCost ? "آخر شراء / تكلفة" : "سعر الشراء", ReadOnly = false, FillWeight = 40, Visible = Session.CanViewCost("Inventory") });
             dgStock.Columns.Add(new DataGridViewButtonColumn 
             { 
                 Name = "BtnCostAudit", 
-                HeaderText = "🧮", 
-                Text = "🧮", 
+                HeaderText = "فئات", 
+                Text = "فئات", 
                 UseColumnTextForButtonValue = true, 
                 ReadOnly = true, 
                 FillWeight = 22, 
                 Visible = Session.CanViewCost("Inventory"),
                 FlatStyle = FlatStyle.Flat
             });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر القطاعي ✏️", ReadOnly = false,  FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SemiWholesalePrice", HeaderText = "سعر نص جملة ✏️", ReadOnly = false, FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
-            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "WholesalePrice",     HeaderText = "سعر الجملة ✏️", ReadOnly = false, FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SalePrice",   HeaderText = "سعر القطاعي", ReadOnly = false,  FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "SemiWholesalePrice", HeaderText = "سعر نص جملة", ReadOnly = false, FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+            dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "WholesalePrice",     HeaderText = "سعر الجملة", ReadOnly = false, FillWeight = 40, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "BookQty",     HeaderText = "الرصيد الدفتري", ReadOnly = true,  FillWeight = 55 });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "ActualQty",   HeaderText = "الرصيد الفعلي", ReadOnly = false, FillWeight = 55, DefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(255, 255, 225), ForeColor = Color.FromArgb(80, 50, 0) } });
             dgStock.Columns.Add(new DataGridViewTextBoxColumn { Name = "DiffQty",     HeaderText = "الفارق",       ReadOnly = true,  FillWeight = 48 });
@@ -536,13 +536,13 @@ namespace ChickenDist.Forms
             // ── قائمة القائمة اليمنى التفاعلية ─────────────────────────────
             var ctxStock = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
-            var itemMark = new ToolStripMenuItem("✅ تمييز تم جرده (مطابق للدفتري)");
+            var itemMark = new ToolStripMenuItem("تمييز تم جرده (مطابق للدفتري)");
             itemMark.Click += (s, e) => MarkSelectedRowAsInventoried();
 
-            var itemHide = new ToolStripMenuItem("🗑️ إخفاء الصنف من العرض لجرده لاحقاً");
+            var itemHide = new ToolStripMenuItem("إخفاء الصنف من العرض لجرده لاحقاً");
             itemHide.Click += (s, e) => HideSelectedRowForLater();
 
-            var itemShortage = new ToolStripMenuItem("📓 إضافة الصنف لكشكول النواقص");
+            var itemShortage = new ToolStripMenuItem("إضافة الصنف لكشكول النواقص");
             itemShortage.Click += (s, e) =>
             {
                 if (dgStock.SelectedRows.Count > 0)
@@ -555,10 +555,10 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var itemCard = new ToolStripMenuItem("🏷️ فتح كارت الصنف");
+            var itemCard = new ToolStripMenuItem("فتح كارت الصنف");
             itemCard.Click += (s, e) => OpenSelectedProductCard();
 
-            var itemCostAudit = new ToolStripMenuItem("🧮 مراجعة وتدقيق معادلة متوسط التكلفة للصنف");
+            var itemCostAudit = new ToolStripMenuItem("مراجعة وتدقيق معادلة متوسط التكلفة للصنف");
             itemCostAudit.Click += (s, e) =>
             {
                 if (dgStock.SelectedRows.Count > 0)
@@ -598,7 +598,7 @@ namespace ChickenDist.Forms
 
             lblCount = new Label
             {
-                Text = "📦 الأصناف المعروضة: 0 صنف",
+                Text = "الأصناف المعروضة: 0 صنف",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42),
@@ -607,7 +607,7 @@ namespace ChickenDist.Forms
 
             lblTotalCost = new Label
             {
-                Text = "💰 إجمالي التكلفة (الشراء): 0.00 ج",
+                Text = "إجمالي التكلفة (الشراء): 0.00 ج",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(180, 50, 0),
@@ -617,7 +617,7 @@ namespace ChickenDist.Forms
 
             lblTotalSale = new Label
             {
-                Text = "🏷️ إجمالي قيمة البيع: 0.00 ج",
+                Text = "إجمالي قيمة البيع: 0.00 ج",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 100, 180),
@@ -661,27 +661,27 @@ namespace ChickenDist.Forms
             txtSearchLog.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadLogs(); };
             var pnlLogSch = MakeFilterPanel("بحث:", txtSearchLog, 130);
 
-            btnLoadLogs = Theme.MakeButton("🔍 عرض السجل", Color.FromArgb(60, 100, 60));
+            btnLoadLogs = Theme.MakeButton("عرض السجل", Color.FromArgb(60, 100, 60));
             btnLoadLogs.Size = new Size(110, 30);
             btnLoadLogs.Margin = new Padding(4, 2, 4, 2);
             btnLoadLogs.Click += (s, e) => LoadLogs();
 
-            btnPrintLogs = Theme.MakeButton("🖨 طباعة السجل", Theme.Accent);
+            btnPrintLogs = Theme.MakeButton("طباعة السجل", Theme.Accent);
             btnPrintLogs.Size = new Size(110, 30);
             btnPrintLogs.Margin = new Padding(4, 2, 4, 2);
             btnPrintLogs.Click += (s, e) => PrintAdjustmentsLog();
 
-            var btnVarianceReportLogs = Theme.MakeButton("📊 تقرير فروق الجرد المالي", Color.FromArgb(120, 50, 150));
+            var btnVarianceReportLogs = Theme.MakeButton("تقرير فروق الجرد المالي", Color.FromArgb(120, 50, 150));
             btnVarianceReportLogs.Size = new Size(180, 30);
             btnVarianceReportLogs.Margin = new Padding(4, 2, 4, 2);
             btnVarianceReportLogs.Click += (s, e) => new FrmInventoryVarianceReport().ShowDialog();
 
-            var btnSessions = Theme.MakeButton("📋 استرجاع عمليات وجلسات الجرد", Color.FromArgb(70, 40, 130));
+            var btnSessions = Theme.MakeButton("استرجاع عمليات وجلسات الجرد", Color.FromArgb(70, 40, 130));
             btnSessions.Size = new Size(210, 30);
             btnSessions.Margin = new Padding(4, 2, 4, 2);
             btnSessions.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
 
-            var btnIncompleteLogs = Theme.MakeButton("📂 فواتير وعمليات لم تكتمل", Color.FromArgb(70, 40, 130));
+            var btnIncompleteLogs = Theme.MakeButton("فواتير وعمليات لم تكتمل", Color.FromArgb(70, 40, 130));
             btnIncompleteLogs.Size = new Size(180, 30);
             btnIncompleteLogs.Margin = new Padding(4, 2, 4, 2);
             btnIncompleteLogs.Click += (s, e) => OpenIncompleteInventoryDialog();
@@ -703,7 +703,7 @@ namespace ChickenDist.Forms
             Theme.AdjustGridHeaders(dgLogs);
 
             var cmsLogs = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            cmsLogs.Items.Add("📋 استرجاع وعرض تفاصيل عملية الجرد كاملة", null, (s, e) =>
+            cmsLogs.Items.Add("استرجاع وعرض تفاصيل عملية الجرد كاملة", null, (s, e) =>
             {
                 if (dgLogs.SelectedRows.Count > 0)
                 {
@@ -711,7 +711,7 @@ namespace ChickenDist.Forms
                     new FrmInventorySessions(bcode).ShowDialog(this);
                 }
             });
-            cmsLogs.Items.Add("🏷️ طباعة باركود الزيادات لهذه العملية", null, (s, e) =>
+            cmsLogs.Items.Add("طباعة باركود الزيادات لهذه العملية", null, (s, e) =>
             {
                 if (dgLogs.SelectedRows.Count > 0)
                 {
@@ -782,7 +782,7 @@ namespace ChickenDist.Forms
             if (_inventoryStartDate.HasValue)
             {
                 if (lblInventoryStart != null)
-                    lblInventoryStart.Text = $"📅 بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy HH:mm}";
+                    lblInventoryStart.Text = $"بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy HH:mm}";
                 _inventoriedProductIDs = InventoryDAL.GetInventoriedProductIDs(_inventoryStartDate.Value, wid);
                 foreach (var kv in _enteredActualQty)
                 {
@@ -793,7 +793,7 @@ namespace ChickenDist.Forms
             else
             {
                 if (lblInventoryStart != null)
-                    lblInventoryStart.Text = "📅 تاريخ بدء الجرد: (لم يبدأ - انقر بدء جرد جديد)";
+                    lblInventoryStart.Text = "تاريخ بدء الجرد: (لم يبدأ - انقر بدء جرد جديد)";
                 _inventoriedProductIDs.Clear();
             }
 
@@ -808,7 +808,7 @@ namespace ChickenDist.Forms
                 // إذا تم تفعيل الخيار ولم يحدد تاريخ بدء سابقاً -> الاعتماد الافتراضي اليوم
                 _inventoryStartDate = DateTime.Today;
                 if (lblInventoryStart != null)
-                    lblInventoryStart.Text = $"📅 بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy 00:00}";
+                    lblInventoryStart.Text = $"بدء الجرد: {_inventoryStartDate.Value:dd/MM/yyyy 00:00}";
                 _inventoriedProductIDs = InventoryDAL.GetInventoriedProductIDs(_inventoryStartDate.Value, wid);
                 foreach (var kv in _enteredActualQty)
                 {
@@ -921,7 +921,7 @@ namespace ChickenDist.Forms
                 bool hasMultiUnits = (!string.IsNullOrWhiteSpace(unit1) && !string.Equals(unit1, majorName, StringComparison.OrdinalIgnoreCase))
                                   || (!string.IsNullOrWhiteSpace(unit2) && !string.Equals(unit2, majorName, StringComparison.OrdinalIgnoreCase))
                                   || majorFactor > 1m;
-                string unitCellText = displayUnit + (hasMultiUnits ? " 🔽" : "");
+                string unitCellText = displayUnit;
 
                 decimal displayedPP;
                 decimal displayedSP;
@@ -1119,9 +1119,9 @@ namespace ChickenDist.Forms
                 }
             }
 
-            if (lblCount != null) lblCount.Text = $"📦 الأصناف المعروضة: {displayedCount:N0} صنف";
-            if (lblTotalCost != null) lblTotalCost.Text = $"💰 إجمالي قيمة التكلفة (الشراء): {totalCost:N2} ج";
-            if (lblTotalSale != null) lblTotalSale.Text = $"🏷️ إجمالي قيمة البيع: {totalSale:N2} ج";
+            if (lblCount != null) lblCount.Text = $"الأصناف المعروضة: {displayedCount:N0} صنف";
+            if (lblTotalCost != null) lblTotalCost.Text = $"إجمالي قيمة التكلفة (الشراء): {totalCost:N2} ج";
+            if (lblTotalSale != null) lblTotalSale.Text = $"إجمالي قيمة البيع: {totalSale:N2} ج";
 
             ApplyPriceColumnsVisibility();
             dgStock.AutoSizeColumnsMode = oldMode;
@@ -1184,7 +1184,7 @@ namespace ChickenDist.Forms
                 expiryVal,
                 unitCellText,
                 displayedPP.ToString("N2"),
-                "🧮",
+                "فئات",
                 displayedSP.ToString("N2"),
                 displayedSWP.ToString("N2"),
                 displayedWP.ToString("N2"),
@@ -1295,7 +1295,7 @@ namespace ChickenDist.Forms
 
         private void BtnStartInventory_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("Inventory")) { MessageBox.Show("⛔ ليس لديك صلاحية بدء جرد جديد.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("Inventory")) { MessageBox.Show("ليس لديك صلاحية بدء جرد جديد.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int? wid = null;
             string whName = "كل المخازن";
             if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
@@ -1597,7 +1597,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                Theme.ShowMsg($"⚠️ لم يتم العثور على أي صنف مطابق للباركود أو الكود الممسوح: ({code})", "تنبيه الأسكانر");
+                Theme.ShowMsg($"لم يتم العثور على أي صنف مطابق للباركود أو الكود الممسوح: ({code})", "تنبيه الأسكانر");
             }
         }
 
@@ -1668,8 +1668,8 @@ namespace ChickenDist.Forms
                 totalCost += (qty * cost);
                 totalSale += (qty * sale);
             }
-            if (lblTotalCost != null) lblTotalCost.Text = $"💰 إجمالي قيمة التكلفة (الشراء): {totalCost:N2} ج";
-            if (lblTotalSale != null) lblTotalSale.Text = $"🏷️ إجمالي قيمة البيع: {totalSale:N2} ج";
+            if (lblTotalCost != null) lblTotalCost.Text = $"إجمالي قيمة التكلفة (الشراء): {totalCost:N2} ج";
+            if (lblTotalSale != null) lblTotalSale.Text = $"إجمالي قيمة البيع: {totalSale:N2} ج";
         }
 
         private void OpenUnitMenuForRow(int rowIndex)
@@ -1711,13 +1711,13 @@ namespace ChickenDist.Forms
             var menu = new ContextMenuStrip { Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), RightToLeft = RightToLeft.Yes };
 
             // 1. الوحدة الكبرى
-            var miMajor = menu.Items.Add($"📦 {majorName} (الوحدة الكبرى - معامل: {majorFactor:G29})");
+            var miMajor = menu.Items.Add($"{majorName} (الوحدة الكبرى - معامل: {majorFactor:G29})");
             miMajor.Click += (s, e) => SwitchRowUnit(row, majorName, majorFactor);
 
             // 2. الوحدة الوسطى (إن وجدت ومختلفة)
             if (!string.IsNullOrWhiteSpace(mediumName) && !string.Equals(mediumName, majorName, StringComparison.OrdinalIgnoreCase) && mediumFactor > 1m && mediumFactor != majorFactor)
             {
-                var miMedium = menu.Items.Add($"⚙️ {mediumName} (الوحدة الوسطى - معامل: {mediumFactor:G29})");
+                var miMedium = menu.Items.Add($"{mediumName} (الوحدة الوسطى - معامل: {mediumFactor:G29})");
                 miMedium.Click += (s, e) => SwitchRowUnit(row, mediumName, mediumFactor);
             }
 
@@ -1727,7 +1727,7 @@ namespace ChickenDist.Forms
                 string sDisplayName = (!string.IsNullOrWhiteSpace(smallName) && !string.Equals(smallName, majorName, StringComparison.OrdinalIgnoreCase))
                     ? smallName
                     : $"{majorName} (تجزئة)";
-                var miSmall = menu.Items.Add($"🔹 {sDisplayName} (الوحدة الصغرى - تجزئة - معامل: 1)");
+                var miSmall = menu.Items.Add($"{sDisplayName} (الوحدة الصغرى - تجزئة - معامل: 1)");
                 miSmall.Click += (s, e) => SwitchRowUnit(row, sDisplayName, smallFactor);
             }
 
@@ -1803,7 +1803,7 @@ namespace ChickenDist.Forms
             }
 
             // 4. تحديث خلايا السطر
-            row.Cells["Unit"].Value = selectedUnit + " 🔽";
+            row.Cells["Unit"].Value = selectedUnit;
             row.Cells["CurrentFactor"].Value = factor;
             row.Cells["BookQty"].Value = newBookQty.ToString("N3");
             decimal pieceSWP = majorFactor > 0 ? (baseSWP / majorFactor) : baseSWP;
@@ -1905,7 +1905,7 @@ namespace ChickenDist.Forms
                 }
 
                 LoadStock();
-                MessageBox.Show($"✅ تم استرجاع مسودة الجرد بنجاح وتحديث ({_enteredActualQty.Count}) صنف!\nستظل محفوظة في قائمة العمليات غير المكتملة لحين حفظ التسوية نهائياً أو حذفها.", "استرجاع مسودة الجرد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم استرجاع مسودة الجرد بنجاح وتحديث ({_enteredActualQty.Count}) صنف!\nستظل محفوظة في قائمة العمليات غير المكتملة لحين حفظ التسوية نهائياً أو حذفها.", "استرجاع مسودة الجرد", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -1984,7 +1984,7 @@ namespace ChickenDist.Forms
 
         private void BtnSaveAdj_Click(object sender, EventArgs e)
         {
-            if (!Session.CanEdit("Inventory")) { MessageBox.Show("⛔ ليس لديك صلاحية حفظ تسوية الجرد.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanEdit("Inventory")) { MessageBox.Show("ليس لديك صلاحية حفظ تسوية الجرد.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int? selectedWid = null;
             if (cboWarehouse != null && cboWarehouse.SelectedItem is ComboItem ci && ci.ID > 0)
             {
@@ -2085,7 +2085,7 @@ namespace ChickenDist.Forms
                         ProductCode = row.Cells["ProductCode"].Value?.ToString() ?? "",
                         ProductName = row.Cells["ProductName"].Value?.ToString() ?? "",
                         ShelfLocation = row.Cells["ShelfLocation"].Value?.ToString() ?? "",
-                        DisplayUnit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "").Trim() ?? "",
+                        DisplayUnit = row.Cells["Unit"].Value?.ToString().Trim() ?? "",
                         Factor = factor,
                         MajorFactor = majorFac > 0 ? majorFac : 1m,
                         Unit2Factor = u2Fac > 0 ? u2Fac : 1m,
@@ -2130,26 +2130,26 @@ namespace ChickenDist.Forms
 
                     if (item.IsQtyModified && item.ActualEntered.HasValue)
                     {
-                        msg += $"الكمية ({item.DisplayedBookQty:N3} ➔ {item.ActualEntered.Value:N3}) ";
+                        msg += $"الكمية ({item.DisplayedBookQty:N3} - {item.ActualEntered.Value:N3}) ";
                     }
 
                     if (item.IsPriceModified)
                     {
                         if (item.IsPurchasePriceModified)
                         {
-                            msg += $"شراء ({item.OriginalPurchasePrice:N2} ➔ {item.NewPurchasePrice:N2}) ";
+                            msg += $"شراء ({item.OriginalPurchasePrice:N2} - {item.NewPurchasePrice:N2}) ";
                         }
                         if (item.IsSalePriceModified)
                         {
-                            msg += $"قطاعي ({item.OriginalSalePrice:N2} ➔ {item.NewSalePrice:N2}) ";
+                            msg += $"قطاعي ({item.OriginalSalePrice:N2} - {item.NewSalePrice:N2}) ";
                         }
                         if (item.IsSemiWholesalePriceModified)
                         {
-                            msg += $"نص جملة ({item.OriginalSemiWholesalePrice:N2} ➔ {item.NewSemiWholesalePrice:N2}) ";
+                            msg += $"نص جملة ({item.OriginalSemiWholesalePrice:N2} - {item.NewSemiWholesalePrice:N2}) ";
                         }
                         if (item.IsWholesalePriceModified)
                         {
-                            msg += $"جملة ({item.OriginalWholesalePrice:N2} ➔ {item.NewWholesalePrice:N2}) ";
+                            msg += $"جملة ({item.OriginalWholesalePrice:N2} - {item.NewWholesalePrice:N2}) ";
                         }
                     }
 
@@ -2538,7 +2538,7 @@ namespace ChickenDist.Forms
                             if (increasedItems.Count > 0)
                             {
                                 var res = MessageBox.Show(
-                                    $"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.\n\n🏷️ يوجد عدد ({increasedItems.Count}) صنف تمت زيادة كمياتها في الجرد.\nهل تريد فتح شاشة طباعة الباركود لطباعة استيكرات بالكميات المضافة؟",
+                                    $"تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.\n\nيوجد عدد ({increasedItems.Count}) صنف تمت زيادة كمياتها في الجرد.\nهل تريد فتح شاشة طباعة الباركود لطباعة استيكرات بالكميات المضافة؟",
                                     "طباعة باركود الزيادات",
                                     MessageBoxButtons.YesNo,
                                     MessageBoxIcon.Question);
@@ -2550,13 +2550,13 @@ namespace ChickenDist.Forms
                             }
                             else
                             {
-                                MessageBox.Show($"✅ تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                MessageBox.Show($"تم حفظ وتطبيق التسوية الجردية لعدد ({savedCount}) أصناف بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"❌ فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -2659,7 +2659,7 @@ namespace ChickenDist.Forms
         {
             var dlg = new Form
             {
-                Text = "🔍 فحص وتصحيح الأصناف ذات الأسعار أو الكميات الشاذة / الخاطئة",
+                Text = "فحص وتصحيح الأصناف ذات الأسعار أو الكميات الشاذة / الخاطئة",
                 Size = new Size(1020, 620),
                 StartPosition = FormStartPosition.CenterParent,
                 RightToLeft = RightToLeft.Yes,
@@ -2671,7 +2671,7 @@ namespace ChickenDist.Forms
             var pnlTop = new Panel { Dock = DockStyle.Top, Height = 55, BackColor = Color.FromArgb(40, 48, 65), Padding = new Padding(10) };
             var lblInfo = new Label
             {
-                Text = "⚠️ هذه الشاشة تفحص وتستخرج كافة الأصناف التي تحتوي على أسعار أو كميات شاذة وغير منطقية (ناتجة عن خطأ استيراد إكسيل أو كتابة خاطئة) لتعديلها فوراً.",
+                Text = "هذه الشاشة تفحص وتستخرج كافة الأصناف التي تحتوي على أسعار أو كميات شاذة وغير منطقية (ناتجة عن خطأ استيراد إكسيل أو كتابة خاطئة) لتعديلها فوراً.",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(254, 240, 138),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
@@ -2679,9 +2679,9 @@ namespace ChickenDist.Forms
             pnlTop.Controls.Add(lblInfo);
 
             var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 55, BackColor = Theme.BgCard, Padding = new Padding(10, 8, 10, 8) };
-            var btnSaveOutliers = Theme.MakeButton("💾 حفظ وتطبيق التعديلات", Theme.Success, new Point(10, 8), new Size(200, 36));
-            var btnOpenCard = Theme.MakeButton("🔍 كارت الصنف", Theme.Primary, new Point(220, 8), new Size(130, 36));
-            var btnZeroOutSelected = Theme.MakeButton("🗑️ تصفير رصيد المحدد", Color.FromArgb(190, 40, 40), new Point(360, 8), new Size(160, 36));
+            var btnSaveOutliers = Theme.MakeButton("حفظ وتطبيق التعديلات", Theme.Success, new Point(10, 8), new Size(200, 36));
+            var btnOpenCard = Theme.MakeButton("كارت الصنف", Theme.Primary, new Point(220, 8), new Size(130, 36));
+            var btnZeroOutSelected = Theme.MakeButton("تصفير رصيد المحدد", Color.FromArgb(190, 40, 40), new Point(360, 8), new Size(160, 36));
             var btnClose = Theme.MakeButton("إغلاق", Color.FromArgb(100, 110, 120), new Point(530, 8), new Size(100, 36));
             btnClose.Click += (s, e) => dlg.Close();
 
@@ -2760,7 +2760,7 @@ namespace ChickenDist.Forms
 
                 if (dg.Rows.Count == 0)
                 {
-                    MessageBox.Show("✅ ممتاز: لم يتم العثور على أي أصناف بأسعار أو كميات شاذة أو غير منطقية في قاعدة البيانات!", "الفحص سليم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("ممتاز: لم يتم العثور على أي أصناف بأسعار أو كميات شاذة أو غير منطقية في قاعدة البيانات!", "الفحص سليم", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
 
@@ -2800,7 +2800,7 @@ namespace ChickenDist.Forms
                         });
 
                         ProductCache.Invalidate();
-                        MessageBox.Show($"✅ تم تصفير رصيد الصنف '{pName}' بنجاح.", "تم التصفير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"تم تصفير رصيد الصنف '{pName}' بنجاح.", "تم التصفير", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         loadOutliers();
                         LoadStock();
                     }
@@ -2851,7 +2851,7 @@ namespace ChickenDist.Forms
                     ProductCache.Invalidate();
                     CloudSyncService.TriggerStoreCatalogSyncDebounced();
                     StockCache.Invalidate();
-                    MessageBox.Show($"✅ تم حفظ وتصحيح بيانات ({updatedCount}) صنف بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم حفظ وتصحيح بيانات ({updatedCount}) صنف بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     loadOutliers();
                     LoadStock();
                 }
@@ -2880,7 +2880,7 @@ namespace ChickenDist.Forms
             var r = dgStock.SelectedRows[0];
             int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
             string name = r.Cells["ProductName"].Value?.ToString();
-            string unit = r.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "")?.Trim();
+            string unit = r.Cells["Unit"].Value?.ToString()?.Trim();
             decimal curFactor = r.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["CurrentFactor"].Value) : 1.0m;
 
             int? wid = null;
@@ -2967,14 +2967,14 @@ namespace ChickenDist.Forms
             int pid = Convert.ToInt32(r.Cells["ProductID"].Value);
             string pName = r.Cells["ProductName"].Value?.ToString() ?? "";
             string curBook = r.Cells["BookQty"].Value?.ToString() ?? "0";
-            string curUnit = r.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "").Trim() ?? "";
+            string curUnit = r.Cells["Unit"].Value?.ToString().Trim() ?? "";
             decimal curFactor = r.Cells["CurrentFactor"].Value != DBNull.Value ? Convert.ToDecimal(r.Cells["CurrentFactor"].Value) : 1.0m;
             if (curFactor <= 0) curFactor = 1.0m;
             decimal curDisplayedBook = decimal.TryParse(curBook, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var cbVal) ? cbVal : 0m;
 
             var promptDlg = new Form
             {
-                Text = "🛠️ تصحيح / تصفير رصيد الصنف المباشر",
+                Text = "تصحيح / تصفير رصيد الصنف المباشر",
                 Size = new Size(460, 240),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -3003,7 +3003,7 @@ namespace ChickenDist.Forms
                 Text = curDisplayedBook.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
             };
 
-            var btnSave = Theme.MakeButton("💾 اعتماد وتصحيح الرصيد", 230, 135, 200, 36, Theme.Success);
+            var btnSave = Theme.MakeButton("اعتماد وتصحيح الرصيد", 230, 135, 200, 36, Theme.Success);
             var btnCancel = Theme.MakeButton("إلغاء", 15, 135, 100, 36, Color.FromArgb(100, 110, 120));
 
             btnSave.Click += (s2, e2) =>
@@ -3067,7 +3067,7 @@ namespace ChickenDist.Forms
 
                     ProductCache.Invalidate();
                     StockCache.Invalidate(wid);
-                    MessageBox.Show($"✅ تم تصحيح رصيد الصنف [{pName}] إلى ({correctQty:N3} {curUnit}) بنجاح!", "تم التصحيح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم تصحيح رصيد الصنف [{pName}] إلى ({correctQty:N3} {curUnit}) بنجاح!", "تم التصحيح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadStock();
                 }
                 catch (Exception ex)
@@ -3158,7 +3158,7 @@ namespace ChickenDist.Forms
 
                     string code = row.Cells["ProductCode"].Value?.ToString() ?? "";
                     string name = row.Cells["ProductName"].Value?.ToString() ?? "";
-                    string unit = row.Cells["Unit"].Value?.ToString()?.Replace(" 🔽", "") ?? "";
+                    string unit = row.Cells["Unit"].Value?.ToString() ?? "";
                     string bookQty = row.Cells["BookQty"].Value?.ToString() ?? "0";
 
                     Brush bgBrush = (_printStockRowIndex % 2 == 1) ? brushRowAlt : Brushes.White;
@@ -3588,7 +3588,7 @@ namespace ChickenDist.Forms
                 int pageW = 800;
 
                 // Header
-                g.DrawString("⚖️ تقرير الأصناف التي تحتوي على كود ميزان (PLU)", boldBig, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 32), center);
+                g.DrawString("تقرير الأصناف التي تحتوي على كود ميزان (PLU)", boldBig, Brushes.DarkBlue, new RectangleF(20, y, pageW - 40, 32), center);
                 y += 35;
                 g.DrawString($"المخزن: {whName} | تاريخ التقرير: {DateTime.Now:dd/MM/yyyy HH:mm} | إجمالي الأصناف: {dtScale.Rows.Count}", normal, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center);
                 y += 25;
@@ -3795,7 +3795,7 @@ namespace ChickenDist.Forms
             dtpNewExpiry = new DateTimePicker { Location = new Point(230, 22), Width = 130, Format = DateTimePickerFormat.Short };
             var lblQty = new Label { Text = "الكمية:", Location = new Point(160, 25), Size = new Size(50, 20), ForeColor = Theme.TextMain };
             nudNewQty = new NumericUpDown { Location = new Point(80, 22), Width = 80, DecimalPlaces = 3, Maximum = 999999, Minimum = 0 };
-            btnAddBatch = Theme.MakeButton("➕ إضافة", Color.FromArgb(40, 120, 60));
+            btnAddBatch = Theme.MakeButton("إضافة", Color.FromArgb(40, 120, 60));
             btnAddBatch.Location = new Point(10, 20);
             btnAddBatch.Size = new Size(60, 28);
             btnAddBatch.Click += BtnAddBatch_Click;
@@ -3803,11 +3803,11 @@ namespace ChickenDist.Forms
             pnlAdd.Controls.AddRange(new Control[] { lblDate, dtpNewExpiry, lblQty, nudNewQty, btnAddBatch });
 
             var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 50, Padding = new Padding(10) };
-            btnSave = Theme.MakeButton("💾 حفظ التعديلات", Theme.Accent);
+            btnSave = Theme.MakeButton("حفظ التعديلات", Theme.Accent);
             btnSave.Location = new Point(10, 10);
             btnSave.Size = new Size(130, 30);
             btnSave.Click += BtnSave_Click;
-            btnCancel = Theme.MakeButton("❌ إلغاء", Color.FromArgb(120, 40, 40));
+            btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(120, 40, 40));
             btnCancel.Location = new Point(150, 10);
             btnCancel.Size = new Size(90, 30);
             btnCancel.Click += (s, e) => this.Close();
@@ -3859,7 +3859,7 @@ namespace ChickenDist.Forms
                 string expStr = row.Cells["ExpiryDate"].Value?.ToString();
                 if (string.IsNullOrWhiteSpace(expStr) || !DateTime.TryParse(expStr, out _))
                 {
-                    MessageBox.Show("❌ خطأ: يجب تسجيل تاريخ صلاحية صحيح لكل الدفعات المعروضة قبل الحفظ!", "تاريخ صلاحية مفقود", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("خطأ: يجب تسجيل تاريخ صلاحية صحيح لكل الدفعات المعروضة قبل الحفظ!", "تاريخ صلاحية مفقود", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
@@ -3910,13 +3910,13 @@ namespace ChickenDist.Forms
                         DbHelper.P("@wid", _warehouseID));
                 });
 
-                MessageBox.Show("✅ تم حفظ تواريخ الصلاحية وتحديث أرصدة الدفعات بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم حفظ تواريخ الصلاحية وتحديث أرصدة الدفعات بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"فشل حفظ التعديلات: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

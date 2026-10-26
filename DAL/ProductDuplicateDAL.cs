@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -277,7 +277,7 @@ namespace ChickenDist.DAL
                     int pTrans = Convert.ToInt32(primaryRow["TotalTransactions"]);
                     decimal pStock = Convert.ToDecimal(primaryRow["CurrentStock"]);
 
-                    fixLog.Add($"📌 كود الصنف [{origCode}]: تم الاحتفاظ به للصنف الأساسي [ID: {primaryID} - {primaryName}] (الأكثر نشاطاً: {pTrans} حركة، رصيد: {pStock:N2}).");
+                    fixLog.Add($"كود الصنف [{origCode}]: تم الاحتفاظ به للصنف الأساسي [ID: {primaryID} - {primaryName}] (الأكثر نشاطاً: {pTrans} حركة، رصيد: {pStock:N2}).");
 
                     // الأصناف الأخرى المكررة (الأقل حركات)
                     for (int i = 1; i < rows.Count; i++)
@@ -291,7 +291,7 @@ namespace ChickenDist.DAL
                         // فحص شرط الحركات إذا كان التعديل مقصوراً على 0 حركات
                         if (onlyModifyZeroTransactions && dupTrans > 0)
                         {
-                            fixLog.Add($"   🛡️ الصنف [ID: {dupID} - {dupName}]: تم تخطيه وحمايته من تعديل الكود لوجود حركات مسجلة ({dupTrans} حركة).");
+                            fixLog.Add($"   الصنف [ID: {dupID} - {dupName}]: تم تخطيه وحمايته من تعديل الكود لوجود حركات مسجلة ({dupTrans} حركة).");
                             continue;
                         }
 
@@ -315,7 +315,7 @@ namespace ChickenDist.DAL
                         UpdateProductCodeEverywhereTrans(trans, dupID, newCode);
 
                         string transInfo = dupTrans > 0 ? $"مع تحديث كافة حركاته وتقاريره ({dupTrans} حركة، رصيد: {dupStock:N2})" : "بدون حركات سابقة";
-                        fixLog.Add($"   ⚡ تم تعديل كود الصنف [ID: {dupID} - {dupName}] من [{origCode}] إلى الكود التسلسلي الجديد [{newCode}] ({transInfo})");
+                        fixLog.Add($"   تم تعديل كود الصنف [ID: {dupID} - {dupName}] من [{origCode}] إلى الكود التسلسلي الجديد [{newCode}] ({transInfo})");
                         fixedCount++;
                     }
                 }
@@ -384,7 +384,7 @@ namespace ChickenDist.DAL
                     int primaryID = Convert.ToInt32(primaryRow["ProductID"]);
                     string barcode = kvp.Key;
 
-                    fixLog.Add($"🏷️ الباركود [{barcode}]: تم إبقاؤه للصنف [ID: {primaryID} - {primaryRow["ProductName"]}]");
+                    fixLog.Add($"الباركود [{barcode}]: تم إبقاؤه للصنف [ID: {primaryID} - {primaryRow["ProductName"]}]");
 
                     for (int i = 1; i < rows.Count; i++)
                     {
@@ -395,13 +395,13 @@ namespace ChickenDist.DAL
                         if (dupRow["Unit1Barcode"] != DBNull.Value && dupRow["Unit1Barcode"].ToString().Trim() == barcode)
                         {
                             DbHelper.ExecuteTrans(trans, "UPDATE Products SET Unit1Barcode = NULL WHERE ProductID = @id", DbHelper.P("@id", dupID));
-                            fixLog.Add($"   ⚡ تم إزالة باركود الوحدة 1 المكرر من الصنف [ID: {dupID} - {dupRow["ProductName"]}]");
+                            fixLog.Add($"   تم إزالة باركود الوحدة 1 المكرر من الصنف [ID: {dupID} - {dupRow["ProductName"]}]");
                             fixedCount++;
                         }
                         if (dupRow["Unit2Barcode"] != DBNull.Value && dupRow["Unit2Barcode"].ToString().Trim() == barcode)
                         {
                             DbHelper.ExecuteTrans(trans, "UPDATE Products SET Unit2Barcode = NULL WHERE ProductID = @id", DbHelper.P("@id", dupID));
-                            fixLog.Add($"   ⚡ تم إزالة باركود الوحدة 2 المكرر من الصنف [ID: {dupID} - {dupRow["ProductName"]}]");
+                            fixLog.Add($"   تم إزالة باركود الوحدة 2 المكرر من الصنف [ID: {dupID} - {dupRow["ProductName"]}]");
                             fixedCount++;
                         }
                     }

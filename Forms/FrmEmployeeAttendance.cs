@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -35,7 +35,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🕒 مديول الحضور والانصراف وإدارة الدوام";
+            this.Text = "مديول الحضور والانصراف وإدارة الدوام";
             this.Size = new Size(1180, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -54,7 +54,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "🕒 إدارة الحضور والانصراف وساعات العمل والغياب",
+                Text = "إدارة الحضور والانصراف وساعات العمل والغياب",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
@@ -70,8 +70,8 @@ namespace ChickenDist.Forms
                 Padding = new Point(16, 8)
             };
 
-            var tabDaily = new TabPage("📅 تسجيل الحضور والانصراف اليومي");
-            var tabReports = new TabPage("📊 تقرير الحضور والغياب والتأخيرات");
+            var tabDaily = new TabPage("تسجيل الحضور والانصراف اليومي");
+            var tabReports = new TabPage("تقرير الحضور والغياب والتأخيرات");
 
             BuildDailyTab(tabDaily);
             BuildReportsTab(tabReports);
@@ -99,7 +99,7 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            var lblDate = new Label { Text = "📅 تاريخ اليوم:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            var lblDate = new Label { Text = "تاريخ اليوم:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
             dtpAttendDay = new DateTimePicker
             {
                 Format = DateTimePickerFormat.Short,
@@ -109,10 +109,10 @@ namespace ChickenDist.Forms
             };
             dtpAttendDay.ValueChanged += (s, e) => LoadDailyData();
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 95, 34, Theme.Secondary);
+            btnRefresh = Theme.MakeButton("تحديث", 0, 0, 95, 34, Theme.Secondary);
             btnRefresh.Click += (s, e) => LoadDailyData();
 
-            btnCheckInAll = Theme.MakeButton("⚡ تحضير الكل وفق الورديات", 0, 0, 180, 34, Color.FromArgb(16, 149, 193));
+            btnCheckInAll = Theme.MakeButton("تحضير الكل وفق الورديات", 0, 0, 180, 34, Color.FromArgb(16, 149, 193));
             btnCheckInAll.Click += (s, e) =>
             {
                 foreach (DataGridViewRow row in dgDailyAttendance.Rows)
@@ -133,7 +133,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var btnAutoCalc = Theme.MakeButton("⚡ احتساب التأخيرات وساعات العمل", 0, 0, 220, 34, Color.FromArgb(217, 119, 6));
+            var btnAutoCalc = Theme.MakeButton("احتساب التأخيرات وساعات العمل", 0, 0, 220, 34, Color.FromArgb(217, 119, 6));
             btnAutoCalc.Click += (s, e) =>
             {
                 dgDailyAttendance.EndEdit();
@@ -141,10 +141,10 @@ namespace ChickenDist.Forms
                 {
                     RecalculateRowMetrics(row);
                 }
-                MessageBox.Show("✅ تم احتساب دقائق التأخير والانصراف وساعات العمل والإضافي لجميع الموظفين وفق وردياتهم الرسمية.", "تم الاحتساب", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم احتساب دقائق التأخير والانصراف وساعات العمل والإضافي لجميع الموظفين وفق وردياتهم الرسمية.", "تم الاحتساب", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            btnSaveDaily = Theme.MakeButton("💾 حفظ واعتماد يومية الحضور", 0, 0, 210, 34, Theme.Success);
+            btnSaveDaily = Theme.MakeButton("حفظ واعتماد يومية الحضور", 0, 0, 210, 34, Theme.Success);
             btnSaveDaily.Click += BtnSaveDaily_Click;
 
             pnlToolbar.Controls.AddRange(new Control[] { lblDate, dtpAttendDay, btnRefresh, btnCheckInAll, btnAutoCalc, btnSaveDaily });
@@ -189,8 +189,8 @@ namespace ChickenDist.Forms
             dgDailyAttendance.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "ملاحظات", FillWeight = 110 });
 
             // أزرار سريعة
-            var btnColIn = new DataGridViewButtonColumn { Name = "BtnIn", HeaderText = "", Text = "🟢 حضور", UseColumnTextForButtonValue = true, FillWeight = 55 };
-            var btnColOut = new DataGridViewButtonColumn { Name = "BtnOut", HeaderText = "", Text = "🔴 انصراف", UseColumnTextForButtonValue = true, FillWeight = 55 };
+            var btnColIn = new DataGridViewButtonColumn { Name = "BtnIn", HeaderText = "", Text = "حضور", UseColumnTextForButtonValue = true, FillWeight = 55 };
+            var btnColOut = new DataGridViewButtonColumn { Name = "BtnOut", HeaderText = "", Text = "انصراف", UseColumnTextForButtonValue = true, FillWeight = 55 };
             dgDailyAttendance.Columns.Add(btnColIn);
             dgDailyAttendance.Columns.Add(btnColOut);
 
@@ -366,7 +366,7 @@ namespace ChickenDist.Forms
                 }
             }
 
-            MessageBox.Show($"✅ تم حفظ بيانات الحضور والانصراف لـ ({savedCount}) موظف بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"تم حفظ بيانات الحضور والانصراف لـ ({savedCount}) موظف بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             LoadDailyData();
         }
 
@@ -400,10 +400,10 @@ namespace ChickenDist.Forms
             cboRepStatus.Items.AddRange(new object[] { "الكل", "حاضر", "غائب", "إجازة", "نصف يوم", "مأمورية" });
             cboRepStatus.SelectedIndex = 0;
 
-            btnLoadRep = Theme.MakeButton("🔍 عرض التقرير", 0, 0, 130, 34, Theme.Primary);
+            btnLoadRep = Theme.MakeButton("عرض التقرير", 0, 0, 130, 34, Theme.Primary);
             btnLoadRep.Click += (s, e) => LoadReportData();
 
-            btnPrintRep = Theme.MakeButton("🖨️ طباعة", 0, 0, 100, 34, Theme.Secondary);
+            btnPrintRep = Theme.MakeButton("طباعة", 0, 0, 100, 34, Theme.Secondary);
             btnPrintRep.Click += BtnPrintRep_Click;
 
             pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpRepFrom, lblTo, dtpRepTo, lblEmp, cboRepEmp, lblStatus, cboRepStatus, btnLoadRep, btnPrintRep });
@@ -418,9 +418,9 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            lblTotalDays = new Label { Text = "📊 إجمالي الأيام: 0", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 25, 0) };
-            lblTotalLate = new Label { Text = "⏰ إجمالي التأخير: 0 دقيقة", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.DarkRed, Margin = new Padding(10, 0, 25, 0) };
-            lblTotalOvertime = new Label { Text = "➕ إجمالي الإضافي: 0 ساعة", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 25, 0) };
+            lblTotalDays = new Label { Text = "إجمالي الأيام: 0", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 25, 0) };
+            lblTotalLate = new Label { Text = "إجمالي التأخير: 0 دقيقة", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.DarkRed, Margin = new Padding(10, 0, 25, 0) };
+            lblTotalOvertime = new Label { Text = "إجمالي الإضافي: 0 ساعة", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 25, 0) };
 
             pnlSummary.Controls.AddRange(new Control[] { lblTotalDays, lblTotalLate, lblTotalOvertime });
 
@@ -504,9 +504,9 @@ namespace ChickenDist.Forms
                 else if (status == "إجازة") row.DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
             }
 
-            lblTotalDays.Text = $"📊 إجمالي السجلات: {dgRep.Rows.Count:N0}";
-            lblTotalLate.Text = $"⏰ إجمالي التأخير: {totalLate:N0} دقيقة";
-            lblTotalOvertime.Text = $"➕ إجمالي الإضافي: {totalOvertime:N2} ساعة";
+            lblTotalDays.Text = $"إجمالي السجلات: {dgRep.Rows.Count:N0}";
+            lblTotalLate.Text = $"إجمالي التأخير: {totalLate:N0} دقيقة";
+            lblTotalOvertime.Text = $"إجمالي الإضافي: {totalOvertime:N2} ساعة";
         }
 
         private void BtnPrintRep_Click(object sender, EventArgs e)

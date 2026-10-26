@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -20,7 +20,7 @@ namespace ChickenDist.Forms
 
         private void InitializeDialog(string message, bool allowPrep)
         {
-            this.Text = "🖨️ اختيار نوع وحجم الطباعة";
+            this.Text = "اختيار نوع وحجم الطباعة";
             this.Size = new Size(540, allowPrep ? 440 : 380);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -53,7 +53,7 @@ namespace ChickenDist.Forms
 
             var lblIcon = new Label
             {
-                Text = "🖨️",
+                Text = "",
                 Font = new Font("Segoe UI", 26f),
                 AutoSize = true,
                 Location = new Point(450, 15),
@@ -88,7 +88,7 @@ namespace ChickenDist.Forms
             int btnX = 25;
 
             // 1. Receipt Button
-            var btnReceipt = Theme.MakeButton("🧾 طباعة ريسيت حراري (Receipt 80mm)", Color.FromArgb(30, 90, 160));
+            var btnReceipt = Theme.MakeButton("طباعة ريسيت حراري (Receipt 80mm)", Color.FromArgb(30, 90, 160));
             btnReceipt.Location = new Point(btnX, btnY);
             btnReceipt.Size = new Size(btnWidth, btnHeight);
             btnReceipt.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
@@ -98,7 +98,7 @@ namespace ChickenDist.Forms
             btnY += btnHeight + btnSpacing;
 
             // 2. A4 Button
-            var btnA4 = Theme.MakeButton("📄 طباعة فاتورة A4 كاملة (A4 Sheet)", Color.FromArgb(35, 120, 75));
+            var btnA4 = Theme.MakeButton("طباعة فاتورة A4 كاملة (A4 Sheet)", Color.FromArgb(35, 120, 75));
             btnA4.Location = new Point(btnX, btnY);
             btnA4.Size = new Size(btnWidth, btnHeight);
             btnA4.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
@@ -107,7 +107,7 @@ namespace ChickenDist.Forms
             btnY += btnHeight + btnSpacing;
 
             // 3. A5 Button
-            var btnA5 = Theme.MakeButton("📑 طباعة فاتورة A5 نصف صفحة (A5 Sheet)", Color.FromArgb(140, 85, 25));
+            var btnA5 = Theme.MakeButton("طباعة فاتورة A5 نصف صفحة (A5 Sheet)", Color.FromArgb(140, 85, 25));
             btnA5.Location = new Point(btnX, btnY);
             btnA5.Size = new Size(btnWidth, btnHeight);
             btnA5.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
@@ -118,7 +118,7 @@ namespace ChickenDist.Forms
             // 4. Preparation Slip Button (Optional)
             if (allowPrep)
             {
-                var btnPrep = Theme.MakeButton("📋 طباعة إذن تحضير مخزن (Preparation Slip)", Color.FromArgb(90, 60, 140));
+                var btnPrep = Theme.MakeButton("طباعة إذن تحضير مخزن (Preparation Slip)", Color.FromArgb(90, 60, 140));
                 btnPrep.Location = new Point(btnX, btnY);
                 btnPrep.Size = new Size(btnWidth, btnHeight);
                 btnPrep.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
@@ -128,7 +128,7 @@ namespace ChickenDist.Forms
             }
 
             // 5. Skip / Cancel Button
-            var btnCancel = Theme.MakeButton("❌ عدم الطباعة (إلغاء)", Color.FromArgb(75, 85, 99));
+            var btnCancel = Theme.MakeButton("عدم الطباعة (إلغاء)", Color.FromArgb(75, 85, 99));
             btnCancel.Location = new Point(btnX, btnY);
             btnCancel.Size = new Size(btnWidth, btnHeight - 4);
             btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
@@ -236,7 +236,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "🖨️ طباعة وإرسال إيصال المرتجع";
+                dlg.Text = "طباعة وإرسال إيصال المرتجع";
                 dlg.Size = new Size(540, 440);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -248,7 +248,7 @@ namespace ChickenDist.Forms
                 dlg.Font = Theme.FontMain;
 
                 var pnlTop = new Panel { Dock = DockStyle.Top, Height = 80, Padding = new Padding(15, 10, 15, 10), BackColor = Color.FromArgb(20, 35, 60) };
-                var lblIcon = new Label { Text = "↩️", Font = new Font("Segoe UI", 26f), AutoSize = true, Location = new Point(450, 15), ForeColor = Color.Gold };
+                var lblIcon = new Label { Text = "", Font = new Font("Segoe UI", 26f), AutoSize = true, Location = new Point(450, 15), ForeColor = Color.Gold };
                 var lblMsg = new Label { Text = msg, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.White, Location = new Point(15, 12), Size = new Size(425, 56), TextAlign = ContentAlignment.MiddleRight };
                 pnlTop.Controls.AddRange(new Control[] { lblIcon, lblMsg });
 
@@ -256,7 +256,7 @@ namespace ChickenDist.Forms
                 int btnY = 12, btnHeight = 44, btnSpacing = 10, btnWidth = 470, btnX = 25;
 
                 // 1. Receipt
-                var btnReceipt = Theme.MakeButton("🧾 طباعة ريسيت حراري (Receipt 80mm)", Color.FromArgb(30, 90, 160));
+                var btnReceipt = Theme.MakeButton("طباعة ريسيت حراري (Receipt 80mm)", Color.FromArgb(30, 90, 160));
                 btnReceipt.Location = new Point(btnX, btnY); btnReceipt.Size = new Size(btnWidth, btnHeight);
                 btnReceipt.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
                 btnReceipt.Click += (s, e) => { dlg.Close(); try { new FrmPrintReturn(returnID, "Receipt", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
@@ -264,7 +264,7 @@ namespace ChickenDist.Forms
                 btnY += btnHeight + btnSpacing;
 
                 // 2. A4
-                var btnA4 = Theme.MakeButton("📄 طباعة إيصال A4 كامل (A4 Sheet)", Color.FromArgb(35, 120, 75));
+                var btnA4 = Theme.MakeButton("طباعة إيصال A4 كامل (A4 Sheet)", Color.FromArgb(35, 120, 75));
                 btnA4.Location = new Point(btnX, btnY); btnA4.Size = new Size(btnWidth, btnHeight);
                 btnA4.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
                 btnA4.Click += (s, e) => { dlg.Close(); try { new FrmPrintReturn(returnID, "A4", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
@@ -272,7 +272,7 @@ namespace ChickenDist.Forms
                 btnY += btnHeight + btnSpacing;
 
                 // 3. A5
-                var btnA5 = Theme.MakeButton("📑 طباعة إيصال A5 نصف صفحة (A5 Sheet)", Color.FromArgb(140, 85, 25));
+                var btnA5 = Theme.MakeButton("طباعة إيصال A5 نصف صفحة (A5 Sheet)", Color.FromArgb(140, 85, 25));
                 btnA5.Location = new Point(btnX, btnY); btnA5.Size = new Size(btnWidth, btnHeight);
                 btnA5.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
                 btnA5.Click += (s, e) => { dlg.Close(); try { new FrmPrintReturn(returnID, "A5", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
@@ -280,7 +280,7 @@ namespace ChickenDist.Forms
                 btnY += btnHeight + btnSpacing;
 
                 // 4. WhatsApp Al-Tareq
-                var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب (نموذج الطارق الفاخر)", Color.FromArgb(37, 211, 102));
+                var btnWhatsApp = Theme.MakeButton("إرسال واتساب (نموذج الطارق الفاخر)", Color.FromArgb(37, 211, 102));
                 btnWhatsApp.Location = new Point(btnX, btnY); btnWhatsApp.Size = new Size(btnWidth, btnHeight);
                 btnWhatsApp.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
                 btnWhatsApp.Click += (s, e) => { dlg.Close(); WhatsAppSender.SendReturnReceipt(owner as Form, returnID); };
@@ -288,7 +288,7 @@ namespace ChickenDist.Forms
                 btnY += btnHeight + btnSpacing;
 
                 // 5. Cancel
-                var btnCancel = Theme.MakeButton("❌ إلغاء", Color.FromArgb(75, 85, 99));
+                var btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(75, 85, 99));
                 btnCancel.Location = new Point(btnX, btnY); btnCancel.Size = new Size(btnWidth, btnHeight - 4);
                 btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
                 btnCancel.Click += (s, e) => { dlg.Close(); };
@@ -313,7 +313,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "🖨️ طباعة إيصال مرتجع المشتريات";
+                dlg.Text = "طباعة إيصال مرتجع المشتريات";
                 dlg.Size = new Size(540, 380);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -325,7 +325,7 @@ namespace ChickenDist.Forms
                 dlg.Font = Theme.FontMain;
 
                 var pnlTop = new Panel { Dock = DockStyle.Top, Height = 80, Padding = new Padding(15, 10, 15, 10), BackColor = Color.FromArgb(40, 20, 25) };
-                var lblIcon = new Label { Text = "↩️", Font = new Font("Segoe UI", 26f), AutoSize = true, Location = new Point(450, 15), ForeColor = Color.LightCoral };
+                var lblIcon = new Label { Text = "", Font = new Font("Segoe UI", 26f), AutoSize = true, Location = new Point(450, 15), ForeColor = Color.LightCoral };
                 var lblMsg = new Label { Text = msg, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.White, Location = new Point(15, 12), Size = new Size(425, 56), TextAlign = ContentAlignment.MiddleRight };
                 pnlTop.Controls.AddRange(new Control[] { lblIcon, lblMsg });
 
@@ -333,7 +333,7 @@ namespace ChickenDist.Forms
                 int btnY = 12, btnHeight = 44, btnSpacing = 10, btnWidth = 470, btnX = 25;
 
                 // 1. Receipt
-                var btnReceipt = Theme.MakeButton("🧾 طباعة ريسيت حراري (Receipt 80mm)", Color.FromArgb(30, 90, 160));
+                var btnReceipt = Theme.MakeButton("طباعة ريسيت حراري (Receipt 80mm)", Color.FromArgb(30, 90, 160));
                 btnReceipt.Location = new Point(btnX, btnY); btnReceipt.Size = new Size(btnWidth, btnHeight);
                 btnReceipt.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
                 btnReceipt.Click += (s, e) => { dlg.Close(); try { new FrmPrintPurchaseReturn(returnID, "Receipt", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
@@ -341,7 +341,7 @@ namespace ChickenDist.Forms
                 btnY += btnHeight + btnSpacing;
 
                 // 2. A4
-                var btnA4 = Theme.MakeButton("📄 طباعة إيصال A4 كامل (A4 Sheet)", Color.FromArgb(35, 120, 75));
+                var btnA4 = Theme.MakeButton("طباعة إيصال A4 كامل (A4 Sheet)", Color.FromArgb(35, 120, 75));
                 btnA4.Location = new Point(btnX, btnY); btnA4.Size = new Size(btnWidth, btnHeight);
                 btnA4.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
                 btnA4.Click += (s, e) => { dlg.Close(); try { new FrmPrintPurchaseReturn(returnID, "A4", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
@@ -349,7 +349,7 @@ namespace ChickenDist.Forms
                 btnY += btnHeight + btnSpacing;
 
                 // 3. A5
-                var btnA5 = Theme.MakeButton("📑 طباعة إيصال A5 نصف صفحة (A5 Sheet)", Color.FromArgb(140, 85, 25));
+                var btnA5 = Theme.MakeButton("طباعة إيصال A5 نصف صفحة (A5 Sheet)", Color.FromArgb(140, 85, 25));
                 btnA5.Location = new Point(btnX, btnY); btnA5.Size = new Size(btnWidth, btnHeight);
                 btnA5.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
                 btnA5.Click += (s, e) => { dlg.Close(); try { new FrmPrintPurchaseReturn(returnID, "A5", false); } catch (Exception ex) { MessageBox.Show(ex.Message); } };
@@ -357,7 +357,7 @@ namespace ChickenDist.Forms
                 btnY += btnHeight + btnSpacing;
 
                 // 4. Cancel
-                var btnCancel = Theme.MakeButton("❌ إلغاء", Color.FromArgb(75, 85, 99));
+                var btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(75, 85, 99));
                 btnCancel.Location = new Point(btnX, btnY); btnCancel.Size = new Size(btnWidth, btnHeight - 4);
                 btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
                 btnCancel.Click += (s, e) => { dlg.Close(); };

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -109,7 +109,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = AppConfig.IsRestaurant ? "🌐 استقبال وإدارة طلبات المنيو الإلكتروني | Online Menu Orders" : "🌐 استقبال وإدارة طلبات المتجر الإلكتروني | ProSoft Online Orders";
+            this.Text = AppConfig.IsRestaurant ? "استقبال وإدارة طلبات المنيو الإلكتروني | Online Menu Orders" : "استقبال وإدارة طلبات المتجر الإلكتروني | ProSoft Online Orders";
             this.Size = new Size(1180, 680);
             this.MinimumSize = new Size(900, 500);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -148,7 +148,7 @@ namespace ChickenDist.Forms
 
             lblHeaderTitle = new Label
             {
-                Text = AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني",
+                Text = AppConfig.IsRestaurant ? "طلبات المنيو الإلكتروني" : "طلبات المتجر الإلكتروني",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
@@ -176,11 +176,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 2, 0, 0)
             };
 
-            btnRefresh = CreateTopButton("🔄 تحديث (F5)", Color.FromArgb(37, 99, 235));
+            btnRefresh = CreateTopButton("تحديث (F5)", Color.FromArgb(37, 99, 235));
             btnRefresh.Click += async (s, e) =>
             {
                 btnRefresh.Enabled = false;
-                btnRefresh.Text = "⏳ سحب...";
+                btnRefresh.Text = "سحب...";
                 try
                 {
                     await CloudSyncService.PullOnlineOrdersFromFirebaseAsync();
@@ -188,11 +188,11 @@ namespace ChickenDist.Forms
                 catch { }
                 LoadOrders();
                 RefreshStats();
-                btnRefresh.Text = "🔄 تحديث (F5)";
+                btnRefresh.Text = "تحديث (F5)";
                 btnRefresh.Enabled = true;
             };
 
-            btnSettings = CreateTopButton("⚙️ الإعدادات (F2)", Color.FromArgb(71, 85, 105));
+            btnSettings = CreateTopButton("الإعدادات (F2)", Color.FromArgb(71, 85, 105));
             btnSettings.Click += (s, e) =>
             {
                 using (var dlg = new FrmOnlineStoreSettings())
@@ -202,7 +202,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnOpenStore = CreateTopButton("🌐 فتح المتجر", Color.FromArgb(16, 185, 129));
+            btnOpenStore = CreateTopButton("فتح المتجر", Color.FromArgb(16, 185, 129));
             btnOpenStore.Click += (s, e) =>
             {
                 string projectId = AppConfig.FirebaseProjectId;
@@ -215,7 +215,7 @@ namespace ChickenDist.Forms
                 try { System.Diagnostics.Process.Start(url); } catch { }
             };
 
-            btnCopyUrl = CreateTopButton("📋 نسخ الرابط", Color.FromArgb(71, 85, 105));
+            btnCopyUrl = CreateTopButton("نسخ الرابط", Color.FromArgb(71, 85, 105));
             btnCopyUrl.Click += (s, e) =>
             {
                 string projectId = AppConfig.FirebaseProjectId;
@@ -226,10 +226,10 @@ namespace ChickenDist.Forms
                 }
                 string url = $"https://{projectId}.web.app/store.html?p={projectId}";
                 Clipboard.SetText(url);
-                MessageBox.Show("تم نسخ رابط المتجر الإلكتروني بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ رابط المتجر الإلكتروني بنجاح", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            var btnStoreQR = CreateTopButton("📱 كود المتجر (QR)", Color.FromArgb(139, 92, 246));
+            var btnStoreQR = CreateTopButton("كود المتجر (QR)", Color.FromArgb(139, 92, 246));
             btnStoreQR.Click += (s, e) =>
             {
                 using (var dlg = new FrmStoreQRDialog())
@@ -238,7 +238,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnCustomersReport = CreateTopButton("👥 عملاء المتجر (F3)", Color.FromArgb(236, 72, 153));
+            btnCustomersReport = CreateTopButton("عملاء المتجر (F3)", Color.FromArgb(236, 72, 153));
             btnCustomersReport.Click += (s, e) =>
             {
                 using (var dlg = new FrmOnlineStoreCustomersReport())
@@ -275,10 +275,10 @@ namespace ChickenDist.Forms
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            lblKpiNew = MakeKPICard("طلبات جديدة 🔴", "0", Color.FromArgb(225, 29, 72), out Panel pKpi1);
-            lblKpiInPrep = MakeKPICard("قيد التجهيز 🟡", "0", Color.FromArgb(217, 119, 6), out Panel pKpi2);
-            lblKpiCompleted = MakeKPICard("طلبات مكتملة 🟢", "0", Color.FromArgb(16, 185, 129), out Panel pKpi3);
-            lblKpiTodayTotal = MakeKPICard("إجمالي اليوم 💰", "0.00 ج.م", Color.FromArgb(2, 132, 199), out Panel pKpi4);
+            lblKpiNew = MakeKPICard("طلبات جديدة", "0", Color.FromArgb(225, 29, 72), out Panel pKpi1);
+            lblKpiInPrep = MakeKPICard("قيد التجهيز", "0", Color.FromArgb(217, 119, 6), out Panel pKpi2);
+            lblKpiCompleted = MakeKPICard("طلبات مكتملة", "0", Color.FromArgb(16, 185, 129), out Panel pKpi3);
+            lblKpiTodayTotal = MakeKPICard("إجمالي اليوم", "0.00 ج.م", Color.FromArgb(2, 132, 199), out Panel pKpi4);
 
             pnlKpi.Controls.Add(pKpi1, 0, 0);
             pnlKpi.Controls.Add(pKpi2, 1, 0);
@@ -312,11 +312,11 @@ namespace ChickenDist.Forms
             };
 
             btnFilterAll = CreateFilterButton("الكل", true);
-            btnFilterNew = CreateFilterButton("جديدة 🔴", false);
-            btnFilterInPrep = CreateFilterButton("قيد التجهيز 🟡", false);
-            btnFilterDelivery = CreateFilterButton("توصيل 🚚", false);
-            btnFilterCompleted = CreateFilterButton("مكتمل 🟢", false);
-            btnFilterCancelled = CreateFilterButton("ملغي ⚪", false);
+            btnFilterNew = CreateFilterButton("جديدة", false);
+            btnFilterInPrep = CreateFilterButton("قيد التجهيز", false);
+            btnFilterDelivery = CreateFilterButton("توصيل", false);
+            btnFilterCompleted = CreateFilterButton("مكتمل", false);
+            btnFilterCancelled = CreateFilterButton("ملغي", false);
 
             btnFilterAll.Click += (s, e) => SetFilter("الكل", btnFilterAll);
             btnFilterNew.Click += (s, e) => SetFilter("جديد", btnFilterNew);
@@ -350,7 +350,7 @@ namespace ChickenDist.Forms
 
             var lblSearch = new Label
             {
-                Text = "🔍",
+                Text = "بحث",
                 Dock = DockStyle.Right,
                 Width = 26,
                 ForeColor = Color.FromArgb(100, 116, 139),
@@ -480,7 +480,7 @@ namespace ChickenDist.Forms
             // 4.2 بيانات العميل والتوصيل (Customer Card - 78px)
             var grpCustomer = new GroupBox
             {
-                Text = "👤 بيانات العميل والتوصيل",
+                Text = "بيانات العميل والتوصيل",
                 Dock = DockStyle.Top,
                 Height = 78,
                 ForeColor = Color.FromArgb(24, 43, 73),
@@ -515,7 +515,7 @@ namespace ChickenDist.Forms
 
             lblDetailCustPhone = new Label
             {
-                Text = "الهاتف: --- 📱",
+                Text = "الهاتف: ---",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(5, 150, 105),
                 Dock = DockStyle.Fill,
@@ -553,7 +553,7 @@ namespace ChickenDist.Forms
             // 4.3 بنود وأصناف الطلب (Items Table - Fill)
             var grpItems = new GroupBox
             {
-                Text = "🛒 بنود الطلب وإدارة الأصناف",
+                Text = "بنود الطلب وإدارة الأصناف",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(24, 43, 73),
                 BackColor = Color.White,
@@ -563,7 +563,7 @@ namespace ChickenDist.Forms
 
             lblStockWarning = new Label
             {
-                Text = "⚠️ تنبيه: الطلب يحتوي على أصناف غير متوفرة في المخزن بالكمية المطلوبة (مظللة بالأحمر). يمكنك استبدالها أو تعديلها.",
+                Text = "تنبيه: الطلب يحتوي على أصناف غير متوفرة في المخزن بالكمية المطلوبة (مظللة بالأحمر). يمكنك استبدالها أو تعديلها.",
                 Dock = DockStyle.Top,
                 Height = 26,
                 BackColor = Color.FromArgb(254, 226, 226),
@@ -585,7 +585,7 @@ namespace ChickenDist.Forms
 
             var btnAddAltItem = new Button
             {
-                Text = "➕ إضافة صنف بديل",
+                Text = "إضافة صنف بديل",
                 Height = 26,
                 AutoSize = true,
                 BackColor = Color.FromArgb(79, 70, 229),
@@ -600,7 +600,7 @@ namespace ChickenDist.Forms
 
             var btnEditQty = new Button
             {
-                Text = "✏️ تعديل الكمية",
+                Text = "تعديل الكمية",
                 Height = 26,
                 AutoSize = true,
                 BackColor = Color.FromArgb(217, 119, 6),
@@ -615,7 +615,7 @@ namespace ChickenDist.Forms
 
             var btnDeleteItem = new Button
             {
-                Text = "🗑️ حذف صنف",
+                Text = "حذف صنف",
                 Height = 26,
                 AutoSize = true,
                 BackColor = Color.FromArgb(220, 38, 38),
@@ -630,7 +630,7 @@ namespace ChickenDist.Forms
 
             var btnEditDelivery = new Button
             {
-                Text = "🚚 تعديل التوصيل",
+                Text = "تعديل التوصيل",
                 Height = 26,
                 AutoSize = true,
                 BackColor = Color.FromArgb(14, 116, 144),
@@ -645,7 +645,7 @@ namespace ChickenDist.Forms
 
             var btnOpenInSales = new Button
             {
-                Text = "🛒 تعديل في شاشة المبيعات",
+                Text = "تعديل في شاشة المبيعات",
                 Height = 26,
                 AutoSize = true,
                 BackColor = Color.FromArgb(5, 150, 105),
@@ -703,11 +703,11 @@ namespace ChickenDist.Forms
             };
 
             var ctxItems = new ContextMenuStrip();
-            ctxItems.Items.Add(new ToolStripMenuItem("✏️ تعديل الكمية (F2)", null, (s, e) => EditCurrentItemQuantity()));
-            ctxItems.Items.Add(new ToolStripMenuItem("🗑️ حذف الصنف من الطلب (Delete)", null, (s, e) => DeleteCurrentItem()));
+            ctxItems.Items.Add(new ToolStripMenuItem("تعديل الكمية (F2)", null, (s, e) => EditCurrentItemQuantity()));
+            ctxItems.Items.Add(new ToolStripMenuItem("حذف الصنف من الطلب (Delete)", null, (s, e) => DeleteCurrentItem()));
             ctxItems.Items.Add(new ToolStripSeparator());
-            ctxItems.Items.Add(new ToolStripMenuItem("➕ إضافة صنف بديل للطلب", null, (s, e) => AddAlternativeItem()));
-            ctxItems.Items.Add(new ToolStripMenuItem("🛒 فتح الطلب في شاشة المبيعات للتعديل الحر", null, (s, e) => ConvertOrderToSaleInvoice(forceOpenInSalesScreen: true)));
+            ctxItems.Items.Add(new ToolStripMenuItem("إضافة صنف بديل للطلب", null, (s, e) => AddAlternativeItem()));
+            ctxItems.Items.Add(new ToolStripMenuItem("فتح الطلب في شاشة المبيعات للتعديل الحر", null, (s, e) => ConvertOrderToSaleInvoice(forceOpenInSalesScreen: true)));
             dgvItems.ContextMenuStrip = ctxItems;
 
             grpItems.Controls.Add(dgvItems);
@@ -780,7 +780,7 @@ namespace ChickenDist.Forms
 
             btnConvertToSale = new Button
             {
-                Text = "⚡ تحويل لفاتورة (F10)",
+                Text = "تحويل لفاتورة (F10)",
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
@@ -794,7 +794,7 @@ namespace ChickenDist.Forms
 
             btnPrintPrepSlip = new Button
             {
-                Text = "🖨️ طباعة تحضير (F9)",
+                Text = "طباعة تحضير (F9)",
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -808,7 +808,7 @@ namespace ChickenDist.Forms
 
             btnWhatsApp = new Button
             {
-                Text = "💬 واتساب العميل",
+                Text = "واتساب العميل",
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(5, 150, 105),
                 ForeColor = Color.White,
@@ -1165,16 +1165,16 @@ namespace ChickenDist.Forms
 
                 if (btnFilterNew != null)
                 {
-                    btnFilterNew.Text = newC > 0 ? $"جديدة 🔔 ({newC})" : "جديدة";
+                    btnFilterNew.Text = newC > 0 ? $"جديدة ({newC})" : "جديدة";
                 }
 
-                string baseTitle = AppConfig.IsRestaurant ? "🌐 طلبات المنيو الإلكتروني" : "🌐 طلبات المتجر الإلكتروني";
+                string baseTitle = AppConfig.IsRestaurant ? "طلبات المنيو الإلكتروني" : "طلبات المتجر الإلكتروني";
                 if (lblHeaderTitle != null)
                 {
-                    lblHeaderTitle.Text = newC > 0 ? $"{baseTitle}  🔔 [{newC} طلب جديد]" : baseTitle;
+                    lblHeaderTitle.Text = newC > 0 ? $"{baseTitle}  [{newC} طلب جديد]" : baseTitle;
                 }
 
-                this.Text = (newC > 0 ? $"🔔 ({newC}) " : "") + (AppConfig.IsRestaurant ? "🌐 استقبال وإدارة طلبات المنيو الإلكتروني" : "🌐 استقبال وإدارة طلبات المتجر الإلكتروني");
+                this.Text = (newC > 0 ? $"({newC}) " : "") + (AppConfig.IsRestaurant ? "استقبال وإدارة طلبات المنيو الإلكتروني" : "استقبال وإدارة طلبات المتجر الإلكتروني");
 
                 FrmMain.Instance?.UpdateOnlineOrdersBadge();
             }
@@ -1224,23 +1224,23 @@ namespace ChickenDist.Forms
             else lblDetailStatus.ForeColor = Color.FromArgb(100, 116, 139);
 
             lblDetailCustName.Text = $"الاسم: {name}";
-            lblDetailCustPhone.Text = $"الهاتف: {phone} 📱";
+            lblDetailCustPhone.Text = $"الهاتف: {phone}";
             lblDetailCustAddress.Text = $"العنوان: {addr}";
             txtDetailNotes.Text = string.IsNullOrEmpty(notes) ? "ملاحظات: لا توجد" : $"ملاحظات: {notes}";
 
             lblDetailSubtotal.Text = $"المجموع: {sub:N2} ج.م";
-            lblDetailDelivery.Text = $"التوصيل: {del:N2} ج.م ✏️";
+            lblDetailDelivery.Text = $"التوصيل: {del:N2} ج.م";
             lblDetailTotal.Text = $"الإجمالي: {tot:N2} ج.م";
 
             // تعطيل زر التحويل إذا كان محولاً مسبقاً
             if (saleId > 0)
             {
-                btnConvertToSale.Text = $"✅ محول لفاتورة #{saleId}";
+                btnConvertToSale.Text = $"محول لفاتورة #{saleId}";
                 btnConvertToSale.BackColor = Color.FromArgb(100, 116, 139);
             }
             else
             {
-                btnConvertToSale.Text = "⚡ تحويل لفاتورة مبيعات (F10)";
+                btnConvertToSale.Text = "تحويل لفاتورة مبيعات (F10)";
                 btnConvertToSale.BackColor = Color.FromArgb(16, 185, 129);
             }
 
@@ -1699,7 +1699,7 @@ namespace ChickenDist.Forms
 
                     OnlineOrdersDAL.AddOrderItem(_selectedOrderID, pid, pName, unit, qty, price);
                     RefreshCurrentOrderData();
-                    MessageBox.Show($"تمت إضافة الصنف البديل ({pName}) إلى الطلب بنجاح ✅", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تمت إضافة الصنف البديل ({pName}) إلى الطلب بنجاح", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -1730,7 +1730,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "🚚 تعديل مصاريف الشحن والتوصيل";
+                dlg.Text = "تعديل مصاريف الشحن والتوصيل";
                 dlg.Size = new Size(380, 230);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -1765,7 +1765,7 @@ namespace ChickenDist.Forms
 
                 var btnOk = new Button
                 {
-                    Text = "💾 حفظ التعديل",
+                    Text = "حفظ التعديل",
                     DialogResult = DialogResult.OK,
                     Location = new Point(20, 115),
                     Size = new Size(155, 38),
@@ -1896,9 +1896,9 @@ namespace ChickenDist.Forms
 
             if (!shouldOpenInSaleScreen && outOfStockList.Count > 0)
             {
-                string warningMsg = "⚠️ تنبيه: يحتوي الطلب على أصناف غير متوفرة في المخزن بالكمية المطلوبة:\n\n"
+                string warningMsg = "تنبيه: يحتوي الطلب على أصناف غير متوفرة في المخزن بالكمية المطلوبة:\n\n"
                     + string.Join("\n", outOfStockList)
-                    + "\n\n💡 يُفضل فتح الطلب في شاشة المبيعات لاستبدال النواقص أو تعديل الكميات والأسعار.\n\nهل ترغب في فتح الطلب الآن في شاشة المبيعات للتعديل والاستبدال؟\n(اختر [نعم] للتعديل في شاشة المبيعات، أو [لا] للتحويل المباشر السريع)";
+                    + "\n\nيُفضل فتح الطلب في شاشة المبيعات لاستبدال النواقص أو تعديل الكميات والأسعار.\n\nهل ترغب في فتح الطلب الآن في شاشة المبيعات للتعديل والاستبدال؟\n(اختر [نعم] للتعديل في شاشة المبيعات، أو [لا] للتحويل المباشر السريع)";
 
                 var choice = MessageBox.Show(warningMsg, "أصناف غير متوفرة بالطلب", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
                 if (choice == DialogResult.Cancel) return;
@@ -1950,7 +1950,7 @@ namespace ChickenDist.Forms
                     RefreshStats();
 
                     var result = MessageBox.Show(
-                        $"تم تحويل الطلب بنجاح إلى فاتورة مبيعات رسمية رقم #{newSaleID} 🔥\n\nهل ترغب في فتح الفاتورة لمعاينتها أو طباعتها الآن؟",
+                        $"تم تحويل الطلب بنجاح إلى فاتورة مبيعات رسمية رقم #{newSaleID}\n\nهل ترغب في فتح الفاتورة لمعاينتها أو طباعتها الآن؟",
                         "نجاح التحويل", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
 
                     if (result == DialogResult.Yes)
@@ -1992,18 +1992,18 @@ namespace ChickenDist.Forms
 
             // بناء نص الرسالة الاحترافي للطلب
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"🏪 *{AppConfig.CompanyName}*");
-            sb.AppendLine($"📦 *إشعار طلب من المتجر الإلكتروني:* {orderNum}");
-            sb.AppendLine($"📅 *التاريخ:* {orderDate:yyyy/MM/dd HH:mm}");
-            sb.AppendLine($"👤 *العميل:* {custName}");
-            if (!string.IsNullOrWhiteSpace(custAddress)) sb.AppendLine($"📍 *العنوان:* {custAddress}");
-            sb.AppendLine($"📌 *حالة الطلب:* {status}");
+            sb.AppendLine($"*{AppConfig.CompanyName}*");
+            sb.AppendLine($"*إشعار طلب من المتجر الإلكتروني:* {orderNum}");
+            sb.AppendLine($"*التاريخ:* {orderDate:yyyy/MM/dd HH:mm}");
+            sb.AppendLine($"*العميل:* {custName}");
+            if (!string.IsNullOrWhiteSpace(custAddress)) sb.AppendLine($"*العنوان:* {custAddress}");
+            sb.AppendLine($"*حالة الطلب:* {status}");
             sb.AppendLine("━━━━━━━━━━━━━━━━");
 
             var dtItems = OnlineOrdersDAL.GetOrderItems(orderID, false);
             if (dtItems != null && dtItems.Rows.Count > 0)
             {
-                sb.AppendLine("📋 *الأصناف المطلوبة:*");
+                sb.AppendLine("*الأصناف المطلوبة:*");
                 foreach (DataRow item in dtItems.Rows)
                 {
                     string pName = item["ProductName"]?.ToString() ?? "صنف";
@@ -2018,18 +2018,18 @@ namespace ChickenDist.Forms
 
             if (delivery > 0)
             {
-                sb.AppendLine($"💵 *المجموع الفرعي:* {subTotal:N2} ج.م");
-                sb.AppendLine($"🚚 *خدمة التوصيل:* {delivery:N2} ج.م");
+                sb.AppendLine($"*المجموع الفرعي:* {subTotal:N2} ج.م");
+                sb.AppendLine($"*خدمة التوصيل:* {delivery:N2} ج.م");
             }
-            sb.AppendLine($"💰 *الإجمالي المستحق:* {total:N2} ج.م");
+            sb.AppendLine($"*الإجمالي المستحق:* {total:N2} ج.م");
 
             if (!string.IsNullOrWhiteSpace(notes))
             {
-                sb.AppendLine($"📝 *ملاحظات:* {notes}");
+                sb.AppendLine($"*ملاحظات:* {notes}");
             }
 
             sb.AppendLine();
-            sb.AppendLine("نشكركم لتسوقكم معنا عبر متجرنا الإلكتروني! 🙏");
+            sb.AppendLine("نشكركم لتسوقكم معنا عبر متجرنا الإلكتروني!");
 
             // فتح نافذة خيارات الإرسال الموحدة (نص أو صورة كارت عالي الدقة مع فتح ابلكيشن الواتساب المباشر)
             WhatsAppSender.ShowWhatsAppSendOptionsDialog(
@@ -2037,7 +2037,7 @@ namespace ChickenDist.Forms
                 phone,
                 sb.ToString(),
                 () => ReceiptImageGenerator.GenerateOnlineOrderReceiptImage(orderID),
-                "📱 إرسال تفاصيل الطلب عبر الواتساب");
+                "إرسال تفاصيل الطلب عبر الواتساب");
         }
 
         private void PrintPreparationSlip()
@@ -2084,7 +2084,7 @@ namespace ChickenDist.Forms
             // 1. ترويسة إذن التحضير
             g.DrawString(AppConfig.CompanyName, fontTitle, brush, width / 2, y, sfCenter);
             y += 24;
-            g.DrawString("📋 إذن تحضير طلب أونلاين", fontHeader, brush, width / 2, y, sfCenter);
+            g.DrawString("إذن تحضير طلب أونلاين", fontHeader, brush, width / 2, y, sfCenter);
             y += 22;
 
             string orderNum = _selectedOrderRow["OrderNumber"]?.ToString() ?? "";

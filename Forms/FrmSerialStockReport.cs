@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            Text = "📱 تقرير وجرد كميات الأجهزة بالسيريال (IMEI) والتتبع الشامل";
+            Text = "تقرير وجرد كميات الأجهزة بالسيريال (IMEI) والتتبع الشامل";
             Size = new Size(1300, 780);
             StartPosition = FormStartPosition.CenterScreen;
             RightToLeft = RightToLeft.Yes;
@@ -123,7 +123,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
-            cboStatus.Items.AddRange(new object[] { "🟢 متاح بالمخزن (In Stock)", "🔴 مباع للعميل (Sold)", "⚪ الكل (جميع السيريلات)" });
+            cboStatus.Items.AddRange(new object[] { "متاح بالمخزن (In Stock)", "مباع للعميل (Sold)", "الكل (جميع السيريلات)" });
             cboStatus.SelectedIndex = 0; // افتراضي: متاح بالمخزن
             cboStatus.SelectedIndexChanged += (s, e) => LoadReport();
             pnlRow1.Controls.Add(cboStatus);
@@ -146,7 +146,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
-            cboViewMode.Items.AddRange(new object[] { "📋 تفصيلي بالسيريل (جهاز بجهاز)", "📊 ملخص كميات الأصناف (تجميعي)" });
+            cboViewMode.Items.AddRange(new object[] { "تفصيلي بالسيريل (جهاز بجهاز)", "ملخص كميات الأصناف (تجميعي)" });
             cboViewMode.SelectedIndex = 0;
             cboViewMode.SelectedIndexChanged += (s, e) => LoadReport();
             pnlRow1.Controls.Add(cboViewMode);
@@ -175,7 +175,7 @@ namespace ChickenDist.Forms
             // البحث الفوري
             pnlRow1.Controls.Add(new Label
             {
-                Text = "🔍 بحث سريع:",
+                Text = "بحث سريع:",
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
@@ -203,7 +203,7 @@ namespace ChickenDist.Forms
 
             chkUseDateFilter = new CheckBox
             {
-                Text = "📅 تفعيل نطاق التاريخ",
+                Text = "تفعيل نطاق التاريخ",
                 AutoSize = true,
                 ForeColor = Theme.TextMain,
                 Font = Theme.FontBold,
@@ -257,25 +257,25 @@ namespace ChickenDist.Forms
             pnlRow2.Controls.Add(dtpTo);
 
             // أزرار العمليات
-            btnLoad = Theme.MakeButton("🔄 تحديث", Theme.Primary);
+            btnLoad = Theme.MakeButton("تحديث", Theme.Primary);
             btnLoad.Size = new Size(95, 32);
             btnLoad.Margin = new Padding(4, 6, 4, 0);
             btnLoad.Click += (s, e) => LoadReport();
             pnlRow2.Controls.Add(btnLoad);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة A4", Color.FromArgb(194, 65, 12));
+            btnPrint = Theme.MakeButton("طباعة A4", Color.FromArgb(194, 65, 12));
             btnPrint.Size = new Size(110, 32);
             btnPrint.Margin = new Padding(4, 6, 4, 0);
             btnPrint.Click += BtnPrint_Click;
             pnlRow2.Controls.Add(btnPrint);
 
-            btnExportExcel = Theme.MakeButton("📊 إكسيل", Color.FromArgb(16, 185, 129));
+            btnExportExcel = Theme.MakeButton("إكسيل", Color.FromArgb(16, 185, 129));
             btnExportExcel.Size = new Size(95, 32);
             btnExportExcel.Margin = new Padding(4, 6, 4, 0);
             btnExportExcel.Click += BtnExportExcel_Click;
             pnlRow2.Controls.Add(btnExportExcel);
 
-            btnCopyIMEIs = Theme.MakeButton("📋 نسخ السيريلات", Color.FromArgb(79, 70, 229));
+            btnCopyIMEIs = Theme.MakeButton("نسخ السيريلات", Color.FromArgb(79, 70, 229));
             btnCopyIMEIs.Size = new Size(130, 32);
             btnCopyIMEIs.Margin = new Padding(4, 6, 4, 0);
             btnCopyIMEIs.Click += BtnCopyIMEIs_Click;
@@ -300,22 +300,22 @@ namespace ChickenDist.Forms
             }
 
             lblTotalAvailableUnits = new Label();
-            var card1 = CreateMetricCard("📱 متاح بالمخزن", lblTotalAvailableUnits, "جهاز جاهز للبيع", Color.FromArgb(13, 148, 136), Color.FromArgb(236, 253, 245));
+            var card1 = CreateMetricCard("متاح بالمخزن", lblTotalAvailableUnits, "جهاز جاهز للبيع", Color.FromArgb(13, 148, 136), Color.FromArgb(236, 253, 245));
 
             lblTotalAvailableCost = new Label();
-            cardCost = CreateMetricCard("💰 تكلفة المتاح", lblTotalAvailableCost, "إجمالي رأس المال", Color.FromArgb(180, 83, 9), Color.FromArgb(254, 252, 232));
+            cardCost = CreateMetricCard("تكلفة المتاح", lblTotalAvailableCost, "إجمالي رأس المال", Color.FromArgb(180, 83, 9), Color.FromArgb(254, 252, 232));
 
             lblTotalRetailValue = new Label();
-            var card3 = CreateMetricCard("🏷️ القيمة البيعية", lblTotalRetailValue, "بسعر البيع المقترح", Color.FromArgb(37, 99, 235), Color.FromArgb(239, 246, 255));
+            var card3 = CreateMetricCard("القيمة البيعية", lblTotalRetailValue, "بسعر البيع المقترح", Color.FromArgb(37, 99, 235), Color.FromArgb(239, 246, 255));
 
             lblTotalExpectedProfit = new Label();
-            cardProfit = CreateMetricCard("📈 أرباح متوقعة", lblTotalExpectedProfit, "هامش ربح المخزون", Color.FromArgb(22, 163, 74), Color.FromArgb(240, 253, 244));
+            cardProfit = CreateMetricCard("أرباح متوقعة", lblTotalExpectedProfit, "هامش ربح المخزون", Color.FromArgb(22, 163, 74), Color.FromArgb(240, 253, 244));
 
             lblTotalSoldUnits = new Label();
-            var card5 = CreateMetricCard("🛒 أجهزة مباعة", lblTotalSoldUnits, "تم تسليمها للعملاء", Color.FromArgb(220, 38, 38), Color.FromArgb(254, 242, 242));
+            var card5 = CreateMetricCard("أجهزة مباعة", lblTotalSoldUnits, "تم تسليمها للعملاء", Color.FromArgb(220, 38, 38), Color.FromArgb(254, 242, 242));
 
             lblTotalRealizedProfit = new Label();
-            cardRealizedProfit = CreateMetricCard("💵 أرباح محققة", lblTotalRealizedProfit, "صافي ربح البيع", Color.FromArgb(109, 40, 217), Color.FromArgb(245, 243, 255));
+            cardRealizedProfit = CreateMetricCard("أرباح محققة", lblTotalRealizedProfit, "صافي ربح البيع", Color.FromArgb(109, 40, 217), Color.FromArgb(245, 243, 255));
 
             cardCost.Visible = _canViewCost;
             cardProfit.Visible = _canViewCost;
@@ -757,7 +757,7 @@ namespace ChickenDist.Forms
             {
                 Clipboard.SetText(string.Join(Environment.NewLine, list));
                 System.Media.SystemSounds.Asterisk.Play();
-                Theme.ShowMsg($"✅ تم نسخ {list.Count} سيريال بنجاح إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Theme.ShowMsg($"تم نسخ {list.Count} سيريال بنجاح إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -781,7 +781,7 @@ namespace ChickenDist.Forms
                         string title = cboViewMode.SelectedIndex == 0 ? "تقرير تفصيلي لسيريلات الأجهزة (IMEI)" : "ملخص كميات وسيريلات الأجهزة المجمعة";
                         FrmReports.ExportDataGridViewToXls(dgGrid, dlg.FileName, title, AppConfig.CompanyName);
 
-                        var res = MessageBox.Show("✅ تم تصدير التقرير بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير التقرير بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
@@ -831,7 +831,7 @@ namespace ChickenDist.Forms
 
             // 1. ترويسة التقرير
             string compName = AppConfig.CompanyName ?? "تقرير كميات وسيريلات الأجهزة";
-            string repTitle = cboViewMode.SelectedIndex == 0 ? "📱 تقرير تفصيلي لكميات وسيريلات الأجهزة بالمخازن (IMEI)" : "📊 ملخص كميات وسيريلات الأجهزة المجمعة";
+            string repTitle = cboViewMode.SelectedIndex == 0 ? "تقرير تفصيلي لكميات وسيريلات الأجهزة بالمخازن (IMEI)" : "ملخص كميات وسيريلات الأجهزة المجمعة";
             string printDate = $"تاريخ الطباعة: {DateTime.Now:yyyy/MM/dd HH:mm}   |   المستخدم: {Session.EmpName}";
 
             var formatRight = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };

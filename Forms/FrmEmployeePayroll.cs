@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -42,7 +42,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📊 مسيرات الرواتب والبدلات والمكافآت والخصومات";
+            this.Text = "مسيرات الرواتب والبدلات والمكافآت والخصومات";
             this.Size = new Size(1220, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -61,7 +61,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "📊 إدارة الرواتب الشهرية ومفردات المرتب والبدلات والخصومات",
+                Text = "إدارة الرواتب الشهرية ومفردات المرتب والبدلات والخصومات",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
@@ -77,8 +77,8 @@ namespace ChickenDist.Forms
                 Padding = new Point(16, 8)
             };
 
-            var tabPayroll = new TabPage("📑 مسير الرواتب الشهرية والاحتساب التلقائي");
-            var tabItems = new TabPage("🎁 إدارة البدلات والمكافآت والخصومات");
+            var tabPayroll = new TabPage("مسير الرواتب الشهرية والاحتساب التلقائي");
+            var tabItems = new TabPage("إدارة البدلات والمكافآت والخصومات");
 
             BuildPayrollTab(tabPayroll);
             BuildItemsTab(tabItems);
@@ -107,7 +107,7 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            var lblMonth = new Label { Text = "📅 شهر الرواتب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+            var lblMonth = new Label { Text = "شهر الرواتب:", AutoSize = true, ForeColor = Theme.TextMain, Margin = new Padding(5, 7, 0, 0), Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
             dtpMonth = new DateTimePicker
             {
                 Format = DateTimePickerFormat.Custom,
@@ -118,16 +118,16 @@ namespace ChickenDist.Forms
             };
             dtpMonth.ValueChanged += (s, e) => LoadPayrollSheet();
 
-            btnGeneratePayroll = Theme.MakeButton("⚡ توليد واحتساب مسير الرواتب تلقائياً", 0, 0, 260, 36, Theme.Primary);
+            btnGeneratePayroll = Theme.MakeButton("توليد واحتساب مسير الرواتب تلقائياً", 0, 0, 260, 36, Theme.Primary);
             btnGeneratePayroll.Click += BtnGeneratePayroll_Click;
 
-            btnPaySelectedSalary = Theme.MakeButton("💵 صرف واعتماد راتب المحدد", 0, 0, 200, 36, Theme.Success);
+            btnPaySelectedSalary = Theme.MakeButton("صرف واعتماد راتب المحدد", 0, 0, 200, 36, Theme.Success);
             btnPaySelectedSalary.Click += BtnPaySelectedSalary_Click;
 
-            btnPrintPayrollSheet = Theme.MakeButton("🖨️ طباعة كشف المسير", 0, 0, 150, 36, Theme.Secondary);
+            btnPrintPayrollSheet = Theme.MakeButton("طباعة كشف المسير", 0, 0, 150, 36, Theme.Secondary);
             btnPrintPayrollSheet.Click += BtnPrintPayrollSheet_Click;
 
-            btnPrintPayslip = Theme.MakeButton("📄 طباعة مفردات المرتب", 0, 0, 170, 36, Color.FromArgb(79, 70, 229));
+            btnPrintPayslip = Theme.MakeButton("طباعة مفردات المرتب", 0, 0, 170, 36, Color.FromArgb(79, 70, 229));
             btnPrintPayslip.Click += BtnPrintPayslip_Click;
 
             pnlToolbar.Controls.AddRange(new Control[] { lblMonth, dtpMonth, btnGeneratePayroll, btnPaySelectedSalary, btnPrintPayrollSheet, btnPrintPayslip });
@@ -142,9 +142,9 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            lblEmployeesCount = new Label { Text = "👥 عدد الموظفين: 0", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 30, 0) };
-            lblTotalNetSalaries = new Label { Text = "💰 إجمالي صافي الرواتب المستحقة: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 11f, FontStyle.Bold), ForeColor = Color.DarkBlue, Margin = new Padding(10, 0, 30, 0) };
-            lblTotalPaidSalaries = new Label { Text = "✅ المصروف منها: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 11f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 30, 0) };
+            lblEmployeesCount = new Label { Text = "عدد الموظفين: 0", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 30, 0) };
+            lblTotalNetSalaries = new Label { Text = "إجمالي صافي الرواتب المستحقة: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 11f, FontStyle.Bold), ForeColor = Color.DarkBlue, Margin = new Padding(10, 0, 30, 0) };
+            lblTotalPaidSalaries = new Label { Text = "المصروف منها: 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 11f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 30, 0) };
 
             pnlSummary.Controls.AddRange(new Control[] { lblEmployeesCount, lblTotalNetSalaries, lblTotalPaidSalaries });
 
@@ -225,7 +225,7 @@ namespace ChickenDist.Forms
                     abs > 0 ? abs.ToString("N2") : "—",
                     adv > 0 ? adv.ToString("N2") : "—",
                     net.ToString("N2") + " ج",
-                    isPaid ? "✅ تم الصرف" : "⏳ غير معتمد"
+                    isPaid ? "تم الصرف" : "غير معتمد"
                 );
 
                 var row = dgPayroll.Rows[idx];
@@ -243,9 +243,9 @@ namespace ChickenDist.Forms
                 }
             }
 
-            lblEmployeesCount.Text = $"👥 عدد الموظفين: {dgPayroll.Rows.Count:N0}";
-            lblTotalNetSalaries.Text = $"💰 إجمالي صافي الرواتب المستحقة: {totalNet:N2} ج";
-            lblTotalPaidSalaries.Text = $"✅ المصروف منها: {totalPaid:N2} ج";
+            lblEmployeesCount.Text = $"عدد الموظفين: {dgPayroll.Rows.Count:N0}";
+            lblTotalNetSalaries.Text = $"إجمالي صافي الرواتب المستحقة: {totalNet:N2} ج";
+            lblTotalPaidSalaries.Text = $"المصروف منها: {totalPaid:N2} ج";
         }
 
         private void BtnGeneratePayroll_Click(object sender, EventArgs e)
@@ -256,7 +256,7 @@ namespace ChickenDist.Forms
                 try
                 {
                     EmployeeHRDAL.GenerateMonthlyPayroll(mYear);
-                    MessageBox.Show($"✅ تم احتساب وتوليد مسير رواتب شهر [{mYear}] بنجاح.", "تم الاحتساب", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم احتساب وتوليد مسير رواتب شهر [{mYear}] بنجاح.", "تم الاحتساب", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadPayrollSheet();
                 }
                 catch (Exception ex)
@@ -277,7 +277,7 @@ namespace ChickenDist.Forms
 
             if (pId <= 0)
             {
-                MessageBox.Show("يرجى الضغط على زر [⚡ توليد واحتساب مسير الرواتب تلقائياً] أولاً لحفظ مسير الراتب.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى الضغط على زر [توليد واحتساب مسير الرواتب تلقائياً] أولاً لحفظ مسير الراتب.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -295,7 +295,7 @@ namespace ChickenDist.Forms
                     int safeId = Session.GetDefaultSafeID();
                     if (EmployeeHRDAL.PaySalary(pId, safeId, $"صرف راتب شهر {mYear}"))
                     {
-                        MessageBox.Show($"✅ تم صرف راتب الموظف [{empName}] بنجاح والتأثير على الخزينة وحساب الموظف.", "تم الصرف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"تم صرف راتب الموظف [{empName}] بنجاح والتأثير على الخزينة وحساب الموظف.", "تم الصرف", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadPayrollSheet();
                     }
                 }
@@ -322,7 +322,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            var lblEmp = new Label { Text = "👤 الموظف:", Location = new Point(1020, 15), AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            var lblEmp = new Label { Text = "الموظف:", Location = new Point(1020, 15), AutoSize = true, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             cboItemEmp = new ComboBox { Location = new Point(810, 12), Width = 200, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 9.5f) };
 
             var lblType = new Label { Text = "نوع البند:", Location = new Point(740, 15), AutoSize = true };
@@ -349,7 +349,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold)
             };
 
-            btnSaveItem = Theme.MakeButton("💾 إضافة البند", 15, 30, 100, 42, Theme.Success);
+            btnSaveItem = Theme.MakeButton("إضافة البند", 15, 30, 100, 42, Theme.Success);
             btnSaveItem.Click += BtnSaveItem_Click;
 
             pnlInput.Controls.AddRange(new Control[] {
@@ -381,10 +381,10 @@ namespace ChickenDist.Forms
             cboItemFilterType.Items.AddRange(new object[] { "الكل", "مكافأة", "بدل", "خصم / جزاء", "سلفة", "إضافي" });
             cboItemFilterType.SelectedIndex = 0;
 
-            btnFilterItems = Theme.MakeButton("🔍 بحث", 0, 0, 90, 30, Theme.Primary);
+            btnFilterItems = Theme.MakeButton("بحث", 0, 0, 90, 30, Theme.Primary);
             btnFilterItems.Click += (s, e) => LoadSalaryItems();
 
-            btnDeleteItem = Theme.MakeButton("🗑️ حذف البند المحدد", 0, 0, 150, 30, Color.FromArgb(185, 28, 28));
+            btnDeleteItem = Theme.MakeButton("حذف البند المحدد", 0, 0, 150, 30, Color.FromArgb(185, 28, 28));
             btnDeleteItem.Click += BtnDeleteItem_Click;
 
             pnlFilter.Controls.AddRange(new Control[] { lfFrom, dtpItemFilterFrom, lfTo, dtpItemFilterTo, lfEmp, cboItemFilterEmp, lfType, cboItemFilterType, btnFilterItems, btnDeleteItem });
@@ -442,7 +442,7 @@ namespace ChickenDist.Forms
                     iType,
                     amt.ToString("N2") + " ج",
                     r["Reason"],
-                    settled ? "✅ تمت التسوية بالراتب" : "⏳ جاري (غير مسوى)",
+                    settled ? "تمت التسوية بالراتب" : "جاري (غير مسوى)",
                     r["CreatedByName"]
                 );
 
@@ -466,7 +466,7 @@ namespace ChickenDist.Forms
                     int id = EmployeeHRDAL.SaveSalaryItem(ci.ID, dtpItemDate.Value, type, amt, reason, pMonth, chkAffectCash.Checked);
                     if (id > 0)
                     {
-                        MessageBox.Show("✅ تم إضافة البند بنجاح.", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم إضافة البند بنجاح.", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         txtItemAmount.Text = "0";
                         txtItemReason.Clear();
                         LoadSalaryItems();
@@ -648,8 +648,8 @@ namespace ChickenDist.Forms
                 // جدول الاستحقاقات والاستقطاعات
                 float midX = ev.PageBounds.Width / 2;
 
-                g.DrawString("🟢 الاستحقاقات والأرباح (+)", fontSub, Brushes.DarkGreen, 60, y);
-                g.DrawString("🔴 الاستقطاعات والخصومات (-)", fontSub, Brushes.DarkRed, midX + 20, y);
+                g.DrawString("الاستحقاقات والأرباح (+)", fontSub, Brushes.DarkGreen, 60, y);
+                g.DrawString("الاستقطاعات والخصومات (-)", fontSub, Brushes.DarkRed, midX + 20, y);
                 y += 30;
 
                 string[] earnings = {
@@ -685,7 +685,7 @@ namespace ChickenDist.Forms
                 // الصافي الإجمالي
                 g.FillRectangle(Brushes.LightYellow, 50, y, ev.PageBounds.Width - 100, 45);
                 g.DrawRectangle(Pens.Orange, 50, y, ev.PageBounds.Width - 100, 45);
-                g.DrawString($"💵 صافي الراتب المستحق للصرف: {netSalary}", new Font("Segoe UI", 13f, FontStyle.Bold), Brushes.DarkBlue, 60, y + 10);
+                g.DrawString($"صافي الراتب المستحق للصرف: {netSalary}", new Font("Segoe UI", 13f, FontStyle.Bold), Brushes.DarkBlue, 60, y + 10);
                 y += 70;
 
                 // التوقيعات

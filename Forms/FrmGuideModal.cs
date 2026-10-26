@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
@@ -26,7 +26,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = $"📖 {_guideTitle}";
+            this.Text = $"{_guideTitle}";
             this.Size = new Size(950, 720);
             this.MinimumSize = new Size(800, 550);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -68,7 +68,7 @@ namespace ChickenDist.Forms
             btnClose.Click += (s, e) => this.Close();
             pnlTools.Controls.Add(btnClose);
 
-            var btnPrint = Theme.MakeButton("🖨️ طباعة الدليل", 240, 4, 120, 34, Color.FromArgb(40, 120, 180));
+            var btnPrint = Theme.MakeButton("طباعة الدليل", 240, 4, 120, 34, Color.FromArgb(40, 120, 180));
             btnPrint.Click += (s, e) => PrintGuide();
             pnlTools.Controls.Add(btnPrint);
 
@@ -86,7 +86,7 @@ namespace ChickenDist.Forms
 
             var lblSearch = new Label
             {
-                Text = "🔍 بحث:",
+                Text = "بحث:",
                 Location = new Point(155, 10),
                 AutoSize = true,
                 ForeColor = Color.Silver,
@@ -182,7 +182,7 @@ namespace ChickenDist.Forms
         {
             rtb.SelectionFont = new Font("Segoe UI", 12.5f, FontStyle.Bold);
             rtb.SelectionColor = Color.FromArgb(180, 83, 9);
-            rtb.AppendText("\n🔹 " + text + "\n");
+            rtb.AppendText("\n" + text + "\n");
         }
 
         public static void AppendStep(RichTextBox rtb, string stepNum, string title, string detail)
@@ -207,7 +207,7 @@ namespace ChickenDist.Forms
         {
             rtb.SelectionFont = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             rtb.SelectionColor = Color.FromArgb(22, 101, 52);
-            rtb.AppendText("\n   💡 معلومة هامة: ");
+            rtb.AppendText("\n   معلومة هامة: ");
 
             rtb.SelectionFont = new Font("Segoe UI", 10.5f, FontStyle.Regular);
             rtb.SelectionColor = Color.FromArgb(22, 101, 52);

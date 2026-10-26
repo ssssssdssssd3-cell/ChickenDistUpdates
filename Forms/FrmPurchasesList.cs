@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -114,7 +114,7 @@ namespace ChickenDist.Forms
 			cboSupplierFilter.SelectedIndex = 0;
 			Button btnSupplierSearchDlg = new Button
 			{
-				Text = "🔍",
+				Text = "بحث",
 				Width = 32,
 				Height = 26,
 				Font = Theme.FontBold,
@@ -213,19 +213,19 @@ namespace ChickenDist.Forms
 			txtSearch.TextChanged += delegate { FilterData(); };
 			filterPanel.Controls.Add(MakeFilterPanel("بحث:", txtSearch, 145));
 
-			btnLoad = Theme.MakeButton("🔄 عرض", Theme.Accent);
+			btnLoad = Theme.MakeButton("عرض", Theme.Accent);
 			btnLoad.Size = new Size(80, 28);
 			btnLoad.Margin = new Padding(6, 3, 4, 2);
 			btnLoad.Click += delegate { LoadPurchases(); };
 			filterPanel.Controls.Add(btnLoad);
 
-			var btnPrint = Theme.MakeButton("🖨️ طباعة الفاتورة", Color.FromArgb(40, 100, 180));
+			var btnPrint = Theme.MakeButton("طباعة الفاتورة", Color.FromArgb(40, 100, 180));
 			btnPrint.Size = new Size(130, 28);
 			btnPrint.Margin = new Padding(6, 3, 4, 2);
 			btnPrint.Click += BtnPrintPurchase_Click;
 			filterPanel.Controls.Add(btnPrint);
 
-			var btnWhatsApp = Theme.MakeButton("📲 إرسال واتساب", Color.FromArgb(37, 211, 102));
+			var btnWhatsApp = Theme.MakeButton("إرسال واتساب", Color.FromArgb(37, 211, 102));
 			btnWhatsApp.Size = new Size(130, 28);
 			btnWhatsApp.Margin = new Padding(6, 3, 4, 2);
 			btnWhatsApp.Click += (s, e) =>
@@ -240,7 +240,7 @@ namespace ChickenDist.Forms
 			};
 			filterPanel.Controls.Add(btnWhatsApp);
 
-			btnNewPurchase = Theme.MakeButton("➕ فاتورة شراء جديدة", Color.FromArgb(40, 150, 80));
+			btnNewPurchase = Theme.MakeButton("فاتورة شراء جديدة", Color.FromArgb(40, 150, 80));
 			btnNewPurchase.Size = new Size(150, 28);
 			btnNewPurchase.Margin = new Padding(6, 3, 4, 2);
 			btnNewPurchase.Click += delegate { new FrmPurchase().ShowDialog(); LoadPurchases(); };
@@ -260,8 +260,8 @@ namespace ChickenDist.Forms
 			for (int i = 0; i < 5; i++) summaryTbl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20f));
 			summaryTbl.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 			lblTotalSummary  = AddDashboardCard(summaryTbl, "إجمالي الفواتير:",        "0.00 ج", Theme.Accent,                  0);
-			lblReturnSummary = AddDashboardCard(summaryTbl, "إجمالي المرتجعات: ↩",   "0.00 ج", Color.FromArgb(231, 76, 60),   1);
-			lblNetSummary    = AddDashboardCard(summaryTbl, "الصافي بعد المرتجع: ✔", "0.00 ج", Color.FromArgb(46, 204, 113),  2);
+			lblReturnSummary = AddDashboardCard(summaryTbl, "إجمالي المرتجعات:",   "0.00 ج", Color.FromArgb(231, 76, 60),   1);
+			lblNetSummary    = AddDashboardCard(summaryTbl, "الصافي بعد المرتجع:", "0.00 ج", Color.FromArgb(46, 204, 113),  2);
 			lblCashSummary   = AddDashboardCard(summaryTbl, "المشتريات النقدية:",      "0.00 ج", Theme.Success,                 3);
 			lblCreditSummary = AddDashboardCard(summaryTbl, "المشتريات الآجلة:",      "0.00 ج", Color.FromArgb(52, 152, 219),  4);
 
@@ -289,8 +289,8 @@ namespace ChickenDist.Forms
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName",      HeaderText = "المورد",         FillWeight = 110f });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierCode",      HeaderText = "كود المورد",     FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalAmount",       HeaderText = "قيمة الفاتورة", FillWeight = 60f });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount",      HeaderText = "المرتجع ↩",      FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
-			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",         HeaderText = "الصافي ✔",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnAmount",      HeaderText = "المرتجع",      FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(231, 76, 60), Alignment = DataGridViewContentAlignment.MiddleCenter } });
+			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "NetAmount",         HeaderText = "الصافي",       FillWeight = 55f, DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Color.FromArgb(46, 204, 113), Font = new Font("Segoe UI", 9f, FontStyle.Bold) } });
 			dgPurchases.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes",             HeaderText = "الملاحظات",      FillWeight = 110f });
 			dgPurchases.SelectionChanged += DgPurchases_SelectionChanged;
 			dgPurchases.CellFormatting += (s, e) =>
@@ -346,7 +346,7 @@ namespace ChickenDist.Forms
 			};
 			Label lblDetailsTitle = new Label
 			{
-				Text = "📋 تفاصيل أصناف فاتورة الشراء المحددة:",
+				Text = "تفاصيل أصناف فاتورة الشراء المحددة:",
 				AutoSize = true,
 				ForeColor = Theme.TextSearchLabel,
 				Font = Theme.FontBold,
@@ -359,7 +359,7 @@ namespace ChickenDist.Forms
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ProductName", HeaderText = "الصنف",      FillWeight = 100f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitName",    HeaderText = "الوحدة",     FillWeight = 38f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(15, 118, 110) } });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Quantity",    HeaderText = "الكمية",     FillWeight = 45f });
-			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnedQty", HeaderText = "المرتجع ↩",  FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(220, 50, 50) } });
+			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "ReturnedQty", HeaderText = "المرتجع",  FillWeight = 45f, DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), ForeColor = Color.FromArgb(220, 50, 50) } });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "UnitPrice",   HeaderText = "سعر الوحدة", FillWeight = 45f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "Discount",    HeaderText = "الخصم",      FillWeight = 40f });
 			dgItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalPrice",  HeaderText = "الإجمالي",   FillWeight = 55f });
@@ -643,7 +643,7 @@ namespace ChickenDist.Forms
 				if (row.Table.Columns.Contains("ReturnedQty") && row["ReturnedQty"] != DBNull.Value)
 					retQty = Convert.ToDecimal(row["ReturnedQty"]);
 
-				string retQtyStr = retQty > 0 ? (retQty.ToString("N2") + " ↩") : "-";
+				string retQtyStr = retQty > 0 ? (retQty.ToString("N2") + "") : "-";
 
 				string unitName = row.Table.Columns.Contains("UnitName") && row["UnitName"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["UnitName"].ToString())
 					? row["UnitName"].ToString()
@@ -691,10 +691,10 @@ namespace ChickenDist.Forms
 
 			var menu = new ContextMenuStrip();
 
-			var itemReceipt = new ToolStripMenuItem("🧾 طباعة باركود (Receipt)");
+			var itemReceipt = new ToolStripMenuItem("طباعة باركود (Receipt)");
 			itemReceipt.Click += (s2, e2) => new FrmPrintPurchase(purchaseID, "Receipt");
 
-			var itemA4 = new ToolStripMenuItem("📄 طباعة فاتورة A4");
+			var itemA4 = new ToolStripMenuItem("طباعة فاتورة A4");
 			itemA4.Click += (s2, e2) => new FrmPrintPurchase(purchaseID, "A4");
 
 			menu.Items.Add(itemReceipt);
@@ -708,7 +708,7 @@ namespace ChickenDist.Forms
 		{
 			var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
-			var miEdit = new ToolStripMenuItem("✏️ تعديل الفاتورة", null, (s, e) =>
+			var miEdit = new ToolStripMenuItem("تعديل الفاتورة", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
 				{
@@ -718,7 +718,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miCopy = new ToolStripMenuItem("📄 نسخ الفاتورة (شراء جديد)", null, (s, e) =>
+			var miCopy = new ToolStripMenuItem("نسخ الفاتورة (شراء جديد)", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
 				{
@@ -728,7 +728,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miPrint = new ToolStripMenuItem("🖨️ طباعة الفاتورة", null, (s, e) =>
+			var miPrint = new ToolStripMenuItem("طباعة الفاتورة", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0)
 				{
@@ -736,7 +736,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miBarcode = new ToolStripMenuItem("🏷️ طباعة باركود أصناف الفاتورة", null, (s, e) =>
+			var miBarcode = new ToolStripMenuItem("طباعة باركود أصناف الفاتورة", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
 				{
@@ -746,7 +746,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miWhatsApp = new ToolStripMenuItem("📲 إرسال الفاتورة عبر الواتساب", null, (s, e) =>
+			var miWhatsApp = new ToolStripMenuItem("إرسال الفاتورة عبر الواتساب", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
 				{
@@ -755,12 +755,12 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miReturn = new ToolStripMenuItem("↩️ إنشاء مرتجع مشتريات", null, (s, e) =>
+			var miReturn = new ToolStripMenuItem("إنشاء مرتجع مشتريات", null, (s, e) =>
 			{
 				new FrmPurchaseReturn().ShowDialog(this);
 			});
 
-			var miStatement = new ToolStripMenuItem("🏭 كشف حساب المورد", null, (s, e) =>
+			var miStatement = new ToolStripMenuItem("كشف حساب المورد", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseID"))
 				{
@@ -774,7 +774,7 @@ namespace ChickenDist.Forms
 				}
 			});
 
-			var miCopyCode = new ToolStripMenuItem("📋 نسخ رقم الفاتورة", null, (s, e) =>
+			var miCopyCode = new ToolStripMenuItem("نسخ رقم الفاتورة", null, (s, e) =>
 			{
 				if (dgPurchases.SelectedRows.Count > 0 && dgPurchases.Columns.Contains("PurchaseCode"))
 				{

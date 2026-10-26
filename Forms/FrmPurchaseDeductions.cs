@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -34,7 +34,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            Text = "📉 استقطاعات وتنزيلات فاتورة الشراء (الوكالة)";
+            Text = "استقطاعات وتنزيلات فاتورة الشراء (الوكالة)";
             Size = new Size(480, 440);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
 
             var lblHeader = new Label
             {
-                Text = "📉 استقطاعات فاتورة الشراء (تنزيل من حساب المورد)",
+                Text = "استقطاعات فاتورة الشراء (تنزيل من حساب المورد)",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
@@ -80,7 +80,7 @@ namespace ChickenDist.Forms
             // 1. عمولة المكان / الوكالة
             var lblComm = new Label
             {
-                Text = "🏪 عمولة المكان / الوكالة:",
+                Text = "عمولة المكان / الوكالة:",
                 Location = new Point(15, curY + 4),
                 Size = new Size(lblW, 24),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -94,7 +94,7 @@ namespace ChickenDist.Forms
             // 2. النولون (أجرة النقل)
             var lblFreight = new Label
             {
-                Text = "🚚 النولون (أجرة النقل / العربية):",
+                Text = "النولون (أجرة النقل / العربية):",
                 Location = new Point(15, curY + 4),
                 Size = new Size(lblW, 24),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -108,7 +108,7 @@ namespace ChickenDist.Forms
             // 3. وهبة العمال / الشيالة
             var lblPorterage = new Label
             {
-                Text = "👷 وهبة العمال / الشيالة:",
+                Text = "وهبة العمال / الشيالة:",
                 Location = new Point(15, curY + 4),
                 Size = new Size(lblW, 24),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -122,7 +122,7 @@ namespace ChickenDist.Forms
             // 4. ملاحظات وبيان
             var lblNotes = new Label
             {
-                Text = "📝 بيان وملاحظات الاستقطاع:",
+                Text = "بيان وملاحظات الاستقطاع:",
                 Location = new Point(15, curY + 4),
                 Size = new Size(lblW, 24),
                 Font = Theme.FontMain,
@@ -184,7 +184,7 @@ namespace ChickenDist.Forms
             // 6. ملاحظة توجيهية
             var lblTip = new Label
             {
-                Text = "💡 ملاحظة: يتم خصم هذه المبالغ تلقائياً من صافي حساب المورد دون التأثير على كميات أو تكلفة المخزون.",
+                Text = "ملاحظة: يتم خصم هذه المبالغ تلقائياً من صافي حساب المورد دون التأثير على كميات أو تكلفة المخزون.",
                 Location = new Point(15, curY),
                 Size = new Size(415, 34),
                 ForeColor = Theme.TextSub,
@@ -203,7 +203,7 @@ namespace ChickenDist.Forms
 
             var btnConfirm = new Button
             {
-                Text = "💾 تأكيد وتطبيق [Enter]",
+                Text = "تأكيد وتطبيق [Enter]",
                 Size = new Size(160, 35),
                 Location = new Point(275, 10),
                 BackColor = Theme.Success,
@@ -217,7 +217,7 @@ namespace ChickenDist.Forms
 
             var btnClear = new Button
             {
-                Text = "🗑️ تصفير الاستقطاعات",
+                Text = "تصفير الاستقطاعات",
                 Size = new Size(130, 35),
                 Location = new Point(135, 10),
                 BackColor = Color.FromArgb(239, 68, 68),

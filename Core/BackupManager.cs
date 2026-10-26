@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data.SqlClient;
 using System.IO;
 using System.IO.Compression;
@@ -80,15 +80,15 @@ namespace ChickenDist.Core
                 : "لم يتم عمل نسخة احتياطية من قبل";
 
             string msg =
-                "⚠️ تحذير: النسخ الاحتياطي لقاعدة البيانات متأخر!\n\n" +
+                "تحذير: النسخ الاحتياطي لقاعدة البيانات متأخر!\n\n" +
                 $"آخر نسخة احتياطية: {lastStr}\n\n" +
                 "يُنصح بعمل نسخة احتياطية الآن من قائمة:\n" +
-                "الإعدادات → النسخ الاحتياطي\n\n" +
+                "الإعدادات - النسخ الاحتياطي\n\n" +
                 "هل تريد عمل نسخة احتياطية الآن؟";
 
             var result = MessageBox.Show(
                 msg,
-                "⚠️ تحذير النسخ الاحتياطي",
+                "تحذير النسخ الاحتياطي",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning,
                 MessageBoxDefaultButton.Button1,
@@ -284,26 +284,26 @@ namespace ChickenDist.Core
 
                 if (!silent)
                 {
-                    string successMsg = $"✅ تم عمل النسخة الاحتياطية بنجاح وضغطها لملف ZIP!\n\nالملف:\n{zipPath}";
+                    string successMsg = $"تم عمل النسخة الاحتياطية بنجاح وضغطها لملف ZIP!\n\nالملف:\n{zipPath}";
                     if (cloudSuccess)
                     {
-                        successMsg += "\n\n☁️ تم رفع وتأمين النسخة سحابياً وإتاحتها للتحميل من تطبيق المالك! ✅";
+                        successMsg += "\n\nتم رفع وتأمين النسخة سحابياً وإتاحتها للتحميل من تطبيق المالك!";
                     }
                     else
                     {
-                        successMsg += $"\n\n⚠️ فشل الرفع السحابي التلقائي للنسخة: {cloudError}";
+                        successMsg += $"\n\nفشل الرفع السحابي التلقائي للنسخة: {cloudError}";
                     }
 
                     if (!string.IsNullOrWhiteSpace(localCloudPath) && Directory.Exists(localCloudPath))
                     {
-                        successMsg += "\n\n📂 تم نسخ الملف للمجلد المحلي السحابي بنجاح!";
+                        successMsg += "\n\nتم نسخ الملف للمجلد المحلي السحابي بنجاح!";
                     }
                     if (!string.IsNullOrWhiteSpace(AppConfig.WhatsAppBackupPhone))
                     {
                         if (waSuccess)
-                            successMsg += "\n\n📬 تم إرسال النسخة الاحتياطية للواتساب بنجاح!";
+                            successMsg += "\n\nتم إرسال النسخة الاحتياطية للواتساب بنجاح!";
                         else
-                            successMsg += $"\n\n⚠️ فشل الإرسال عبر الواتساب: {waError}";
+                            successMsg += $"\n\nفشل الإرسال عبر الواتساب: {waError}";
                     }
 
                     MessageBox.Show(
@@ -324,7 +324,7 @@ namespace ChickenDist.Core
                 if (!silent)
                 {
                     MessageBox.Show(
-                        $"❌ فشل عمل النسخة الاحتياطية:\n\n{ex.Message}\n\n" +
+                        $"فشل عمل النسخة الاحتياطية:\n\n{ex.Message}\n\n" +
                         "تأكد من:\n" +
                         "• صلاحيات الكتابة على مجلد الباكب\n" +
                         "• أن SQL Server يعمل\n" +

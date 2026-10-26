@@ -20,14 +20,14 @@ namespace ChickenDist.Core
             {
                 if (DateTime.Now.Year < 2024 || DateTime.Now.Year > 2035)
                 {
-                    warningMessage = $"⚠️ تنبيه هام جداً: تاريخ جهاز الكمبيوتر الحالي غير مضبوط ({DateTime.Now:yyyy-MM-dd}).\nقد يؤدي هذا إلى تسجيل فواتير وحركات بتاريخ خاطئ وتخبيط التقارير الفترية!\nيرجى ضبط تاريخ وساعة الويندوز فوراً قبل متابعة العمل.";
+                    warningMessage = $"تنبيه هام جداً: تاريخ جهاز الكمبيوتر الحالي غير مضبوط ({DateTime.Now:yyyy-MM-dd}).\nقد يؤدي هذا إلى تسجيل فواتير وحركات بتاريخ خاطئ وتخبيط التقارير الفترية!\nيرجى ضبط تاريخ وساعة الويندوز فوراً قبل متابعة العمل.";
                     return false;
                 }
 
                 // فحص الشذوذ الزمني المسجل في جلسات الأجهزة أو المبيعات المستقبلية
                 if (DeviceSessionManager.CheckForTimeAnomalies(out string anomalyInfo))
                 {
-                    warningMessage = $"⚠️ تنبيه خطأ زمني مسجل في النظام:\n{anomalyInfo}\n\nيرجى الدخول إلى [سجل أجهزة البرنامج ومواعيد الفتح والإغلاق] لحذف السجل الخاطئ وضبط ساعة الجهاز المتسبب قبل استمرار العمل.";
+                    warningMessage = $"تنبيه خطأ زمني مسجل في النظام:\n{anomalyInfo}\n\nيرجى الدخول إلى [سجل أجهزة البرنامج ومواعيد الفتح والإغلاق] لحذف السجل الخاطئ وضبط ساعة الجهاز المتسبب قبل استمرار العمل.";
                     return false;
                 }
 
@@ -44,7 +44,7 @@ namespace ChickenDist.Core
                 {
                     if (DateTime.Now.Date < maxDbDate.Date.AddDays(-1))
                     {
-                        warningMessage = $"⚠️ تنبيه خطأ في تاريخ الجهاز: تاريخ الويندوز الحالي ({DateTime.Now:yyyy-MM-dd}) أقدم من أحدث حركة مسجلة بالبرنامج بتاريخ ({maxDbDate:yyyy-MM-dd}).\nيرجى ضبط تاريخ الويندوز لتجنب تداخل الحركات!";
+                        warningMessage = $"تنبيه خطأ في تاريخ الجهاز: تاريخ الويندوز الحالي ({DateTime.Now:yyyy-MM-dd}) أقدم من أحدث حركة مسجلة بالبرنامج بتاريخ ({maxDbDate:yyyy-MM-dd}).\nيرجى ضبط تاريخ الويندوز لتجنب تداخل الحركات!";
                         return false;
                     }
                 }
@@ -2356,7 +2356,7 @@ public static void EnsureDatabaseSchema()
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'PendingQtyThreshold')
                 BEGIN
                     -- الكمية القديمة المتبقية عند تسجيل السعر المعلق
-                    -- عندما يصل المخزون إلى هذا الرقم أو أقل → يتفعل السعر الجديد
+                    -- عندما يصل المخزون إلى هذا الرقم أو أقل - يتفعل السعر الجديد
                     ALTER TABLE Products ADD PendingQtyThreshold DECIMAL(10,3) NULL;
                 END";
                 Execute(sqlProductPricing);
@@ -2559,7 +2559,7 @@ public static void EnsureDatabaseSchema()
                         Factor DECIMAL(10,3) NULL
                     );
                 END
-                -- ✅ إضافة عمود Factor لجداول موجودة بدونه (للأجهزة التي سبق تثبيتها)
+                -- إضافة عمود Factor لجداول موجودة بدونه (للأجهزة التي سبق تثبيتها)
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('WarehouseTransferItems') AND name = 'Factor')
                 BEGIN
                     ALTER TABLE WarehouseTransferItems ADD Factor DECIMAL(10,3) NULL;

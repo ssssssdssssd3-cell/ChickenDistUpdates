@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -127,7 +127,7 @@ namespace ChickenDist.Forms
                 y += (int)szComp.Height + 5;
 
                 // Title
-                string docTitle = "💸 سند صرف نقدية لمورد";
+                string docTitle = "سند صرف نقدية لمورد";
                 SizeF szTitle = g.MeasureString(docTitle, fHeader);
                 g.DrawString(docTitle, fHeader, Brushes.Black, (pageW - szTitle.Width) / 2, y);
                 y += (int)szTitle.Height + 10;
@@ -214,23 +214,23 @@ namespace ChickenDist.Forms
 
             string amountTafqeet = TafqeetHelper.ConvertToArabicWords(_amount);
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("💸 *إشعار وسند صرف نقدية لمورد*");
+            sb.AppendLine("*إشعار وسند صرف نقدية لمورد*");
             sb.AppendLine("===============================");
-            sb.AppendLine($"🤝 *اسم المورد:* {_supplierName}");
-            sb.AppendLine($"🔢 *رقم السند:* {_voucherCode}");
-            sb.AppendLine($"📅 *التاريخ:* {_transDate:dd/MM/yyyy HH:mm}");
+            sb.AppendLine($"*اسم المورد:* {_supplierName}");
+            sb.AppendLine($"*رقم السند:* {_voucherCode}");
+            sb.AppendLine($"*التاريخ:* {_transDate:dd/MM/yyyy HH:mm}");
             sb.AppendLine("-------------------------------");
-            sb.AppendLine($"💵 *المبلغ المَصروف:* {_amount:N2} ج");
-            sb.AppendLine($"💬 *تفييد المبلغ:* ({amountTafqeet})");
+            sb.AppendLine($"*المبلغ المَصروف:* {_amount:N2} ج");
+            sb.AppendLine($"*تفييد المبلغ:* ({amountTafqeet})");
             sb.AppendLine("-------------------------------");
-            sb.AppendLine($"📊 *الرصيد السابق قبل الصرف:* {_prevBalance:N2} ج");
-            sb.AppendLine($"📌 *رصيدكم النهائي المتبقي:* {_currentBalance:N2} ج");
+            sb.AppendLine($"*الرصيد السابق قبل الصرف:* {_prevBalance:N2} ج");
+            sb.AppendLine($"*رصيدكم النهائي المتبقي:* {_currentBalance:N2} ج");
             if (!string.IsNullOrWhiteSpace(_notes))
             {
-                sb.AppendLine($"📝 *البيان:* {_notes}");
+                sb.AppendLine($"*البيان:* {_notes}");
             }
             sb.AppendLine("===============================");
-            sb.AppendLine("✨ *شكراً لتعاملكم معنا!*");
+            sb.AppendLine("*شكراً لتعاملكم معنا!*");
 
             WhatsAppSender.OpenWhatsApp(_supplierPhone, sb.ToString());
         }
@@ -250,7 +250,7 @@ namespace ChickenDist.Forms
                     Clipboard.SetImage(bmp);
                 }
 
-                MessageBox.Show("✅ تم تصميم إشعار الصرف ونسخ الصورة للحافظة بنجاح!\nسيتم فتح محادثة الواتساب للمورد الآن، فقط اضغط (Ctrl+V) للصق وإرسال الصورة.",
+                MessageBox.Show("تم تصميم إشعار الصرف ونسخ الصورة للحافظة بنجاح!\nسيتم فتح محادثة الواتساب للمورد الآن، فقط اضغط (Ctrl+V) للصق وإرسال الصورة.",
                     "تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 WhatsAppSender.OpenWhatsAppChat(_supplierPhone);
@@ -286,7 +286,7 @@ namespace ChickenDist.Forms
                 g.DrawString(company, fTitle, Brushes.Black, (w - szC.Width) / 2, y);
                 y += 30;
 
-                string title = "💸 إشعار وسند صرف نقدية لمورد";
+                string title = "إشعار وسند صرف نقدية لمورد";
                 SizeF szT = g.MeasureString(title, fHeader);
                 g.DrawString(title, fHeader, Brushes.DarkRed, (w - szT.Width) / 2, y);
                 y += 30;

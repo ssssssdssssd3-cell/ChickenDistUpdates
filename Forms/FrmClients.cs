@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -69,12 +69,12 @@ namespace ChickenDist.Forms
                 ForeColor = Color.FromArgb(241, 196, 15),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(8, 8, 0, 0),
-                Text = "👥 إجمالي العملاء: --  |  💰 إجمالي المديونيات: -- ج"
+                Text = "إجمالي العملاء: --  |  إجمالي المديونيات: -- ج"
             };
 
             var lblSearch = new Label
             {
-                Text = "🔍 بحث العملاء:",
+                Text = "بحث العملاء:",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -92,7 +92,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 FlatStyle = FlatStyle.Flat
             };
-            cboSearchFilter.Items.AddRange(new object[] { "🔍 الكل (شامل)", "👤 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchFilter.Items.AddRange(new object[] { "الكل (شامل)", "بالاسم", "برقم الهاتف", "بالكود" });
             cboSearchFilter.SelectedIndex = 0;
             cboSearchFilter.SelectedIndexChanged += (s, e) =>
             {
@@ -121,7 +121,7 @@ namespace ChickenDist.Forms
                 LoadClients(searchVal);
             };
 
-            btnSearch = Theme.MakeButton("🔍", Color.FromArgb(37, 99, 235));
+            btnSearch = Theme.MakeButton("بحث", Color.FromArgb(37, 99, 235));
             btnSearch.Dock = DockStyle.Right;
             btnSearch.Width = 45;
             btnSearch.Click += (s, e) => {
@@ -212,7 +212,7 @@ namespace ChickenDist.Forms
             int y = 10;
             var lblDetailsTitle = new Label
             {
-                Text = "📋 بطاقة وتفاصيل العميل",
+                Text = "بطاقة وتفاصيل العميل",
                 Location = new Point(10, y),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(241, 196, 15),
@@ -297,18 +297,18 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(lblBalance);
             y += 46;
 
-            btnSave = Theme.MakeButton("➕ حفظ العميل", 215, y, 100, 36, Color.FromArgb(16, 185, 129));
-            btnNew = Theme.MakeButton("➕ إضافة", 115, y, 95, 36, Color.FromArgb(37, 99, 235));
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 10, y, 100, 36, Color.FromArgb(239, 68, 68)); y += 42;
+            btnSave = Theme.MakeButton("حفظ العميل", 215, y, 100, 36, Color.FromArgb(16, 185, 129));
+            btnNew = Theme.MakeButton("إضافة", 115, y, 95, 36, Color.FromArgb(37, 99, 235));
+            btnDelete = Theme.MakeButton("إيقاف", 10, y, 100, 36, Color.FromArgb(239, 68, 68)); y += 42;
 
-            btnPayment = Theme.MakeButton("💵 تحصيل نقدية", 215, y, 100, 34, Color.FromArgb(5, 150, 105));
-            btnAdjustment = Theme.MakeButton("⚖️ تسوية رصيد", 115, y, 95, 34, Color.FromArgb(71, 85, 105));
-            btnStatement = Theme.MakeButton("📄 كشف حساب", 10, y, 100, 34, Color.FromArgb(37, 99, 235)); y += 40;
+            btnPayment = Theme.MakeButton("تحصيل نقدية", 215, y, 100, 34, Color.FromArgb(5, 150, 105));
+            btnAdjustment = Theme.MakeButton("تسوية رصيد", 115, y, 95, 34, Color.FromArgb(71, 85, 105));
+            btnStatement = Theme.MakeButton("كشف حساب", 10, y, 100, 34, Color.FromArgb(37, 99, 235)); y += 40;
 
-            btnItemizedStatement = Theme.MakeButton("📦 كشف الأصناف", 165, y, 150, 34, Color.FromArgb(2, 132, 199));
-            btnSalesReport = Theme.MakeButton("📊 تقرير المبيعات", 10, y, 150, 34, Color.FromArgb(217, 119, 6)); y += 42;
+            btnItemizedStatement = Theme.MakeButton("كشف الأصناف", 165, y, 150, 34, Color.FromArgb(2, 132, 199));
+            btnSalesReport = Theme.MakeButton("تقرير المبيعات", 10, y, 150, 34, Color.FromArgb(217, 119, 6)); y += 42;
 
-            var btnWhatsApp = Theme.MakeButton("📲 إرسال كشف الحساب واتساب", 10, y, 305, 36, Color.FromArgb(37, 211, 102));
+            var btnWhatsApp = Theme.MakeButton("إرسال كشف الحساب واتساب", 10, y, 305, 36, Color.FromArgb(37, 211, 102));
             btnWhatsApp.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnWhatsApp.ForeColor = Color.White;
 
@@ -338,18 +338,18 @@ namespace ChickenDist.Forms
                 }
                 catch { }
 
-                string msg = $"📊 *كشف حساب مالي - {AppConfig.CompanyName}*\n" +
-                             $"👤 *العميل:* {name}\n" +
-                             $"📅 *التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n" +
-                             $"💵 *الرصيد المتبقي/المديونية:* {bal:N2} ج\n" +
-                             $"\nنتمنى لكم دوام التوفيق والنجاح! 🙏";
+                string msg = $"*كشف حساب مالي - {AppConfig.CompanyName}*\n" +
+                             $"*العميل:* {name}\n" +
+                             $"*التاريخ:* {DateTime.Now:yyyy-MM-dd HH:mm}\n" +
+                             $"*الرصيد المتبقي/المديونية:* {bal:N2} ج\n" +
+                             $"\nنتمنى لكم دوام التوفيق والنجاح!";
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
                     phone,
                     msg,
                     () => ReceiptImageGenerator.GenerateClientStatementImage(_selectedID, name, bal),
-                    "📱 إرسال كشف حساب العميل عبر الواتساب");
+                    "إرسال كشف حساب العميل عبر الواتساب");
             };
 
             pnlDetails.Controls.AddRange(new Control[] { btnNew, btnSave, btnDelete, btnStatement, btnPayment, btnAdjustment, btnSalesReport, btnItemizedStatement, btnWhatsApp });
@@ -455,7 +455,7 @@ namespace ChickenDist.Forms
 
             if (lblSummary != null)
             {
-                lblSummary.Text = string.Format("👥 إجمالي العملاء: {0:N0}  |  💰 إجمالي المديونيات: {1:N2} ج", dt.Rows.Count, totalDebt);
+                lblSummary.Text = string.Format("إجمالي العملاء: {0:N0}  |  إجمالي المديونيات: {1:N2} ج", dt.Rows.Count, totalDebt);
             }
 
             dgClients.AutoSizeColumnsMode = oldMode;
@@ -499,7 +499,7 @@ namespace ChickenDist.Forms
 
             if (btnSave != null)
             {
-                btnSave.Text = "💾 حفظ التعديل";
+                btnSave.Text = "حفظ التعديل";
                 btnSave.BackColor = Color.FromArgb(245, 158, 11);
             }
         }
@@ -563,7 +563,7 @@ namespace ChickenDist.Forms
 
             if (btnSave != null)
             {
-                btnSave.Text = "➕ حفظ العميل";
+                btnSave.Text = "حفظ العميل";
                 btnSave.BackColor = Color.FromArgb(16, 185, 129);
             }
         }
@@ -572,12 +572,12 @@ namespace ChickenDist.Forms
         {
             if (_selectedID == 0 && !Session.CanAdd("Clients"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية إضافة عملاء جُدد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية إضافة عملاء جُدد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (_selectedID > 0 && !Session.CanEdit("Clients"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية تعديل بيانات العملاء!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية تعديل بيانات العملاء!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (string.IsNullOrWhiteSpace(txtName.Text)) { MessageBox.Show("أدخل اسم العميل"); return; }
@@ -586,11 +586,11 @@ namespace ChickenDist.Forms
             if (ClientDAL.CheckDuplicateName(txtName.Text.Trim(), _selectedID, out string dupName, out string dupCode, out string dupReason))
             {
                 MessageBox.Show(
-                    $"⚠️ لا يمكن الحفظ لمنع التكرار والتضارب المحاسبي:\n\n" +
+                    $"لا يمكن الحفظ لمنع التكرار والتضارب المحاسبي:\n\n" +
                     $"يوجد عميل مسجل مسبقاً ({dupReason}):\n" +
                     $"• الاسم المسجل: \"{dupName}\"\n" +
                     $"• كود العميل: {dupCode}\n\n" +
-                    $"💡 للتسجيل: يرجى كتابة الاسم ثلاثياً أو إضافة لقب/منطقة لتمييز العميل الجديد.",
+                    $"للتسجيل: يرجى كتابة الاسم ثلاثياً أو إضافة لقب/منطقة لتمييز العميل الجديد.",
                     "تكرار اسم العميل", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtName.Focus();
                 return;
@@ -601,7 +601,7 @@ namespace ChickenDist.Forms
             {
                 if (ClientDAL.IsDuplicatePhone(txtPhone.Text.Trim(), _selectedID))
                 {
-                    MessageBox.Show($"⚠️ رقم الهاتف \"{txtPhone.Text.Trim()}\" مسجَّل لعميل آخر بالفعل.\nيرجى التحقق من الرقم أو البحث عن العميل الموجود.",
+                    MessageBox.Show($"رقم الهاتف \"{txtPhone.Text.Trim()}\" مسجَّل لعميل آخر بالفعل.\nيرجى التحقق من الرقم أو البحث عن العميل الموجود.",
                         "تكرار رقم الهاتف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtPhone.Focus();
                     return;
@@ -617,7 +617,7 @@ namespace ChickenDist.Forms
             {
                 string suggestedCode = ClientDAL.GetNextClientCode();
                 var dr = MessageBox.Show(
-                    $"⚠️ كود العميل \"{txtCode.Text.Trim()}\" مسجَّل لعميل آخر بالفعل!\n\nهل تريد استخدام الكود المقترح تلقائياً: ({suggestedCode})؟",
+                    $"كود العميل \"{txtCode.Text.Trim()}\" مسجَّل لعميل آخر بالفعل!\n\nهل تريد استخدام الكود المقترح تلقائياً: ({suggestedCode})؟",
                     "تكرار كود العميل", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (dr == DialogResult.Yes)
                 {
@@ -636,8 +636,8 @@ namespace ChickenDist.Forms
 
             int id = ClientDAL.Save(_selectedID, txtCode.Text, txtName.Text, txtPhone.Text, txtPhone2.Text,
                 txtAddress.Text, nudOpening.Value, chkActive.Checked, driverID, nudCreditLimit.Value, txtNotes.Text, cmbPriceTier.Text, (int)nudOpeningCrates.Value, GetSelectedPaymentType());
-            if (id > 0) { ClientCache.Refresh(); MessageBox.Show("✅ تم الحفظ"); _selectedID = id; LoadClients(); }
-            else MessageBox.Show("❌ فشل الحفظ");
+            if (id > 0) { ClientCache.Refresh(); MessageBox.Show("تم الحفظ"); _selectedID = id; LoadClients(); }
+            else MessageBox.Show("فشل الحفظ");
         }
 
         private void FixDuplicateClientCodes()
@@ -647,7 +647,7 @@ namespace ChickenDist.Forms
                 DataTable dtDups = ClientDuplicateDAL.GetDuplicateClientsReport();
                 if (dtDups == null || dtDups.Rows.Count == 0)
                 {
-                    MessageBox.Show("✅ ممتاز: لا توجد أي أكواد عملاء مكررة في قاعدة البيانات، جميع الأكواد فريدة 100%!",
+                    MessageBox.Show("ممتاز: لا توجد أي أكواد عملاء مكررة في قاعدة البيانات، جميع الأكواد فريدة 100%!",
                         "فحص أكواد العملاء", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
@@ -664,10 +664,10 @@ namespace ChickenDist.Forms
                 int withoutTrans = dupCount - withTrans;
 
                 var res = MessageBox.Show(
-                    $"⚠️ تم اكتشاف ({dupCount}) سجل عملاء يشتركون في أكواد مكررة داخل قاعدة البيانات!\n\n" +
+                    $"تم اكتشاف ({dupCount}) سجل عملاء يشتركون في أكواد مكررة داخل قاعدة البيانات!\n\n" +
                     $"• عملاء لهم حركات وفواتير مسجلة (محميون من التعديل): {withTrans}\n" +
                     $"• عملاء ليس لهم أي حركات على البرنامج (سيتم تعديل أكوادهم فقط): {withoutTrans}\n\n" +
-                    "📌 شرط الأمان المعتمد:\n" +
+                    "شرط الأمان المعتمد:\n" +
                     "سيتم تعديل كود العميل فقط للعملاء الذين ليس لهم أي حركات على البرنامج، والاحتفاظ التام بكود العميل الذي له حركات مسجلة ولن يتم المساس به إطلاقاً.\n\n" +
                     "هل ترغب في البدء في تصحيح الأكواد الآن؟",
                     "معالجة أكواد العملاء المكررة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -678,7 +678,7 @@ namespace ChickenDist.Forms
                     ClientCache.Refresh();
                     LoadClients();
                     MessageBox.Show(
-                        $"✅ تم بنجاح معالجة وتصحيح ({totalFixed}) عميل من الذين ليس لهم أي حركات!\n\n" +
+                        $"تم بنجاح معالجة وتصحيح ({totalFixed}) عميل من الذين ليس لهم أي حركات!\n\n" +
                         "تمت حماية جميع العملاء ذوي الحركات المحاسبية وبقيت أكوادهم الأصلية كما هي تماماً.",
                         "اكتمال المعالجة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -694,7 +694,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanDelete("Clients"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية حذف وإيقاف العملاء!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية حذف وإيقاف العملاء!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (_selectedID == 0) return;
@@ -728,7 +728,7 @@ namespace ChickenDist.Forms
             {
                 Width = 420,
                 Height = 425,
-                Text = "💵 تحصيل نقدية وسند قبض من العميل",
+                Text = "تحصيل نقدية وسند قبض من العميل",
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox = false,
@@ -793,7 +793,7 @@ namespace ChickenDist.Forms
             // اسم العميل
             var lblClient = new Label
             {
-                Text = $"👤 العميل: {txtName.Text}",
+                Text = $"العميل: {txtName.Text}",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Location = new Point(15, y),
@@ -901,8 +901,8 @@ namespace ChickenDist.Forms
             y += 50;
 
             // أزرار
-            var btnSave = Theme.MakeButton("✅ حفظ وإصدار سند", 215, y, 175, 38, Theme.Success);
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 115, y, 90, 38, Theme.Danger);
+            var btnSave = Theme.MakeButton("حفظ وإصدار سند", 215, y, 175, 38, Theme.Success);
+            var btnCancel = Theme.MakeButton("إلغاء", 115, y, 90, 38, Theme.Danger);
             btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
 
             int? chosenSafeId = null;
@@ -953,7 +953,7 @@ namespace ChickenDist.Forms
         {
             var ctx = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
 
-            var miStatement = new ToolStripMenuItem("📑 كشف حساب تفصيلي", null, (s, e) =>
+            var miStatement = new ToolStripMenuItem("كشف حساب تفصيلي", null, (s, e) =>
             {
                 if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
                 {
@@ -963,7 +963,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miItemized = new ToolStripMenuItem("📊 كشف حساب بالأصناف والكميات", null, (s, e) =>
+            var miItemized = new ToolStripMenuItem("كشف حساب بالأصناف والكميات", null, (s, e) =>
             {
                 if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
                 {
@@ -973,7 +973,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miPayment = new ToolStripMenuItem("💵 سند قبض سريع", null, (s, e) =>
+            var miPayment = new ToolStripMenuItem("سند قبض سريع", null, (s, e) =>
             {
                 if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
                 {
@@ -981,7 +981,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miWhatsApp = new ToolStripMenuItem("📱 مراسلة واتساب / تذكير بالمديونية", null, (s, e) =>
+            var miWhatsApp = new ToolStripMenuItem("مراسلة واتساب / تذكير بالمديونية", null, (s, e) =>
             {
                 if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
                 {
@@ -1002,7 +1002,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miCopyPhone = new ToolStripMenuItem("📋 نسخ رقم الهاتف", null, (s, e) =>
+            var miCopyPhone = new ToolStripMenuItem("نسخ رقم الهاتف", null, (s, e) =>
             {
                 if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("Phone"))
                 {
@@ -1014,7 +1014,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miSendMenu = new ToolStripMenuItem(AppConfig.IsRestaurant ? "🍽️ إرسال رابط المنيو للعميل واتساب" : "🛒 إرسال رابط المتجر للعميل واتساب", null, (s, e) =>
+            var miSendMenu = new ToolStripMenuItem(AppConfig.IsRestaurant ? "إرسال رابط المنيو للعميل واتساب" : "إرسال رابط المتجر للعميل واتساب", null, (s, e) =>
             {
                 if (dgClients.SelectedRows.Count > 0 && dgClients.Columns.Contains("ClientID"))
                 {
@@ -1027,7 +1027,7 @@ namespace ChickenDist.Forms
                             ? $"https://{projectId}.web.app/store.html?p={projectId}"
                             : "https://prosoft.web.app/store.html";
                         string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "متجرنا الإلكتروني";
-                        string msg = Uri.EscapeDataString($"مرحباً {name}، يسعدنا تواصلكم معنا! ✨\nيمكنكم الآن تصفح كافة منتجاتنا وقائمة الأسعار والطلب أونلاين مباشرة عبر الرابط التالي:\n{storeUrl}\n\nنتشرف بخدمتكم دائماً في {comp}.");
+                        string msg = Uri.EscapeDataString($"مرحباً {name}، يسعدنا تواصلكم معنا!\nيمكنكم الآن تصفح كافة منتجاتنا وقائمة الأسعار والطلب أونلاين مباشرة عبر الرابط التالي:\n{storeUrl}\n\nنتشرف بخدمتكم دائماً في {comp}.");
                         string cleanPhone = phone.Replace(" ", "").Replace("-", "");
                         if (cleanPhone.StartsWith("01")) cleanPhone = "2" + cleanPhone;
                         try { System.Diagnostics.Process.Start($"https://wa.me/{cleanPhone}?text={msg}"); } catch { }
@@ -1039,7 +1039,7 @@ namespace ChickenDist.Forms
                 }
             });
 
-            var miStoreQr = new ToolStripMenuItem("📱 رمز باركود المتجر / المنيو (QR Code)", null, (s, e) =>
+            var miStoreQr = new ToolStripMenuItem("رمز باركود المتجر / المنيو (QR Code)", null, (s, e) =>
             {
                 using (var dlg = new FrmStoreQRDialog())
                 {

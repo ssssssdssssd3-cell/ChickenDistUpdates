@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -65,7 +65,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "👥 تقرير عملاء المتجر الإلكتروني | ProSoft Online Store Customers";
+            this.Text = "تقرير عملاء المتجر الإلكتروني | ProSoft Online Store Customers";
             this.Size = new Size(1180, 720);
             this.MinimumSize = new Size(950, 550);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -104,7 +104,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "👥 تقرير عملاء المتجر الإلكتروني",
+                Text = "تقرير عملاء المتجر الإلكتروني",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(244, 114, 182),
                 AutoSize = true,
@@ -132,16 +132,16 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 2, 0, 0)
             };
 
-            btnRefresh = CreateButton("🔄 تحديث (F5)", Color.FromArgb(37, 99, 235));
+            btnRefresh = CreateButton("تحديث (F5)", Color.FromArgb(37, 99, 235));
             btnRefresh.Click += (s, e) => LoadReport();
 
-            btnPrintReport = CreateButton("🖨️ طباعة تقرير (F9)", Color.FromArgb(16, 185, 129));
+            btnPrintReport = CreateButton("طباعة تقرير (F9)", Color.FromArgb(16, 185, 129));
             btnPrintReport.Click += (s, e) => PrintReport();
 
-            btnExportCsv = CreateButton("📊 تصدير Excel", Color.FromArgb(14, 116, 144));
+            btnExportCsv = CreateButton("تصدير Excel", Color.FromArgb(14, 116, 144));
             btnExportCsv.Click += (s, e) => ExportToCsv();
 
-            btnClose = CreateButton("❌ إغلاق (Esc)", Color.FromArgb(71, 85, 105));
+            btnClose = CreateButton("إغلاق (Esc)", Color.FromArgb(71, 85, 105));
             btnClose.Click += (s, e) => this.Close();
 
             pnlHeaderButtons.Controls.Add(btnRefresh);
@@ -191,7 +191,7 @@ namespace ChickenDist.Forms
             // البحث
             var lblSearch = new Label
             {
-                Text = "🔍 بحث:",
+                Text = "بحث:",
                 ForeColor = Color.FromArgb(226, 232, 240),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 AutoSize = true,
@@ -442,13 +442,13 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 4, 0, 0)
             };
 
-            btnWhatsApp = CreateActionButton("💬 واتساب", Color.FromArgb(34, 197, 94));
+            btnWhatsApp = CreateActionButton("واتساب", Color.FromArgb(34, 197, 94));
             btnWhatsApp.Click += (s, e) => OpenCustomerWhatsApp();
 
-            btnViewOrders = CreateActionButton("📜 طلبات العميل", Color.FromArgb(59, 130, 246));
+            btnViewOrders = CreateActionButton("طلبات العميل", Color.FromArgb(59, 130, 246));
             btnViewOrders.Click += (s, e) => ViewCustomerOrders();
 
-            btnRegisterClient = CreateActionButton("➕ تسجيل بالمنظومة", Color.FromArgb(236, 72, 153));
+            btnRegisterClient = CreateActionButton("تسجيل بالمنظومة", Color.FromArgb(236, 72, 153));
             btnRegisterClient.Click += (s, e) => RegisterCurrentCustomerAsClient();
 
             pnlCustButtons.Controls.Add(btnWhatsApp);
@@ -679,13 +679,13 @@ namespace ChickenDist.Forms
                 if (isRegistered)
                 {
                     string code = drv["ClientCode"]?.ToString();
-                    e.Value = $"✅ مسجل (كود: {code})";
+                    e.Value = $"مسجل (كود: {code})";
                     e.CellStyle.ForeColor = Color.FromArgb(52, 211, 153);
                     e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
                 }
                 else
                 {
-                    e.Value = "⚠️ غير مسجل";
+                    e.Value = "غير مسجل";
                     e.CellStyle.ForeColor = Color.FromArgb(251, 191, 36);
                 }
                 e.FormattingApplied = true;
@@ -747,13 +747,13 @@ namespace ChickenDist.Forms
                 string code = _selectedRow["ClientCode"]?.ToString();
 
                 lblSelectedCustName.Text = $"العميل: {name}";
-                lblSelectedCustPhone.Text = $"📱 {phone}";
+                lblSelectedCustPhone.Text = $"{phone}";
                 lblSelectedCustStats.Text = $"إجمالي الطلبات: {orders} | الإنفاق: {spent:N2} ج.م | العنوان: {(string.IsNullOrEmpty(addr) ? "غير محدد" : addr)} | الحالة: {(isReg ? $"مسجل بالمنظومة (كود: {code})" : "غير مسجل بالدليل")}";
 
                 btnWhatsApp.Enabled = !string.IsNullOrWhiteSpace(phone);
                 btnViewOrders.Enabled = true;
                 btnRegisterClient.Enabled = !isReg;
-                btnRegisterClient.Text = isReg ? "✅ مسجل بالفعل" : "➕ تسجيل بالمنظومة";
+                btnRegisterClient.Text = isReg ? "مسجل بالفعل" : "تسجيل بالمنظومة";
             }
             else
             {
@@ -764,7 +764,7 @@ namespace ChickenDist.Forms
                 btnWhatsApp.Enabled = false;
                 btnViewOrders.Enabled = false;
                 btnRegisterClient.Enabled = false;
-                btnRegisterClient.Text = "➕ تسجيل بالمنظومة";
+                btnRegisterClient.Text = "تسجيل بالمنظومة";
             }
         }
 
@@ -787,7 +787,7 @@ namespace ChickenDist.Forms
 
             string name = _selectedRow["CustomerName"]?.ToString() ?? "عميلنا العزيز";
             string coName = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المتجر الإلكتروني";
-            string msg = $"مرحباً بك أستاذ {name} 👋\nنتواصل معك من {coName} بخصوص طلباتكم عبر المتجر الإلكتروني.\nنسعد دائماً بخدمتكم وتلبية كافة احتياجاتكم! 🙏";
+            string msg = $"مرحباً بك أستاذ {name}\nنتواصل معك من {coName} بخصوص طلباتكم عبر المتجر الإلكتروني.\nنسعد دائماً بخدمتكم وتلبية كافة احتياجاتكم!";
 
             WhatsAppSender.OpenWhatsApp(phone, msg);
         }
@@ -819,7 +819,7 @@ namespace ChickenDist.Forms
             }
 
             var confirm = MessageBox.Show(
-                $"هل ترغب في تسجيل العميل:\n\n👤 الاسم: {name}\n📱 الهاتف: {phone}\n📍 العنوان: {addr}\n\nفي جدول العملاء الرسمي لتسهيل البيع الآجل ومتابعة كشف الحساب؟",
+                $"هل ترغب في تسجيل العميل:\n\nالاسم: {name}\nالهاتف: {phone}\nالعنوان: {addr}\n\nفي جدول العملاء الرسمي لتسهيل البيع الآجل ومتابعة كشف الحساب؟",
                 "تأكيد تسجيل عميل",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
@@ -829,7 +829,7 @@ namespace ChickenDist.Forms
             int newId = OnlineOrdersDAL.RegisterStoreCustomerAsClient(name, phone, addr, out string err);
             if (newId > 0)
             {
-                MessageBox.Show($"✅ تم تسجيل العميل بنجاح في قاعدة البيانات!\nمعرف العميل الداخلي: {newId}", "تم التسجيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تسجيل العميل بنجاح في قاعدة البيانات!\nمعرف العميل الداخلي: {newId}", "تم التسجيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadReport();
             }
             else
@@ -882,7 +882,7 @@ namespace ChickenDist.Forms
                         }
 
                         File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-                        MessageBox.Show("تم تصدير تقرير عملاء المتجر بنجاح ✅", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تصدير تقرير عملاء المتجر بنجاح", "تم التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
@@ -1096,7 +1096,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = $"📜 سجل طلبات العميل | {_custName} ({_phone})";
+            this.Text = $"سجل طلبات العميل | {_custName} ({_phone})";
             this.Size = new Size(880, 560);
             this.StartPosition = FormStartPosition.CenterParent;
             this.RightToLeft = RightToLeft.Yes;
@@ -1117,7 +1117,7 @@ namespace ChickenDist.Forms
 
             lblHeaderInfo = new Label
             {
-                Text = $"👤 سجل طلبات العميل: {_custName} | الهاتف: {_phone}",
+                Text = $"سجل طلبات العميل: {_custName} | الهاتف: {_phone}",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Fill,
@@ -1169,7 +1169,7 @@ namespace ChickenDist.Forms
 
             var lblItemsTitle = new Label
             {
-                Text = "📦 محتويات وأصناف الطلب المحدد:",
+                Text = "محتويات وأصناف الطلب المحدد:",
                 Dock = DockStyle.Top,
                 Height = 22,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),

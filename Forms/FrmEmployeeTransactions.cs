@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -40,7 +40,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💰 كشف وحسابات الموظفين والمناديب";
+            this.Text = "كشف وحسابات الموظفين والمناديب";
             this.Size = new Size(1220, 740);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -59,20 +59,20 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "💰 حسابات الموظفين والمناديب (كشف حساب تفصيلي + سلف ومستحقات)",
+                Text = "حسابات الموظفين والمناديب (كشف حساب تفصيلي + سلف ومستحقات)",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
                 Location = new Point(15, 14)
             };
 
-            var btnGoAttendance = Theme.MakeButton("🕒 الحضور والانصراف", 0, 0, 150, 36, Color.FromArgb(30, 41, 59));
+            var btnGoAttendance = Theme.MakeButton("الحضور والانصراف", 0, 0, 150, 36, Color.FromArgb(30, 41, 59));
             btnGoAttendance.Click += (s, e) => new FrmEmployeeAttendance().ShowDialog(this);
 
-            var btnGoPayroll = Theme.MakeButton("📊 مسيرات الرواتب", 0, 0, 140, 36, Color.FromArgb(19, 78, 74));
+            var btnGoPayroll = Theme.MakeButton("مسيرات الرواتب", 0, 0, 140, 36, Color.FromArgb(19, 78, 74));
             btnGoPayroll.Click += (s, e) => new FrmEmployeePayroll().ShowDialog(this);
 
-            var btnGoCommissions = Theme.MakeButton("💼 عمولات المبيعات", 0, 0, 150, 36, Color.FromArgb(14, 116, 144));
+            var btnGoCommissions = Theme.MakeButton("عمولات المبيعات", 0, 0, 150, 36, Color.FromArgb(14, 116, 144));
             btnGoCommissions.Click += (s, e) => new FrmEmployeeCommissions().ShowDialog(this);
 
             var flowShortcuts = new FlowLayoutPanel
@@ -97,7 +97,7 @@ namespace ChickenDist.Forms
                 AutoScroll = true
             };
 
-            var lblSelectEmp = new Label { Text = "👤 اختر الموظف أو المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10f, FontStyle.Bold), Location = new Point(15, 12) };
+            var lblSelectEmp = new Label { Text = "اختر الموظف أو المندوب:", AutoSize = true, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 10f, FontStyle.Bold), Location = new Point(15, 12) };
             cboEmployee = new ComboBox
             {
                 Location = new Point(15, 36),
@@ -147,7 +147,7 @@ namespace ChickenDist.Forms
             // نموذج إضافة حركة جديدة
             var lblNewTransTitle = new Label
             {
-                Text = "⚡ تسجيل حركة مالية جديدة",
+                Text = "تسجيل حركة مالية جديدة",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Theme.Accent,
                 Location = new Point(15, 178),
@@ -216,7 +216,7 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.Primary
             };
 
-            btnSaveTrans = Theme.MakeButton("💾 حفظ وتأثير المالية", 15, 510, 295, 38, Theme.Accent);
+            btnSaveTrans = Theme.MakeButton("حفظ وتأثير المالية", 15, 510, 295, 38, Theme.Accent);
             btnSaveTrans.Click += BtnSaveTrans_Click;
 
             pnlRight.Controls.AddRange(new Control[] {
@@ -258,7 +258,7 @@ namespace ChickenDist.Forms
             cboTypeFilter.SelectedIndex = 0;
             cboTypeFilter.SelectedIndexChanged += (s, e) => LoadTransactions();
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة كشف حساب", 0, 0, 160, 32, Theme.Primary);
+            btnPrint = Theme.MakeButton("طباعة كشف حساب", 0, 0, 160, 32, Theme.Primary);
             btnPrint.Click += BtnPrint_Click;
 
             pnlFilters.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, lblType, cboTypeFilter, btnPrint });
@@ -273,9 +273,9 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            lblTransCount = new Label { Text = "📊 عدد الحركات: 0", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 30, 0) };
-            lblTotalDebit = new Label { Text = "🔴 إجمالي المدين (عليه/سلف): 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkRed, Margin = new Padding(10, 0, 30, 0) };
-            lblTotalCredit = new Label { Text = "🟢 إجمالي الدائن (له/رواتب ومكافآت): 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 30, 0) };
+            lblTransCount = new Label { Text = "عدد الحركات: 0", AutoSize = true, Font = new Font("Segoe UI", 10f, FontStyle.Bold), ForeColor = Theme.TextMain, Margin = new Padding(10, 0, 30, 0) };
+            lblTotalDebit = new Label { Text = "إجمالي المدين (عليه/سلف): 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkRed, Margin = new Padding(10, 0, 30, 0) };
+            lblTotalCredit = new Label { Text = "إجمالي الدائن (له/رواتب ومكافآت): 0.00 ج", AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Color.DarkGreen, Margin = new Padding(10, 0, 30, 0) };
 
             pnlBottomStats.Controls.AddRange(new Control[] { lblTransCount, lblTotalDebit, lblTotalCredit });
 
@@ -324,7 +324,7 @@ namespace ChickenDist.Forms
             {
                 Name = "Delete",
                 HeaderText = "",
-                Text = "🗑",
+                Text = "حذف",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 22f
             };
@@ -367,9 +367,9 @@ namespace ChickenDist.Forms
                 _selectedEmpID = 0;
                 _selectedEmpName = "";
                 lblBalanceVal.Text = "0.00 ج";
-                lblTransCount.Text = "📊 عدد الحركات: 0";
-                lblTotalDebit.Text = "🔴 إجمالي المدين: 0.00 ج";
-                lblTotalCredit.Text = "🟢 إجمالي الدائن: 0.00 ج";
+                lblTransCount.Text = "عدد الحركات: 0";
+                lblTotalDebit.Text = "إجمالي المدين: 0.00 ج";
+                lblTotalCredit.Text = "إجمالي الدائن: 0.00 ج";
                 dgTrans.Rows.Clear();
             }
         }
@@ -454,9 +454,9 @@ namespace ChickenDist.Forms
                 if (credit > 0) row.Cells["Credit"].Style.ForeColor = Color.DarkGreen;
             }
 
-            lblTransCount.Text = $"📊 عدد الحركات: {dgTrans.Rows.Count:N0}";
-            lblTotalDebit.Text = $"🔴 إجمالي المدين: {totalDebit:N2} ج";
-            lblTotalCredit.Text = $"🟢 إجمالي الدائن: {totalCredit:N2} ج";
+            lblTransCount.Text = $"عدد الحركات: {dgTrans.Rows.Count:N0}";
+            lblTotalDebit.Text = $"إجمالي المدين: {totalDebit:N2} ج";
+            lblTotalCredit.Text = $"إجمالي الدائن: {totalCredit:N2} ج";
         }
 
         private static readonly string[] _transTypeKeys = { "Advance", "Salary", "SalaryPayment", "Repayment", "Deduction", "Bonus" };
@@ -503,13 +503,13 @@ namespace ChickenDist.Forms
                 int id = EmployeeDAL.SaveTransaction(_selectedEmpID, dtpNewDate.Value, transType, debit, credit, note, affectCash);
                 if (id > 0)
                 {
-                    MessageBox.Show("✅ تم تسجيل الحركة بنجاح وتأثير الخزينة.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم تسجيل الحركة بنجاح وتأثير الخزينة.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     txtNewAmount.Text = "0";
                     txtNewNotes.Clear();
                     LoadEmployeeBalance();
                     LoadTransactions();
                 }
-                else MessageBox.Show("❌ فشل تسجيل الحركة.");
+                else MessageBox.Show("فشل تسجيل الحركة.");
             }
             catch (Exception ex)
             {
@@ -530,7 +530,7 @@ namespace ChickenDist.Forms
                 {
                     if (EmployeeDAL.DeleteTransaction(transId))
                     {
-                        MessageBox.Show("✅ تم حذف الحركة بنجاح.");
+                        MessageBox.Show("تم حذف الحركة بنجاح.");
                         LoadEmployeeBalance();
                         LoadTransactions();
                     }

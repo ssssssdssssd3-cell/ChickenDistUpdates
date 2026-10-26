@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -28,7 +28,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "⚙️ خيارات النظام والتشغيل";
+            this.Text = "خيارات النظام والتشغيل";
             this.Size = new Size(650, 710);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -39,7 +39,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var pnlTop = Theme.MakeTitleBar("⚙️ خيارات النظام والتشغيل", "نقاط الولاء للعملاء، سياسات البيع والورديات، الفوارغ، قوالب الواتساب، وبيانات الترخيص");
+            var pnlTop = Theme.MakeTitleBar("خيارات النظام والتشغيل", "نقاط الولاء للعملاء، سياسات البيع والورديات، الفوارغ، قوالب الواتساب، وبيانات الترخيص");
             this.Controls.Add(pnlTop);
 
             var pnlBody = new Panel
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
             // ── 1. سياسات التشغيل والبيع ─────────────────────────
             var lblSalesPolicy = new Label
             {
-                Text = "🛒 سياسات البيع والكاشير والمخزون:",
+                Text = "سياسات البيع والكاشير والمخزون:",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -115,7 +115,7 @@ namespace ChickenDist.Forms
 
             chkLockPurchaseToMajorUnit = new CheckBox
             {
-                Text = "🔒 قفل الشراء بالوحدة الكبرى فقط (منع تسجيل فواتير الشراء بالوحدات الصغرى والفرعية)",
+                Text = "قفل الشراء بالوحدة الكبرى فقط (منع تسجيل فواتير الشراء بالوحدات الصغرى والفرعية)",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f),
@@ -127,7 +127,7 @@ namespace ChickenDist.Forms
 
             chkBarcodePrintCategory = new CheckBox
             {
-                Text = "🏷️ طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود",
+                Text = "طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f),
@@ -144,7 +144,7 @@ namespace ChickenDist.Forms
             // ── 2. نظام نقاط الولاء ─────────────────────────────
             var lblLoyaltyTitle = new Label
             {
-                Text = "🎁 نظام نقاط الولاء والمكافآت للعملاء:",
+                Text = "نظام نقاط الولاء والمكافآت للعملاء:",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -201,7 +201,7 @@ namespace ChickenDist.Forms
             // ── 3. قوالب إرسال الفواتير عبر الواتساب ───────────────
             var lblWhatsAppTitle = new Label
             {
-                Text = "💬 قوالب إرسال كروت الفواتير عبر الواتساب للعملاء:",
+                Text = "قوالب إرسال كروت الفواتير عبر الواتساب للعملاء:",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -224,16 +224,16 @@ namespace ChickenDist.Forms
             };
             cboWhatsAppInvoiceTemplate.Items.AddRange(new object[]
             {
-                "🖼️ كارت الفاتورة الكلاسيكي الملكي (Royal Navy Card)",
-                "🖼️ كارت الفاتورة المودرن الفحمي (Modern Charcoal Card)",
-                "🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
-                "🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
-                "🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
-                "🖼️ كارت فاتورة الطارق هوم (Al Tarek Home Grid Card)",
-                "💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
-                "💬 النموذج السريع الموجز (رسالة نصية سريعة)",
-                "💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)",
-                "💬 نموذج الطارق المعتمد (رسالة نصية الطارق)"
+                "كارت الفاتورة الكلاسيكي الملكي (Royal Navy Card)",
+                "كارت الفاتورة المودرن الفحمي (Modern Charcoal Card)",
+                "كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
+                "كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
+                "كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
+                "كارت فاتورة الطارق هوم (Al Tarek Home Grid Card)",
+                "النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
+                "النموذج السريع الموجز (رسالة نصية سريعة)",
+                "نموذج كشف الحساب والمالية (رسالة نصية مالية)",
+                "نموذج الطارق المعتمد (رسالة نصية الطارق)"
             });
             cboWhatsAppInvoiceTemplate.SelectedIndex = AppConfig.WhatsAppInvoiceTemplate switch
             {
@@ -250,7 +250,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(cboWhatsAppInvoiceTemplate);
 
-            var btnPreviewWhatsApp = Theme.MakeButton("👁️ معاينة القالب", 405, y - 2, 140, 32, Color.FromArgb(37, 211, 102));
+            var btnPreviewWhatsApp = Theme.MakeButton("معاينة القالب", 405, y - 2, 140, 32, Color.FromArgb(37, 211, 102));
             btnPreviewWhatsApp.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPreviewWhatsApp.Click += (s, e) => PreviewWhatsAppTemplate();
             pnlBody.Controls.Add(btnPreviewWhatsApp);
@@ -263,7 +263,7 @@ namespace ChickenDist.Forms
             // ── 4. معلومات ترخيص البرنامج ─────────────────────────
             var lblLicTitle = new Label
             {
-                Text = "🔑 معلومات ترخيص البرنامج وتفعيل الجهاز:",
+                Text = "معلومات ترخيص البرنامج وتفعيل الجهاز:",
                 Location = new Point(15, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -276,9 +276,9 @@ namespace ChickenDist.Forms
             string hddSerial = LicenseManager.GetCurrentHddSerial();
             string expiryTxt = LicenseManager.IsActivated
                 ? (LicenseManager.ExpiryDate == DateTime.MaxValue
-                    ? "✅ ترخيص دائم ومفعل"
-                    : $"✅ مفعل وصالح حتى: {LicenseManager.ExpiryDate:yyyy-MM-dd}")
-                : "⛔ غير مفعل";
+                    ? "ترخيص دائم ومفعل"
+                    : $"مفعل وصالح حتى: {LicenseManager.ExpiryDate:yyyy-MM-dd}")
+                : "غير مفعل";
 
             var lblLicInfo = new Label
             {
@@ -298,17 +298,17 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(lblLicInfo);
 
-            var btnCopyIds = Theme.MakeButton("📋 نسخ المعرفات", 405, y, 140, 34, Color.FromArgb(55, 65, 81));
+            var btnCopyIds = Theme.MakeButton("نسخ المعرفات", 405, y, 140, 34, Color.FromArgb(55, 65, 81));
             btnCopyIds.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnCopyIds.Click += (s, e) =>
             {
                 string info = $"Machine ID: {machineId}\nHDD Serial: {hddSerial}";
                 Clipboard.SetText(info);
-                MessageBox.Show("✅ تم نسخ معرفات الجهاز للحافظة بنجاح!\nأرسلها للدعم الفني لتوليد كود التفعيل.", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ معرفات الجهاز للحافظة بنجاح!\nأرسلها للدعم الفني لتوليد كود التفعيل.", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             pnlBody.Controls.Add(btnCopyIds);
 
-            var btnActivateLic = Theme.MakeButton("🔑 تفعيل الترخيص", 405, y + 40, 140, 34, Theme.Success);
+            var btnActivateLic = Theme.MakeButton("تفعيل الترخيص", 405, y + 40, 140, 34, Theme.Success);
             btnActivateLic.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnActivateLic.Click += (s, e) =>
             {
@@ -329,7 +329,7 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(pnlFooter);
 
-            var btnSave = Theme.MakeButton("💾 حفظ خيارات النظام", 15, 8, 200, 38, Theme.Primary);
+            var btnSave = Theme.MakeButton("حفظ خيارات النظام", 15, 8, 200, 38, Theme.Primary);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             pnlFooter.Controls.Add(btnSave);
@@ -404,7 +404,7 @@ namespace ChickenDist.Forms
                 _ => "ImageCardNavy"
             };
 
-            MessageBox.Show("✅ تم حفظ خيارات النظام والتشغيل بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("تم حفظ خيارات النظام والتشغيل بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
     }

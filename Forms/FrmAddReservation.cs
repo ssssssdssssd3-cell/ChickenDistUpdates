@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -52,7 +52,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = _editReservationID > 0 ? "✏️ تعديل فاتورة حجز عميل" : "📝 تسجيل حجز صنف / طلبية جديدة";
+            this.Text = _editReservationID > 0 ? "تعديل فاتورة حجز عميل" : "تسجيل حجز صنف / طلبية جديدة";
             this.Size = new Size(780, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
@@ -62,7 +62,7 @@ namespace ChickenDist.Forms
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
 
-            var titleText = _editReservationID > 0 ? "✏️ تعديل بيانات وفاتورة حجز العميل" : "📝 حجز صنف / طلبية جديدة للعميل";
+            var titleText = _editReservationID > 0 ? "تعديل بيانات وفاتورة حجز العميل" : "حجز صنف / طلبية جديدة للعميل";
             var descText = "سجل بيانات العميل والأصناف المحجوزة مع العربون المدفوع وتاريخ التسليم المتوقع.";
             var pnlTop = Theme.MakeTitleBar(titleText, descText);
             this.Controls.Add(pnlTop);
@@ -83,7 +83,7 @@ namespace ChickenDist.Forms
             cboClient.SelectedIndexChanged += CboClient_SelectedIndexChanged;
             this.Controls.Add(cboClient);
 
-            var btnClientSearch = Theme.MakeButton("🔍", 370, y - 4, 35, 27, Theme.Primary);
+            var btnClientSearch = Theme.MakeButton("بحث", 370, y - 4, 35, 27, Theme.Primary);
             btnClientSearch.Click += (s, e) =>
             {
                 using (var frm = new FrmClientSearch())
@@ -147,7 +147,7 @@ namespace ChickenDist.Forms
 
             var lblProductHeader = new Label
             {
-                Text = "🛒 اختيار إضافة أصناف الفاتورة:",
+                Text = "اختيار إضافة أصناف الفاتورة:",
                 Location = new Point(10, 8),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -167,7 +167,7 @@ namespace ChickenDist.Forms
             cboProduct.SelectedIndexChanged += CboProduct_SelectedIndexChanged;
             pnlAddItem.Controls.Add(cboProduct);
 
-            btnSearchProduct = Theme.MakeButton("🔍 بحث", 275, 35, 75, 30, Theme.Primary);
+            btnSearchProduct = Theme.MakeButton("بحث", 275, 35, 75, 30, Theme.Primary);
             btnSearchProduct.Click += BtnSearchProduct_Click;
             pnlAddItem.Controls.Add(btnSearchProduct);
 
@@ -204,7 +204,7 @@ namespace ChickenDist.Forms
             };
             pnlAddItem.Controls.Add(nudUnitPrice);
 
-            btnAddItem = Theme.MakeButton("➕ إضافة", 625, 34, 95, 32, Theme.Success);
+            btnAddItem = Theme.MakeButton("إضافة", 625, 34, 95, 32, Theme.Success);
             btnAddItem.Click += BtnAddItem_Click;
             pnlAddItem.Controls.Add(btnAddItem);
 
@@ -254,7 +254,7 @@ namespace ChickenDist.Forms
             {
                 Name = "btnDelete",
                 HeaderText = "إجراء",
-                Text = "❌ حذف",
+                Text = "حذف",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 60
             };
@@ -342,7 +342,7 @@ namespace ChickenDist.Forms
             y += 65;
 
             // 6. أزرار التحكم
-            var btnSave = Theme.MakeButton(_editReservationID > 0 ? "💾 حفظ التعديلات" : "💾 حفظ الحجز وتأكيده", 220, y, 190, 42, Theme.Success);
+            var btnSave = Theme.MakeButton(_editReservationID > 0 ? "حفظ التعديلات" : "حفظ الحجز وتأكيده", 220, y, 190, 42, Theme.Success);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 

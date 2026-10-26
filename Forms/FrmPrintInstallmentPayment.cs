@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -265,7 +265,7 @@ namespace ChickenDist.Forms
 
                 string nextDueText = _nextDueDate.HasValue 
                     ? $"{_nextDueDate.Value:yyyy-MM-dd} (قيمة: {_nextDueAmount:N2} ج)"
-                    : "لا يوجد (تم سداد كامل أقساط العقد بنجاح ✅)";
+                    : "لا يوجد (تم سداد كامل أقساط العقد بنجاح)";
                 
                 g.DrawString($"استحقاق القسط القادم:", fBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), right);
                 y += 18;
@@ -286,7 +286,7 @@ namespace ChickenDist.Forms
                 g.DrawString("توقيع العميل: ....................", fSmall, Brushes.Black, new RectangleF(lMargin, y, 180, 18), left);
                 y += 24;
 
-                g.DrawString("✨ شكراً لالتزامكم وحسن تعاملكم معنا", fBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), center);
+                g.DrawString("شكراً لالتزامكم وحسن تعاملكم معنا", fBold, Brushes.Black, new RectangleF(lMargin, y, printableW, 18), center);
                 y += 18;
                 g.DrawString("نظام إدارة المبيعات والأقساط ProSoft ERP", fSmall, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center);
             };
@@ -326,32 +326,32 @@ namespace ChickenDist.Forms
             
             string nextDueText = _nextDueDate.HasValue 
                 ? $"{_nextDueDate.Value:yyyy-MM-dd} (قيمة القسط: {_nextDueAmount:N2} ج.م)"
-                : "تم سداد كامل أقساط العقد بنجاح ✅";
+                : "تم سداد كامل أقساط العقد بنجاح";
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"🧾 *إيصال سداد قسط تقسيط - {compName}*");
+            sb.AppendLine($"*إيصال سداد قسط تقسيط - {compName}*");
             sb.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━");
-            sb.AppendLine($"👤 *العميل:* {_customerName}");
-            sb.AppendLine($"📋 *رقم العقد:* {_contractCode}");
-            sb.AppendLine($"🔢 *البيان:* {installmentTitle}");
-            sb.AppendLine($"📅 *تاريخ التحصيل:* {_transDate:dd/MM/yyyy hh:mm tt}");
+            sb.AppendLine($"*العميل:* {_customerName}");
+            sb.AppendLine($"*رقم العقد:* {_contractCode}");
+            sb.AppendLine($"*البيان:* {installmentTitle}");
+            sb.AppendLine($"*تاريخ التحصيل:* {_transDate:dd/MM/yyyy hh:mm tt}");
             sb.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━");
-            sb.AppendLine($"💵 *المبلغ المسدد:* {_collectedAmount:N2} ج.م");
-            sb.AppendLine($"💬 *فقط:* ({amountTafqeet})");
-            sb.AppendLine($"💳 *طريقة الدفع:* {_paymentMethod}" + (!string.IsNullOrEmpty(_safeName) && _safeName != "---" ? $" ({_safeName})" : ""));
+            sb.AppendLine($"*المبلغ المسدد:* {_collectedAmount:N2} ج.م");
+            sb.AppendLine($"*فقط:* ({amountTafqeet})");
+            sb.AppendLine($"*طريقة الدفع:* {_paymentMethod}" + (!string.IsNullOrEmpty(_safeName) && _safeName != "---" ? $" ({_safeName})" : ""));
             sb.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━");
-            sb.AppendLine($"📊 *المديونية المتبقية على العقد:* {_remainingBalance:N2} ج.م");
-            sb.AppendLine($"🔔 *استحقاق القسط القادم:* {nextDueText}");
+            sb.AppendLine($"*المديونية المتبقية على العقد:* {_remainingBalance:N2} ج.م");
+            sb.AppendLine($"*استحقاق القسط القادم:* {nextDueText}");
             if (_overallClientDebt > 0 && Math.Abs(_overallClientDebt - _remainingBalance) > 0.05m)
             {
-                sb.AppendLine($"📌 *إجمالي مديونية الحساب الشاملة:* {_overallClientDebt:N2} ج.م");
+                sb.AppendLine($"*إجمالي مديونية الحساب الشاملة:* {_overallClientDebt:N2} ج.م");
             }
             if (!string.IsNullOrWhiteSpace(_notes))
             {
-                sb.AppendLine($"📝 *ملاحظات:* {_notes}");
+                sb.AppendLine($"*ملاحظات:* {_notes}");
             }
             sb.AppendLine("━━━━━━━━━━━━━━━━━━━━━━━━━");
-            sb.AppendLine("✨ *شكراً لالتزامكم وحسن تعاملكم معنا!*");
+            sb.AppendLine("*شكراً لالتزامكم وحسن تعاملكم معنا!*");
 
             WhatsAppSender.OpenWhatsApp(_customerPhone, sb.ToString());
         }
@@ -371,7 +371,7 @@ namespace ChickenDist.Forms
                     Clipboard.SetImage(bmp);
                 }
 
-                MessageBox.Show("✅ تم تصميم صورة إيصال سداد القسط ونسخها إلى الحافظة بنجاح!\nسيتم فتح محادثة الواتساب للعميل الآن، فقط اضغط (Ctrl + V) للصق وإرسال الصورة مباشرة.",
+                MessageBox.Show("تم تصميم صورة إيصال سداد القسط ونسخها إلى الحافظة بنجاح!\nسيتم فتح محادثة الواتساب للعميل الآن، فقط اضغط (Ctrl + V) للصق وإرسال الصورة مباشرة.",
                     "تم النسخ للحافظة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 
                 WhatsAppSender.OpenWhatsAppChat(_customerPhone);
@@ -458,7 +458,7 @@ namespace ChickenDist.Forms
 
                 string nextDueText = _nextDueDate.HasValue 
                     ? $"{_nextDueDate.Value:yyyy-MM-dd} (قيمة: {_nextDueAmount:N2} ج)"
-                    : "تم سداد كامل أقساط العقد بنجاح ✅";
+                    : "تم سداد كامل أقساط العقد بنجاح";
                 DrawPair(g, fVal, fLbl, lx, rx, y, "استحقاق القسط التالي:", nextDueText, Color.FromArgb(70, 70, 70), _nextDueDate.HasValue ? Color.FromArgb(180, 30, 30) : Color.FromArgb(10, 130, 75));
                 y += 28;
 
@@ -478,7 +478,7 @@ namespace ChickenDist.Forms
                 y += 8;
                 g.DrawLine(new Pen(Color.FromArgb(16, 100, 75), 1.5f), lx, y, rx, y);
                 y += 10;
-                g.DrawString("✨ شكراً لالتزامكم وحسن تعاملكم معنا", fSmall, new SolidBrush(Color.FromArgb(16, 100, 75)), new RectangleF(lx, y, rx - lx, 20), sfC);
+                g.DrawString("شكراً لالتزامكم وحسن تعاملكم معنا", fSmall, new SolidBrush(Color.FromArgb(16, 100, 75)), new RectangleF(lx, y, rx - lx, 20), sfC);
             }
             return bmp;
         }

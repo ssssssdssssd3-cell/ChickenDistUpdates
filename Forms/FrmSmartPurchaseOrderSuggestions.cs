@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💡 الاقتراح الذكي لأصناف أمر الشراء (حركة المبيعات والأرصدة)";
+            this.Text = "الاقتراح الذكي لأصناف أمر الشراء (حركة المبيعات والأرصدة)";
             this.Size = new Size(1180, 720);
             this.MinimumSize = new Size(980, 560);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -58,7 +58,7 @@ namespace ChickenDist.Forms
             string supTitle = !string.IsNullOrWhiteSpace(_supplierName) ? $" للمورد [{_supplierName}]" : "";
             var lblTitle = new Label
             {
-                Text = $"💡 محرك الاقتراح الذكي لأمر الشراء{supTitle}",
+                Text = $"محرك الاقتراح الذكي لأمر الشراء{supTitle}",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -143,11 +143,11 @@ namespace ChickenDist.Forms
             };
 
             // بحث سريع
-            var lblSearch = new Label { Text = "🔍 بحث:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 7, 2, 0) };
+            var lblSearch = new Label { Text = "بحث:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 7, 2, 0) };
             txtSearch = new TextBox { Width = 140, Height = 26, Margin = new Padding(2, 4, 8, 4) };
             txtSearch.TextChanged += (s, e) => ApplyLocalSearch();
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث التحليل", 0, 0, 125, 30, Color.FromArgb(37, 99, 235));
+            btnRefresh = Theme.MakeButton("تحديث التحليل", 0, 0, 125, 30, Color.FromArgb(37, 99, 235));
             btnRefresh.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
             btnRefresh.Click += (s, e) => LoadSuggestions();
 
@@ -170,16 +170,16 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 8, 15, 8)
             };
 
-            btnAddSelected = Theme.MakeButton("➕ إضافة الأصناف المحددة لأمر الشراء", 0, 0, 260, 36, Color.FromArgb(5, 150, 105));
+            btnAddSelected = Theme.MakeButton("إضافة الأصناف المحددة لأمر الشراء", 0, 0, 260, 36, Color.FromArgb(5, 150, 105));
             btnAddSelected.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnAddSelected.Dock = DockStyle.Left;
             btnAddSelected.Click += (s, e) => AddSelectedToOrder();
 
-            btnSelectAll = Theme.MakeButton("✔️ تحديد الكل", 0, 0, 105, 36, Color.FromArgb(70, 80, 95));
+            btnSelectAll = Theme.MakeButton("تحديد الكل", 0, 0, 105, 36, Color.FromArgb(70, 80, 95));
             btnSelectAll.Dock = DockStyle.Right;
             btnSelectAll.Click += (s, e) => SetAllSelection(true);
 
-            btnDeselectAll = Theme.MakeButton("❌ إلغاء التحديد", 0, 0, 115, 36, Color.FromArgb(100, 116, 139));
+            btnDeselectAll = Theme.MakeButton("إلغاء التحديد", 0, 0, 115, 36, Color.FromArgb(100, 116, 139));
             btnDeselectAll.Dock = DockStyle.Right;
             btnDeselectAll.Click += (s, e) => SetAllSelection(false);
 
@@ -307,7 +307,7 @@ namespace ChickenDist.Forms
             dgvSuggestions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colSuggested",
-                HeaderText = "الكمية المقترحة ✏️",
+                HeaderText = "الكمية المقترحة",
                 Width = 130,
                 ReadOnly = false,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10f, FontStyle.Bold), BackColor = Color.FromArgb(240, 253, 244), ForeColor = Color.FromArgb(21, 128, 61) }
@@ -317,7 +317,7 @@ namespace ChickenDist.Forms
             dgvSuggestions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colPrice",
-                HeaderText = "سعر الشراء ✏️",
+                HeaderText = "سعر الشراء",
                 Width = 120,
                 ReadOnly = false,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold }
@@ -327,7 +327,7 @@ namespace ChickenDist.Forms
             dgvSuggestions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colReason",
-                HeaderText = "سبب الاقتراح والتحليل الذكي 📊",
+                HeaderText = "سبب الاقتراح والتحليل الذكي",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 ReadOnly = true,
                 DefaultCellStyle = { ForeColor = Color.FromArgb(180, 83, 9) }

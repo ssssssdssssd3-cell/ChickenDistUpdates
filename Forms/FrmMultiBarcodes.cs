@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -95,8 +95,8 @@ namespace ChickenDist.Forms
                 Padding = new Padding(8, 8, 8, 8)
             };
 
-            btnOK = Theme.MakeButton("✔ موافق", 0, 0, 100, 32, Theme.Accent);
-            btnCancel = Theme.MakeButton("✖ إلغاء", 0, 0, 100, 32, Theme.BgInput);
+            btnOK = Theme.MakeButton("موافق", 0, 0, 100, 32, Theme.Accent);
+            btnCancel = Theme.MakeButton("إلغاء", 0, 0, 100, 32, Theme.BgInput);
 
             btnOK.Click += (s, e) =>
             {

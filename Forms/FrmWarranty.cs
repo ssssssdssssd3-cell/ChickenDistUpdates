@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -50,7 +50,7 @@ namespace ChickenDist.Forms
 
             Label lblTitle = new Label
             {
-                Text = "🛡️ سجل أجهزة الضمان وخدمة ما بعد البيع",
+                Text = "سجل أجهزة الضمان وخدمة ما بعد البيع",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 Dock = DockStyle.Right,
@@ -105,13 +105,13 @@ namespace ChickenDist.Forms
                 AutoScroll = false
             };
 
-            Label lblSearch = new Label { Text = "🔍 بحث سريع:", AutoSize = true, Margin = new Padding(0, 6, 8, 0), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
+            Label lblSearch = new Label { Text = "بحث سريع:", AutoSize = true, Margin = new Padding(0, 6, 8, 0), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold) };
             txtSearch = new TextBox { Width = 210, Height = 26, Margin = new Padding(0, 3, 5, 0) };
             txtSearch.TextChanged += (s, e) => ApplyClientFilters();
 
             Button btnSearchClient = new Button
             {
-                Text = "👤 اختيار عميل",
+                Text = "اختيار عميل",
                 Width = 110,
                 Height = 28,
                 BackColor = Color.FromArgb(236, 240, 241),
@@ -145,7 +145,7 @@ namespace ChickenDist.Forms
 
             Button btnRefresh = new Button
             {
-                Text = "🔄 تحديث",
+                Text = "تحديث",
                 Width = 90,
                 Height = 28,
                 BackColor = Color.FromArgb(236, 240, 241),
@@ -185,28 +185,28 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent
             };
 
-            Button btnNew = CreateActionButton("➕ استلام جهاز جديد", Color.FromArgb(39, 174, 96), Color.White);
+            Button btnNew = CreateActionButton("استلام جهاز جديد", Color.FromArgb(39, 174, 96), Color.White);
             btnNew.Click += (s, e) => OpenTicketEditor(0);
 
-            Button btnEdit = CreateActionButton("✏️ تعديل / تفاصيل", Color.FromArgb(41, 128, 185), Color.White);
+            Button btnEdit = CreateActionButton("تعديل / تفاصيل", Color.FromArgb(41, 128, 185), Color.White);
             btnEdit.Click += (s, e) => EditSelectedTicket();
 
-            Button btnSendVendor = CreateActionButton("🚚 إرسال للتوكيل", Color.FromArgb(230, 126, 34), Color.White);
+            Button btnSendVendor = CreateActionButton("إرسال للتوكيل", Color.FromArgb(230, 126, 34), Color.White);
             btnSendVendor.Click += (s, e) => QuickSendToVendor();
 
-            Button btnReceiveVendor = CreateActionButton("📦 استلام من التوكيل", Color.FromArgb(142, 68, 173), Color.White);
+            Button btnReceiveVendor = CreateActionButton("استلام من التوكيل", Color.FromArgb(142, 68, 173), Color.White);
             btnReceiveVendor.Click += (s, e) => QuickReceiveFromVendor();
 
-            Button btnDeliverCustomer = CreateActionButton("🤝 تسليم للعميل", Color.FromArgb(22, 160, 133), Color.White);
+            Button btnDeliverCustomer = CreateActionButton("تسليم للعميل", Color.FromArgb(22, 160, 133), Color.White);
             btnDeliverCustomer.Click += (s, e) => QuickDeliverCustomer();
 
-            Button btnPrint = CreateActionButton("🖨️ طباعة إيصال استلام", Color.FromArgb(52, 73, 94), Color.White);
+            Button btnPrint = CreateActionButton("طباعة إيصال استلام", Color.FromArgb(52, 73, 94), Color.White);
             btnPrint.Click += (s, e) => PrintReceipt();
 
-            Button btnWhatsApp = CreateActionButton("💬 إرسال واتساب للعميل", Color.FromArgb(37, 211, 102), Color.White);
+            Button btnWhatsApp = CreateActionButton("إرسال واتساب للعميل", Color.FromArgb(37, 211, 102), Color.White);
             btnWhatsApp.Click += (s, e) => SendWhatsApp();
 
-            Button btnDelete = CreateActionButton("🗑️ حذف الإيصال", Color.FromArgb(192, 57, 43), Color.White);
+            Button btnDelete = CreateActionButton("حذف الإيصال", Color.FromArgb(192, 57, 43), Color.White);
             btnDelete.Click += (s, e) => DeleteTicket();
 
             // Stack buttons nicely inside pnlActions

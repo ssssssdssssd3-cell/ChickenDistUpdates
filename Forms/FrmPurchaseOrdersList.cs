@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Linq;
@@ -26,7 +26,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanAccess("Purchases") && !Session.CanAccess("PurchaseOrdersList") && !Session.IsAdmin)
             {
-                MessageBox.Show("⛔ غير مصرح لك بعرض سجل أوامر الشراء.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بعرض سجل أوامر الشراء.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Load += (s, e) => this.Close();
                 return;
             }
@@ -38,7 +38,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📑 سجل طلبيات وأوامر الشراء";
+            this.Text = "سجل طلبيات وأوامر الشراء";
             this.Size = new Size(1220, 760);
             this.MinimumSize = new Size(980, 580);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -58,7 +58,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "📑 سجل ومتابعة طلبيات وأوامر الشراء (Purchase Orders Archive)",
+                Text = "سجل ومتابعة طلبيات وأوامر الشراء (Purchase Orders Archive)",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -101,19 +101,19 @@ namespace ChickenDist.Forms
 
             cboSupplier = new ComboBox { Width = 175, DropDownStyle = ComboBoxStyle.DropDownList };
             cboSupplier.SelectedIndexChanged += (s, e) => LoadOrders();
-            pnlFilter.Controls.Add(MakeFilterItem("المورد 👤:", cboSupplier));
+            pnlFilter.Controls.Add(MakeFilterItem("المورد :", cboSupplier));
 
             cboStatus = new ComboBox { Width = 135, DropDownStyle = ComboBoxStyle.DropDownList };
             cboStatus.Items.AddRange(new object[] { "الكل", "معلقة", "تم التوريد بالكامل", "ملغاة" });
             cboStatus.SelectedIndex = 0;
             cboStatus.SelectedIndexChanged += (s, e) => LoadOrders();
-            pnlFilter.Controls.Add(MakeFilterItem("الحالة 📶:", cboStatus));
+            pnlFilter.Controls.Add(MakeFilterItem("الحالة :", cboStatus));
 
             txtSearch = new TextBox { Width = 140, Height = 26 };
             txtSearch.TextChanged += (s, e) => ApplyLocalSearch();
-            pnlFilter.Controls.Add(MakeFilterItem("🔍 بحث:", txtSearch));
+            pnlFilter.Controls.Add(MakeFilterItem("بحث:", txtSearch));
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 85, 30, Color.FromArgb(70, 80, 95));
+            btnRefresh = Theme.MakeButton("تحديث", 0, 0, 85, 30, Color.FromArgb(70, 80, 95));
             btnRefresh.Margin = new Padding(4, 18, 4, 2);
             btnRefresh.Click += (s, e) => LoadOrders();
             pnlFilter.Controls.Add(btnRefresh);
@@ -131,35 +131,35 @@ namespace ChickenDist.Forms
                 WrapContents = true
             };
 
-            btnNewOrder = Theme.MakeButton("➕ أمر شراء جديد", 0, 0, 150, 34, Color.FromArgb(5, 150, 105));
+            btnNewOrder = Theme.MakeButton("أمر شراء جديد", 0, 0, 150, 34, Color.FromArgb(5, 150, 105));
             btnNewOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnNewOrder.Click += (s, e) => OpenNewOrder();
 
-            btnEditOrder = Theme.MakeButton("👁️ عرض وتعديل الطلبية", 0, 0, 165, 34, Color.FromArgb(37, 99, 235));
+            btnEditOrder = Theme.MakeButton("عرض وتعديل الطلبية", 0, 0, 165, 34, Color.FromArgb(37, 99, 235));
             btnEditOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnEditOrder.Click += (s, e) => OpenSelectedOrder();
 
-            btnConvertToPurchase = Theme.MakeButton("🛒 تحويل لفاتورة مشتريات", 0, 0, 195, 34, Color.FromArgb(234, 88, 12));
+            btnConvertToPurchase = Theme.MakeButton("تحويل لفاتورة مشتريات", 0, 0, 195, 34, Color.FromArgb(234, 88, 12));
             btnConvertToPurchase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnConvertToPurchase.Click += (s, e) => ConvertSelectedToPurchase();
 
-            btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب", 0, 0, 130, 34, Color.FromArgb(37, 211, 102));
+            btnWhatsApp = Theme.MakeButton("إرسال واتساب", 0, 0, 130, 34, Color.FromArgb(37, 211, 102));
             btnWhatsApp.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnWhatsApp.Click += (s, e) => SendWhatsAppSelected();
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة A4", 0, 0, 110, 34, Color.FromArgb(100, 116, 139));
+            btnPrint = Theme.MakeButton("طباعة A4", 0, 0, 110, 34, Color.FromArgb(100, 116, 139));
             btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPrint.Click += (s, e) => PrintSelected();
 
-            btnExportExcel = Theme.MakeButton("📥 تصدير إكسيل", 0, 0, 130, 34, Color.FromArgb(13, 148, 136));
+            btnExportExcel = Theme.MakeButton("تصدير إكسيل", 0, 0, 130, 34, Color.FromArgb(13, 148, 136));
             btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnExportExcel.Click += (s, e) => ExportToExcel();
 
-            btnCancelOrder = Theme.MakeButton("🚫 إلغاء الطلبية", 0, 0, 120, 34, Color.FromArgb(220, 38, 38));
+            btnCancelOrder = Theme.MakeButton("إلغاء الطلبية", 0, 0, 120, 34, Color.FromArgb(220, 38, 38));
             btnCancelOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCancelOrder.Click += (s, e) => CancelSelectedOrder();
 
-            btnDeleteOrder = Theme.MakeButton("🗑️ حذف نهائي", 0, 0, 115, 34, Color.FromArgb(185, 28, 28));
+            btnDeleteOrder = Theme.MakeButton("حذف نهائي", 0, 0, 115, 34, Color.FromArgb(185, 28, 28));
             btnDeleteOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnDeleteOrder.Click += (s, e) => DeleteSelectedOrder();
 
@@ -230,14 +230,14 @@ namespace ChickenDist.Forms
         {
             dgvOrders.Columns.Clear();
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderID", DataPropertyName = "OrderID", HeaderText = "#", Width = 55, Visible = false });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderCode", DataPropertyName = "OrderCode", HeaderText = "كود الطلبية 🔖", Width = 140, DefaultCellStyle = { Font = Theme.FontBold, Alignment = DataGridViewContentAlignment.MiddleCenter } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderDate", DataPropertyName = "OrderDate", HeaderText = "تاريخ الطلب 📅", Width = 145, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd hh:mm tt" } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", DataPropertyName = "SupplierName", HeaderText = "المورد 👤", Width = 190, DefaultCellStyle = { Font = Theme.FontBold } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierPhone", DataPropertyName = "SupplierPhone", HeaderText = "هاتف المورد 📱", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderCode", DataPropertyName = "OrderCode", HeaderText = "كود الطلبية", Width = 140, DefaultCellStyle = { Font = Theme.FontBold, Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "OrderDate", DataPropertyName = "OrderDate", HeaderText = "تاريخ الطلب", Width = 145, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd hh:mm tt" } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierName", DataPropertyName = "SupplierName", HeaderText = "المورد", Width = 190, DefaultCellStyle = { Font = Theme.FontBold } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "SupplierPhone", DataPropertyName = "SupplierPhone", HeaderText = "هاتف المورد", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalItemsCount", DataPropertyName = "TotalItemsCount", HeaderText = "عدد الأصناف", Width = 95, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalQuantity", DataPropertyName = "TotalQuantity", HeaderText = "إجمالي الكمية", Width = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2" } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalEstimatedCost", DataPropertyName = "TotalEstimatedCost", HeaderText = "التكلفة التقديرية 💰", Width = 135, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold, ForeColor = Color.FromArgb(5, 150, 105) } });
-            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", DataPropertyName = "Status", HeaderText = "الحالة 📶", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = Theme.FontBold } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TotalEstimatedCost", DataPropertyName = "TotalEstimatedCost", HeaderText = "التكلفة التقديرية", Width = 135, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold, ForeColor = Color.FromArgb(5, 150, 105) } });
+            dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", DataPropertyName = "Status", HeaderText = "الحالة", Width = 120, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = Theme.FontBold } });
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "ExpectedDeliveryDate", DataPropertyName = "ExpectedDeliveryDate", HeaderText = "تاريخ التوريد المتوقع", Width = 130, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy/MM/dd" } });
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "CreatedByEmpName", DataPropertyName = "CreatedByEmpName", HeaderText = "المستخدم", Width = 110, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter } });
             dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", DataPropertyName = "Notes", HeaderText = "ملاحظات", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
@@ -429,13 +429,13 @@ namespace ChickenDist.Forms
             if (phone.StartsWith("01")) phone = "20" + phone.Substring(1);
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"📋 *طلب توريد بضاعة / أمر شراء جديد*");
-            sb.AppendLine($"🏢 *الجهة:* {AppConfig.CompanyName}");
-            sb.AppendLine($"🔖 *رقم الطلبية:* {order.OrderCode}");
-            sb.AppendLine($"📅 *التاريخ:* {order.OrderDate:yyyy/MM/dd}");
-            sb.AppendLine($"👤 *المطلوب من الأستاذ / الشركة:* {order.SupplierName}");
+            sb.AppendLine($"*طلب توريد بضاعة / أمر شراء جديد*");
+            sb.AppendLine($"*الجهة:* {AppConfig.CompanyName}");
+            sb.AppendLine($"*رقم الطلبية:* {order.OrderCode}");
+            sb.AppendLine($"*التاريخ:* {order.OrderDate:yyyy/MM/dd}");
+            sb.AppendLine($"*المطلوب من الأستاذ / الشركة:* {order.SupplierName}");
             sb.AppendLine("────────────────────");
-            sb.AppendLine("📦 *بيان الأصناف والكميات المطلوبة:*");
+            sb.AppendLine("*بيان الأصناف والكميات المطلوبة:*");
 
             int idx = 1;
             foreach (var itm in order.Items)
@@ -447,13 +447,13 @@ namespace ChickenDist.Forms
             }
 
             sb.AppendLine("────────────────────");
-            sb.AppendLine($"📊 *إجمالي الأصناف:* {order.Items.Count} صنف");
-            sb.AppendLine($"📦 *إجمالي الكمية:* {order.Items.Sum(x => x.Quantity):N2}");
+            sb.AppendLine($"*إجمالي الأصناف:* {order.Items.Count} صنف");
+            sb.AppendLine($"*إجمالي الكمية:* {order.Items.Sum(x => x.Quantity):N2}");
             if (order.Items.Any(x => x.EstimatedUnitPrice > 0))
-                sb.AppendLine($"💰 *إجمالي التكلفة التقديرية:* {order.Items.Sum(x => x.TotalPrice):N2} ج");
+                sb.AppendLine($"*إجمالي التكلفة التقديرية:* {order.Items.Sum(x => x.TotalPrice):N2} ج");
 
             if (!string.IsNullOrWhiteSpace(order.Notes))
-                sb.AppendLine($"📝 *ملاحظات خاصة:* {order.Notes}");
+                sb.AppendLine($"*ملاحظات خاصة:* {order.Notes}");
 
             sb.AppendLine("\nيرجى مراجعة الطلبية وتأكيد موعد التوريد. شاكرين حسن التعاون معكم.");
 
@@ -462,7 +462,7 @@ namespace ChickenDist.Forms
                 phone,
                 sb.ToString(),
                 () => ReceiptImageGenerator.GeneratePurchaseOrderImage(order),
-                "📱 إرسال أمر الشراء عبر الواتساب"
+                "إرسال أمر الشراء عبر الواتساب"
             );
         }
 
@@ -538,7 +538,7 @@ namespace ChickenDist.Forms
                     try
                     {
                         FrmReports.ExportDataGridViewToXls(dgvOrders, dlg.FileName, "سجل طلبيات وأوامر الشراء", AppConfig.CompanyName);
-                        var res = MessageBox.Show("✅ تم تصدير السجل إلى Excel بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير السجل إلى Excel بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dlg.FileName) { UseShellExecute = true });

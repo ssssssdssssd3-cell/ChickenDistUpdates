@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -75,7 +75,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = _ticketID > 0 ? "📝 تعديل كرت جهاز تحت الضمان" : "➕ استلام جهاز جديد تحت الضمان";
+            this.Text = _ticketID > 0 ? "تعديل كرت جهاز تحت الضمان" : "استلام جهاز جديد تحت الضمان";
             int screenH = Screen.FromControl(this)?.WorkingArea.Height ?? Screen.PrimaryScreen.WorkingArea.Height;
             int screenW = Screen.FromControl(this)?.WorkingArea.Width ?? Screen.PrimaryScreen.WorkingArea.Width;
             int formH = Math.Min(720, screenH - 40);
@@ -105,7 +105,7 @@ namespace ChickenDist.Forms
 
             // ── Top Title Bar (Docked Top) ──
             Panel pnlTitle = Theme.MakeTitleBar(
-                _ticketID > 0 ? "📝 تعديل بيانات كرت الضمان" : "🛡️ استلام جهاز تحت الضمان والصيانة",
+                _ticketID > 0 ? "تعديل بيانات كرت الضمان" : "استلام جهاز تحت الضمان والصيانة",
                 "سجل إداري لمتابعة الأجهزة مع العملاء والتوكيلات الخارجية دون التأثير على المخزون أو الحسابات.");
             pnlTitle.Dock = DockStyle.Top;
 
@@ -127,17 +127,17 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ فقط (F2)", Theme.Success);
+            btnSave = Theme.MakeButton("حفظ فقط (F2)", Theme.Success);
             btnSave.Size = new Size(130, 38);
             btnSave.Margin = new Padding(8, 0, 0, 0);
             btnSave.Click += (s, e) => SaveTicket(printAfterSave: false, sendWhatsAppAfterSave: false);
 
-            btnSaveAndPrint = Theme.MakeButton("🖨️ حفظ وطباعة (F3)", Color.FromArgb(30, 80, 180));
+            btnSaveAndPrint = Theme.MakeButton("حفظ وطباعة (F3)", Color.FromArgb(30, 80, 180));
             btnSaveAndPrint.Size = new Size(160, 38);
             btnSaveAndPrint.Margin = new Padding(8, 0, 0, 0);
             btnSaveAndPrint.Click += (s, e) => SaveTicket(printAfterSave: true, sendWhatsAppAfterSave: false);
 
-            btnSaveAndWhatsApp = Theme.MakeButton("📱 حفظ وواتساب (F5)", Color.FromArgb(37, 211, 102));
+            btnSaveAndWhatsApp = Theme.MakeButton("حفظ وواتساب (F5)", Color.FromArgb(37, 211, 102));
             btnSaveAndWhatsApp.Size = new Size(160, 38);
             btnSaveAndWhatsApp.ForeColor = Color.White;
             btnSaveAndWhatsApp.Margin = new Padding(8, 0, 0, 0);
@@ -149,7 +149,7 @@ namespace ChickenDist.Forms
 
             if (_ticketID > 0)
             {
-                btnDirectPrint = Theme.MakeButton("🖨️ طباعة فورية", Color.FromArgb(52, 73, 94));
+                btnDirectPrint = Theme.MakeButton("طباعة فورية", Color.FromArgb(52, 73, 94));
                 btnDirectPrint.Size = new Size(130, 38);
                 btnDirectPrint.Margin = new Padding(8, 0, 0, 0);
                 btnDirectPrint.Click += (s, e) =>
@@ -159,7 +159,7 @@ namespace ChickenDist.Forms
                     WarrantyReceiptHelper.PrintReceipt(ticket, showPreview: true);
                 };
 
-                btnDirectWhatsApp = Theme.MakeButton("📱 إرسال واتساب", Color.FromArgb(18, 140, 126));
+                btnDirectWhatsApp = Theme.MakeButton("إرسال واتساب", Color.FromArgb(18, 140, 126));
                 btnDirectWhatsApp.Size = new Size(130, 38);
                 btnDirectWhatsApp.ForeColor = Color.White;
                 btnDirectWhatsApp.Margin = new Padding(8, 0, 0, 0);
@@ -174,7 +174,7 @@ namespace ChickenDist.Forms
                 pnlButtons.Controls.Add(btnDirectWhatsApp);
             }
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Color.FromArgb(100, 110, 120));
+            btnCancel = Theme.MakeButton("إلغاء (Esc)", Color.FromArgb(100, 110, 120));
             btnCancel.Size = new Size(110, 38);
             btnCancel.Margin = new Padding(8, 0, 0, 0);
             btnCancel.Click += (s, e) => this.Close();
@@ -248,7 +248,7 @@ namespace ChickenDist.Forms
             // Left side of Header: Quick invoice lookup
             pnlHeader.Controls.Add(new Label
             {
-                Text = "🔍 بحث سريع:",
+                Text = "بحث سريع:",
                 Location = new Point(230, 13),
                 Width = 95,
                 TextAlign = ContentAlignment.MiddleRight,
@@ -268,7 +268,7 @@ namespace ChickenDist.Forms
 
             btnQuickSearch = new Button
             {
-                Text = "🔎",
+                Text = "بحث",
                 Location = new Point(15, 10),
                 Width = 36,
                 Height = 27,
@@ -287,13 +287,13 @@ namespace ChickenDist.Forms
             curY += 58;
 
             // ── 2. GroupBox: بيانات العميل ──
-            GroupBox grpCustomer = CreateSectionBox("👤 بيانات العميل / الزبون", 15, curY, boxWidth, 105);
+            GroupBox grpCustomer = CreateSectionBox("بيانات العميل / الزبون", 15, curY, boxWidth, 105);
             pnlBody.Controls.Add(grpCustomer);
 
             txtCustomerName = new TextBox { Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             btnSearchClient = new Button
             {
-                Text = "🔍",
+                Text = "بحث",
                 Size = new Size(34, 26),
                 BackColor = Theme.Accent,
                 ForeColor = Color.White,
@@ -340,13 +340,13 @@ namespace ChickenDist.Forms
             curY += 115;
 
             // ── 3. GroupBox: بيانات الجهاز والأصناف ──
-            GroupBox grpDevice = CreateSectionBox("📦 بيانات الجهاز / الصنف والضمان", 15, curY, boxWidth, 142);
+            GroupBox grpDevice = CreateSectionBox("بيانات الجهاز / الصنف والضمان", 15, curY, boxWidth, 142);
             pnlBody.Controls.Add(grpDevice);
 
             txtProductName = new TextBox { Width = 175, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             Button btnSearchProduct = new Button
             {
-                Text = "🔍",
+                Text = "بحث",
                 Size = new Size(34, 26),
                 Location = new Point(452, 24),
                 BackColor = Theme.Accent,
@@ -361,7 +361,7 @@ namespace ChickenDist.Forms
 
             Button btnClientPurchases = new Button
             {
-                Text = "📋",
+                Text = "سجل",
                 Size = new Size(34, 26),
                 Location = new Point(415, 24),
                 BackColor = Color.FromArgb(30, 80, 160),
@@ -429,7 +429,7 @@ namespace ChickenDist.Forms
             curY += 152;
 
             // ── 4. GroupBox: الفحص المبدئي والاستلام من العميل ──
-            GroupBox grpInspection = CreateSectionBox("🔍 الفحص المبدئي والاستلام من العميل", 15, curY, boxWidth, 150);
+            GroupBox grpInspection = CreateSectionBox("الفحص المبدئي والاستلام من العميل", 15, curY, boxWidth, 150);
             pnlBody.Controls.Add(grpInspection);
 
             txtProblemDescription = new TextBox
@@ -446,11 +446,11 @@ namespace ChickenDist.Forms
             txtAccessories = new TextBox { Width = 370, Font = Theme.FontMain, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
 
             // Helper quick buttons for accessories
-            Button btnAccBox = new Button { Text = "📦 بالكرتونة", Location = new Point(205, 75), Width = 85, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
+            Button btnAccBox = new Button { Text = "بالكرتونة", Location = new Point(205, 75), Width = 85, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
             btnAccBox.Click += (s, e) => AppendAccessory("بالكرتونة");
-            Button btnAccCable = new Button { Text = "🔌 شاحن/كابل", Location = new Point(110, 75), Width = 90, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
+            Button btnAccCable = new Button { Text = "شاحن/كابل", Location = new Point(110, 75), Width = 90, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
             btnAccCable.Click += (s, e) => AppendAccessory("شاحن/سلك");
-            Button btnAccNone = new Button { Text = "🚫 جهاز فقط", Location = new Point(15, 75), Width = 90, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
+            Button btnAccNone = new Button { Text = "جهاز فقط", Location = new Point(15, 75), Width = 90, Height = 26, Font = new Font(Theme.FontMain.FontFamily, 8.5f), FlatStyle = FlatStyle.Flat };
             btnAccNone.Click += (s, e) => txtAccessories.Text = "الجهاز فقط بدون ملحقات";
 
             Label lblAcc = new Label
@@ -471,7 +471,7 @@ namespace ChickenDist.Forms
             curY += 160;
 
             // ── 5. GroupBox: متابعة التوكيل والصيانة الخارجية ──
-            GroupBox grpVendor = CreateSectionBox("🏢 متابعة التوكيل / مركز الصيانة الخارجي", 15, curY, boxWidth, 180);
+            GroupBox grpVendor = CreateSectionBox("متابعة التوكيل / مركز الصيانة الخارجي", 15, curY, boxWidth, 180);
             pnlBody.Controls.Add(grpVendor);
 
             cboStatus = new ComboBox
@@ -558,7 +558,7 @@ namespace ChickenDist.Forms
             curY += 190;
 
             // ── 6. GroupBox: التسليم للزبون والملاحظات ──
-            GroupBox grpDelivery = CreateSectionBox("🤝 التسليم للزبون والملاحظات", 15, curY, boxWidth, 105);
+            GroupBox grpDelivery = CreateSectionBox("التسليم للزبون والملاحظات", 15, curY, boxWidth, 105);
             pnlBody.Controls.Add(grpDelivery);
 
             chkDelivered = new CheckBox
@@ -982,7 +982,7 @@ namespace ChickenDist.Forms
                     {
                         var cr = dtClients.Rows[0];
                         ApplyClientSelection(Convert.ToInt32(cr["ClientID"]), cr["ClientName"]?.ToString() ?? "", cr["Phone"]?.ToString() ?? "");
-                        MessageBox.Show("✅ تم العثور على العميل المسجل وجلب بياناته بنجاح!", "تم العثور على العميل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم العثور على العميل المسجل وجلب بياناته بنجاح!", "تم العثور على العميل", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
                     else if (dtClients.Rows.Count > 1)
@@ -1010,7 +1010,7 @@ namespace ChickenDist.Forms
                     // Show a quick picker dialog
                     using (var dlg = new Form())
                     {
-                        dlg.Text = "🔍 اختر الصنف / الفاتورة المطابقة";
+                        dlg.Text = "اختر الصنف / الفاتورة المطابقة";
                         dlg.Size = new Size(680, 380);
                         dlg.StartPosition = FormStartPosition.CenterParent;
                         dlg.RightToLeft = RightToLeft.Yes;
@@ -1029,7 +1029,7 @@ namespace ChickenDist.Forms
                         };
                         Theme.ApplyGridTheme(dgv);
 
-                        var btnChoose = Theme.MakeButton("اختيار الصنف المكتمل ✔", Theme.Success);
+                        var btnChoose = Theme.MakeButton("اختيار الصنف المكتمل", Theme.Success);
                         btnChoose.Dock = DockStyle.Bottom;
                         btnChoose.Height = 38;
                         btnChoose.Click += (s, e) =>
@@ -1079,7 +1079,7 @@ namespace ChickenDist.Forms
             if (r.Table.Columns.Contains("IMEI") && r["IMEI"] != DBNull.Value && !string.IsNullOrWhiteSpace(r["IMEI"].ToString()))
                 txtSerialNumber.Text = r["IMEI"].ToString();
 
-            MessageBox.Show("✅ تم جلب بيانات العميل والفاتورة والصنف بنجاح!", "تم الجلب", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("تم جلب بيانات العميل والفاتورة والصنف بنجاح!", "تم الجلب", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void LoadTicketData()
@@ -1232,7 +1232,7 @@ namespace ChickenDist.Forms
                     else if (_ticketID == 0)
                     {
                         // New ticket - ask for print
-                        var ask = MessageBox.Show("✅ تم استلام وحفظ كرت الضمان بنجاح!\n\nهل ترغب في طباعة إيصال الاستلام الآن للعميل؟", "طباعة إيصال الضمان", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        var ask = MessageBox.Show("تم استلام وحفظ كرت الضمان بنجاح!\n\nهل ترغب في طباعة إيصال الاستلام الآن للعميل؟", "طباعة إيصال الضمان", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                         if (ask == DialogResult.Yes)
                         {
                             WarrantyReceiptHelper.PrintReceipt(t, showPreview: true);

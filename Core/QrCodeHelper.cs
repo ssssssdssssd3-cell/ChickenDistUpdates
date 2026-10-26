@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Net;
@@ -87,7 +87,7 @@ namespace ChickenDist.Core
                     using (var brush = new SolidBrush(dark))
                     {
                         var sfCenter = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                        g.DrawString("📱 رابط المنيو / المتجر الإلكتروني", fontHeader, brush, new RectangleF(15, 40, cardSize - 30, 40), sfCenter);
+                        g.DrawString("رابط المنيو / المتجر الإلكتروني", fontHeader, brush, new RectangleF(15, 40, cardSize - 30, 40), sfCenter);
                         g.DrawString(content, fontText, brush, new RectangleF(25, 120, cardSize - 50, 120), sfCenter);
                         g.DrawString("(امسح الرابط أو افتحه بالمتصفح)", fontText, Brushes.Gray, new RectangleF(15, 260, cardSize - 30, 30), sfCenter);
                     }

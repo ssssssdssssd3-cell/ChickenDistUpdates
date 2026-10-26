@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -30,7 +30,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🔓 فتح وردية جديدة - الخزينة والكاشير";
+            this.Text = "فتح وردية جديدة - الخزينة والكاشير";
             this.Size = new Size(530, 450);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -51,7 +51,7 @@ namespace ChickenDist.Forms
             };
             Label lblTitle = new Label
             {
-                Text = "⚡ بدء وفتح وردية عمل جديدة",
+                Text = "بدء وفتح وردية عمل جديدة",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Top,
@@ -83,19 +83,19 @@ namespace ChickenDist.Forms
             for (int i = 0; i < 5; i++) tbl.RowStyles.Add(new RowStyle(SizeType.Absolute, 52f));
 
             // 1. الموظف / الكاشير
-            Label lblEmpTitle = new Label { Text = "👤 الموظف / الكاشير:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            Label lblEmpTitle = new Label { Text = "الموظف / الكاشير:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             lblEmployee = new Label { Text = Session.EmpName, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 11f, FontStyle.Bold), ForeColor = Theme.Accent };
             tbl.Controls.Add(lblEmpTitle, 0, 0);
             tbl.Controls.Add(lblEmployee, 1, 0);
 
             // 2. تاريخ ووقت الفتح
-            Label lblTimeTitle = new Label { Text = "📅 تاريخ ووقت الفتح:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            Label lblTimeTitle = new Label { Text = "تاريخ ووقت الفتح:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             lblOpenTime = new Label { Text = DateTime.Now.ToString("yyyy-MM-dd   hh:mm tt"), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = Theme.TextMain };
             tbl.Controls.Add(lblTimeTitle, 0, 1);
             tbl.Controls.Add(lblOpenTime, 1, 1);
 
             // 3. الرصيد الافتتاحي (Opening Cash)
-            Label lblCashTitle = new Label { Text = "💵 الرصيد الافتتاحي (ج):", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            Label lblCashTitle = new Label { Text = "الرصيد الافتتاحي (ج):", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             txtOpeningCash = new TextBox
             {
                 Dock = DockStyle.Fill,
@@ -124,7 +124,7 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(txtOpeningCash, 1, 2);
 
             // 4. الخزينة المرتبطة
-            Label lblSafeTitle = new Label { Text = "🏦 الخزينة المرتبطة:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            Label lblSafeTitle = new Label { Text = "الخزينة المرتبطة:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             cboSafeAccount = new ComboBox
             {
                 Dock = DockStyle.Fill,
@@ -139,7 +139,7 @@ namespace ChickenDist.Forms
             tbl.Controls.Add(cboSafeAccount, 1, 3);
 
             // 5. ملاحظات
-            Label lblNotesTitle = new Label { Text = "📝 ملاحظات البدء:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain, ForeColor = Theme.TextMain };
+            Label lblNotesTitle = new Label { Text = "ملاحظات البدء:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain, ForeColor = Theme.TextMain };
             txtNotes = new TextBox
             {
                 Dock = DockStyle.Fill,
@@ -163,8 +163,8 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            btnStart = Theme.MakeButton("✅ فتح الوردية الآن", Theme.Success, new Point(0, 0), new Size(170, 40));
-            btnCancel = Theme.MakeButton("❌ إلغاء", Color.FromArgb(100, 110, 125), new Point(0, 0), new Size(110, 40));
+            btnStart = Theme.MakeButton("فتح الوردية الآن", Theme.Success, new Point(0, 0), new Size(170, 40));
+            btnCancel = Theme.MakeButton("إلغاء", Color.FromArgb(100, 110, 125), new Point(0, 0), new Size(110, 40));
 
             btnStart.Click += BtnStart_Click;
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -534,7 +534,7 @@ namespace ChickenDist.Forms
                     else if (string.Equals(template, "Elegant", StringComparison.OrdinalIgnoreCase))
                     {
                         // Elegant format: stylish headers, decorative lines, fancy layout
-                        g.DrawString("❀ " + AppConfig.CompanyName + " ❀", boldBig, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
+                        g.DrawString(AppConfig.CompanyName, boldBig, Brushes.DarkSlateGray, new RectangleF(lMargin, y, printableW, 25), center); y += 24;
                         if (!string.IsNullOrWhiteSpace(AppConfig.ReceiptHeaderNote))
                         {
                             var headerSize = g.MeasureString(AppConfig.ReceiptHeaderNote, normal, printableW);
@@ -542,7 +542,7 @@ namespace ChickenDist.Forms
                             y += (int)headerSize.Height + 4;
                         }
                         g.DrawString("ـ ــ ـــ فاتورة مبيعات ـــ ــ ـ", bold, Brushes.Black, new RectangleF(lMargin, y, printableW, 20), center); y += 20;
-                        g.DrawString("✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿ ✿", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
+                        g.DrawString("- - - - - - - - - - -", small, Brushes.Gray, new RectangleF(lMargin, y, printableW, 14), center); y += 14;
                         
                         if (_saleRow != null)
                         {
@@ -1112,7 +1112,7 @@ namespace ChickenDist.Forms
                     string invNotes = _saleRow != null && _saleRow.Table.Columns.Contains("Notes") && _saleRow["Notes"] != DBNull.Value ? _saleRow["Notes"].ToString().Trim() : "";
                     if (!string.IsNullOrWhiteSpace(invNotes) && invNotes != "POS" && invNotes != "POS_DRAFT")
                     {
-                        string noteStr = "📝 ملاحظات: " + invNotes;
+                        string noteStr = "ملاحظات: " + invNotes;
                         var noteSize = g.MeasureString(noteStr, normal, printableW);
                         g.DrawString(noteStr, normal, Brushes.DarkBlue, new RectangleF(lMargin, y, printableW, noteSize.Height + 4), right);
                         y += (int)noteSize.Height + 6;
@@ -1149,14 +1149,14 @@ namespace ChickenDist.Forms
                         }
                         if (!string.IsNullOrWhiteSpace(AppConfig.CompanyAddress))
                         {
-                            string addrText = "📍 " + AppConfig.CompanyAddress.Trim();
+                            string addrText = "" + AppConfig.CompanyAddress.Trim();
                             var addrSize = g.MeasureString(addrText, small, printableW);
                             g.DrawString(addrText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, addrSize.Height + 2), center);
                             y += (int)addrSize.Height + 4;
                         }
                         if (!string.IsNullOrWhiteSpace(AppConfig.CompanyPhone))
                         {
-                            string phoneText = "📞 " + AppConfig.CompanyPhone.Trim();
+                            string phoneText = "" + AppConfig.CompanyPhone.Trim();
                             g.DrawString(phoneText, small, Brushes.Black, new RectangleF(lMargin, y, printableW, 16), center);
                             y += 18;
                         }
@@ -1985,7 +1985,7 @@ namespace ChickenDist.Forms
                             string classicNotes = _saleRow != null && _saleRow.Table.Columns.Contains("Notes") && _saleRow["Notes"] != DBNull.Value ? _saleRow["Notes"].ToString().Trim() : "";
                             if (!string.IsNullOrWhiteSpace(classicNotes) && classicNotes != "POS" && classicNotes != "POS_DRAFT")
                             {
-                                string cNoteStr = "📝 ملاحظات: " + classicNotes;
+                                string cNoteStr = "ملاحظات: " + classicNotes;
                                 g.DrawString(cNoteStr, normal, Brushes.DarkBlue, new RectangleF(rightNotesX, y + (isA4Page ? 50 : 38), rightNotesW, isA4Page ? 65 : 48), right);
                             }
                         }
@@ -2342,7 +2342,7 @@ namespace ChickenDist.Forms
                     if (!string.IsNullOrWhiteSpace(sheetNotes) && sheetNotes != "POS" && sheetNotes != "POS_DRAFT")
                     {
                         g.DrawLine(Pens.LightGray, margin, y, pageW - margin, y); y += 6;
-                        string noteBoxText = "📝 ملاحظات: " + sheetNotes;
+                        string noteBoxText = "ملاحظات: " + sheetNotes;
                         var noteSz = g.MeasureString(noteBoxText, boldSheet, pageW - 2 * margin - 16);
                         float boxH = Math.Max(isA4Page ? 26 : 22, noteSz.Height + 6);
                         g.FillRectangle(new SolidBrush(Color.FromArgb(248, 250, 252)), margin, y, pageW - 2 * margin, boxH);

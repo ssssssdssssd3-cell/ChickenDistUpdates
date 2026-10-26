@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -32,7 +32,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "🏢 بيانات المؤسسة والفرع";
+            this.Text = "بيانات المؤسسة والفرع";
             this.Size = new Size(620, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -43,7 +43,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var pnlTop = Theme.MakeTitleBar("🏢 بيانات المؤسسة والفرع", "تعديل اسم الشركة، أرقام الهواتف، العنوان، الشعار، ونوع النشاط التجاري");
+            var pnlTop = Theme.MakeTitleBar("بيانات المؤسسة والفرع", "تعديل اسم الشركة، أرقام الهواتف، العنوان، الشعار، ونوع النشاط التجاري");
             this.Controls.Add(pnlTop);
 
             var pnlBody = new Panel
@@ -178,7 +178,7 @@ namespace ChickenDist.Forms
             txtShopLogoPath.TextChanged += (s, e) => UpdateLogoPreview();
             pnlBody.Controls.Add(txtShopLogoPath);
 
-            var btnBrowseLogo = Theme.MakeButton("📂 تصفح الشعار", 355, y - 2, 105, 30, Color.FromArgb(55, 65, 81));
+            var btnBrowseLogo = Theme.MakeButton("تصفح الشعار", 355, y - 2, 105, 30, Color.FromArgb(55, 65, 81));
             btnBrowseLogo.Font = new Font("Segoe UI", 9f);
             btnBrowseLogo.Click += (s, e) =>
             {
@@ -194,7 +194,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(btnBrowseLogo);
 
-            var btnClearLogo = Theme.MakeButton("❌ مسح", 468, y - 2, 75, 30, Color.FromArgb(120, 50, 50));
+            var btnClearLogo = Theme.MakeButton("مسح", 468, y - 2, 75, 30, Color.FromArgb(120, 50, 50));
             btnClearLogo.Font = new Font("Segoe UI", 9f);
             btnClearLogo.Click += (s, e) => { txtShopLogoPath.Text = ""; };
             pnlBody.Controls.Add(btnClearLogo);
@@ -264,7 +264,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(cboBusinessType);
 
-            btnUnlockBizType = Theme.MakeButton("🔒 تعديل النشاط", 405, y - 2, 140, 32, Theme.Accent);
+            btnUnlockBizType = Theme.MakeButton("تعديل النشاط", 405, y - 2, 140, 32, Theme.Accent);
             btnUnlockBizType.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnUnlockBizType.Click += (s, e) => UnlockBusinessType();
             pnlBody.Controls.Add(btnUnlockBizType);
@@ -308,7 +308,7 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(pnlFooter);
 
-            var btnSave = Theme.MakeButton("💾 حفظ بيانات المؤسسة", 15, 8, 200, 38, Theme.Primary);
+            var btnSave = Theme.MakeButton("حفظ بيانات المؤسسة", 15, 8, 200, 38, Theme.Primary);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             pnlFooter.Controls.Add(btnSave);
@@ -403,7 +403,7 @@ namespace ChickenDist.Forms
                     if (txt.Text == "Pro@soft2026")
                     {
                         cboBusinessType.Enabled = true;
-                        btnUnlockBizType.Text = "🔓 مفتوح للتعديل";
+                        btnUnlockBizType.Text = "مفتوح للتعديل";
                         btnUnlockBizType.BackColor = Theme.Success;
                         btnUnlockBizType.Enabled = false;
                     }
@@ -455,7 +455,7 @@ namespace ChickenDist.Forms
             };
 
             MessageBox.Show(
-                "✅ تم حفظ بيانات المؤسسة بنجاح!\n(ملاحظة: في حال تغيير الثيم، يُرجى إعادة تشغيل البرنامج لتطبيقه بالكامل).",
+                "تم حفظ بيانات المؤسسة بنجاح!\n(ملاحظة: في حال تغيير الثيم، يُرجى إعادة تشغيل البرنامج لتطبيقه بالكامل).",
                 "تم الحفظ",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);

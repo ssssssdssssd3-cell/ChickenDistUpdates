@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
@@ -24,7 +24,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📊 سجل حركات وتعديلات الأسعار";
+            this.Text = "سجل حركات وتعديلات الأسعار";
             this.Size = new Size(1000, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -125,8 +125,8 @@ namespace ChickenDist.Forms
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadLogs(); };
             pnlTop.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("🔍 بحث وفلترة", 410, 44, 115, 30, Theme.Accent);
-            btnReset = Theme.MakeButton("🔄 إعادة تعيين", 535, 44, 110, 30, Color.FromArgb(70, 70, 70));
+            btnSearch = Theme.MakeButton("بحث وفلترة", 410, 44, 115, 30, Theme.Accent);
+            btnReset = Theme.MakeButton("إعادة تعيين", 535, 44, 110, 30, Color.FromArgb(70, 70, 70));
 
             btnSearch.Click += (s, e) => LoadLogs();
             btnReset.Click += (s, e) =>
@@ -143,7 +143,7 @@ namespace ChickenDist.Forms
             // Empty state notice
             lblEmptyNotice = new Label
             {
-                Text = "ℹ️ لا توجد حركات تعديل أسعار مسجلة في هذه الفترة.",
+                Text = "لا توجد حركات تعديل أسعار مسجلة في هذه الفترة.",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = Theme.TextSub,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -44,14 +44,14 @@ namespace ChickenDist.Forms
                 "عهدة المناديب الحالية",
                 "ملخص شامل للحمولات المفتوحة غير المقفلة — الكميات والقيم والمحصل والمتبقي بعهدة كل مندوب");
 
-            var btnRefresh = Theme.MakeButton("🔄 تحديث", Theme.Accent);
+            var btnRefresh = Theme.MakeButton("تحديث", Theme.Accent);
             btnRefresh.Size = new Size(110, 30);
             btnRefresh.Location = new Point(20, 20);
             btnRefresh.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnRefresh.Click += (s, e) => LoadData();
             pnlTitle.Controls.Add(btnRefresh);
 
-            var btnPrint = Theme.MakeButton("🖨️ طباعة", Theme.Primary);
+            var btnPrint = Theme.MakeButton("طباعة", Theme.Primary);
             btnPrint.Size = new Size(110, 30);
             btnPrint.Location = new Point(140, 20);
             btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Left;
@@ -210,7 +210,7 @@ namespace ChickenDist.Forms
 
             // صف الإجمالي الكلي
             int totIdx = dgCustody.Rows.Add(
-                "📊 الإجمالي الكلي",
+                "الإجمالي الكلي",
                 "---",
                 "---",
                 sumLoadedQty.ToString("N2"),

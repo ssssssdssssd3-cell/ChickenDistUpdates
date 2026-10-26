@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "📥 استيراد الأصناف من ملف Excel";
+            this.Text = "استيراد الأصناف من ملف Excel";
             this.Size = new Size(1100, 700);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
@@ -46,7 +46,7 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
 
             // شريط العنوان
-            pnlHeader = Theme.MakeTitleBar("📥 استيراد الأصناف والبيانات الافتتاحية", 
+            pnlHeader = Theme.MakeTitleBar("استيراد الأصناف والبيانات الافتتاحية", 
                 "استيراد الأصناف والأسعار والأرصدة من ملف Excel (.xlsx) مع مطابقة الأعمدة ديناميكياً وتفادي التكرار.");
             this.Controls.Add(pnlHeader);
 
@@ -59,11 +59,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10)
             };
 
-            btnBrowse = Theme.MakeButton("📂 اختيار ملف Excel", 860, 12, 175, 36, Theme.Accent);
+            btnBrowse = Theme.MakeButton("اختيار ملف Excel", 860, 12, 175, 36, Theme.Accent);
             btnBrowse.Click += BtnBrowse_Click;
             pnlTopControls.Controls.Add(btnBrowse);
 
-            btnCopyTemplate = Theme.MakeButton("📋 نسخ قالب Excel", 705, 12, 150, 36, Color.FromArgb(70, 80, 95));
+            btnCopyTemplate = Theme.MakeButton("نسخ قالب Excel", 705, 12, 150, 36, Color.FromArgb(70, 80, 95));
             btnCopyTemplate.Click += BtnCopyTemplate_Click;
             pnlTopControls.Controls.Add(btnCopyTemplate);
 
@@ -100,7 +100,7 @@ namespace ChickenDist.Forms
             // لوحة مطابقة الأعمدة
             grpMapping = new GroupBox
             {
-                Text = "⚙️ مطابقة أعمدة ملف Excel / Column Mapping",
+                Text = "مطابقة أعمدة ملف Excel / Column Mapping",
                 Location = new Point(20, 155),
                 Size = new Size(1045, 175),
                 ForeColor = Theme.TextMain,
@@ -138,7 +138,7 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(lblStats);
 
-            btnPreview = Theme.MakeButton("👁️ معاينة ومطابقة البيانات", 865, 335, 200, 32, Theme.Primary);
+            btnPreview = Theme.MakeButton("معاينة ومطابقة البيانات", 865, 335, 200, 32, Theme.Primary);
             btnPreview.Enabled = false;
             btnPreview.Click += BtnPreview_Click;
             this.Controls.Add(btnPreview);
@@ -192,13 +192,13 @@ namespace ChickenDist.Forms
             // الأزرار بالأسفل
             int yBottom = 605;
 
-            btnImport = Theme.MakeButton("📥 بدء الاستيراد", 725, yBottom, 160, 40, Theme.Success);
+            btnImport = Theme.MakeButton("بدء الاستيراد", 725, yBottom, 160, 40, Theme.Success);
             btnImport.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnImport.Enabled = false;
             btnImport.Click += BtnImport_Click;
             this.Controls.Add(btnImport);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 905, yBottom, 160, 40, Color.FromArgb(70, 80, 95));
+            btnCancel = Theme.MakeButton("إلغاء", 905, yBottom, 160, 40, Color.FromArgb(70, 80, 95));
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
 
@@ -339,7 +339,7 @@ namespace ChickenDist.Forms
             try
             {
                 Clipboard.SetText(template);
-                MessageBox.Show("✅ تم نسخ هيكل قالب Excel إلى الحافظة!\nيمكنك لصقه مباشرة (Paste) داخل ملف Excel وسينقسم إلى أعمدة تلقائياً.",
+                MessageBox.Show("تم نسخ هيكل قالب Excel إلى الحافظة!\nيمكنك لصقه مباشرة (Paste) داخل ملف Excel وسينقسم إلى أعمدة تلقائياً.",
                     "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information, 
                     MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
             }
@@ -391,7 +391,7 @@ namespace ChickenDist.Forms
                         btnPreview.Enabled = true;
                         btnImport.Enabled = false;
 
-                        lblStats.Text = $"📂 تم تحميل الملف بنجاح! يحتوي على {headers.Length} عمود و {_allLines.Count - 1} صف. يرجى مراجعة وتأكيد مطابقة الأعمدة بالأسفل.";
+                        lblStats.Text = $"تم تحميل الملف بنجاح! يحتوي على {headers.Length} عمود و {_allLines.Count - 1} صف. يرجى مراجعة وتأكيد مطابقة الأعمدة بالأسفل.";
                         lblStats.ForeColor = Theme.Success;
                     }
                     catch (Exception ex)
@@ -413,7 +413,7 @@ namespace ChickenDist.Forms
             ComboBox cboName = _mappings["ProductName"];
             if (cboName.SelectedIndex <= 0) // [غير حدد]
             {
-                MessageBox.Show("❌ يجب تحديد العمود المقابل لـ (اسم الصنف) على الأقل للاستيراد.", "خطأ مطابقة", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("يجب تحديد العمود المقابل لـ (اسم الصنف) على الأقل للاستيراد.", "خطأ مطابقة", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -441,7 +441,7 @@ namespace ChickenDist.Forms
                     {
                         string friendlyExisting = GetFriendlyName(existingField);
                         string friendlyCurrent = GetFriendlyName(fieldKey);
-                        MessageBox.Show($"❌ لا يمكن مطابقة نفس العمود بالملف لأكثر من حقل!\nالعمود '{cbo.SelectedItem}' تم ربطه بكل من '{friendlyExisting}' و '{friendlyCurrent}'.", "تضارب مطابقة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"لا يمكن مطابقة نفس العمود بالملف لأكثر من حقل!\nالعمود '{cbo.SelectedItem}' تم ربطه بكل من '{friendlyExisting}' و '{friendlyCurrent}'.", "تضارب مطابقة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                     mappedIndices[colIdx] = fieldKey;
@@ -465,7 +465,7 @@ namespace ChickenDist.Forms
                       FROM Products p
                       LEFT JOIN Categories c ON c.CategoryID = p.CategoryID");
 
-                var existingCatMap = new Dictionary<int, string>(); // ProductID → CategoryName
+                var existingCatMap = new Dictionary<int, string>(); // ProductID - CategoryName
                 foreach (DataRow r in dtExist.Rows)
                 {
                     string code = r["ProductCode"].ToString().Trim();
@@ -607,11 +607,11 @@ namespace ChickenDist.Forms
 
                     string statusText;
                     if (!isExisting)
-                        statusText = "🆕 صنف جديد";
+                        statusText = "صنف جديد";
                     else if (categoryConflict)
-                        statusText = $"⚠️ تعديل — تصنيف: [{existingCatName}] → [{category}]";
+                        statusText = $"تعديل — تصنيف: [{existingCatName}] - [{category}]";
                     else
-                        statusText = $"⚠️ تعديل موجود (بـ {matchReason})";
+                        statusText = $"تعديل موجود (بـ {matchReason})";
 
                     int gridIdx = dgPreview.Rows.Add(
                         statusText,
@@ -650,7 +650,7 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                lblStats.Text = $"📊 المعاينة: إجمالي الأصناف: {_parsedRows.Count} | أصناف جديدة: {newCount} | أصناف للتعديل: {updateCount}";
+                lblStats.Text = $"المعاينة: إجمالي الأصناف: {_parsedRows.Count} | أصناف جديدة: {newCount} | أصناف للتعديل: {updateCount}";
                 lblStats.ForeColor = Theme.Accent;
                 btnImport.Enabled = _parsedRows.Count > 0;
             }
@@ -820,7 +820,7 @@ namespace ChickenDist.Forms
 
                 this.Cursor = Cursors.Default;
                 ChickenDist.Core.ProductCache.Refresh();
-                MessageBox.Show($"✅ اكتمل الاستيراد بنجاح!\nالأصناف المستوردة/المحدثة بنجاح: {success}\nالأصناف التي فشلت: {failed}",
+                MessageBox.Show($"اكتمل الاستيراد بنجاح!\nالأصناف المستوردة/المحدثة بنجاح: {success}\nالأصناف التي فشلت: {failed}",
                     "تم الاستيراد", MessageBoxButtons.OK, MessageBoxIcon.Information, 
                     MessageBoxDefaultButton.Button1, MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
 

@@ -12,7 +12,7 @@ namespace ChickenDist.Core
 {
     public static class UpdateManager
     {
-        public const string CurrentVersion = "4.4.18";
+        public const string CurrentVersion = "4.4.19";
         
         // رابط ملف التحديث النصي على GitHub
         private const string UpdateUrl = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/update.txt";
@@ -66,10 +66,10 @@ namespace ChickenDist.Core
                     if (remote > local)
                     {
                         var result = MessageBox.Show(
-                            $"🚀 يوجد تحديث جديد متاح للبرنامج!\n\n" +
+                            $"يوجد تحديث جديد متاح للبرنامج!\n\n" +
                             $"الإصدار الحالي لديك:  {CurrentVersion}\n" +
                             $"الإصدار الجديد المتاح: {remoteVersion}\n\n" +
-                            $"📝 ما الجديد في هذا الإصدار:\n{changelog}\n\n" +
+                            $"ما الجديد في هذا الإصدار:\n{changelog}\n\n" +
                             $"هل ترغب في تنزيل التحديث وتثبيته الآن؟",
                             "تحديث جديد متاح",
                             MessageBoxButtons.YesNo,
@@ -86,9 +86,9 @@ namespace ChickenDist.Core
                         if (showNoUpdateMsg)
                         {
                             MessageBox.Show(
-                                $"✅ أنت تستخدم أحدث إصدار بالفعل.\n\n" +
+                                $"أنت تستخدم أحدث إصدار بالفعل.\n\n" +
                                 $"إصدارك الحالي: {CurrentVersion}\n\n" +
-                                $"📌 آخر التحديثات في هذا الإصدار:\n{changelog}",
+                                $"آخر التحديثات في هذا الإصدار:\n{changelog}",
                                 "تحديث البرنامج",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Information,
@@ -326,7 +326,7 @@ namespace ChickenDist.Core
             try
             {
                 MessageBox.Show(
-                    $"✅ تم تحميل التحديث (v{remoteVersion}) بنجاح!\n\n" +
+                    $"تم تحميل التحديث (v{remoteVersion}) بنجاح!\n\n" +
                     "سيتم الآن استبدال ملف البرنامج وإعادة التشغيل فوراً.",
                     "اكتمل تحميل التحديث",
                     MessageBoxButtons.OK, MessageBoxIcon.Information,

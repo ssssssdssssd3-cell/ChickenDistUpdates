@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -39,7 +39,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.IsAdmin && !Session.CanAccess("DeviceSessions") && !Session.CanAccess("Settings"))
             {
-                MessageBox.Show("⛔ غير مصرح لك بعرض سجل أجهزة البرنامج.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بعرض سجل أجهزة البرنامج.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Load += (s, e) => this.Close();
                 return;
             }
@@ -51,7 +51,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "💻 سجل أجهزة البرنامج ومواعيد الفتح والإغلاق (حماية التوقيت)";
+            this.Text = "سجل أجهزة البرنامج ومواعيد الفتح والإغلاق (حماية التوقيت)";
             this.Size = new Size(1220, 780);
             this.MinimumSize = new Size(980, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -71,7 +71,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "💻 سجل أجهزة البرنامج ومواعيد الفتح والإغلاق",
+                Text = "سجل أجهزة البرنامج ومواعيد الفتح والإغلاق",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -110,9 +110,9 @@ namespace ChickenDist.Forms
             lblTotalHoursVal = new Label();
 
             pnlKPIs.Controls.Add(CreateKPICard("إجمالي الجلسات", lblTotalSessionsVal, Color.FromArgb(59, 130, 246)), 0, 0);
-            pnlKPIs.Controls.Add(CreateKPICard("أجهزة متصلة الآن 🟢", lblActiveDevicesVal, Color.FromArgb(16, 185, 129)), 1, 0);
-            pnlKPIs.Controls.Add(CreateKPICard("عدد الأجهزة المختلفة 💻", lblDistinctMachinesVal, Color.FromArgb(139, 92, 246)), 2, 0);
-            pnlKPIs.Controls.Add(CreateKPICard("إجمالي ساعات التشغيل ⏱️", lblTotalHoursVal, Color.FromArgb(245, 158, 11)), 3, 0);
+            pnlKPIs.Controls.Add(CreateKPICard("أجهزة متصلة الآن", lblActiveDevicesVal, Color.FromArgb(16, 185, 129)), 1, 0);
+            pnlKPIs.Controls.Add(CreateKPICard("عدد الأجهزة المختلفة", lblDistinctMachinesVal, Color.FromArgb(139, 92, 246)), 2, 0);
+            pnlKPIs.Controls.Add(CreateKPICard("إجمالي ساعات التشغيل", lblTotalHoursVal, Color.FromArgb(245, 158, 11)), 3, 0);
 
             // 3. شريط الفلتر
             var pnlFilter = new FlowLayoutPanel
@@ -164,19 +164,19 @@ namespace ChickenDist.Forms
             // فلتر الجهاز
             cmbMachine = new ComboBox { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
             cmbMachine.SelectedIndexChanged += (s, e) => ApplyLocalFilter();
-            pnlFilter.Controls.Add(MakeFilterItem("الجهاز 💻:", cmbMachine));
+            pnlFilter.Controls.Add(MakeFilterItem("الجهاز :", cmbMachine));
 
             // فلتر الحالة
             cmbStatus = new ComboBox { Width = 115, DropDownStyle = ComboBoxStyle.DropDownList };
             cmbStatus.Items.AddRange(new object[] { "الكل", "متصل الآن", "تم الخروج" });
             cmbStatus.SelectedIndex = 0;
             cmbStatus.SelectedIndexChanged += (s, e) => ApplyLocalFilter();
-            pnlFilter.Controls.Add(MakeFilterItem("الحالة 📶:", cmbStatus));
+            pnlFilter.Controls.Add(MakeFilterItem("الحالة :", cmbStatus));
 
             // البحث السريع
             txtSearch = new TextBox { Width = 140, Height = 26 };
             txtSearch.TextChanged += (s, e) => ApplyLocalFilter();
-            pnlFilter.Controls.Add(MakeFilterItem("🔍 بحث:", txtSearch));
+            pnlFilter.Controls.Add(MakeFilterItem("بحث:", txtSearch));
 
             // 4. شريط الأزرار والإجراءات
             var pnlActions = new FlowLayoutPanel
@@ -191,12 +191,12 @@ namespace ChickenDist.Forms
                 WrapContents = true
             };
 
-            btnRefresh = CreateActionButton("🔄 تحديث السجل", Color.FromArgb(37, 99, 235), (s, e) => LoadSessions());
-            btnDeleteSelected = CreateActionButton("🗑️ حذف الجلسة المحددة (لتصحيح الوقت)", Color.FromArgb(220, 38, 38), (s, e) => DeleteSelectedSession());
-            btnCleanAnomalies = CreateActionButton("🧹 تنظيف التواريخ الشاذة", Color.FromArgb(180, 83, 9), (s, e) => CleanAnomalies());
-            btnExportExcel = CreateActionButton("📥 تصدير إكسيل", Color.FromArgb(5, 150, 105), (s, e) => ExportToExcel());
-            btnPrint = CreateActionButton("🖨️ طباعة", Color.FromArgb(75, 85, 99), (s, e) => PrintReport());
-            btnWhatsApp = CreateActionButton("📱 مشاركة واتساب", Color.FromArgb(37, 211, 102), (s, e) => ShareWhatsApp());
+            btnRefresh = CreateActionButton("تحديث السجل", Color.FromArgb(37, 99, 235), (s, e) => LoadSessions());
+            btnDeleteSelected = CreateActionButton("حذف الجلسة المحددة (لتصحيح الوقت)", Color.FromArgb(220, 38, 38), (s, e) => DeleteSelectedSession());
+            btnCleanAnomalies = CreateActionButton("تنظيف التواريخ الشاذة", Color.FromArgb(180, 83, 9), (s, e) => CleanAnomalies());
+            btnExportExcel = CreateActionButton("تصدير إكسيل", Color.FromArgb(5, 150, 105), (s, e) => ExportToExcel());
+            btnPrint = CreateActionButton("طباعة", Color.FromArgb(75, 85, 99), (s, e) => PrintReport());
+            btnWhatsApp = CreateActionButton("مشاركة واتساب", Color.FromArgb(37, 211, 102), (s, e) => ShareWhatsApp());
 
             pnlActions.Controls.Add(btnRefresh);
             pnlActions.Controls.Add(btnDeleteSelected);
@@ -244,10 +244,10 @@ namespace ChickenDist.Forms
 
             // قائمة السياق (Right-Click Context Menu)
             ctxMenu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            ctxMenu.Items.Add("🗑️ حذف هذه الجلسة (لتصحيح أي خطأ تاريخ)", null, (s, e) => DeleteSelectedSession());
-            ctxMenu.Items.Add("📋 نسخ اسم الجهاز", null, (s, e) => CopyMachineName());
+            ctxMenu.Items.Add("حذف هذه الجلسة (لتصحيح أي خطأ تاريخ)", null, (s, e) => DeleteSelectedSession());
+            ctxMenu.Items.Add("نسخ اسم الجهاز", null, (s, e) => CopyMachineName());
             ctxMenu.Items.Add(new ToolStripSeparator());
-            ctxMenu.Items.Add("🔄 تحديث البيانات", null, (s, e) => LoadSessions());
+            ctxMenu.Items.Add("تحديث البيانات", null, (s, e) => LoadSessions());
             dgvSessions.ContextMenuStrip = ctxMenu;
 
             // تجميع عناصر النموذج
@@ -273,7 +273,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "MachineName",
-                HeaderText = "اسم الجهاز 💻",
+                HeaderText = "اسم الجهاز",
                 Width = 145,
                 DefaultCellStyle = { Font = Theme.FontBold, Alignment = DataGridViewContentAlignment.MiddleLeft }
             });
@@ -281,7 +281,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "EmpName",
-                HeaderText = "الموظف 👤",
+                HeaderText = "الموظف",
                 Width = 135,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleLeft }
             });
@@ -297,7 +297,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "LoginTime",
-                HeaderText = "وقت فتح البرنامج 🟢",
+                HeaderText = "وقت فتح البرنامج",
                 Width = 150,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy-MM-dd   hh:mm tt" }
             });
@@ -305,7 +305,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "LogoutDisplay",
-                HeaderText = "وقت إغلاق البرنامج 🔴",
+                HeaderText = "وقت إغلاق البرنامج",
                 Width = 150,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
             });
@@ -313,7 +313,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "DurationDisplay",
-                HeaderText = "مدة التشغيل ⏱️",
+                HeaderText = "مدة التشغيل",
                 Width = 110,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
             });
@@ -321,7 +321,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "LocalMachineTime",
-                HeaderText = "ساعة جهاز اللاب ⏰",
+                HeaderText = "ساعة جهاز اللاب",
                 Width = 145,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "yyyy-MM-dd   hh:mm tt" }
             });
@@ -329,7 +329,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "StatusArabic",
-                HeaderText = "الحالة 📶",
+                HeaderText = "الحالة",
                 Width = 105,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
             });
@@ -337,7 +337,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "AppVersion",
-                HeaderText = "الإصدار 📦",
+                HeaderText = "الإصدار",
                 Width = 90,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
             });
@@ -345,7 +345,7 @@ namespace ChickenDist.Forms
             dgvSessions.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "IPAddress",
-                HeaderText = "عنوان IP 🌐",
+                HeaderText = "عنوان IP",
                 Width = 115,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
             });
@@ -436,9 +436,9 @@ namespace ChickenDist.Forms
                     {
                         string st = r["StatusArabic"]?.ToString() ?? "";
                         if (st.Contains("متصل الآن"))
-                            r["LogoutDisplay"] = "متصل الآن 🟢";
+                            r["LogoutDisplay"] = "متصل الآن";
                         else
-                            r["LogoutDisplay"] = "لم يُسجل خروج ⚠️";
+                            r["LogoutDisplay"] = "لم يُسجل خروج";
                     }
 
                     // مدة الجلسة المنسقة
@@ -581,7 +581,7 @@ namespace ChickenDist.Forms
             string loginStr = drv["LoginTime"]?.ToString() ?? "";
 
             var confirm = MessageBox.Show(
-                $"هل أنت متأكد من حذف جلسة الجهاز:\n\n💻 الجهاز: [{machine}]\n👤 الموظف: [{emp}]\n⏰ توقيت الفتح: [{loginStr}]\n\n⚠️ فائدة هذا الإجراء: حذف أي توقيت خاطئ أو مستقبلي سُجل عن طريق الخطأ لتمكين الجهاز من الدخول بتوقيته الصحيح دون تعليق.",
+                $"هل أنت متأكد من حذف جلسة الجهاز:\n\nالجهاز: [{machine}]\nالموظف: [{emp}]\nتوقيت الفتح: [{loginStr}]\n\nفائدة هذا الإجراء: حذف أي توقيت خاطئ أو مستقبلي سُجل عن طريق الخطأ لتمكين الجهاز من الدخول بتوقيته الصحيح دون تعليق.",
                 "تأكيد حذف جلسة لتصحيح التوقيت",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question,
@@ -594,12 +594,12 @@ namespace ChickenDist.Forms
                 bool ok = DeviceSessionManager.DeleteSession(sessionId);
                 if (ok)
                 {
-                    MessageBox.Show("✅ تم حذف الجلسة بنجاح! يمكن الآن ضبط ساعة الجهاز والدخول مجدداً.", "تم بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم حذف الجلسة بنجاح! يمكن الآن ضبط ساعة الجهاز والدخول مجدداً.", "تم بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadSessions();
                 }
                 else
                 {
-                    MessageBox.Show("❌ فشل حذف الجلسة من قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل حذف الجلسة من قاعدة البيانات.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
@@ -621,7 +621,7 @@ namespace ChickenDist.Forms
             try
             {
                 int count = DeviceSessionManager.CleanFutureAnomalies();
-                MessageBox.Show($"✅ تم تنظيف السجلات وحذف ({count}) سجل زمني شاذ.", "تم التنظيف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تنظيف السجلات وحذف ({count}) سجل زمني شاذ.", "تم التنظيف", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadSessions();
             }
             catch (Exception ex)
@@ -668,7 +668,7 @@ namespace ChickenDist.Forms
                     {
                         FrmReports.ExportDataGridViewToXls(dgvSessions, dlg.FileName, "سجل مواعيد أجهزة البرنامج", AppConfig.CompanyName);
 
-                        var res = MessageBox.Show("✅ تم تصدير التقرير إلى إكسيل بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير التقرير إلى إكسيل بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
@@ -676,7 +676,7 @@ namespace ChickenDist.Forms
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("❌ فشل التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -822,14 +822,14 @@ namespace ChickenDist.Forms
             try
             {
                 var sb = new StringBuilder();
-                sb.AppendLine($"📊 *تقرير أجهزة البرنامج ومواعيد الفتح والإغلاق*");
-                sb.AppendLine($"🏢 المؤسسة: {AppConfig.CompanyName}");
-                sb.AppendLine($"📅 التاريخ: {DateTime.Now:yyyy/MM/dd hh:mm tt}");
-                sb.AppendLine($"🟢 الأجهزة المتصلة الآن: {lblActiveDevicesVal.Text}");
-                sb.AppendLine($"💻 إجمالي الأجهزة المختلفة: {lblDistinctMachinesVal.Text}");
-                sb.AppendLine($"⏱️ إجمالي ساعات التشغيل: {lblTotalHoursVal.Text}");
+                sb.AppendLine($"*تقرير أجهزة البرنامج ومواعيد الفتح والإغلاق*");
+                sb.AppendLine($"المؤسسة: {AppConfig.CompanyName}");
+                sb.AppendLine($"التاريخ: {DateTime.Now:yyyy/MM/dd hh:mm tt}");
+                sb.AppendLine($"الأجهزة المتصلة الآن: {lblActiveDevicesVal.Text}");
+                sb.AppendLine($"إجمالي الأجهزة المختلفة: {lblDistinctMachinesVal.Text}");
+                sb.AppendLine($"إجمالي ساعات التشغيل: {lblTotalHoursVal.Text}");
                 sb.AppendLine("────────────────────");
-                sb.AppendLine("💻 *الأجهزة النشطة حالياً:*");
+                sb.AppendLine("*الأجهزة النشطة حالياً:*");
 
                 int count = 0;
                 foreach (DataRowView drv in _dvFiltered)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
         {
             if (lblHeaderSubtitle != null)
             {
-                lblHeaderSubtitle.Text = "👈 حدد خيارات البحث واضغط على زر [🔍 عرض وبحث] أو اضغط Enter في حقل البحث لعرض كشكول النواقص";
+                lblHeaderSubtitle.Text = "حدد خيارات البحث واضغط على زر [عرض وبحث] أو اضغط Enter في حقل البحث لعرض كشكول النواقص";
                 lblHeaderSubtitle.ForeColor = Color.FromArgb(37, 99, 235);
                 lblHeaderSubtitle.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
             }
@@ -75,7 +75,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "📓 كشكول النواقص والطلبات الخاصة";
+            this.Text = "كشكول النواقص والطلبات الخاصة";
             this.Size = new Size(1340, 820);
             this.MinimumSize = new Size(1024, 620);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -97,7 +97,7 @@ namespace ChickenDist.Forms
 
             lblHeaderTitle = new Label
             {
-                Text = "📓 كشكول النواقص والطلبات الخاصة",
+                Text = "كشكول النواقص والطلبات الخاصة",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 AutoSize = true,
@@ -138,42 +138,42 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnAddManual = Theme.MakeButton("➕ إضافة طلب/نقص", 0, 0, 145, 32, Theme.Success);
+            btnAddManual = Theme.MakeButton("إضافة طلب/نقص", 0, 0, 145, 32, Theme.Success);
             btnAddManual.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnAddManual.Click += BtnAddManual_Click;
 
-            btnChangeStatus = Theme.MakeButton("📝 تغيير الحالة", 0, 0, 110, 32, Color.FromArgb(41, 128, 185));
+            btnChangeStatus = Theme.MakeButton("تغيير الحالة", 0, 0, 110, 32, Color.FromArgb(41, 128, 185));
             btnChangeStatus.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnChangeStatus.Click += BtnChangeStatus_Click;
 
-            var btnChangeSupplier = Theme.MakeButton("🏢 تغيير المورد", 0, 0, 120, 32, Color.FromArgb(142, 68, 173));
+            var btnChangeSupplier = Theme.MakeButton("تغيير المورد", 0, 0, 120, 32, Color.FromArgb(142, 68, 173));
             btnChangeSupplier.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnChangeSupplier.Click += (s, e) => ChangeSelectedSupplier();
 
-            var btnDeleteShortage = Theme.MakeButton("🗑️ حذف من الكشكول", 0, 0, 135, 32, Color.FromArgb(192, 57, 43));
+            var btnDeleteShortage = Theme.MakeButton("حذف من الكشكول", 0, 0, 135, 32, Color.FromArgb(192, 57, 43));
             btnDeleteShortage.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnDeleteShortage.Click += (s, e) => DeleteSelectedShortages();
 
-            btnCreatePurchase = Theme.MakeButton("🛒 فتح فاتورة شراء", 0, 0, 135, 32, Theme.Primary);
+            btnCreatePurchase = Theme.MakeButton("فتح فاتورة شراء", 0, 0, 135, 32, Theme.Primary);
             btnCreatePurchase.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnCreatePurchase.Click += BtnCreatePurchase_Click;
 
-            btnMinStockEdit = Theme.MakeButton("🎯 تعديل حد الطلب", 0, 0, 125, 32, Color.FromArgb(13, 148, 136));
+            btnMinStockEdit = Theme.MakeButton("تعديل حد الطلب", 0, 0, 125, 32, Color.FromArgb(13, 148, 136));
             btnMinStockEdit.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnMinStockEdit.Click += (s, e) => {
                 new FrmMinStockEdit().ShowDialog();
                 LoadData();
             };
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة الكشكول", 0, 0, 120, 32, Color.FromArgb(142, 68, 173));
+            btnPrint = Theme.MakeButton("طباعة الكشكول", 0, 0, 120, 32, Color.FromArgb(142, 68, 173));
             btnPrint.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnPrint.Click += BtnPrint_Click;
 
-            btnExportExcel = Theme.MakeButton("📊 تصدير إكسل", 0, 0, 110, 32, Color.FromArgb(46, 117, 89));
+            btnExportExcel = Theme.MakeButton("تصدير إكسل", 0, 0, 110, 32, Color.FromArgb(46, 117, 89));
             btnExportExcel.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnExportExcel.Click += BtnExportExcel_Click;
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 85, 32, Color.FromArgb(70, 80, 95));
+            btnRefresh = Theme.MakeButton("تحديث", 0, 0, 85, 32, Color.FromArgb(70, 80, 95));
             btnRefresh.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnRefresh.Click += (s, e) => { LoadDropdowns(); LoadData(); };
 
@@ -257,7 +257,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            btnSearch = Theme.MakeButton("🔍 عرض وبحث", 0, 0, 105, 26, Color.FromArgb(37, 99, 235));
+            btnSearch = Theme.MakeButton("عرض وبحث", 0, 0, 105, 26, Color.FromArgb(37, 99, 235));
             btnSearch.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
             btnSearch.Cursor = Cursors.Hand;
             btnSearch.Click += (s, e) => LoadData();
@@ -278,7 +278,7 @@ namespace ChickenDist.Forms
             cboStockCondition = new ComboBox { BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9f) };
             cboStockCondition.Items.AddRange(new object[]
             {
-                "الكل", "⚠️ تحت حد الطلب", "🔴 رصيد صفر", "🟡 بين الصفر والحد"
+                "الكل", "تحت حد الطلب", "رصيد صفر", "بين الصفر والحد"
             });
             cboStockCondition.SelectedIndex = 0;
             cboStockCondition.SelectedIndexChanged += (s, e) => { if (!_isInitializing && _hasLoadedOnce) LoadData(); };
@@ -326,24 +326,24 @@ namespace ChickenDist.Forms
             dtpDateTo.ValueChanged += (s, e) => { if (chkUseDateFilter.Checked) LoadData(); };
 
             // Reset button
-            btnResetFilters = Theme.MakeButton("🧹 مسح", 0, 0, 70, 26, Color.FromArgb(100, 116, 139));
+            btnResetFilters = Theme.MakeButton("مسح", 0, 0, 70, 26, Color.FromArgb(100, 116, 139));
             btnResetFilters.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             btnResetFilters.Margin = new Padding(3, 18, 3, 2);
             btnResetFilters.Click += (s, e) => ResetFilters();
 
             // Date filter group inline
             var pnlDate = new Panel { Width = 260, Height = 48, Margin = new Padding(3, 2, 3, 2) };
-            var lblDateLbl = new Label { Text = "📅 الفترة (من - إلى):", AutoSize = false, Width = 260, Height = 16, Location = new Point(0, 0), ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8.25f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
+            var lblDateLbl = new Label { Text = "الفترة (من - إلى):", AutoSize = false, Width = 260, Height = 16, Location = new Point(0, 0), ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8.25f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
             chkUseDateFilter.Location = new Point(195, 20);
             dtpDateFrom.Location = new Point(100, 18); dtpDateFrom.Width = 90; dtpDateFrom.Height = 24;
-            var lblArrow = new Label { Text = "←", Location = new Point(82, 21), AutoSize = true, ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8f) };
+            var lblArrow = new Label { Text = "<-", Location = new Point(82, 21), AutoSize = true, ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 8f) };
             dtpDateTo.Location = new Point(0, 18); dtpDateTo.Width = 80; dtpDateTo.Height = 24;
             pnlDate.Controls.AddRange(new Control[] { lblDateLbl, chkUseDateFilter, dtpDateFrom, lblArrow, dtpDateTo });
 
             var pnlSearch = new Panel { AutoSize = false, Width = 285, Height = 48, Margin = new Padding(3, 2, 3, 2) };
             var lblSearch = new Label
             {
-                Text = "🔍 بحث بالاسم أو الكود (Enter):",
+                Text = "بحث بالاسم أو الكود (Enter):",
                 AutoSize = false, Width = 285, Height = 16,
                 Location = new Point(0, 0), ForeColor = Theme.TextGray,
                 Font = new Font("Segoe UI", 8.25f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight
@@ -440,7 +440,7 @@ namespace ChickenDist.Forms
             var colDeficit = new DataGridViewTextBoxColumn
             {
                 Name = "DeficitQty",
-                HeaderText = "الكمية المطلوبة ✏️",
+                HeaderText = "الكمية المطلوبة",
                 FillWeight = 95,
                 ReadOnly = false,
                 DefaultCellStyle = new DataGridViewCellStyle
@@ -457,7 +457,7 @@ namespace ChickenDist.Forms
             var colPurchasePrice = new DataGridViewTextBoxColumn
             {
                 Name = "PurchasePrice",
-                HeaderText = "سعر الشراء ✏️",
+                HeaderText = "سعر الشراء",
                 FillWeight = 85,
                 ReadOnly = false,
                 Visible = canSeeCost,
@@ -478,27 +478,27 @@ namespace ChickenDist.Forms
 
             // Context Menu
             var cms = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            cms.Items.Add("✏️ تعديل الكمية المطلوبة لهذا الصنف", null, (s, e) => EditSelectedRequestedQty());
-            cms.Items.Add("🏢 تغيير المورد للأصناف المحددة", null, (s, e) => ChangeSelectedSupplier());
-            cms.Items.Add("📝 تغيير حالة الصنف (جديد / تم الطلب / تم التوفير)", null, (s, e) => BtnChangeStatus_Click(null, null));
-            cms.Items.Add("🗑️ حذف الأصناف المحددة من كشكول النواقص (Del)", null, (s, e) => DeleteSelectedShortages());
+            cms.Items.Add("تعديل الكمية المطلوبة لهذا الصنف", null, (s, e) => EditSelectedRequestedQty());
+            cms.Items.Add("تغيير المورد للأصناف المحددة", null, (s, e) => ChangeSelectedSupplier());
+            cms.Items.Add("تغيير حالة الصنف (جديد / تم الطلب / تم التوفير)", null, (s, e) => BtnChangeStatus_Click(null, null));
+            cms.Items.Add("حذف الأصناف المحددة من كشكول النواقص (Del)", null, (s, e) => DeleteSelectedShortages());
             cms.Items.Add(new ToolStripSeparator());
-            cms.Items.Add("🛒 فتح فاتورة شراء لهذا الصنف/المورد", null, (s, e) => BtnCreatePurchase_Click(null, null));
+            cms.Items.Add("فتح فاتورة شراء لهذا الصنف/المورد", null, (s, e) => BtnCreatePurchase_Click(null, null));
             cms.Items.Add(new ToolStripSeparator());
-            cms.Items.Add("📊 مقارنة الموردين لهذا الصنف", null, (s, e) => ShowSupplierComparison());
+            cms.Items.Add("مقارنة الموردين لهذا الصنف", null, (s, e) => ShowSupplierComparison());
             cms.Items.Add(new ToolStripSeparator());
-            cms.Items.Add("🎯 تعديل حد الطلب للأصناف", null, (s, e) => {
+            cms.Items.Add("تعديل حد الطلب للأصناف", null, (s, e) => {
                 new FrmMinStockEdit().ShowDialog();
                 LoadData();
             });
-            cms.Items.Add("🏷️ فتح بطاقة الصنف", null, (s, e) => {
+            cms.Items.Add("فتح بطاقة الصنف", null, (s, e) => {
                 if (dgShortages.SelectedRows.Count > 0)
                 {
                     int pId = Convert.ToInt32(dgShortages.SelectedRows[0].Cells["ProductID"].Value);
                     if (pId > 0 && new FrmProductCard(pId).ShowDialog() == DialogResult.OK) LoadData();
                 }
             });
-            cms.Items.Add("🖨️ طباعة قائمة النواقص", null, (s, e) => BtnPrint_Click(null, null));
+            cms.Items.Add("طباعة قائمة النواقص", null, (s, e) => BtnPrint_Click(null, null));
             dgShortages.ContextMenuStrip = cms;
 
             // Delete Key shortcut
@@ -800,7 +800,7 @@ namespace ChickenDist.Forms
                 // Build dialog
                 using (var dlg = new Form())
                 {
-                    dlg.Text = $"📊 مقارنة الموردين - {productName}";
+                    dlg.Text = $"مقارنة الموردين - {productName}";
                     dlg.Size = new Size(780, 480);
                     dlg.StartPosition = FormStartPosition.CenterParent;
                     dlg.BackColor = Theme.BgMain;
@@ -810,7 +810,7 @@ namespace ChickenDist.Forms
 
                     var lblTitle = new Label
                     {
-                        Text = $"📊 مقارنة أسعار الموردين للصنف: {productName}",
+                        Text = $"مقارنة أسعار الموردين للصنف: {productName}",
                         Dock = DockStyle.Top,
                         Height = 38,
                         ForeColor = Theme.Primary,
@@ -865,7 +865,7 @@ namespace ChickenDist.Forms
                     {
                         var lblNoData = new Label
                         {
-                            Text = "⚠️ لا توجد سجلات شراء لهذا الصنف في النظام بعد.",
+                            Text = "لا توجد سجلات شراء لهذا الصنف في النظام بعد.",
                             Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter,
                             ForeColor = Theme.TextGray, Font = new Font("Segoe UI", 10f)
                         };
@@ -913,20 +913,20 @@ namespace ChickenDist.Forms
                                 cell.Style.ForeColor = Color.FromArgb(5, 120, 60);
                                 cell.Style.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
                             }
-                            bestRow.Cells["SupplierName"].Value = "🏆 " + bestRow.Cells["SupplierName"].Value;
+                            bestRow.Cells["SupplierName"].Value = "" + bestRow.Cells["SupplierName"].Value;
                         }
 
                         dlg.Controls.Add(grid);
                     }
 
                     var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 40, BackColor = Theme.BgCard };
-                    var btnClose = Theme.MakeButton("✖ إغلاق", 10, 5, 110, 30, Color.FromArgb(100, 116, 139));
+                    var btnClose = Theme.MakeButton("إغلاق", 10, 5, 110, 30, Color.FromArgb(100, 116, 139));
                     btnClose.Click += (s2, e2) => dlg.Close();
                     pnlBottom.Controls.Add(btnClose);
 
                     var lblHint = new Label
                     {
-                        Text = "🏆 الصف المظلل بالأخضر = أفضل مورد بأقل متوسط سعر شراء",
+                        Text = "الصف المظلل بالأخضر = أفضل مورد بأقل متوسط سعر شراء",
                         Location = new Point(130, 12), AutoSize = true,
                         ForeColor = Color.FromArgb(5, 120, 60),
                         Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
@@ -1036,7 +1036,7 @@ namespace ChickenDist.Forms
                 if (ok)
                 {
                     LoadData();
-                    MessageBox.Show($"✅ تم حذف ({count}) صنف من كشكول النواقص بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم حذف ({count}) صنف من كشكول النواقص بنجاح.", "تم الحذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -1058,7 +1058,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "🏢 تغيير المورد للأصناف المحددة";
+                dlg.Text = "تغيير المورد للأصناف المحددة";
                 dlg.Size = new Size(420, 220);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -1095,10 +1095,10 @@ namespace ChickenDist.Forms
                 }
                 if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
 
-                var btnOk = Theme.MakeButton("✅ حفظ وتطبيق المورد", 15, 115, 180, 36, Theme.Success);
+                var btnOk = Theme.MakeButton("حفظ وتطبيق المورد", 15, 115, 180, 36, Theme.Success);
                 btnOk.Click += (s, e) => { dlg.DialogResult = DialogResult.OK; dlg.Close(); };
 
-                var btnCancel = Theme.MakeButton("❌ إلغاء", 205, 115, 110, 36, Color.FromArgb(120, 40, 40));
+                var btnCancel = Theme.MakeButton("إلغاء", 205, 115, 110, 36, Color.FromArgb(120, 40, 40));
                 btnCancel.Click += (s, e) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
 
                 dlg.Controls.AddRange(new Control[] { lbl, cbo, btnOk, btnCancel });
@@ -1112,7 +1112,7 @@ namespace ChickenDist.Forms
                         ShortageDAL.UpdateSupplier(sId, pId, selSup.ID, selSup.Text);
                     }
                     LoadData();
-                    MessageBox.Show($"✅ تم تحديث المورد إلى [{selSup.Text}] بنجاح.", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم تحديث المورد إلى [{selSup.Text}] بنجاح.", "تم التحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -1178,7 +1178,7 @@ namespace ChickenDist.Forms
                 };
                 dlg.Controls.Add(nud);
 
-                var btnSave = Theme.MakeButton("💾 حفظ الكمية", 20, 110, 150, 36, Theme.Success);
+                var btnSave = Theme.MakeButton("حفظ الكمية", 20, 110, 150, 36, Theme.Success);
                 btnSave.Click += (s2, e2) =>
                 {
                     row.Cells["DeficitQty"].Value = nud.Value.ToString("N2");
@@ -1195,7 +1195,7 @@ namespace ChickenDist.Forms
                 };
                 dlg.Controls.Add(btnSave);
 
-                var btnCancel = Theme.MakeButton("❌ إلغاء", 190, 110, 150, 36, Theme.Danger);
+                var btnCancel = Theme.MakeButton("إلغاء", 190, 110, 150, 36, Theme.Danger);
                 btnCancel.Click += (s2, e2) => dlg.Close();
                 dlg.Controls.Add(btnCancel);
 
@@ -1259,7 +1259,7 @@ namespace ChickenDist.Forms
                 cbo.SelectedItem = currentStatus == "تحت الحد" ? "جديد" : currentStatus;
                 dlg.Controls.Add(cbo);
 
-                var btnSave = Theme.MakeButton("💾 حفظ وتحديث", 20, 130, 150, 36, Theme.Success);
+                var btnSave = Theme.MakeButton("حفظ وتحديث", 20, 130, 150, 36, Theme.Success);
                 btnSave.Click += (s2, e2) =>
                 {
                     string newSt = cbo.SelectedItem.ToString();
@@ -1278,7 +1278,7 @@ namespace ChickenDist.Forms
                 };
                 dlg.Controls.Add(btnSave);
 
-                var btnCancel = Theme.MakeButton("❌ إلغاء", 190, 130, 150, 36, Theme.Danger);
+                var btnCancel = Theme.MakeButton("إلغاء", 190, 130, 150, 36, Theme.Danger);
                 btnCancel.Click += (s2, e2) => dlg.Close();
                 dlg.Controls.Add(btnCancel);
 
@@ -1362,7 +1362,7 @@ namespace ChickenDist.Forms
                         // Header
                         g.DrawString(AppConfig.CompanyName ?? "المؤسسة التجارية", fontTitle, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 25), sfCenter);
                         y += 26;
-                        g.DrawString("📓 تقرير كشكول النواقص وأوامر التوريد المطلوبة", fontHeader, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 22), sfCenter);
+                        g.DrawString("تقرير كشكول النواقص وأوامر التوريد المطلوبة", fontHeader, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 22), sfCenter);
                         y += 24;
 
                         string filterDesc = $"التاريخ: {DateTime.Now:yyyy/MM/dd HH:mm} | المورد: {cboSupplierFilter.Text} | القسم: {cboCategoryFilter.Text} | النوع: {cboStockCondition.Text}";
@@ -1490,7 +1490,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom(int? defaultProductID)
         {
-            this.Text = "➕ إضافة صنف / طلب لكشكول النواقص";
+            this.Text = "إضافة صنف / طلب لكشكول النواقص";
             this.Size = new Size(520, 460);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
@@ -1501,7 +1501,7 @@ namespace ChickenDist.Forms
             this.MaximizeBox = false;
             this.MinimizeBox = false;
 
-            var lblTitle = Theme.MakeTitleBar("➕ إضافة صنف / طلب كشكول", "تسجيل طلب صنف غير متوفر أو نقص بناءً على طلب موظف أو عميل.");
+            var lblTitle = Theme.MakeTitleBar("إضافة صنف / طلب كشكول", "تسجيل طلب صنف غير متوفر أو نقص بناءً على طلب موظف أو عميل.");
             this.Controls.Add(lblTitle);
 
             chkCustomProduct = new CheckBox
@@ -1614,11 +1614,11 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(txtNotes);
 
-            var btnSave = Theme.MakeButton("💾 حفظ في الكشكول", 25, 370, 210, 38, Theme.Success);
+            var btnSave = Theme.MakeButton("حفظ في الكشكول", 25, 370, 210, 38, Theme.Success);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 265, 370, 210, 38, Theme.Danger);
+            var btnCancel = Theme.MakeButton("إلغاء", 265, 370, 210, 38, Theme.Danger);
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
         }

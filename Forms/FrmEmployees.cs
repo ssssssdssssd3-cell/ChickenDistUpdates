@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -55,7 +55,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "👥 إدارة الموظفين وفريق العمل والورديات";
+            this.Text = "إدارة الموظفين وفريق العمل والورديات";
             this.Size = new Size(1240, 760);
             this.MinimumSize = new Size(1100, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
 
             var lblHeaderTitle = new Label
             {
-                Text = "👥 شؤون الموظفين وفريق العمل وإدارة الورديات",
+                Text = "شؤون الموظفين وفريق العمل وإدارة الورديات",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Right,
@@ -93,9 +93,9 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent
             };
 
-            lblStatTotal = MakeStatBadge("👥 إجمالي الموظفين: 0", Color.FromArgb(37, 99, 235));
-            lblStatActive = MakeStatBadge("🟢 النشطون: 0", Color.FromArgb(16, 185, 129));
-            lblStatDrivers = MakeStatBadge("🚚 المناديب: 0", Color.FromArgb(245, 158, 11));
+            lblStatTotal = MakeStatBadge("إجمالي الموظفين: 0", Color.FromArgb(37, 99, 235));
+            lblStatActive = MakeStatBadge("النشطون: 0", Color.FromArgb(16, 185, 129));
+            lblStatDrivers = MakeStatBadge("المناديب: 0", Color.FromArgb(245, 158, 11));
             flowStats.Controls.AddRange(new Control[] { lblStatTotal, lblStatActive, lblStatDrivers });
 
             var pnlTopSearch = new Panel
@@ -117,7 +117,7 @@ namespace ChickenDist.Forms
 
             var lblSearchIcon = new Label
             {
-                Text = "🔍 بحث:",
+                Text = "بحث:",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -223,10 +223,10 @@ namespace ChickenDist.Forms
 
             // شريط أزرار العمليات أسفل البطاقة
             var pnlActions = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Theme.BgCard, Padding = new Padding(0, 6, 0, 0) };
-            btnNew = Theme.MakeButton("➕ إضافة", 380, 6, 85, 36, Color.FromArgb(40, 140, 70));
-            btnSave = Theme.MakeButton("➕ حفظ الموظف", 240, 6, 130, 36, Color.FromArgb(40, 140, 70));
-            btnDelete = Theme.MakeButton("🗑 إيقاف", 150, 6, 80, 36, Color.FromArgb(200, 50, 60));
-            btnPerms = Theme.MakeButton("🔐 الصلاحيات", 10, 6, 130, 36, Color.FromArgb(75, 45, 140));
+            btnNew = Theme.MakeButton("إضافة", 380, 6, 85, 36, Color.FromArgb(40, 140, 70));
+            btnSave = Theme.MakeButton("حفظ الموظف", 240, 6, 130, 36, Color.FromArgb(40, 140, 70));
+            btnDelete = Theme.MakeButton("إيقاف", 150, 6, 80, 36, Color.FromArgb(200, 50, 60));
+            btnPerms = Theme.MakeButton("الصلاحيات", 10, 6, 130, 36, Color.FromArgb(75, 45, 140));
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
@@ -243,11 +243,11 @@ namespace ChickenDist.Forms
                 Padding = new Point(12, 6)
             };
 
-            var tabBasic = new TabPage("📋 الأساسية");
-            var tabShift = new TabPage("🕒 مواعيد الدوام والشيفت");
-            var tabFinancial = new TabPage("💰 الراتب والعمولات");
-            var tabSafes = new TabPage("🏦 الخزائن والصلاحيات");
-            var tabWarehouses = new TabPage("🏪 المخازن والتسعير");
+            var tabBasic = new TabPage("الأساسية");
+            var tabShift = new TabPage("مواعيد الدوام والشيفت");
+            var tabFinancial = new TabPage("الراتب والعمولات");
+            var tabSafes = new TabPage("الخزائن والصلاحيات");
+            var tabWarehouses = new TabPage("المخازن والتسعير");
 
             BuildBasicTab(tabBasic);
             BuildShiftTab(tabShift);
@@ -288,7 +288,7 @@ namespace ChickenDist.Forms
 
             var lblPassHint = new Label
             {
-                Text = "💡 اتركها فارغة عند التعديل للحفاظ على كلمة المرور الحالية",
+                Text = "اتركها فارغة عند التعديل للحفاظ على كلمة المرور الحالية",
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(120, 130, 150),
                 Location = new Point(20, y - 4),
@@ -323,7 +323,7 @@ namespace ChickenDist.Forms
             var pnlNotice = new Panel { Location = new Point(15, y), Size = new Size(460, 48), BackColor = Color.FromArgb(238, 242, 255), Padding = new Padding(8) };
             var lblNotice = new Label
             {
-                Text = "⏱️ تحديد مواعيد الحضور والانصراف الرسمية للموظف، ليتم بناءً عليها احتساب دقائق التأخير وساعات العمل والإضافي في شاشة الحضور.",
+                Text = "تحديد مواعيد الحضور والانصراف الرسمية للموظف، ليتم بناءً عليها احتساب دقائق التأخير وساعات العمل والإضافي في شاشة الحضور.",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(67, 56, 202)
@@ -333,7 +333,7 @@ namespace ChickenDist.Forms
             y += 58;
 
             // Work Start Time
-            tab.Controls.Add(new Label { Text = "⏰ موعد الحضور الرسمي:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            tab.Controls.Add(new Label { Text = "موعد الحضور الرسمي:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
             dtpWorkStartTime = new DateTimePicker
             {
                 Location = new Point(15, y),
@@ -349,7 +349,7 @@ namespace ChickenDist.Forms
             y += 44;
 
             // Work End Time
-            tab.Controls.Add(new Label { Text = "🚪 موعد الانصراف الرسمي:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            tab.Controls.Add(new Label { Text = "موعد الانصراف الرسمي:", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
             dtpWorkEndTime = new DateTimePicker
             {
                 Location = new Point(15, y),
@@ -370,7 +370,7 @@ namespace ChickenDist.Forms
             txtDailyHours.TextChanged += (s, e) => { UpdateShiftSummary(); UpdateHourlyRatePreview(); };
 
             // Grace Period Minutes
-            tab.Controls.Add(new Label { Text = "⏳ سماح التأخير (بالدقائق):", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
+            tab.Controls.Add(new Label { Text = "سماح التأخير (بالدقائق):", Location = new Point(310, y + 4), AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.TextMain });
             numGracePeriod = new NumericUpDown
             {
                 Location = new Point(15, y),
@@ -385,15 +385,15 @@ namespace ChickenDist.Forms
             y += 48;
 
             // Quick Shift Presets Bar
-            var lblPresets = new Label { Text = "⚡ ورديات سريعة جاهزة:", Location = new Point(310, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Color.FromArgb(70, 80, 100) };
+            var lblPresets = new Label { Text = "ورديات سريعة جاهزة:", Location = new Point(310, y), AutoSize = true, Font = Theme.FontBold, ForeColor = Color.FromArgb(70, 80, 100) };
             tab.Controls.Add(lblPresets);
             y += 24;
 
             var pnlPresets = new FlowLayoutPanel { Location = new Point(15, y), Size = new Size(460, 42), FlowDirection = FlowDirection.RightToLeft, BackColor = Color.Transparent };
-            var btnMorning = MakeShiftPresetBtn("☀️ صباحي (9 ص - 5 م)", () => SetShiftPreset(9, 17, 8));
-            var btnEvening = MakeShiftPresetBtn("🌆 مسائي (2 م - 10 م)", () => SetShiftPreset(14, 22, 8));
-            var btnNight = MakeShiftPresetBtn("🌙 ليلي (8 م - 4 ص)", () => SetShiftPreset(20, 4, 8));
-            var btnFullDay = MakeShiftPresetBtn("⏰ دوام (8 ص - 4 م)", () => SetShiftPreset(8, 16, 8));
+            var btnMorning = MakeShiftPresetBtn("صباحي (9 ص - 5 م)", () => SetShiftPreset(9, 17, 8));
+            var btnEvening = MakeShiftPresetBtn("مسائي (2 م - 10 م)", () => SetShiftPreset(14, 22, 8));
+            var btnNight = MakeShiftPresetBtn("ليلي (8 م - 4 ص)", () => SetShiftPreset(20, 4, 8));
+            var btnFullDay = MakeShiftPresetBtn("دوام (8 ص - 4 م)", () => SetShiftPreset(8, 16, 8));
             pnlPresets.Controls.AddRange(new Control[] { btnMorning, btnEvening, btnNight, btnFullDay });
             tab.Controls.Add(pnlPresets);
             y += 50;
@@ -402,7 +402,7 @@ namespace ChickenDist.Forms
             var pnlSummary = new Panel { Location = new Point(15, y), Size = new Size(460, 42), BackColor = Color.FromArgb(240, 253, 244), BorderStyle = BorderStyle.FixedSingle };
             lblShiftSummary = new Label
             {
-                Text = "⏱️ إجمالي الدوام: 8.0 ساعات | السماح حتى: 09:15 ص",
+                Text = "إجمالي الدوام: 8.0 ساعات | السماح حتى: 09:15 ص",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -412,7 +412,7 @@ namespace ChickenDist.Forms
             tab.Controls.Add(pnlSummary);
             y += 52;
 
-            btnOpenAttendance = Theme.MakeButton("🕒 فتح شاشة وسجل الحضور والانصراف", 15, y, 460, 36, Color.FromArgb(16, 149, 193));
+            btnOpenAttendance = Theme.MakeButton("فتح شاشة وسجل الحضور والانصراف", 15, y, 460, 36, Color.FromArgb(16, 149, 193));
             btnOpenAttendance.Click += (s, e) => new FrmEmployeeAttendance().ShowDialog();
             tab.Controls.Add(btnOpenAttendance);
         }
@@ -437,7 +437,7 @@ namespace ChickenDist.Forms
             var pnlHourly = new Panel { Location = new Point(15, y), Size = new Size(460, 52), BackColor = Color.FromArgb(248, 250, 252), BorderStyle = BorderStyle.FixedSingle };
             lblHourlyRatePreview = new Label
             {
-                Text = "💰 أجر ساعة العمل المحسوب: 0.00 ج.م / ساعة\n(يحسب على أساس الراتب ÷ 30 يوم ÷ ساعات الدوام اليومي)",
+                Text = "أجر ساعة العمل المحسوب: 0.00 ج.م / ساعة\n(يحسب على أساس الراتب ÷ 30 يوم ÷ ساعات الدوام اليومي)",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -479,7 +479,7 @@ namespace ChickenDist.Forms
             y += 28;
             chkCanEditShippingCharge = new CheckBox { Text = "إضافة/تعديل خدمة الشحن", Location = new Point(250, y), AutoSize = true, Font = Theme.FontMain, ForeColor = Theme.TextMain, Checked = true };
             y += 28;
-            chkCanSellBelowCost = new CheckBox { Text = "⚠️ السماح بالبيع بأقل من سعر التكلفة", Location = new Point(220, y), AutoSize = true, Font = new Font(Theme.FontMain.FontFamily, Theme.FontMain.Size, FontStyle.Bold), ForeColor = Color.FromArgb(220, 53, 69), Checked = false };
+            chkCanSellBelowCost = new CheckBox { Text = "السماح بالبيع بأقل من سعر التكلفة", Location = new Point(220, y), AutoSize = true, Font = new Font(Theme.FontMain.FontFamily, Theme.FontMain.Size, FontStyle.Bold), ForeColor = Color.FromArgb(220, 53, 69), Checked = false };
             tab.Controls.AddRange(new Control[] { chkCanSellCash, chkCanSellCredit, chkCanSellVisa, chkCanSellInstallment, chkCanSellDriverLoad, chkCanSelectDriver, chkCanEditShippingCharge, chkCanSellBelowCost });
         }
 
@@ -506,7 +506,7 @@ namespace ChickenDist.Forms
             // 3. وضع واجهة المبيعات الافتراضية
             chkUseSimpleSaleMode = new CheckBox
             {
-                Text = "⚡ واجهة المبيعات: تفعيل وضع الكاشير المبسط (شاشة سريعة وخفيفة)",
+                Text = "واجهة المبيعات: تفعيل وضع الكاشير المبسط (شاشة سريعة وخفيفة)",
                 Location = new Point(20, y),
                 AutoSize = true,
                 Font = Theme.FontBold,
@@ -526,7 +526,7 @@ namespace ChickenDist.Forms
 
             // أزرار تحديد سريع
             var pnlQuickWh = new FlowLayoutPanel { Location = new Point(20, y), Size = new Size(450, 32), FlowDirection = FlowDirection.RightToLeft, BackColor = Color.Transparent };
-            var btnCheckAllWh = Theme.MakeButton("✔️ تحديد الكل", 0, 0, 100, 28, Color.FromArgb(40, 140, 70));
+            var btnCheckAllWh = Theme.MakeButton("تحديد الكل", 0, 0, 100, 28, Color.FromArgb(40, 140, 70));
             btnCheckAllWh.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             btnCheckAllWh.Click += (s, e) =>
             {
@@ -534,7 +534,7 @@ namespace ChickenDist.Forms
                     clbAllowedWarehouses.SetItemChecked(i, true);
             };
 
-            var btnUncheckAllWh = Theme.MakeButton("❌ إلغاء التحديد", 0, 0, 100, 28, Color.FromArgb(160, 50, 50));
+            var btnUncheckAllWh = Theme.MakeButton("إلغاء التحديد", 0, 0, 100, 28, Color.FromArgb(160, 50, 50));
             btnUncheckAllWh.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             btnUncheckAllWh.Click += (s, e) =>
             {
@@ -550,7 +550,7 @@ namespace ChickenDist.Forms
             // توضيح للمستخدم
             var lblHint = new Label
             {
-                Text = "💡 توضيح الصلاحيات:\n" +
+                Text = "توضيح الصلاحيات:\n" +
                        "• تحديد مخزن واحد فقط: يتم تقييد الموظف بالبيع والشراء من هذا المخزن فقط وتُقفل القائمة.\n" +
                        "• تحديد أكثر من مخزن: يتمكن الموظف من التبديل بين المخازن المصرح بها فقط.\n" +
                        "• عدم تحديد أي مخزن: يُلزم بالمخزن الافتراضي فقط (أو كل المخازن لمدير النظام).",
@@ -652,7 +652,7 @@ namespace ChickenDist.Forms
             int grace = (int)numGracePeriod.Value;
             var graceTime = dtpWorkStartTime.Value.AddMinutes(grace).ToString("hh:mm tt");
 
-            lblShiftSummary.Text = $"⏱️ الدوام: {startStr} إلى {endStr} ({dwh:N1} س) | السماح حتى: {graceTime}";
+            lblShiftSummary.Text = $"الدوام: {startStr} إلى {endStr} ({dwh:N1} س) | السماح حتى: {graceTime}";
         }
 
         private void UpdateHourlyRatePreview()
@@ -662,7 +662,7 @@ namespace ChickenDist.Forms
             decimal.TryParse(txtDailyHours.Text.Trim(), out decimal dwh);
             if (dwh <= 0) dwh = 8;
             decimal hourly = (sal > 0 && dwh > 0) ? (sal / 30m / dwh) : 0m;
-            lblHourlyRatePreview.Text = $"💰 أجر ساعة العمل المحسوب: {hourly:N2} ج.م / ساعة\n(يحسب على أساس الراتب ÷ 30 يوم ÷ ساعات الدوام اليومي)";
+            lblHourlyRatePreview.Text = $"أجر ساعة العمل المحسوب: {hourly:N2} ج.م / ساعة\n(يحسب على أساس الراتب ÷ 30 يوم ÷ ساعات الدوام اليومي)";
         }
 
         private string FormatTimeForDisplay(string timeStr)
@@ -711,7 +711,7 @@ namespace ChickenDist.Forms
 
                 string salDisplay = r.Table.Columns.Contains("Salary") && r["Salary"] != DBNull.Value ? Convert.ToDecimal(r["Salary"]).ToString("N0") : "0";
 
-                var ri = dgEmployees.Rows.Add(r["EmpID"], name, job, shiftDisplay, role, salDisplay, phone, active ? "✓ نشط" : "✗ معطل");
+                var ri = dgEmployees.Rows.Add(r["EmpID"], name, job, shiftDisplay, role, salDisplay, phone, active ? "نشط" : "معطل");
                 if (!active)
                 {
                     dgEmployees.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
@@ -719,9 +719,9 @@ namespace ChickenDist.Forms
                 }
             }
 
-            if (lblStatTotal != null) lblStatTotal.Text = $"👥 إجمالي الموظفين: {total}";
-            if (lblStatActive != null) lblStatActive.Text = $"🟢 النشطون: {activeCount}";
-            if (lblStatDrivers != null) lblStatDrivers.Text = $"🚚 المناديب: {driversCount}";
+            if (lblStatTotal != null) lblStatTotal.Text = $"إجمالي الموظفين: {total}";
+            if (lblStatActive != null) lblStatActive.Text = $"النشطون: {activeCount}";
+            if (lblStatDrivers != null) lblStatDrivers.Text = $"المناديب: {driversCount}";
         }
 
         private void DgEmployees_SelectionChanged(object sender, EventArgs e)
@@ -827,7 +827,7 @@ namespace ChickenDist.Forms
 
             if (btnSave != null)
             {
-                btnSave.Text = "💾 حفظ البيانات";
+                btnSave.Text = "حفظ البيانات";
                 btnSave.BackColor = Theme.Primary;
             }
         }
@@ -872,7 +872,7 @@ namespace ChickenDist.Forms
 
             if (btnSave != null)
             {
-                btnSave.Text = "➕ حفظ الموظف";
+                btnSave.Text = "حفظ الموظف";
                 btnSave.BackColor = Color.FromArgb(40, 140, 70);
             }
         }
@@ -949,16 +949,16 @@ namespace ChickenDist.Forms
                     workStartTime, workEndTime, gracePeriod,
                     defaultWarehouseID, allowedWarehouseIDs, defaultPriceTier,
                     useSimpleSaleMode);
-                if (id > 0) { MessageBox.Show("✅ تم حفظ بيانات الموظف بنجاح"); _selectedID = id; LoadEmployees(); }
+                if (id > 0) { MessageBox.Show("تم حفظ بيانات الموظف بنجاح"); _selectedID = id; LoadEmployees(); }
                 else
                 {
                     string errDetail = !string.IsNullOrEmpty(DbHelper.LastErrorMessage) ? $"\nالسبب: {DbHelper.LastErrorMessage}" : "";
-                    MessageBox.Show("❌ فشل حفظ بيانات الموظف" + errDetail, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل حفظ بيانات الموظف" + errDetail, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ فشل الحفظ: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل الحفظ: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1058,19 +1058,19 @@ namespace ChickenDist.Forms
             public bool HasSellBelowCost { get; set; }
 
             // Custom labels & hints if needed
-            public string AddLabel { get; set; } = "➕ حفظ وإصدار العمليات الجديدة";
+            public string AddLabel { get; set; } = "حفظ وإصدار العمليات الجديدة";
             public string AddHint { get; set; } = "يتيح للموظف إتمام وحفظ العمليات والفواتير الجديدة بنجاح في قاعدة البيانات.";
 
-            public string EditLabel { get; set; } = "✏️ تعديل العمليات والبيانات السابقة";
+            public string EditLabel { get; set; } = "تعديل العمليات والبيانات السابقة";
             public string EditHint { get; set; } = "السماح للموظف بفتح وتعديل الفواتير أو الحركات المسجلة مسبقاً وتغيير بنودها.";
 
-            public string DeleteLabel { get; set; } = "🗑️ حذف وإلغاء العمليات والسجلات";
+            public string DeleteLabel { get; set; } = "حذف وإلغاء العمليات والسجلات";
             public string DeleteHint { get; set; } = "السماح للموظف بحذف الفواتير أو السجلات نهائياً من قاعدة البيانات.";
 
-            public string EditPriceLabel { get; set; } = "🏷️ تعديل الأسعار والخصومات يدوياً";
+            public string EditPriceLabel { get; set; } = "تعديل الأسعار والخصومات يدوياً";
             public string EditPriceHint { get; set; } = "السماح بتغيير سعر بيع/شراء الوحدة أو نسبة الخصم يدوياً أثناء تحرير الفاتورة.";
 
-            public string OtherSalesLabel { get; set; } = "📝 تعديل / إرجاع فواتير الموظفين الآخرين";
+            public string OtherSalesLabel { get; set; } = "تعديل / إرجاع فواتير الموظفين الآخرين";
             public string OtherSalesHint { get; set; } = "عند التفعيل: يستطيع الموظف تعديل أو إرجاع فواتير أي موظف أو مندوب آخر.\nعند الإلغاء: يقتصر على فواتيره ومبيعاته الشخصية فقط.";
         }
 
@@ -1096,444 +1096,444 @@ namespace ChickenDist.Forms
 
         private static readonly List<ScreenDef> AllScreens = new List<ScreenDef>
         {
-            // ── 🛒 1. المبيعات والعملاء ─────────────────────────────────────
+            // ── 1. المبيعات والعملاء ─────────────────────────────────────
             new ScreenDef {
-                Key = "Sales", Name = "فاتورة المبيعات الرئيسية", Category = "🛒 المبيعات والعملاء", Icon = "🛒",
+                Key = "Sales", Name = "فاتورة المبيعات الرئيسية", Category = "المبيعات والعملاء", Icon = "",
                 Description = "شاشة إصدار فواتير البيع للعملاء وإدارة الحسابات النقدية والآجلة.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
                 HasViewQuickItems = true, HasOrderColumns = true, HasSellBelowCost = true,
                 HasViewBalance = true, HasViewDetails = true,
-                AddLabel = "➕ إصدار وحفظ فواتير بيع جديدة",
+                AddLabel = "إصدار وحفظ فواتير بيع جديدة",
                 AddHint = "السماح للموظف بحفظ فواتير البيع وإتمام عملية البيع.",
-                EditLabel = "✏️ تعديل فواتير المبيعات السابقة",
+                EditLabel = "تعديل فواتير المبيعات السابقة",
                 EditHint = "السماح بفتح وتعديل فواتير بيع سابقة.",
-                OtherSalesLabel = "📝 تعديل فواتير الموظفين الآخرين",
+                OtherSalesLabel = "تعديل فواتير الموظفين الآخرين",
                 OtherSalesHint = "إذا أُلغيت، يقتصر الموظف على تعديل فواتيره الشخصية فقط."
             },
             new ScreenDef {
-                Key = "POS", Name = "شاشة الكاشير السريع (POS)", Category = "🛒 المبيعات والعملاء", Icon = "⚡",
+                Key = "POS", Name = "شاشة الكاشير السريع (POS)", Category = "المبيعات والعملاء", Icon = "",
                 Description = "شاشة البيع السريعة المخصصة لنقاط البيع وطباعة الريسيت الحراري.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasDeleteSalesInvoice = false, HasCopySalesInvoice = true, HasViewCost = true, HasChangeSafe = true,
                 HasViewQuickItems = true, HasOrderColumns = true, HasSellBelowCost = true,
                 HasViewBalance = true, HasViewDetails = true,
-                AddLabel = "➕ حفظ وإتمام فواتير الكاشير",
+                AddLabel = "حفظ وإتمام فواتير الكاشير",
                 AddHint = "السماح للموظف بإنهاء وحفظ فواتير نقاط البيع السريعة."
             },
             new ScreenDef {
-                Key = "Returns", Name = "مرتجع المبيعات واستبدال الأصناف", Category = "🛒 المبيعات والعملاء", Icon = "↩️",
+                Key = "Returns", Name = "مرتجع المبيعات واستبدال الأصناف", Category = "المبيعات والعملاء", Icon = "",
                 Description = "شاشة إرجاع بضاعة وفواتير مبيعات للعملاء وإعادة الأصناف للمخزن.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasEditSalesInvoice = true,
                 HasCopySalesInvoice = true, HasChangeSafe = true,
-                AddLabel = "➕ حفظ وإتمام عمليات المرتجع",
+                AddLabel = "حفظ وإتمام عمليات المرتجع",
                 AddHint = "السماح للموظف بحفظ وإتمام مرتجعات المبيعات (يجب تفعيلها ليتمكن من حفظ المرتجع).",
-                EditLabel = "✏️ تعديل فواتير المرتجع السابقة",
+                EditLabel = "تعديل فواتير المرتجع السابقة",
                 EditHint = "السماح بتعديل مرتجعات تم حفظها مسبقاً.",
-                OtherSalesLabel = "📝 إرجاع فواتير الموظفين والمناديب الآخرين",
+                OtherSalesLabel = "إرجاع فواتير الموظفين والمناديب الآخرين",
                 OtherSalesHint = "عند التفعيل: يستطيع إرجاع أي فاتورة لأي موظف.\nعند الإلغاء: يقتصر على إرجاع فواتيره ومبيعاته الشخصية فقط."
             },
             new ScreenDef {
-                Key = "PriceQuote", Name = "بيان تسعير وعروض الأسعار", Category = "🛒 المبيعات والعملاء", Icon = "📋",
+                Key = "PriceQuote", Name = "بيان تسعير وعروض الأسعار", Category = "المبيعات والعملاء", Icon = "",
                 Description = "شاشة تحرير عروض وبيانات أسعار للعملاء دون التأثير على رصيد المخزن.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasCopySalesInvoice = true, HasViewCost = true,
-                AddLabel = "➕ إنشاء وحفظ بيان تسعير جديد",
+                AddLabel = "إنشاء وحفظ بيان تسعير جديد",
                 AddHint = "السماح للموظف بحفظ عروض وبيانات الأسعار للعملاء."
             },
             new ScreenDef {
-                Key = "SalesList", Name = "سجل الفواتير والمبيعات السابقة", Category = "🛒 المبيعات والعملاء", Icon = "📋",
+                Key = "SalesList", Name = "سجل الفواتير والمبيعات السابقة", Category = "المبيعات والعملاء", Icon = "",
                 Description = "استعراض والبحث في كافة فواتير المبيعات الصادرة وإعادة طباعتها وتصديرها.",
                 HasEdit = true, HasDelete = false, HasEditSalesInvoice = true, HasDeleteSalesInvoice = false,
                 HasCopySalesInvoice = true, HasViewCost = true, HasViewSalesTotals = true,
-                OtherSalesLabel = "📝 تعديل فواتير الغير من السجل",
+                OtherSalesLabel = "تعديل فواتير الغير من السجل",
                 OtherSalesHint = "السماح بفتح وتعديل فواتير مسجلة بأسماء موظفين آخرين من السجل."
             },
             new ScreenDef {
-                Key = "Clients", Name = "إدارة بيانات العملاء", Category = "🛒 المبيعات والعملاء", Icon = "👥",
+                Key = "Clients", Name = "إدارة بيانات العملاء", Category = "المبيعات والعملاء", Icon = "",
                 Description = "إضافة وتعديل بيانات العملاء وتحديد حدود الائتمان والأسعار الخاصة.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true,
-                AddLabel = "➕ إضافة عميل جديد",
-                EditLabel = "✏️ تعديل بيانات العملاء",
-                DeleteLabel = "🗑️ حذف عميل"
+                AddLabel = "إضافة عميل جديد",
+                EditLabel = "تعديل بيانات العملاء",
+                DeleteLabel = "حذف عميل"
             },
             new ScreenDef {
-                Key = "ClientStatement", Name = "كشف حساب العميل التفصيلي", Category = "🛒 المبيعات والعملاء", Icon = "📄",
+                Key = "ClientStatement", Name = "كشف حساب العميل التفصيلي", Category = "المبيعات والعملاء", Icon = "",
                 Description = "استعراض حركات وفواتير ومسددات ومتبقي حساب أي عميل خلال فترة.",
                 HasViewBalance = true
             },
             new ScreenDef {
-                Key = "Installments", Name = "عقود التقسيط وجدولة المديونيات", Category = "🛒 المبيعات والعملاء", Icon = "💳",
+                Key = "Installments", Name = "عقود التقسيط وجدولة المديونيات", Category = "المبيعات والعملاء", Icon = "",
                 Description = "إدارة عقود التقسيط للعملاء وجدولة الأقساط الشهرية ومتابعة التحصيل.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true
             },
             new ScreenDef {
-                Key = "PriceChecker", Name = "كشك فحص الأسعار والبدائل الذكية", Category = "🛒 المبيعات والعملاء", Icon = "🏷️",
+                Key = "PriceChecker", Name = "كشك فحص الأسعار والبدائل الذكية", Category = "المبيعات والعملاء", Icon = "",
                 Description = "شاشة استعلام فوري عن سعر الصنف والبدائل المتوفرة بدون فتح فواتير."
             },
             new ScreenDef {
-                Key = "ProductSearch", Name = "شاشة بحث الأصناف السريعة", Category = "🛒 المبيعات والعملاء", Icon = "🔍",
+                Key = "ProductSearch", Name = "شاشة بحث الأصناف السريعة", Category = "المبيعات والعملاء", Icon = "",
                 Description = "نافذة البحث السريع عن الأصعار والكميات المتاحة في المخازن وإدراجها بالفاتورة.",
                 HasEditPrice = true, HasViewCost = true
             },
             new ScreenDef {
-                Key = "QuickItems", Name = "لوحة وشبكة الأصناف السريعة (POS والمبيعات)", Category = "🛒 المبيعات والعملاء", Icon = "⚡",
+                Key = "QuickItems", Name = "لوحة وشبكة الأصناف السريعة (POS والمبيعات)", Category = "المبيعات والعملاء", Icon = "",
                 Description = "إظهار أو إخفاء شبكة أزرار الأصناف السريعة الأكثر طلباً في شاشة الكاشير POS وشاشة المبيعات.",
                 HasViewQuickItems = true
             },
             new ScreenDef {
-                Key = "QuickDetails", Name = "نافذة التفاصيل والإحصائيات السريعة", Category = "🛒 المبيعات والعملاء", Icon = "📊",
+                Key = "QuickDetails", Name = "نافذة التفاصيل والإحصائيات السريعة", Category = "المبيعات والعملاء", Icon = "",
                 Description = "نافذة عرض ملخص المبيعات والإحصائيات السريعة من الواجهة الرئيسية.",
                 HasViewDetails = true, HasViewSalesTotals = true
             },
             new ScreenDef {
                 Key = "OnlineOrders", 
                 Name = AppConfig.IsRestaurant ? "استقبال ومتابعة طلبات المنيو الإلكتروني (أونلاين)" : "استقبال طلبات المتجر والمنيو الإلكتروني (أونلاين)", 
-                Category = "🛒 المبيعات والعملاء | 🚚 الإدارة", 
-                Icon = "🌐",
+                Category = "المبيعات والعملاء | الإدارة", 
+                Icon = "",
                 Description = "شاشة استقبال ومتابعة وتأكيد طلبات الشراء والمنيو الواردة أونلاين من العملاء وتحويلها لفواتير بيع.",
                 HasAdd = true, HasEdit = true, HasDelete = true,
-                AddLabel = "➕ اعتماد وتحويل الطلب لفاتورة بيع",
+                AddLabel = "اعتماد وتحويل الطلب لفاتورة بيع",
                 AddHint = "السماح للموظف باعتماد وتحويل طلب العميل الأونلاين إلى فاتورة بيع فعلية وخصم الكميات من المخزن.",
-                EditLabel = "✏️ تعديل بنود وحالة ومصاريف الطلب",
+                EditLabel = "تعديل بنود وحالة ومصاريف الطلب",
                 EditHint = "السماح للموظف بتعديل كميات وأسعار بنود الطلب، العنوان، مصاريف التوصيل، أو تغيير حالته.",
-                DeleteLabel = "🗑️ إلغاء أو حذف طلب وارد",
+                DeleteLabel = "إلغاء أو حذف طلب وارد",
                 DeleteHint = "السماح للموظف بإلغاء طلب العميل أو حذفه من سجل الطلبات."
             },
             new ScreenDef {
                 Key = "OnlineStoreSettings", 
                 Name = AppConfig.IsRestaurant ? "إعدادات المنيو الإلكتروني والطلب أونلاين" : "إعدادات المتجر والمنيو الإلكتروني للعملاء (Online Store & Menu)", 
-                Category = "🛒 المبيعات والعملاء | 🚚 الإدارة", 
-                Icon = "⚙️",
+                Category = "المبيعات والعملاء | الإدارة", 
+                Icon = "",
                 Description = "لوحة التحكم في أسعار المنيو/المتجر الإلكتروني، تفعيل/تعطيل الطلب، تصنيفات العرض، ورابط وباركود QR الخاص بالزبائن.",
                 HasEdit = true,
-                EditLabel = "✏️ تعديل وحفظ إعدادات المنيو / المتجر",
+                EditLabel = "تعديل وحفظ إعدادات المنيو / المتجر",
                 EditHint = "السماح للموظف بتعديل أسعار المتجر، تفعيل/تعطيل المتجر، وتحديث بيانات المنيو ورابط الـ QR."
             },
             new ScreenDef {
                 Key = "DiscountVouchers", 
                 Name = "بونات الخصم وقسائم الشراء", 
-                Category = "🛒 المبيعات والعملاء", 
-                Icon = "🎟️",
+                Category = "المبيعات والعملاء", 
+                Icon = "",
                 Description = "شاشة إنشاء وإدارة بونات الخصم وقسائم الشراء وتحديد قيمتها وصلاحيتها للعملاء في البيع والمتجر.",
                 HasAdd = true, HasEdit = true, HasDelete = true,
-                AddLabel = "➕ إنشاء وتوليد بونات خصم جديدة",
+                AddLabel = "إنشاء وتوليد بونات خصم جديدة",
                 AddHint = "السماح للموظف بإنشاء وتوليد كروت وأكواد خصم جديدة.",
-                EditLabel = "✏️ تعديل بيانات وحالة بون الخصم",
+                EditLabel = "تعديل بيانات وحالة بون الخصم",
                 EditHint = "السماح للموظف بتعديل صلاحية أو قيمة أو حالة بون الخصم.",
-                DeleteLabel = "🗑️ حذف وتصفير بونات الخصم",
+                DeleteLabel = "حذف وتصفير بونات الخصم",
                 DeleteHint = "السماح للموظف بحذف كود أو بون خصم نهائياً من النظام."
             },
             new ScreenDef {
                 Key = "IncompleteInvoices", 
                 Name = "الفواتير غير المكتملة (المعلقة)", 
-                Category = "🛒 المبيعات والعملاء", 
-                Icon = "⏳",
+                Category = "المبيعات والعملاء", 
+                Icon = "",
                 Description = "شاشة استعراض واستعادة أو حذف الفواتير المعلقة وغير المكتملة التي تم حفظها لحظياً ولم تكتمل.",
                 HasEdit = true, HasDelete = true,
-                EditLabel = "🔄 استعادة الفاتورة ومتابعة البيع",
+                EditLabel = "استعادة الفاتورة ومتابعة البيع",
                 EditHint = "السماح للموظف بفتح واستعادة الفاتورة غير المكتملة لمتابعة عملية البيع وإصدار الفاتورة.",
-                DeleteLabel = "🗑️ إلغاء وحذف الفاتورة غير المكتملة",
+                DeleteLabel = "إلغاء وحذف الفاتورة غير المكتملة",
                 DeleteHint = "السماح للموظف بحذف الفواتير المعلقة وغير المكتملة نهائياً من النظام."
             },
 
-            // ── 📥 2. المشتريات والموردين ─────────────────────────────────
+            // ── 2. المشتريات والموردين ─────────────────────────────────
             new ScreenDef {
-                Key = "Purchases", Name = "فاتورة المشتريات (وارد بضاعة)", Category = "📥 المشتريات والموردين", Icon = "📥",
+                Key = "Purchases", Name = "فاتورة المشتريات (وارد بضاعة)", Category = "المشتريات والموردين", Icon = "",
                 Description = "شاشة إدخال فواتير الشراء من الموردين وزيادة رصيد المخزن وتكلفة الأصناف.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasCopySalesInvoice = true,
                 HasChangeSafe = true, HasOrderColumns = true,
-                AddLabel = "➕ حفظ وإصدار فواتير شراء جديدة",
+                AddLabel = "حفظ وإصدار فواتير شراء جديدة",
                 AddHint = "السماح للموظف بحفظ فواتير الشراء من الموردين.",
-                EditLabel = "✏️ تعديل فواتير الشراء السابقة"
+                EditLabel = "تعديل فواتير الشراء السابقة"
             },
             new ScreenDef {
-                Key = "PurchaseReturn", Name = "مرتجع المشتريات للموردين", Category = "📥 المشتريات والموردين", Icon = "↩️",
+                Key = "PurchaseReturn", Name = "مرتجع المشتريات للموردين", Category = "المشتريات والموردين", Icon = "",
                 Description = "شاشة إرجاع بضاعة لمورد وخصم قيمتها من حسابه وخصم الرصيد من المخزن.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasEditPrice = true, HasChangeSafe = true,
-                AddLabel = "➕ حفظ وإتمام مرتجع مشتريات",
+                AddLabel = "حفظ وإتمام مرتجع مشتريات",
                 AddHint = "السماح للموظف بحفظ وإتمام مرتجع الشراء للمورد."
             },
             new ScreenDef {
-                Key = "PurchasesList", Name = "سجل فواتير المشتريات", Category = "📥 المشتريات والموردين", Icon = "📋",
+                Key = "PurchasesList", Name = "سجل فواتير المشتريات", Category = "المشتريات والموردين", Icon = "",
                 Description = "استعراض سجل فواتير الشراء والبحث فيها ومراجعة بنودها.",
                 HasEdit = true, HasDelete = false, HasCopySalesInvoice = true, HasViewSalesTotals = true
             },
             new ScreenDef {
-                Key = "PurchaseDeductions", Name = "استقطاعات فاتورة الشراء (عمولة / نولون / وهبة)", Category = "📥 المشتريات والموردين", Icon = "📉",
+                Key = "PurchaseDeductions", Name = "استقطاعات فاتورة الشراء (عمولة / نولون / وهبة)", Category = "المشتريات والموردين", Icon = "",
                 Description = "تفعيل زر استقطاعات الوكالة والمورد (عمولة المكان، نولون النقل، وهبة الشيالة) وخصمها تلقائياً من حساب المورد."
             },
             new ScreenDef {
-                Key = "Suppliers", Name = "إدارة بيانات الموردين", Category = "📥 المشتريات والموردين", Icon = "🏢",
+                Key = "Suppliers", Name = "إدارة بيانات الموردين", Category = "المشتريات والموردين", Icon = "",
                 Description = "إضافة وتعديل بيانات الموردين وجهات التوريد وحساباتهم.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true,
-                AddLabel = "➕ إضافة مورد جديد",
-                EditLabel = "✏️ تعديل بيانات المورد",
-                DeleteLabel = "🗑️ حذف مورد"
+                AddLabel = "إضافة مورد جديد",
+                EditLabel = "تعديل بيانات المورد",
+                DeleteLabel = "حذف مورد"
             },
             new ScreenDef {
-                Key = "SupplierStatement", Name = "كشف حساب المورد التفصيلي", Category = "📥 المشتريات والموردين", Icon = "📄",
+                Key = "SupplierStatement", Name = "كشف حساب المورد التفصيلي", Category = "المشتريات والموردين", Icon = "",
                 Description = "استعراض حركات الشراء والمدفوعات والمتبقي للمورد.",
                 HasViewBalance = true
             },
             new ScreenDef {
-                Key = "SupplierPayment", Name = "سند صرف نقدي لمورد", Category = "📥 المشتريات والموردين", Icon = "💵",
+                Key = "SupplierPayment", Name = "سند صرف نقدي لمورد", Category = "المشتريات والموردين", Icon = "",
                 Description = "تسجيل دفعات نقدية أو شيكات للموردين وخصمها من الخزنة.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasChangeSafe = true, HasViewBalance = true
             },
             new ScreenDef {
-                Key = "SupplierAdjustment", Name = "تسوية أرصدة الموردين", Category = "📥 المشتريات والموردين", Icon = "⚖️",
+                Key = "SupplierAdjustment", Name = "تسوية أرصدة الموردين", Category = "المشتريات والموردين", Icon = "",
                 Description = "تسوية الفروق الحسابية والخصومات المكتسبة مع الموردين.",
                 HasAdd = true, HasEdit = true, HasDelete = false
             },
 
-            // ── 📦 3. المخازن والأصناف ───────────────────────────────────
+            // ── 3. المخازن والأصناف ───────────────────────────────────
             new ScreenDef {
-                Key = "Products", Name = "إدارة وتعديل الأصناف والأسعار", Category = "📦 المخازن والأصناف", Icon = "🏷️",
+                Key = "Products", Name = "إدارة وتعديل الأصناف والأسعار", Category = "المخازن والأصناف", Icon = "",
                 Description = "إضافة وتعديل الأصناف وتحديد أسعار البيع والشراء والباركود وحد الطلب.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasEditPrice = true, HasViewCost = true, HasOrderColumns = true,
-                AddLabel = "➕ إضافة صنف جديد",
+                AddLabel = "إضافة صنف جديد",
                 AddHint = "السماح للموظف بإنشاء أصناف جديدة في النظام.",
-                EditLabel = "✏️ تعديل بيانات وأسعار الأصناف",
-                DeleteLabel = "🗑️ حذف صنف من النظام",
-                EditPriceLabel = "🏷️ تعديل أسعار البيع والشراء للأصناف"
+                EditLabel = "تعديل بيانات وأسعار الأصناف",
+                DeleteLabel = "حذف صنف من النظام",
+                EditPriceLabel = "تعديل أسعار البيع والشراء للأصناف"
             },
             new ScreenDef {
-                Key = "ProductCard", Name = "كارت الصنف والمواصفات", Category = "📦 المخازن والأصناف", Icon = "💳",
+                Key = "ProductCard", Name = "كارت الصنف والمواصفات", Category = "المخازن والأصناف", Icon = "",
                 Description = "استعراض كارت الصنف ومواصفاته الفنية وأسعاره ومخزونه.",
                 HasAdd = true, HasEdit = true, HasViewCost = true
             },
             new ScreenDef {
-                Key = "Categories", Name = "التصنيفات والمجموعات", Category = "📦 المخازن والأصناف", Icon = "🗂️",
+                Key = "Categories", Name = "التصنيفات والمجموعات", Category = "المخازن والأصناف", Icon = "",
                 Description = "إدارة أقسام وتصنيفات ومجموعات الأصناف الرئيسية والفرعية.",
                 HasAdd = true, HasEdit = true, HasDelete = true
             },
             new ScreenDef {
-                Key = "Units", Name = "إدارة الوحدات ومعاملات التحويل", Category = "📦 المخازن والأصناف", Icon = "📏",
+                Key = "Units", Name = "إدارة الوحدات ومعاملات التحويل", Category = "المخازن والأصناف", Icon = "",
                 Description = "تعريف وحدات القياس (قطعة، دستة، كرتونة) ومعاملات التحويل.",
                 HasAdd = true, HasEdit = true, HasDelete = true
             },
             new ScreenDef {
-                Key = "Warehouses", Name = "إدارة المخازن والمستودعات", Category = "📦 المخازن والأصناف", Icon = "🏭",
+                Key = "Warehouses", Name = "إدارة المخازن والمستودعات", Category = "المخازن والأصناف", Icon = "",
                 Description = "إضافة وتعريف المخازن والفروع والمستودعات.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewCost = true
             },
             new ScreenDef {
-                Key = "Inventory", Name = "جرد وتعديل رصيد المخزن", Category = "📦 المخازن والأصناف", Icon = "📦",
+                Key = "Inventory", Name = "جرد وتعديل رصيد المخزن", Category = "المخازن والأصناف", Icon = "",
                 Description = "تسجيل أرصدة الجرد الفعلي للمخازن وتسوية فروق الكميات.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewCost = true
             },
             new ScreenDef {
-                Key = "ShortageNotebook", Name = "كشكول النواقص والطلبات", Category = "📦 المخازن والأصناف", Icon = "📓",
+                Key = "ShortageNotebook", Name = "كشكول النواقص والطلبات", Category = "المخازن والأصناف", Icon = "",
                 Description = "حصر الأصناف الناقصة تحت حد الطلب وتجهيز طلبيات التوريد.",
                 HasAdd = true, HasEdit = true, HasViewCost = true
             },
             new ScreenDef {
-                Key = "Wastage", Name = "تسجيل الهوالك والتالف", Category = "📦 المخازن والأصناف", Icon = "⚠️",
+                Key = "Wastage", Name = "تسجيل الهوالك والتالف", Category = "المخازن والأصناف", Icon = "",
                 Description = "تسجيل بضاعة تالفة أو منتهية الصلاحية وخصمها من المخزن.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewCost = true
             },
             new ScreenDef {
-                Key = "WarehouseTransfer", Name = "التحويل المخزني بين الفروع", Category = "📦 المخازن والأصناف", Icon = "🔄",
+                Key = "WarehouseTransfer", Name = "التحويل المخزني بين الفروع", Category = "المخازن والأصناف", Icon = "",
                 Description = "تحويل كميات أصناف من مخزن إلى مخزن آخر داخل المنشأة.",
                 HasAdd = true, HasEdit = true, HasDelete = true
             },
             new ScreenDef {
-                Key = "BulkPrintBarcodes", Name = "طباعة الباركود (مجمع وفردي)", Category = "📦 المخازن والأصناف", Icon = "🏷️",
+                Key = "BulkPrintBarcodes", Name = "طباعة الباركود (مجمع وفردي)", Category = "المخازن والأصناف", Icon = "",
                 Description = "تصميم وطباعة ملصقات الباركود على طابعات الاستيكر المختلفة."
             },
 
-            // ── 💰 4. المالية والخزائن والورديات ──────────────────────────
+            // ── 4. المالية والخزائن والورديات ──────────────────────────
             new ScreenDef {
-                Key = "CashBox", Name = "الخزنة والمصروفات والإيرادات", Category = "💰 المالية والخزائن والورديات", Icon = "💰",
+                Key = "CashBox", Name = "الخزنة والمصروفات والإيرادات", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "تسجيل حركات النقدية والمصروفات اليومية والإيرادات المتنوعة.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasChangeSafe = true, HasViewBalance = true,
-                AddLabel = "➕ تسجيل حركة قبض أو صرف جديدة",
-                EditLabel = "✏️ تعديل حركة نقدية سابقة"
+                AddLabel = "تسجيل حركة قبض أو صرف جديدة",
+                EditLabel = "تعديل حركة نقدية سابقة"
             },
             new ScreenDef {
-                Key = "ReceiptVoucher", Name = "سندات القبض والصرف الرسمية", Category = "💰 المالية والخزائن والورديات", Icon = "📄",
+                Key = "ReceiptVoucher", Name = "سندات القبض والصرف الرسمية", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "إصدار وطباعة سندات القبض والدفع المالية للعملاء والموردين.",
                 HasAdd = true, HasEdit = true, HasDelete = false, HasChangeSafe = true, HasViewBalance = true
             },
             new ScreenDef {
-                Key = "DailyAccounts", Name = "الحسابات والمالية اليومية الشاملة", Category = "💰 المالية والخزائن والورديات", Icon = "📊",
+                Key = "DailyAccounts", Name = "الحسابات والمالية اليومية الشاملة", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "شاشة المتابعة المالية اليومية الشاملة لكافة حركات النقدية والأدراج.",
                 HasAdd = true, HasEdit = true, HasChangeSafe = true, HasViewBalance = true, HasViewDetails = true
             },
             new ScreenDef {
-                Key = "SafeAccounts", Name = "إدارة الخزن والحسابات البنكية", Category = "💰 المالية والخزائن والورديات", Icon = "🏛️",
+                Key = "SafeAccounts", Name = "إدارة الخزن والحسابات البنكية", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "تعريف وتعديل الخزن الفرعية وحسابات البنوك ومحافظ فودافون كاش.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasChangeSafe = true, HasViewBalance = true
             },
             new ScreenDef {
-                Key = "ActualBalances", Name = "مطابقة الأرصدة الفعلية للنقدية", Category = "💰 المالية والخزائن والورديات", Icon = "💵",
+                Key = "ActualBalances", Name = "مطابقة الأرصدة الفعلية للنقدية", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "مطابقة النقدية الفعلية في الدرج مع الرصيد الدفتري المسجل.",
                 HasViewBalance = true, HasViewDetails = true
             },
             new ScreenDef {
-                Key = "DailyClosing", Name = "تقفيل اليومية ومراجعة المبيعات", Category = "💰 المالية والخزائن والورديات", Icon = "🔒",
+                Key = "DailyClosing", Name = "تقفيل اليومية ومراجعة المبيعات", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "تقفيل اليومية وحساب إجمالي الإيرادات والمصروفات وترحيل الأرصدة.",
                 HasViewBalance = true, HasViewDetails = true, HasViewSalesTotals = true
             },
             new ScreenDef {
-                Key = "ShiftClose", Name = "إغلاق وتقفيل وردية الكاشير", Category = "💰 المالية والخزائن والورديات", Icon = "🔄",
+                Key = "ShiftClose", Name = "إغلاق وتقفيل وردية الكاشير", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "إنهاء شيفت الكاشير واستلام عهدة الدرج النقدية وترحيلها للخزنة.",
                 HasViewBalance = true, HasViewDetails = true
             },
             new ScreenDef {
-                Key = "FinancialPosition", Name = "الموقف المالي وقائمة المركز المالي", Category = "💰 المالية والخزائن والورديات", Icon = "📊",
+                Key = "FinancialPosition", Name = "الموقف المالي وقائمة المركز المالي", Category = "المالية والخزائن والورديات", Icon = "",
                 Description = "استعراض الأصول والخصوم ورأس المال وحقوق الشركاء والديون.",
                 HasViewBalance = true, HasViewCost = true
             },
 
-            // ── 🏢 الأصول والشركاء ────────────────────────────────────────
+            // ── الأصول والشركاء ────────────────────────────────────────
             new ScreenDef {
-                Key = "FixedAssets", Name = "سجل وإهلاك الأصول الثابتة", Category = "🏢 الأصول والشركاء", Icon = "🏢",
+                Key = "FixedAssets", Name = "سجل وإهلاك الأصول الثابتة", Category = "الأصول والشركاء", Icon = "",
                 Description = "تسجيل ومتابعة الأصول الثابتة وحساب الإهلاك السنوي وإدارة قيمة الأصول والممتلكات.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewCost = true, HasViewBalance = true,
-                AddLabel = "➕ إضافة أصل ثابت جديد",
-                EditLabel = "✏️ تعديل بيانات وقيمة الأصل",
-                DeleteLabel = "🗑️ حذف أو استبعاد أصل"
+                AddLabel = "إضافة أصل ثابت جديد",
+                EditLabel = "تعديل بيانات وقيمة الأصل",
+                DeleteLabel = "حذف أو استبعاد أصل"
             },
             new ScreenDef {
-                Key = "Shareholders", Name = "حسابات الشركاء ورأس المال والأرباح", Category = "🏢 الأصول والشركاء", Icon = "🤝",
+                Key = "Shareholders", Name = "حسابات الشركاء ورأس المال والأرباح", Category = "الأصول والشركاء", Icon = "",
                 Description = "إدارة حصص الشركاء ورأس المال وحساب المسحوبات الدورية وتوزيع الأرباح السنوية.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true, HasViewDetails = true,
-                AddLabel = "➕ إضافة شريك أو حركة رأس مال جديدة",
-                EditLabel = "✏️ تعديل حركة شريك أو نسبة أرباح",
-                DeleteLabel = "🗑️ حذف حركة شريك"
+                AddLabel = "إضافة شريك أو حركة رأس مال جديدة",
+                EditLabel = "تعديل حركة شريك أو نسبة أرباح",
+                DeleteLabel = "حذف حركة شريك"
             },
 
-            // ── 📊 5. التقارير التفصيلية الشاملة ─────────────────────────
+            // ── 5. التقارير التفصيلية الشاملة ─────────────────────────
             new ScreenDef {
-                Key = "Reports", Name = "بوابة التقارير والإحصائيات الشاملة", Category = "📊 التقارير التفصيلية الشاملة", Icon = "📊",
+                Key = "Reports", Name = "بوابة التقارير والإحصائيات الشاملة", Category = "التقارير التفصيلية الشاملة", Icon = "",
                 Description = "استعراض والاطلاع على كافة تقارير المنشأة ومؤشرات الأداء.",
                 HasViewCost = true, HasViewBalance = true, HasViewDetails = true
             },
             new ScreenDef {
-                Key = "Financials", Name = "قائمة الدخل والأرباح والميزانية", Category = "📊 التقارير التفصيلية الشاملة", Icon = "📈",
+                Key = "Financials", Name = "قائمة الدخل والأرباح والميزانية", Category = "التقارير التفصيلية الشاملة", Icon = "",
                 Description = "استعراض الأرباح التشغيلية وصافي ربح الفواتير وقائمة الدخل التفصيلية.",
                 HasViewCost = true, HasViewBalance = true, HasViewDetails = true
             },
             new ScreenDef {
-                Key = "RepDailySales", Name = "تقرير المبيعات اليومية التفصيلي", Category = "📊 التقارير التفصيلية الشاملة", Icon = "📅",
+                Key = "RepDailySales", Name = "تقرير المبيعات اليومية التفصيلي", Category = "التقارير التفصيلية الشاملة", Icon = "",
                 Description = "تقرير فواتير ومبيعات اليوم مع تصنيف الكاش والآجل والفيزا."
             },
             new ScreenDef {
-                Key = "RepSalesByProduct", Name = "تقرير مبيعات وأرباح الأصناف", Category = "📊 التقارير التفصيلية الشاملة", Icon = "📦",
+                Key = "RepSalesByProduct", Name = "تقرير مبيعات وأرباح الأصناف", Category = "التقارير التفصيلية الشاملة", Icon = "",
                 Description = "تقرير يوضح أكثر الأصناف مبيعاً وربحية خلال فترة زمنية.",
                 HasViewCost = true
             },
             new ScreenDef {
-                Key = "RepClientBalances", Name = "تقرير مديونيات وأرصدة العملاء", Category = "📊 التقارير التفصيلية الشاملة", Icon = "⚖️",
+                Key = "RepClientBalances", Name = "تقرير مديونيات وأرصدة العملاء", Category = "التقارير التفصيلية الشاملة", Icon = "",
                 Description = "استعراض كشف مديونيات كافة العملاء ومتابعة التحصيلات.",
                 HasViewBalance = true
             },
             new ScreenDef {
-                Key = "RepStores", Name = "تقرير أرصدة وتقييم المخزون", Category = "📊 التقارير التفصيلية الشاملة", Icon = "📦",
+                Key = "RepStores", Name = "تقرير أرصدة وتقييم المخزون", Category = "التقارير التفصيلية الشاملة", Icon = "",
                 Description = "استعراض كميات المخازن وقيمتها بسعر التكلفة وسعر البيع.",
                 HasViewCost = true
             },
 
-            // ── 🚚 6. المناديب والتوزيع ─────────────────────────────
+            // ── 6. المناديب والتوزيع ─────────────────────────────
             new ScreenDef {
-                Key = "Drivers", Name = "شاشة المناديب (بوابة التوزيع والمبيعات)", Category = "🚚 المناديب والتوزيع", Icon = "🚚",
+                Key = "Drivers", Name = "شاشة المناديب (بوابة التوزيع والمبيعات)", Category = "المناديب والتوزيع", Icon = "",
                 Description = "شاشة وإدارة المناديب لمتابعة رحلات التوزيع ومبيعات السيارات وإصدار الفواتير وتحصيل المبالغ.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true, HasViewDetails = true,
-                AddLabel = "➕ إصدار فواتير بيع وتحصيل للمندوب",
-                EditLabel = "✏️ تعديل فواتير وحركات المناديب",
-                DeleteLabel = "🗑️ حذف فواتير أو حركات المناديب"
+                AddLabel = "إصدار فواتير بيع وتحصيل للمندوب",
+                EditLabel = "تعديل فواتير وحركات المناديب",
+                DeleteLabel = "حذف فواتير أو حركات المناديب"
             },
             new ScreenDef {
-                Key = "DriverHandover", Name = "تسليم وتحميل بضاعة المندوب", Category = "🚚 المناديب والتوزيع", Icon = "📦",
+                Key = "DriverHandover", Name = "تسليم وتحميل بضاعة المندوب", Category = "المناديب والتوزيع", Icon = "",
                 Description = "تسجيل حمولة بضاعة السيارة للمندوب وتتبع عهدة البضاعة وتصفية الرحلة.",
                 HasAdd = true, HasEdit = true, HasDelete = true,
-                AddLabel = "➕ تسجيل حمولة أو تصفية جديدة للمندوب",
-                EditLabel = "✏️ تعديل حمولة أو تصفية سابقة",
-                DeleteLabel = "🗑️ حذف تسليم أو تصفية حمولة"
+                AddLabel = "تسجيل حمولة أو تصفية جديدة للمندوب",
+                EditLabel = "تعديل حمولة أو تصفية سابقة",
+                DeleteLabel = "حذف تسليم أو تصفية حمولة"
             },
             new ScreenDef {
-                Key = "DriverCustody", Name = "عهدة المناديب والتحصيلات المالية", Category = "🚚 المناديب والتوزيع", Icon = "💼",
+                Key = "DriverCustody", Name = "عهدة المناديب والتحصيلات المالية", Category = "المناديب والتوزيع", Icon = "",
                 Description = "متابعة النقدية والتحصيلات المسلمة من المندوب إلى الخزينة وتوريد العهدة.",
                 HasAdd = true, HasEdit = true, HasViewBalance = true,
-                AddLabel = "➕ توريد عهدة نقدية للمندوب",
-                EditLabel = "✏️ تعديل توريد العهدة"
+                AddLabel = "توريد عهدة نقدية للمندوب",
+                EditLabel = "تعديل توريد العهدة"
             },
             new ScreenDef {
-                Key = "DriverPortal", Name = "بوابة ومبيعات المندوب الميدانية", Category = "🚚 المناديب والتوزيع", Icon = "📡",
+                Key = "DriverPortal", Name = "بوابة ومبيعات المندوب الميدانية", Category = "المناديب والتوزيع", Icon = "",
                 Description = "بوابة المندوب الميداني لربط التطبيق والمزامنة وإجراء المبيعات المباشرة.",
                 HasAdd = true, HasEdit = true, HasDelete = true, HasViewBalance = true, HasViewDetails = true
             },
             new ScreenDef {
-                Key = "DriversMonitor", Name = "مراقبة وتتبع رحلات وسيارات المناديب", Category = "🚚 المناديب والتوزيع", Icon = "🖥️",
+                Key = "DriversMonitor", Name = "مراقبة وتتبع رحلات وسيارات المناديب", Category = "المناديب والتوزيع", Icon = "",
                 Description = "متابعة حركة المناديب المباشرة والكميات المحملة والمباعة في الوقت الفعلي.",
                 HasViewDetails = true
             },
             new ScreenDef {
-                Key = "DriverLeaderboard", Name = "لوحة أداء وترتيب المناديب", Category = "🚚 المناديب والتوزيع", Icon = "🏆",
+                Key = "DriverLeaderboard", Name = "لوحة أداء وترتيب المناديب", Category = "المناديب والتوزيع", Icon = "",
                 Description = "عرض ترتيب المناديب بحسب المبيعات والتحصيلات ونسب الإنجاز والنشاط.",
                 HasViewDetails = true
             },
             new ScreenDef {
-                Key = "ImportPreview", Name = "استيراد مبيعات المناديب من السحاب", Category = "🚚 المناديب والتوزيع", Icon = "☁️",
+                Key = "ImportPreview", Name = "استيراد مبيعات المناديب من السحاب", Category = "المناديب والتوزيع", Icon = "",
                 Description = "استيراد ومطابقة فواتير وحركات المناديب المرفوعة من تطبيق الموبايل السحابي.",
                 HasAdd = true
             },
             new ScreenDef {
-                Key = "RepDrivers", Name = "تقارير المناديب والتوزيع الشاملة", Category = "🚚 المناديب والتوزيع", Icon = "📊",
+                Key = "RepDrivers", Name = "تقارير المناديب والتوزيع الشاملة", Category = "المناديب والتوزيع", Icon = "",
                 Description = "استعراض تقارير مبيعات وحمولات وعهد المناديب ومقارنة أدائهم خلال فترة.",
                 HasViewCost = true, HasViewBalance = true, HasViewDetails = true
             },
 
-            // ── ⚙️ 7. النظام والإدارة والصيانة ───────────────────────────
+            // ── 7. النظام والإدارة والصيانة ───────────────────────────
             new ScreenDef {
-                Key = "Maintenance", Name = "تذاكر الصيانة وإدارة الأجهزة", Category = "⚙️ النظام والإدارة والصيانة", Icon = "🔧",
+                Key = "Maintenance", Name = "تذاكر الصيانة وإدارة الأجهزة", Category = "النظام والإدارة والصيانة", Icon = "",
                 Description = "إدارة كروت وتذاكر صيانة الأجهزة والسيارات ومتابعة مراحل التصليح.",
                 HasAdd = true, HasEdit = true, HasDelete = true
             },
             new ScreenDef {
-                Key = "Employees", Name = "إدارة الموظفين وتعديل الصلاحيات", Category = "⚙️ النظام والإدارة والصيانة", Icon = "👨‍💼",
+                Key = "Employees", Name = "إدارة الموظفين وتعديل الصلاحيات", Category = "النظام والإدارة والصيانة", Icon = "",
                 Description = "إضافة المستخدمين وتعيين كلمات المرور وضبط الصلاحيات.",
                 HasAdd = true, HasEdit = true, HasDelete = true
             },
             new ScreenDef {
-                Key = "Settings", Name = "الإعدادات العامة للنظام والطابعات", Category = "⚙️ النظام والإدارة والصيانة", Icon = "⚙️",
+                Key = "Settings", Name = "الإعدادات العامة للنظام والطابعات", Category = "النظام والإدارة والصيانة", Icon = "",
                 Description = "تعديل اسم المنشأة واللوجو وإعدادات الطابعات والنسخ الاحتياطي.",
                 HasEdit = true
             },
             new ScreenDef {
-                Key = "CloudSync", Name = "ربط الموبايل والتزامن السحابي", Category = "⚙️ النظام والإدارة والصيانة", Icon = "☁️",
+                Key = "CloudSync", Name = "ربط الموبايل والتزامن السحابي", Category = "النظام والإدارة والصيانة", Icon = "",
                 Description = "إعدادات مزامنة بيانات المالك مع Firebase وتطبيق الموبايل.",
                 HasEdit = true
             },
 
-            // ── 🏭 8. التصنيع والإنتاج ─────────────────────────────────────
+            // ── 8. التصنيع والإنتاج ─────────────────────────────────────
             new ScreenDef {
-                Key = "BOM", Name = "تحديد مواد التصنيع (شجرة المنتج BOM)", Category = "🏭 التصنيع والإنتاج", Icon = "🌿",
+                Key = "BOM", Name = "تحديد مواد التصنيع (شجرة المنتج BOM)", Category = "التصنيع والإنتاج", Icon = "",
                 Description = "تحديد وتعديل نسب ومكونات المواد الخام للمنتج النهائي وحساب التكلفة المعيارية.",
                 HasAdd = true, HasEdit = true, HasDelete = true,
-                AddLabel = "➕ إضافة شجرة ومكونات تصنيع جديدة",
-                EditLabel = "✏️ تعديل شجرة التصنيع والمكونات",
-                DeleteLabel = "🗑️ حذف شجرة تصنيع"
+                AddLabel = "إضافة شجرة ومكونات تصنيع جديدة",
+                EditLabel = "تعديل شجرة التصنيع والمكونات",
+                DeleteLabel = "حذف شجرة تصنيع"
             },
             new ScreenDef {
-                Key = "FixedProduction", Name = "التصنيع الثابت (وفق الوصفة المعيارية)", Category = "🏭 التصنيع والإنتاج", Icon = "🏭",
+                Key = "FixedProduction", Name = "التصنيع الثابت (وفق الوصفة المعيارية)", Category = "التصنيع والإنتاج", Icon = "",
                 Description = "إصدار أوامر التصنيع الثابتة، تنزيل المكونات تلقائياً، مصاريف التشغيل، وتعليق الأوامر (تحت التحضير).",
                 HasAdd = true, HasEdit = true, HasDelete = true,
-                AddLabel = "➕ إصدار وحفظ أمر تصنيع جديد",
-                EditLabel = "✏️ استرجاع وتعديل الأوامر المعلقة",
-                DeleteLabel = "❌ إلغاء أمر تصنيع واسترجاع الخامات"
+                AddLabel = "إصدار وحفظ أمر تصنيع جديد",
+                EditLabel = "استرجاع وتعديل الأوامر المعلقة",
+                DeleteLabel = "إلغاء أمر تصنيع واسترجاع الخامات"
             },
             new ScreenDef {
-                Key = "CustomProduction", Name = "التصنيع المخصص (إدخال حر للمكونات)", Category = "🏭 التصنيع والإنتاج", Icon = "🛠️",
+                Key = "CustomProduction", Name = "التصنيع المخصص (إدخال حر للمكونات)", Category = "التصنيع والإنتاج", Icon = "",
                 Description = "إصدار أوامر تصنيع مرنة مع اختيار حر للمواد المستهلكة والمصروفات الإضافية والتعليق.",
                 HasAdd = true, HasEdit = true, HasDelete = true,
-                AddLabel = "➕ إصدار وحفظ أمر تصنيع مخصص جديد",
-                EditLabel = "✏️ استرجاع وتعديل الأوامر المعلقة",
-                DeleteLabel = "❌ إلغاء أمر تصنيع واسترجاع الخامات"
+                AddLabel = "إصدار وحفظ أمر تصنيع مخصص جديد",
+                EditLabel = "استرجاع وتعديل الأوامر المعلقة",
+                DeleteLabel = "إلغاء أمر تصنيع واسترجاع الخامات"
             },
             new ScreenDef {
-                Key = "ProductionReports", Name = "سجل وتقارير حركات التصنيع", Category = "🏭 التصنيع والإنتاج", Icon = "📊",
+                Key = "ProductionReports", Name = "سجل وتقارير حركات التصنيع", Category = "التصنيع والإنتاج", Icon = "",
                 Description = "استعراض والبحث في كافة حركات التصنيع وسجل التعديلات والتعليق وطباعة التقارير.",
                 HasViewDetails = true
             }
@@ -1563,7 +1563,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = $"🔐 ضبط صلاحيات الموظف: {_empName}";
+            this.Text = $"ضبط صلاحيات الموظف: {_empName}";
             this.Size = new Size(1280, 820);
             this.MinimumSize = new Size(1100, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -1590,7 +1590,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = $"🔐 ضبط وتخصيص صلاحيات الموظف: {_empName}",
+                Text = $"ضبط وتخصيص صلاحيات الموظف: {_empName}",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Right,
@@ -1622,21 +1622,21 @@ namespace ChickenDist.Forms
 
             var lblPresetTitle = new Label
             {
-                Text = "⚡ قوالب جاهزة:",
+                Text = "قوالب جاهزة:",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35),
                 Padding = new Padding(0, 6, 8, 0)
             };
             flowPresets.Controls.Add(lblPresetTitle);
-            flowPresets.Controls.Add(MakePresetBtn("👑 مدير كامل", Color.FromArgb(192, 57, 43), () => ApplyPreset("Admin")));
-            flowPresets.Controls.Add(MakePresetBtn("🛒 كاشير / بيع", Color.FromArgb(41, 128, 185), () => ApplyPreset("Cashier")));
-            flowPresets.Controls.Add(MakePresetBtn("🚚 مندوب توزيع", Color.FromArgb(109, 40, 217), () => ApplyPreset("Driver")));
-            flowPresets.Controls.Add(MakePresetBtn("📥 مشتريات", Color.FromArgb(142, 68, 173), () => ApplyPreset("Purchases")));
-            flowPresets.Controls.Add(MakePresetBtn("📦 أمين مخزن", Color.FromArgb(39, 174, 96), () => ApplyPreset("Inventory")));
-            flowPresets.Controls.Add(MakePresetBtn("🏭 مدير إنتاج", Color.FromArgb(16, 185, 129), () => ApplyPreset("Manufacturing")));
-            flowPresets.Controls.Add(MakePresetBtn("💰 محاسب مالي", Color.FromArgb(211, 84, 0), () => ApplyPreset("Accountant")));
-            flowPresets.Controls.Add(MakePresetBtn("🧹 تفريغ الكل", Color.FromArgb(108, 122, 137), () => ApplyPreset("Clear")));
+            flowPresets.Controls.Add(MakePresetBtn("مدير كامل", Color.FromArgb(192, 57, 43), () => ApplyPreset("Admin")));
+            flowPresets.Controls.Add(MakePresetBtn("كاشير / بيع", Color.FromArgb(41, 128, 185), () => ApplyPreset("Cashier")));
+            flowPresets.Controls.Add(MakePresetBtn("مندوب توزيع", Color.FromArgb(109, 40, 217), () => ApplyPreset("Driver")));
+            flowPresets.Controls.Add(MakePresetBtn("مشتريات", Color.FromArgb(142, 68, 173), () => ApplyPreset("Purchases")));
+            flowPresets.Controls.Add(MakePresetBtn("أمين مخزن", Color.FromArgb(39, 174, 96), () => ApplyPreset("Inventory")));
+            flowPresets.Controls.Add(MakePresetBtn("مدير إنتاج", Color.FromArgb(16, 185, 129), () => ApplyPreset("Manufacturing")));
+            flowPresets.Controls.Add(MakePresetBtn("محاسب مالي", Color.FromArgb(211, 84, 0), () => ApplyPreset("Accountant")));
+            flowPresets.Controls.Add(MakePresetBtn("تفريغ الكل", Color.FromArgb(108, 122, 137), () => ApplyPreset("Clear")));
 
             pnlTop.Controls.Add(pnlHeaderInfo);
             pnlTop.Controls.Add(flowPresets);
@@ -1676,7 +1676,7 @@ namespace ChickenDist.Forms
 
             var lblSearch = new Label
             {
-                Text = "🔍 بحث سريع عن شاشة:",
+                Text = "بحث سريع عن شاشة:",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
@@ -1727,7 +1727,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var colCheck = new DataGridViewCheckBoxColumn { Name = "colAccess", HeaderText = "👁️ الدخول", Width = 75 };
+            var colCheck = new DataGridViewCheckBoxColumn { Name = "colAccess", HeaderText = "الدخول", Width = 75 };
             var colName = new DataGridViewTextBoxColumn { Name = "colName", HeaderText = "اسم الشاشة / القسم", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
             var colBadge = new DataGridViewTextBoxColumn { Name = "colBadge", HeaderText = "الصلاحيات", Width = 110 };
             colBadge.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
@@ -1763,7 +1763,7 @@ namespace ChickenDist.Forms
 
             lblSelectedTitle = new Label
             {
-                Text = "🛒 فاتورة المبيعات الرئيسية",
+                Text = "فاتورة المبيعات الرئيسية",
                 Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(243, 198, 35),
                 AutoSize = true,
@@ -1781,7 +1781,7 @@ namespace ChickenDist.Forms
 
             lblStatsBadge = new Label
             {
-                Text = "مفعلة بالكامل 🟢",
+                Text = "مفعلة بالكامل",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(46, 204, 113),
                 Dock = DockStyle.Left,
@@ -1803,7 +1803,7 @@ namespace ChickenDist.Forms
 
             chkMasterAccess = new CheckBox
             {
-                Text = "👁️ السماح للموظف بفتح واستخدام هذه الشاشة في البرنامج",
+                Text = "السماح للموظف بفتح واستخدام هذه الشاشة في البرنامج",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Right,
@@ -1812,8 +1812,8 @@ namespace ChickenDist.Forms
             };
             chkMasterAccess.CheckedChanged += ChkMasterAccess_CheckedChanged;
 
-            var btnSelectAllCurrent = MakeSmallBtn("✔️ تحديد كافة الصلاحيات", Color.FromArgb(5, 150, 105), () => ToggleCurrentScreenSubPerms(true));
-            var btnClearAllCurrent = MakeSmallBtn("❌ إلغاء الصلاحيات الفرعية", Color.FromArgb(140, 60, 70), () => ToggleCurrentScreenSubPerms(false));
+            var btnSelectAllCurrent = MakeSmallBtn("تحديد كافة الصلاحيات", Color.FromArgb(5, 150, 105), () => ToggleCurrentScreenSubPerms(true));
+            var btnClearAllCurrent = MakeSmallBtn("إلغاء الصلاحيات الفرعية", Color.FromArgb(140, 60, 70), () => ToggleCurrentScreenSubPerms(false));
             btnSelectAllCurrent.Dock = DockStyle.Left;
             btnClearAllCurrent.Dock = DockStyle.Left;
             btnSelectAllCurrent.Margin = new Padding(4);
@@ -1850,7 +1850,7 @@ namespace ChickenDist.Forms
 
             lblFooterStats = new Label
             {
-                Text = "📊 إجمالي الشاشات المسموحة: 0 / 0 | 🛡️ الصلاحيات الفرعية المفعلة: 0",
+                Text = "إجمالي الشاشات المسموحة: 0 / 0 | الصلاحيات الفرعية المفعلة: 0",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(70, 200, 240),
                 Dock = DockStyle.Right,
@@ -1858,13 +1858,13 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 8, 0, 0)
             };
 
-            var btnSavePerms = Theme.MakeButton("💾 حفظ وتطبيق الصلاحيات فوراً [F5]", Color.FromArgb(16, 185, 129));
+            var btnSavePerms = Theme.MakeButton("حفظ وتطبيق الصلاحيات فوراً [F5]", Color.FromArgb(16, 185, 129));
             btnSavePerms.Size = new Size(270, 42);
             btnSavePerms.Location = new Point(20, 10);
             btnSavePerms.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSavePerms.Click += BtnSave_Click;
 
-            var btnClose = Theme.MakeButton("❌ إلغاء وخروج", Color.FromArgb(100, 110, 125));
+            var btnClose = Theme.MakeButton("إلغاء وخروج", Color.FromArgb(100, 110, 125));
             btnClose.Size = new Size(130, 42);
             btnClose.Location = new Point(300, 10);
             btnClose.Click += (s, e) => this.Close();
@@ -1888,7 +1888,7 @@ namespace ChickenDist.Forms
         private void BuildCategoryChips()
         {
             pnlCategories.Controls.Clear();
-            string[] cats = { "الكل", "🛒 المبيعات", "📥 المشتريات", "📦 المخازن", "🚚 المناديب", "🏭 التصنيع", "💰 المالية", "🏢 الأصول والشركاء", "📊 التقارير", "⚙️ الإدارة" };
+            string[] cats = { "الكل", "المبيعات", "المشتريات", "المخازن", "المناديب", "التصنيع", "المالية", "الأصول والشركاء", "التقارير", "الإدارة" };
 
             foreach (var cat in cats)
             {
@@ -1981,10 +1981,7 @@ namespace ChickenDist.Forms
             dgScreens.Rows.Clear();
             string q = txtSearch.Text.Trim().ToLowerInvariant();
 
-            string catClean = _activeCategoryFilter
-                .Replace("🛒", "").Replace("📥", "").Replace("📦", "")
-                .Replace("🏭", "").Replace("💰", "").Replace("🏢", "")
-                .Replace("📊", "").Replace("🚚", "").Replace("⚙️", "").Trim();
+            string catClean = _activeCategoryFilter.Trim();
 
             foreach (var def in AllScreens)
             {
@@ -1998,7 +1995,7 @@ namespace ChickenDist.Forms
                 int totalSub = CountAvailableSubPerms(def);
                 int activeSub = CountActiveSubPerms(def, st);
 
-                int ri = dgScreens.Rows.Add(st.CanAccess, $"{def.Icon} {def.Name}", st.CanAccess ? $"{activeSub}/{totalSub} مفعلة" : "❌ مقفلة");
+                int ri = dgScreens.Rows.Add(st.CanAccess, $"{def.Icon} {def.Name}", st.CanAccess ? $"{activeSub}/{totalSub} مفعلة" : "مقفلة");
                 dgScreens.Rows[ri].Tag = def;
             }
             UpdateGlobalCounters();
@@ -2097,7 +2094,7 @@ namespace ChickenDist.Forms
 
             int total = CountAvailableSubPerms(def);
             int active = CountActiveSubPerms(def, st);
-            lblStatsBadge.Text = st.CanAccess ? $"مفعلة ({active} من {total} صلاحيات) 🟢" : "الشاشة مقفلة ⛔";
+            lblStatsBadge.Text = st.CanAccess ? $"مفعلة ({active} من {total} صلاحيات)" : "الشاشة مقفلة";
             lblStatsBadge.ForeColor = st.CanAccess ? Color.FromArgb(46, 204, 113) : Color.FromArgb(231, 76, 60);
 
             BuildSubPermissionsCards(def, st);
@@ -2151,7 +2148,7 @@ namespace ChickenDist.Forms
                 };
                 var lblDis = new Label
                 {
-                    Text = "⛔ هذه الشاشة مقفلة حالياً لهذا الموظف!\nقم بتفعيل مفتاح (السماح بالدخول للشاشة) أعلاه لتمكين وضبط صلاحياتها الفرعية.",
+                    Text = "هذه الشاشة مقفلة حالياً لهذا الموظف!\nقم بتفعيل مفتاح (السماح بالدخول للشاشة) أعلاه لتمكين وضبط صلاحياتها الفرعية.",
                     Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(240, 120, 120),
                     Dock = DockStyle.Fill,
@@ -2192,39 +2189,39 @@ namespace ChickenDist.Forms
 
             // 6. CanCopySalesInvoice
             if (def.HasCopySalesInvoice)
-                AddCard(MakeSubPermCard("📋 نسخ وإعادة طباعة الفواتير السابقة", "السماح بإعادة طباعة الإيصالات أو نسخ بنود الفاتورة لإنشاء فاتورة جديدة.", st.CanCopySalesInvoice, v => { st.CanCopySalesInvoice = v; OnSubPermChanged(def); }));
+                AddCard(MakeSubPermCard("نسخ وإعادة طباعة الفواتير السابقة", "السماح بإعادة طباعة الإيصالات أو نسخ بنود الفاتورة لإنشاء فاتورة جديدة.", st.CanCopySalesInvoice, v => { st.CanCopySalesInvoice = v; OnSubPermChanged(def); }));
 
             // 8. CanViewCost
             if (def.HasViewCost)
-                AddCard(MakeSubPermCard("💲 الاطلاع على سعر التكلفة والربح", "إظهار سعر الشراء والتكلفة وأرباح الفاتورة وهوامش الأصناف للموظف.", st.CanViewCost, v => { st.CanViewCost = v; OnSubPermChanged(def); }, Color.FromArgb(155, 89, 182)));
+                AddCard(MakeSubPermCard("الاطلاع على سعر التكلفة والربح", "إظهار سعر الشراء والتكلفة وأرباح الفاتورة وهوامش الأصناف للموظف.", st.CanViewCost, v => { st.CanViewCost = v; OnSubPermChanged(def); }, Color.FromArgb(155, 89, 182)));
 
             // 9. CanViewBalance
             if (def.HasViewBalance)
-                AddCard(MakeSubPermCard("💰 الاطلاع على الرصيد الفعلي وكشف الحساب", "كشف الرصيد الفعلي المتوفر في الدرج أو كشف مديونيات وحسابات العملاء والموردين.", st.CanViewBalance, v => { st.CanViewBalance = v; OnSubPermChanged(def); }));
+                AddCard(MakeSubPermCard("الاطلاع على الرصيد الفعلي وكشف الحساب", "كشف الرصيد الفعلي المتوفر في الدرج أو كشف مديونيات وحسابات العملاء والموردين.", st.CanViewBalance, v => { st.CanViewBalance = v; OnSubPermChanged(def); }));
 
             // 10. CanViewDetails (التقفيل)
             if (def.HasViewDetails)
-                AddCard(MakeSubPermCard("📄 الاطلاع على تفاصيل التقفيل والشيفت", "كشف المبالغ النقدية المتوقعة ومبيعات الكاش والفيزا عند إغلاق الوردية.", st.CanViewDetails, v => { st.CanViewDetails = v; OnSubPermChanged(def); }));
+                AddCard(MakeSubPermCard("الاطلاع على تفاصيل التقفيل والشيفت", "كشف المبالغ النقدية المتوقعة ومبيعات الكاش والفيزا عند إغلاق الوردية.", st.CanViewDetails, v => { st.CanViewDetails = v; OnSubPermChanged(def); }));
 
             // 11. CanChangeSafe
             if (def.HasChangeSafe)
-                AddCard(MakeSubPermCard("🔄 تغيير الخزينة / الحساب المالي", "السماح باختيار خزينة أو درج مالي آخر بخلاف الدرج الافتراضي المحدد للموظف.", st.CanChangeSafe, v => { st.CanChangeSafe = v; OnSubPermChanged(def); }));
+                AddCard(MakeSubPermCard("تغيير الخزينة / الحساب المالي", "السماح باختيار خزينة أو درج مالي آخر بخلاف الدرج الافتراضي المحدد للموظف.", st.CanChangeSafe, v => { st.CanChangeSafe = v; OnSubPermChanged(def); }));
 
             // 12. CanViewSalesTotals
             if (def.HasViewSalesTotals)
-                AddCard(MakeSubPermCard("📊 عرض شريط الإجماليات والأرباح في السجل", "إظهار شريط الإجماليات المالية السفلية في سجل الفواتير والمبيعات.", st.CanViewSalesTotals, v => { st.CanViewSalesTotals = v; OnSubPermChanged(def); }));
+                AddCard(MakeSubPermCard("عرض شريط الإجماليات والأرباح في السجل", "إظهار شريط الإجماليات المالية السفلية في سجل الفواتير والمبيعات.", st.CanViewSalesTotals, v => { st.CanViewSalesTotals = v; OnSubPermChanged(def); }));
 
             // 13. CanViewQuickItems
             if (def.HasViewQuickItems)
-                AddCard(MakeSubPermCard("⚡ إظهار أزرار الأصناف السريعة", "عرض شبكة أزرار الأصناف الأكثر مبيعاً في شاشة الكاشير POS.", st.CanViewQuickItems, v => { st.CanViewQuickItems = v; OnSubPermChanged(def); }));
+                AddCard(MakeSubPermCard("إظهار أزرار الأصناف السريعة", "عرض شبكة أزرار الأصناف الأكثر مبيعاً في شاشة الكاشير POS.", st.CanViewQuickItems, v => { st.CanViewQuickItems = v; OnSubPermChanged(def); }));
 
             // 14. CanOrderColumns
             if (def.HasOrderColumns)
-                AddCard(MakeSubPermCard("↕️ ترتيب وتخصيص أعمدة الجدول", "السماح للموظف بسحب وتغيير ترتيب وعرض الأعمدة في الجداول.", st.CanOrderColumns, v => { st.CanOrderColumns = v; OnSubPermChanged(def); }));
+                AddCard(MakeSubPermCard("ترتيب وتخصيص أعمدة الجدول", "السماح للموظف بسحب وتغيير ترتيب وعرض الأعمدة في الجداول.", st.CanOrderColumns, v => { st.CanOrderColumns = v; OnSubPermChanged(def); }));
 
             // 15. CanSellBelowCost
             if (def.HasSellBelowCost)
-                AddCard(MakeSubPermCard("⚠️ السماح بالبيع بأقل من سعر التكلفة", "السماح بإصدار الفواتير أو تعديل الأسعار والخصومات حتى لو نزل سعر البيع عن سعر التكلفة.", st.CanSellBelowCost, v => { st.CanSellBelowCost = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
+                AddCard(MakeSubPermCard("السماح بالبيع بأقل من سعر التكلفة", "السماح بإصدار الفواتير أو تعديل الأسعار والخصومات حتى لو نزل سعر البيع عن سعر التكلفة.", st.CanSellBelowCost, v => { st.CanSellBelowCost = v; OnSubPermChanged(def); }, Color.FromArgb(231, 76, 60)));
 
             pnlSubPerms.ResumeLayout();
         }
@@ -2296,7 +2293,7 @@ namespace ChickenDist.Forms
             var st = _permStates[def.Key];
             int total = CountAvailableSubPerms(def);
             int active = CountActiveSubPerms(def, st);
-            lblStatsBadge.Text = $"مفعلة ({active} من {total} صلاحيات) 🟢";
+            lblStatsBadge.Text = $"مفعلة ({active} من {total} صلاحيات)";
 
             foreach (DataGridViewRow r in dgScreens.Rows)
             {
@@ -2352,7 +2349,7 @@ namespace ChickenDist.Forms
             var st = _permStates[def.Key];
             int total = CountAvailableSubPerms(def);
             int active = CountActiveSubPerms(def, st);
-            row.Cells[2].Value = st.CanAccess ? $"{active}/{total} مفعلة" : "❌ مقفلة";
+            row.Cells[2].Value = st.CanAccess ? $"{active}/{total} مفعلة" : "مقفلة";
         }
 
         private void UpdateGlobalCounters()
@@ -2369,7 +2366,7 @@ namespace ChickenDist.Forms
                     }
                 }
             }
-            lblFooterStats.Text = $"📊 إجمالي الشاشات المسموحة: {allowed} من {total} | 🛡️ الصلاحيات الفرعية المفعلة: {subActive}";
+            lblFooterStats.Text = $"إجمالي الشاشات المسموحة: {allowed} من {total} | الصلاحيات الفرعية المفعلة: {subActive}";
         }
 
         private void ApplyPreset(string role)
@@ -2489,12 +2486,12 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                MessageBox.Show($"✅ تم حفظ وتطبيق صلاحيات الموظف ({_empName}) بنجاح!", "حفظ الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم حفظ وتطبيق صلاحيات الموظف ({_empName}) بنجاح!", "حفظ الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ حدث خطأ أثناء حفظ الصلاحيات:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("حدث خطأ أثناء حفظ الصلاحيات:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

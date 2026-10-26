@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -114,9 +114,9 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(txtName);
             y += 70;
 
-            btnNew = Theme.MakeButton("➕ إضافة", 195, y, 70, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("➕ حفظ", 105, y, 80, 32, Theme.Accent);
-            btnDelete = Theme.MakeButton("🗑️ حذف", 15, y, 80, 32, Color.FromArgb(140, 40, 40));
+            btnNew = Theme.MakeButton("إضافة", 195, y, 70, 32, Color.FromArgb(60, 100, 60));
+            btnSave = Theme.MakeButton("حفظ", 105, y, 80, 32, Theme.Accent);
+            btnDelete = Theme.MakeButton("حذف", 15, y, 80, 32, Color.FromArgb(140, 40, 40));
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
@@ -183,7 +183,7 @@ namespace ChickenDist.Forms
             txtCode.Text = dgItems.SelectedRows[0].Cells["Code"].Value?.ToString() ?? "";
             txtName.Text = dgItems.SelectedRows[0].Cells["Name"].Value?.ToString() ?? "";
             btnDelete.Enabled = true;
-            if (btnSave != null) btnSave.Text = "💾 حفظ";
+            if (btnSave != null) btnSave.Text = "حفظ";
         }
 
         private void ClearDetail()
@@ -192,7 +192,7 @@ namespace ChickenDist.Forms
             txtCode.Text = "تلقائي";
             txtName.Clear();
             btnDelete.Enabled = false;
-            if (btnSave != null) btnSave.Text = "➕ حفظ";
+            if (btnSave != null) btnSave.Text = "حفظ";
             txtName.Focus();
         }
 
@@ -207,14 +207,14 @@ namespace ChickenDist.Forms
             int id = LookupDAL.Save(_tableName, _idCol, _codeCol, _nameCol, _prefix, _selectedID, txtName.Text.Trim());
             if (id > 0)
             {
-                MessageBox.Show("✅ تم الحفظ بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم الحفظ بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 _selectedID = id;
                 LoadData();
                 ClearDetail();
             }
             else
             {
-                MessageBox.Show("❌ فشل الحفظ. قد يكون الاسم مكرراً.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل الحفظ. قد يكون الاسم مكرراً.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -232,7 +232,7 @@ namespace ChickenDist.Forms
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ فشل الحذف. قد يكون العنصر مستخدماً في النظام.\n" + ex.Message, "خطأ الحذف", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل الحذف. قد يكون العنصر مستخدماً في النظام.\n" + ex.Message, "خطأ الحذف", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -88,7 +88,7 @@ namespace ChickenDist.Forms
 
             var lblWTitle = new Label
             {
-                Text = "🏭 قائمة المخازن",
+                Text = "قائمة المخازن",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -186,7 +186,7 @@ namespace ChickenDist.Forms
 
             lblStockHeader = new Label
             {
-                Text = "📦 كميات المخزن",
+                Text = "كميات المخزن",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -224,7 +224,7 @@ namespace ChickenDist.Forms
 
             btnRefreshStock = new Button
             {
-                Text = "🔄 تحديث",
+                Text = "تحديث",
                 Size = new Size(80, 28),
                 Margin = new Padding(0, 0, 6, 0),
                 BackColor = Theme.Accent, 
@@ -238,7 +238,7 @@ namespace ChickenDist.Forms
 
             var btnLowStock = new Button
             {
-                Text = "⚠ عجز فقط",
+                Text = "عجز فقط",
                 Size = new Size(92, 28),
                 Margin = new Padding(0, 0, 6, 0),
                 BackColor = Color.FromArgb(170, 45, 45), 
@@ -343,7 +343,7 @@ namespace ChickenDist.Forms
 
             lblFormTitle = new Label
             {
-                Text = "➕ مخزن جديد",
+                Text = "مخزن جديد",
                 Dock = DockStyle.Top,
                 Height = 42,
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
@@ -419,7 +419,7 @@ namespace ChickenDist.Forms
             // ─── تيك نشط ───
             chkActive = new CheckBox
             {
-                Text = "✔  مخزن نشط",
+                Text = "مخزن نشط",
                 Dock = DockStyle.Top, Height = 36,
                 ForeColor = Theme.TextMain,
                 Checked = true,
@@ -434,9 +434,9 @@ namespace ChickenDist.Forms
                 BackColor = Color.Transparent,
                 Padding = new Padding(0, 6, 0, 0)
             };
-            btnNew    = ActionBtn("➕ إضافة",  Color.FromArgb(40, 120, 60));
-            btnSave   = ActionBtn("💾 حفظ",   Theme.Accent);
-            btnDelete = ActionBtn("⛔ إيقاف", Color.FromArgb(170, 45, 45));
+            btnNew    = ActionBtn("إضافة",  Color.FromArgb(40, 120, 60));
+            btnSave   = ActionBtn("حفظ",   Theme.Accent);
+            btnDelete = ActionBtn("إيقاف", Color.FromArgb(170, 45, 45));
 
             // نجعل الأزرار أكبر وأوضح
             btnNew.Size    = new Size(100, 36);
@@ -498,7 +498,7 @@ namespace ChickenDist.Forms
                     r["WarehouseID"],
                     name,
                     r["Location"],
-                    active ? "✓ نشط" : "✗ متوقف");
+                    active ? "نشط" : "متوقف");
 
                 if (!active)
                     dgWarehouses.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
@@ -506,7 +506,7 @@ namespace ChickenDist.Forms
         }
 
         // ══════════════════════════════════════════════════════
-        //  عند اختيار مخزن → تحميل بياناته + كمياته
+        //  عند اختيار مخزن تحميل بياناته + كمياته
         // ══════════════════════════════════════════════════════
         private void DgWarehouses_SelectionChanged(object sender, EventArgs e)
         {
@@ -525,15 +525,15 @@ namespace ChickenDist.Forms
                 txtLocation.Text = r["Location"].ToString();
                 txtNotes.Text    = r["Notes"].ToString();
                 chkActive.Checked = Convert.ToBoolean(r["IsActive"]);
-                lblFormTitle.Text = $"✏ تعديل: {txtName.Text}";
+                lblFormTitle.Text = $"تعديل: {txtName.Text}";
                 btnDelete.Enabled = (_selectedID != 1);
-                if (btnSave != null) btnSave.Text = "💾 حفظ";
+                if (btnSave != null) btnSave.Text = "حفظ";
             }
 
             // تحميل لوحة الكميات
             _currentWarehouseID   = _selectedID;
             _currentWarehouseName = selRow.Cells["WarehouseName"].Value?.ToString() ?? "";
-            lblStockHeader.Text   = $"📦 كميات المخزن: {_currentWarehouseName}";
+            lblStockHeader.Text   = $"كميات المخزن: {_currentWarehouseName}";
             txtProductSearch.Clear();
             pnlStock.Visible = true;
             LoadStock();
@@ -606,7 +606,7 @@ namespace ChickenDist.Forms
                     $"  إجمالي الأصناف: {totalProducts}  |" +
                     costPart +
                     $"  البيع: {totalSaleValue:N2} ج  |" +
-                    $"  🔴 عجز: {lowStockCount}";
+                    $"  عجز: {lowStockCount}";
             }
             catch (Exception ex)
             {
@@ -642,15 +642,15 @@ namespace ChickenDist.Forms
             txtName.Clear(); txtLocation.Clear(); txtNotes.Clear();
             chkActive.Checked = true;
             btnDelete.Enabled = false;
-            lblFormTitle.Text = "➕ مخزن جديد";
-            if (btnSave != null) btnSave.Text = "➕ حفظ";
+            lblFormTitle.Text = "مخزن جديد";
+            if (btnSave != null) btnSave.Text = "حفظ";
             txtName.Focus();
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (_selectedID == 0 && !Session.CanAdd("Warehouses")) { MessageBox.Show("⛔ ليس لديك صلاحية إضافة مخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (_selectedID > 0 && !Session.CanEdit("Warehouses")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل المخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID == 0 && !Session.CanAdd("Warehouses")) { MessageBox.Show("ليس لديك صلاحية إضافة مخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID > 0 && !Session.CanEdit("Warehouses")) { MessageBox.Show("ليس لديك صلاحية تعديل المخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
@@ -660,20 +660,20 @@ namespace ChickenDist.Forms
             int id = WarehouseDAL.Save(_selectedID, txtName.Text.Trim(), txtLocation.Text.Trim(), txtNotes.Text.Trim(), chkActive.Checked);
             if (id > 0)
             {
-                MessageBox.Show("✅ تم حفظ بيانات المخزن بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم حفظ بيانات المخزن بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 _selectedID = id;
                 LoadWarehouses();
                 ClearDetail();
                 pnlStock.Visible = false;
             }
             else
-                MessageBox.Show("❌ فشل حفظ المخزن.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل حفظ المخزن.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedID <= 1) return;
-            if (!Session.CanDelete("Warehouses")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف المخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanDelete("Warehouses")) { MessageBox.Show("ليس لديك صلاحية حذف المخازن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (MessageBox.Show("هل تريد إيقاف هذا المخزن؟\nلن تتمكن من استخدامه في العمليات الجديدة.",
                     "تأكيد الإيقاف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -90,7 +90,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "🏷️ كشك الاستعلام الذكي وفحص الأسعار";
+            this.Text = "كشك الاستعلام الذكي وفحص الأسعار";
             this.Size = new Size(1150, 760);
             this.MinimumSize = new Size(950, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -176,7 +176,7 @@ namespace ChickenDist.Forms
             // Fullscreen Button
             btnToggleFullscreen = new Button
             {
-                Text = _isFullscreen ? "🗗 نافذة" : "🗖 ملء الشاشة",
+                Text = _isFullscreen ? "نافذة" : "ملء الشاشة",
                 Size = new Size(115, 38),
                 BackColor = Color.FromArgb(51, 65, 85),     // Slate 700
                 ForeColor = Color.FromArgb(226, 232, 240),  // Slate 200
@@ -190,7 +190,7 @@ namespace ChickenDist.Forms
             // Close Button
             btnClose = new Button
             {
-                Text = "❌ إغلاق",
+                Text = "إغلاق",
                 Size = new Size(90, 38),
                 BackColor = Color.FromArgb(220, 38, 38),
                 ForeColor = Color.White,
@@ -233,7 +233,7 @@ namespace ChickenDist.Forms
             // Customer Warm Greeting Message (جملة حلوة مميزة للعميل)
             lblCustomerGreeting = new Label
             {
-                Text = "✨ نسعد دائماً بزيارتكم الكريمة.. نتشرف بخدمتكم ونتمنى لكم تجربة تسوق ممتعة ويوم سعيد 🌟",
+                Text = "نسعد دائماً بزيارتكم الكريمة.. نتشرف بخدمتكم ونتمنى لكم تجربة تسوق ممتعة ويوم سعيد",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(167, 243, 208),  // Emerald 200
                 Dock = DockStyle.Fill,
@@ -252,7 +252,7 @@ namespace ChickenDist.Forms
 
             lblCountdownText = new Label
             {
-                Text = "⏳ العودة للاستقبال بعد 12 ثانية...",
+                Text = "العودة للاستقبال بعد 12 ثانية...",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(148, 163, 184),  // Slate 400
                 Dock = DockStyle.Top,
@@ -273,7 +273,7 @@ namespace ChickenDist.Forms
 
             btnScanAnother = new Button
             {
-                Text = "🔍 فحص صنف آخر",
+                Text = "فحص صنف آخر",
                 Dock = DockStyle.Right,
                 Width = 155,
                 BackColor = Color.FromArgb(37, 99, 235),    // Blue 600
@@ -374,7 +374,7 @@ namespace ChickenDist.Forms
             // Badge Top
             var lblKioskBadge = new Label
             {
-                Text = "⚡ الاستعلام الفوري والمباشر عن الأسعار والخدمة الذاتية",
+                Text = "الاستعلام الفوري والمباشر عن الأسعار والخدمة الذاتية",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(248, 250, 252),   // Near White
                 BackColor = Color.FromArgb(37, 99, 235),     // Blue 600
@@ -410,7 +410,7 @@ namespace ChickenDist.Forms
             // Barcode ASCII Art Icon
             lblBarcodeArt = new Label
             {
-                Text = "║▌║█║▌│║▌║▌█║ ▌│║▌║▌║",
+                Text = "║║║│║║║ │║║║",
                 Font = new Font("Segoe UI", 26f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(148, 163, 184),  // Slate 400
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -421,7 +421,7 @@ namespace ChickenDist.Forms
             // Laser Beam Line
             lblScannerLaser = new Label
             {
-                Text = "━━━━━━━ 🔴 وجّه شعاع القارئ هنا 🔴 ━━━━━━━",
+                Text = "━━━━━━━ وجّه شعاع القارئ هنا ━━━━━━━",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(239, 68, 68),  // Laser Red
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -495,7 +495,7 @@ namespace ChickenDist.Forms
 
             btnManualSearch = new Button
             {
-                Text = "🔍 استعلام",
+                Text = "استعلام",
                 Dock = DockStyle.Left,
                 Width = 125,
                 BackColor = Color.FromArgb(37, 99, 235),     // Blue 600
@@ -567,7 +567,7 @@ namespace ChickenDist.Forms
             // Active Scanner Status Indicator (مكان اسكان الصنف حتى أثناء عرض الصنف)
             lblActiveScannerHint = new Label
             {
-                Text = "⚡ قارئ الباركود نشط الآن: يمكنك تمرير باركود أي صنف آخر فوراً للاستعلام في أي وقت",
+                Text = "قارئ الباركود نشط الآن: يمكنك تمرير باركود أي صنف آخر فوراً للاستعلام في أي وقت",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(167, 243, 208),  // Emerald 200
                 BackColor = Color.FromArgb(15, 23, 42),     // Deep Navy
@@ -585,10 +585,10 @@ namespace ChickenDist.Forms
                 Padding = new Padding(0, 3, 0, 0)
             };
 
-            lblBarcodeBadge = CreateBadge("🏷️ كود: ----", Color.FromArgb(15, 23, 42), Color.FromArgb(148, 163, 184));
-            lblCategoryBadge = CreateBadge("📂 القسم: ----", Color.FromArgb(15, 23, 42), Color.FromArgb(203, 213, 225));
-            lblShelfLocation = CreateBadge("📍 مكان الرف: ----", Color.FromArgb(30, 64, 115), Color.FromArgb(147, 197, 253));
-            lblStockStatus = CreateBadge("🟢 متوفر بالفرع", Color.FromArgb(6, 78, 59), Color.FromArgb(110, 231, 183));
+            lblBarcodeBadge = CreateBadge("كود: ----", Color.FromArgb(15, 23, 42), Color.FromArgb(148, 163, 184));
+            lblCategoryBadge = CreateBadge("القسم: ----", Color.FromArgb(15, 23, 42), Color.FromArgb(203, 213, 225));
+            lblShelfLocation = CreateBadge("مكان الرف: ----", Color.FromArgb(30, 64, 115), Color.FromArgb(147, 197, 253));
+            lblStockStatus = CreateBadge("متوفر بالفرع", Color.FromArgb(6, 78, 59), Color.FromArgb(110, 231, 183));
 
             pnlBadges.Controls.Add(lblBarcodeBadge);
             pnlBadges.Controls.Add(lblCategoryBadge);
@@ -679,7 +679,7 @@ namespace ChickenDist.Forms
 
             lblDiscountBadge = new Label
             {
-                Text = "🔥 وفر 0.00 ج (0% خصم)",
+                Text = "وفر 0.00 ج (0% خصم)",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 BackColor = Color.FromArgb(185, 28, 28),     // Crimson Red
@@ -716,7 +716,7 @@ namespace ChickenDist.Forms
 
             lblAlternativesTitle = new Label
             {
-                Text = "✨ بدائل متوفرة وخيارات اقتصادية في نفس القسم:",
+                Text = "بدائل متوفرة وخيارات اقتصادية في نفس القسم:",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(167, 243, 208),  // Emerald 200
                 Dock = DockStyle.Top,
@@ -808,7 +808,7 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    lblCountdownText.Text = $"⏳ العودة للاستقبال بعد {_countdownSeconds} ثانية...";
+                    lblCountdownText.Text = $"العودة للاستقبال بعد {_countdownSeconds} ثانية...";
                     prgResetCountdown.Value = Math.Max(0, Math.Min(100, (_countdownSeconds * 100) / 12));
                 }
             };
@@ -824,7 +824,7 @@ namespace ChickenDist.Forms
 
             // Footer in Standby Mode
             string compName = string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? "البرنامج الذكي" : AppConfig.CompanyName;
-            lblCustomerGreeting.Text = $"✨ أهلاً بكم في {compName}.. نسعد دائماً بخدمتكم ونتمنى لكم تجربة تسوق ممتعة 🌟";
+            lblCustomerGreeting.Text = $"أهلاً بكم في {compName}.. نسعد دائماً بخدمتكم ونتمنى لكم تجربة تسوق ممتعة";
             pnlCountdownWrap.Visible = false;
             btnScanAnother.Visible = false;
 
@@ -892,7 +892,7 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    MessageBox.Show($"❌ لم يتم العثور على صنف مطابق للباركود أو السيريال:\n({code})", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"لم يتم العثور على صنف مطابق للباركود أو السيريال:\n({code})", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     SwitchToStandby();
                 }
             }
@@ -942,32 +942,32 @@ namespace ChickenDist.Forms
 
             // Populate Badges & Serial Info
             string matchedImei = dr.Table.Columns.Contains("MatchedIMEI") ? dr["MatchedIMEI"]?.ToString() ?? "" : "";
-            string imeiPart = !string.IsNullOrWhiteSpace(matchedImei) ? $" | 📱 IMEI: {matchedImei}" : "";
+            string imeiPart = !string.IsNullOrWhiteSpace(matchedImei) ? $" | IMEI: {matchedImei}" : "";
             string supCode = "";
             if (AppConfig.BusinessType == "Mobiles" || !string.IsNullOrWhiteSpace(matchedImei))
             {
                 try { supCode = PurchaseDAL.GetProductSupplierInfo(productID, matchedImei).SupplierCode; } catch { }
             }
-            string supPart = !string.IsNullOrWhiteSpace(supCode) ? $" | 🏢 مورد: {supCode}" : "";
-            lblBarcodeBadge.Text = $"🏷️ كود: {prodCode}{imeiPart}{supPart}";
-            lblCategoryBadge.Text = string.IsNullOrWhiteSpace(catName) ? "📂 القسم: عام" : $"📂 {catName}";
-            lblShelfLocation.Text = string.IsNullOrWhiteSpace(shelfLoc) ? "📍 مكان الرف: غير محدد" : $"📍 مكان الرف: {shelfLoc}";
+            string supPart = !string.IsNullOrWhiteSpace(supCode) ? $" | مورد: {supCode}" : "";
+            lblBarcodeBadge.Text = $"كود: {prodCode}{imeiPart}{supPart}";
+            lblCategoryBadge.Text = string.IsNullOrWhiteSpace(catName) ? "القسم: عام" : $"{catName}";
+            lblShelfLocation.Text = string.IsNullOrWhiteSpace(shelfLoc) ? "مكان الرف: غير محدد" : $"مكان الرف: {shelfLoc}";
 
             if (totalStock > 5)
             {
-                lblStockStatus.Text = "🟢 متوفر بالفرع";
+                lblStockStatus.Text = "متوفر بالفرع";
                 lblStockStatus.BackColor = Color.FromArgb(6, 78, 59);
                 lblStockStatus.ForeColor = Color.FromArgb(74, 222, 128);
             }
             else if (totalStock > 0)
             {
-                lblStockStatus.Text = $"🟡 كمية محدودة ({totalStock:N0} {unit})";
+                lblStockStatus.Text = $"كمية محدودة ({totalStock:N0} {unit})";
                 lblStockStatus.BackColor = Color.FromArgb(113, 63, 18);
                 lblStockStatus.ForeColor = Color.FromArgb(253, 224, 71);
             }
             else
             {
-                lblStockStatus.Text = "🔴 غير متوفر حالياً بالمخزن";
+                lblStockStatus.Text = "غير متوفر حالياً بالمخزن";
                 lblStockStatus.BackColor = Color.FromArgb(136, 19, 55);
                 lblStockStatus.ForeColor = Color.FromArgb(251, 113, 133);
             }
@@ -990,7 +990,7 @@ namespace ChickenDist.Forms
                 decimal pct = (saved / origPrice) * 100m;
                 lblOriginalPrice.Text = $"السعر قبل الخصم: {origPrice:N2} ج.م";
                 lblOriginalPrice.Visible = true;
-                lblDiscountBadge.Text = $"🔥 وفر {saved:N2} ج.م ({pct:N0}% خصم)";
+                lblDiscountBadge.Text = $"وفر {saved:N2} ج.م ({pct:N0}% خصم)";
                 lblDiscountBadge.Visible = true;
             }
             else
@@ -1026,14 +1026,14 @@ namespace ChickenDist.Forms
             pnlProductDetails.Visible = true;
 
             // Footer in Product View (جملة مميزة + عداد العودة)
-            lblCustomerGreeting.Text = "✨ شكراً لثقتكم الغالية.. نتشرف بخدمتكم دائماً ونتمنى لكم تجربة تسوق ممتعة 🌟";
+            lblCustomerGreeting.Text = "شكراً لثقتكم الغالية.. نتشرف بخدمتكم دائماً ونتمنى لكم تجربة تسوق ممتعة";
             pnlCountdownWrap.Visible = true;
             btnScanAnother.Visible = true;
 
             // Start Countdown (12s)
             _countdownSeconds = 12;
             prgResetCountdown.Value = 100;
-            lblCountdownText.Text = "⏳ العودة للاستقبال بعد 12 ثانية...";
+            lblCountdownText.Text = "العودة للاستقبال بعد 12 ثانية...";
             _resetCountdownTimer.Start();
 
             this.ActiveControl = txtBarcodeScan;
@@ -1079,12 +1079,12 @@ namespace ChickenDist.Forms
 
             if (isOutOfStock)
             {
-                lblAlternativesTitle.Text = "⚠️ هذا الصنف غير متوفر حالياً! إليك أفضل البدائل المتاحة فوراً بالفرع:";
+                lblAlternativesTitle.Text = "هذا الصنف غير متوفر حالياً! إليك أفضل البدائل المتاحة فوراً بالفرع:";
                 lblAlternativesTitle.ForeColor = Color.FromArgb(252, 165, 165);
             }
             else
             {
-                lblAlternativesTitle.Text = "✨ بدائل متوفرة وخيارات اقتصادية أوفر في نفس القسم:";
+                lblAlternativesTitle.Text = "بدائل متوفرة وخيارات اقتصادية أوفر في نفس القسم:";
                 lblAlternativesTitle.ForeColor = Color.FromArgb(167, 243, 208);
             }
 
@@ -1187,7 +1187,7 @@ namespace ChickenDist.Forms
             };
             lblP.Click += onClick;
 
-            string stockText = stock > 0 ? "متوفر 🟢" : "غير متوفر 🔴";
+            string stockText = stock > 0 ? "متوفر" : "غير متوفر";
             if (diff > 0.01m) stockText += $" | أوفر {diff:N1} ج";
 
             var lblLoc = new Label
@@ -1215,7 +1215,7 @@ namespace ChickenDist.Forms
             {
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.WindowState = FormWindowState.Maximized;
-                btnToggleFullscreen.Text = "🗗 نافذة";
+                btnToggleFullscreen.Text = "نافذة";
             }
             else
             {
@@ -1223,7 +1223,7 @@ namespace ChickenDist.Forms
                 this.WindowState = FormWindowState.Normal;
                 this.Size = new Size(1150, 760);
                 this.CenterToScreen();
-                btnToggleFullscreen.Text = "🗖 ملء الشاشة";
+                btnToggleFullscreen.Text = "ملء الشاشة";
             }
         }
 

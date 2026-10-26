@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -729,7 +729,7 @@ namespace ChickenDist.Core
         {
             using (var passForm = new Form())
             {
-                passForm.Text = "🔒 تأكيد بصلاحية المسؤول (Admin)";
+                passForm.Text = "تأكيد بصلاحية المسؤول (Admin)";
                 passForm.Size = new Size(380, 210);
                 passForm.StartPosition = FormStartPosition.CenterParent;
                 passForm.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -749,7 +749,7 @@ namespace ChickenDist.Core
                 };
                 var lblHeader = new Label
                 {
-                    Text = string.IsNullOrWhiteSpace(reason) ? "🔒 يرجى إدخال كلمة مرور المسؤول:" : $"🔒 {reason}:",
+                    Text = string.IsNullOrWhiteSpace(reason) ? "يرجى إدخال كلمة مرور المسؤول:" : $"{reason}:",
                     Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(250, 204, 21), // Gold
                     Dock = DockStyle.Fill,
@@ -799,7 +799,7 @@ namespace ChickenDist.Core
 
                 var btnOk = new Button
                 {
-                    Text = "✅ تأكيد",
+                    Text = "تأكيد",
                     Size = new Size(100, 34),
                     Dock = DockStyle.Left,
                     FlatStyle = FlatStyle.Flat,
@@ -813,7 +813,7 @@ namespace ChickenDist.Core
 
                 var btnCancel = new Button
                 {
-                    Text = "❌ إلغاء",
+                    Text = "إلغاء",
                     Size = new Size(90, 34),
                     Dock = DockStyle.Right,
                     FlatStyle = FlatStyle.Flat,
@@ -843,7 +843,7 @@ namespace ChickenDist.Core
                     {
                         return true;
                     }
-                    MessageBox.Show(owner, "❌ كلمة المرور غير صحيحة! لا يمكنك تعديل أو تخصيص ترتيب الأعمدة.", "خطأ في التحقق", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(owner, "كلمة المرور غير صحيحة! لا يمكنك تعديل أو تخصيص ترتيب الأعمدة.", "خطأ في التحقق", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 return false;
             }
@@ -953,7 +953,7 @@ namespace ChickenDist.Core
             // Finance, Safes & Shifts
             "CashBox", "SafeAccounts", "ActualBalances", "DailyAccounts", "ReceiptVoucher", "FinancialPosition", "Reports", "Financials", "DailyClosing", "ShiftClose", "ShiftsHistory",
             
-            // Assets & Shareholders (🏢 الأصول والشركاء)
+            // Assets & Shareholders (الأصول والشركاء)
             "FixedAssets", "Shareholders",
             
             // Detailed Reports

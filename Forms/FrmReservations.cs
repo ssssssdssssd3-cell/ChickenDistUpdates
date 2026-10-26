@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -29,7 +29,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "📋 سجل وإدارة حجوزات الأصناف والطلبيات الخاصة";
+            this.Text = "سجل وإدارة حجوزات الأصناف والطلبيات الخاصة";
             this.Size = new Size(1180, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
 
-            var pnlTop = Theme.MakeTitleBar("📋 سجل وإدارة حجوزات الأصناف والطلبيات الخاصة", "متابعة حجوزات الأصناف وتعديلها، طباعة الإيصالات، تحويل الحجوزات لمبيعات، وتنبيهات توفير البضائع.");
+            var pnlTop = Theme.MakeTitleBar("سجل وإدارة حجوزات الأصناف والطلبيات الخاصة", "متابعة حجوزات الأصناف وتعديلها، طباعة الإيصالات، تحويل الحجوزات لمبيعات، وتنبيهات توفير البضائع.");
             this.Controls.Add(pnlTop);
 
             var pnlFilter = new Panel
@@ -49,7 +49,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 10, 10, 10)
             };
 
-            btnAdd = Theme.MakeButton("➕ حجز جديد", 10, 12, 110, 36, Theme.Success);
+            btnAdd = Theme.MakeButton("حجز جديد", 10, 12, 110, 36, Theme.Success);
             btnAdd.Click += (s, e) =>
             {
                 using (var dlg = new FrmAddReservation())
@@ -59,23 +59,23 @@ namespace ChickenDist.Forms
             };
             pnlFilter.Controls.Add(btnAdd);
 
-            btnEdit = Theme.MakeButton("✏️ تعديل الحجز", 125, 12, 115, 36, Color.FromArgb(41, 128, 185));
+            btnEdit = Theme.MakeButton("تعديل الحجز", 125, 12, 115, 36, Color.FromArgb(41, 128, 185));
             btnEdit.Click += BtnEdit_Click;
             pnlFilter.Controls.Add(btnEdit);
 
-            btnPrintReceipt = Theme.MakeButton("🖨️ طباعة الإيصال", 245, 12, 130, 36, Color.FromArgb(142, 68, 173));
+            btnPrintReceipt = Theme.MakeButton("طباعة الإيصال", 245, 12, 130, 36, Color.FromArgb(142, 68, 173));
             btnPrintReceipt.Click += BtnPrintReceipt_Click;
             pnlFilter.Controls.Add(btnPrintReceipt);
 
-            btnSetReady = Theme.MakeButton("🟢 جاهز للتسليم", 380, 12, 125, 36, Color.FromArgb(46, 204, 113));
+            btnSetReady = Theme.MakeButton("جاهز للتسليم", 380, 12, 125, 36, Color.FromArgb(46, 204, 113));
             btnSetReady.Click += BtnSetReady_Click;
             pnlFilter.Controls.Add(btnSetReady);
 
-            btnConvertToSale = Theme.MakeButton("🛒 تحويل لفاتورة مبيعات", 510, 12, 160, 36, Theme.Primary);
+            btnConvertToSale = Theme.MakeButton("تحويل لفاتورة مبيعات", 510, 12, 160, 36, Theme.Primary);
             btnConvertToSale.Click += BtnConvertToSale_Click;
             pnlFilter.Controls.Add(btnConvertToSale);
 
-            btnCancelRes = Theme.MakeButton("❌ إلغاء", 675, 12, 85, 36, Theme.Danger);
+            btnCancelRes = Theme.MakeButton("إلغاء", 675, 12, 85, 36, Theme.Danger);
             btnCancelRes.Click += BtnCancelRes_Click;
             pnlFilter.Controls.Add(btnCancelRes);
 
@@ -96,7 +96,7 @@ namespace ChickenDist.Forms
             cboStatusFilter.SelectedIndexChanged += (s, e) => LoadReservations();
             pnlFilter.Controls.Add(cboStatusFilter);
 
-            var lblSearch = new Label { Text = "🔍 بحث:", Location = new Point(930, 20), AutoSize = true, ForeColor = Theme.TextMain };
+            var lblSearch = new Label { Text = "بحث:", Location = new Point(930, 20), AutoSize = true, ForeColor = Theme.TextMain };
             pnlFilter.Controls.Add(lblSearch);
 
             txtSearch = new TextBox
@@ -110,7 +110,7 @@ namespace ChickenDist.Forms
             txtSearch.TextChanged += (s, e) => LoadReservations();
             pnlFilter.Controls.Add(txtSearch);
 
-            btnRefresh = Theme.MakeButton("🔄", 735, 15, 40, 36, Color.FromArgb(70, 80, 95));
+            btnRefresh = Theme.MakeButton("تحديث", 735, 15, 40, 36, Color.FromArgb(70, 80, 95));
             btnRefresh.Click += (s, e) => LoadReservations();
             pnlFilter.Controls.Add(btnRefresh);
 
@@ -246,7 +246,7 @@ namespace ChickenDist.Forms
 
         private void BtnEdit_Click(object sender, EventArgs e)
         {
-            if (!Session.CanEdit("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل الحجوزات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanEdit("Reservations")) { MessageBox.Show("ليس لديك صلاحية تعديل الحجوزات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (dgReservations.SelectedRows.Count == 0)
             {
                 MessageBox.Show("يرجى تحديد فاتورة الحجز المراد تعديلها من الجدول", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -266,7 +266,7 @@ namespace ChickenDist.Forms
         private void BtnSetReady_Click(object sender, EventArgs e)
         {
             if (dgReservations.SelectedRows.Count == 0) return;
-            if (!Session.CanEdit("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية تحديث حالة الحجوز.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanEdit("Reservations")) { MessageBox.Show("ليس لديك صلاحية تحديث حالة الحجوز.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int id = Convert.ToInt32(dgReservations.SelectedRows[0].Cells["ReservationID"].Value);
             try
             {
@@ -283,7 +283,7 @@ namespace ChickenDist.Forms
         private void BtnCancelRes_Click(object sender, EventArgs e)
         {
             if (dgReservations.SelectedRows.Count == 0) return;
-            if (!Session.CanDelete("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية إلغاء الحجوزات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanDelete("Reservations")) { MessageBox.Show("ليس لديك صلاحية إلغاء الحجوزات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int id = Convert.ToInt32(dgReservations.SelectedRows[0].Cells["ReservationID"].Value);
 
             if (MessageBox.Show("هل أنت تأكد من إلغاء هذا الحجز؟", "تأكيد الإلغاء", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
@@ -304,7 +304,7 @@ namespace ChickenDist.Forms
         private void BtnConvertToSale_Click(object sender, EventArgs e)
         {
             if (dgReservations.SelectedRows.Count == 0) return;
-            if (!Session.CanEdit("Reservations")) { MessageBox.Show("⛔ ليس لديك صلاحية تحويل الحجز لفاتورة مبيعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanEdit("Reservations")) { MessageBox.Show("ليس لديك صلاحية تحويل الحجز لفاتورة مبيعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int id = Convert.ToInt32(dgReservations.SelectedRows[0].Cells["ReservationID"].Value);
 
             var dt = DbHelper.Query("SELECT * FROM CustomerReservations WHERE ReservationID=@id", DbHelper.P("@id", id));
@@ -350,7 +350,7 @@ namespace ChickenDist.Forms
 
                     if (saleID <= 0)
                     {
-                        MessageBox.Show("❌ حدث خطأ أثناء إنشاء فاتورة المبيعات الخاصة بالحجز.", "خطأ في عملية البيع", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("حدث خطأ أثناء إنشاء فاتورة المبيعات الخاصة بالحجز.", "خطأ في عملية البيع", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
 
@@ -460,7 +460,7 @@ namespace ChickenDist.Forms
                         // Header
                         g.DrawString(AppConfig.CompanyName ?? "المحل التجاري", fontTitle, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 30), sfCenter);
                         y += 30;
-                        g.DrawString("📋 إيصال حجز صنف / طلبية عميل", fontHeader, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 25), sfCenter);
+                        g.DrawString("إيصال حجز صنف / طلبية عميل", fontHeader, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 25), sfCenter);
                         y += 30;
 
                         g.DrawLine(Pens.Black, leftMargin, y, rightMargin, y);
@@ -547,7 +547,7 @@ namespace ChickenDist.Forms
                             y += 25;
                         }
 
-                        g.DrawString("شكراً لتعاملكم معنا 💖", fontBold, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 25), sfCenter);
+                        g.DrawString("شكراً لتعاملكم معنا", fontBold, Brushes.Black, new RectangleF(leftMargin, y, contentWidth, 25), sfCenter);
                     };
 
                     using (var dlg = new PrintPreviewDialog { Document = pd, Width = 800, Height = 600, StartPosition = FormStartPosition.CenterParent })

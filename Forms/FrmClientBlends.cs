@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -50,7 +50,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = $"☕ توليفات العميل: {ClientName}";
+            this.Text = $"توليفات العميل: {ClientName}";
             this.Size = new Size(920, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -62,14 +62,14 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── عنوان ──
-            var pnlTop = Theme.MakeTitleBar($"☕ إدارة توليفات العميل: {ClientName}",
+            var pnlTop = Theme.MakeTitleBar($"إدارة توليفات العميل: {ClientName}",
                 "أضف أو عدّل التوليفات والمقادير المخصصة لهذا العميل، ثم ادرجها في الفاتورة مباشرة");
             this.Controls.Add(pnlTop);
 
             // ── قائمة التوليفات (يسار) ──
             var lblListTitle = new Label
             {
-                Text = "📋 قائمة التوليفات المحفوظة:",
+                Text = "قائمة التوليفات المحفوظة:",
                 Location = new Point(490, 80),
                 Size = new Size(400, 22),
                 ForeColor = Theme.Accent,
@@ -120,12 +120,12 @@ namespace ChickenDist.Forms
             this.Controls.Add(dgBlends);
 
             // ── أزرار القائمة ──
-            btnInsertToInvoice = Theme.MakeButton("✅ إدراج في الفاتورة (F5)", 490, 610, 240, 36, Theme.Success);
+            btnInsertToInvoice = Theme.MakeButton("إدراج في الفاتورة (F5)", 490, 610, 240, 36, Theme.Success);
             btnInsertToInvoice.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnInsertToInvoice.Click += (s, e) => InsertSelectedBlendToInvoice();
             this.Controls.Add(btnInsertToInvoice);
 
-            var btnClose = Theme.MakeButton("❌ إغلاق", 742, 610, 148, 36, Color.FromArgb(100, 110, 120));
+            var btnClose = Theme.MakeButton("إغلاق", 742, 610, 148, 36, Color.FromArgb(100, 110, 120));
             btnClose.Click += (s, e) => this.Close();
             this.Controls.Add(btnClose);
 
@@ -137,7 +137,7 @@ namespace ChickenDist.Forms
 
             var lblFormTitle = new Label
             {
-                Text = "✏️ إضافة / تعديل توليفة:",
+                Text = "إضافة / تعديل توليفة:",
                 Location = new Point(lx, fy),
                 Size = new Size(fw, 22),
                 ForeColor = Theme.Accent,
@@ -166,7 +166,7 @@ namespace ChickenDist.Forms
                 Text = "-- اختر الصنف --"
             };
             this.Controls.Add(lblBaseProduct);
-            btnBaseProduct = Theme.MakeButton("🔍 اختيار", lx + fw - 115, fy + 22, 110, fh, Theme.Accent);
+            btnBaseProduct = Theme.MakeButton("اختيار", lx + fw - 115, fy + 22, 110, fh, Theme.Accent);
             btnBaseProduct.Click += BtnBaseProduct_Click;
             this.Controls.Add(btnBaseProduct);
             fy += 60;
@@ -199,7 +199,7 @@ namespace ChickenDist.Forms
             fy += 60;
 
             // تفاصيل المقادير — أهم حقل
-            AddLabel("☕ مقادير التوليفة (كل مكوّن في سطر — جم ونوع):", lx, fy);
+            AddLabel("مقادير التوليفة (كل مكوّن في سطر — جم ونوع):", lx, fy);
             txtRecipeDetails = new TextBox
             {
                 Location = new Point(lx, fy + 22),
@@ -223,7 +223,7 @@ namespace ChickenDist.Forms
             // التوليفة المفضلة
             chkIsDefault = new CheckBox
             {
-                Text = "⭐ تعيين كالتوليفة المفضلة لهذا العميل",
+                Text = "تعيين كالتوليفة المفضلة لهذا العميل",
                 Location = new Point(lx, fy),
                 Size = new Size(fw, 26),
                 ForeColor = Color.Gold,
@@ -233,16 +233,16 @@ namespace ChickenDist.Forms
             fy += 38;
 
             // أزرار النموذج
-            btnNew = Theme.MakeButton("➕ جديد", lx, fy, 100, 36, Theme.Primary);
+            btnNew = Theme.MakeButton("جديد", lx, fy, 100, 36, Theme.Primary);
             btnNew.Click += (s, e) => ClearForm();
             this.Controls.Add(btnNew);
 
-            btnSave = Theme.MakeButton("💾 حفظ التوليفة", lx + 108, fy, 170, 36, Theme.Success);
+            btnSave = Theme.MakeButton("حفظ التوليفة", lx + 108, fy, 170, 36, Theme.Success);
             btnSave.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
 
-            btnDelete = Theme.MakeButton("🗑 حذف", lx + 286, fy, 100, 36, Color.FromArgb(192, 57, 43));
+            btnDelete = Theme.MakeButton("حذف", lx + 286, fy, 100, 36, Color.FromArgb(192, 57, 43));
             btnDelete.Click += BtnDelete_Click;
             btnDelete.Enabled = false;
             this.Controls.Add(btnDelete);
@@ -332,7 +332,7 @@ namespace ChickenDist.Forms
             }
         }
 
-        // ── تحديد توليفة من القائمة → تحميلها في النموذج ──
+        // ── تحديد توليفة من القائمة تحميلها في النموذج ──
         private void DgBlends_SelectionChanged(object sender, EventArgs e)
         {
             if (dgBlends.SelectedRows.Count == 0) return;
@@ -470,7 +470,7 @@ namespace ChickenDist.Forms
 
                 LoadBlends();
                 ClearForm();
-                MessageBox.Show("✅ تم حفظ التوليفة بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم حفظ التوليفة بنجاح!", "تم", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {

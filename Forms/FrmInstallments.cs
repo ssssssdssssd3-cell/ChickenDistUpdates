@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -86,11 +86,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(10, 5, 10, 5)
             };
             
-            pnlDashboard.Controls.Add(MakeMetricCard("💰 إجمالي المتبقي للتحصيل", out lblRemainingVal, Theme.Accent));
-            pnlDashboard.Controls.Add(MakeMetricCard("📋 عقود التقسيط النشطة", out lblActiveCount, Color.FromArgb(52, 152, 219)));
-            pnlDashboard.Controls.Add(MakeMetricCard("🔔 أقساط مستحقة اليوم", out lblDueTodayVal, Theme.Primary));
-            pnlDashboard.Controls.Add(MakeMetricCard("⚠️ الأقساط المتأخرة", out lblOverdueVal, Theme.Danger));
-            pnlDashboard.Controls.Add(MakeMetricCard("💵 تحصيلات اليوم الفعلي", out lblCollectedTodayVal, Theme.Success));
+            pnlDashboard.Controls.Add(MakeMetricCard("إجمالي المتبقي للتحصيل", out lblRemainingVal, Theme.Accent));
+            pnlDashboard.Controls.Add(MakeMetricCard("عقود التقسيط النشطة", out lblActiveCount, Color.FromArgb(52, 152, 219)));
+            pnlDashboard.Controls.Add(MakeMetricCard("أقساط مستحقة اليوم", out lblDueTodayVal, Theme.Primary));
+            pnlDashboard.Controls.Add(MakeMetricCard("الأقساط المتأخرة", out lblOverdueVal, Theme.Danger));
+            pnlDashboard.Controls.Add(MakeMetricCard("تحصيلات اليوم الفعلي", out lblCollectedTodayVal, Theme.Success));
 
             mainTbl.Controls.Add(pnlDashboard, 0, 0);
 
@@ -152,7 +152,7 @@ namespace ChickenDist.Forms
 
             var btnSearchClient = new Button
             {
-                Text = "🔍",
+                Text = "بحث",
                 Size = new Size(34, 26),
                 Font = Theme.FontBold,
                 FlatStyle = FlatStyle.Flat,
@@ -207,19 +207,19 @@ namespace ChickenDist.Forms
                 BorderStyle = BorderStyle.FixedSingle
             };
 
-            btnSearch = Theme.MakeButton("🔍 بحث", 0, 0, 90, 28, Theme.Primary);
+            btnSearch = Theme.MakeButton("بحث", 0, 0, 90, 28, Theme.Primary);
             btnSearch.Margin = new Padding(6, 2, 4, 2);
             btnSearch.Click += (s, e) => { _currentPage = 1; SearchContracts(); };
 
-            btnReset = Theme.MakeButton("🔄 إعادة تعيين", 0, 0, 100, 28, Color.FromArgb(100, 100, 100));
+            btnReset = Theme.MakeButton("إعادة تعيين", 0, 0, 100, 28, Color.FromArgb(100, 100, 100));
             btnReset.Margin = new Padding(4, 2, 4, 2);
             btnReset.Click += BtnReset_Click;
 
-            btnTopDebtors = Theme.MakeButton("📊 أعلى المدينين", 0, 0, 120, 28, Color.FromArgb(120, 120, 80));
+            btnTopDebtors = Theme.MakeButton("أعلى المدينين", 0, 0, 120, 28, Color.FromArgb(120, 120, 80));
             btnTopDebtors.Margin = new Padding(4, 2, 4, 2);
             btnTopDebtors.Click += (s, e) => new FrmTopDebtors().ShowDialog();
 
-            var btnNewDebtSchedule = Theme.MakeButton("➕ تقسيط مديونية عميل", 0, 0, 150, 28, Theme.Success);
+            var btnNewDebtSchedule = Theme.MakeButton("تقسيط مديونية عميل", 0, 0, 150, 28, Theme.Success);
             btnNewDebtSchedule.Margin = new Padding(4, 2, 4, 2);
             btnNewDebtSchedule.Click += (s, e) =>
             {
@@ -309,12 +309,12 @@ namespace ChickenDist.Forms
             pnlPagination.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));  // lblPageInfo
             pnlPagination.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            btnPrevPage = Theme.MakeButton("السابق ◀", Color.FromArgb(70, 70, 70));
+            btnPrevPage = Theme.MakeButton("السابق", Color.FromArgb(70, 70, 70));
             btnPrevPage.Dock = DockStyle.Fill;
             btnPrevPage.Margin = new Padding(2);
             btnPrevPage.Click += (s, e) => { if (_currentPage > 1) { _currentPage--; SearchContracts(); } };
 
-            btnNextPage = Theme.MakeButton("▶ التالي", Color.FromArgb(70, 70, 70));
+            btnNextPage = Theme.MakeButton("التالي", Color.FromArgb(70, 70, 70));
             btnNextPage.Dock = DockStyle.Fill;
             btnNextPage.Margin = new Padding(2);
             btnNextPage.Click += (s, e) => { if (_currentPage < _totalPages) { _currentPage++; SearchContracts(); } };
@@ -383,10 +383,10 @@ namespace ChickenDist.Forms
 
             // Context Menu for right-clicking schedule rows
             var ctxSchedule = new ContextMenuStrip();
-            var miCollect = new ToolStripMenuItem("💵 سداد هذا القسط", null, (s, e) => BtnCollectSingle_Click(s, e));
-            var miPrint = new ToolStripMenuItem("🖨️ طباعة إيصال السداد", null, (s, e) => BtnPrintReceipt_Click(s, e));
-            var miWAText = new ToolStripMenuItem("💬 إرسال إيصال واتساب (نص)", null, (s, e) => SendWhatsAppForSelectedSchedule(false));
-            var miWAImage = new ToolStripMenuItem("🖼️ إرسال إيصال واتساب (صورة)", null, (s, e) => SendWhatsAppForSelectedSchedule(true));
+            var miCollect = new ToolStripMenuItem("سداد هذا القسط", null, (s, e) => BtnCollectSingle_Click(s, e));
+            var miPrint = new ToolStripMenuItem("طباعة إيصال السداد", null, (s, e) => BtnPrintReceipt_Click(s, e));
+            var miWAText = new ToolStripMenuItem("إرسال إيصال واتساب (نص)", null, (s, e) => SendWhatsAppForSelectedSchedule(false));
+            var miWAImage = new ToolStripMenuItem("إرسال إيصال واتساب (صورة)", null, (s, e) => SendWhatsAppForSelectedSchedule(true));
             ctxSchedule.Items.AddRange(new ToolStripItem[] { miCollect, new ToolStripSeparator(), miPrint, miWAText, miWAImage });
             dgSchedule.ContextMenuStrip = ctxSchedule;
 
@@ -409,42 +409,42 @@ namespace ChickenDist.Forms
             pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             pnlActions.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
-            btnCollectSingle = Theme.MakeButton("💵 سداد قسط", Theme.Success);
+            btnCollectSingle = Theme.MakeButton("سداد قسط", Theme.Success);
             btnCollectSingle.Dock = DockStyle.Fill;
             btnCollectSingle.Margin = new Padding(2);
             btnCollectSingle.Click += BtnCollectSingle_Click;
 
-            btnCollectAmount = Theme.MakeButton("💰 تحصيل دفعة", Theme.Accent);
+            btnCollectAmount = Theme.MakeButton("تحصيل دفعة", Theme.Accent);
             btnCollectAmount.Dock = DockStyle.Fill;
             btnCollectAmount.Margin = new Padding(2);
             btnCollectAmount.Click += BtnCollectAmount_Click;
 
-            btnEarlyPayoff = Theme.MakeButton("⚡ سداد مبكر", Color.FromArgb(160, 50, 160));
+            btnEarlyPayoff = Theme.MakeButton("سداد مبكر", Color.FromArgb(160, 50, 160));
             btnEarlyPayoff.Dock = DockStyle.Fill;
             btnEarlyPayoff.Margin = new Padding(2);
             btnEarlyPayoff.Click += BtnEarlyPayoff_Click;
 
-            btnPrintReceipt = Theme.MakeButton("🖨️ طباعة إيصال", Color.FromArgb(52, 152, 219));
+            btnPrintReceipt = Theme.MakeButton("طباعة إيصال", Color.FromArgb(52, 152, 219));
             btnPrintReceipt.Dock = DockStyle.Fill;
             btnPrintReceipt.Margin = new Padding(2);
             btnPrintReceipt.Click += BtnPrintReceipt_Click;
 
-            btnReschedule = Theme.MakeButton("📅 إعادة جدولة", Theme.Primary);
+            btnReschedule = Theme.MakeButton("إعادة جدولة", Theme.Primary);
             btnReschedule.Dock = DockStyle.Fill;
             btnReschedule.Margin = new Padding(2);
             btnReschedule.Click += BtnReschedule_Click;
 
-            btnCancelContract = Theme.MakeButton("❌ إلغاء العقد", Theme.Danger);
+            btnCancelContract = Theme.MakeButton("إلغاء العقد", Theme.Danger);
             btnCancelContract.Dock = DockStyle.Fill;
             btnCancelContract.Margin = new Padding(2);
             btnCancelContract.Click += BtnCancelContract_Click;
 
-            btnAuditLog = Theme.MakeButton("🔐 سجل التدقيق", Color.FromArgb(120, 120, 80));
+            btnAuditLog = Theme.MakeButton("سجل التدقيق", Color.FromArgb(120, 120, 80));
             btnAuditLog.Dock = DockStyle.Fill;
             btnAuditLog.Margin = new Padding(2);
             btnAuditLog.Click += BtnAuditLog_Click;
 
-            btnSendWhatsApp = Theme.MakeButton("📱 إرسال واتساب", Color.FromArgb(37, 211, 102));
+            btnSendWhatsApp = Theme.MakeButton("إرسال واتساب", Color.FromArgb(37, 211, 102));
             btnSendWhatsApp.Dock = DockStyle.Fill;
             btnSendWhatsApp.Margin = new Padding(2);
             btnSendWhatsApp.Click += BtnSendWhatsApp_Click;
@@ -724,7 +724,7 @@ namespace ChickenDist.Forms
         private void BtnCollectSingle_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
-            if (!Session.CanAdd("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية تحصيل الأقساط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("Installments")) { MessageBox.Show("ليس لديك صلاحية تحصيل الأقساط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (dgSchedule.SelectedRows.Count == 0)
             {
                 MessageBox.Show("من فضلك اختر القسط المستحق المطلوب سداده من جدول الأقساط أولاً.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -761,7 +761,7 @@ namespace ChickenDist.Forms
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("❌ فشل التحصيل: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل التحصيل: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -770,7 +770,7 @@ namespace ChickenDist.Forms
         private void BtnCollectAmount_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
-            if (!Session.CanAdd("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية تحصيل دفعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("Installments")) { MessageBox.Show("ليس لديك صلاحية تحصيل دفعات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             // Get total remaining for contract
             decimal remTotal = 0m;
@@ -802,7 +802,7 @@ namespace ChickenDist.Forms
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("❌ فشل التحصيل: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل التحصيل: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -811,7 +811,7 @@ namespace ChickenDist.Forms
         private void BtnEarlyPayoff_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
-            if (!Session.CanAdd("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية إجراء سداد مبكر.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("Installments")) { MessageBox.Show("ليس لديك صلاحية إجراء سداد مبكر.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             // Get remaining sum
             decimal remaining = 0m;
@@ -956,7 +956,7 @@ namespace ChickenDist.Forms
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("❌ فشل إجراء السداد المبكر: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل إجراء السداد المبكر: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -1030,7 +1030,7 @@ namespace ChickenDist.Forms
         private void BtnReschedule_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
-            if (!Session.CanEdit("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية إعادة جدولة الأقساط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanEdit("Installments")) { MessageBox.Show("ليس لديك صلاحية إعادة جدولة الأقساط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             DataTable dt = InstallmentDAL.GetContractSchedule(_selectedContractID);
             List<InstallmentScheduleDTO> list = new List<InstallmentScheduleDTO>();
@@ -1069,13 +1069,13 @@ namespace ChickenDist.Forms
                         bool ok = InstallmentDAL.RescheduleInstallments(_selectedContractID, frm.UpdatedSchedule);
                         if (ok)
                         {
-                            MessageBox.Show("✅ تم إعادة جدولة تواريخ استحقاق الأقساط بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("تم إعادة جدولة تواريخ استحقاق الأقساط بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             SearchContracts();
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("❌ فشل إعادة الجدولة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل إعادة الجدولة: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -1084,16 +1084,16 @@ namespace ChickenDist.Forms
         private void BtnCancelContract_Click(object sender, EventArgs e)
         {
             if (_selectedContractID == 0) return;
-            if (!Session.CanDelete("Installments")) { MessageBox.Show("⛔ ليس لديك صلاحية إلغاء عقود التقسيط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanDelete("Installments")) { MessageBox.Show("ليس لديك صلاحية إلغاء عقود التقسيط.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             // التحقق من وجود دفعات مسجلة
             if (InstallmentDAL.HasPaymentsCollected(_selectedContractID))
             {
-                MessageBox.Show("❌ يمنع إلغاء أو حذف هذا العقد لوجود تحصيلات وأقساط مسددة مسجلة عليه.\nيُسمح فقط بإلغاء العقود غير المدفوعة أو إرجاع البضاعة عبر فاتورة مرتجع.", "إلغاء غير مسموح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                MessageBox.Show("يمنع إلغاء أو حذف هذا العقد لوجود تحصيلات وأقساط مسددة مسجلة عليه.\nيُسمح فقط بإلغاء العقود غير المدفوعة أو إرجاع البضاعة عبر فاتورة مرتجع.", "إلغاء غير مسموح", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                 return;
             }
 
-            DialogResult confirm = MessageBox.Show("⚠️ هل أنت متأكد من إلغاء هذا العقد بالكامل؟\nسيؤدي ذلك إلى توليد قيود عكسية وتصفير المديونية وإلغاء الأقساط المتبقية.", "تأكيد الإلغاء", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            DialogResult confirm = MessageBox.Show("هل أنت متأكد من إلغاء هذا العقد بالكامل؟\nسيؤدي ذلك إلى توليد قيود عكسية وتصفير المديونية وإلغاء الأقساط المتبقية.", "تأكيد الإلغاء", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirm == DialogResult.Yes)
             {
                 string reason = InputBoxHelper.Show("من فضلك أدخل سبب الإلغاء:", "سبب إلغاء العقد", "إلغاء بطلب من العميل");
@@ -1104,14 +1104,14 @@ namespace ChickenDist.Forms
                     bool ok = InstallmentDAL.CancelContract(_selectedContractID, reason);
                     if (ok)
                     {
-                        MessageBox.Show("✅ تم إلغاء عقد التقسيط وتصفير جدول الأقساط وعكس القيود بنجاح.", "تم الإلغاء", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم إلغاء عقد التقسيط وتصفير جدول الأقساط وعكس القيود بنجاح.", "تم الإلغاء", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadDashboard();
                         SearchContracts();
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ فشل الإلغاء: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل الإلغاء: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -1206,7 +1206,7 @@ namespace ChickenDist.Forms
             this.Controls.AddRange(new Control[] { lblNotes, txtNotes });
 
             y += 50;
-            btnOk = Theme.MakeButton("💾 سداد", 200, y, 100, 30, Theme.Success);
+            btnOk = Theme.MakeButton("سداد", 200, y, 100, 30, Theme.Success);
             btnOk.Click += (s, e) =>
             {
                 CollectedAmount = nudAmount.Value;
@@ -1324,7 +1324,7 @@ namespace ChickenDist.Forms
             this.Controls.AddRange(new Control[] { lblMethod, cboMethod });
 
             y += 50;
-            btnOk = Theme.MakeButton("💾 إغلاق العقد", 230, y, 110, 30, Theme.Success);
+            btnOk = Theme.MakeButton("إغلاق العقد", 230, y, 110, 30, Theme.Success);
             btnOk.Click += (s, e) =>
             {
                 WaiverAmount = nudWaiver.Value;
@@ -1375,7 +1375,7 @@ namespace ChickenDist.Forms
 
             var lblInfo = new Label
             {
-                Text = "💡 يمكنك النقر المزدوج على خانة تاريخ الاستحقاق لتغيير تاريخ السداد.",
+                Text = "يمكنك النقر المزدوج على خانة تاريخ الاستحقاق لتغيير تاريخ السداد.",
                 Location = new Point(15, 10),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(100, 180, 100),
@@ -1421,7 +1421,7 @@ namespace ChickenDist.Forms
             this.Controls.Add(dgReschedule);
 
             int y = 310;
-            btnOk = Theme.MakeButton("💾 حفظ التواريخ المحدثة", 230, y, 180, 32, Theme.Success);
+            btnOk = Theme.MakeButton("حفظ التواريخ المحدثة", 230, y, 180, 32, Theme.Success);
             btnOk.Click += BtnOk_Click;
             btnCancel = Theme.MakeButton("إلغاء", 120, y, 100, 32, Color.FromArgb(100, 100, 100));
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };

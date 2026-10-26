@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -47,7 +47,7 @@ namespace ChickenDist.Forms
 
             var lblHeader = new Label
             {
-                Text = $"✅ {title}\nالطرف: {partyName}   |   المبلغ: {amount:N2} ج",
+                Text = $"{title}\nالطرف: {partyName}   |   المبلغ: {amount:N2} ج",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
@@ -83,25 +83,25 @@ namespace ChickenDist.Forms
             tblBtns.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             tblBtns.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
-            var btnReceipt = Theme.MakeButton("🧾 طباعة سند ريسيت (80mm)", 0, 0, 0, 0, Theme.Primary);
+            var btnReceipt = Theme.MakeButton("طباعة سند ريسيت (80mm)", 0, 0, 0, 0, Theme.Primary);
             btnReceipt.Dock = DockStyle.Fill;
             btnReceipt.Margin = new Padding(6);
             btnReceipt.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnReceipt.Click += (s, e) => { _onPrintReceipt?.Invoke(); };
 
-            var btnA4 = Theme.MakeButton("📄 طباعة سند (A4 / A5)", 0, 0, 0, 0, Color.FromArgb(88, 58, 148));
+            var btnA4 = Theme.MakeButton("طباعة سند (A4 / A5)", 0, 0, 0, 0, Color.FromArgb(88, 58, 148));
             btnA4.Dock = DockStyle.Fill;
             btnA4.Margin = new Padding(6);
             btnA4.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnA4.Click += (s, e) => { _onPrintA4?.Invoke(); };
 
-            var btnWAText = Theme.MakeButton("💬 إرسال واتساب (نص)", 0, 0, 0, 0, Color.FromArgb(37, 211, 102));
+            var btnWAText = Theme.MakeButton("إرسال واتساب (نص)", 0, 0, 0, 0, Color.FromArgb(37, 211, 102));
             btnWAText.Dock = DockStyle.Fill;
             btnWAText.Margin = new Padding(6);
             btnWAText.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnWAText.Click += (s, e) => { _onSendWAText?.Invoke(); };
 
-            var btnWAImage = Theme.MakeButton("🖼️ إرسال واتساب (صورة)", 0, 0, 0, 0, Color.FromArgb(18, 140, 126));
+            var btnWAImage = Theme.MakeButton("إرسال واتساب (صورة)", 0, 0, 0, 0, Color.FromArgb(18, 140, 126));
             btnWAImage.Dock = DockStyle.Fill;
             btnWAImage.Margin = new Padding(6);
             btnWAImage.Font = new Font("Segoe UI", 10f, FontStyle.Bold);

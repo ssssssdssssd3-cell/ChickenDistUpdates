@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Net.Http;
@@ -479,7 +479,7 @@ self.addEventListener('fetch', (event) => {
 
                 bool ok = await PushLiveStatsToFirebaseAsync(projectId);
                 string statusMsg = ok 
-                    ? $"تم التزامن بنجاح مع Firebase 🔥 ({projectId})" 
+                    ? $"تم التزامن بنجاح مع Firebase ({projectId})" 
                     : "فشل التزامن، يرجى التحقق من اتصال الإنترنت ومشروع Firebase";
 
                 DbHelper.Execute(@"
@@ -1237,7 +1237,7 @@ self.addEventListener('fetch', (event) => {
                 {
                     try
                     {
-                        string statusMsg = $"متصل بنجاح 🔥 ({DateTime.Now:yyyy-MM-dd HH:mm:ss})";
+                        string statusMsg = $"متصل بنجاح ({DateTime.Now:yyyy-MM-dd HH:mm:ss})";
                         DbHelper.Execute(@"
                             UPDATE CloudSyncSettings 
                             SET LastSyncDate = GETDATE(), LastSyncStatus = @status 
@@ -2028,7 +2028,7 @@ self.addEventListener('fetch', (event) => {
                     decimal voucherDiscount = GetDictDecimal(orderObj, "VoucherDiscount", 0m);
                     if (!string.IsNullOrEmpty(voucherCode) && voucherDiscount > 0)
                     {
-                        string voucherTag = $"[🎟️ بون خصم: {voucherCode} (-{voucherDiscount:N2} ج.م)]";
+                        string voucherTag = $"[بون خصم: {voucherCode} (-{voucherDiscount:N2} ج.م)]";
                         notes = string.IsNullOrEmpty(notes) ? voucherTag : $"{notes} | {voucherTag}";
 
                         try

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -60,11 +60,11 @@ namespace ChickenDist.Core
                     g.DrawEllipse(innerPen, innerRect);
                 }
 
-                using (Font fontEmoji = new Font("Segoe UI Emoji", size * 0.42f, FontStyle.Bold))
+                using (Font fontEmoji = new Font("Segoe UI", size * 0.34f, FontStyle.Bold))
                 using (Brush goldBrush = new SolidBrush(Color.FromArgb(243, 198, 35)))
                 {
                     StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    g.DrawString("⚡", fontEmoji, goldBrush, new RectangleF(0, -size * 0.02f, size, size), sf);
+                    g.DrawString("PRO", fontEmoji, goldBrush, new RectangleF(0, -size * 0.02f, size, size), sf);
                 }
             }
             return bmp;

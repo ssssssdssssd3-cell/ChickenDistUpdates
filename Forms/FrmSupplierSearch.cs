@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -41,7 +41,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 65, BackColor = Theme.BgSearchPanel, RightToLeft = RightToLeft.No, Padding = new Padding(12) };
-            var lblSearch = new Label { Text = "🔍 نوع البحث:", Location = new Point(665, 22), Width = 130, ForeColor = Color.FromArgb(255, 220, 110), TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold };
+            var lblSearch = new Label { Text = "نوع البحث:", Location = new Point(665, 22), Width = 130, ForeColor = Color.FromArgb(255, 220, 110), TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontBold };
             cboSearchType = new ComboBox
             {
                 Location = new Point(490, 18),
@@ -53,7 +53,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 RightToLeft = RightToLeft.Yes
             };
-            cboSearchType.Items.AddRange(new object[] { "🔍 الكل (شامل)", "🏢 بالاسم", "📞 برقم الهاتف", "🔢 بالكود" });
+            cboSearchType.Items.AddRange(new object[] { "الكل (شامل)", "بالاسم", "برقم الهاتف", "بالكود" });
             cboSearchType.SelectedIndex = 0;
             cboSearchType.SelectedIndexChanged += (s, e) => ApplyFilter();
 

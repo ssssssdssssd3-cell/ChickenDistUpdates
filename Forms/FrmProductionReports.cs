@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -60,7 +60,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📊 سجل ومتابعة حركات التصنيع والتشغيل الشامل";
+            this.Text = "سجل ومتابعة حركات التصنيع والتشغيل الشامل";
             this.Size = new Size(1280, 780);
             this.MinimumSize = new Size(1060, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -107,7 +107,7 @@ namespace ChickenDist.Forms
             // عنوان الفلترة
             flowRow0.Controls.Add(new Label
             {
-                Text = "🔍 فترة التقرير:",
+                Text = "فترة التقرير:",
                 AutoSize = true,
                 Font = Theme.FontBold,
                 ForeColor = Theme.Accent,
@@ -225,12 +225,12 @@ namespace ChickenDist.Forms
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; ApplyFilters(); } };
             flowRow1.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("🔍 بحث", 0, 0, 70, 27, Theme.Primary);
+            btnSearch = Theme.MakeButton("بحث", 0, 0, 70, 27, Theme.Primary);
             btnSearch.Margin = new Padding(0, 2, 4, 0);
             btnSearch.Click += (s, e) => ApplyFilters();
             flowRow1.Controls.Add(btnSearch);
 
-            btnRefresh = Theme.MakeButton("🔄 تحديث", 0, 0, 75, 27, Color.FromArgb(71, 85, 105));
+            btnRefresh = Theme.MakeButton("تحديث", 0, 0, 75, 27, Color.FromArgb(71, 85, 105));
             btnRefresh.Margin = new Padding(0, 2, 2, 0);
             btnRefresh.Click += (s, e) => { txtSearch.Clear(); ApplyFilters(); };
             flowRow1.Controls.Add(btnRefresh);
@@ -255,22 +255,22 @@ namespace ChickenDist.Forms
             };
             pnlKPI.Controls.Add(flowKPI);
 
-            lblTotalOrdersCount = MakeBadge("📋 إجمالي الأوامر: 0", Color.FromArgb(30, 41, 59), Color.FromArgb(226, 232, 240));
+            lblTotalOrdersCount = MakeBadge("إجمالي الأوامر: 0", Color.FromArgb(30, 41, 59), Color.FromArgb(226, 232, 240));
             flowKPI.Controls.Add(lblTotalOrdersCount);
 
-            lblPrepOrdersCount = MakeBadge("⏳ تحت التحضير: 0", Color.FromArgb(194, 65, 12), Color.FromArgb(255, 237, 213));
+            lblPrepOrdersCount = MakeBadge("تحت التحضير: 0", Color.FromArgb(194, 65, 12), Color.FromArgb(255, 237, 213));
             flowKPI.Controls.Add(lblPrepOrdersCount);
 
-            lblCompletedOrdersCount = MakeBadge("✅ مكتمل ومرحل: 0", Color.FromArgb(21, 128, 61), Color.FromArgb(220, 252, 231));
+            lblCompletedOrdersCount = MakeBadge("مكتمل ومرحل: 0", Color.FromArgb(21, 128, 61), Color.FromArgb(220, 252, 231));
             flowKPI.Controls.Add(lblCompletedOrdersCount);
 
-            lblRawCostSum = MakeBadge("📦 تكلفة الخامات: 0.00 ج", Color.FromArgb(146, 64, 14), Color.FromArgb(254, 243, 199));
+            lblRawCostSum = MakeBadge("تكلفة الخامات: 0.00 ج", Color.FromArgb(146, 64, 14), Color.FromArgb(254, 243, 199));
             flowKPI.Controls.Add(lblRawCostSum);
 
-            lblExtraExpensesSum = MakeBadge("⚡ مصاريف تشغيل: 0.00 ج", Color.FromArgb(180, 83, 9), Color.FromArgb(254, 240, 138));
+            lblExtraExpensesSum = MakeBadge("مصاريف تشغيل: 0.00 ج", Color.FromArgb(180, 83, 9), Color.FromArgb(254, 240, 138));
             flowKPI.Controls.Add(lblExtraExpensesSum);
 
-            lblTotalCostSum = MakeBadge("💰 إجمالي التكاليف: 0.00 ج.م", Color.FromArgb(15, 23, 42), Color.FromArgb(186, 230, 253));
+            lblTotalCostSum = MakeBadge("إجمالي التكاليف: 0.00 ج.م", Color.FromArgb(15, 23, 42), Color.FromArgb(186, 230, 253));
             lblTotalCostSum.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             flowKPI.Controls.Add(lblTotalCostSum);
 
@@ -343,7 +343,7 @@ namespace ChickenDist.Forms
             
             btnToggleDetails = new Button
             {
-                Text = "🔽 إخفاء لوحة التفاصيل",
+                Text = "إخفاء لوحة التفاصيل",
                 Dock = DockStyle.Left,
                 Width = 140,
                 FlatStyle = FlatStyle.Flat,
@@ -357,7 +357,7 @@ namespace ChickenDist.Forms
 
             var lblDetTitle = new Label
             {
-                Text = "📦 تفاصيل ومكونات وسجل الأمر المحدد أعلاه:",
+                Text = "تفاصيل ومكونات وسجل الأمر المحدد أعلاه:",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Font = Theme.FontBold,
@@ -377,7 +377,7 @@ namespace ChickenDist.Forms
             tabDetails.BringToFront();
 
             // Tab 1: Raw Materials
-            var tabItems = new TabPage("📦 المواد الخام المستهلكة في هذا الأمر");
+            var tabItems = new TabPage("المواد الخام المستهلكة في هذا الأمر");
             tabItems.BackColor = Color.White;
             dgItemsDetail = new DataGridView
             {
@@ -416,7 +416,7 @@ namespace ChickenDist.Forms
             tabDetails.TabPages.Add(tabItems);
 
             // Tab 2: Audit History
-            var tabHistory = new TabPage("📑 سجل حركات وتعديل الأمر (Audit Trail)");
+            var tabHistory = new TabPage("سجل حركات وتعديل الأمر (Audit Trail)");
             tabHistory.BackColor = Color.White;
             dgHistoryDetail = new DataGridView
             {
@@ -473,13 +473,13 @@ namespace ChickenDist.Forms
             };
             pnlBottom.Controls.Add(flowBottom);
 
-            btnOpenOrder = Theme.MakeButton("📂 فتح أمر التصنيع", 0, 0, 140, 34, Theme.Primary);
+            btnOpenOrder = Theme.MakeButton("فتح أمر التصنيع", 0, 0, 140, 34, Theme.Primary);
             btnOpenOrder.Font = Theme.FontBold;
             btnOpenOrder.Margin = new Padding(0, 1, 8, 0);
             btnOpenOrder.Click += (s, e) => OpenSelectedOrderForm();
             flowBottom.Controls.Add(btnOpenOrder);
 
-            btnNewFixed = Theme.MakeButton("➕ تصنيع معياري (BOM)", 0, 0, 150, 34, Color.FromArgb(16, 185, 129));
+            btnNewFixed = Theme.MakeButton("تصنيع معياري (BOM)", 0, 0, 150, 34, Color.FromArgb(16, 185, 129));
             btnNewFixed.Font = Theme.FontBold;
             btnNewFixed.Margin = new Padding(0, 1, 8, 0);
             btnNewFixed.Click += (s, e) =>
@@ -492,7 +492,7 @@ namespace ChickenDist.Forms
             };
             flowBottom.Controls.Add(btnNewFixed);
 
-            btnNewCustom = Theme.MakeButton("🛠️ تصنيع مخصص", 0, 0, 125, 34, Color.FromArgb(139, 92, 246));
+            btnNewCustom = Theme.MakeButton("تصنيع مخصص", 0, 0, 125, 34, Color.FromArgb(139, 92, 246));
             btnNewCustom.Font = Theme.FontBold;
             btnNewCustom.Margin = new Padding(0, 1, 8, 0);
             btnNewCustom.Click += (s, e) =>
@@ -505,7 +505,7 @@ namespace ChickenDist.Forms
             };
             flowBottom.Controls.Add(btnNewCustom);
 
-            btnSuspendedOrders = Theme.MakeButton("⏳ الأوامر المعلقة", 0, 0, 130, 34, Color.FromArgb(234, 88, 12));
+            btnSuspendedOrders = Theme.MakeButton("الأوامر المعلقة", 0, 0, 130, 34, Color.FromArgb(234, 88, 12));
             btnSuspendedOrders.Font = Theme.FontBold;
             btnSuspendedOrders.Margin = new Padding(0, 1, 8, 0);
             btnSuspendedOrders.Click += (s, e) =>
@@ -539,13 +539,13 @@ namespace ChickenDist.Forms
             };
             flowBottom.Controls.Add(btnSuspendedOrders);
 
-            btnPrintReport = Theme.MakeButton("🖨️ طباعة التقرير", 0, 0, 115, 34, Color.FromArgb(2, 132, 199));
+            btnPrintReport = Theme.MakeButton("طباعة التقرير", 0, 0, 115, 34, Color.FromArgb(2, 132, 199));
             btnPrintReport.Font = Theme.FontBold;
             btnPrintReport.Margin = new Padding(0, 1, 8, 0);
             btnPrintReport.Click += (s, e) => PrintReport();
             flowBottom.Controls.Add(btnPrintReport);
 
-            btnExportExcel = Theme.MakeButton("📊 تصدير Excel", 0, 0, 115, 34, Color.FromArgb(22, 163, 74));
+            btnExportExcel = Theme.MakeButton("تصدير Excel", 0, 0, 115, 34, Color.FromArgb(22, 163, 74));
             btnExportExcel.Font = Theme.FontBold;
             btnExportExcel.Margin = new Padding(0, 1, 0, 0);
             btnExportExcel.Click += (s, e) => ExportToCsv();
@@ -631,13 +631,13 @@ namespace ChickenDist.Forms
             if (_detailsVisible)
             {
                 split.Panel2Collapsed = false;
-                btnToggleDetails.Text = "🔽 إخفاء لوحة التفاصيل";
+                btnToggleDetails.Text = "إخفاء لوحة التفاصيل";
                 if (split.Height > 250) split.SplitterDistance = (int)(split.Height * 0.65);
             }
             else
             {
                 split.Panel2Collapsed = true;
-                btnToggleDetails.Text = "🔼 إظهار لوحة التفاصيل";
+                btnToggleDetails.Text = "إظهار لوحة التفاصيل";
             }
         }
 
@@ -808,12 +808,12 @@ namespace ChickenDist.Forms
                 }
             }
 
-            lblTotalOrdersCount.Text = $"📋 إجمالي الأوامر: {totalCount}";
-            lblPrepOrdersCount.Text = $"⏳ تحت التحضير: {prepCount}";
-            lblCompletedOrdersCount.Text = $"✅ مكتمل ومرحل: {completedCount}";
-            lblRawCostSum.Text = $"📦 تكلفة الخامات: {rawCost:N2} ج";
-            lblExtraExpensesSum.Text = $"⚡ مصاريف تشغيل: {totalExpenses:N2} ج";
-            lblTotalCostSum.Text = $"💰 إجمالي التكاليف: {totalCost:N2} ج.م";
+            lblTotalOrdersCount.Text = $"إجمالي الأوامر: {totalCount}";
+            lblPrepOrdersCount.Text = $"تحت التحضير: {prepCount}";
+            lblCompletedOrdersCount.Text = $"مكتمل ومرحل: {completedCount}";
+            lblRawCostSum.Text = $"تكلفة الخامات: {rawCost:N2} ج";
+            lblExtraExpensesSum.Text = $"مصاريف تشغيل: {totalExpenses:N2} ج";
+            lblTotalCostSum.Text = $"إجمالي التكاليف: {totalCost:N2} ج.م";
         }
 
         private void LoadSelectedOrderDetails()
@@ -992,11 +992,11 @@ namespace ChickenDist.Forms
                             sb.AppendLine($"\"{r.Cells["OrderCode"].Value}\",\"{r.Cells["CreatedDate"].Value}\",\"{r.Cells["ProductionTypeName"].Value}\",\"{r.Cells["WarehouseName"].Value}\",\"{r.Cells["FinishedProductCode"].Value}\",\"{r.Cells["FinishedProductName"].Value}\",\"{r.Cells["ProducedQty"].Value}\",\"{r.Cells["UnitName"].Value}\",\"{r.Cells["RawMaterialsCost"].Value}\",\"{r.Cells["ExtraExpenses"].Value}\",\"{r.Cells["TotalCost"].Value}\",\"{r.Cells["UnitCost"].Value}\",\"{r.Cells["StatusName"].Value}\",\"{r.Cells["CreatedByName"].Value}\"");
                         }
                         System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), System.Text.Encoding.UTF8);
-                        MessageBox.Show("✅ تم تصدير تقرير التصنيع بنجاح!", "نجاح التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تصدير تقرير التصنيع بنجاح!", "نجاح التصدير", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"❌ فشل التصدير:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"فشل التصدير:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }

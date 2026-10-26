@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -52,7 +52,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📂 الفواتير غير المكتملة (المحفوظة تلقائياً)";
+            this.Text = "الفواتير غير المكتملة (المحفوظة تلقائياً)";
             this.Size = new Size(1200, 720);
             this.MinimumSize = new Size(950, 580);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -62,7 +62,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── 1. Header Bar ──
-            var pnlTitle = Theme.MakeTitleBar("📂 الفواتير غير المكتملة", "يعرض النظام تلقائياً كافة فواتير البيع والمشتريات وجلسات الجرد التي تم حفظها لحظياً ولم تكتمل بسبب فصل الجهاز أو انقطاع الكهرباء.");
+            var pnlTitle = Theme.MakeTitleBar("الفواتير غير المكتملة", "يعرض النظام تلقائياً كافة فواتير البيع والمشتريات وجلسات الجرد التي تم حفظها لحظياً ولم تكتمل بسبب فصل الجهاز أو انقطاع الكهرباء.");
 
             // ── 2. Top Filter Bar ──
             var pnlFilter = new FlowLayoutPanel
@@ -86,7 +86,7 @@ namespace ChickenDist.Forms
 
             pnlFilter.Controls.Add(new Label { Text = "نوع العملية:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(12, 8, 2, 0) });
             cboType = new ComboBox { Width = 160, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, FlatStyle = FlatStyle.Flat };
-            cboType.Items.AddRange(new object[] { "--- كل العمليات ---", "🛒 فواتير مبيعات", "🖥️ نقطة بيع POS", "📦 فواتير مشتريات", "📋 عمليات جرد مخزني" });
+            cboType.Items.AddRange(new object[] { "--- كل العمليات ---", "فواتير مبيعات", "نقطة بيع POS", "فواتير مشتريات", "عمليات جرد مخزني" });
             
             if (_initialType == "Sale") cboType.SelectedIndex = 1;
             else if (_initialType == "POS") cboType.SelectedIndex = 2;
@@ -101,19 +101,19 @@ namespace ChickenDist.Forms
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) LoadDrafts(); };
             pnlFilter.Controls.Add(txtSearch);
 
-            btnSearch = Theme.MakeButton("🔍 بحث", Theme.Primary);
+            btnSearch = Theme.MakeButton("بحث", Theme.Primary);
             btnSearch.Size = new Size(95, 32);
             btnSearch.Click += (s, e) => LoadDrafts();
             pnlFilter.Controls.Add(btnSearch);
 
-            btnRestore = Theme.MakeButton("📂 استرجاع ومتابعة الفاتورة", Color.FromArgb(39, 174, 96));
+            btnRestore = Theme.MakeButton("استرجاع ومتابعة الفاتورة", Color.FromArgb(39, 174, 96));
             btnRestore.Size = new Size(200, 32);
             btnRestore.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnRestore.Enabled = Session.CanEdit("IncompleteInvoices");
             btnRestore.Click += BtnRestore_Click;
             pnlFilter.Controls.Add(btnRestore);
 
-            btnDelete = Theme.MakeButton("🗑️ حذف الفاتورة غير المكتملة", Color.FromArgb(192, 57, 43));
+            btnDelete = Theme.MakeButton("حذف الفاتورة غير المكتملة", Color.FromArgb(192, 57, 43));
             btnDelete.Size = new Size(180, 32);
             btnDelete.Enabled = Session.CanDelete("IncompleteInvoices");
             btnDelete.Click += BtnDelete_Click;
@@ -132,7 +132,7 @@ namespace ChickenDist.Forms
 
             // Upper Panel: Master Drafts List
             var pnlUpperHeader = new Panel { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgCard, Padding = new Padding(10, 5, 10, 0) };
-            lblDraftsCount = new Label { Text = "📋 قائمة الفواتير والعمليات غير المكتملة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Accent };
+            lblDraftsCount = new Label { Text = "قائمة الفواتير والعمليات غير المكتملة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Accent };
             pnlUpperHeader.Controls.Add(lblDraftsCount);
 
             dgDrafts = MakeGrid();
@@ -154,7 +154,7 @@ namespace ChickenDist.Forms
 
             // Lower Panel: Detail Items List
             var pnlLowerHeader = new Panel { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgCard, Padding = new Padding(10, 5, 10, 0) };
-            lblItemsTitle = new Label { Text = "🔍 محتويات وأصناف العملية المحددة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Primary };
+            lblItemsTitle = new Label { Text = "محتويات وأصناف العملية المحددة:", AutoSize = true, Font = Theme.FontBold, ForeColor = Theme.Primary };
             pnlLowerHeader.Controls.Add(lblItemsTitle);
 
             dgItems = MakeGrid();
@@ -218,10 +218,10 @@ namespace ChickenDist.Forms
                 string rawType = r["DraftType"].ToString();
                 string displayType = rawType switch
                 {
-                    "Sale" => "🛒 فاتورة بيع",
-                    "POS" => "🖥️ نقطة بيع POS",
-                    "Purchase" => "📦 فاتورة شراء",
-                    "Inventory" => "📋 جرد مخزن",
+                    "Sale" => "فاتورة بيع",
+                    "POS" => "نقطة بيع POS",
+                    "Purchase" => "فاتورة شراء",
+                    "Inventory" => "جرد مخزن",
                     _ => rawType
                 };
 
@@ -244,7 +244,7 @@ namespace ChickenDist.Forms
                 );
             }
 
-            lblDraftsCount.Text = $"📋 قائمة الفواتير والعمليات غير المكتملة: ({dgDrafts.Rows.Count:N0} عملية غير مكتملة)";
+            lblDraftsCount.Text = $"قائمة الفواتير والعمليات غير المكتملة: ({dgDrafts.Rows.Count:N0} عملية غير مكتملة)";
 
             if (dgDrafts.Rows.Count > 0 && dgDrafts.SelectedRows.Count == 0)
             {
@@ -265,7 +265,7 @@ namespace ChickenDist.Forms
             string draftType = r["DraftType"].ToString();
             string json = r["DraftData"].ToString();
 
-            lblItemsTitle.Text = $"🔍 محتويات [{r["TargetName"]}] ({r["ItemCount"]} صنف):";
+            lblItemsTitle.Text = $"محتويات [{r["TargetName"]}] ({r["ItemCount"]} صنف):";
 
             if (draftType == "Sale" || draftType == "POS")
             {

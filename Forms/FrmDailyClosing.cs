@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -41,7 +41,7 @@ namespace ChickenDist.Forms
 
             // ── Title bar ─────────────────────────────────────────────────────
             var titleBar = Theme.MakeTitleBar(
-                "📋 تقرير التقفيل اليومي",
+                "تقرير التقفيل اليومي",
                 $"إجمالي المبيعات  |  آخر توريد  |  مديونية العملاء");
             Controls.Add(titleBar);
 
@@ -74,17 +74,17 @@ namespace ChickenDist.Forms
             _dtpDate.RightToLeftLayout = true;
             _dtpDate.ValueChanged += (s, e) => LoadReport();
 
-            var btnLoad = Theme.MakeButton("🔄 تحديث", Theme.Accent);
+            var btnLoad = Theme.MakeButton("تحديث", Theme.Accent);
             btnLoad.Size   = new Size(110, 34);
             btnLoad.Dock   = DockStyle.Right;
             btnLoad.Click += (s, e) => LoadReport();
 
-            var btnPrint = Theme.MakeButton("🖨️ طباعة", Theme.Primary);
+            var btnPrint = Theme.MakeButton("طباعة", Theme.Primary);
             btnPrint.Size   = new Size(100, 34);
             btnPrint.Dock   = DockStyle.Right;
             btnPrint.Click += BtnPrint_Click;
 
-            var btnDetailedInvoices = Theme.MakeButton("📑 فواتير اليومية (شيت بالأصناف)", Color.FromArgb(14, 165, 233));
+            var btnDetailedInvoices = Theme.MakeButton("فواتير اليومية (شيت بالأصناف)", Color.FromArgb(14, 165, 233));
             btnDetailedInvoices.Size = new Size(210, 34);
             btnDetailedInvoices.Dock = DockStyle.Right;
             btnDetailedInvoices.Click += (s, e) =>
@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
                 frm.Show(this);
             };
 
-            var btnWhatsApp = Theme.MakeButton("📲 واتساب التقفيل", Theme.Accent);
+            var btnWhatsApp = Theme.MakeButton("واتساب التقفيل", Theme.Accent);
             btnWhatsApp.Size   = new Size(130, 34);
             btnWhatsApp.BackColor = Color.FromArgb(37, 211, 102);
             btnWhatsApp.Dock   = DockStyle.Right;
@@ -101,7 +101,7 @@ namespace ChickenDist.Forms
 
             _lblProductCountInfo = new Label
             {
-                Text = "📦 الأصناف المباعة: 0",
+                Text = "الأصناف المباعة: 0",
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Theme.Accent,
                 AutoSize = true,
@@ -177,7 +177,7 @@ namespace ChickenDist.Forms
             };
             Controls.Add(_dg);
 
-            // ensure Z-order: title → toolbar → grid → footer
+            // ensure Z-order: title toolbar grid footer
             titleBar.BringToFront();
             toolbar.BringToFront();
             _dg.BringToFront();
@@ -229,10 +229,10 @@ namespace ChickenDist.Forms
 
                 _productCount = pageProductRows.Count;
                 _lblProductCountInfo.Text = _productCount > 0 
-                    ? $"📦 الأصناف المباعة اليوم: {_productCount} صنف"
-                    : "📦 لا توجد مبيعات أصناف اليوم";
+                    ? $"الأصناف المباعة اليوم: {_productCount} صنف"
+                    : "لا توجد مبيعات أصناف اليوم";
 
-                // ── Build lookup: clientID → { productID → qty }
+                // ── Build lookup: clientID { productID qty }
                 var qtyMap = new Dictionary<int, Dictionary<int, decimal>>();
                 foreach (DataRow r in dtQty.Rows)
                 {
@@ -243,7 +243,7 @@ namespace ChickenDist.Forms
                     qtyMap[cid][pid] = q;
                 }
 
-                // ── Build lookup: clientID → (name, invoice, lastPayment, balance)
+                // ── Build lookup: clientID (name, invoice, lastPayment, balance)
                 var totMap = new Dictionary<int, (string name, decimal inv, decimal pay, decimal bal)>();
                 var clientOrder = new List<int>();
                 foreach (DataRow r in dtTotals.Rows)
@@ -566,10 +566,10 @@ namespace ChickenDist.Forms
                 BackColor = Theme.BgCard,
                 Font = Theme.FontMain
             };
-            var lbl = new Label { Text = "📱 أدخل رقم الواتساب (مثال: 01012345678):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(10, 15) };
+            var lbl = new Label { Text = "أدخل رقم الواتساب (مثال: 01012345678):", AutoSize = true, ForeColor = Theme.TextMain, Location = new Point(10, 15) };
             var txt = new TextBox { Location = new Point(10, 42), Width = 380, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 12f), BorderStyle = BorderStyle.FixedSingle };
-            var btnSend = Theme.MakeButton("✅ إرسال", 230, 90, 150, 36, Color.FromArgb(37, 211, 102));
-            var btnCancel = Theme.MakeButton("❌ إلغاء", 60, 90, 150, 36, Color.FromArgb(180, 60, 60));
+            var btnSend = Theme.MakeButton("إرسال", 230, 90, 150, 36, Color.FromArgb(37, 211, 102));
+            var btnCancel = Theme.MakeButton("إلغاء", 60, 90, 150, 36, Color.FromArgb(180, 60, 60));
             btnSend.Click   += (s2, e2) => { dlg.DialogResult = DialogResult.OK;     dlg.Close(); };
             btnCancel.Click += (s2, e2) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
             dlg.Controls.AddRange(new Control[] { lbl, txt, btnSend, btnCancel });
@@ -580,13 +580,13 @@ namespace ChickenDist.Forms
 
             // بناء نص رسالة التقفيل
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("📋 *تقرير التقفيل اليومي*");
-            sb.AppendLine($"🏢 {AppConfig.CompanyName}");
-            sb.AppendLine($"📅 التاريخ: {_dtpDate.Value:dd/MM/yyyy}");
+            sb.AppendLine("*تقرير التقفيل اليومي*");
+            sb.AppendLine($"{AppConfig.CompanyName}");
+            sb.AppendLine($"التاريخ: {_dtpDate.Value:dd/MM/yyyy}");
             sb.AppendLine("──────────────────────");
-            sb.AppendLine($"💰 إجمالي فواتير البيع: {_grandInvoice:N2} ج.م");
-            sb.AppendLine($"✅ إجمالي التوريد: {_grandPayment:N2} ج.م");
-            sb.AppendLine($"📊 إجمالي المديونية: {_grandBalance:N2} ج.م");
+            sb.AppendLine($"إجمالي فواتير البيع: {_grandInvoice:N2} ج.م");
+            sb.AppendLine($"إجمالي التوريد: {_grandPayment:N2} ج.م");
+            sb.AppendLine($"إجمالي المديونية: {_grandBalance:N2} ج.م");
             sb.AppendLine("──────────────────────");
 
             // تفاصيل كل عميل (تخطي صف السعر وصف الإجمالي)
@@ -620,13 +620,13 @@ namespace ChickenDist.Forms
                 {
                     Clipboard.SetText(message);
                     MessageBox.Show(
-                        "⚠️ نظراً لأن التقرير طويل جداً، تم نسخه بالكامل إلى الحافظة (Clipboard) تلقائياً.\n" +
+                        "نظراً لأن التقرير طويل جداً، تم نسخه بالكامل إلى الحافظة (Clipboard) تلقائياً.\n" +
                         "يرجى الضغط على لصق (Ctrl + V) داخل محادثة الواتساب التي ستفتح الآن لإرساله.",
                         "تم نسخ التقرير", MessageBoxButtons.OK, MessageBoxIcon.Information,
                         MessageBoxDefaultButton.Button1,
                         MessageBoxOptions.RightAlign | MessageBoxOptions.RtlReading);
                         
-                    encoded = Uri.EscapeDataString("📋 تقرير الإغلاق اليومي (تم نسخ التفاصيل للحافظة، يرجى اللصق وإرسال)");
+                    encoded = Uri.EscapeDataString("تقرير الإغلاق اليومي (تم نسخ التفاصيل للحافظة، يرجى اللصق وإرسال)");
                 }
                 else
                 {

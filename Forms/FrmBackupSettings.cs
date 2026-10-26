@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
@@ -29,7 +29,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "💾 النسخ الاحتياطي والأرشفة";
+            this.Text = "النسخ الاحتياطي والأرشفة";
             this.Size = new Size(680, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -40,7 +40,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var pnlTop = Theme.MakeTitleBar("💾 النسخ الاحتياطي والأرشفة", "إدارة مسار حفظ النسخ الاحتياطية، الجدولة الدورية التلقائية، والمزامنة السحابية والواتساب");
+            var pnlTop = Theme.MakeTitleBar("النسخ الاحتياطي والأرشفة", "إدارة مسار حفظ النسخ الاحتياطية، الجدولة الدورية التلقائية، والمزامنة السحابية والواتساب");
             this.Controls.Add(pnlTop);
 
             var pnlBody = new Panel
@@ -100,7 +100,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(txtBackupFolder);
 
-            var btnBrowse = Theme.MakeButton("📂 تصفح", 485, y - 2, 120, 32, Color.FromArgb(55, 65, 81));
+            var btnBrowse = Theme.MakeButton("تصفح", 485, y - 2, 120, 32, Color.FromArgb(55, 65, 81));
             btnBrowse.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnBrowse.Click += (s, e) =>
             {
@@ -140,11 +140,11 @@ namespace ChickenDist.Forms
                 ForeColor = Theme.TextMain,
                 Font = new Font("Segoe UI", 10f)
             };
-            cboBackupInterval.Items.Add(new ComboItem(0, "🛑 إيقاف النسخ الاحتياطي الدوري"));
-            cboBackupInterval.Items.Add(new ComboItem(2, "⏱️ كل ساعتين (موصى به أثناء العمل)"));
-            cboBackupInterval.Items.Add(new ComboItem(6, "⏱️ كل 6 ساعات"));
-            cboBackupInterval.Items.Add(new ComboItem(12, "⏱️ كل 12 ساعة"));
-            cboBackupInterval.Items.Add(new ComboItem(24, "⏱️ كل 24 ساعة (يومياً)"));
+            cboBackupInterval.Items.Add(new ComboItem(0, "إيقاف النسخ الاحتياطي الدوري"));
+            cboBackupInterval.Items.Add(new ComboItem(2, "كل ساعتين (موصى به أثناء العمل)"));
+            cboBackupInterval.Items.Add(new ComboItem(6, "كل 6 ساعات"));
+            cboBackupInterval.Items.Add(new ComboItem(12, "كل 12 ساعة"));
+            cboBackupInterval.Items.Add(new ComboItem(24, "كل 24 ساعة (يومياً)"));
 
             cboBackupInterval.DisplayMember = "Text";
             cboBackupInterval.ValueMember = "ID";
@@ -178,7 +178,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(txtLocalCloudPath);
 
-            var btnBrowseCloud = Theme.MakeButton("📂 تصفح", 375, y - 2, 85, 30, Color.FromArgb(55, 65, 81));
+            var btnBrowseCloud = Theme.MakeButton("تصفح", 375, y - 2, 85, 30, Color.FromArgb(55, 65, 81));
             btnBrowseCloud.Font = new Font("Segoe UI", 9f);
             btnBrowseCloud.Click += (s, e) =>
             {
@@ -192,7 +192,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(btnBrowseCloud);
 
-            var btnAutoDetectGDrive = Theme.MakeButton("☁️ كشف جوجل درايف", 470, y - 2, 135, 30, Color.FromArgb(47, 54, 64));
+            var btnAutoDetectGDrive = Theme.MakeButton("كشف جوجل درايف", 470, y - 2, 135, 30, Color.FromArgb(47, 54, 64));
             btnAutoDetectGDrive.Font = new Font("Segoe UI", 9f);
             btnAutoDetectGDrive.Click += (s, e) =>
             {
@@ -218,7 +218,7 @@ namespace ChickenDist.Forms
             y += 42;
 
             // ── إعدادات النسخ السحابي فيربيز وتطبيق الموبايل (Firebase Cloud Backup) ─────────
-            AddLabel(pnlBody, "🌐 معرّف مشروع Firebase للعميل (Project ID) للنسخ السحابي وتطبيق الموبايل:", 15, y);
+            AddLabel(pnlBody, "معرّف مشروع Firebase للعميل (Project ID) للنسخ السحابي وتطبيق الموبايل:", 15, y);
             y += 24;
 
             txtFirebaseProjectId = new TextBox
@@ -254,7 +254,7 @@ namespace ChickenDist.Forms
                     : $"رابط تطبيق الموبايل: https://{pid}.web.app";
             };
 
-            var btnCopyFirebaseUrl = Theme.MakeButton("📋 نسخ رابط الموبايل", 375, y - 2, 130, 30, Color.FromArgb(14, 116, 144));
+            var btnCopyFirebaseUrl = Theme.MakeButton("نسخ رابط الموبايل", 375, y - 2, 130, 30, Color.FromArgb(14, 116, 144));
             btnCopyFirebaseUrl.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             btnCopyFirebaseUrl.Click += (s, e) =>
             {
@@ -271,7 +271,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(btnCopyFirebaseUrl);
 
-            var btnOpenCloudSync = Theme.MakeButton("⚙️ إعدادات السحابة", 510, y - 2, 95, 30, Color.FromArgb(55, 65, 81));
+            var btnOpenCloudSync = Theme.MakeButton("إعدادات السحابة", 510, y - 2, 95, 30, Color.FromArgb(55, 65, 81));
             btnOpenCloudSync.Font = new Font("Segoe UI", 8.5f);
             btnOpenCloudSync.Click += (s, e) =>
             {
@@ -300,7 +300,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(txtWhatsAppPhone);
 
-            var btnTestWhatsApp = Theme.MakeButton("📤 اختبار الرفع بالواتس", 455, y - 2, 150, 32, Color.FromArgb(80, 100, 60));
+            var btnTestWhatsApp = Theme.MakeButton("اختبار الرفع بالواتس", 455, y - 2, 150, 32, Color.FromArgb(80, 100, 60));
             btnTestWhatsApp.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnTestWhatsApp.Click += (s, e) => TestWhatsAppUpload();
             pnlBody.Controls.Add(btnTestWhatsApp);
@@ -311,7 +311,7 @@ namespace ChickenDist.Forms
             y += 15;
 
             // ── أزرار العمليات الفورية ──────────────────────────────
-            var btnBackupNow = Theme.MakeButton("💾 عمل نسخة احتياطية الآن فوراً", 15, y, 285, 42, Theme.Success);
+            var btnBackupNow = Theme.MakeButton("عمل نسخة احتياطية الآن فوراً", 15, y, 285, 42, Theme.Success);
             btnBackupNow.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnBackupNow.Click += (s, e) =>
             {
@@ -321,7 +321,7 @@ namespace ChickenDist.Forms
             };
             pnlBody.Controls.Add(btnBackupNow);
 
-            var btnOpenFolder = Theme.MakeButton("📂 استعراض وفتح مجلد الباكب", 310, y, 285, 42, Color.FromArgb(55, 65, 81));
+            var btnOpenFolder = Theme.MakeButton("استعراض وفتح مجلد الباكب", 310, y, 285, 42, Color.FromArgb(55, 65, 81));
             btnOpenFolder.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnOpenFolder.Click += (s, e) =>
             {
@@ -340,7 +340,7 @@ namespace ChickenDist.Forms
             };
             this.Controls.Add(pnlFooter);
 
-            var btnSave = Theme.MakeButton("💾 حفظ إعدادات النسخ الاحتياطي", 15, 8, 230, 38, Theme.Primary);
+            var btnSave = Theme.MakeButton("حفظ إعدادات النسخ الاحتياطي", 15, 8, 230, 38, Theme.Primary);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
             pnlFooter.Controls.Add(btnSave);
@@ -379,12 +379,12 @@ namespace ChickenDist.Forms
                 ? last.Value.ToString("dd/MM/yyyy hh:mm tt")
                 : "لم يتم عمل نسخة احتياطية بعد";
             bool isOverdue = BackupManager.IsBackupOverdue();
-            string overdueStr = isOverdue ? " ⚠️ متأخر!" : " ✅ حديث";
+            string overdueStr = isOverdue ? " متأخر!" : " حديث";
 
             string cloudPid = AppConfig.FirebaseProjectId;
             string cloudInfo = !string.IsNullOrWhiteSpace(cloudPid)
-                ? $" | ☁️ سحابة العميل: {cloudPid}"
-                : " | ☁️ السحابة: ⚠️ غير مضبوطة (Project ID فارغ)";
+                ? $" | سحابة العميل: {cloudPid}"
+                : " | السحابة: غير مضبوطة (Project ID فارغ)";
 
             lblLastBackup.Text = $"آخر نسخة: {lastStr}{overdueStr}{cloudInfo}";
             lblLastBackup.ForeColor = isOverdue
@@ -411,12 +411,12 @@ namespace ChickenDist.Forms
                 {
                     if (ok)
                     {
-                        MessageBox.Show("✅ تم إرسال النسخة التجريبية بالواتساب بنجاح! يرجى التحقق من هاتفك.", "نجاح الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم إرسال النسخة التجريبية بالواتساب بنجاح! يرجى التحقق من هاتفك.", "نجاح الاختبار", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         RefreshLastBackupLabel();
                     }
                     else
                     {
-                        MessageBox.Show("❌ فشل اختبار الرفع بالواتساب. تأكد من تشغيل البوت والاتصال بالشبكة.", "خطأ بالاختبار", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل اختبار الرفع بالواتساب. تأكد من تشغيل البوت والاتصال بالشبكة.", "خطأ بالاختبار", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }));
             });
@@ -443,7 +443,7 @@ namespace ChickenDist.Forms
                 AppConfig.FirebaseStorageBucket = $"{enteredPid}.firebasestorage.app";
             }
 
-            MessageBox.Show("✅ تم حفظ إعدادات النسخ الاحتياطي ومشروع السحابة بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("تم حفظ إعدادات النسخ الاحتياطي ومشروع السحابة بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
     }

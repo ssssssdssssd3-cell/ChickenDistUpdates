@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -81,7 +81,7 @@ namespace CloudBackupManager
             // Title Panel
             Panel pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.FromArgb(45, 45, 48) };
             Label lblTitle = new Label {
-                Text = "☁️ لوحة تحكم وإدارة النسخ الاحتياطية السحابية للعملاء",
+                Text = "لوحة تحكم وإدارة النسخ الاحتياطية السحابية للعملاء",
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 173, 181),
                 AutoSize = true,
@@ -104,7 +104,7 @@ namespace CloudBackupManager
             txtSearch.TextChanged += TxtSearch_TextChanged;
 
             btnRefresh = new Button {
-                Text = "🔄 تحديث القائمة",
+                Text = "تحديث القائمة",
                 Location = new Point(430, 15),
                 Size = new Size(140, 32),
                 BackColor = Color.FromArgb(0, 173, 181),
@@ -115,7 +115,7 @@ namespace CloudBackupManager
             btnRefresh.Click += BtnRefresh_Click;
 
             btnDownload = new Button {
-                Text = "📥 تحميل النسخة المحددة",
+                Text = "تحميل النسخة المحددة",
                 Location = new Point(585, 15),
                 Size = new Size(190, 32),
                 BackColor = Color.FromArgb(46, 204, 113),
@@ -381,7 +381,7 @@ namespace CloudBackupManager
                         else
                         {
                             lblStatus.Text = "اكتمل التحميل بنجاح.";
-                            MessageBox.Show("تم تحميل النسخة الاحتياطية للعميل وحفظها بنجاح! ✅\n\nالمسار:\n" + savePath, "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("تم تحميل النسخة الاحتياطية للعميل وحفظها بنجاح!\n\nالمسار:\n" + savePath, "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     };
 

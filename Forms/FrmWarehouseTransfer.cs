@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "🔄  تحويل المخزون بين المستودعات والمستودعات الفرعية",
+                Text = "تحويل المخزون بين المستودعات والمستودعات الفرعية",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Theme.Accent,
                 Dock = DockStyle.Right,
@@ -103,7 +103,7 @@ namespace ChickenDist.Forms
 
             btnTransfersHistory = new Button
             {
-                Text = "📋 سجل التحويلات السابقة [F4]",
+                Text = "سجل التحويلات السابقة [F4]",
                 Dock = DockStyle.Left,
                 Width = 205,
                 Height = 34,
@@ -118,7 +118,7 @@ namespace ChickenDist.Forms
 
             var lblShortcutsHint = new Label
             {
-                Text = "💡 اختصارات سريعة:  [F3] بحث أصناف  |  [Enter] إضافة  |  [F5] حفظ  |  [F2] جديد",
+                Text = "اختصارات سريعة:  [F3] بحث أصناف  |  [Enter] إضافة  |  [F5] حفظ  |  [F2] جديد",
                 Dock = DockStyle.Fill,
                 ForeColor = Theme.TextSub,
                 Font = new Font("Segoe UI", 9f),
@@ -161,7 +161,7 @@ namespace ChickenDist.Forms
 
             var lblFrom = new Label
             {
-                Text = "📤 من مستودع (المصدر):",
+                Text = "من مستودع (المصدر):",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(240, 245, 255),
                 AutoSize = true,
@@ -182,7 +182,7 @@ namespace ChickenDist.Forms
 
             var lblTo = new Label
             {
-                Text = "⬅️ إلى مستودع (الوجهة):",
+                Text = "إلى مستودع (الوجهة):",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(240, 245, 255),
                 AutoSize = true,
@@ -203,7 +203,7 @@ namespace ChickenDist.Forms
 
             var lblNotes = new Label
             {
-                Text = "📝 ملاحظات التحويل:",
+                Text = "ملاحظات التحويل:",
                 Font = new Font("Segoe UI", 9.5f),
                 ForeColor = Color.FromArgb(200, 215, 235),
                 AutoSize = true,
@@ -268,7 +268,7 @@ namespace ChickenDist.Forms
             // 0: تسمية وإدخال الاسكنر
             var lblScannerTitle = new Label
             {
-                Text = "📷 الباركود:",
+                Text = "الباركود:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
                 Dock = DockStyle.Fill,
@@ -291,14 +291,14 @@ namespace ChickenDist.Forms
             // 1: زر بحث الأصناف [F3]
             var lblSearchTitle = new Label
             {
-                Text = "🔍 بحث الأصناف:",
+                Text = "بحث الأصناف:",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 100),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(2, 0, 2, 2)
             };
-            btnSearchProduct = Theme.MakeButton("🔍 بحث [F3]", Theme.Primary);
+            btnSearchProduct = Theme.MakeButton("بحث [F3]", Theme.Primary);
             btnSearchProduct.Dock = DockStyle.Fill;
             btnSearchProduct.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSearchProduct.Margin = new Padding(2, 0, 2, 0);
@@ -307,7 +307,7 @@ namespace ChickenDist.Forms
             // 2: الصنف المختار
             var lblSelectedTitle = new Label
             {
-                Text = "📦 الصنف المحدد (انقر للاختيار):",
+                Text = "الصنف المحدد (انقر للاختيار):",
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(200, 220, 245),
                 Dock = DockStyle.Fill,
@@ -415,7 +415,7 @@ namespace ChickenDist.Forms
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(2, 0, 2, 2)
             };
-            btnAddItem = Theme.MakeButton("➕ إضافة [Enter]", Theme.Accent);
+            btnAddItem = Theme.MakeButton("إضافة [Enter]", Theme.Accent);
             btnAddItem.Dock = DockStyle.Fill;
             btnAddItem.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnAddItem.Margin = new Padding(2, 0, 2, 0);
@@ -531,7 +531,7 @@ namespace ChickenDist.Forms
             var colUnit = new DataGridViewComboBoxColumn
             {
                 Name = "Unit",
-                HeaderText = "الوحدة (✏️ تعديل)",
+                HeaderText = "الوحدة (تعديل)",
                 FillWeight = 65,
                 ReadOnly = false,
                 DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
@@ -576,7 +576,7 @@ namespace ChickenDist.Forms
             var colQty = new DataGridViewTextBoxColumn
             {
                 Name = "Quantity",
-                HeaderText = "الكمية المحولة (✏️ تعديل)",
+                HeaderText = "الكمية المحولة (تعديل)",
                 FillWeight = 70,
                 ReadOnly = false, // متاح للتعديل المباشر في الخلية!
                 DefaultCellStyle = new DataGridViewCellStyle
@@ -606,7 +606,7 @@ namespace ChickenDist.Forms
             {
                 Name = "Delete",
                 HeaderText = "حذف",
-                Text = "🗑️ حذف",
+                Text = "حذف",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 35,
                 DefaultCellStyle = new DataGridViewCellStyle
@@ -688,7 +688,7 @@ namespace ChickenDist.Forms
 
             lblCountBadge = new Label
             {
-                Text = "🏷️  البنود المحولة: 0 صنف",
+                Text = "البنود المحولة: 0 صنف",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Height = 42,
@@ -702,7 +702,7 @@ namespace ChickenDist.Forms
 
             lblTotalQtyBadge = new Label
             {
-                Text = "⚖️  إجمالي الكميات: 0.000",
+                Text = "إجمالي الكميات: 0.000",
                 Dock = DockStyle.Right,
                 AutoSize = true,
                 Height = 42,
@@ -728,17 +728,17 @@ namespace ChickenDist.Forms
                 WrapContents = false
             };
 
-            btnSave = Theme.MakeButton("💾  حفظ التحويل [F5]", Theme.Accent);
+            btnSave = Theme.MakeButton("حفظ التحويل [F5]", Theme.Accent);
             btnSave.Size = new Size(195, 44);
             btnSave.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnSave.Click += (s, e) => BtnSave_Click(false);
 
-            btnSaveAndPrint = Theme.MakeButton("🖨️  حفظ وطباعة الإذن", Color.FromArgb(25, 135, 84));
+            btnSaveAndPrint = Theme.MakeButton("حفظ وطباعة الإذن", Color.FromArgb(25, 135, 84));
             btnSaveAndPrint.Size = new Size(185, 44);
             btnSaveAndPrint.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSaveAndPrint.Click += (s, e) => BtnSave_Click(true);
 
-            btnNew = Theme.MakeButton("🆕  تحويل جديد [F2]", Color.FromArgb(60, 70, 85));
+            btnNew = Theme.MakeButton("تحويل جديد [F2]", Color.FromArgb(60, 70, 85));
             btnNew.Size = new Size(150, 44);
             btnNew.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnNew.Click += (s, e) => ClearForm();
@@ -812,7 +812,7 @@ namespace ChickenDist.Forms
 
             if (!(cboFromWarehouse.SelectedItem is ComboItem wh) || wh.ID <= 0)
             {
-                MessageBox.Show("⚠️ يرجى اختيار مستودع المصدر أولاً لعرض أرصدة الأصناف المتوفرة به بدقة!", "تحديد مستودع المصدر مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يرجى اختيار مستودع المصدر أولاً لعرض أرصدة الأصناف المتوفرة به بدقة!", "تحديد مستودع المصدر مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 cboFromWarehouse.Focus();
                 return;
             }
@@ -827,7 +827,7 @@ namespace ChickenDist.Forms
                     decimal qty = frm.SelectedQuantity > 0 ? frm.SelectedQuantity : 1m;
                     string preferredUnit = frm.SelectedUnitName;
 
-                    // ✅ تحديد الصنف مع الوحدة المختارة
+                    // تحديد الصنف مع الوحدة المختارة
                     SelectProductByID(frm.SelectedProductID, wh.ID, qty, preferredUnitName: preferredUnit);
                     BtnAddItem_Click(null, null);
                 }
@@ -1047,7 +1047,7 @@ namespace ChickenDist.Forms
 
                 if (!(cboFromWarehouse.SelectedItem is ComboItem wh) || wh.ID <= 0)
                 {
-                    MessageBox.Show("⚠️ يرجى اختيار مستودع المصدر أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("يرجى اختيار مستودع المصدر أولاً!", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     cboFromWarehouse.Focus();
                     return;
                 }
@@ -1125,7 +1125,7 @@ namespace ChickenDist.Forms
             if (currentBaseQtyInGrid + requestedBaseQty > availableStockSmallest)
             {
                 decimal availInSelectedUnit = factor > 0 ? (availableStockSmallest / factor) : availableStockSmallest;
-                MessageBox.Show($"❌ الكمية المطلوبة تتجاوز الرصيد المتوفر في المستودع المصدر!\n" +
+                MessageBox.Show($"الكمية المطلوبة تتجاوز الرصيد المتوفر في المستودع المصدر!\n" +
                                 $"• الرصيد المتاح بالمصدر: {availInSelectedUnit:G29} {unit} ({availableStockSmallest:G29} بالصغرى)\n" +
                                 $"• المضاف مسبقاً بالإذن: {currentBaseQtyInGrid:G29} بالصغرى\n" +
                                 $"• المطلوب إضافته: {qty:G29} {unit} ({requestedBaseQty:G29} بالصغرى)",
@@ -1235,8 +1235,8 @@ namespace ChickenDist.Forms
                 totalBaseQty += _items[i].TotalBaseQty;
             }
 
-            lblCountBadge.Text = $"🏷️  البنود المحولة: {_items.Count} صنف";
-            lblTotalQtyBadge.Text = $"⚖️  إجمالي بالوحدات: {totalQty:N2} | بالصغرى: {totalBaseQty:N0}";
+            lblCountBadge.Text = $"البنود المحولة: {_items.Count} صنف";
+            lblTotalQtyBadge.Text = $"إجمالي بالوحدات: {totalQty:N2} | بالصغرى: {totalBaseQty:N0}";
         }
 
         private void DgItems_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
@@ -1295,7 +1295,7 @@ namespace ChickenDist.Forms
 
             if (remainingBaseStock <= 0)
             {
-                MessageBox.Show($"❌ لا يتوفر رصيد متبقٍ لهذا الصنف بالمستودع المصدر لتغيير الوحدة إلى '{newUnit}'!\n" +
+                MessageBox.Show($"لا يتوفر رصيد متبقٍ لهذا الصنف بالمستودع المصدر لتغيير الوحدة إلى '{newUnit}'!\n" +
                                 $"• الرصيد الإجمالي: {baseStock:G29} بالصغرى\n" +
                                 $"• المحجوز في باقي بنود الإذن: {otherBaseQty:G29} بالصغرى",
                                 "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1310,7 +1310,7 @@ namespace ChickenDist.Forms
                 decimal maxInNewUnit = newFactor > 0 ? Math.Floor(remainingBaseStock / newFactor * 1000m) / 1000m : remainingBaseStock;
                 if (maxInNewUnit <= 0) maxInNewUnit = remainingBaseStock / newFactor;
 
-                MessageBox.Show($"⚠️ تنبيه: الكمية الحالية ({item.Quantity:G29} {newUnit}) تعادل ({newBaseQty:G29} بالصغرى) وتتجاوز الرصيد المتاح بالمصدر ({remainingBaseStock:G29} بالصغرى)!\n" +
+                MessageBox.Show($"تنبيه: الكمية الحالية ({item.Quantity:G29} {newUnit}) تعادل ({newBaseQty:G29} بالصغرى) وتتجاوز الرصيد المتاح بالمصدر ({remainingBaseStock:G29} بالصغرى)!\n" +
                                 $"• تم تعديل الكمية تلقائياً للحد الأقصى المتاح بالوحدة الجديدة: {maxInNewUnit:G29} {newUnit}.",
                                 "تعديل تلقائي للكمية المتاحة", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
@@ -1391,7 +1391,7 @@ namespace ChickenDist.Forms
                     decimal maxAllowedInThisUnit = item.Factor > 0 ? ((baseStock - otherBaseQty) / item.Factor) : (baseStock - otherBaseQty);
                     if (maxAllowedInThisUnit < 0) maxAllowedInThisUnit = 0;
 
-                    MessageBox.Show($"❌ الكمية المدخلة ({newQty:G29} {item.Unit}) تتجاوز الرصيد المتاح بالمصدر!\n" +
+                    MessageBox.Show($"الكمية المدخلة ({newQty:G29} {item.Unit}) تتجاوز الرصيد المتاح بالمصدر!\n" +
                                     $"• الحد الأقصى المتاح بالوحدة المختارة: {maxAllowedInThisUnit:G29} {item.Unit}\n" +
                                     $"• الرصيد الإجمالي المتاح: {baseStock:G29} بالصغرى", "تنبيه رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     dgItems.Rows[e.RowIndex].Cells["Quantity"].Value = item.Quantity.ToString("G29");
@@ -1454,7 +1454,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanAdd("WarehouseTransfer"))
             {
-                MessageBox.Show("⛔ ليس لديك صلاحية حفظ التحويلات المخزنية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ليس لديك صلاحية حفظ التحويلات المخزنية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -1516,7 +1516,7 @@ namespace ChickenDist.Forms
                 if (transferID > 0)
                 {
                     string transferCode = $"TRF-{transferID}";
-                    MessageBox.Show($"✅ تم ترحيل وحفظ إذن التحويل المخزني بنجاح!\nرقم الإذن: {transferCode}\nتم تحديث أرصدة المستودعات فوراً.", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم ترحيل وحفظ إذن التحويل المخزني بنجاح!\nرقم الإذن: {transferCode}\nتم تحديث أرصدة المستودعات فوراً.", "نجاح العملية", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     if (printAfterSave)
                     {
@@ -1527,12 +1527,12 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    MessageBox.Show("❌ فشل في حفظ التحويل المخزني.", "خطأ في النظام", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل في حفظ التحويل المخزني.", "خطأ في النظام", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ خطأ أثناء حفظ التحويل المخزني:\n" + ex.Message, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("خطأ أثناء حفظ التحويل المخزني:\n" + ex.Message, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1702,8 +1702,8 @@ namespace ChickenDist.Forms
             txtNotes.Clear();
             txtBarcodeTransfer.Clear();
             ResetSelectedItem();
-            lblCountBadge.Text = "🏷️  البنود المحولة: 0 صنف";
-            lblTotalQtyBadge.Text = "⚖️  إجمالي الكميات: 0.000";
+            lblCountBadge.Text = "البنود المحولة: 0 صنف";
+            lblTotalQtyBadge.Text = "إجمالي الكميات: 0.000";
         }
     }
 }

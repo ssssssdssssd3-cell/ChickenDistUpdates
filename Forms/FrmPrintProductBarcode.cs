@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Windows.Forms;
@@ -93,7 +93,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent(decimal salePrice)
         {
-            this.Text = "🏷️ طباعة باركود صنف";
+            this.Text = "طباعة باركود صنف";
             this.Size = new Size(540, 585);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -105,7 +105,7 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
 
             // Title Bar
-            var pnlTop = Theme.MakeTitleBar("🏷️ طباعة باركود الصنف", _productName);
+            var pnlTop = Theme.MakeTitleBar("طباعة باركود الصنف", _productName);
             this.Controls.Add(pnlTop);
 
             var pnlContent = new Panel
@@ -136,7 +136,7 @@ namespace ChickenDist.Forms
 
             if (_imeiList.Count > 0)
             {
-                cboBarcodeType.Items.Add($"📱 طباعة مخصصة لكل سيريال ({_imeiList.Count} جهاز)");
+                cboBarcodeType.Items.Add($"طباعة مخصصة لكل سيريال ({_imeiList.Count} جهاز)");
                 foreach (var imei in _imeiList)
                 {
                     cboBarcodeType.Items.Add($"سيريال: {imei}");
@@ -162,7 +162,7 @@ namespace ChickenDist.Forms
                         if (stockSerials != null && stockSerials.Count > 0)
                         {
                             _availableStockIMEIs = stockSerials;
-                            cboBarcodeType.Items.Add($"📱 طباعة جميع سيريالات المخزون المتاحة ({_availableStockIMEIs.Count} جهاز)");
+                            cboBarcodeType.Items.Add($"طباعة جميع سيريالات المخزون المتاحة ({_availableStockIMEIs.Count} جهاز)");
                             foreach (var imei in _availableStockIMEIs)
                             {
                                 cboBarcodeType.Items.Add($"سيريال متاح: {imei}");
@@ -174,7 +174,7 @@ namespace ChickenDist.Forms
 
                 if (AppConfig.BusinessType == "Mobiles" && _availableStockIMEIs.Count > 0)
                 {
-                    int bIdx = cboBarcodeType.FindString("📱 طباعة جميع سيريالات");
+                    int bIdx = cboBarcodeType.FindString("طباعة جميع سيريالات");
                     cboBarcodeType.SelectedIndex = bIdx >= 0 ? bIdx : 0;
                 }
                 else if (!string.IsNullOrWhiteSpace(_internationalCode))
@@ -265,7 +265,7 @@ namespace ChickenDist.Forms
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
-                "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
+                "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "كود الصنف علي العرض",
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "سعر بارز (سعر كبير + باركود)",
@@ -277,8 +277,8 @@ namespace ChickenDist.Forms
             bool isMobileMode = _imeiList.Count > 0 || _availableStockIMEIs.Count > 0 || AppConfig.BusinessType == "Mobiles" || AppConfig.BarcodeTemplate == "MobileIMEI" || AppConfig.BarcodeTemplate == "CodeOnSide";
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "CodeOnSide" ? "كود الصنف علي العرض"
                                             : (isMobileMode && (AppConfig.BarcodeTemplate == "MobileIMEI" || AppConfig.BarcodeTemplate == "Standard" || string.IsNullOrEmpty(AppConfig.BarcodeTemplate)))
-                                            ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
-                                            : AppConfig.BarcodeTemplate == "MobileIMEI" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
+                                            ? "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
+                                            : AppConfig.BarcodeTemplate == "MobileIMEI" ? "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
                                             : AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
                                             : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
@@ -350,17 +350,17 @@ namespace ChickenDist.Forms
             y += 84;
 
             // Buttons
-            btnPrint = Theme.MakeButton("🖨️ طباعة مباشرة", 15, y, 150, 40, Theme.Success);
+            btnPrint = Theme.MakeButton("طباعة مباشرة", 15, y, 150, 40, Theme.Success);
             btnPrint.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnPrint.Click += (s, e) => StartPrintJob(false);
             pnlContent.Controls.Add(btnPrint);
 
-            btnPreview = Theme.MakeButton("معاينة 👁️", 175, y, 140, 40, Theme.Accent);
+            btnPreview = Theme.MakeButton("معاينة", 175, y, 140, 40, Theme.Accent);
             btnPreview.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnPreview.Click += (s, e) => StartPrintJob(true);
             pnlContent.Controls.Add(btnPreview);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 325, y, 140, 40, Color.FromArgb(100, 116, 139));
+            btnCancel = Theme.MakeButton("إلغاء", 325, y, 140, 40, Color.FromArgb(100, 116, 139));
             btnCancel.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnCancel.Click += (s, e) => this.Close();
             pnlContent.Controls.Add(btnCancel);
@@ -373,12 +373,12 @@ namespace ChickenDist.Forms
             string selectedType = cboBarcodeType.SelectedItem?.ToString() ?? "";
             _activeBatchSerials = null;
 
-            if (selectedType.StartsWith("📱 طباعة مخصصة لكل سيريال") && _imeiList.Count > 0)
+            if (selectedType.StartsWith("طباعة مخصصة لكل سيريال") && _imeiList.Count > 0)
             {
                 _activeBatchSerials = _imeiList;
                 _selectedBarcode = _imeiList[0];
             }
-            else if (selectedType.StartsWith("📱 طباعة جميع سيريالات") && _availableStockIMEIs.Count > 0)
+            else if (selectedType.StartsWith("طباعة جميع سيريالات") && _availableStockIMEIs.Count > 0)
             {
                 _activeBatchSerials = _availableStockIMEIs;
                 _selectedBarcode = _availableStockIMEIs[0];

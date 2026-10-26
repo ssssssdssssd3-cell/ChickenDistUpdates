@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -117,7 +117,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🛒 نقطة البيع السريعة - POS";
+            this.Text = "نقطة البيع السريعة - POS";
             this.Size = new Size(1100, 750);
             this.MinimumSize = new Size(900, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -131,7 +131,7 @@ namespace ChickenDist.Forms
 
             // ── الشريط العلوي ─────────────────────────────────
             pnlTop = new Panel { Dock = DockStyle.Top, Height = 75, BackColor = Theme.BgHeader };
-            lblTitle = new Label { Text = "🛒 نقطة البيع السريعة", Font = new Font("Segoe UI", 15f, FontStyle.Bold), ForeColor = Theme.Accent, AutoSize = true };
+            lblTitle = new Label { Text = "نقطة البيع السريعة", Font = new Font("Segoe UI", 15f, FontStyle.Bold), ForeColor = Theme.Accent, AutoSize = true };
             
             txtBarcode = new TextBox
             {
@@ -143,7 +143,7 @@ namespace ChickenDist.Forms
             };
             txtBarcode.KeyDown += TxtBarcode_KeyDown;
 
-            btnSearchProduct = Theme.MakeButton("🔍", Theme.Primary, new Point(325, 35), new Size(40, 32));
+            btnSearchProduct = Theme.MakeButton("بحث", Theme.Primary, new Point(325, 35), new Size(40, 32));
             btnSearchProduct.Visible = Session.CanAccess("ProductSearch");
             btnSearchProduct.Click += (s, e) => OpenProductSearch();
 
@@ -155,7 +155,7 @@ namespace ChickenDist.Forms
 
             btnCustomizeCols = new Button
             {
-                Text      = "⚙️ الأعمدة",
+                Text      = "الأعمدة",
                 Size      = new Size(95, 32),
                 Location  = new Point(375, 35),
                 BackColor = Color.FromArgb(55, 65, 81),
@@ -365,7 +365,7 @@ namespace ChickenDist.Forms
             var colLastPrice = new DataGridViewTextBoxColumn
             {
                 Name = "LastClientPrice",
-                HeaderText = "آخر سعر للعميل 🏷️",
+                HeaderText = "آخر سعر للعميل",
                 Visible = false,
                 ReadOnly = true,
                 Width = 115,
@@ -404,7 +404,7 @@ namespace ChickenDist.Forms
                 var colKn = new DataGridViewTextBoxColumn
                 {
                     Name = "KitchenNotes",
-                    HeaderText = "📝 ملاحظات التحضير",
+                    HeaderText = "ملاحظات التحضير",
                     Visible = true,
                     ReadOnly = false,
                     Width = 140
@@ -415,7 +415,7 @@ namespace ChickenDist.Forms
             {
                 Name = "Delete",
                 HeaderText = "حذف",
-                Text = "🗑",
+                Text = "حذف",
                 UseColumnTextForButtonValue = true,
                 Width = 45,
                 FlatStyle = FlatStyle.Flat
@@ -492,7 +492,7 @@ namespace ChickenDist.Forms
                         if (!CheckAvailableStock(item.ProductID, item.BatchID, targetBaseQty, out decimal avail, out string err))
                         {
                             decimal maxAvail = avail / (item.Factor > 0 ? item.Factor : 1m);
-                            MessageBox.Show($"⚠️ لا يمكن زيادة الكمية.\nالرصيد المتاح بالمخزن ({maxAvail:G29}) لا يكفي!\nالبيع بالسالب غير مسموح للأصناف العادية.", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBox.Show($"لا يمكن زيادة الكمية.\nالرصيد المتاح بالمخزن ({maxAvail:G29}) لا يكفي!\nالبيع بالسالب غير مسموح للأصناف العادية.", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
                         item.Qty += 1;
@@ -590,10 +590,10 @@ namespace ChickenDist.Forms
             dgItems.KeyDown += DgItems_KeyDown;
 
             var cmsPOS = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, Font = Theme.FontMain };
-            cmsPOS.Items.Add("🔍 كارت الصنف السريع (F4)", null, (s, e) => {
+            cmsPOS.Items.Add("كارت الصنف السريع (F4)", null, (s, e) => {
                 if (!Session.IsAdmin && !Session.CanAccess("ProductCard") && !Session.CanAccess("Products") && !Session.CanEdit("Products"))
                 {
-                    MessageBox.Show("❌ عفوًا: ليس لديك صلاحية الدخول على كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عفوًا: ليس لديك صلاحية الدخول على كارت الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
@@ -608,7 +608,7 @@ namespace ChickenDist.Forms
                     }
                 }
             });
-            cmsPOS.Items.Add("📊 فحص رصيد الصنف بالمخازن", null, (s, e) => {
+            cmsPOS.Items.Add("فحص رصيد الصنف بالمخازن", null, (s, e) => {
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {
                     int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
@@ -617,7 +617,7 @@ namespace ChickenDist.Forms
                     if (pId > 0)
                     {
                         var dtWarehouses = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
-                        string msg = $"📦 تفاصيل رصيد الصنف: {name}\n" + new string('-', 40) + "\n";
+                        string msg = $"تفاصيل رصيد الصنف: {name}\n" + new string('-', 40) + "\n";
                         decimal totalStock = 0;
                         foreach (DataRow r in dtWarehouses.Rows)
                         {
@@ -632,7 +632,7 @@ namespace ChickenDist.Forms
                     }
                 }
             });
-            cmsPOS.Items.Add("📈 كشف حركة الصنف التفصيلي", null, (s, e) => {
+            cmsPOS.Items.Add("كشف حركة الصنف التفصيلي", null, (s, e) => {
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {
                     int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
@@ -644,7 +644,7 @@ namespace ChickenDist.Forms
                     }
                 }
             });
-            cmsPOS.Items.Add("🏷️ طباعة باركود الصنف", null, (s, e) => {
+            cmsPOS.Items.Add("طباعة باركود الصنف", null, (s, e) => {
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {
                     int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
@@ -667,7 +667,7 @@ namespace ChickenDist.Forms
                 }
             });
             cmsPOS.Items.Add(new ToolStripSeparator());
-            cmsPOS.Items.Add("📓 إضافة الصنف المحدد لكشكول النواقص", null, (s, e) => {
+            cmsPOS.Items.Add("إضافة الصنف المحدد لكشكول النواقص", null, (s, e) => {
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {
                     int pId = _items[dgItems.SelectedRows[0].Index].ProductID;
@@ -680,9 +680,9 @@ namespace ChickenDist.Forms
                     }
                 }
             });
-            cmsPOS.Items.Add("🎯 تعديل حد الطلب للأصناف", null, (s, e) => new FrmMinStockEdit().ShowDialog());
+            cmsPOS.Items.Add("تعديل حد الطلب للأصناف", null, (s, e) => new FrmMinStockEdit().ShowDialog());
             cmsPOS.Items.Add(new ToolStripSeparator());
-            cmsPOS.Items.Add("🗑️ حذف الصنف من الفاتورة (Del)", null, (s, e) => {
+            cmsPOS.Items.Add("حذف الصنف من الفاتورة (Del)", null, (s, e) => {
                 if (dgItems.SelectedRows.Count > 0 && dgItems.SelectedRows[0].Index < _items.Count)
                 {
                     _items.RemoveAt(dgItems.SelectedRows[0].Index);
@@ -711,7 +711,7 @@ namespace ChickenDist.Forms
             cboClient = new ComboBox { Location = new Point(55, 3), Size = new Size(135, 28), DropDownStyle = ComboBoxStyle.DropDown, Font = Theme.FontMain, BackColor = Theme.BgInput };
             cboClient.SelectedIndexChanged += CboClient_Changed;
 
-            var btnClientSearch = Theme.MakeButton("🔍", Theme.Accent);
+            var btnClientSearch = Theme.MakeButton("بحث", Theme.Accent);
             btnClientSearch.Location = new Point(193, 3);
             btnClientSearch.Size = new Size(30, 28);
             btnClientSearch.Click += (s, e) =>
@@ -741,7 +741,7 @@ namespace ChickenDist.Forms
                 }
             };
 
-            var btnClientAdd = Theme.MakeButton("➕", Theme.Success);
+            var btnClientAdd = Theme.MakeButton("+", Theme.Success);
             btnClientAdd.Location = new Point(225, 3);
             btnClientAdd.Size = new Size(30, 28);
             btnClientAdd.Font = Theme.FontBold;
@@ -779,7 +779,7 @@ namespace ChickenDist.Forms
             // ── زر توليفة العميل (مطاعم / كافيهات / محامص بن) ──
             if (AppConfig.IsRestaurant)
             {
-                var btnBlend = Theme.MakeButton("☕ توليفة", Color.FromArgb(110, 65, 25));
+                var btnBlend = Theme.MakeButton("توليفة", Color.FromArgb(110, 65, 25));
                 btnBlend.Location = new Point(350, 27);
                 btnBlend.Size = new Size(74, 26);
                 btnBlend.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
@@ -800,9 +800,9 @@ namespace ChickenDist.Forms
                     Padding = new Padding(6)
                 };
 
-                rbDineIn = new RadioButton   { Text = "🍽️ صالة",    Checked = true, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
-                rbTakeaway = new RadioButton { Text = "🛍️ تيك أواي", ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
-                rbDelivery = new RadioButton { Text = "🛵 توصيل",   ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
+                rbDineIn = new RadioButton   { Text = "صالة",    Checked = true, ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
+                rbTakeaway = new RadioButton { Text = "تيك أواي", ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
+                rbDelivery = new RadioButton { Text = "توصيل",   ForeColor = Color.White, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoSize = true };
 
                 lblTableNum = new Label { Text = "رقم الطاولة:", ForeColor = Color.White, Font = new Font("Segoe UI", 9f), AutoSize = true };
                 txtTableNum = new TextBox { Width = 60, Font = new Font("Segoe UI", 10f, FontStyle.Bold), BackColor = Theme.BgInput, ForeColor = Color.Black };
@@ -868,13 +868,13 @@ namespace ChickenDist.Forms
             pnlTotals = new Panel { Location = new Point(10, 495), Size = new Size(1070, 200), BackColor = Theme.BgCard };
             pnlTotals.Paint += (s, e) => Theme.DrawCardBorder(e.Graphics, pnlTotals);
 
-            // ترتيب RTL: الإجمالي (يمين) → المدفوع ونوع الدفع (وسط) → الباقي وعدد الأصناف (يسار)
+            // ترتيب RTL: الإجمالي (يمين) المدفوع ونوع الدفع (وسط) الباقي وعدد الأصناف (يسار)
             lblTotal     = new Label { Text = "الإجمالي: 0.00 ج",  Location = new Point(700, 45), Size = new Size(340, 40), ForeColor = Theme.Success, Font = new Font("Segoe UI", 20f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleRight };
             lblItemCount = new Label { Text = "عدد الأصناف: 0",    Location = new Point(700, 10), Size = new Size(340, 30), ForeColor = Theme.TextSub,  Font = new Font("Segoe UI", 11f),              TextAlign = ContentAlignment.MiddleRight };
 
             lblInvoiceItemsBadge = new Label
             {
-                Text = "📦 أصناف الفاتورة: 0",
+                Text = "أصناف الفاتورة: 0",
                 Location = new Point(20, 46),
                 Size = new Size(205, 42),
                 ForeColor = Color.FromArgb(255, 220, 110),
@@ -889,7 +889,7 @@ namespace ChickenDist.Forms
             
             btnTypeCash = new Button
             {
-                Text = "💵 كاش (F7)",
+                Text = "كاش (F7)",
                 Size = new Size(95, 34),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat,
@@ -902,7 +902,7 @@ namespace ChickenDist.Forms
 
             btnTypeVisa = new Button
             {
-                Text = "💳 فيزا (F8)",
+                Text = "فيزا (F8)",
                 Size = new Size(95, 34),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat,
@@ -932,7 +932,7 @@ namespace ChickenDist.Forms
 
             btnTypeCredit = new Button
             {
-                Text = "📑 آجل (F9)",
+                Text = "آجل (F9)",
                 Size = new Size(95, 34),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat,
@@ -945,7 +945,7 @@ namespace ChickenDist.Forms
 
             btnTypeMixed = new Button
             {
-                Text = "🔀 مختلط (F10)",
+                Text = "مختلط (F10)",
                 Size = new Size(105, 34),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat,
@@ -969,49 +969,49 @@ namespace ChickenDist.Forms
             lblChange = new Label { Text = "الباقي: 0.00 ج", Location = new Point(230, 46), Size = new Size(240, 42), ForeColor = Theme.Accent, Font = new Font("Segoe UI", 17.5f, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter };
 
             // ── أزرار الأسفل ──────────────────────────────────
-            btnPay = Theme.MakeButton("💰 إتمام البيع (F5)", Theme.Success, new Point(20, 130), new Size(250, 55));
+            btnPay = Theme.MakeButton("إتمام البيع (F5)", Theme.Success, new Point(20, 130), new Size(250, 55));
             btnPay.Font = new Font("Segoe UI", 13.5f, FontStyle.Bold);
             btnPay.Click += BtnPay_Click;
 
-            btnNew = Theme.MakeButton("🔄 فاتورة جديدة (F2)", Color.FromArgb(60, 70, 85), new Point(280, 130), new Size(160, 55));
+            btnNew = Theme.MakeButton("فاتورة جديدة (F2)", Color.FromArgb(60, 70, 85), new Point(280, 130), new Size(160, 55));
             btnNew.Font = new Font("Segoe UI", 11.5f, FontStyle.Bold);
             btnNew.Click += (s, e) => NewInvoice();
 
-            btnCancel = Theme.MakeButton("❌ إلغاء (Esc)", Theme.Danger, new Point(450, 130), new Size(130, 55));
+            btnCancel = Theme.MakeButton("إلغاء (Esc)", Theme.Danger, new Point(450, 130), new Size(130, 55));
             btnCancel.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnCancel.Click += (s, e) => { if (_items.Count > 0 && MessageBox.Show("إلغاء الفاتورة؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes) NewInvoice(); };
 
-            _btnPrint = Theme.MakeButton("🖨️ طباعة (F6)", Theme.Primary, new Point(680, 130), new Size(110, 55));
+            _btnPrint = Theme.MakeButton("طباعة (F6)", Theme.Primary, new Point(680, 130), new Size(110, 55));
             _btnPrint.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             _btnPrint.Click += (s, e) => { if (_lastSaleID > 0) PrintReceipt(_lastSaleID, askFirst: true); };
 
-            _btnWhatsApp = Theme.MakeButton("💬 واتساب", Color.FromArgb(37, 211, 102), new Point(795, 130), new Size(95, 55));
+            _btnWhatsApp = Theme.MakeButton("واتساب", Color.FromArgb(37, 211, 102), new Point(795, 130), new Size(95, 55));
             _btnWhatsApp.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             _btnWhatsApp.ForeColor = Color.White;
             _btnWhatsApp.Click += (s, e) => { if (_lastSaleID > 0) SendWhatsAppReceipt(_lastSaleID); };
 
-            btnOpenDrawer = Theme.MakeButton("🔓 فتح الدرج\n(Ctrl+D)", Color.FromArgb(70, 70, 70), new Point(895, 130), new Size(150, 55));
+            btnOpenDrawer = Theme.MakeButton("فتح الدرج\n(Ctrl+D)", Color.FromArgb(70, 70, 70), new Point(895, 130), new Size(150, 55));
             btnOpenDrawer.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnOpenDrawer.Click += (s, e) => { RawPrinterHelper.OpenCashDrawer(); };
 
-            btnSuspend = Theme.MakeButton("⏳ تعليق\nالطلب (F3)", Color.FromArgb(230, 126, 34), new Point(0, 130), new Size(130, 55));
+            btnSuspend = Theme.MakeButton("تعليق\nالطلب (F3)", Color.FromArgb(230, 126, 34), new Point(0, 130), new Size(130, 55));
             btnSuspend.Name = "btnSuspend";
             btnSuspend.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnSuspend.Click += (s, e) => SuspendCurrentOrder();
 
-            btnRecall = Theme.MakeButton("📋 الطلبات\nالمعلقة (F4)", Color.FromArgb(52, 152, 219), new Point(0, 130), new Size(140, 55));
+            btnRecall = Theme.MakeButton("الطلبات\nالمعلقة (F4)", Color.FromArgb(52, 152, 219), new Point(0, 130), new Size(140, 55));
             btnRecall.Name = "btnRecall";
             btnRecall.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnRecall.Click += (s, e) => RecallDraftSale();
 
-            btnClientPayment = Theme.MakeButton("📥 توريد\nمن عميل", Color.FromArgb(16, 120, 140), new Point(0, 128), new Size(115, 56));
+            btnClientPayment = Theme.MakeButton("توريد\nمن عميل", Color.FromArgb(16, 120, 140), new Point(0, 128), new Size(115, 56));
             btnClientPayment.Name = "btnClientPayment";
             btnClientPayment.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnClientPayment.Click += (s, e) => OpenClientPaymentDialog();
 
             if (AppConfig.IsClothing)
             {
-                btnModelLookup = Theme.MakeButton("👗 ألوان ومقاسات", Color.FromArgb(142, 68, 173), new Point(0, 128), new Size(125, 56));
+                btnModelLookup = Theme.MakeButton("ألوان ومقاسات", Color.FromArgb(142, 68, 173), new Point(0, 128), new Size(125, 56));
                 btnModelLookup.Name = "btnModelLookup";
                 btnModelLookup.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
                 btnModelLookup.Click += (s, e) => OpenModelLookup();
@@ -1051,7 +1051,7 @@ namespace ChickenDist.Forms
 
             btnApplyVoucher = new Button
             {
-                Text = "✔ تطبيق",
+                Text = "تطبيق",
                 Location = new Point(158, 10),
                 Size = new Size(65, 28),
                 BackColor = Color.FromArgb(109, 40, 217),
@@ -1078,7 +1078,7 @@ namespace ChickenDist.Forms
 
             if (AppConfig.IsRestaurant)
             {
-                btnKitchenPrint = Theme.MakeButton("🍳 بون\nمطبخ", Color.FromArgb(230, 120, 20), new Point(0, 128), new Size(95, 56));
+                btnKitchenPrint = Theme.MakeButton("بون\nمطبخ", Color.FromArgb(230, 120, 20), new Point(0, 128), new Size(95, 56));
                 btnKitchenPrint.Name = "btnKitchenPrint";
                 btnKitchenPrint.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
                 btnKitchenPrint.Click += (s, e) =>
@@ -1391,13 +1391,13 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanSellCredit)
                 {
-                    MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالأجل!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عفوًا: ليس لديك صلاحية البيع بالأجل!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (!(cboClient.SelectedItem is ComboItem ci) || ci.ID <= 0)
                 {
-                    MessageBox.Show("⚠️ تنبيه: البيع بالأجل (آجل) يتطلب اختيار عميل مسجل أولاً!\nيرجى تحديد العميل من قائمة العملاء بالأعلى.", "اختيار العميل مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("تنبيه: البيع بالأجل (آجل) يتطلب اختيار عميل مسجل أولاً!\nيرجى تحديد العميل من قائمة العملاء بالأعلى.", "اختيار العميل مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     cboClient.Focus();
                     return;
                 }
@@ -1408,7 +1408,7 @@ namespace ChickenDist.Forms
                     string ptype = clientRow["DefaultPaymentType"].ToString();
                     if (string.Equals(ptype, "Cash", StringComparison.OrdinalIgnoreCase) || ptype == "كاش")
                     {
-                        MessageBox.Show("⚠️ هذا العميل محدَّد في كارت العميل لـ (كاش فقط)، لا يمكن البيع له بالأجل!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("هذا العميل محدَّد في كارت العميل لـ (كاش فقط)، لا يمكن البيع له بالأجل!", "طريقة الدفع غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                 }
@@ -1417,7 +1417,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanSellVisa)
                 {
-                    MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالفيزا / البطاقة!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عفوًا: ليس لديك صلاحية البيع بالفيزا / البطاقة!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -1435,7 +1435,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanSellCash)
                 {
-                    MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع النقدي!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عفوًا: ليس لديك صلاحية البيع النقدي!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -1465,11 +1465,11 @@ namespace ChickenDist.Forms
                 btnTypeVisa.ForeColor = _selectedSaleType == "Visa" ? activeText : inactiveText;
                 if (_selectedSaleType == "Visa" && !string.IsNullOrEmpty(_selectedVisaAccountName))
                 {
-                    btnTypeVisa.Text = $"💳 {_selectedVisaAccountName}";
+                    btnTypeVisa.Text = $"{_selectedVisaAccountName}";
                 }
                 else
                 {
-                    btnTypeVisa.Text = "💳 فيزا (F8)";
+                    btnTypeVisa.Text = "فيزا (F8)";
                 }
             }
 
@@ -1645,7 +1645,7 @@ namespace ChickenDist.Forms
                         // تم مسح IMEI صريح لكنه غير متوفر بالمخزن الحالي
                         txtBarcode?.Clear();
                         txtBarcode?.Focus();
-                        MessageBox.Show($"❌ تنبيه: جهاز الموبايل برقم IMEI ({cleanImei}) غير متوفر في هذا المخزن أو تم بيعه مسبقاً!", "تنبيه جهاز غير متاح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"تنبيه: جهاز الموبايل برقم IMEI ({cleanImei}) غير متوفر في هذا المخزن أو تم بيعه مسبقاً!", "تنبيه جهاز غير متاح", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                 }
@@ -1766,7 +1766,7 @@ namespace ChickenDist.Forms
                             }
                             else
                             {
-                                MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                MessageBox.Show("عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                 return;
                             }
                         }
@@ -1867,7 +1867,7 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -1880,7 +1880,7 @@ namespace ChickenDist.Forms
         {
             if (expiryDate.HasValue && expiryDate.Value < DateTime.Today && !AppConfig.AllowSellExpired)
             {
-                MessageBox.Show("❌ عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("عجز: هذا الصنف منتهي الصلاحية ولا يسمح النظام ببيعه حسب الإعدادات الحالية!", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -2018,7 +2018,7 @@ namespace ChickenDist.Forms
                 if (availableStock <= 0m)
                 {
                     string curWhName = cboWarehouse != null ? cboWarehouse.Text : "المخزن المحدد";
-                    MessageBox.Show($"❌ عجز: الصنف '{name}' ليس لديه رصيد متاح في {curWhName} حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"عجز: الصنف '{name}' ليس لديه رصيد متاح في {curWhName} حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -2026,7 +2026,7 @@ namespace ChickenDist.Forms
 
                 if (targetQty > maxAvailInUnit)
                 {
-                    MessageBox.Show($"❌ عجز: الكمية المطلوبة ({targetQty:G29}) أكبر من الرصيد المتاح بالمخزن ({maxAvailInUnit:G29}) للصنف '{name}'!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"عجز: الكمية المطلوبة ({targetQty:G29}) أكبر من الرصيد المتاح بالمخزن ({maxAvailInUnit:G29}) للصنف '{name}'!\nالبيع بالسالب غير مسموح.", "رصيد غير كافٍ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -2187,8 +2187,8 @@ namespace ChickenDist.Forms
             if (lblInvoiceItemsBadge != null)
             {
                 lblInvoiceItemsBadge.Text = totalPieces > 0 && totalPieces != _items.Count
-                    ? $"📦 أصناف الفاتورة: {_items.Count} ({totalPieces:G29} ق)"
-                    : $"📦 أصناف الفاتورة: {_items.Count}";
+                    ? $"أصناف الفاتورة: {_items.Count} ({totalPieces:G29} ق)"
+                    : $"أصناف الفاتورة: {_items.Count}";
             }
             decimal netTotal = total - loyaltyDiscount - _voucherDiscount;
             if (_selectedSaleType == "Cash" && txtPaid != null) txtPaid.Text = netTotal.ToString("N2");
@@ -2205,8 +2205,8 @@ namespace ChickenDist.Forms
                     {
                         _voucherDiscount = recalc;
                         string discLabel = vDto.DiscountType == "Percent"
-                            ? $"🎟️ خصم {vDto.DiscountValue:G29}%: -{recalc:N2} ج"
-                            : $"🎟️ خصم: -{recalc:N2} ج";
+                            ? $"خصم {vDto.DiscountValue:G29}%: -{recalc:N2} ج"
+                            : $"خصم: -{recalc:N2} ج";
                         lblVoucherDiscount.Text = discLabel;
                     }
                 }
@@ -2481,7 +2481,7 @@ namespace ChickenDist.Forms
                 decimal maxAvailInUnit = availBase / (item.Factor > 0 ? item.Factor : 1m);
                 if (item.Qty > maxAvailInUnit)
                 {
-                    MessageBox.Show($"⚠️ تنبيه: الكمية المطلوبة ({item.Qty:G29}) أكبر من الرصيد المتاح للوحدة المختارة ({maxAvailInUnit:G29}) للصنف '{item.Name}'!", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"تنبيه: الكمية المطلوبة ({item.Qty:G29}) أكبر من الرصيد المتاح للوحدة المختارة ({maxAvailInUnit:G29}) للصنف '{item.Name}'!", "تنبيه المخزون", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
 
@@ -2630,7 +2630,7 @@ namespace ChickenDist.Forms
                 available = qtyObj != null && qtyObj != DBNull.Value ? Convert.ToDecimal(qtyObj) : 0m;
                 if (qtyInFactor > available)
                 {
-                    errorMessage = $"❌ عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في تشغيلية الصلاحية المحددة ({available:G29})!";
+                    errorMessage = $"عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في تشغيلية الصلاحية المحددة ({available:G29})!";
                     return false;
                 }
             }
@@ -2639,7 +2639,7 @@ namespace ChickenDist.Forms
                 available = InventoryDAL.GetProductStock(productID, wid);
                 if (qtyInFactor > available)
                 {
-                    errorMessage = $"❌ عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في المخزن حالياً ({available:G29})!";
+                    errorMessage = $"عجز: الكمية المطلوبة ({qtyInFactor:G29}) أكبر من الكمية المتاحة في المخزن حالياً ({available:G29})!";
                     return false;
                 }
             }
@@ -2844,7 +2844,7 @@ namespace ChickenDist.Forms
                     if (!Session.CanSellBelowCost("POS") && item.Cost > 0 && newPrice < item.Cost)
                     {
                         string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
-                        MessageBox.Show($"❌ غير مسموح ببيع الصنف '{item.Name}' بسعر ({newPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"غير مسموح ببيع الصنف '{item.Name}' بسعر ({newPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         dgItems.Rows[e.RowIndex].Cells["Price"].Value = item.Price.ToString("N2");
                         return;
                     }
@@ -2854,7 +2854,7 @@ namespace ChickenDist.Forms
                     if (!Session.CanSellBelowCost("POS") && item.Cost > 0 && testNetUnit < item.Cost)
                     {
                         string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
-                        MessageBox.Show($"❌ السعر المدخل مع الخصم الحالي يجعل صافي سعر الصنف '{item.Name}' ({testNetUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"السعر المدخل مع الخصم الحالي يجعل صافي سعر الصنف '{item.Name}' ({testNetUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         dgItems.Rows[e.RowIndex].Cells["Price"].Value = item.Price.ToString("N2");
                         return;
                     }
@@ -2877,7 +2877,7 @@ namespace ChickenDist.Forms
                     if (!Session.CanSellBelowCost("POS") && item.Cost > 0 && netUnitPrice < item.Cost)
                     {
                         string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " أقل من الحد الأدنى المسموح به للبيع.";
-                        MessageBox.Show($"❌ قيمة الخصم تجعل صافي سعر بيع الصنف '{item.Name}' ({netUnitPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"قيمة الخصم تجعل صافي سعر بيع الصنف '{item.Name}' ({netUnitPrice:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         dgItems.Rows[e.RowIndex].Cells["Discount"].Value = item.DiscountAmt.ToString("N2");
                         return;
                     }
@@ -2958,14 +2958,14 @@ namespace ChickenDist.Forms
                 {
                     if (clientID <= 0)
                     {
-                        MessageBox.Show("⚠️ تنبيه: البيع بالأجل (آجل) يتطلب اختيار عميل مسجل أولاً!\nيرجى تحديد العميل من قائمة العملاء بالأعلى.", "اختيار العميل مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("تنبيه: البيع بالأجل (آجل) يتطلب اختيار عميل مسجل أولاً!\nيرجى تحديد العميل من قائمة العملاء بالأعلى.", "اختيار العميل مطلوب", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         if (cboClient != null) cboClient.Focus();
                         _isSaving = false;
                         return;
                     }
                     if (!Session.IsAdmin && !Session.CanSellCredit)
                     {
-                        MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالأجل!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("عفوًا: ليس لديك صلاحية البيع بالأجل!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         _isSaving = false;
                         return;
                     }
@@ -2974,7 +2974,7 @@ namespace ChickenDist.Forms
                 {
                     if (!Session.IsAdmin && !Session.CanSellVisa)
                     {
-                        MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع بالفيزا / البطاقة!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("عفوًا: ليس لديك صلاحية البيع بالفيزا / البطاقة!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         _isSaving = false;
                         return;
                     }
@@ -2983,7 +2983,7 @@ namespace ChickenDist.Forms
                 {
                     if (!Session.IsAdmin && !Session.CanSellCash)
                     {
-                        MessageBox.Show("⛔ عفوًا: ليس لديك صلاحية البيع النقدي!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("عفوًا: ليس لديك صلاحية البيع النقدي!", "صلاحية غير مسموحة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         _isSaving = false;
                         return;
                     }
@@ -3037,7 +3037,7 @@ namespace ChickenDist.Forms
                     decimal totalPaid = cashPaidVal + visaPaidVal;
                     if (totalPaid < total && clientID <= 0)
                     {
-                        MessageBox.Show("⚠️ إجمالي المدفوع (كاش + فيزا) أقل من قيمة الفاتورة!\nيلزم اختيار عميل مسجل لتسجيل باقي المبلغ كآجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("إجمالي المدفوع (كاش + فيزا) أقل من قيمة الفاتورة!\nيلزم اختيار عميل مسجل لتسجيل باقي المبلغ كآجل.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         if (cboClient != null) cboClient.Focus();
                         _isSaving = false;
                         return;
@@ -3096,7 +3096,7 @@ namespace ChickenDist.Forms
                 {
                     if (!CheckAvailableStock(gItem.ProductID, gItem.BatchID, gItem.TotalBaseQty, out decimal avail, out string errMsg))
                     {
-                        MessageBox.Show($"عذراً، الصنف '{gItem.Name}' رصيده لا يكفي لإتمام البيع!\n{errMsg}\n\n⚠️ تم منع البيع لأن الصنف ليس صنف خدمة وغير مسموح ببيعه بالسالب.", "منع البيع بالسالب", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"عذراً، الصنف '{gItem.Name}' رصيده لا يكفي لإتمام البيع!\n{errMsg}\n\nتم منع البيع لأن الصنف ليس صنف خدمة وغير مسموح ببيعه بالسالب.", "منع البيع بالسالب", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         _isSaving = false;
                         return;
                     }
@@ -3113,7 +3113,7 @@ namespace ChickenDist.Forms
                             if (netUnit < item.Cost - 0.001m)
                             {
                                 string costNotice = Session.CanViewCost("POS") ? $" أقل من سعر التكلفة ({item.Cost:N2})." : " يقل عن الحد الأدنى المسموح به.";
-                                MessageBox.Show($"❌ لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{item.Name}' بعد الخصم ({netUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                                MessageBox.Show($"لا يمكن حفظ الفاتورة لأن صافي سعر بيع الصنف '{item.Name}' بعد الخصم ({netUnit:N2}){costNotice}", "تنبيه سعر البيع", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                                 _isSaving = false;
                                 return;
                             }
@@ -3437,7 +3437,7 @@ namespace ChickenDist.Forms
             catch (Exception ex)
             {
                 AppLogger.Error("FrmPOS.BtnPay_Click", ex);
-                MessageBox.Show("❌ فشل حفظ الفاتورة:\n" + ex.Message, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل حفظ الفاتورة:\n" + ex.Message, "خطأ في الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -3465,7 +3465,7 @@ namespace ChickenDist.Forms
             var dto = DiscountVouchersDAL.GetByCode(code);
             if (dto == null)
             {
-                lblVoucherDiscount.Text = "❌ كود الخصم غير موجود";
+                lblVoucherDiscount.Text = "كود الخصم غير موجود";
                 lblVoucherDiscount.ForeColor = Color.FromArgb(239, 68, 68);
                 _voucherDiscount = 0m;
                 _appliedVoucherID = 0;
@@ -3476,7 +3476,7 @@ namespace ChickenDist.Forms
             string reason;
             if (!dto.IsValid(out reason))
             {
-                lblVoucherDiscount.Text = "⚠️ " + reason;
+                lblVoucherDiscount.Text = "" + reason;
                 lblVoucherDiscount.ForeColor = Color.FromArgb(251, 146, 60);
                 _voucherDiscount = 0m;
                 _appliedVoucherID = 0;
@@ -3493,8 +3493,8 @@ namespace ChickenDist.Forms
             _appliedVoucherID = dto.VoucherID;
 
             string discLabel = dto.DiscountType == "Percent"
-                ? $"🎟️ خصم {dto.DiscountValue:G29}%: -{disc:N2} ج"
-                : $"🎟️ خصم: -{disc:N2} ج";
+                ? $"خصم {dto.DiscountValue:G29}%: -{disc:N2} ج"
+                : $"خصم: -{disc:N2} ج";
 
             lblVoucherDiscount.Text = discLabel;
             lblVoucherDiscount.ForeColor = Color.FromArgb(52, 211, 153);
@@ -3593,7 +3593,7 @@ namespace ChickenDist.Forms
         {
             using var dlg = new Form
             {
-                Text = "📥 توريد نقدية من عميل (سند قبض)",
+                Text = "توريد نقدية من عميل (سند قبض)",
                 Size = new Size(460, 430),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -3664,7 +3664,7 @@ namespace ChickenDist.Forms
 
             var btnSave = new Button
             {
-                Text = "💾 حفظ وطباعة / إرسال",
+                Text = "حفظ وطباعة / إرسال",
                 Location = new Point(25, 312),
                 Size = new Size(240, 44),
                 BackColor = Color.FromArgb(16, 120, 140),
@@ -3786,7 +3786,7 @@ namespace ChickenDist.Forms
                 }
 
                 RefreshGrid();
-                MessageBox.Show($"✅ تم استرجاع فاتورة الكاشير بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم استرجاع فاتورة الكاشير بنجاح ({_items.Count} صنف)!\nستظل محفوظة في قائمة الفواتير غير المكتملة لحين حفظها نهائياً أو حذفها.", "استرجاع الفاتورة", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -3856,7 +3856,7 @@ namespace ChickenDist.Forms
             {
                 if (askFirst)
                 {
-                    FrmPrintChoiceDialog.PromptAndPrintSale(this, saleID, $"✅ تم حفظ فاتورة البيع رقم [{saleID}]", forceAsk: true);
+                    FrmPrintChoiceDialog.PromptAndPrintSale(this, saleID, $"تم حفظ فاتورة البيع رقم [{saleID}]", forceAsk: true);
                 }
                 else
                 {
@@ -3945,7 +3945,7 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        // المستخدم ضغط إلغاء أو أغلق الشاشة → نخرج من الحلقة
+                        // المستخدم ضغط إلغاء أو أغلق الشاشة نخرج من الحلقة
                         break;
                     }
                 }
@@ -4072,8 +4072,8 @@ namespace ChickenDist.Forms
                     btnColor = Color.FromArgb(108, 117, 125); // رمادي للأصناف غير المتوفرة
                 }
 
-                string priceText = price > 0 ? $"{price:N2} ج" : "⚠️ بدون سعر";
-                string stockText = isService ? "خدمة" : (dispStock > 0 ? $"رصيد: {stockStr}" : "❌ نفد");
+                string priceText = price > 0 ? $"{price:N2} ج" : "بدون سعر";
+                string stockText = isService ? "خدمة" : (dispStock > 0 ? $"رصيد: {stockStr}" : "نفد");
 
                 float nameFontSize = name.Length > 24 ? 9.5f : (name.Length > 14 ? 10.5f : 11.5f);
                 string pText = priceText;
@@ -4167,7 +4167,7 @@ namespace ChickenDist.Forms
                 if (stock <= 0 && !isService)
                 {
                     string whName = cboWarehouse != null ? cboWarehouse.Text : "المخزن المحدد";
-                    MessageBox.Show($"❌ عجز: الصنف '{row["ProductName"]}' ليس لديه رصيد متاح في {whName} حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "عجز الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show($"عجز: الصنف '{row["ProductName"]}' ليس لديه رصيد متاح في {whName} حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "عجز الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -4183,7 +4183,7 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        MessageBox.Show("❌ عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("عجز: لا توجد أي تشغيلات (صلاحيات) متوفرة لهذا الصنف في هذا المخزن حالياً!", "عجز الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                 }
@@ -4383,7 +4383,7 @@ namespace ChickenDist.Forms
                 {
                     var pts = DbHelper.Scalar("SELECT ISNULL(LoyaltyPoints,0) FROM Clients WHERE ClientID=@id", DbHelper.P("@id", ci.ID));
                     decimal points = pts != null && pts != DBNull.Value ? Convert.ToDecimal(pts) : 0;
-                    lblClientPoints.Text = $"🎁 {points:N0} نقطة";
+                    lblClientPoints.Text = $"{points:N0} نقطة";
                 }
                 else { lblClientPoints.Text = ""; }
 
@@ -4440,13 +4440,13 @@ namespace ChickenDist.Forms
 
             // بناء نص التوليفة الذي سيُدرج في ملاحظات التحضير (KitchenNotes)
             var sb = new System.Text.StringBuilder();
-            sb.Append($"☕ {frm.SelectedBlendName}");
+            sb.Append($"{frm.SelectedBlendName}");
             if (!string.IsNullOrWhiteSpace(frm.SelectedRecipeDetails))
                 sb.Append($"\r\n{frm.SelectedRecipeDetails}");
             if (!string.IsNullOrWhiteSpace(frm.SelectedGrindType))
-                sb.Append($"\r\n⚙️ الطحن: {frm.SelectedGrindType}");
+                sb.Append($"\r\nالطحن: {frm.SelectedGrindType}");
             if (!string.IsNullOrWhiteSpace(frm.SelectedRoastLevel))
-                sb.Append($"\r\n🔥 التحويج: {frm.SelectedRoastLevel}");
+                sb.Append($"\r\nالتحويج: {frm.SelectedRoastLevel}");
 
             string blendText = sb.ToString();
 
@@ -4479,7 +4479,7 @@ namespace ChickenDist.Forms
                         RefreshGrid();
                         if (dgItems.Rows.Count > 0)
                             dgItems.CurrentCell = dgItems.Rows[dgItems.Rows.Count - 1].Cells["Qty"];
-                        MessageBox.Show($"✅ تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
                 }
@@ -4501,7 +4501,7 @@ namespace ChickenDist.Forms
                     dgItems.Rows[rowIdx].Cells["KitchenNotes"].Value = blendText;
                 }
                 RefreshGrid();
-                MessageBox.Show($"✅ تم ربط التوليفة [{frm.SelectedBlendName}] بالصنف المختار بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم ربط التوليفة [{frm.SelectedBlendName}] بالصنف المختار بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else if (_items.Count > 0)
             {
@@ -4514,11 +4514,11 @@ namespace ChickenDist.Forms
                     dgItems.Rows[dgItems.Rows.Count - 1].Cells["KitchenNotes"].Value = blendText;
                 }
                 RefreshGrid();
-                MessageBox.Show($"✅ تم ربط التوليفة [{frm.SelectedBlendName}] بآخر صنف بالفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم ربط التوليفة [{frm.SelectedBlendName}] بآخر صنف بالفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                // الفاتورة فارغة والتوليفة غير مرتبطة بصنف أساسي → سؤال الكاشير لاختيار الصنف
+                // الفاتورة فارغة والتوليفة غير مرتبطة بصنف أساسي سؤال الكاشير لاختيار الصنف
                 var ans = MessageBox.Show(
                     $"التوليفة [{frm.SelectedBlendName}] غير مربوطة بصنف مبيعات أساسي.\nهل ترغب في اختيار صنف من قائمة الأصناف الآن لبيعه مع هذه التوليفة؟",
                     "اختيار صنف التوليفة", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -4548,7 +4548,7 @@ namespace ChickenDist.Forms
                             RefreshGrid();
                             DbHelper.Execute("UPDATE ClientBlends SET BaseProductID=@pid WHERE ClientID=@cid AND BlendName=@bn AND (BaseProductID IS NULL OR BaseProductID=0)",
                                 DbHelper.P("@pid", search.SelectedProductID), DbHelper.P("@cid", ci.ID), DbHelper.P("@bn", frm.SelectedBlendName));
-                            MessageBox.Show($"✅ تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show($"تم إدراج صنف التوليفة [{frm.SelectedBlendName}] في الفاتورة بنجاح.", "تم الإدراج", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
                 }
@@ -4714,11 +4714,11 @@ namespace ChickenDist.Forms
 
                 // 3. Format message
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"📄 *فاتورة مبيعات رقم: {saleCode}*");
-                sb.AppendLine($"📅 *التاريخ:* {Convert.ToDateTime(row["SaleDate"]):yyyy-MM-dd HH:mm}");
-                sb.AppendLine($"👤 *العميل:* {clientName}");
+                sb.AppendLine($"*فاتورة مبيعات رقم: {saleCode}*");
+                sb.AppendLine($"*التاريخ:* {Convert.ToDateTime(row["SaleDate"]):yyyy-MM-dd HH:mm}");
+                sb.AppendLine($"*العميل:* {clientName}");
                 sb.AppendLine();
-                sb.AppendLine("📋 *الأصناف:*");
+                sb.AppendLine("*الأصناف:*");
                 
                 foreach (DataRow item in dtItems.Rows)
                 {
@@ -4735,18 +4735,18 @@ namespace ChickenDist.Forms
                     sb.AppendLine($"- {prodName} ({qty} {unit} × {price:N2}) = {itemTotal:N2} ج");
                     if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
                     {
-                        sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+                        sb.AppendLine($"   السيريال (IMEI): {imei}");
                     }
                 }
 
                 sb.AppendLine();
-                sb.AppendLine($"💵 *الإجمالي:* {total:N2} ج");
-                if (discount > 0) sb.AppendLine($"🎁 *الخصم:* {discount:N2} ج");
-                sb.AppendLine($"💳 *المدفوع:* {paid:N2} ج");
-                if (remaining > 0) sb.AppendLine($"⚠️ *المتبقي:* {remaining:N2} ج");
+                sb.AppendLine($"*الإجمالي:* {total:N2} ج");
+                if (discount > 0) sb.AppendLine($"*الخصم:* {discount:N2} ج");
+                sb.AppendLine($"*المدفوع:* {paid:N2} ج");
+                if (remaining > 0) sb.AppendLine($"*المتبقي:* {remaining:N2} ج");
                 
                 sb.AppendLine();
-                sb.AppendLine("شكراً لتعاملكم معنا! 🙏");
+                sb.AppendLine("شكراً لتعاملكم معنا!");
 
                 string message = sb.ToString();
 
@@ -4756,7 +4756,7 @@ namespace ChickenDist.Forms
                     phone,
                     message,
                     () => ReceiptImageGenerator.GenerateSaleReceiptImage(saleID),
-                    "📱 إرسال فاتورة المبيعات عبر الواتساب");
+                    "إرسال فاتورة المبيعات عبر الواتساب");
             }
             catch (Exception ex)
             {
@@ -4864,7 +4864,7 @@ namespace ChickenDist.Forms
 
             var dlg = new Form
             {
-                Text            = "⚙️ تخصيص أعمدة المبيعات السريعة",
+                Text            = "تخصيص أعمدة المبيعات السريعة",
                 Size            = new Size(360, 480),
                 StartPosition   = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -4878,7 +4878,7 @@ namespace ChickenDist.Forms
 
             var lblHint = new Label
             {
-                Text      = "✅ تفعيل/إيقاف الأعمدة  |  ▲▼ لتغيير الترتيب",
+                Text      = "تفعيل/إيقاف الأعمدة  |  لتغيير الترتيب",
                 Dock      = DockStyle.Top,
                 Height    = 32,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -4902,8 +4902,8 @@ namespace ChickenDist.Forms
                 clb.Items.Add(new ColEntry(col.Name, col.HeaderText), col.Visible);
             }
 
-            var btnUp   = new Button { Text = "▲ أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-            var btnDown = new Button { Text = "▼ أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnUp   = new Button { Text = "أعلى",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+            var btnDown = new Button { Text = "أسفل",   Width = 90, Height = 30, BackColor = Color.FromArgb(55,65,81), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
             btnUp.FlatAppearance.BorderSize = btnDown.FlatAppearance.BorderSize = 0;
 
             btnUp.Click += (s, e) =>
@@ -4929,8 +4929,8 @@ namespace ChickenDist.Forms
                 clb.SelectedIndex = i + 1;
             };
 
-            var btnOk     = new Button { Text = "✅ حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
-            var btnCancel = new Button { Text = "❌ إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
+            var btnOk     = new Button { Text = "حفظ",   Width = 100, Height = 32, BackColor = Color.FromArgb(46,204,113), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.OK };
+            var btnCancel = new Button { Text = "إلغاء", Width = 80,  Height = 32, BackColor = Color.FromArgb(200,50,50),  ForeColor = Color.White, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel };
             btnOk.FlatAppearance.BorderSize = btnCancel.FlatAppearance.BorderSize = 0;
 
             var pnlArrows = new FlowLayoutPanel
@@ -5177,7 +5177,7 @@ namespace ChickenDist.Forms
         {
             using (Form dlg = new Form())
             {
-                dlg.Text = "📋 الطلبات المعلقة والطاولات النشطة";
+                dlg.Text = "الطلبات المعلقة والطاولات النشطة";
                 dlg.Size = new Size(760, 520);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.RightToLeft = RightToLeft.Yes;
@@ -5187,8 +5187,8 @@ namespace ChickenDist.Forms
 
                 // ── شريط الأزرار السفلي ──────────────────────────── (يُضاف أولاً)
                 var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 65, BackColor = Theme.BgHeader, Padding = new Padding(10, 12, 10, 10) };
-                var btnLoad = Theme.MakeButton("✅ استرجاع الطلب", Theme.Primary, new Point(10, 10), new Size(165, 42));
-                var btnDelete = Theme.MakeButton("❌ حذف المعلق", Theme.Danger, new Point(185, 10), new Size(145, 42));
+                var btnLoad = Theme.MakeButton("استرجاع الطلب", Theme.Primary, new Point(10, 10), new Size(165, 42));
+                var btnDelete = Theme.MakeButton("حذف المعلق", Theme.Danger, new Point(185, 10), new Size(145, 42));
                 var btnCancelDraft = Theme.MakeButton("رجوع", Color.FromArgb(70,70,70), new Point(340, 10), new Size(105, 42));
                 pnlButtons.Controls.Add(btnLoad);
                 pnlButtons.Controls.Add(btnDelete);
@@ -5242,7 +5242,7 @@ namespace ChickenDist.Forms
                 // ── شريط البحث العلوي ─────────────────────────────── (يُضاف أخيراً - Top)
                 var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.BgCard, Padding = new Padding(10, 10, 10, 6) };
                 var txtSearch = new TextBox { Width = 260, Height = 30, Font = new Font("Segoe UI", 11f), BorderStyle = BorderStyle.FixedSingle, BackColor = Theme.BgInput };
-                var lblSearch = new Label { Text = "🔍 بحث (طاولة / عميل):", Width = 165, Height = 28, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain };
+                var lblSearch = new Label { Text = "بحث (طاولة / عميل):", Width = 165, Height = 28, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain };
                 var flowSearch = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
                 flowSearch.Controls.Add(lblSearch);
                 flowSearch.Controls.Add(txtSearch);
@@ -5256,9 +5256,9 @@ namespace ChickenDist.Forms
                         @"SELECT s.SaleID, s.SaleCode AS [رقم الفاتورة], 
                                  s.SaleDate AS [التاريخ والوقت],
                                  CASE s.OrderType 
-                                    WHEN 'DineIn' THEN N'🍽️ صالة (' + ISNULL(s.TableNumber,'') + ')'
-                                    WHEN 'Delivery' THEN N'🛵 توصيل'
-                                    ELSE N'🛍️ تيك أواي'
+                                    WHEN 'DineIn' THEN N'صالة (' + ISNULL(s.TableNumber,'') + ')'
+                                    WHEN 'Delivery' THEN N'توصيل'
+                                    ELSE N'تيك أواي'
                                  END AS [نوع الطلب],
                                  ISNULL(s.TableNumber, '') AS [رقم الطاولة],
                                  ISNULL(c.ClientName, N'---') AS [العميل],

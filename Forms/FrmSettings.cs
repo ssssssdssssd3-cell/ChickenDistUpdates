@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -28,7 +28,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "⚙️ لوحة تحكم الإعدادات العامة";
+            this.Text = "لوحة تحكم الإعدادات العامة";
             this.Size = new Size(820, 620);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -39,7 +39,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgMain;
             this.Font = Theme.FontMain;
 
-            var pnlTop = Theme.MakeTitleBar("⚙️ لوحة تحكم الإعدادات العامة", "اختر القسم المطلوب لضبط وتخصيص إعدادات المؤسسة، الطابعات، النسخ الاحتياطي، الموازين، أو خيارات النظام");
+            var pnlTop = Theme.MakeTitleBar("لوحة تحكم الإعدادات العامة", "اختر القسم المطلوب لضبط وتخصيص إعدادات المؤسسة، الطابعات، النسخ الاحتياطي، الموازين، أو خيارات النظام");
             this.Controls.Add(pnlTop);
 
             var pnlBody = new Panel
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 
             // 1. كارت بيانات المؤسسة والفرع (صف 1 - يمين)
             var cardCompany = CreateSettingsCard(
-                "🏢 بيانات المؤسسة والفرع",
+                "بيانات المؤسسة والفرع",
                 "تعديل اسم الشركة، أرقام الهواتف، العنوان، شعار المحل، نوع النشاط التجاري، وثيم ألوان البرنامج.",
                 Theme.Primary,
                 () => OpenSection("company"),
@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
 
             // 2. كارت إعدادات الطابعات والفواتير (صف 1 - شمال)
             var cardPrinters = CreateSettingsCard(
-                "🖨️ إعدادات الطابعات ونماذج الفواتير",
+                "إعدادات الطابعات ونماذج الفواتير",
                 "تخصيص طابعة الريسيت وA4 والباركود، مقاسات الفواتير والتقارير، قوالب الفواتير، محاذاة A5، وأذونات التحضير.",
                 Color.FromArgb(14, 165, 233), // Sky Blue
                 () => OpenSection("printers"),
@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
 
             // 3. كارت النسخ الاحتياطي والأرشفة (صف 2 - يمين)
             var cardBackup = CreateSettingsCard(
-                "💾 النسخ الاحتياطي والأرشفة",
+                "النسخ الاحتياطي والأرشفة",
                 "إدارة مسار النسخ الاحتياطية، النسخ التلقائي عند الخروج، الجدولة الدورية، المجلد السحابي، والواتساب.",
                 Color.FromArgb(16, 185, 129), // Emerald
                 () => OpenSection("backup"),
@@ -87,7 +87,7 @@ namespace ChickenDist.Forms
 
             // 4. كارت إعدادات الموازين والأجهزة (صف 2 - شمال)
             var cardScales = CreateSettingsCard(
-                "⚖️ إعدادات الموازين والأجهزة",
+                "إعدادات الموازين والأجهزة",
                 "إعداد واختبار الميزان الإلكتروني اللحظي للكاشير (COM Port) وضبط بادئة وأطوال ميزان الباركود الملصق.",
                 Color.FromArgb(245, 158, 11), // Amber
                 () => OpenSection("scales"),
@@ -97,7 +97,7 @@ namespace ChickenDist.Forms
 
             // 5. كارت خيارات النظام والتشغيل (صف 3 - يمين)
             var cardGeneral = CreateSettingsCard(
-                "⚙️ خيارات النظام والتشغيل",
+                "خيارات النظام والتشغيل",
                 "إدارة نقاط الولاء، إلزامية الورديات، تتبع الفوارغ، بيع منتهي الصلاحية، قوالب الواتساب، وبيانات الترخيص.",
                 Color.FromArgb(139, 92, 246), // Purple
                 () => OpenSection("general"),
@@ -107,7 +107,7 @@ namespace ChickenDist.Forms
 
             // 6. كارت تفعيل الترخيص (صف 3 - شمال)
             var cardLicense = CreateSettingsCard(
-                "🔑 ترخيص وتفعيل البرنامج",
+                "ترخيص وتفعيل البرنامج",
                 "عرض معرفات الجهاز (Machine ID و HDD Serial)، نسخ بيانات التفعيل، وإدخال سيريال ترخيص العميل.",
                 Color.FromArgb(225, 29, 72), // Rose
                 () => {
@@ -132,7 +132,7 @@ namespace ChickenDist.Forms
 
             var lblFooterTip = new Label
             {
-                Text = "💡 يمكنك أيضاً الوصول المباشر لأي قسم من هذه الإعدادات من قائمة «الإدارة» بالشاشة الرئيسية.",
+                Text = "يمكنك أيضاً الوصول المباشر لأي قسم من هذه الإعدادات من قائمة «الإدارة» بالشاشة الرئيسية.",
                 Location = new Point(20, 16),
                 AutoSize = true,
                 ForeColor = Theme.TextSub,
@@ -189,7 +189,7 @@ namespace ChickenDist.Forms
             };
             pnlCard.Controls.Add(lblDesc);
 
-            var btnOpen = Theme.MakeButton("فتح الإعدادات ⬅", 15, 92, 130, 30, accentColor);
+            var btnOpen = Theme.MakeButton("فتح الإعدادات", 15, 92, 130, 30, accentColor);
             btnOpen.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnOpen.Click += (s, e) => onClick();
             pnlCard.Controls.Add(btnOpen);

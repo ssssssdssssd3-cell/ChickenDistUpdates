@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -58,7 +58,7 @@ namespace ChickenDist.Forms
         {
             if (!Session.CanAdd("Purchases") && !Session.CanAccess("PurchaseOrder") && !Session.IsAdmin)
             {
-                MessageBox.Show("⛔ غير مصرح لك بإنشاء أوامر وطلبيات الشراء.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بإنشاء أوامر وطلبيات الشراء.", "تنبيه الصلاحيات", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Load += (s, e) => this.Close();
                 return;
             }
@@ -79,7 +79,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📋 إعداد طلبية مشتريات / أمر شراء للمورد";
+            this.Text = "إعداد طلبية مشتريات / أمر شراء للمورد";
             this.Size = new Size(1260, 800);
             this.MinimumSize = new Size(1024, 620);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -108,7 +108,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "📋 إعداد طلبية مشتريات / أمر شراء للمورد (Purchase Order)",
+                Text = "إعداد طلبية مشتريات / أمر شراء للمورد (Purchase Order)",
                 Font = new Font("Segoe UI", 11.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Fill,
@@ -137,29 +137,29 @@ namespace ChickenDist.Forms
 
             // كود الطلبية
             txtOrderCode = new TextBox { Width = 115, ReadOnly = true, Font = Theme.FontBold, BackColor = Color.FromArgb(241, 245, 249), TextAlign = HorizontalAlignment.Center };
-            flowInfo.Controls.Add(MakeInfoGroup("كود الطلبية 🔖:", txtOrderCode));
+            flowInfo.Controls.Add(MakeInfoGroup("كود الطلبية :", txtOrderCode));
 
             // التاريخ
             dtpOrderDate = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today };
-            flowInfo.Controls.Add(MakeInfoGroup("تاريخ الطلب 📅:", dtpOrderDate));
+            flowInfo.Controls.Add(MakeInfoGroup("تاريخ الطلب :", dtpOrderDate));
 
             // المورد
             cboSupplier = new ComboBox { Width = 185, DropDownStyle = ComboBoxStyle.DropDownList };
             cboSupplier.SelectedIndexChanged += CboSupplier_SelectedIndexChanged;
-            flowInfo.Controls.Add(MakeInfoGroup("المورد 👤:", cboSupplier));
+            flowInfo.Controls.Add(MakeInfoGroup("المورد :", cboSupplier));
 
             // هاتف المورد (للواتساب)
             txtSupplierPhone = new TextBox { Width = 125 };
-            flowInfo.Controls.Add(MakeInfoGroup("هاتف الواتساب 📱:", txtSupplierPhone));
+            flowInfo.Controls.Add(MakeInfoGroup("هاتف الواتساب :", txtSupplierPhone));
 
             // موعد التوريد المتوقع
             dtpDeliveryDate = new DateTimePicker { Width = 115, Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(2) };
-            flowInfo.Controls.Add(MakeInfoGroup("التوريد المتوقع ⏳:", dtpDeliveryDate));
+            flowInfo.Controls.Add(MakeInfoGroup("التوريد المتوقع :", dtpDeliveryDate));
 
             // حالة الطلبية
             lblStatusBadge = new Label
             {
-                Text = "معلقة 🟡",
+                Text = "معلقة",
                 AutoSize = false,
                 Width = 85,
                 Height = 24,
@@ -173,7 +173,7 @@ namespace ChickenDist.Forms
 
             // ملاحظات
             txtNotes = new TextBox { Width = 220 };
-            flowInfo.Controls.Add(MakeInfoGroup("ملاحظات الطلبية 📝:", txtNotes));
+            flowInfo.Controls.Add(MakeInfoGroup("ملاحظات الطلبية :", txtNotes));
 
             pnlOrderInfo.Controls.Add(flowInfo);
 
@@ -196,19 +196,19 @@ namespace ChickenDist.Forms
             };
 
             // زر الاقتراح الذكي المميز
-            btnSmartSuggest = Theme.MakeButton("💡 الاقتراح الذكي", 0, 0, 160, 32, Color.FromArgb(139, 92, 246));
+            btnSmartSuggest = Theme.MakeButton("الاقتراح الذكي", 0, 0, 160, 32, Color.FromArgb(139, 92, 246));
             btnSmartSuggest.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnSmartSuggest.Margin = new Padding(2, 2, 8, 2);
             btnSmartSuggest.Click += (s, e) => OpenSmartSuggestionsDialog();
 
             // زر بحث الأصناف الشامل المتقدم
-            btnProductSearch = Theme.MakeButton("🔍 بحث الأصناف (F1)", 0, 0, 140, 32, Color.FromArgb(16, 185, 129));
+            btnProductSearch = Theme.MakeButton("بحث الأصناف (F1)", 0, 0, 140, 32, Color.FromArgb(16, 185, 129));
             btnProductSearch.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnProductSearch.Margin = new Padding(2, 2, 12, 2);
             btnProductSearch.Click += (s, e) => OpenProductSearch();
 
             // بحث عن صنف يدوي
-            var lblSearch = new Label { Text = "📦 صنف يدوي:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 7, 2, 0) };
+            var lblSearch = new Label { Text = "صنف يدوي:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(2, 7, 2, 0) };
             txtQuickSearch = new TextBox { Width = 210, Height = 26, Margin = new Padding(2, 4, 4, 2) };
             txtQuickSearch.TextChanged += TxtQuickSearch_TextChanged;
             txtQuickSearch.KeyDown += TxtQuickSearch_KeyDown;
@@ -219,7 +219,7 @@ namespace ChickenDist.Forms
             var lblPrice = new Label { Text = "السعر:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(6, 7, 2, 0) };
             txtQuickPrice = new TextBox { Width = 80, Height = 26, Text = "0.00", Margin = new Padding(2, 4, 8, 2) };
 
-            btnQuickAdd = Theme.MakeButton("➕ إضافة للبند", 0, 0, 105, 30, Color.FromArgb(37, 99, 235));
+            btnQuickAdd = Theme.MakeButton("إضافة للبند", 0, 0, 105, 30, Color.FromArgb(37, 99, 235));
             btnQuickAdd.Font = new Font("Segoe UI", 8.8f, FontStyle.Bold);
             btnQuickAdd.Margin = new Padding(2, 2, 4, 2);
             btnQuickAdd.Click += (s, e) => AddQuickProductToGrid();
@@ -321,31 +321,31 @@ namespace ChickenDist.Forms
                 WrapContents = true
             };
 
-            btnSaveOrder = Theme.MakeButton("💾 حفظ الطلبية معلقة", 0, 0, 180, 38, Color.FromArgb(5, 150, 105));
+            btnSaveOrder = Theme.MakeButton("حفظ الطلبية معلقة", 0, 0, 180, 38, Color.FromArgb(5, 150, 105));
             btnSaveOrder.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSaveOrder.Click += (s, e) => SaveOrderToDb();
 
-            btnSendWhatsApp = Theme.MakeButton("📱 إرسال للمورد واتساب", 0, 0, 175, 38, Color.FromArgb(37, 211, 102));
+            btnSendWhatsApp = Theme.MakeButton("إرسال للمورد واتساب", 0, 0, 175, 38, Color.FromArgb(37, 211, 102));
             btnSendWhatsApp.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSendWhatsApp.Click += (s, e) => SendWhatsAppOrder();
 
-            btnPrintOrder = Theme.MakeButton("🖨️ طباعة ومعاينة A4", 0, 0, 150, 38, Color.FromArgb(70, 80, 95));
+            btnPrintOrder = Theme.MakeButton("طباعة ومعاينة A4", 0, 0, 150, 38, Color.FromArgb(70, 80, 95));
             btnPrintOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPrintOrder.Click += (s, e) => PrintPurchaseOrder();
 
-            btnExportExcel = Theme.MakeButton("📥 تصدير إكسيل", 0, 0, 130, 38, Color.FromArgb(13, 148, 136));
+            btnExportExcel = Theme.MakeButton("تصدير إكسيل", 0, 0, 130, 38, Color.FromArgb(13, 148, 136));
             btnExportExcel.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnExportExcel.Click += (s, e) => ExportOrderToExcel();
 
-            btnConvertToPurchase = Theme.MakeButton("🛒 تحويل مباشر لفاتورة مشتريات", 0, 0, 225, 38, Color.FromArgb(234, 88, 12));
+            btnConvertToPurchase = Theme.MakeButton("تحويل مباشر لفاتورة مشتريات", 0, 0, 225, 38, Color.FromArgb(234, 88, 12));
             btnConvertToPurchase.Font = new Font("Segoe UI", 9.8f, FontStyle.Bold);
             btnConvertToPurchase.Click += (s, e) => ConvertDirectlyToPurchaseInvoice();
 
-            btnOpenOrdersList = Theme.MakeButton("📑 سجل طلبيات الشراء", 0, 0, 155, 38, Color.FromArgb(71, 85, 105));
+            btnOpenOrdersList = Theme.MakeButton("سجل طلبيات الشراء", 0, 0, 155, 38, Color.FromArgb(71, 85, 105));
             btnOpenOrdersList.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnOpenOrdersList.Click += (s, e) => OpenOrdersArchive();
 
-            btnNewOrder = Theme.MakeButton("🆕 طلبية جديدة", 0, 0, 115, 38, Color.FromArgb(100, 116, 139));
+            btnNewOrder = Theme.MakeButton("طلبية جديدة", 0, 0, 115, 38, Color.FromArgb(100, 116, 139));
             btnNewOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnNewOrder.Click += (s, e) => StartNewOrder();
 
@@ -395,10 +395,10 @@ namespace ChickenDist.Forms
             dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colStock", HeaderText = "الرصيد بالمخزن", Width = 110, ReadOnly = true, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = Theme.FontBold } });
 
             // 7. الكمية المطلوبة
-            dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colQty", HeaderText = "الكمية المطلوبة ✏️", Width = 130, ReadOnly = false, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, BackColor = Color.FromArgb(240, 253, 244), ForeColor = Color.FromArgb(21, 128, 61), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) } });
+            dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colQty", HeaderText = "الكمية المطلوبة", Width = 130, ReadOnly = false, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, BackColor = Color.FromArgb(240, 253, 244), ForeColor = Color.FromArgb(21, 128, 61), Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) } });
 
             // 8. سعر الشراء المتوقع
-            dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrice", HeaderText = "سعر الشراء المتوقع ✏️", Width = 130, ReadOnly = false, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold } });
+            dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrice", HeaderText = "سعر الشراء المتوقع", Width = 130, ReadOnly = false, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold } });
 
             // 9. الإجمالي
             dgvItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colTotal", HeaderText = "الإجمالي التقديري", Width = 130, ReadOnly = true, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Format = "N2", Font = Theme.FontBold, ForeColor = Color.FromArgb(5, 150, 105) } });
@@ -411,7 +411,7 @@ namespace ChickenDist.Forms
             {
                 Name = "colDelete",
                 HeaderText = "حذف",
-                Text = "❌",
+                Text = "X",
                 UseColumnTextForButtonValue = true,
                 Width = 55,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, ForeColor = Color.Red }
@@ -460,7 +460,7 @@ namespace ChickenDist.Forms
             cboSupplier.SelectedIndex = 0;
             txtSupplierPhone.Text = "";
             txtNotes.Text = "";
-            lblStatusBadge.Text = "معلقة 🟡";
+            lblStatusBadge.Text = "معلقة";
             lblStatusBadge.BackColor = Color.FromArgb(254, 243, 199);
             lblStatusBadge.ForeColor = Color.FromArgb(180, 83, 9);
             dgvItems.Rows.Clear();
@@ -687,7 +687,7 @@ namespace ChickenDist.Forms
                     }
 
                     RecalculateTotals();
-                    MessageBox.Show($"✅ تمت إضافة ({dlg.SelectedItems.Count}) صنف مقترح إلى أمر الشراء بنجاح!", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تمت إضافة ({dlg.SelectedItems.Count}) صنف مقترح إلى أمر الشراء بنجاح!", "تمت الإضافة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -988,7 +988,7 @@ namespace ChickenDist.Forms
                 txtOrderCode.Text = _order.OrderCode;
 
                 var res = MessageBox.Show(
-                    $"✅ تم حفظ أمر الشراء رقم [{_order.OrderCode}] بنجاح بحالة [معلقة]!\n\nهل ترغب في إرسال نسخة الطلبية للمورد عبر الواتساب الآن؟ 📱",
+                    $"تم حفظ أمر الشراء رقم [{_order.OrderCode}] بنجاح بحالة [معلقة]!\n\nهل ترغب في إرسال نسخة الطلبية للمورد عبر الواتساب الآن؟",
                     "تم الحفظ بنجاح",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question);
@@ -1022,15 +1022,15 @@ namespace ChickenDist.Forms
             }
 
             var sb = new StringBuilder();
-            sb.AppendLine($"📋 *طلب توريد بضاعة / أمر شراء جديد*");
-            sb.AppendLine($"🏢 *الجهة:* {AppConfig.CompanyName}");
-            sb.AppendLine($"🔖 *رقم الطلبية:* {order.OrderCode}");
-            sb.AppendLine($"📅 *التاريخ:* {order.OrderDate:yyyy/MM/dd}");
-            sb.AppendLine($"👤 *المطلوب من الأستاذ / الشركة:* {order.SupplierName}");
+            sb.AppendLine($"*طلب توريد بضاعة / أمر شراء جديد*");
+            sb.AppendLine($"*الجهة:* {AppConfig.CompanyName}");
+            sb.AppendLine($"*رقم الطلبية:* {order.OrderCode}");
+            sb.AppendLine($"*التاريخ:* {order.OrderDate:yyyy/MM/dd}");
+            sb.AppendLine($"*المطلوب من الأستاذ / الشركة:* {order.SupplierName}");
             if (dtpDeliveryDate.Value > DateTime.Today)
-                sb.AppendLine($"⏳ *موعد التوريد المتوقع:* {dtpDeliveryDate.Value:yyyy/MM/dd}");
+                sb.AppendLine($"*موعد التوريد المتوقع:* {dtpDeliveryDate.Value:yyyy/MM/dd}");
             sb.AppendLine("────────────────────");
-            sb.AppendLine("📦 *بيان الأصناف والكميات المطلوبة:*");
+            sb.AppendLine("*بيان الأصناف والكميات المطلوبة:*");
 
             int idx = 1;
             foreach (var itm in order.Items)
@@ -1042,13 +1042,13 @@ namespace ChickenDist.Forms
             }
 
             sb.AppendLine("────────────────────");
-            sb.AppendLine($"📊 *إجمالي الأصناف:* {order.Items.Count} صنف");
-            sb.AppendLine($"📦 *إجمالي الكمية:* {order.Items.Sum(x => x.Quantity):N2}");
+            sb.AppendLine($"*إجمالي الأصناف:* {order.Items.Count} صنف");
+            sb.AppendLine($"*إجمالي الكمية:* {order.Items.Sum(x => x.Quantity):N2}");
             if (order.Items.Any(x => x.EstimatedUnitPrice > 0))
-                sb.AppendLine($"💰 *إجمالي التكلفة التقديرية:* {order.Items.Sum(x => x.TotalPrice):N2} ج");
+                sb.AppendLine($"*إجمالي التكلفة التقديرية:* {order.Items.Sum(x => x.TotalPrice):N2} ج");
 
             if (!string.IsNullOrWhiteSpace(order.Notes))
-                sb.AppendLine($"📝 *ملاحظات خاصة:* {order.Notes}");
+                sb.AppendLine($"*ملاحظات خاصة:* {order.Notes}");
 
             sb.AppendLine("────────────────────");
             sb.AppendLine("يرجى تأكيد استلام الطلبية وموعد الشحن. شاكرين حسن تعاونكم الدائم.");
@@ -1058,7 +1058,7 @@ namespace ChickenDist.Forms
                 phone,
                 sb.ToString(),
                 () => ReceiptImageGenerator.GeneratePurchaseOrderImage(order),
-                "📱 إرسال أمر الشراء عبر الواتساب"
+                "إرسال أمر الشراء عبر الواتساب"
             );
         }
 
@@ -1083,7 +1083,7 @@ namespace ChickenDist.Forms
                     {
                         FrmReports.ExportDataGridViewToXls(dgvItems, dlg.FileName, $"أمر شراء {txtOrderCode.Text}", AppConfig.CompanyName);
 
-                        var res = MessageBox.Show("✅ تم تصدير أمر الشراء إلى إكسيل بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير أمر الشراء إلى إكسيل بنجاح!\nهل تريد فتح الملف الآن؟", "تم التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
@@ -1091,7 +1091,7 @@ namespace ChickenDist.Forms
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("❌ فشل التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("فشل التصدير:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }

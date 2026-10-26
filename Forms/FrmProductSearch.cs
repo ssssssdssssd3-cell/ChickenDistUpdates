@@ -106,10 +106,10 @@ namespace ChickenDist.Forms
         private void InitUI()
         {
             this.Text = _isPurchaseMode 
-                ? "🔍 بحث متقدم عن صنف - فواتير الشراء والتوريد" 
+                ? "بحث متقدم عن صنف - فواتير الشراء والتوريد" 
                 : (_allowZeroStockSelection 
-                    ? "🔍 بحث متقدم عن صنف - بيان تسعير وعروض الأسعار" 
-                    : "🔍 بحث متقدم عن صنف - مبيعات ونقطة البيع");
+                    ? "بحث متقدم عن صنف - بيان تسعير وعروض الأسعار" 
+                    : "بحث متقدم عن صنف - مبيعات ونقطة البيع");
             this.Size = new Size(1000, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -270,7 +270,7 @@ namespace ChickenDist.Forms
             dgProducts.Columns.Add(new DataGridViewTextBoxColumn 
             { 
                 Name = "LastClientPrice", 
-                HeaderText = "آخر سعر للعميل 🏷️", 
+                HeaderText = "آخر سعر للعميل", 
                 FillWeight = 36, 
                 MinimumWidth = 120,
                 DefaultCellStyle = new DataGridViewCellStyle 
@@ -390,7 +390,7 @@ namespace ChickenDist.Forms
             txtSelectedSalePrice.TextChanged += (s, e) => RecalcSearchPrices("SalePrice");
 
             int permNoticeX = showPurchasePrice ? 100 : 220;
-            lblPricePermissionNotice = new Label { Text = "🔒 تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 33), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
+            lblPricePermissionNotice = new Label { Text = "تعديل السعر يتطلب صلاحية", Location = new Point(permNoticeX, 33), AutoSize = true, ForeColor = Color.FromArgb(220, 38, 38), Font = new Font("Segoe UI", 7.5f, FontStyle.Bold) };
 
             bool canEditPrice = _isPurchaseMode 
                 ? (Session.IsAdmin || Session.CanEditPrice("ProductSearch") || Session.CanEditPrice("Purchases"))
@@ -428,11 +428,11 @@ namespace ChickenDist.Forms
             });
 
             var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = Color.Transparent };
-            btnSelect = Theme.MakeButton("✅ اختيار وانزال الصنف للفاتورة", 450, 6, 240, 34, Theme.Accent);
+            btnSelect = Theme.MakeButton("اختيار وانزال الصنف للفاتورة", 450, 6, 240, 34, Theme.Accent);
             btnSelect.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSelect.Enabled = false;
 
-            var btnAddNewProduct = Theme.MakeButton("⚡ إدخال سريع لصنف جديد", 270, 6, 175, 34, Theme.Success);
+            var btnAddNewProduct = Theme.MakeButton("إدخال سريع لصنف جديد", 270, 6, 175, 34, Theme.Success);
             btnAddNewProduct.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnAddNewProduct.Visible = _isPurchaseMode;
             btnAddNewProduct.Click += (s, e) =>
@@ -446,7 +446,7 @@ namespace ChickenDist.Forms
                 txtSearch.Focus();
                 txtSearch.SelectAll();
             };
-            btnCancel = Theme.MakeButton("❌ إلغاء", 130, 6, 125, 34, Color.FromArgb(120, 40, 40));
+            btnCancel = Theme.MakeButton("إلغاء", 130, 6, 125, 34, Color.FromArgb(120, 40, 40));
             btnCancel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             
             btnSelect.Click += BtnSelect_Click;
@@ -646,7 +646,7 @@ namespace ChickenDist.Forms
                         {
                             dgProducts.Rows[rowIdx].DefaultCellStyle.BackColor = Color.FromArgb(254, 243, 199);
                             dgProducts.Rows[rowIdx].DefaultCellStyle.ForeColor = Color.FromArgb(146, 64, 14);
-                            dgProducts.Rows[rowIdx].Cells["ProductName"].Value = "🏷️ " + dgProducts.Rows[rowIdx].Cells["ProductName"].Value;
+                            dgProducts.Rows[rowIdx].Cells["ProductName"].Value = "" + dgProducts.Rows[rowIdx].Cells["ProductName"].Value;
                         }
                     }
                 }
@@ -1261,7 +1261,7 @@ namespace ChickenDist.Forms
                     decimal avail = _stockCache.TryGetValue(pid, out var st) ? st : 0m;
                     if (avail <= 0)
                     {
-                        MessageBox.Show("❌ عجز: هذا الصنف ليس لديه رصيد متاح في المخزن المحدد حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "عجز الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("عجز: هذا الصنف ليس لديه رصيد متاح في المخزن المحدد حالياً (الرصيد: 0)!\nالبيع بالسالب غير مسموح.", "عجز الرصيد", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                 }

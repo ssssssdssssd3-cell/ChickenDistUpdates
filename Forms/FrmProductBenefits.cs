@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "📝 فوائد ومكونات ووصف الأصناف للمتجر والمنيو الإلكتروني";
+            this.Text = "فوائد ومكونات ووصف الأصناف للمتجر والمنيو الإلكتروني";
             this.Size = new Size(1020, 700);
             this.MinimumSize = new Size(920, 600);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -54,7 +54,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = "✨ إدارة فوائد ومكونات ووصف الأصناف للمتجر والمنيو أونلاين",
+                Text = "إدارة فوائد ومكونات ووصف الأصناف للمتجر والمنيو أونلاين",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(248, 250, 252),
                 Dock = DockStyle.Top,
@@ -64,7 +64,7 @@ namespace ChickenDist.Forms
 
             var lblSubtitle = new Label
             {
-                Text = "اكتب فوائد ومكونات ومواصفات كل صنف ليراها الزبائن عند الضغط على زر '✨ فوائد ومكونات الصنف' في المتجر والمنيو أونلاين.",
+                Text = "اكتب فوائد ومكونات ومواصفات كل صنف ليراها الزبائن عند الضغط على زر 'فوائد ومكونات الصنف' في المتجر والمنيو أونلاين.",
                 Font = new Font("Segoe UI", 9f),
                 ForeColor = Color.FromArgb(203, 213, 225),
                 Dock = DockStyle.Fill,
@@ -107,7 +107,7 @@ namespace ChickenDist.Forms
 
             var lblSearch = new Label
             {
-                Text = "🔍 بحث بالاسم أو الكود:",
+                Text = "بحث بالاسم أو الكود:",
                 ForeColor = Color.FromArgb(203, 213, 225),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Dock = DockStyle.Right,
@@ -141,7 +141,7 @@ namespace ChickenDist.Forms
 
             btnSyncOnline = new Button
             {
-                Text = "☁️ مزامنة التعديلات مع المتجر أونلاين الآن",
+                Text = "مزامنة التعديلات مع المتجر أونلاين الآن",
                 Size = new Size(260, 38),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -155,20 +155,20 @@ namespace ChickenDist.Forms
             {
                 btnSyncOnline.Enabled = false;
                 lblStatus.ForeColor = Color.FromArgb(56, 189, 248);
-                lblStatus.Text = "⏳ جاري مزامنة الكتالوج مع السحابة...";
+                lblStatus.Text = "جاري مزامنة الكتالوج مع السحابة...";
                 try
                 {
                     bool ok = await CloudSyncService.SyncStoreCatalogToFirebaseAsync();
                     if (ok)
                     {
                         lblStatus.ForeColor = Color.FromArgb(52, 211, 153);
-                        lblStatus.Text = "✅ تم رفع وتحديث فوائد الأصناف في المتجر أونلاين بنجاح!";
-                        MessageBox.Show("تم رفع وتحديث فوائد ووصف الأصناف في المتجر الإلكتروني بنجاح ✅", "تمت المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        lblStatus.Text = "تم رفع وتحديث فوائد الأصناف في المتجر أونلاين بنجاح!";
+                        MessageBox.Show("تم رفع وتحديث فوائد ووصف الأصناف في المتجر الإلكتروني بنجاح", "تمت المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
                         lblStatus.ForeColor = Color.FromArgb(244, 63, 94);
-                        lblStatus.Text = "⚠️ تعذر المزامنة أونلاين، تأكد من الإنترنت.";
+                        lblStatus.Text = "تعذر المزامنة أونلاين، تأكد من الإنترنت.";
                     }
                 }
                 catch (Exception ex)
@@ -299,7 +299,7 @@ namespace ChickenDist.Forms
 
             var lblQuick = new Label
             {
-                Text = "💡 عبارات وفوائد مقترحة سريعة (اضغط للإضافة):",
+                Text = "عبارات وفوائد مقترحة سريعة (اضغط للإضافة):",
                 Dock = DockStyle.Top,
                 Height = 22,
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
@@ -317,14 +317,14 @@ namespace ChickenDist.Forms
 
             string[] phrases = new string[]
             {
-                "✨ طازج ومحضر يومياً بأعلى معايير الجودة.",
-                "🌿 خالي تماماً من المواد الحافظة والزيوت المهدرجة.",
-                "🔥 يُقدم ساخناً وطازجاً فور استلام الطلب.",
-                "☕ قهوة مختصة 100% بن أرابيكا فاخر بنكهة ساحرة.",
-                "💪 غني بالبروتين والعناصر الغذائية المفيدة للجسم.",
-                "🍯 محلى طبيعياً بالعسل وخالي من السكر المكرر.",
-                "🥗 مكونات طبيعية 100% منتقاة بعناية فائقة.",
-                "❄️ يُحفظ في درجة حرارة باردة للحفاظ على النكهة والقوام."
+                "طازج ومحضر يومياً بأعلى معايير الجودة.",
+                "خالي تماماً من المواد الحافظة والزيوت المهدرجة.",
+                "يُقدم ساخناً وطازجاً فور استلام الطلب.",
+                "قهوة مختصة 100% بن أرابيكا فاخر بنكهة ساحرة.",
+                "غني بالبروتين والعناصر الغذائية المفيدة للجسم.",
+                "محلى طبيعياً بالعسل وخالي من السكر المكرر.",
+                "مكونات طبيعية 100% منتقاة بعناية فائقة.",
+                "يُحفظ في درجة حرارة باردة للحفاظ على النكهة والقوام."
             };
 
             foreach (var phrase in phrases)
@@ -367,7 +367,7 @@ namespace ChickenDist.Forms
 
             btnSaveDesc = new Button
             {
-                Text = "💾 حفظ وصف وفوائد هذا الصنف",
+                Text = "حفظ وصف وفوائد هذا الصنف",
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
@@ -430,7 +430,7 @@ namespace ChickenDist.Forms
                         c.CategoryName,
                         ISNULL(p.RetailPrice, 0) AS RetailPrice,
                         ISNULL(p.OnlineDescription, '') AS OnlineDescription,
-                        CASE WHEN ISNULL(LTRIM(RTRIM(p.OnlineDescription)), '') <> '' THEN N'✅ مسجل' ELSE N'⚪ فارغ' END AS DescStatus
+                        CASE WHEN ISNULL(LTRIM(RTRIM(p.OnlineDescription)), '') <> '' THEN N'مسجل' ELSE N'فارغ' END AS DescStatus
                     FROM Products p WITH (NOLOCK)
                     LEFT JOIN Categories c WITH (NOLOCK) ON p.CategoryID = c.CategoryID
                     WHERE ISNULL(p.IsActive, 1) = 1
@@ -517,7 +517,7 @@ namespace ChickenDist.Forms
                 _currentProductName = drv["ProductName"]?.ToString() ?? "";
                 string desc = drv["OnlineDescription"]?.ToString() ?? "";
 
-                lblSelectedProduct.Text = $"📌 صنف: {_currentProductName}";
+                lblSelectedProduct.Text = $"صنف: {_currentProductName}";
                 txtDescription.Text = desc;
                 btnSaveDesc.Enabled = true;
             }
@@ -551,12 +551,12 @@ namespace ChickenDist.Forms
                     if (found.Length > 0)
                     {
                         found[0]["OnlineDescription"] = desc;
-                        found[0]["DescStatus"] = string.IsNullOrWhiteSpace(desc) ? "⚪ فارغ" : "✅ مسجل";
+                        found[0]["DescStatus"] = string.IsNullOrWhiteSpace(desc) ? "فارغ" : "مسجل";
                     }
                 }
 
                 lblStatus.ForeColor = Color.FromArgb(52, 211, 153);
-                lblStatus.Text = $"✅ تم حفظ وصف وفوائد صنف [{_currentProductName}] بنجاح!";
+                lblStatus.Text = $"تم حفظ وصف وفوائد صنف [{_currentProductName}] بنجاح!";
             }
             catch (Exception ex)
             {

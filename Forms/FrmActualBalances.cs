@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -35,7 +35,7 @@ namespace ChickenDist.Forms
 
             // ── Title Bar ──────────────────────────────────────────────────────
             var titleBar = Theme.MakeTitleBar(
-                "💵 النقدية والسيولة الفعلية المتاحة",
+                "النقدية والسيولة الفعلية المتاحة",
                 "الأرصدة الحقيقية المتاحة في كافة الخزائن والأدراج والفيزا والبنوك بعد التقفيل وكافة الحركات");
             Controls.Add(titleBar);
 
@@ -68,23 +68,23 @@ namespace ChickenDist.Forms
             _dtpAsOf.RightToLeftLayout = true;
             _dtpAsOf.ValueChanged += (s, e) => LoadData();
 
-            _btnRefresh = Theme.MakeButton("🔄 تحديث", Theme.Accent);
+            _btnRefresh = Theme.MakeButton("تحديث", Theme.Accent);
             _btnRefresh.Size   = new Size(110, 34);
             _btnRefresh.Dock   = DockStyle.Right;
             _btnRefresh.Click += (s, e) => LoadData();
 
-            _btnPrint = Theme.MakeButton("🖨️ طباعة التقرير", Theme.Primary);
+            _btnPrint = Theme.MakeButton("طباعة التقرير", Theme.Primary);
             _btnPrint.Size   = new Size(130, 34);
             _btnPrint.Dock   = DockStyle.Right;
             _btnPrint.Click += BtnPrint_Click;
 
-            _btnWhatsApp = Theme.MakeButton("📲 إرسال للواتساب", Theme.Accent);
+            _btnWhatsApp = Theme.MakeButton("إرسال للواتساب", Theme.Accent);
             _btnWhatsApp.Size   = new Size(140, 34);
             _btnWhatsApp.BackColor = Color.FromArgb(37, 211, 102);
             _btnWhatsApp.Dock   = DockStyle.Right;
             _btnWhatsApp.Click += BtnWhatsApp_Click;
 
-            _btnManageAccounts = Theme.MakeButton("💳 إدارة الخزائن والحسابات", Color.FromArgb(70, 70, 150));
+            _btnManageAccounts = Theme.MakeButton("إدارة الخزائن والحسابات", Color.FromArgb(70, 70, 150));
             _btnManageAccounts.Size = new Size(180, 34);
             _btnManageAccounts.Dock = DockStyle.Left;
             _btnManageAccounts.Visible = Session.IsAdmin || (Session.CanAccess("SafeAccounts") && (Session.CanAdd("SafeAccounts") || Session.CanEdit("SafeAccounts")));
@@ -92,7 +92,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanAccess("SafeAccounts"))
                 {
-                    MessageBox.Show("⛔ غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 new FrmSafeAccounts().ShowDialog(this);
@@ -117,10 +117,10 @@ namespace ChickenDist.Forms
             pnlKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             pnlKpis.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            _lblTotalCash      = MakeKpiCard(pnlKpis, 0, "💵 النقدية والأدراج", "0.00 ج", Color.FromArgb(46, 204, 113));
-            _lblTotalBank      = MakeKpiCard(pnlKpis, 1, "🏦 الحسابات البنكية", "0.00 ج", Color.FromArgb(52, 152, 219));
-            _lblTotalVisa      = MakeKpiCard(pnlKpis, 2, "💳 ماكينات الفيزا/الشبكة", "0.00 ج", Color.FromArgb(155, 89, 182));
-            _lblTotalLiquidity = MakeKpiCard(pnlKpis, 3, "💎 إجمالي السيولة المتاحة", "0.00 ج", Color.FromArgb(241, 196, 15));
+            _lblTotalCash      = MakeKpiCard(pnlKpis, 0, "النقدية والأدراج", "0.00 ج", Color.FromArgb(46, 204, 113));
+            _lblTotalBank      = MakeKpiCard(pnlKpis, 1, "الحسابات البنكية", "0.00 ج", Color.FromArgb(52, 152, 219));
+            _lblTotalVisa      = MakeKpiCard(pnlKpis, 2, "ماكينات الفيزا/الشبكة", "0.00 ج", Color.FromArgb(155, 89, 182));
+            _lblTotalLiquidity = MakeKpiCard(pnlKpis, 3, "إجمالي السيولة المتاحة", "0.00 ج", Color.FromArgb(241, 196, 15));
 
             Controls.Add(pnlKpis);
 
@@ -184,7 +184,7 @@ namespace ChickenDist.Forms
             };
             var lblHint = new Label
             {
-                Text      = "💡 انقر مرتين على أي حساب لعرض كشف الحركة التفصيلي الخاص به في حركة الخزنة.",
+                Text      = "انقر مرتين على أي حساب لعرض كشف الحركة التفصيلي الخاص به في حركة الخزنة.",
                 Font      = new Font("Segoe UI", 9.5f, FontStyle.Italic),
                 ForeColor = Theme.Accent,
                 AutoSize  = true,
@@ -290,20 +290,20 @@ namespace ChickenDist.Forms
 
                     string typeArabic = type switch
                     {
-                        "Cash" => "💵 خزنة نقدية",
-                        "Bank" => "🏦 حساب بنكي",
-                        "Visa" => "💳 ماكينة فيزا / شبكة",
-                        _ => "💵 خزنة نقدية"
+                        "Cash" => "خزنة نقدية",
+                        "Bank" => "حساب بنكي",
+                        "Visa" => "ماكينة فيزا / شبكة",
+                        _ => "خزنة نقدية"
                     };
 
                     if (type == "Bank") totalBank += actualBalance;
                     else if (type == "Visa") totalVisa += actualBalance;
                     else totalCash += actualBalance;
 
-                    string actualText = canViewBalance ? actualBalance.ToString("N2") + " ج" : "*** 🔒";
-                    string openText   = canViewBalance ? opening.ToString("N2") : "*** 🔒";
-                    string inText     = canViewBalance ? totIn.ToString("N2") : "*** 🔒";
-                    string outText    = canViewBalance ? totOut.ToString("N2") : "*** 🔒";
+                    string actualText = canViewBalance ? actualBalance.ToString("N2") + " ج" : "***";
+                    string openText   = canViewBalance ? opening.ToString("N2") : "***";
+                    string inText     = canViewBalance ? totIn.ToString("N2") : "***";
+                    string outText    = canViewBalance ? totOut.ToString("N2") : "***";
 
                     int ri = _dg.Rows.Add(
                         accID,
@@ -336,10 +336,10 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    _lblTotalCash.Text      = "*** 🔒 (محجوب)";
-                    _lblTotalBank.Text      = "*** 🔒 (محجوب)";
-                    _lblTotalVisa.Text      = "*** 🔒 (محجوب)";
-                    _lblTotalLiquidity.Text = "*** 🔒 (محجوب)";
+                    _lblTotalCash.Text      = "*** (محجوب)";
+                    _lblTotalBank.Text      = "*** (محجوب)";
+                    _lblTotalVisa.Text      = "*** (محجوب)";
+                    _lblTotalLiquidity.Text = "*** (محجوب)";
                 }
             }
             catch (Exception ex)
@@ -490,7 +490,7 @@ namespace ChickenDist.Forms
 
                     y += 12;
                     g.DrawLine(new Pen(Color.FromArgb(24, 43, 73), 1.5f), startX, y, startX + pageW, y); y += 8;
-                    g.DrawString($"💎 إجمالي السيولة الكلية المتاحة: {_lblTotalLiquidity.Text}", fTitle, Brushes.DarkGreen, new RectangleF(startX, y, pageW, 28), sfRtlRight);
+                    g.DrawString($"إجمالي السيولة الكلية المتاحة: {_lblTotalLiquidity.Text}", fTitle, Brushes.DarkGreen, new RectangleF(startX, y, pageW, 28), sfRtlRight);
                 };
 
                 using (var dlg = new PrintPreviewDialog { Document = pd, Width = 900, Height = 700, Text = "طباعة تقرير النقدية والسيولة" })
@@ -509,22 +509,22 @@ namespace ChickenDist.Forms
             try
             {
                 var sb = new StringBuilder();
-                sb.AppendLine("💵 *تقرير النقدية والسيولة الفعلية المتاحة*");
-                sb.AppendLine($"📅 حتى تاريخ: {_dtpAsOf.Value:dd/MM/yyyy}");
+                sb.AppendLine("*تقرير النقدية والسيولة الفعلية المتاحة*");
+                sb.AppendLine($"حتى تاريخ: {_dtpAsOf.Value:dd/MM/yyyy}");
                 sb.AppendLine("------------------------------------");
 
                 foreach (DataGridViewRow row in _dg.Rows)
                 {
                     string name = row.Cells["AccountName"].Value?.ToString();
                     string bal  = row.Cells["ActualBalance"].Value?.ToString();
-                    sb.AppendLine($"🔹 {name}: *{bal}*");
+                    sb.AppendLine($"{name}: *{bal}*");
                 }
 
                 sb.AppendLine("------------------------------------");
-                sb.AppendLine($"💎 *إجمالي السيولة الكلية:* {_lblTotalLiquidity.Text}");
+                sb.AppendLine($"*إجمالي السيولة الكلية:* {_lblTotalLiquidity.Text}");
 
                 Clipboard.SetText(sb.ToString());
-                MessageBox.Show("✅ تم نسخ ملخص النقدية الفعليه إلى الحافظة بنجاح!\nيمكنك لصق التقرير في الواتساب فوراً.", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ ملخص النقدية الفعليه إلى الحافظة بنجاح!\nيمكنك لصق التقرير في الواتساب فوراً.", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -115,7 +115,7 @@ namespace ChickenDist.DAL
                         string primaryName = primary["ClientName"].ToString();
                         int pTrans = Convert.ToInt32(primary["TotalTransactions"]);
 
-                        fixLog.Add($"📌 كود العميل [{origCode}]: تم الاحتفاظ به للعميل [ID: {primaryID} - {primaryName}] لوجود حركات مسجلة ({pTrans} حركة).");
+                        fixLog.Add($"كود العميل [{origCode}]: تم الاحتفاظ به للعميل [ID: {primaryID} - {primaryName}] لوجود حركات مسجلة ({pTrans} حركة).");
 
                         // تعديل العملاء الذين ليس لهم حركات فقط
                         foreach (var dup in withoutTrans)
@@ -135,7 +135,7 @@ namespace ChickenDist.DAL
                                 "UPDATE Clients SET ClientCode = @nc WHERE ClientID = @id",
                                 DbHelper.P("@nc", newCode), DbHelper.P("@id", dupID));
 
-                            fixLog.Add($"   ⚡ تم تعديل كود العميل [ID: {dupID} - {dupName}] (بدون أي حركات) من [{origCode}] إلى الكود الجديد الفريد [{newCode}]");
+                            fixLog.Add($"   تم تعديل كود العميل [ID: {dupID} - {dupName}] (بدون أي حركات) من [{origCode}] إلى الكود الجديد الفريد [{newCode}]");
                             fixedCount++;
                         }
 
@@ -151,7 +151,7 @@ namespace ChickenDist.DAL
 
                                 if (onlyModifyZeroTransactions)
                                 {
-                                    fixLog.Add($"   🛡️ العميل [ID: {oID} - {oName}]: تم تخطيه وحمايته من تعديل الكود لأن له حركات مسجلة ({oTrans} حركة).");
+                                    fixLog.Add($"   العميل [ID: {oID} - {oName}]: تم تخطيه وحمايته من تعديل الكود لأن له حركات مسجلة ({oTrans} حركة).");
                                 }
                                 else
                                 {
@@ -167,7 +167,7 @@ namespace ChickenDist.DAL
                                         "UPDATE Clients SET ClientCode = @nc WHERE ClientID = @id",
                                         DbHelper.P("@nc", newCode), DbHelper.P("@id", oID));
 
-                                    fixLog.Add($"   ⚡ تم تعديل كود العميل [ID: {oID} - {oName}] من [{origCode}] إلى [{newCode}]");
+                                    fixLog.Add($"   تم تعديل كود العميل [ID: {oID} - {oName}] من [{origCode}] إلى [{newCode}]");
                                     fixedCount++;
                                 }
                             }
@@ -180,7 +180,7 @@ namespace ChickenDist.DAL
                         int primaryID = Convert.ToInt32(primary["ClientID"]);
                         string primaryName = primary["ClientName"].ToString();
 
-                        fixLog.Add($"📌 كود العميل [{origCode}]: تم الاحتفاظ به للعميل الأقدم [ID: {primaryID} - {primaryName}] (بدون حركات).");
+                        fixLog.Add($"كود العميل [{origCode}]: تم الاحتفاظ به للعميل الأقدم [ID: {primaryID} - {primaryName}] (بدون حركات).");
 
                         for (int i = 1; i < withoutTrans.Count; i++)
                         {
@@ -200,7 +200,7 @@ namespace ChickenDist.DAL
                                 "UPDATE Clients SET ClientCode = @nc WHERE ClientID = @id",
                                 DbHelper.P("@nc", newCode), DbHelper.P("@id", dupID));
 
-                            fixLog.Add($"   ⚡ تم تعديل كود العميل [ID: {dupID} - {dupName}] (بدون أي حركات) من [{origCode}] إلى الكود الجديد الفريد [{newCode}]");
+                            fixLog.Add($"   تم تعديل كود العميل [ID: {dupID} - {dupName}] (بدون أي حركات) من [{origCode}] إلى الكود الجديد الفريد [{newCode}]");
                             fixedCount++;
                         }
                     }

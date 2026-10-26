@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Text;
@@ -32,7 +32,7 @@ namespace ChickenDist.Forms
         {
             this.SuspendLayout();
 
-            this.Text = "🔑 تفعيل برنامج ChickenDist";
+            this.Text = "تفعيل برنامج ChickenDist";
             this.Size = new Size(540, 580);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -47,7 +47,7 @@ namespace ChickenDist.Forms
             pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.FromArgb(30, 60, 114) };
             lblTitle = new Label
             {
-                Text = "🔑  تفعيل رخصة برنامج ChickenDist",
+                Text = "تفعيل رخصة برنامج ChickenDist",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -71,7 +71,7 @@ namespace ChickenDist.Forms
             // GroupBox for Hardware Details
             var grpHardware = new GroupBox
             {
-                Text = "💻  بيانات جهازك الحالي (أرسلها للمطور)",
+                Text = "بيانات جهازك الحالي (أرسلها للمطور)",
                 Location = new Point(20, 130),
                 Size = new Size(480, 150),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
@@ -102,7 +102,7 @@ namespace ChickenDist.Forms
             // GroupBox for Activation input
             grpActivation = new GroupBox
             {
-                Text = "🔑  إدخال كود التفعيل",
+                Text = "إدخال كود التفعيل",
                 Location = new Point(20, 290),
                 Size = new Size(480, 185),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
@@ -113,7 +113,7 @@ namespace ChickenDist.Forms
 
             btnImportFile = new Button
             {
-                Text = "📂 استيراد من ملف",
+                Text = "استيراد من ملف",
                 Location = new Point(320, 20),
                 Size = new Size(135, 28),
                 BackColor = Color.FromArgb(52, 152, 219),
@@ -137,7 +137,7 @@ namespace ChickenDist.Forms
 
             btnActivate = new Button
             {
-                Text = "⚡  تفعيل البرنامج الآن",
+                Text = "تفعيل البرنامج الآن",
                 Location = new Point(15, 130),
                 Size = new Size(440, 40),
                 BackColor = Color.FromArgb(46, 204, 113),
@@ -195,7 +195,7 @@ namespace ChickenDist.Forms
                     LicenseManager.WriteIniValue("General", "Key5", parts[4], encrypt: false);
                     LicenseManager.WriteIniValue("General", "Key6", parts[5], encrypt: false);
 
-                    MessageBox.Show("✅ تم تفعيل البرنامج بنجاح! سيتم فتح البرنامج الآن.", "تم التفعيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم تفعيل البرنامج بنجاح! سيتم فتح البرنامج الآن.", "تم التفعيل", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }
@@ -206,7 +206,7 @@ namespace ChickenDist.Forms
             }
             else
             {
-                MessageBox.Show($"❌ كود التفعيل غير صالح:\n{errorReason}", "خطأ التفعيل", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"كود التفعيل غير صالح:\n{errorReason}", "خطأ التفعيل", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -61,7 +61,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            Text = "📋 شاشة بيان تسعير وعرض أسعار (بدون تأثير مخزني)";
+            Text = "شاشة بيان تسعير وعرض أسعار (بدون تأثير مخزني)";
             Size = new Size(1040, 700);
             StartPosition = FormStartPosition.CenterScreen;
             RightToLeft = RightToLeft.Yes;
@@ -175,7 +175,7 @@ namespace ChickenDist.Forms
             // Row 2: Info banner
             var lblBanner = new Label
             {
-                Text = "ℹ️ تنبيه: بيان التسعير هذا مجرد عرض أسعار للعميل ولا يخصم أي كميات من المخزون إلا عند تحويله لفاتورة بيع.",
+                Text = "تنبيه: بيان التسعير هذا مجرد عرض أسعار للعميل ولا يخصم أي كميات من المخزون إلا عند تحويله لفاتورة بيع.",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(255, 220, 110),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -233,12 +233,12 @@ namespace ChickenDist.Forms
             };
             txtProductCode.KeyDown += TxtProductCode_KeyDown;
 
-            btnSearchProduct = Theme.MakeButton("🔍 بحث سريع (F3)", 0, 0, 0, 0, Theme.Accent);
+            btnSearchProduct = Theme.MakeButton("بحث سريع (F3)", 0, 0, 0, 0, Theme.Accent);
             btnSearchProduct.Dock = DockStyle.Fill;
             btnSearchProduct.Margin = new Padding(2);
             btnSearchProduct.Click += (s, e) => OpenQuickSearch();
 
-            btnManualAdd = Theme.MakeButton("➕ إضافة", 0, 0, 0, 0, Theme.Success);
+            btnManualAdd = Theme.MakeButton("إضافة", 0, 0, 0, 0, Theme.Success);
             btnManualAdd.Dock = DockStyle.Fill;
             btnManualAdd.Margin = new Padding(2);
             btnManualAdd.Click += (s, e) => ProcessProductInput(txtProductCode.Text.Trim());
@@ -303,25 +303,25 @@ namespace ChickenDist.Forms
                 RightToLeft = RightToLeft.Yes
             };
 
-            btnNew = Theme.MakeButton("📄 جديد (F1)", 0, 0, 110, 40, Color.FromArgb(55, 65, 81));
+            btnNew = Theme.MakeButton("جديد (F1)", 0, 0, 110, 40, Color.FromArgb(55, 65, 81));
             btnNew.Click += (s, e) => NewQuote(true);
 
-            btnSuspend = Theme.MakeButton("📌 تعليق / حفظ (F2)", 0, 0, 160, 40, Theme.Primary);
+            btnSuspend = Theme.MakeButton("تعليق / حفظ (F2)", 0, 0, 160, 40, Theme.Primary);
             btnSuspend.Click += (s, e) => SaveQuote(false);
 
-            btnPendingList = Theme.MakeButton("📋 العروض المعلقة (F4)", 0, 0, 160, 40, Theme.Accent);
+            btnPendingList = Theme.MakeButton("العروض المعلقة (F4)", 0, 0, 160, 40, Theme.Accent);
             btnPendingList.Click += (s, e) => OpenPendingQuotesList();
 
-            btnConvertToSale = Theme.MakeButton("🔄 تحويل لفاتورة بيع (F5)", 0, 0, 190, 40, Theme.Success);
+            btnConvertToSale = Theme.MakeButton("تحويل لفاتورة بيع (F5)", 0, 0, 190, 40, Theme.Success);
             btnConvertToSale.Click += (s, e) => ConvertToSaleInvoice();
 
-            btnPrintPrep = Theme.MakeButton("📦 طباعة إذن تحضير", 0, 0, 150, 40, Color.DarkSlateBlue);
+            btnPrintPrep = Theme.MakeButton("طباعة إذن تحضير", 0, 0, 150, 40, Color.DarkSlateBlue);
             btnPrintPrep.Click += (s, e) => PrintPreparationSlip();
 
-            btnPrintQuote = Theme.MakeButton("🖨️ طباعة عرض أسعار", 0, 0, 150, 40, Color.DarkGreen);
+            btnPrintQuote = Theme.MakeButton("طباعة عرض أسعار", 0, 0, 150, 40, Color.DarkGreen);
             btnPrintQuote.Click += (s, e) => PrintPriceQuote();
 
-            var btnWhatsApp = Theme.MakeButton("📱 واتساب للعميل", 0, 0, 150, 40, Color.FromArgb(37, 211, 102));
+            var btnWhatsApp = Theme.MakeButton("واتساب للعميل", 0, 0, 150, 40, Color.FromArgb(37, 211, 102));
             btnWhatsApp.ForeColor = Color.White;
             btnWhatsApp.Click += (s, e) => SendQuoteWhatsApp();
 
@@ -362,7 +362,7 @@ namespace ChickenDist.Forms
             {
                 Name = "BtnDelete",
                 HeaderText = "حذف",
-                Text = "❌",
+                Text = "X",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 20
             };
@@ -771,7 +771,7 @@ namespace ChickenDist.Forms
                 try
                 {
                     decimal bal = ClientDAL.GetBalance(cid.Value);
-                    lblClientBalance.Text = $"💰 رصيد العميل السابق (المديونية الحالية): {bal:N2} ج.م";
+                    lblClientBalance.Text = $"رصيد العميل السابق (المديونية الحالية): {bal:N2} ج.م";
                     lblClientBalance.ForeColor = bal > 0
                         ? Color.FromArgb(220, 50, 50)
                         : Color.FromArgb(30, 160, 80);
@@ -837,7 +837,7 @@ namespace ChickenDist.Forms
                 _currentQuoteID = savedID;
                 if (!isSilent)
                 {
-                    var askWa = MessageBox.Show("✅ تم تعليق وحفظ بيان التسعير بنجاح (بدون أي تأثير مخزني).\n\nهل تريد إرسال بيان الأسعار للعميل عبر واتساب؟",
+                    var askWa = MessageBox.Show("تم تعليق وحفظ بيان التسعير بنجاح (بدون أي تأثير مخزني).\n\nهل تريد إرسال بيان الأسعار للعميل عبر واتساب؟",
                         "إرسال واتساب", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (askWa == DialogResult.Yes)
                     {
@@ -959,7 +959,7 @@ namespace ChickenDist.Forms
             this.Close();
         }
 
-        // ── 🖨️ Printing Logic ──
+        // ── Printing Logic ──
 
         private void PrintPreparationSlip()
         {
@@ -1372,7 +1372,7 @@ namespace ChickenDist.Forms
                     y += 20;
                 }
 
-                string title = "🧾 فاتورة بيع تقديرية (عرض أسعار)";
+                string title = "فاتورة بيع تقديرية (عرض أسعار)";
                 g.DrawString(title, fontTitle, Brushes.Black, new RectangleF(left, y, width, isA5 ? 24 : 28), sfCenter);
                 y += isA5 ? 26 : 30;
 
@@ -1668,19 +1668,19 @@ namespace ChickenDist.Forms
                 string compPhone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
 
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"⭐ *{comp}* ⭐");
+                sb.AppendLine($"*{comp}*");
                 if (!string.IsNullOrWhiteSpace(compPhone))
                 {
-                    sb.AppendLine($"📞 خدمة العملاء: {compPhone}");
+                    sb.AppendLine($"خدمة العملاء: {compPhone}");
                 }
                 sb.AppendLine("━━━━━━━━━━━━━━━━");
-                sb.AppendLine("📋 *بيان أسعار وعرض أسعار معتمد*");
-                if (!string.IsNullOrEmpty(quoteCode)) sb.AppendLine($"🔖 *رقم العرض:* #{quoteCode}");
-                sb.AppendLine($"📅 *التاريخ:* {DateTime.Now:yyyy/MM/dd hh:mm tt}");
-                sb.AppendLine($"👤 *العميل:* {(string.IsNullOrWhiteSpace(clientName) ? "عميل نقدي" : clientName)}");
-                sb.AppendLine($"🏷️ *فئة التسعير:* {tier}");
+                sb.AppendLine("*بيان أسعار وعرض أسعار معتمد*");
+                if (!string.IsNullOrEmpty(quoteCode)) sb.AppendLine($"*رقم العرض:* #{quoteCode}");
+                sb.AppendLine($"*التاريخ:* {DateTime.Now:yyyy/MM/dd hh:mm tt}");
+                sb.AppendLine($"*العميل:* {(string.IsNullOrWhiteSpace(clientName) ? "عميل نقدي" : clientName)}");
+                sb.AppendLine($"*فئة التسعير:* {tier}");
                 sb.AppendLine("━━━━━━━━━━━━━━━━");
-                sb.AppendLine("📦 *تفاصيل الأصناف والأسعار:*");
+                sb.AppendLine("*تفاصيل الأصناف والأسعار:*");
 
                 int itemIdx = 1;
                 decimal grossTotal = 0m;
@@ -1696,29 +1696,29 @@ namespace ChickenDist.Forms
                 sb.AppendLine("━━━━━━━━━━━━━━━━");
                 if (disc > 0)
                 {
-                    sb.AppendLine($"💵 *إجمالي البضاعة:* {grossTotal:N2} ج.م");
-                    sb.AppendLine($"✂️ *قيمة الخصم:* {disc:N2} ج.م");
+                    sb.AppendLine($"*إجمالي البضاعة:* {grossTotal:N2} ج.م");
+                    sb.AppendLine($"*قيمة الخصم:* {disc:N2} ج.م");
                 }
-                sb.AppendLine($"💰 *الصافي الإجمالي المطلوب:* {netTotal:N2} ج.م");
+                sb.AppendLine($"*الصافي الإجمالي المطلوب:* {netTotal:N2} ج.م");
                 try
                 {
-                    sb.AppendLine($"📝 *فقط {TafqeetHelper.ConvertToArabicWords(netTotal)} لا غير.*");
+                    sb.AppendLine($"*فقط {TafqeetHelper.ConvertToArabicWords(netTotal)} لا غير.*");
                 }
                 catch { }
 
                 if (!string.IsNullOrWhiteSpace(notes))
                 {
-                    sb.AppendLine($"📌 *ملاحظات:* {notes}");
+                    sb.AppendLine($"*ملاحظات:* {notes}");
                 }
-                sb.AppendLine("📌 *بيان تقديري استرشادي - أسعار سارية حتى انتهاء الكميات*");
-                sb.AppendLine("🙏 *نشكركم على ثقتكم الغالية ونتشرف بخدمتكم دائماً!*");
+                sb.AppendLine("*بيان تقديري استرشادي - أسعار سارية حتى انتهاء الكميات*");
+                sb.AppendLine("*نشكركم على ثقتكم الغالية ونتشرف بخدمتكم دائماً!*");
 
                 WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                     this,
                     phone,
                     sb.ToString(),
                     () => ReceiptImageGenerator.GeneratePriceQuoteReceiptImage(clientName, phone, quoteCode, tier, _items, disc, notes),
-                    "📱 إرسال عرض السعر عبر الواتساب (نموذج الطارق)",
+                    "إرسال عرض السعر عبر الواتساب (نموذج الطارق)",
                     () => PdfReportHelper.GeneratePriceQuotePdf(clientName, phone, quoteCode, tier, _items, disc, notes),
                     () => ReceiptImageGenerator.GeneratePriceQuoteImages(clientName, phone, quoteCode, tier, _items, disc, notes));
             }

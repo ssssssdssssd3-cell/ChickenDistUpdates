@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -73,7 +73,7 @@ namespace ChickenDist.Forms
 
             var lblHeaderTitle = new Label
             {
-                Text = "🚀 تحديث إصدار البرنامج من السيرفر الرئيسي",
+                Text = "تحديث إصدار البرنامج من السيرفر الرئيسي",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = false,
@@ -114,7 +114,7 @@ namespace ChickenDist.Forms
 
             var lblOldVer = new Label
             {
-                Text = $"🖥️ إصدار هذا الجهاز (قديم):  v{_currentVersion}",
+                Text = $"إصدار هذا الجهاز (قديم):  v{_currentVersion}",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(220, 38, 38),
                 Location = new Point(15, 12),
@@ -123,7 +123,7 @@ namespace ChickenDist.Forms
 
             var lblNewVer = new Label
             {
-                Text = $"🏢 إصدار السيرفر الرئيسي (المعتمد):  v{_serverVersion}",
+                Text = $"إصدار السيرفر الرئيسي (المعتمد):  v{_serverVersion}",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(22, 163, 74),
                 Location = new Point(15, 40),
@@ -133,14 +133,14 @@ namespace ChickenDist.Forms
             string serverInfo = !string.IsNullOrWhiteSpace(_serverMachine) ? $" | جهاز: {_serverMachine}" : "";
             var lblServerDetails = new Label
             {
-                Text = $"🕒 تم الاعتماد: {_updatedAt:yyyy/MM/dd hh:mm tt}{serverInfo}",
+                Text = $"تم الاعتماد: {_updatedAt:yyyy/MM/dd hh:mm tt}{serverInfo}",
                 Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(100, 116, 139),
                 Location = new Point(15, 68),
                 Size = new Size(450, 22)
             };
 
-            string sourceDesc = _hasBinaryInDb ? "⚡ النسخة متوفرة وجاهزة للتحميل الفوري عبر الشبكة المحلية (LAN)" : "🌐 سيتم التحميل التلقائي عبر خادم التحديثات المعتمد";
+            string sourceDesc = _hasBinaryInDb ? "النسخة متوفرة وجاهزة للتحميل الفوري عبر الشبكة المحلية (LAN)" : "سيتم التحميل التلقائي عبر خادم التحديثات المعتمد";
             var lblSource = new Label
             {
                 Text = sourceDesc,
@@ -195,7 +195,7 @@ namespace ChickenDist.Forms
             // ── 5. Action Buttons ────────────────────────────────────
             _btnUpdate = new Button
             {
-                Text = "📥 تحميل وتثبيت إصدار الرئيسي الآن (تلقائي)",
+                Text = "تحميل وتثبيت إصدار الرئيسي الآن (تلقائي)",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
@@ -210,7 +210,7 @@ namespace ChickenDist.Forms
 
             _btnBrowse = new Button
             {
-                Text = "📁 أو اختيار ملف البرنامج المحدث يدوياً من الشبكة...",
+                Text = "أو اختيار ملف البرنامج المحدث يدوياً من الشبكة...",
                 Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                 BackColor = Color.FromArgb(241, 245, 249),
                 ForeColor = Color.FromArgb(51, 65, 85),
@@ -281,7 +281,7 @@ namespace ChickenDist.Forms
                 if (!updateOk)
                 {
                     _progressBar.Visible = false;
-                    _lblStatus.Text = "❌ فشل التحميل";
+                    _lblStatus.Text = "فشل التحميل";
                     _lblStatus.ForeColor = Color.Red;
                     _btnUpdate.Enabled = true;
                     _btnBrowse.Enabled = true;
@@ -295,7 +295,7 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    _lblStatus.Text = "✅ اكتمل التحديث! جاري إعادة التشغيل...";
+                    _lblStatus.Text = "اكتمل التحديث! جاري إعادة التشغيل...";
                     _lblStatus.ForeColor = Color.Green;
                     this.DialogResult = DialogResult.OK;
                 }

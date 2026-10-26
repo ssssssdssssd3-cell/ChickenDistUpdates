@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Printing;
@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
                 AppConfig.SetPrinter(pd, kitchenPrinter);
 
                 // محاولة قراءة عرض الورق الفعلي من الطابعة
-                // لو الطابعة 58mm ≈ 205 وحدة، لو 80mm ≈ 300 وحدة
+                // لو الطابعة 58mm 205 وحدة، لو 80mm 300 وحدة
                 int paperW = AppConfig.ReceiptPaperWidth == 58 ? 205 : 300;
                 try
                 {
@@ -134,7 +134,7 @@ namespace ChickenDist.Forms
             StringFormat formatLeft = new StringFormat { Alignment = StringAlignment.Near };
 
             // العنوان
-            string prepHeaderTitle = AppConfig.IsRestaurant ? "⚡ بون تحضير المطبخ ⚡" : "⚡ بون تحضير وتسليم الطلب ⚡";
+            string prepHeaderTitle = AppConfig.IsRestaurant ? "بون تحضير المطبخ" : "بون تحضير وتسليم الطلب";
             g.DrawString(prepHeaderTitle, fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 22), formatCenter);
             y += 24;
 
@@ -165,8 +165,8 @@ namespace ChickenDist.Forms
             {
                 g.FillRectangle(new SolidBrush(Color.FromArgb(30, 60, 30)), margin, y, usableWidth, 22);
                 string clientDisplay = string.IsNullOrEmpty(clientPhone)
-                    ? $"👤 {clientName}"
-                    : $"👤 {clientName}  ({clientPhone})";
+                    ? $"{clientName}"
+                    : $"{clientName}  ({clientPhone})";
                 g.DrawString(clientDisplay, fBodyBold, Brushes.LightGreen,
                     new RectangleF(margin, y + 2, usableWidth, 20), formatRight);
                 y += 26;
@@ -280,8 +280,8 @@ namespace ChickenDist.Forms
 
                     // عنوان التوليفة
                     string blendHeader = string.IsNullOrEmpty(blendName)
-                        ? "☕ التوليفة الخاصة:"
-                        : $"☕ {blendName}:";
+                        ? "التوليفة الخاصة:"
+                        : $"{blendName}:";
                     g.DrawString(blendHeader, fHeader, Brushes.Black, new RectangleF(margin, y, usableWidth, 18), formatRight);
                     y += 20;
 
@@ -300,14 +300,14 @@ namespace ChickenDist.Forms
                     if (!string.IsNullOrWhiteSpace(blendGrind))
                     {
                         y += 2;
-                        g.DrawString($"⚙️ الطحن: {blendGrind}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 16), formatRight);
+                        g.DrawString($"الطحن: {blendGrind}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 16), formatRight);
                         y += 18;
                     }
 
                     // درجة التحميص
                     if (!string.IsNullOrWhiteSpace(blendRoast))
                     {
-                        g.DrawString($"🔥 التحويج: {blendRoast}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 16), formatRight);
+                        g.DrawString($"التحويج: {blendRoast}", fBodyBold, Brushes.Black, new RectangleF(margin, y, usableWidth, 16), formatRight);
                         y += 18;
                     }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -60,7 +60,7 @@ namespace ChickenDist.Forms
 
         private void BuildUI()
         {
-            this.Text = "🎟️ إدارة بونات الخصم";
+            this.Text = "إدارة بونات الخصم";
             this.Size = new Size(1020, 620);
             this.MinimumSize = new Size(880, 520);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -78,7 +78,7 @@ namespace ChickenDist.Forms
             };
             var lblTitle = new Label
             {
-                Text = "🎟️ إدارة بونات الخصم — إنشاء وتعديل وحذف البونات",
+                Text = "إدارة بونات الخصم — إنشاء وتعديل وحذف البونات",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Fill,
@@ -128,10 +128,10 @@ namespace ChickenDist.Forms
                 Padding = new Padding(6, 4, 6, 4),
                 BackColor = Color.FromArgb(237, 233, 254)
             };
-            btnNew = CreateButton("➕ بون جديد", Color.FromArgb(109, 40, 217));
+            btnNew = CreateButton("بون جديد", Color.FromArgb(109, 40, 217));
             btnNew.Click += (s, e) => ClearForm();
 
-            btnEdit = CreateButton("✏️ تعديل المحدد", Color.FromArgb(37, 99, 235));
+            btnEdit = CreateButton("تعديل المحدد", Color.FromArgb(37, 99, 235));
             btnEdit.Click += (s, e) =>
             {
                 if (dgvVouchers.SelectedRows.Count == 0 && dgvVouchers.CurrentRow == null)
@@ -144,10 +144,10 @@ namespace ChickenDist.Forms
                 txtCode.SelectAll();
             };
 
-            btnDelete = CreateButton("🗑️ حذف", Color.FromArgb(239, 68, 68));
+            btnDelete = CreateButton("حذف", Color.FromArgb(239, 68, 68));
             btnDelete.Click += BtnDelete_Click;
 
-            btnClose = CreateButton("✖ إغلاق", Color.FromArgb(71, 85, 105));
+            btnClose = CreateButton("إغلاق", Color.FromArgb(71, 85, 105));
             btnClose.Click += (s, e) => this.Close();
 
             pnlGridButtons.Controls.Add(btnNew);
@@ -280,7 +280,7 @@ namespace ChickenDist.Forms
             // زر الحفظ
             btnSave = new Button
             {
-                Text = "💾 حفظ البون",
+                Text = "حفظ البون",
                 Location = new Point(14, y),
                 Size = new Size(200, 38),
                 BackColor = Color.FromArgb(109, 40, 217),
@@ -296,7 +296,7 @@ namespace ChickenDist.Forms
             // عنوان الـ Panel
             lblPanelTitle = new Label
             {
-                Text = "➕ إضافة بون جديد",
+                Text = "إضافة بون جديد",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(109, 40, 217),
                 BackColor = Color.FromArgb(245, 243, 255),
@@ -493,13 +493,13 @@ namespace ChickenDist.Forms
             chkIsActive.Checked = dto.IsActive;
             if (lblPanelTitle != null)
             {
-                lblPanelTitle.Text = $"✏️ تعديل البون: {dto.Code}";
+                lblPanelTitle.Text = $"تعديل البون: {dto.Code}";
                 lblPanelTitle.ForeColor = Color.FromArgb(37, 99, 235);
                 lblPanelTitle.BackColor = Color.FromArgb(239, 246, 255);
             }
             if (btnSave != null)
             {
-                btnSave.Text = "💾 حفظ التعديلات";
+                btnSave.Text = "حفظ التعديلات";
                 btnSave.BackColor = Color.FromArgb(37, 99, 235);
             }
             lblStatus.Text = "";
@@ -528,14 +528,14 @@ namespace ChickenDist.Forms
             string code = txtCode.Text.Trim().ToUpper();
             if (string.IsNullOrEmpty(code))
             {
-                lblStatus.Text = "⚠️ يجب إدخال كود البون";
+                lblStatus.Text = "يجب إدخال كود البون";
                 lblStatus.ForeColor = Color.FromArgb(239, 68, 68);
                 txtCode.Focus();
                 return;
             }
             if (nudDiscountValue.Value <= 0)
             {
-                lblStatus.Text = "⚠️ يجب إدخال قيمة خصم أكبر من صفر";
+                lblStatus.Text = "يجب إدخال قيمة خصم أكبر من صفر";
                 lblStatus.ForeColor = Color.FromArgb(239, 68, 68);
                 return;
             }
@@ -557,7 +557,7 @@ namespace ChickenDist.Forms
             {
                 int savedId = DiscountVouchersDAL.Save(dto);
                 LoadGrid(savedId);
-                lblStatus.Text = isEdit ? $"✅ تم حفظ تعديلات البون [{code}] بنجاح" : $"✅ تم إضافة البون [{code}] بنجاح";
+                lblStatus.Text = isEdit ? $"تم حفظ تعديلات البون [{code}] بنجاح" : $"تم إضافة البون [{code}] بنجاح";
                 lblStatus.ForeColor = Color.FromArgb(22, 163, 74);
 
                 // مزامنة فورية مع السحاب للمتجر الإلكتروني
@@ -568,7 +568,7 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                lblStatus.Text = "❌ خطأ: " + ex.Message;
+                lblStatus.Text = "خطأ: " + ex.Message;
                 lblStatus.ForeColor = Color.FromArgb(239, 68, 68);
                 AppLogger.Error("Save voucher failed", ex, "FrmDiscountVouchers");
             }
@@ -597,7 +597,7 @@ namespace ChickenDist.Forms
                 DiscountVouchersDAL.Delete(vid);
                 LoadGrid();
                 ClearForm();
-                lblStatus.Text = "✅ تم الحذف";
+                lblStatus.Text = "تم الحذف";
                 lblStatus.ForeColor = Color.FromArgb(22, 163, 74);
 
                 // مزامنة فورية مع السحاب للمتجر الإلكتروني
@@ -628,13 +628,13 @@ namespace ChickenDist.Forms
             chkIsActive.Checked = true;
             if (lblPanelTitle != null)
             {
-                lblPanelTitle.Text = "➕ إضافة بون جديد";
+                lblPanelTitle.Text = "إضافة بون جديد";
                 lblPanelTitle.ForeColor = Color.FromArgb(109, 40, 217);
                 lblPanelTitle.BackColor = Color.FromArgb(245, 243, 255);
             }
             if (btnSave != null)
             {
-                btnSave.Text = "💾 حفظ البون الجديد";
+                btnSave.Text = "حفظ البون الجديد";
                 btnSave.BackColor = Color.FromArgb(109, 40, 217);
             }
             lblStatus.Text = "";

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Collections.Generic;
@@ -269,7 +269,7 @@ namespace ChickenDist.DAL
             int? activeShiftID = ShiftDAL.GetActiveShiftID();
             if (!activeShiftID.HasValue && !isDraft)
             {
-                throw new InvalidOperationException("⚠️ عفوًا: لا يمكن حفظ الفاتورة بدون وجود وردية (شيفت) مفتوحة حالياً!\nيرجى فتح وردية جديدة أولاً لتسجيل الفاتورة وحساب النقدية والدرج.");
+                throw new InvalidOperationException("عفوًا: لا يمكن حفظ الفاتورة بدون وجود وردية (شيفت) مفتوحة حالياً!\nيرجى فتح وردية جديدة أولاً لتسجيل الفاتورة وحساب النقدية والدرج.");
             }
 
             if (!isDraft && items != null)
@@ -288,7 +288,7 @@ namespace ChickenDist.DAL
                         decimal curStock = InventoryDAL.GetProductStock(gItem.ProductID, targetWh);
                         if (gItem.TotalQty > curStock)
                         {
-                            throw new InvalidOperationException($"❌ عجز في المخزون: الصنف '{gItem.ProductName}' رصيده المتاح بالمخزن ({curStock:G29}) غير كافٍ لإتمام عملية البيع ({gItem.TotalQty:G29}) ولا يمكن البيع بالسالب!");
+                            throw new InvalidOperationException($"عجز في المخزون: الصنف '{gItem.ProductName}' رصيده المتاح بالمخزن ({curStock:G29}) غير كافٍ لإتمام عملية البيع ({gItem.TotalQty:G29}) ولا يمكن البيع بالسالب!");
                         }
                     }
                 }
@@ -300,7 +300,7 @@ namespace ChickenDist.DAL
                 decimal totalPaid = (cashPaid ?? 0m) + (visaPaid ?? 0m);
                 if (totalPaid < total - 0.01m)
                 {
-                    throw new InvalidOperationException($"❌ خطأ مالي: إجمالي المسدد نقدياً وفيزا ({totalPaid:N2} ج) أقل من إجمالي الفاتورة ({total:N2} ج) لعميل نقدي غير مسجل!\nيجب سداد كامل الفاتورة أو اختيار عميل مسجل لتحميل المتبقي ({total - totalPaid:N2} ج) كدين على حسابه.");
+                    throw new InvalidOperationException($"خطأ مالي: إجمالي المسدد نقدياً وفيزا ({totalPaid:N2} ج) أقل من إجمالي الفاتورة ({total:N2} ج) لعميل نقدي غير مسجل!\nيجب سداد كامل الفاتورة أو اختيار عميل مسجل لتحميل المتبقي ({total - totalPaid:N2} ج) كدين على حسابه.");
                 }
             }
 
@@ -2478,12 +2478,12 @@ namespace ChickenDist.DAL
                           END AS ClientCode,
                           ISNULL(c.ClientName, ISNULL(c2.ClientName, N'عميل نقدي / عام')) AS ClientName,
                           CASE 
-                              WHEN sr.PaymentType = 'Visa' THEN N'💳 فيزا'
-                              WHEN sr.PaymentType = 'Credit' THEN N'📋 آجل'
-                              WHEN sr.PaymentType = 'Cash' THEN N'💵 نقدي'
-                              WHEN s.SaleType = 'Visa' THEN N'💳 فيزا'
-                              WHEN s.SaleType = 'Credit' THEN N'📋 آجل'
-                              ELSE N'💵 نقدي'
+                              WHEN sr.PaymentType = 'Visa' THEN N'فيزا'
+                              WHEN sr.PaymentType = 'Credit' THEN N'آجل'
+                              WHEN sr.PaymentType = 'Cash' THEN N'نقدي'
+                              WHEN s.SaleType = 'Visa' THEN N'فيزا'
+                              WHEN s.SaleType = 'Credit' THEN N'آجل'
+                              ELSE N'نقدي'
                           END AS PaymentType,
                           ISNULL(retItems.ItemsCount, 0) AS ItemsCount,
                           sr.TotalAmount, sr.Notes
@@ -2591,7 +2591,7 @@ namespace ChickenDist.DAL
                 }
 
                 // المنطق المحاسبي الدقيق:
-                // 1. مرتجع نقدي (Cash) → صرف نقدية من الخزينة/الدرج (ReturnOutcome) وتأثيرها على الدرج في الوردية
+                // 1. مرتجع نقدي (Cash) صرف نقدية من الخزينة/الدرج (ReturnOutcome) وتأثيرها على الدرج في الوردية
                 if (paymentType == "Cash")
                 {
                     int accId = Session.GetDefaultSafeID();
@@ -2606,7 +2606,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@accId", accId),
                         DbHelper.P("@shid", sID.HasValue && sID.Value > 0 ? (object)sID.Value : DBNull.Value));
                 }
-                // 2. مرتجع فيزا (Visa) → صرف من حساب الفيزا/البنك وتأثيرها على إجمالي الفيزا في الوردية دون المساس بنقدية الدرج
+                // 2. مرتجع فيزا (Visa) صرف من حساب الفيزا/البنك وتأثيرها على إجمالي الفيزا في الوردية دون المساس بنقدية الدرج
                 else if (paymentType == "Visa")
                 {
                     int visaAcc = targetVisaAccID ?? (Session.GetDefaultSafeID());
@@ -2645,7 +2645,7 @@ namespace ChickenDist.DAL
                             DbHelper.P("@by", Session.EmpID));
                     }
                 }
-                // 3. مرتجع آجل (Credit) → تخفيض رصيد/مديونية العميل دون تحريك النقدية
+                // 3. مرتجع آجل (Credit) تخفيض رصيد/مديونية العميل دون تحريك النقدية
                 else if (clientID.HasValue)
                 {
                     DbHelper.ExecuteTrans(trans,
@@ -3411,12 +3411,12 @@ namespace ChickenDist.DAL
                     ISNULL(s.SaleCode, N'مرتجع مباشر') AS OriginalSaleCode,
                     ISNULL(c.ClientName, N'عميل نقدي') AS ClientName,
                     CASE 
-                        WHEN sr.PaymentType = 'Visa' THEN N'💳 فيزا'
-                        WHEN sr.PaymentType = 'Credit' THEN N'📋 آجل'
-                        WHEN sr.PaymentType = 'Cash' THEN N'💵 نقدي'
-                        WHEN s.SaleType = 'Visa' THEN N'💳 فيزا'
-                        WHEN s.SaleType = 'Credit' THEN N'📋 آجل'
-                        ELSE N'💵 نقدي'
+                        WHEN sr.PaymentType = 'Visa' THEN N'فيزا'
+                        WHEN sr.PaymentType = 'Credit' THEN N'آجل'
+                        WHEN sr.PaymentType = 'Cash' THEN N'نقدي'
+                        WHEN s.SaleType = 'Visa' THEN N'فيزا'
+                        WHEN s.SaleType = 'Credit' THEN N'آجل'
+                        ELSE N'نقدي'
                     END AS PaymentType,
                     COALESCE(p.ProductCode, p.PartNumber, CAST(p.ProductID AS NVARCHAR)) AS ProductCode,
                     CASE WHEN NULLIF(LTRIM(RTRIM(ri.IMEI)), N'') IS NOT NULL THEN p.ProductName + N' (' + LTRIM(RTRIM(ri.IMEI)) + N')' ELSE p.ProductName END AS ProductName,
@@ -4473,12 +4473,12 @@ namespace ChickenDist.DAL
                         ELSE ISNULL(s.SupplierName, N'مورد غير معروف')
                     END AS PartyName,
                     CASE 
-                        WHEN p.PurchaseSource = 'Client' THEN N'👤 عميل'
-                        ELSE N'🏭 مورد'
+                        WHEN p.PurchaseSource = 'Client' THEN N'عميل'
+                        ELSE N'مورد'
                     END AS PurchaseSourceText,
                     CASE 
-                        WHEN p.PurchaseType = 'Cash' THEN N'💵 نقدي'
-                        ELSE N'📋 آجل'
+                        WHEN p.PurchaseType = 'Cash' THEN N'نقدي'
+                        ELSE N'آجل'
                     END AS PurchaseType,
                     ISNULL((
                         SELECT SUM(pi.Quantity * pi.UnitPrice)
@@ -4568,8 +4568,8 @@ namespace ChickenDist.DAL
                         ELSE ISNULL(s.SupplierName, N'مورد غير معروف')
                     END AS PartyName,
                     CASE 
-                        WHEN p.PurchaseSource = 'Client' THEN N'👤 عميل'
-                        ELSE N'🏭 مورد'
+                        WHEN p.PurchaseSource = 'Client' THEN N'عميل'
+                        ELSE N'مورد'
                     END AS PartyType,
                     COUNT(p.PurchaseID) AS InvoiceCount,
                     SUM(CASE WHEN p.PurchaseType = 'Cash' THEN p.TotalAmount ELSE 0 END) AS CashTotal,

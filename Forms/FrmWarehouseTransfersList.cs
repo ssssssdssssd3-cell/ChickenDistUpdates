@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -78,12 +78,12 @@ namespace ChickenDist.Forms
             dtpFrom = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Today.AddDays(-30) };
             dtpTo = new DateTimePicker { Width = 180, Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy/MM/dd hh:mm tt", Value = DateTime.Now };
 
-            btnLoad = Theme.MakeButton("🔍 عرض التحويلات", Color.FromArgb(17, 94, 89));
+            btnLoad = Theme.MakeButton("عرض التحويلات", Color.FromArgb(17, 94, 89));
             btnLoad.Size = new Size(150, 32);
             btnLoad.Margin = new Padding(8, 2, 4, 2);
             btnLoad.Click += (s, e) => LoadTransfers();
 
-            var btnNewTransfer = Theme.MakeButton("🔄 تحويل جديد", Theme.Accent);
+            var btnNewTransfer = Theme.MakeButton("تحويل جديد", Theme.Accent);
             btnNewTransfer.Size = new Size(140, 32);
             btnNewTransfer.Margin = new Padding(6, 2, 4, 2);
             btnNewTransfer.Click += (s, e) =>
@@ -115,7 +115,7 @@ namespace ChickenDist.Forms
             // ── Upper: Transfers list ──────────────────────────────────────
             var pnlUpperLabel = new Label
             {
-                Text = "📋 قائمة التحويلات المخزنية",
+                Text = "قائمة التحويلات المخزنية",
                 Dock = DockStyle.Top,
                 Height = 30,
                 Font = Theme.FontBold,
@@ -146,7 +146,7 @@ namespace ChickenDist.Forms
             };
             lblTransferInfo = new Label
             {
-                Text = "🔍 اختر تحويلاً من القائمة لعرض أصنافه",
+                Text = "اختر تحويلاً من القائمة لعرض أصنافه",
                 Dock = DockStyle.Fill,
                 Font = Theme.FontBold,
                 ForeColor = Theme.Accent,
@@ -174,7 +174,7 @@ namespace ChickenDist.Forms
         {
             dgTransfers.Rows.Clear();
             dgTransferItems.Rows.Clear();
-            lblTransferInfo.Text = "🔍 اختر تحويلاً من القائمة لعرض أصنافه";
+            lblTransferInfo.Text = "اختر تحويلاً من القائمة لعرض أصنافه";
 
             var dt = TransferDAL.GetAll(dtpFrom.Value, dtpTo.Value);
             foreach (DataRow r in dt.Rows)
@@ -202,7 +202,7 @@ namespace ChickenDist.Forms
             string from = row.Cells["FromWarehouse"].Value?.ToString();
             string to   = row.Cells["ToWarehouse"].Value?.ToString();
 
-            lblTransferInfo.Text = $"📦 أصناف التحويل رقم: {code}  |  من: {from}  ←  إلى: {to}";
+            lblTransferInfo.Text = $"أصناف التحويل رقم: {code}  |  من: {from}  -  إلى: {to}";
 
             dgTransferItems.Rows.Clear();
             var dt = TransferDAL.GetItems(transferID);

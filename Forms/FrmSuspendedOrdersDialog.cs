@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -34,7 +34,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "⏳ استرجاع ومتابعة أوامر التصنيع المعلقة (تحت التحضير)";
+            this.Text = "استرجاع ومتابعة أوامر التصنيع المعلقة (تحت التحضير)";
             this.Size = new Size(1140, 600);
             this.MinimumSize = new Size(960, 480);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -64,7 +64,7 @@ namespace ChickenDist.Forms
 
             flowTop.Controls.Add(new Label
             {
-                Text = "🔍 تصفية الأوامر المعلقة:",
+                Text = "تصفية الأوامر المعلقة:",
                 AutoSize = true,
                 Font = Theme.FontBold,
                 ForeColor = Theme.Accent,
@@ -183,12 +183,12 @@ namespace ChickenDist.Forms
                 Padding = new Padding(12, 8, 12, 8)
             };
 
-            btnOpen = Theme.MakeButton("📂 استرجاع وفتح الأمر المختار", 12, 8, 220, 38, Color.FromArgb(16, 185, 129));
+            btnOpen = Theme.MakeButton("استرجاع وفتح الأمر المختار", 12, 8, 220, 38, Color.FromArgb(16, 185, 129));
             btnOpen.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnOpen.Click += (s, e) => OpenSelectedOrder();
             pnlBottom.Controls.Add(btnOpen);
 
-            btnCancelOrder = Theme.MakeButton("❌ إلغاء الأمر وإرجاع الخامات للمخزن", 240, 8, 240, 38, Color.FromArgb(220, 53, 69));
+            btnCancelOrder = Theme.MakeButton("إلغاء الأمر وإرجاع الخامات للمخزن", 240, 8, 240, 38, Color.FromArgb(220, 53, 69));
             btnCancelOrder.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCancelOrder.Click += (s, e) => CancelSelectedOrder();
             pnlBottom.Controls.Add(btnCancelOrder);

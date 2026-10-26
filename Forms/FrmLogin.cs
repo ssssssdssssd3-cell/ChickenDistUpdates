@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
@@ -72,7 +72,7 @@ namespace ChickenDist.Forms
             {
                 lblLogo = new Label
                 {
-                    Text = "🚚",
+                    Text = "",
                     Font = new Font("Segoe UI Emoji", 50f),
                     ForeColor = Theme.Accent,
                     AutoSize = false,
@@ -182,7 +182,7 @@ namespace ChickenDist.Forms
             // ── شريط عرض الإصدار الحالي ─────────────────────────────────────
             lblUpdateStatus = new Label
             {
-                Text = $"🎯 إصدار البرنامج: v{UpdateManager.CurrentVersion} (انقر للفحص أو التحديث)",
+                Text = $"إصدار البرنامج: v{UpdateManager.CurrentVersion} (انقر للفحص أو التحديث)",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(125, 211, 252),
                 AutoSize = false,
@@ -204,7 +204,7 @@ namespace ChickenDist.Forms
 
             var btnUpdateFromMain = new Button
             {
-                Text = "🔄 فحص وتحديث الإصدار من السيرفر الرئيسي",
+                Text = "فحص وتحديث الإصدار من السيرفر الرئيسي",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 BackColor = Color.FromArgb(16, 185, 129),

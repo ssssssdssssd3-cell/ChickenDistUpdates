@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -41,7 +41,7 @@ namespace ChickenDist.Forms
         {
             _productID = productID;
             _productName = productName;
-            _initialUnit = productUnit?.Replace(" 🔽", "")?.Trim() ?? "";
+            _initialUnit = productUnit?.Trim() ?? "";
             _initialFactor = currentFactor > 0 ? currentFactor : 1.0m;
             _initialWarehouseID = warehouseID;
 
@@ -75,7 +75,7 @@ namespace ChickenDist.Forms
             
             lblTitle = new Label 
             { 
-                Text = $"📊 تقرير حركة الصنف: {_productName}", 
+                Text = $"تقرير حركة الصنف: {_productName}", 
                 Font = Theme.FontHeader, 
                 ForeColor = Theme.Accent,
                 Dock = DockStyle.Top,
@@ -180,12 +180,12 @@ namespace ChickenDist.Forms
             };
             cboUnit.SelectedIndexChanged += (s, e) => { if (!_isInitializing) LoadMovement(); };
 
-            btnLoad = Theme.MakeButton("🔍 تحديث الحركة", Color.FromArgb(40, 110, 50));
+            btnLoad = Theme.MakeButton("تحديث الحركة", Color.FromArgb(40, 110, 50));
             btnLoad.Location = new Point(530, yRow2 - 2);
             btnLoad.Size = new Size(135, 34);
             btnLoad.Click += (s, e) => LoadMovement();
 
-            btnPrint = Theme.MakeButton("🖨 طباعة تقرير الحركة", Theme.Accent);
+            btnPrint = Theme.MakeButton("طباعة تقرير الحركة", Theme.Accent);
             btnPrint.Location = new Point(345, yRow2 - 2);
             btnPrint.Size = new Size(175, 34);
             btnPrint.Click += (s, e) => PrintMovement();
@@ -240,7 +240,7 @@ namespace ChickenDist.Forms
         private void LoadWarehouses()
         {
             cboWarehouse.Items.Clear();
-            cboWarehouse.Items.Add(new ComboItem(0, "🏢 (جميع المخازن)"));
+            cboWarehouse.Items.Add(new ComboItem(0, "(جميع المخازن)"));
             try
             {
                 var dt = DbHelper.Query("SELECT WarehouseID, WarehouseName FROM Warehouses WHERE IsActive = 1 ORDER BY WarehouseID");
@@ -314,7 +314,7 @@ namespace ChickenDist.Forms
                     { 
                         Name = majorName, 
                         Factor = majorFactor, 
-                        DisplayText = $"📦 {majorName} (الوحدة الكبرى - معامل: {majorFactor:G29})" 
+                        DisplayText = $"{majorName} (الوحدة الكبرى - معامل: {majorFactor:G29})" 
                     };
                     cboUnit.Items.Add(optMajor);
 
@@ -325,7 +325,7 @@ namespace ChickenDist.Forms
                         { 
                             Name = mediumName, 
                             Factor = mediumFactor, 
-                            DisplayText = $"⚙️ {mediumName} (الوحدة الوسطى - معامل: {mediumFactor:G29})" 
+                            DisplayText = $"{mediumName} (الوحدة الوسطى - معامل: {mediumFactor:G29})" 
                         };
                         cboUnit.Items.Add(optMedium);
                     }
@@ -341,7 +341,7 @@ namespace ChickenDist.Forms
                         { 
                             Name = sDisplayName, 
                             Factor = smallFactor, 
-                            DisplayText = $"🔹 {sDisplayName} (الوحدة الصغرى - تجزئة - معامل: 1)" 
+                            DisplayText = $"{sDisplayName} (الوحدة الصغرى - تجزئة - معامل: 1)" 
                         };
                         cboUnit.Items.Add(optSmall);
                     }
@@ -355,7 +355,7 @@ namespace ChickenDist.Forms
             if (cboUnit.Items.Count == 0)
             {
                 string uName = !string.IsNullOrWhiteSpace(_initialUnit) ? _initialUnit : "وحدة";
-                cboUnit.Items.Add(new UnitOption { Name = uName, Factor = 1.0m, DisplayText = $"📦 {uName}" });
+                cboUnit.Items.Add(new UnitOption { Name = uName, Factor = 1.0m, DisplayText = $"{uName}" });
             }
 
             // تحديد الوحدة الافتراضية بناءً على ما كان محدداً في شاشة الجرد:
@@ -422,7 +422,7 @@ namespace ChickenDist.Forms
             dgMovement.Columns["Balance"].HeaderText = $"الرصيد [{unitName}]";
 
             string whTitle = wid.HasValue ? $" - مخزن: {(cboWarehouse.SelectedItem as ComboItem)?.Text}" : " - (جميع المخازن)";
-            lblTitle.Text = $"📊 تقرير حركة الصنف: {_productName} ({unitName}){whTitle}";
+            lblTitle.Text = $"تقرير حركة الصنف: {_productName} ({unitName}){whTitle}";
 
             DataTable dt = InventoryDAL.GetProductMovement(_productID, wid);
 
@@ -525,7 +525,7 @@ namespace ChickenDist.Forms
             }
 
             // 4. تحديث شريط الملخص العلوي
-            lblSummary.Text = $"📦 رصيد أول المدة: {FormatBalance(openingBalance)}  |  🟢 إجمالي الوارد: {FormatBalance(totalPeriodIn)}  |  🔴 إجمالي الصادر: {FormatBalance(totalPeriodOut)}  |  🎯 الرصيد الختامي: {FormatBalance(runningBalance)} {unitName}";
+            lblSummary.Text = $"رصيد أول المدة: {FormatBalance(openingBalance)}  |  إجمالي الوارد: {FormatBalance(totalPeriodIn)}  |  إجمالي الصادر: {FormatBalance(totalPeriodOut)}  |  الرصيد الختامي: {FormatBalance(runningBalance)} {unitName}";
         }
 
         private void PrintMovement()

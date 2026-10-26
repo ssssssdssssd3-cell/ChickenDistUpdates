@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -86,7 +86,7 @@ namespace ChickenDist.Forms
             // GroupBox 1: البيانات الأساسية (أقصى اليمين)
             grpBasic = new GroupBox
             {
-                Text = "📝 البيانات الأساسية",
+                Text = "البيانات الأساسية",
                 Location = new Point(15, 15),
 
                 Size = new Size(grpWidth, grpHeight),
@@ -98,7 +98,7 @@ namespace ChickenDist.Forms
             // GroupBox 2: الأسعار والربح والضريبة (الثاني من اليمين)
             grpPrice = new GroupBox
             {
-                Text = "💰 الأسعار والربح والضريبة",
+                Text = "الأسعار والربح والضريبة",
                 Location = new Point(345, 15),
 
                 Size = new Size(grpWidth, grpHeight),
@@ -110,7 +110,7 @@ namespace ChickenDist.Forms
             // GroupBox 3: الوحدة الوسطى (الثالث من اليمين)
             grpUnit2 = new GroupBox
             {
-                Text = "📦 الوحدة الوسطى (علبة/دستة)",
+                Text = "الوحدة الوسطى (علبة/دستة)",
                 Location = new Point(675, 15),
                 Size = new Size(grpWidth, grpHeight),
                 ForeColor = Theme.Primary,
@@ -121,7 +121,7 @@ namespace ChickenDist.Forms
             // GroupBox 4: الوحدة الصغرى والربط (أقصى اليسار)
             grpUnit1 = new GroupBox
             {
-                Text = "🔍 الوحدة الصغرى (تجزئة/قطعة)",
+                Text = "الوحدة الصغرى (تجزئة/قطعة)",
                 Location = new Point(1005, 15),
                 Size = new Size(grpWidth, grpHeight),
                 ForeColor = Theme.Primary,
@@ -169,19 +169,19 @@ namespace ChickenDist.Forms
             btnAddUnit.Click += (s, e) => { new FrmUnits().ShowDialog(); LoadUnitsCombos(); };
             ry += 32;
 
-            chkActive = new CheckBox { Text = "☑ نشط بالبرنامج", Location = new Point(145, ry), Width = 145, Height = 22, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
-            chkPrintLocalBarcode = new CheckBox { Text = "🏷️ باركود محلي", Location = new Point(5, ry), Width = 135, Height = 22, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkActive = new CheckBox { Text = "نشط بالبرنامج", Location = new Point(145, ry), Width = 145, Height = 22, ForeColor = Theme.TextMain, Checked = true, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
+            chkPrintLocalBarcode = new CheckBox { Text = "باركود محلي", Location = new Point(5, ry), Width = 135, Height = 22, ForeColor = Theme.TextMain, Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = Theme.FontMain };
             grpBasic.Controls.AddRange(new Control[] { chkActive, chkPrintLocalBarcode });
             ry += 24;
 
-            chkIsService = new CheckBox { Text = "🔧 صنف خدمة (سالب)", Location = new Point(145, ry), Width = 145, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsService = new CheckBox { Text = "صنف خدمة (سالب)", Location = new Point(145, ry), Width = 145, Height = 22, ForeColor = Color.FromArgb(180, 120, 0), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
             chkIsService.CheckedChanged += (s, e) =>
             {
                 if (_isLoadingData) return;
                 if (chkIsService.Checked)
                 {
                     var res = MessageBox.Show(
-                        "⚠️ تنبيه هام لمنع أخطاء الحسابات:\n\nتحويل الصنف إلى 'صنف خدمة' يتيح البيع بالسالب بدون فحص رصيد المخزن.\n\n🔒 تذكير أمان: لن يمكنك التراجع عن هذا الخيار أو إرجاع الصنف كصنف عادي (مخزني) مرة أخرى بعد الحفظ لحماية حركة المخزون.\n\nهل أنت متأكد من تفعيل هذا الصنف كخدمي؟",
+                        "تنبيه هام لمنع أخطاء الحسابات:\n\nتحويل الصنف إلى 'صنف خدمة' يتيح البيع بالسالب بدون فحص رصيد المخزن.\n\nتذكير أمان: لن يمكنك التراجع عن هذا الخيار أو إرجاع الصنف كصنف عادي (مخزني) مرة أخرى بعد الحفظ لحماية حركة المخزون.\n\nهل أنت متأكد من تفعيل هذا الصنف كخدمي؟",
                         "تأكيد تحويل صنف خدمة", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     if (res != DialogResult.Yes)
                     {
@@ -191,12 +191,12 @@ namespace ChickenDist.Forms
                     }
                 }
             };
-            chkIsQuickItem = new CheckBox { Text = "⚡ بيع سريع (POS)", Location = new Point(5, ry), Width = 135, Height = 22, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsQuickItem = new CheckBox { Text = "بيع سريع (POS)", Location = new Point(5, ry), Width = 135, Height = 22, ForeColor = Color.FromArgb(0, 120, 180), Checked = false, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
             grpBasic.Controls.AddRange(new Control[] { chkIsService, chkIsQuickItem });
             ry += 24;
 
             bool isMobileBiz = (AppConfig.BusinessType == "Mobiles");
-            chkIsIMEI = new CheckBox { Text = "📱 صنف ذو سيريال / IMEI (إلزامي بالشراء)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(234, 88, 12), Checked = isMobileBiz, Visible = isMobileBiz, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
+            chkIsIMEI = new CheckBox { Text = "صنف ذو سيريال / IMEI (إلزامي بالشراء)", Location = new Point(5, ry), Width = 285, Height = 24, ForeColor = Color.FromArgb(234, 88, 12), Checked = isMobileBiz, Visible = isMobileBiz, AutoSize = false, CheckAlign = ContentAlignment.MiddleRight, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Theme.FontMain, FontStyle.Bold) };
             if (isMobileBiz) grpBasic.Controls.Add(chkIsIMEI);
             if (isMobileBiz) ry += 28;
 
@@ -205,10 +205,10 @@ namespace ChickenDist.Forms
             grpBasic.Controls.AddRange(new Control[] { lblDesc, txtDescription });
             ry += 50;
 
-            btnProductImages = Theme.MakeButton("📷 صور الصنف (0/3)", 135, ry, 155, 36, Color.FromArgb(40, 90, 160));
+            btnProductImages = Theme.MakeButton("صور الصنف (0/3)", 135, ry, 155, 36, Color.FromArgb(40, 90, 160));
             btnProductImages.Click += BtnProductImages_Click;
 
-            btnMobileUpload = Theme.MakeButton("📱 تصوير موبايل", 5, ry, 125, 36, Color.FromArgb(16, 185, 129));
+            btnMobileUpload = Theme.MakeButton("تصوير موبايل", 5, ry, 125, 36, Color.FromArgb(16, 185, 129));
             btnMobileUpload.Click += BtnMobileUpload_Click;
 
             grpBasic.Controls.AddRange(new Control[] { btnProductImages, btnMobileUpload });
@@ -221,9 +221,9 @@ namespace ChickenDist.Forms
             AddNud(grpPrice, "شراء الكبرى:", 10, py, out nudPurchasePrice, 2, canSeeCost);
             if (canSeeCost) py += 34;
 
-            // 🟢 القطاعي
+            // القطاعي
             Label lblRetailMargin;
-            AddNud(grpPrice, "🟢 ربح القطاعي %:", 10, py, out nudProfitMarginPct, 2, out lblRetailMargin, canSeeCost);
+            AddNud(grpPrice, "ربح القطاعي %:", 10, py, out nudProfitMarginPct, 2, out lblRetailMargin, canSeeCost);
             nudProfitMarginPct.Maximum = 9999m;
             nudProfitMarginPct.BackColor = Color.FromArgb(16, 42, 34);
             nudProfitMarginPct.ForeColor = Color.FromArgb(52, 211, 153);
@@ -234,9 +234,9 @@ namespace ChickenDist.Forms
 
             AddNud(grpPrice, "بيع قطاعي الكبرى:", 10, py, out nudPrice, 2); py += 34;
 
-            // 🟠 نصف الجملة
+            // نصف الجملة
             Label lblSemiMargin;
-            AddNud(grpPrice, "🟠 ربح نصف الجملة %:", 10, py, out nudSemiWholesaleMarginPct, 2, out lblSemiMargin, canSeeCost);
+            AddNud(grpPrice, "ربح نصف الجملة %:", 10, py, out nudSemiWholesaleMarginPct, 2, out lblSemiMargin, canSeeCost);
             nudSemiWholesaleMarginPct.Maximum = 9999m;
             nudSemiWholesaleMarginPct.BackColor = Color.FromArgb(48, 34, 12);
             nudSemiWholesaleMarginPct.ForeColor = Color.FromArgb(251, 191, 36);
@@ -247,9 +247,9 @@ namespace ChickenDist.Forms
 
             AddNud(grpPrice, "نصف جملة الكبرى:", 10, py, out nudSemiWholesalePrice, 2); py += 34;
 
-            // 🔵 الجملة
+            // الجملة
             Label lblWholeMargin;
-            AddNud(grpPrice, "🔵 ربح الجملة %:", 10, py, out nudWholesaleMarginPct, 2, out lblWholeMargin, canSeeCost);
+            AddNud(grpPrice, "ربح الجملة %:", 10, py, out nudWholesaleMarginPct, 2, out lblWholeMargin, canSeeCost);
             nudWholesaleMarginPct.Maximum = 9999m;
             nudWholesaleMarginPct.BackColor = Color.FromArgb(18, 36, 56);
             nudWholesaleMarginPct.ForeColor = Color.FromArgb(56, 189, 248);
@@ -260,9 +260,9 @@ namespace ChickenDist.Forms
 
             AddNud(grpPrice, "جملة الكبرى:", 10, py, out nudWholesalePrice, 2); py += 34;
 
-            // 🟣 الضريبة
+            // الضريبة
             Label lblTax;
-            AddNud(grpPrice, "🟣 نسبة الضريبة %:", 10, py, out nudTaxPct, 2, out lblTax);
+            AddNud(grpPrice, "نسبة الضريبة %:", 10, py, out nudTaxPct, 2, out lblTax);
             nudTaxPct.Maximum = 100m;
             nudTaxPct.BackColor = Color.FromArgb(36, 22, 54);
             nudTaxPct.ForeColor = Color.FromArgb(216, 180, 254);
@@ -286,13 +286,13 @@ namespace ChickenDist.Forms
             int lblBarW = 125;
             int lblBarX = (grpPrice.ClientSize.Width > 0 ? grpPrice.ClientSize.Width : 315) - lblBarW - 12;
             var lblBar = new Label { Text = "الباركود الدولي:", Location = new Point(lblBarX, py + 3), Size = new Size(lblBarW, 24), AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain, Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            btnMultiBarcode = new Button { Text = "➕", Location = new Point(12, py), Size = new Size(28, 23), FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            btnMultiBarcode = new Button { Text = "+", Location = new Point(12, py), Size = new Size(28, 23), FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             btnMultiBarcode.Click += BtnMultiBarcode_Click;
             txtInternationalCode = new TextBox { Location = new Point(46, py), Size = new Size(Math.Max(80, lblBarX - 46 - 6), 24), BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             grpPrice.Controls.AddRange(new Control[] { lblBar, txtInternationalCode, btnMultiBarcode });
             py += 34;
 
-            AddField(grpPrice, "⚖️ كود كرت الميزان:", 10, py, out txtScalePLU);
+            AddField(grpPrice, "كود كرت الميزان:", 10, py, out txtScalePLU);
             txtScalePLU.BackColor = Color.FromArgb(30, 48, 70);
             txtScalePLU.ForeColor = Color.FromArgb(254, 240, 138);
             txtScalePLU.Font = new Font(Theme.FontMain, FontStyle.Bold);
@@ -309,7 +309,7 @@ namespace ChickenDist.Forms
 
             // --- GroupBox 3 Content (الوحدة الوسطى) ---
             int u2y = 25;
-            lblUnit2Header = new Label { Text = "⚙️ خانات الوحدة الوسطى (علبة/دستة):", Location = new Point(10, u2y), Width = 290, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
+            lblUnit2Header = new Label { Text = "خانات الوحدة الوسطى (علبة/دستة):", Location = new Point(10, u2y), Width = 290, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
             grpUnit2.Controls.Add(lblUnit2Header);
             u2y += 32;
 
@@ -324,7 +324,7 @@ namespace ChickenDist.Forms
 
             grpUnit2.Controls.Add(new Label { Text = "باركود الوسطى:", Location = new Point(10, u2y + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
             txtUnit2Barcode = new TextBox { Location = new Point(165, u2y), Width = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            btnUnit2MultiBarcode = new Button { Text = "➕", Location = new Point(263, u2y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnUnit2MultiBarcode = new Button { Text = "+", Location = new Point(263, u2y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             btnUnit2MultiBarcode.Click += BtnUnit2MultiBarcode_Click;
             grpUnit2.Controls.AddRange(new Control[] { txtUnit2Barcode, btnUnit2MultiBarcode });
             u2y += 38;
@@ -333,14 +333,14 @@ namespace ChickenDist.Forms
             if (canSeeCost) u2y += 38;
             AddNud(grpUnit2, "بيع قطاعي الوسطى:", 10, u2y, out nudUnit2SalePrice, 2); u2y += 35;
 
-            btnResetU2 = Theme.MakeButton("🔄 إعادة حساب سعر الوسطى تلقائياً", 10, u2y, 285, 30, Color.FromArgb(60, 130, 200));
+            btnResetU2 = Theme.MakeButton("إعادة حساب سعر الوسطى تلقائياً", 10, u2y, 285, 30, Color.FromArgb(60, 130, 200));
             btnResetU2.Click += (s, e) => ResetUnit2SaleOverride();
             grpUnit2.Controls.Add(btnResetU2);
             u2y += 38;
 
             // --- GroupBox 4 Content (الوحدة الصغرى) ---
             int u1y = 25;
-            lblUnit1Header = new Label { Text = "⚙️ خانات الوحدة الصغرى (تجزئة/قطعة):", Location = new Point(10, u1y), Width = 290, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
+            lblUnit1Header = new Label { Text = "خانات الوحدة الصغرى (تجزئة/قطعة):", Location = new Point(10, u1y), Width = 290, Font = new Font(Theme.FontMain, FontStyle.Bold), ForeColor = Theme.Primary };
             grpUnit1.Controls.Add(lblUnit1Header);
             u1y += 32;
 
@@ -355,7 +355,7 @@ namespace ChickenDist.Forms
 
             grpUnit1.Controls.Add(new Label { Text = "باركود الصغرى:", Location = new Point(10, u1y + 3), Width = 150, Height = 24, AutoSize = false, TextAlign = ContentAlignment.MiddleRight, ForeColor = Theme.TextMain, Font = Theme.FontMain });
             txtUnit1Barcode = new TextBox { Location = new Point(165, u1y), Width = 95, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, BorderStyle = BorderStyle.FixedSingle, Font = Theme.FontMain };
-            btnUnit1MultiBarcode = new Button { Text = "➕", Location = new Point(263, u1y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnUnit1MultiBarcode = new Button { Text = "+", Location = new Point(263, u1y), Width = 28, Height = 23, FlatStyle = FlatStyle.Flat, BackColor = Theme.Accent, ForeColor = Color.White, Cursor = Cursors.Hand };
             btnUnit1MultiBarcode.Click += BtnUnit1MultiBarcode_Click;
             grpUnit1.Controls.AddRange(new Control[] { txtUnit1Barcode, btnUnit1MultiBarcode });
             u1y += 38;
@@ -364,7 +364,7 @@ namespace ChickenDist.Forms
             if (canSeeCost) u1y += 38;
             AddNud(grpUnit1, "بيع قطاعي الصغرى:", 10, u1y, out nudUnit1SalePrice, 2); u1y += 35;
 
-            btnResetU1 = Theme.MakeButton("🔄 إعادة حساب سعر الصغرى تلقائياً", 10, u1y, 285, 30, Color.FromArgb(60, 130, 200));
+            btnResetU1 = Theme.MakeButton("إعادة حساب سعر الصغرى تلقائياً", 10, u1y, 285, 30, Color.FromArgb(60, 130, 200));
             btnResetU1.Click += (s, e) => ResetUnit1SaleOverride();
             grpUnit1.Controls.Add(btnResetU1);
             u1y += 38;
@@ -409,7 +409,7 @@ namespace ChickenDist.Forms
             // --- Footer Panel for Save / Cancel / RecalcAll ---
             pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 65, BackColor = Theme.BgCard };
 
-            btnRecalcAll = Theme.MakeButton("🔄 إعادة حساب كافة التقسيمات تلقائياً", 710, 14, 340, 38, Color.FromArgb(30, 120, 190));
+            btnRecalcAll = Theme.MakeButton("إعادة حساب كافة التقسيمات تلقائياً", 710, 14, 340, 38, Color.FromArgb(30, 120, 190));
             btnRecalcAll.Click += (s, e) =>
             {
                 _unit1SaleOverride = false;
@@ -417,11 +417,11 @@ namespace ChickenDist.Forms
                 nudUnit2SalePrice.BackColor = Color.FromArgb(255, 255, 220);
                 nudUnit1SalePrice.BackColor = Color.FromArgb(255, 255, 220);
                 RecalculateSubUnitPrices();
-                MessageBox.Show("✅ تم إعادة حساب أسعار وتقسيمات الوحدة الوسطى والصغرى تلقائياً بناءً على سعر الكبرى ومعدلات التجميع.", "تم الحساب التلقائي", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم إعادة حساب أسعار وتقسيمات الوحدة الوسطى والصغرى تلقائياً بناءً على سعر الكبرى ومعدلات التجميع.", "تم الحساب التلقائي", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ الصنف", 510, 14, 180, 38, Theme.Accent);
-            btnCancel = Theme.MakeButton("❌ إلغاء", 350, 14, 150, 38, Color.FromArgb(100, 110, 120));
+            btnSave = Theme.MakeButton("حفظ الصنف", 510, 14, 180, 38, Theme.Accent);
+            btnCancel = Theme.MakeButton("إلغاء", 350, 14, 150, 38, Color.FromArgb(100, 110, 120));
 
             btnSave.Click += BtnSave_Click;
             btnCancel.Click += (s, e) => this.Close();
@@ -817,7 +817,7 @@ namespace ChickenDist.Forms
                 // 1. إذا كان تعديل صنف موجود ولا يملك صلاحية تعديل الأصناف -> وضع العرض فقط بالكامل
                 if (_selectedID > 0 && !canEditProducts)
                 {
-                    this.Text = "🔍 معاينة بيانات الصنف (وضع العرض فقط - لا تملك صلاحية التعديل)";
+                    this.Text = "معاينة بيانات الصنف (وضع العرض فقط - لا تملك صلاحية التعديل)";
                     if (btnSave != null) { btnSave.Enabled = false; btnSave.Visible = false; }
                     if (btnRecalcAll != null) { btnRecalcAll.Enabled = false; btnRecalcAll.Visible = false; }
                     if (btnResetU1 != null) { btnResetU1.Enabled = false; btnResetU1.Visible = false; }
@@ -891,7 +891,7 @@ namespace ChickenDist.Forms
                 // 2. إذا كان إضافة صنف جديد ولا يملك صلاحية الإضافة -> منع الحفظ
                 if (_selectedID == 0 && !canAddProducts)
                 {
-                    this.Text = "➕ إضافة صنف (لا تملك صلاحية الإضافة)";
+                    this.Text = "إضافة صنف (لا تملك صلاحية الإضافة)";
                     if (btnSave != null) { btnSave.Enabled = false; btnSave.Visible = false; }
                     if (btnRecalcAll != null) { btnRecalcAll.Enabled = false; btnRecalcAll.Visible = false; }
                     return;
@@ -915,11 +915,11 @@ namespace ChickenDist.Forms
                     if (btnResetU2 != null) { btnResetU2.Enabled = false; btnResetU2.Visible = false; }
 
                     var tip = new ToolTip();
-                    tip.SetToolTip(nudPrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
-                    tip.SetToolTip(nudWholesalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
-                    tip.SetToolTip(nudSemiWholesalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
-                    tip.SetToolTip(nudUnit1SalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
-                    tip.SetToolTip(nudUnit2SalePrice, "🔒 تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudPrice, "تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudWholesalePrice, "تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudSemiWholesalePrice, "تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudUnit1SalePrice, "تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
+                    tip.SetToolTip(nudUnit2SalePrice, "تم قفل تعديل سعر البيع — لا تملك صلاحية تعديل الأسعار");
                 }
             }
             catch (Exception ex)
@@ -1020,7 +1020,7 @@ namespace ChickenDist.Forms
             };
             btnAdd = new Button
             {
-                Text = "➕",
+                Text = "+",
                 Location = new Point(btnX, y),
                 Size = new Size(btnW, 23),
                 FlatStyle = FlatStyle.Flat,
@@ -1260,12 +1260,12 @@ namespace ChickenDist.Forms
                 if (isSrv)
                 {
                     chkIsService.Enabled = false;
-                    chkIsService.Text = "🔧 صنف خدمة (سالب) 🔒";
+                    chkIsService.Text = "صنف خدمة (سالب)";
                 }
                 else
                 {
                     chkIsService.Enabled = true;
-                    chkIsService.Text = "🔧 صنف خدمة (سالب)";
+                    chkIsService.Text = "صنف خدمة (سالب)";
                 }
                 chkIsQuickItem.Checked = dr.Table.Columns.Contains("IsQuickItem") && dr["IsQuickItem"] != DBNull.Value ? Convert.ToBoolean(dr["IsQuickItem"]) : false;
                 if (chkIsIMEI != null) chkIsIMEI.Checked = (AppConfig.BusinessType == "Mobiles") && dr.Table.Columns.Contains("IsIMEI") && dr["IsIMEI"] != DBNull.Value && Convert.ToBoolean(dr["IsIMEI"]);
@@ -1388,7 +1388,7 @@ namespace ChickenDist.Forms
             chkPrintLocalBarcode.Checked = false;
             chkIsService.Checked = false;
             chkIsService.Enabled = true;
-            chkIsService.Text = "🔧 صنف خدمة (سالب)";
+            chkIsService.Text = "صنف خدمة (سالب)";
             chkIsQuickItem.Checked = false;
             if (chkIsIMEI != null) chkIsIMEI.Checked = (AppConfig.BusinessType == "Mobiles");
             if (chkHasExpiry != null) chkHasExpiry.Checked = false;
@@ -1423,13 +1423,13 @@ namespace ChickenDist.Forms
             // ─── التحقق من الصلاحيات الأمنية ───
             if (_selectedID > 0 && !Session.IsAdmin && !Session.CanEdit("Products") && !Session.CanEdit("ProductCard"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية تعديل بيانات الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية تعديل بيانات الصنف!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (_selectedID == 0 && !Session.IsAdmin && !Session.CanAdd("Products") && !Session.CanAdd("ProductCard"))
             {
-                MessageBox.Show("❌ عفوًا: لا تملك صلاحية إضافة صنف جديد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("عفوًا: لا تملك صلاحية إضافة صنف جديد!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -1455,7 +1455,7 @@ namespace ChickenDist.Forms
                 decimal totalQty = GetProductTotalStock(_selectedID);
                 if (totalQty > 0)
                 {
-                    MessageBox.Show("❌ عجز: هذا الصنف له رصيد حالي في المخازن يبلغ (" + totalQty.ToString("G29") + ").\nيجب تصفير كمية هذا الصنف في تسوية الجرد أولاً قبل تفعيل خيار تاريخ الصلاحية!", "تنبيه الرصيد الحالي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عجز: هذا الصنف له رصيد حالي في المخازن يبلغ (" + totalQty.ToString("G29") + ").\nيجب تصفير كمية هذا الصنف في تسوية الجرد أولاً قبل تفعيل خيار تاريخ الصلاحية!", "تنبيه الرصيد الحالي", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     chkHasExpiry.Checked = false;
                     return;
                 }
@@ -1464,7 +1464,7 @@ namespace ChickenDist.Forms
             // فحص تكرار اسم الصنف
             if (ProductDAL.IsNameExists(txtName.Text.Trim(), _selectedID))
             {
-                MessageBox.Show($"⚠️ يوجد صنف آخر بنفس الاسم: \"{txtName.Text.Trim()}\"\nيرجى استخدام اسم مختلف أو تعديل الصنف الموجود.",
+                MessageBox.Show($"يوجد صنف آخر بنفس الاسم: \"{txtName.Text.Trim()}\"\nيرجى استخدام اسم مختلف أو تعديل الصنف الموجود.",
                     "تكرار اسم الصنف", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtName.Focus();
                 return;
@@ -1479,7 +1479,7 @@ namespace ChickenDist.Forms
             {
                 string suggestedCode = ProductDAL.GetNextProductCode();
                 var dr = MessageBox.Show(
-                    $"⚠️ كود الصنف \"{txtCode.Text.Trim()}\" مسجَّل لصنف آخر بالفعل!\n\nهل تريد استخدام الكود المقترح تلقائياً: ({suggestedCode})؟",
+                    $"كود الصنف \"{txtCode.Text.Trim()}\" مسجَّل لصنف آخر بالفعل!\n\nهل تريد استخدام الكود المقترح تلقائياً: ({suggestedCode})؟",
                     "تكرار كود الصنف", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (dr == DialogResult.Yes)
                 {
@@ -1621,7 +1621,7 @@ namespace ChickenDist.Forms
                 {
                     string subUnitName = !string.IsNullOrWhiteSpace(cboUnit1Name.Text) ? cboUnit1Name.Text.Trim() : (!string.IsNullOrWhiteSpace(cboUnit2Name.Text) ? cboUnit2Name.Text.Trim() : "وحدة صغرى");
                     string mainUnitName = !string.IsNullOrWhiteSpace(cboUnit.Text) ? cboUnit.Text.Trim() : "الوحدة الكبرى";
-                    string msg = $"⚠️ تنبيه تجزئة صنف مسجل له رصيد مسبقاً:\n\n" +
+                    string msg = $"تنبيه تجزئة صنف مسجل له رصيد مسبقاً:\n\n" +
                                  $"هذا الصنف لديه رصيد حالي مسجل قدره ({currentStock:N3} {mainUnitName}).\n" +
                                  $"تم تقسيم كارت الصنف الآن بمعامل ({newTotalFactor:N0}) ليصبح بالوحدة ({subUnitName}).\n\n" +
                                  $"هل ترغب في ضرب الرصيد الحالي تلقائياً في المعامل ليصبح ({currentStock * newTotalFactor:N3} {subUnitName})؟\n\n" +
@@ -1648,7 +1648,7 @@ namespace ChickenDist.Forms
                     bool wasService = oldSrvVal != null && oldSrvVal != DBNull.Value && Convert.ToBoolean(oldSrvVal);
                     if (wasService && !chkIsService.Checked)
                     {
-                        MessageBox.Show("⛔ غير مسموح بتحويل الصنف الخدمي إلى صنف عادي (مخزني)!\n\nنظراً لأن الأصناف الخدمية تباع بدون رصيد متاح ويتم الصرف منها بالسالب، لا يمكن إرجاعها كأصناف مخزنية لتفادي اختلال الجرد والأرصدة.",
+                        MessageBox.Show("غير مسموح بتحويل الصنف الخدمي إلى صنف عادي (مخزني)!\n\nنظراً لأن الأصناف الخدمية تباع بدون رصيد متاح ويتم الصرف منها بالسالب، لا يمكن إرجاعها كأصناف مخزنية لتفادي اختلال الجرد والأرصدة.",
                             "إجراء محظور", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                         chkIsService.Checked = true;
                         chkIsService.Enabled = false;
@@ -1699,13 +1699,13 @@ namespace ChickenDist.Forms
 
                     ChickenDist.Core.ProductCache.Refresh();
                     FrmQuickAdd.RaiseProductSaved();
-                    MessageBox.Show("✅ تم الحفظ");
+                    MessageBox.Show("تم الحفظ");
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }
                 else
                 {
-                    MessageBox.Show("❌ فشل الحفظ");
+                    MessageBox.Show("فشل الحفظ");
                 }
             }
             catch (Exception ex)
@@ -1722,7 +1722,7 @@ namespace ChickenDist.Forms
             if (!string.IsNullOrWhiteSpace(_imageUrl2)) count++;
             if (!string.IsNullOrWhiteSpace(_imageUrl3)) count++;
 
-            btnProductImages.Text = $"📷 صور الصنف للمتجر ({count}/3)";
+            btnProductImages.Text = $"صور الصنف للمتجر ({count}/3)";
             if (count > 0)
             {
                 btnProductImages.BackColor = Color.FromArgb(16, 130, 80);
@@ -1769,7 +1769,7 @@ namespace ChickenDist.Forms
                     }
 
                     UpdateProductImagesButton();
-                    MessageBox.Show("✅ تم استلام وحفظ الصور من الموبايل بنجاح وتحديث الصنف!", "تم الاستلام", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم استلام وحفظ الصور من الموبايل بنجاح وتحديث الصنف!", "تم الاستلام", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -1845,11 +1845,11 @@ namespace ChickenDist.Forms
 
             if (lblUnit2Header != null)
             {
-                lblUnit2Header.Text = $"⚙️ خانات الوحدة الوسطى ({(string.IsNullOrEmpty(unit2) ? "غير محددة" : unit2)}):";
+                lblUnit2Header.Text = $"خانات الوحدة الوسطى ({(string.IsNullOrEmpty(unit2) ? "غير محددة" : unit2)}):";
             }
             if (lblUnit1Header != null)
             {
-                lblUnit1Header.Text = $"⚙️ خانات الوحدة الصغرى ({(string.IsNullOrEmpty(unit1) ? "غير محددة" : unit1)}):";
+                lblUnit1Header.Text = $"خانات الوحدة الصغرى ({(string.IsNullOrEmpty(unit1) ? "غير محددة" : unit1)}):";
             }
 
             if (lblUnit3FactorPrompt != null)
@@ -1883,17 +1883,17 @@ namespace ChickenDist.Forms
 
                 if (!string.IsNullOrEmpty(unit2) && !string.IsNullOrEmpty(unit1))
                 {
-                    lblUnitFormula.Text = $"💡 معادلة التجزئة للصنف:\n1 {unit3} = {u3f:0.##} {unit2} = {total:0.##} {unit1}\n(كل 1 {unit2} تحتوي {u2f:0.##} {unit1})";
+                    lblUnitFormula.Text = $"معادلة التجزئة للصنف:\n1 {unit3} = {u3f:0.##} {unit2} = {total:0.##} {unit1}\n(كل 1 {unit2} تحتوي {u2f:0.##} {unit1})";
                     lblUnitFormula.ForeColor = Color.FromArgb(254, 240, 138);
                 }
                 else if (!string.IsNullOrEmpty(unit1))
                 {
-                    lblUnitFormula.Text = $"💡 معادلة التجزئة للصنف:\n1 {unit3} = {u2f:0.##} {unit1}";
+                    lblUnitFormula.Text = $"معادلة التجزئة للصنف:\n1 {unit3} = {u2f:0.##} {unit1}";
                     lblUnitFormula.ForeColor = Color.FromArgb(160, 230, 255);
                 }
                 else
                 {
-                    lblUnitFormula.Text = $"💡 صنف بوحدة واحدة ({unit3}) بدون تجزئة.";
+                    lblUnitFormula.Text = $"صنف بوحدة واحدة ({unit3}) بدون تجزئة.";
                     lblUnitFormula.ForeColor = Color.FromArgb(200, 210, 220);
                 }
             }

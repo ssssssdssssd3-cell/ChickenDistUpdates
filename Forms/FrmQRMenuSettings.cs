@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -59,7 +59,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "🍽️ إعدادات منيو المطاعم وباركود الطاولات (Digital QR Table Menu)";
+            this.Text = "إعدادات منيو المطاعم وباركود الطاولات (Digital QR Table Menu)";
             this.Size = new Size(1060, 750);
             this.MinimumSize = new Size(980, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -80,7 +80,7 @@ namespace ChickenDist.Forms
 
             var lblHeaderTitle = new Label
             {
-                Text = "🍽️ قائمة الطعام الرقمية وباركود الطاولات (Digital QR Table Menu)",
+                Text = "قائمة الطعام الرقمية وباركود الطاولات (Digital QR Table Menu)",
                 Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(245, 158, 11),
                 Dock = DockStyle.Top,
@@ -111,7 +111,7 @@ namespace ChickenDist.Forms
 
             btnSaveAndSync = new Button
             {
-                Text = "💾 حفظ الإعدادات ومزامنة المنيو مع السحابة فوراً",
+                Text = "حفظ الإعدادات ومزامنة المنيو مع السحابة فوراً",
                 Dock = DockStyle.Left,
                 Width = 280,
                 BackColor = Color.FromArgb(37, 99, 235),
@@ -159,13 +159,13 @@ namespace ChickenDist.Forms
                 Padding = new Point(16, 6)
             };
 
-            var tabBranding = new TabPage("🎨 هوية ومظهر المنيو (Branding)")
+            var tabBranding = new TabPage("هوية ومظهر المنيو (Branding)")
             {
                 BackColor = Color.FromArgb(15, 23, 42),
                 Padding = new Padding(15)
             };
 
-            var tabStandees = new TabPage("🖨️ باركود وطباعة ستاندات الطاولات (Table QR)")
+            var tabStandees = new TabPage("باركود وطباعة ستاندات الطاولات (Table QR)")
             {
                 BackColor = Color.FromArgb(15, 23, 42),
                 Padding = new Padding(15)
@@ -206,7 +206,7 @@ namespace ChickenDist.Forms
             // بيانات الواي فاي
             var grpWifi = new GroupBox
             {
-                Text = "📶 بيانات شبكة الواي فاي للزبائن (تظهر تلقائياً على كارت الطاولة لمسح المنيو بسهولة)",
+                Text = "بيانات شبكة الواي فاي للزبائن (تظهر تلقائياً على كارت الطاولة لمسح المنيو بسهولة)",
                 Location = new Point(20, y),
                 Size = new Size(930, 85),
                 ForeColor = Color.FromArgb(96, 165, 250),
@@ -230,7 +230,7 @@ namespace ChickenDist.Forms
             // نمط العرض
             var grpMode = new GroupBox
             {
-                Text = "📱 نمط عرض المنيو عند مسح الباركود",
+                Text = "نمط عرض المنيو عند مسح الباركود",
                 Location = new Point(20, y),
                 Size = new Size(930, 75),
                 ForeColor = Color.FromArgb(245, 158, 11),
@@ -239,7 +239,7 @@ namespace ChickenDist.Forms
 
             rbMenuOnly = new RadioButton
             {
-                Text = "🍽️ منيو رقمي فقط (عرض قائمة الوجبات والمشروبات والأسعار - بدون سلة أو خيارات توصيل)",
+                Text = "منيو رقمي فقط (عرض قائمة الوجبات والمشروبات والأسعار - بدون سلة أو خيارات توصيل)",
                 Location = new Point(20, 28),
                 AutoSize = true,
                 ForeColor = Color.White,
@@ -248,7 +248,7 @@ namespace ChickenDist.Forms
 
             rbTableOrders = new RadioButton
             {
-                Text = "🛎️ منيو تفاعلي مع إمكانية إرسال الطلب من الطاولة مباشرة إلى الكاشير",
+                Text = "منيو تفاعلي مع إمكانية إرسال الطلب من الطاولة مباشرة إلى الكاشير",
                 Location = new Point(520, 28),
                 AutoSize = true,
                 ForeColor = Color.White
@@ -263,7 +263,7 @@ namespace ChickenDist.Forms
             // اللوجو والبانر
             var grpMedia = new GroupBox
             {
-                Text = "🖼️ صور وهوية المطعم (اللوجو وبانر الغلاف الترحيبي)",
+                Text = "صور وهوية المطعم (اللوجو وبانر الغلاف الترحيبي)",
                 Location = new Point(20, y),
                 Size = new Size(930, 230),
                 ForeColor = Color.FromArgb(52, 211, 153),
@@ -442,7 +442,7 @@ namespace ChickenDist.Forms
 
             btnCopyUrl = new Button
             {
-                Text = "📋 نسخ الرابط",
+                Text = "نسخ الرابط",
                 Location = new Point(15, y),
                 Size = new Size(130, 32),
                 BackColor = Color.FromArgb(51, 65, 85),
@@ -464,7 +464,7 @@ namespace ChickenDist.Forms
 
             btnOpenBrowser = new Button
             {
-                Text = "🌐 تجربة المنيو بالمتصفح",
+                Text = "تجربة المنيو بالمتصفح",
                 Location = new Point(155, y),
                 Size = new Size(180, 32),
                 BackColor = Color.FromArgb(16, 185, 129),
@@ -488,7 +488,7 @@ namespace ChickenDist.Forms
             // كرت إجراءات الطباعة
             var grpPrint = new GroupBox
             {
-                Text = "🖨️ طباعة كروت وستاندات الطاولات (Acrylic Stand / Tent Card)",
+                Text = "طباعة كروت وستاندات الطاولات (Acrylic Stand / Tent Card)",
                 Location = new Point(15, y),
                 Size = new Size(410, 240),
                 ForeColor = Color.FromArgb(245, 158, 11),
@@ -497,7 +497,7 @@ namespace ChickenDist.Forms
 
             btnPrintSingleCard = new Button
             {
-                Text = "🖨️ طباعة كارت هذه الطاولة الحالية",
+                Text = "طباعة كارت هذه الطاولة الحالية",
                 Location = new Point(15, 30),
                 Size = new Size(380, 38),
                 BackColor = Color.FromArgb(37, 99, 235),
@@ -512,7 +512,7 @@ namespace ChickenDist.Forms
 
             btnSaveCardImage = new Button
             {
-                Text = "💾 حفظ الكارت كصورة عالية الدقة (PNG)",
+                Text = "حفظ الكارت كصورة عالية الدقة (PNG)",
                 Location = new Point(15, 76),
                 Size = new Size(380, 34),
                 BackColor = Color.FromArgb(51, 65, 85),
@@ -541,7 +541,7 @@ namespace ChickenDist.Forms
 
             btnPrintBatchCards = new Button
             {
-                Text = "📑 طباعة المجموعة كاملة",
+                Text = "طباعة المجموعة كاملة",
                 Location = new Point(15, 188),
                 Size = new Size(380, 36),
                 BackColor = Color.FromArgb(139, 92, 246),
@@ -567,7 +567,7 @@ namespace ChickenDist.Forms
 
             var lblPrevTitle = new Label
             {
-                Text = "👁️ معاينة كارت الطاولة الحي (Standard Acrylic Standee Preview):",
+                Text = "معاينة كارت الطاولة الحي (Standard Acrylic Standee Preview):",
                 Dock = DockStyle.Top,
                 Height = 30,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -710,12 +710,12 @@ namespace ChickenDist.Forms
                 using (var bGold = new SolidBrush(Color.FromArgb(245, 158, 11)))
                 {
                     var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    g.DrawString("📱 قائمة الطعام والأسعار الرقمية | Digital Menu", fSub, bGold, new RectangleF(30, y, width - 60, 24), sf);
+                    g.DrawString("قائمة الطعام والأسعار الرقمية | Digital Menu", fSub, bGold, new RectangleF(30, y, width - 60, 24), sf);
                 }
                 y += 30;
 
                 // 6. شارة رقم الطاولة (Table Badge)
-                string tableLabel = $"🍽️ طاولة: {tableStr}";
+                string tableLabel = $"طاولة: {tableStr}";
                 int badgeW = 220;
                 int badgeH = 40;
                 int badgeX = (width - badgeW) / 2;
@@ -753,7 +753,7 @@ namespace ChickenDist.Forms
                 using (var bScan = new SolidBrush(Color.White))
                 {
                     var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    g.DrawString("امسح الكود عبر كاميرا هاتفك لتصفح المنيو 📱", fScan, bScan, new RectangleF(30, y, width - 60, 26), sf);
+                    g.DrawString("امسح الكود عبر كاميرا هاتفك لتصفح المنيو", fScan, bScan, new RectangleF(30, y, width - 60, 26), sf);
                 }
                 y += 30;
 
@@ -772,7 +772,7 @@ namespace ChickenDist.Forms
                         g.DrawRectangle(pWifiBorder, wifiBoxX, y, wifiBoxW, wifiBoxH);
                     }
 
-                    string wifiText = $"📶 واي فاي: {ssid}   |   كلمة السر: {(string.IsNullOrEmpty(pass) ? "مفتوحة" : pass)}";
+                    string wifiText = $"واي فاي: {ssid}   |   كلمة السر: {(string.IsNullOrEmpty(pass) ? "مفتوحة" : pass)}";
                     using (var fWifi = new Font("Segoe UI", 10f, FontStyle.Bold))
                     using (var bWifi = new SolidBrush(Color.FromArgb(147, 197, 253)))
                     {
@@ -787,7 +787,7 @@ namespace ChickenDist.Forms
                 using (var bFoot = new SolidBrush(Color.FromArgb(148, 163, 184)))
                 {
                     var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    g.DrawString("نتمنى لكم أطيب الأوقات ووجبة شهية ✨", fFoot, bFoot, new RectangleF(30, height - 55, width - 60, 25), sf);
+                    g.DrawString("نتمنى لكم أطيب الأوقات ووجبة شهية", fFoot, bFoot, new RectangleF(30, height - 55, width - 60, 25), sf);
                 }
             }
             return bmp;
@@ -962,7 +962,7 @@ namespace ChickenDist.Forms
         {
             btnSaveAndSync.Enabled = false;
             lblSyncStatus.ForeColor = Color.FromArgb(56, 189, 248);
-            lblSyncStatus.Text = "⏳ جاري حفظ الإعدادات ورفع المنيو الرقمي للسحابة...";
+            lblSyncStatus.Text = "جاري حفظ الإعدادات ورفع المنيو الرقمي للسحابة...";
 
             try
             {
@@ -981,13 +981,13 @@ namespace ChickenDist.Forms
                 if (syncOk)
                 {
                     lblSyncStatus.ForeColor = Color.FromArgb(52, 211, 153);
-                    lblSyncStatus.Text = "✅ تم حفظ وتحديث المنيو السحابي بنجاح!";
-                    MessageBox.Show("تم حفظ إعدادات المنيو ورفع الكتالوج بجميع الأسعار الحالية فوراً إلى السحابة بنجاح! 🍽️✨", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    lblSyncStatus.Text = "تم حفظ وتحديث المنيو السحابي بنجاح!";
+                    MessageBox.Show("تم حفظ إعدادات المنيو ورفع الكتالوج بجميع الأسعار الحالية فوراً إلى السحابة بنجاح!", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
                     lblSyncStatus.ForeColor = Color.FromArgb(244, 63, 94);
-                    lblSyncStatus.Text = "⚠️ تم الحفظ محلياً وتعذر رفع السحابة (تأكد من الإنترنت)";
+                    lblSyncStatus.Text = "تم الحفظ محلياً وتعذر رفع السحابة (تأكد من الإنترنت)";
                 }
             }
             catch (Exception ex)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using ChickenDist.Core;
@@ -106,7 +106,7 @@ namespace ChickenDist.DAL
                         DbHelper.P("@notes", notes),
                         DbHelper.P("@id", partnerID));
 
-                    // إذا تم تعديل رأس المال بالزيادة أو النقصان ➔ تأثير فوري على الخزينة وحساب الشريك
+                    // إذا تم تعديل رأس المال بالزيادة أو النقصان تأثير فوري على الخزينة وحساب الشريك
                     if (diff > 0)
                     {
                         // 1. زيادة رأس المال -> توريد نقدية إلى الخزينة

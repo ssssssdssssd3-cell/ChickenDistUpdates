@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.IO;
@@ -93,20 +93,20 @@ namespace ChickenDist.Forms
                 WrapContents = false
             };
 
-            var btnCheckStatus = Theme.MakeButton("🔄 تحديث", Theme.Primary);
+            var btnCheckStatus = Theme.MakeButton("تحديث", Theme.Primary);
             btnCheckStatus.Size = new Size(100, 36);
             btnCheckStatus.Click += async (s, e) => {
                 btnCheckStatus.Enabled = false;
-                btnCheckStatus.Text = "⏳...";
+                btnCheckStatus.Text = "...";
                 await CheckBotStatusAsync();
-                btnCheckStatus.Text = "🔄 تحديث";
+                btnCheckStatus.Text = "تحديث";
                 btnCheckStatus.Enabled = true;
             };
             statusBtnsPanel.Controls.Add(btnCheckStatus);
 
             btnFirebaseSettings = new Button
             {
-                Text = "⚙️ إعدادات Firebase",
+                Text = "إعدادات Firebase",
                 BackColor = Color.FromArgb(255, 165, 0),
                 ForeColor = Color.White,
                 Size = new Size(155, 36),
@@ -120,7 +120,7 @@ namespace ChickenDist.Forms
 
             var btnTopDeploy = new Button
             {
-                Text = "🚀 رفع السحابة",
+                Text = "رفع السحابة",
                 BackColor = Color.FromArgb(155, 89, 182),
                 ForeColor = Color.White,
                 Size = new Size(125, 36),
@@ -198,7 +198,7 @@ namespace ChickenDist.Forms
             // Pairing Code Button
             var btnPairingCode = new Button
             {
-                Text = "📲 كود الاقتران",
+                Text = "كود الاقتران",
                 BackColor = Color.FromArgb(155, 89, 182),
                 ForeColor = Color.White,
                 Size = new Size(130, 42),
@@ -213,7 +213,7 @@ namespace ChickenDist.Forms
             // Clear Session button
             btnClearSession = new Button
             {
-                Text = "🗑️ مسح الجلسة",
+                Text = "مسح الجلسة",
                 BackColor = Color.FromArgb(180, 60, 60),
                 ForeColor = Color.White,
                 Size = new Size(120, 42),
@@ -227,7 +227,7 @@ namespace ChickenDist.Forms
             // Live Mobile Stats Refresh Button
             var btnPushLiveStats = new Button
             {
-                Text = "⚡ تحديث الموبايل حياً",
+                Text = "تحديث الموبايل حياً",
                 BackColor = Color.FromArgb(46, 204, 113),
                 ForeColor = Color.White,
                 Size = new Size(160, 42),
@@ -238,13 +238,13 @@ namespace ChickenDist.Forms
             btnPushLiveStats.FlatAppearance.BorderSize = 0;
             btnPushLiveStats.Click += async (s, e) => {
                 btnPushLiveStats.Enabled = false;
-                btnPushLiveStats.Text = "⏳ جاري التحديث...";
+                btnPushLiveStats.Text = "جاري التحديث...";
                 bool ok = await Services.CloudSyncService.PushLiveStatsToFirestoreAsync();
                 if (ok)
-                    LogMessage("✅ تم تحديث ومزامنة جميع تقارير المبيعات والأرباح والمخزن إلى سحابة الموبايل بنجاح!");
+                    LogMessage("تم تحديث ومزامنة جميع تقارير المبيعات والأرباح والمخزن إلى سحابة الموبايل بنجاح!");
                 else
-                    LogMessage("⚠️ تعذر رفع التحديث الحسابي — تأكد من الاتصال بالإنترنت.");
-                btnPushLiveStats.Text = "⚡ تحديث الموبايل حياً";
+                    LogMessage("تعذر رفع التحديث الحسابي — تأكد من الاتصال بالإنترنت.");
+                btnPushLiveStats.Text = "تحديث الموبايل حياً";
                 btnPushLiveStats.Enabled = true;
             };
             btnPanelLeft.Controls.Add(btnPushLiveStats);
@@ -253,7 +253,7 @@ namespace ChickenDist.Forms
             FlowLayoutPanel btnPanelRight = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
             btnPushPrices = new Button 
             { 
-                Text = "تحديث الأسعار وإرسالها للبوت 🔄", 
+                Text = "تحديث الأسعار وإرسالها للبوت", 
                 BackColor = Color.FromArgb(46, 204, 113), 
                 ForeColor = Color.White, 
                 Size = new Size(240, 42), 
@@ -289,7 +289,7 @@ namespace ChickenDist.Forms
             // ─── 1. Accountant App Link ───
             Label lblAccTitle = new Label
             {
-                Text = "📱 رابط تطبيق المحاسب (لاستقبال وتأكيد الطلبات سحابياً):",
+                Text = "رابط تطبيق المحاسب (لاستقبال وتأكيد الطلبات سحابياً):",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
@@ -327,7 +327,7 @@ namespace ChickenDist.Forms
             btnCopyAccUrl.FlatAppearance.BorderSize = 0;
             btnCopyAccUrl.Click += (s, e) => {
                 Clipboard.SetText(txtAccUrl.Text);
-                MessageBox.Show("✅ تم نسخ رابط تطبيق المحاسب إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ رابط تطبيق المحاسب إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             pnlAccountant.Controls.Add(btnCopyAccUrl);
 
@@ -351,7 +351,7 @@ namespace ChickenDist.Forms
             // ─── 2. Client Web Site Link ───
             Label lblClientTitle = new Label
             {
-                Text = "🛒 رابط موقع طلبات العملاء (الويب سايت لنشره للزبائن):",
+                Text = "رابط موقع طلبات العملاء (الويب سايت لنشره للزبائن):",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
@@ -388,7 +388,7 @@ namespace ChickenDist.Forms
             btnCopyClientUrl.FlatAppearance.BorderSize = 0;
             btnCopyClientUrl.Click += (s, e) => {
                 Clipboard.SetText(txtClientUrl.Text);
-                MessageBox.Show("✅ تم نسخ رابط موقع طلبات العملاء إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ رابط موقع طلبات العملاء إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             pnlAccountant.Controls.Add(btnCopyClientUrl);
 
@@ -412,7 +412,7 @@ namespace ChickenDist.Forms
             // ─── 3. Owner Mobile App Link ───
             Label lblMobileTitle = new Label
             {
-                Text = "📱 رابط تطبيق موبايل المالك (تطبيق الشاشات والأرباح اللحظية):",
+                Text = "رابط تطبيق موبايل المالك (تطبيق الشاشات والأرباح اللحظية):",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
@@ -450,7 +450,7 @@ namespace ChickenDist.Forms
             btnCopyMobileUrl.FlatAppearance.BorderSize = 0;
             btnCopyMobileUrl.Click += (s, e) => {
                 Clipboard.SetText(txtMobileAppUrl.Text);
-                MessageBox.Show("✅ تم نسخ رابط تطبيق موبايل المالك إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ رابط تطبيق موبايل المالك إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             pnlAccountant.Controls.Add(btnCopyMobileUrl);
 
@@ -474,7 +474,7 @@ namespace ChickenDist.Forms
             // ─── 4. Deploy Button ───
             Button btnDeployHosting = new Button
             {
-                Text = "🚀 رفع اللوحة والروابط أونلاين (Deploy to Firebase)",
+                Text = "رفع اللوحة والروابط أونلاين (Deploy to Firebase)",
                 BackColor = Color.FromArgb(155, 89, 182),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -493,7 +493,7 @@ namespace ChickenDist.Forms
             // ─── 5. Tip Label ───
             Label lblAccTip = new Label
             {
-                Text = "💡 اضغط '🚀 رفع اللوحة والروابط أونلاين' لرفع تطبيق المحاسب والمنيو وتطبيق المالك فوراً.",
+                Text = "اضغط 'رفع اللوحة والروابط أونلاين' لرفع تطبيق المحاسب والمنيو وتطبيق المالك فوراً.",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(127, 140, 141),
                 AutoSize = true,
@@ -522,20 +522,20 @@ namespace ChickenDist.Forms
                 if (_qrSecondsLeft > 0)
                 {
                     _qrSecondsLeft--;
-                    lblQrCountdown.Text = $"⏱ صلاحية الكود: {_qrSecondsLeft} ثانية";
+                    lblQrCountdown.Text = $"صلاحية الكود: {_qrSecondsLeft} ثانية";
                     lblQrCountdown.ForeColor = _qrSecondsLeft < 15
                         ? Color.FromArgb(220, 50, 50)
                         : Color.FromArgb(230, 126, 34);
                 }
                 else
                 {
-                    lblQrCountdown.Text = "⚠️ انتهت صلاحية QR — جاري تحديثه...";
+                    lblQrCountdown.Text = "انتهت صلاحية QR — جاري تحديثه...";
                     tmrCountdown.Stop();
                 }
             };
 
             LogMessage("تم فتح شاشة إدارة البوت الميدانية.");
-            LogMessage("تطبيق المبيعات يعمل الآن بنظام الربط السحابي المباشر ☁️");
+            LogMessage("تطبيق المبيعات يعمل الآن بنظام الربط السحابي المباشر");
         }
 
         /// <summary>
@@ -569,7 +569,7 @@ namespace ChickenDist.Forms
                 string batContent = @"@echo off
 chcp 65001 > nul
 echo ===================================================
-echo   ⚡ Unified Firebase Deployer - ProSoft ERP ⚡
+echo   Unified Firebase Deployer - ProSoft ERP
 echo ===================================================
 echo.
 echo [1/4] Syncing Mobile App files to Firebase public folder...
@@ -586,7 +586,7 @@ echo [4/4] Deploying Client Menu, Accountant Portal and Owner Mobile App to Fire
 call npx firebase deploy --only hosting
 echo.
 echo ===================================================
-echo   ✅ Done! Your Unified Cloud App is Live Online!
+echo   Done! Your Unified Cloud App is Live Online!
 echo ===================================================
 pause
 ";
@@ -665,7 +665,7 @@ pause
 
                     if (statusVal == "Online")
                     {
-                        lblStatus.Text = "الحالة: متصل بالواتساب ومتاح للعملاء (سحابي) ✅";
+                        lblStatus.Text = "الحالة: متصل بالواتساب ومتاح للعملاء (سحابي)";
                         lblStatus.ForeColor = Color.FromArgb(46, 204, 113);
                         btnToggle.Text = "البوت متصل بالكامل";
                         btnToggle.BackColor = Color.FromArgb(46, 204, 113);
@@ -687,7 +687,7 @@ pause
                             code = mCode.Groups[1].Value;
                         }
 
-                        lblStatus.Text = $"الحالة: كود الاقتران جاهز ({code}) 📲\n(أدخل الكود في تطبيق الواتساب بالهاتف للربط)";
+                        lblStatus.Text = $"الحالة: كود الاقتران جاهز ({code})\n(أدخل الكود في تطبيق الواتساب بالهاتف للربط)";
                         lblStatus.ForeColor = Color.FromArgb(155, 89, 182);
                         btnToggle.Text = "إعادة تشغيل الجلسة";
                         btnToggle.BackColor = Color.FromArgb(155, 89, 182);
@@ -702,7 +702,7 @@ pause
                     }
                     else if (statusVal == "QR_Ready")
                     {
-                        lblStatus.Text = "الحالة: يرجى مسح رمز الدخول بالهاتف 📲\n(السبب: لم يتم ربط الحساب بالهاتف)";
+                        lblStatus.Text = "الحالة: يرجى مسح رمز الدخول بالهاتف\n(السبب: لم يتم ربط الحساب بالهاتف)";
                         lblStatus.ForeColor = Color.FromArgb(230, 126, 34);
                         btnToggle.Text = "إعادة تشغيل الجلسة";
                         btnToggle.BackColor = Color.FromArgb(230, 126, 34);
@@ -714,14 +714,14 @@ pause
                         if (!tmrCountdown.Enabled || _qrSecondsLeft <= 0)
                         {
                             _qrSecondsLeft = 55;
-                            lblQrCountdown.Text = $"⏱ صالحية الكود: 55 ثانية";
+                            lblQrCountdown.Text = $"صالحية الكود: 55 ثانية";
                             lblQrCountdown.Visible = true;
                             tmrCountdown.Start();
                         }
                     }
                     else if (statusVal == "Connecting")
                     {
-                        lblStatus.Text = "الحالة: جاري تحضير المتصفح الخلفي... ⏳\n(السبب: جاري مزامنة وربط الجلسة)";
+                        lblStatus.Text = "الحالة: جاري تحضير المتصفح الخلفي...\n(السبب: جاري مزامنة وربط الجلسة)";
                         lblStatus.ForeColor = Color.FromArgb(52, 152, 219);
                         btnToggle.Text = "جاري التحضير...";
                         btnToggle.BackColor = Color.FromArgb(52, 152, 219);
@@ -732,7 +732,7 @@ pause
                     }
                     else
                     {
-                        lblStatus.Text = "الحالة: البوت متوقف حالياً ❌\n(السبب: البوت مغلق من السحابة - اضغط ربط)";
+                        lblStatus.Text = "الحالة: البوت متوقف حالياً\n(السبب: البوت مغلق من السحابة - اضغط ربط)";
                         lblStatus.ForeColor = Color.FromArgb(120, 120, 120);
                         btnToggle.Text = "ربط وتفعيل البوت";
                         btnToggle.BackColor = Color.FromArgb(9, 132, 227);
@@ -744,7 +744,7 @@ pause
                 }
                 else
                 {
-                    lblStatus.Text = "الحالة: لا يمكن جلب حالة البوت السحابية ⚠️\n(السبب: خطأ خادم سحابي HTTP)";
+                    lblStatus.Text = "الحالة: لا يمكن جلب حالة البوت السحابية\n(السبب: خطأ خادم سحابي HTTP)";
                     lblStatus.ForeColor = Color.Red;
                     pbQrCode.Image = null;
                     tmrStatus.Interval = 15000; // Cool down on error
@@ -752,7 +752,7 @@ pause
             }
             catch
             {
-                lblStatus.Text = "الحالة: فشل الاتصال بالسحابة ⚠️";
+                lblStatus.Text = "الحالة: فشل الاتصال بالسحابة";
                 lblStatus.ForeColor = Color.Red;
                 pbQrCode.Image = null;
                 tmrStatus.Interval = 15000; // Cool down on connection error
@@ -803,11 +803,11 @@ pause
                     pbQrCode.Image = img;
                     pbQrCode.BackColor = Color.White;
                 }
-                LogMessage("✅ تم تحميل رمز QR — امسح الآن بهاتفك");
+                LogMessage("تم تحميل رمز QR — امسح الآن بهاتفك");
             }
             catch (Exception ex)
             {
-                LogMessage($"⚠️ خطأ تحميل QR: {ex.Message}");
+                LogMessage($"خطأ تحميل QR: {ex.Message}");
             }
         }
 
@@ -877,7 +877,7 @@ pause
             try
             {
                 btnClearSession.Enabled = false;
-                btnClearSession.Text = "⏳ جاري...";
+                btnClearSession.Text = "جاري...";
                 LogMessage("جاري إرسال أمر مسح الجلسة وإعادة التشغيل للسحابة...");
 
                 string isoNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
@@ -894,9 +894,9 @@ pause
                     content);
 
                 if (response.IsSuccessStatusCode)
-                    LogMessage("✅ تم إرسال أمر مسح الجلسة — انتظر ظهور QR جديد خلال 30 ثانية...");
+                    LogMessage("تم إرسال أمر مسح الجلسة — انتظر ظهور QR جديد خلال 30 ثانية...");
                 else
-                    LogMessage($"❌ فشل إرسال الأمر: {response.StatusCode}");
+                    LogMessage($"فشل إرسال الأمر: {response.StatusCode}");
             }
             catch (Exception ex)
             {
@@ -904,7 +904,7 @@ pause
             }
             finally
             {
-                btnClearSession.Text = "🗑️ مسح الجلسة";
+                btnClearSession.Text = "مسح الجلسة";
                 btnClearSession.Enabled = true;
             }
         }
@@ -944,7 +944,7 @@ pause
 
                 Button btnOk = new Button
                 {
-                    Text = "📲 استخراج كود الاقتران",
+                    Text = "استخراج كود الاقتران",
                     DialogResult = DialogResult.OK,
                     Location = new Point(15, 95),
                     Size = new Size(180, 38),
@@ -998,9 +998,9 @@ pause
                         content);
 
                     if (response.IsSuccessStatusCode)
-                        LogMessage("✅ تم إرسال طلب كود الاقتران — انتظر ظهور الكود على الشاشة خلال ثوانٍ...");
+                        LogMessage("تم إرسال طلب كود الاقتران — انتظر ظهور الكود على الشاشة خلال ثوانٍ...");
                     else
-                        LogMessage($"❌ فشل إرسال الطلب: {response.StatusCode}");
+                        LogMessage($"فشل إرسال الطلب: {response.StatusCode}");
                 }
             }
         }
@@ -1058,7 +1058,7 @@ pause
 
                         Button btnOk = new Button
                         {
-                            Text = "موافق 👍",
+                            Text = "موافق",
                             DialogResult = DialogResult.OK,
                             Location = new Point(265, 155),
                             Size = new Size(110, 34),
@@ -1141,7 +1141,7 @@ pause
                 else
                 {
                     string errBody = await response.Content.ReadAsStringAsync();
-                    LogMessage($"❌ فشل إرسال الأمر السحابي: {response.StatusCode} - {errBody}");
+                    LogMessage($"فشل إرسال الأمر السحابي: {response.StatusCode} - {errBody}");
                 }
             }
             catch (Exception ex)
@@ -1236,7 +1236,7 @@ pause
 
                 if (pricesResponse.IsSuccessStatusCode && clientsResponse.IsSuccessStatusCode)
                 {
-                    LogMessage("✅ تم تحديث الأسعار والعملاء بالسحابة بنجاح!");
+                    LogMessage("تم تحديث الأسعار والعملاء بالسحابة بنجاح!");
                     lblLastSync.Text = $"آخر تحديث للأسعار والعملاء: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}";
                 }
                 else
@@ -1246,19 +1246,19 @@ pause
                     {
                         try { body = await pricesResponse.Content.ReadAsStringAsync(); } catch { }
                         if (body.Length > 120) body = body.Substring(0, 120) + "...";
-                        LogMessage($"❌ فشل تحديث الأسعار بالسحاب — HTTP {(int)pricesResponse.StatusCode}: {body}");
+                        LogMessage($"فشل تحديث الأسعار بالسحاب — HTTP {(int)pricesResponse.StatusCode}: {body}");
                     }
                     if (!clientsResponse.IsSuccessStatusCode)
                     {
                         try { body = await clientsResponse.Content.ReadAsStringAsync(); } catch { }
                         if (body.Length > 120) body = body.Substring(0, 120) + "...";
-                        LogMessage($"❌ فشل تحديث العملاء بالسحاب — HTTP {(int)clientsResponse.StatusCode}: {body}");
+                        LogMessage($"فشل تحديث العملاء بالسحاب — HTTP {(int)clientsResponse.StatusCode}: {body}");
                     }
                 }
             }
             catch (TaskCanceledException)
             {
-                LogMessage("❌ انتهت مهلة الطلب — قد يكون الاتصال بالسحابة ضعيفاً.");
+                LogMessage("انتهت مهلة الطلب — قد يكون الاتصال بالسحابة ضعيفاً.");
             }
             catch (Exception ex)
             {
@@ -1274,7 +1274,7 @@ pause
             // Build a clean, professional dialog
             Form dlg = new Form
             {
-                Text = "⚙️ إعدادات Firebase",
+                Text = "إعدادات Firebase",
                 Size = new Size(540, 440),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -1311,7 +1311,7 @@ pause
             // Input label
             Label lblProjectId = new Label
             {
-                Text = "🔑 Firebase Config أو Project ID:",
+                Text = "Firebase Config أو Project ID:",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(44, 62, 80),
                 AutoSize = true,
@@ -1361,7 +1361,7 @@ pause
             // Save button
             Button btnSave = new Button
             {
-                Text = "💾 حفظ",
+                Text = "حفظ",
                 BackColor = Color.FromArgb(46, 204, 113),
                 ForeColor = Color.White,
                 Size = new Size(110, 38),
@@ -1408,7 +1408,7 @@ pause
                     catch { }
 
                     // ── RADICAL KILL: Use OS-level taskkill to force-close ALL node processes ──
-                    LogMessage("⏳ جاري إغلاق كل عمليات البوت القديمة بالقوة...");
+                    LogMessage("جاري إغلاق كل عمليات البوت القديمة بالقوة...");
                     try
                     {
                         // Use taskkill /F /T /IM node.exe — kills node and all its child processes
@@ -1426,7 +1426,7 @@ pause
                         };
                         killProc.Start();
                         killProc.WaitForExit(5000);
-                        LogMessage($"🔴 تم إغلاق العمليات القديمة (exit: {killProc.ExitCode})");
+                        LogMessage($"تم إغلاق العمليات القديمة (exit: {killProc.ExitCode})");
                     }
                     catch { }
 
@@ -1450,13 +1450,13 @@ pause
                     if (txtClientUrl != null) txtClientUrl.Text = newClientUrl;
                     if (txtMobileAppUrl != null) txtMobileAppUrl.Text = newMobileUrl;
 
-                    LogMessage($"✅ تم حفظ إعدادات Firebase للمشروع: {actualPid}");
+                    LogMessage($"تم حفظ إعدادات Firebase للمشروع: {actualPid}");
 
                     // Restart local node server to load new configurations (force=true to bypass port check)
                     StartLocalNodeServer(forceRestart: true);
 
                     MessageBox.Show(
-                        $"✅ تم الحفظ بنجاح!\n\nProject ID: {actualPid}\nتم تحديث الروابط وإعادة تشغيل خادم البوت بالقيم الجديدة.",
+                        $"تم الحفظ بنجاح!\n\nProject ID: {actualPid}\nتم تحديث الروابط وإعادة تشغيل خادم البوت بالقيم الجديدة.",
                         "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     dlg.Close();
                 }
@@ -1470,7 +1470,7 @@ pause
             // Test connection button
             Button btnTest = new Button
             {
-                Text = "🔗 اختبار الاتصال",
+                Text = "اختبار الاتصال",
                 BackColor = Color.FromArgb(52, 152, 219),
                 ForeColor = Color.White,
                 Size = new Size(150, 38),
@@ -1484,12 +1484,12 @@ pause
                 string pid = txtProjectId.Text.Trim();
                 if (string.IsNullOrEmpty(pid))
                 {
-                    lblTestResult.Text = "⚠️ أدخل Project ID أولاً!";
+                    lblTestResult.Text = "أدخل Project ID أولاً!";
                     lblTestResult.ForeColor = Color.Orange;
                     return;
                 }
                 btnTest.Enabled = false;
-                btnTest.Text = "⏳ جاري الاختبار...";
+                btnTest.Text = "جاري الاختبار...";
                 lblTestResult.Text = "جاري الاتصال بـ Firebase...";
                 lblTestResult.ForeColor = Color.Gray;
                 try
@@ -1499,39 +1499,39 @@ pause
                         $"https://firestore.googleapis.com/v1/projects/{pid}/databases/(default)/documents/metadata/status");
                     if (resp.IsSuccessStatusCode)
                     {
-                        lblTestResult.Text = $"✅ الاتصال ناجح! المشروع '{pid}' متصل بـ Firestore.";
+                        lblTestResult.Text = $"الاتصال ناجح! المشروع '{pid}' متصل بـ Firestore.";
                         lblTestResult.ForeColor = Color.FromArgb(46, 204, 113);
                     }
                     else if ((int)resp.StatusCode == 403)
                     {
-                        lblTestResult.Text = $"✅ المشروع موجود، لكن Firestore مقيّد (يحتاج auth). Project ID صحيح!";
+                        lblTestResult.Text = $"المشروع موجود، لكن Firestore مقيّد (يحتاج auth). Project ID صحيح!";
                         lblTestResult.ForeColor = Color.FromArgb(230, 126, 34);
                     }
                     else if ((int)resp.StatusCode == 404)
                     {
                         // 404 means the project and database exist, but the specific status document is not created yet by the node bot.
-                        lblTestResult.Text = $"✅ الاتصال ناجح! المشروع '{pid}' موجود وقاعدة البيانات متصلة. (اضغط حفظ وشغّل البوت).";
+                        lblTestResult.Text = $"الاتصال ناجح! المشروع '{pid}' موجود وقاعدة البيانات متصلة. (اضغط حفظ وشغّل البوت).";
                         lblTestResult.ForeColor = Color.FromArgb(46, 204, 113);
                     }
                     else
                     {
-                        lblTestResult.Text = $"⚠️ استجابة غير متوقعة: HTTP {(int)resp.StatusCode}";
+                        lblTestResult.Text = $"استجابة غير متوقعة: HTTP {(int)resp.StatusCode}";
                         lblTestResult.ForeColor = Color.Orange;
                     }
                 }
                 catch (TaskCanceledException)
                 {
-                    lblTestResult.Text = "❌ انتهت مهلة الاتصال — تحقق من الإنترنت.";
+                    lblTestResult.Text = "انتهت مهلة الاتصال — تحقق من الإنترنت.";
                     lblTestResult.ForeColor = Color.Red;
                 }
                 catch (Exception ex)
                 {
-                    lblTestResult.Text = $"❌ خطأ: {ex.Message}";
+                    lblTestResult.Text = $"خطأ: {ex.Message}";
                     lblTestResult.ForeColor = Color.Red;
                 }
                 finally
                 {
-                    btnTest.Text = "🔗 اختبار الاتصال";
+                    btnTest.Text = "اختبار الاتصال";
                     btnTest.Enabled = true;
                 }
             };
@@ -1703,12 +1703,12 @@ pause
                 }
                 else
                 {
-                    LogMessage("⚠️ لم يتم العثور على ملفات خادم البوت المحلي!");
+                    LogMessage("لم يتم العثور على ملفات خادم البوت المحلي!");
                 }
             }
             catch (Exception ex)
             {
-                LogMessage($"⚠️ فشل تشغيل خادم البوت تلقائياً: {ex.Message}");
+                LogMessage($"فشل تشغيل خادم البوت تلقائياً: {ex.Message}");
             }
         }
 

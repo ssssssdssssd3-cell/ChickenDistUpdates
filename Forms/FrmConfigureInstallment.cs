@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -49,7 +49,7 @@ namespace ChickenDist.Forms
 
         private void InitUI(decimal initialDownPayment)
         {
-            this.Text = "💳 إعداد عقد وتقسيط الفاتورة";
+            this.Text = "إعداد عقد وتقسيط الفاتورة";
             this.Size = new Size(700, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -60,7 +60,7 @@ namespace ChickenDist.Forms
             this.BackColor = Theme.BgCard;
             this.Font = Theme.FontMain;
 
-            var pnlTop = Theme.MakeTitleBar("💳 إعداد عقد التقسيط وحساب الأرباح", "يتم احتساب الفائدة والأقساط على صافي المبلغ المتبقي بعد خصم الدفعة المقدمة");
+            var pnlTop = Theme.MakeTitleBar("إعداد عقد التقسيط وحساب الأرباح", "يتم احتساب الفائدة والأقساط على صافي المبلغ المتبقي بعد خصم الدفعة المقدمة");
             this.Controls.Add(pnlTop);
 
             int y = 75;
@@ -270,13 +270,13 @@ namespace ChickenDist.Forms
             y += 210;
 
             // ── الأزرار السفلية ───────────────────────────────────────────────────
-            btnConfirm = Theme.MakeButton("💾 تأكيد وحفظ العقد", 470, y, 190, 38, Theme.Success);
+            btnConfirm = Theme.MakeButton("تأكيد وحفظ العقد", 470, y, 190, 38, Theme.Success);
             btnConfirm.Click += BtnConfirm_Click;
 
-            btnRecalc = Theme.MakeButton("🔄 إعادة جدولة الأقساط", 260, y, 190, 38, Theme.Primary);
+            btnRecalc = Theme.MakeButton("إعادة جدولة الأقساط", 260, y, 190, 38, Theme.Primary);
             btnRecalc.Click += (s, e) => CalculateSchedule();
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 25, y, 110, 38, Theme.Danger);
+            btnCancel = Theme.MakeButton("إلغاء", 25, y, 110, 38, Theme.Danger);
             btnCancel.Click += (s, e) => { this.DialogResult = DialogResult.Cancel; this.Close(); };
 
             this.Controls.AddRange(new Control[] { btnConfirm, btnRecalc, btnCancel });
@@ -421,7 +421,7 @@ namespace ChickenDist.Forms
 
             if (financed <= 0)
             {
-                lblSummary.Text = "⚠️ لا يوجد مبلغ متبقي للتقسيط (تم سداد الفاتورة بالكامل مقدماً)";
+                lblSummary.Text = "لا يوجد مبلغ متبقي للتقسيط (تم سداد الفاتورة بالكامل مقدماً)";
                 return;
             }
 
@@ -432,7 +432,7 @@ namespace ChickenDist.Forms
             decimal totalAllocated = baseValue * count;
             decimal diff = financed - totalAllocated;
 
-            lblSummary.Text = $"📊 قيمة القسط: {baseValue:N2} ج ({cboPeriod.Text}) | إجمالي الأقساط: {financed:N2} ج (يشمل {profitAmount:N2} ج أرباح) | المقدم: {downPayment:N2} ج";
+            lblSummary.Text = $"قيمة القسط: {baseValue:N2} ج ({cboPeriod.Text}) | إجمالي الأقساط: {financed:N2} ج (يشمل {profitAmount:N2} ج أرباح) | المقدم: {downPayment:N2} ج";
 
             DateTime currentDueDate = dtpStartDate.Value;
             string period = cboPeriod.Text;

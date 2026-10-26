@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Linq;
@@ -32,7 +32,7 @@ namespace ChickenDist.Forms
         {
             if (AppConfig.BusinessType != "Clothing")
             {
-                MessageBox.Show("❌ ميزة مصفوفة المقاسات والألوان مخصصة فقط لنشاط محلات ومعارض الملابس والأحذية!", "تنبيه النشاط", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ميزة مصفوفة المقاسات والألوان مخصصة فقط لنشاط محلات ومعارض الملابس والأحذية!", "تنبيه النشاط", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Load += (s, e) => this.Close();
                 return;
             }
@@ -44,7 +44,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "👗 توليد مصفوفة الملابس والأحذية";
+            this.Text = "توليد مصفوفة الملابس والأحذية";
             this.Size = new Size(820, 690);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -56,7 +56,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // ── Top Header Banner ────────────────────────────────────────────────
-            var pnlHeader = Theme.MakeTitleBar("👗 توليد مصفوفة الملابس والأحذية", "توليد تلقائي احترافي لكافة تركيبات الألوان والمقاسات للصنف بباركودات فريدة ومستقلة لكل صنف");
+            var pnlHeader = Theme.MakeTitleBar("توليد مصفوفة الملابس والأحذية", "توليد تلقائي احترافي لكافة تركيبات الألوان والمقاسات للصنف بباركودات فريدة ومستقلة لكل صنف");
             this.Controls.Add(pnlHeader);
 
             // ── Main Padded Scroll Container ─────────────────────────────────────
@@ -71,8 +71,8 @@ namespace ChickenDist.Forms
 
             int currentY = 4;
 
-            // ── Card 1: 👔 بيانات الموديل الأساسي ─────────────────────────────
-            var cardModel = CreateCardPanel("👔 بيانات الموديل الأساسي (Model Info)", ref currentY, 145);
+            // ── Card 1: بيانات الموديل الأساسي ─────────────────────────────
+            var cardModel = CreateCardPanel("بيانات الموديل الأساسي (Model Info)", ref currentY, 145);
             
             // Row 1: Model Base Name & Model Code
             var lblBaseName = CreateLabel("الاسم الأساسي للموديل (مثال: قميص جينز كاجوال) *:", 16, 32, 360);
@@ -116,8 +116,8 @@ namespace ChickenDist.Forms
 
             pnlContainer.Controls.Add(cardModel);
 
-            // ── Card 2: 🎨 مصفوفة الألوان والمقاسات ─────────────────────────────
-            var cardMatrix = CreateCardPanel("🎨 مصفوفة الألوان والمقاسات (Colors & Sizes Matrix)", ref currentY, 185);
+            // ── Card 2: مصفوفة الألوان والمقاسات ─────────────────────────────
+            var cardMatrix = CreateCardPanel("مصفوفة الألوان والمقاسات (Colors & Sizes Matrix)", ref currentY, 185);
 
             var lblColors = CreateLabel("الألوان المطلوبة (تفصل بفاصلة أو مسافة، مثال: أسود، كحلي، أبيض، رمادي):", 16, 32, 716);
             txtColors = CreateTextBox("أسود, كحلي, أبيض, رمادي", 16, 54, 716);
@@ -147,8 +147,8 @@ namespace ChickenDist.Forms
 
             pnlContainer.Controls.Add(cardMatrix);
 
-            // ── Card 3: 💰 الأسعار والتخزين ───────────────────────────────────
-            var cardPricing = CreateCardPanel("💰 الأسعار والتخزين (Pricing & Stock Limits)", ref currentY, 145);
+            // ── Card 3: الأسعار والتخزين ───────────────────────────────────
+            var cardPricing = CreateCardPanel("الأسعار والتخزين (Pricing & Stock Limits)", ref currentY, 145);
 
             // Row 1: Purchase Price, Sale Price, Wholesale Price
             bool canSeeCost = Session.CanViewCost("Products");
@@ -203,12 +203,12 @@ namespace ChickenDist.Forms
             var pnlBorder = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = Color.FromArgb(226, 232, 240) };
             pnlFooter.Controls.Add(pnlBorder);
 
-            btnGenerate = Theme.MakeButton("🚀 توليد الأصناف والمصفوفة", 435, 12, 330, 42, Theme.Success);
+            btnGenerate = Theme.MakeButton("توليد الأصناف والمصفوفة", 435, 12, 330, 42, Theme.Success);
             btnGenerate.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnGenerate.Click += BtnGenerate_Click;
             pnlFooter.Controls.Add(btnGenerate);
 
-            btnCancel = Theme.MakeButton("❌ إلغاء", 16, 12, 150, 42, Color.FromArgb(100, 116, 139));
+            btnCancel = Theme.MakeButton("إلغاء", 16, 12, 150, 42, Color.FromArgb(100, 116, 139));
             btnCancel.Click += (s, e) => this.Close();
             pnlFooter.Controls.Add(btnCancel);
 
@@ -304,17 +304,17 @@ namespace ChickenDist.Forms
 
             if (total == 0)
             {
-                lblPreviewBadge.Text = "⚠️ يُرجى إدخال ألوان ومقاسات ليتم حساب تركيبة الأصناف.";
+                lblPreviewBadge.Text = "يُرجى إدخال ألوان ومقاسات ليتم حساب تركيبة الأصناف.";
                 lblPreviewBadge.BackColor = Color.FromArgb(254, 243, 199);
                 lblPreviewBadge.ForeColor = Color.FromArgb(146, 64, 14);
-                btnGenerate.Text = "🚀 توليد الأصناف والمصفوفة";
+                btnGenerate.Text = "توليد الأصناف والمصفوفة";
             }
             else
             {
-                lblPreviewBadge.Text = $"⚡ سيتم توليد ({total}) صنف جديد للمصفوفة بباركودات مستقلة ({colorCount} ألوان × {sizeCount} مقاسات)";
+                lblPreviewBadge.Text = $"سيتم توليد ({total}) صنف جديد للمصفوفة بباركودات مستقلة ({colorCount} ألوان × {sizeCount} مقاسات)";
                 lblPreviewBadge.BackColor = Color.FromArgb(236, 253, 245);
                 lblPreviewBadge.ForeColor = Color.FromArgb(6, 95, 70);
-                btnGenerate.Text = $"🚀 توليد الأصناف والمصفوفة ({total} صنف)";
+                btnGenerate.Text = $"توليد الأصناف والمصفوفة ({total} صنف)";
             }
         }
 
@@ -455,13 +455,13 @@ namespace ChickenDist.Forms
                     }
                 }
 
-                MessageBox.Show($"✅ تم بنجاح توليد ({generatedCount}) صنف جديد للمصفوفة بنجاح!", "اكتمل التوليد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم بنجاح توليد ({generatedCount}) صنف جديد للمصفوفة بنجاح!", "اكتمل التوليد", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ فشل توليد بعض الأصناف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل توليد بعض الأصناف: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

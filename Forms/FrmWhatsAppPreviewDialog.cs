@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
 
         private void InitializeDialog(string initialTemplate, int? saleID)
         {
-            this.Text = "📱 معاينة قوالب وكروت الواتساب - Pro System";
+            this.Text = "معاينة قوالب وكروت الواتساب - Pro System";
             this.Size = new Size(760, 840);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.Sizable;
@@ -77,16 +77,16 @@ namespace ChickenDist.Forms
 
             cboTemplates.Items.AddRange(new object[]
             {
-                "🖼️ كارت الفاتورة الكلاسيكي الملكي (Royal Navy Card)",
-                "🖼️ كارت الفاتورة المودرن الفحمي (Modern Charcoal Card)",
-                "🖼️ كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
-                "🖼️ كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
-                "🖼️ كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
-                "🖼️ كارت فاتورة الطارق هوم (Al Tarek Home Grid Card)",
-                "💬 النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
-                "💬 النموذج السريع الموجز (رسالة نصية سريعة)",
-                "💬 نموذج كشف الحساب والمالية (رسالة نصية مالية)",
-                "💬 نموذج الطارق المعتمد (رسالة نصية الطارق)"
+                "كارت الفاتورة الكلاسيكي الملكي (Royal Navy Card)",
+                "كارت الفاتورة المودرن الفحمي (Modern Charcoal Card)",
+                "كارت الفاتورة الشبكي التجاري (Commercial Grid Card)",
+                "كارت الفاتورة الزمردي الأنيق (Emerald Green Card)",
+                "كارت الفاتورة الذهبي للشركات (Corporate Gold Card)",
+                "كارت فاتورة الطارق هوم (Al Tarek Home Grid Card)",
+                "النموذج التفصيلي الشامل (رسالة نصية تفصيلية)",
+                "النموذج السريع الموجز (رسالة نصية سريعة)",
+                "نموذج كشف الحساب والمالية (رسالة نصية مالية)",
+                "نموذج الطارق المعتمد (رسالة نصية الطارق)"
             });
 
             int selIdx = 0;
@@ -108,7 +108,7 @@ namespace ChickenDist.Forms
 
             cboTemplates.SelectedIndexChanged += (s, e) => RenderSelectedTemplate();
 
-            var btnRefresh = Theme.MakeButton("🔄 تحديث", 20, 15, 100, 32, Theme.Primary);
+            var btnRefresh = Theme.MakeButton("تحديث", 20, 15, 100, 32, Theme.Primary);
             btnRefresh.Click += (s, e) => RenderSelectedTemplate();
 
             pnlTop.Controls.Add(lblTpl);
@@ -156,7 +156,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            var btnCopy = Theme.MakeButton("📋 نسخ للحافظة", Color.FromArgb(37, 211, 102));
+            var btnCopy = Theme.MakeButton("نسخ للحافظة", Color.FromArgb(37, 211, 102));
             btnCopy.Size = new Size(160, 40);
             btnCopy.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnCopy.Dock = DockStyle.Left;
@@ -165,16 +165,16 @@ namespace ChickenDist.Forms
                 if (cboTemplates.SelectedIndex < 6 && currentBitmap != null)
                 {
                     Clipboard.SetImage(currentBitmap);
-                    MessageBox.Show("✅ تم نسخ صورة كارت الفاتورة للحافظة بنجاح!\nيمكنك الآن لصقها في أي محادثة واتساب (Ctrl + V).", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم نسخ صورة كارت الفاتورة للحافظة بنجاح!\nيمكنك الآن لصقها في أي محادثة واتساب (Ctrl + V).", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else if (!string.IsNullOrWhiteSpace(currentText))
                 {
                     Clipboard.SetText(currentText);
-                    MessageBox.Show("✅ تم نسخ نص الفاتورة للحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم نسخ نص الفاتورة للحافظة بنجاح!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
 
-            var btnSaveImage = Theme.MakeButton("💾 حفظ الصورة كملف", Color.FromArgb(18, 140, 126));
+            var btnSaveImage = Theme.MakeButton("حفظ الصورة كملف", Color.FromArgb(18, 140, 126));
             btnSaveImage.Size = new Size(160, 40);
             btnSaveImage.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnSaveImage.Dock = DockStyle.Left;
@@ -190,13 +190,13 @@ namespace ChickenDist.Forms
                         if (sfd.ShowDialog(this) == DialogResult.OK)
                         {
                             currentBitmap.Save(sfd.FileName, sfd.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ? ImageFormat.Jpeg : ImageFormat.Png);
-                            MessageBox.Show("✅ تم حفظ صورة كارت الفاتورة بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("تم حفظ صورة كارت الفاتورة بنجاح!", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
                 }
             };
 
-            var btnSetDefault = Theme.MakeButton("⚙️ تعيين كافتراضي", Color.FromArgb(70, 80, 100));
+            var btnSetDefault = Theme.MakeButton("تعيين كافتراضي", Color.FromArgb(70, 80, 100));
             btnSetDefault.Size = new Size(150, 40);
             btnSetDefault.Dock = DockStyle.Left;
             btnSetDefault.Margin = new Padding(8, 0, 0, 0);
@@ -204,7 +204,7 @@ namespace ChickenDist.Forms
             {
                 string key = GetSelectedTemplateKey();
                 AppConfig.WhatsAppInvoiceTemplate = key;
-                MessageBox.Show($"✅ تم تعيين هذا النموذج كنموذج افتراضي لفواتير الواتساب بنجاح!\n(الرمز: {key})", "تم التعيين", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"تم تعيين هذا النموذج كنموذج افتراضي لفواتير الواتساب بنجاح!\n(الرمز: {key})", "تم التعيين", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             var btnClose = Theme.MakeButton("إغلاق", Color.FromArgb(100, 100, 110));
@@ -410,25 +410,25 @@ namespace ChickenDist.Forms
             string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة التجارية";
             string phone = !string.IsNullOrWhiteSpace(AppConfig.CompanyPhone) ? AppConfig.CompanyPhone : "";
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"⭐ *{comp}* ⭐");
+            sb.AppendLine($"*{comp}*");
             if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
             {
-                sb.AppendLine($"📄 *{AppConfig.GetTaxAndCommercialShortText()}*");
+                sb.AppendLine($"*{AppConfig.GetTaxAndCommercialShortText()}*");
             }
             if (!string.IsNullOrWhiteSpace(phone))
             {
-                sb.AppendLine($"📞 خدمة العملاء: {phone}");
+                sb.AppendLine($"خدمة العملاء: {phone}");
             }
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            sb.AppendLine("🧾 *فاتورة مبيعات معتمدة*");
-            sb.AppendLine($"🔖 *رقم الفاتورة:* #{saleRow["SaleCode"]}");
-            sb.AppendLine($"📅 *التاريخ:* {Convert.ToDateTime(saleRow["SaleDate"]):yyyy/MM/dd hh:mm tt}");
+            sb.AppendLine("*فاتورة مبيعات معتمدة*");
+            sb.AppendLine($"*رقم الفاتورة:* #{saleRow["SaleCode"]}");
+            sb.AppendLine($"*التاريخ:* {Convert.ToDateTime(saleRow["SaleDate"]):yyyy/MM/dd hh:mm tt}");
             string cName = (saleRow.Table.Columns.Contains("CustomClientName") && saleRow["CustomClientName"] != DBNull.Value && !string.IsNullOrWhiteSpace(saleRow["CustomClientName"].ToString()))
                 ? saleRow["CustomClientName"].ToString()
                 : (saleRow["ClientName"]?.ToString() ?? "عميل نقدي");
-            sb.AppendLine($"👤 *العميل:* {cName}");
+            sb.AppendLine($"*العميل:* {cName}");
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            sb.AppendLine("📦 *تفاصيل الأصناف والبنود:*");
+            sb.AppendLine("*تفاصيل الأصناف والبنود:*");
             if (saleItems != null)
             {
                 int idx = 1;
@@ -451,9 +451,9 @@ namespace ChickenDist.Forms
                     sb.AppendLine($"*{idx}. {pName}{codePart}*");
                     if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
                     {
-                        sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+                        sb.AppendLine($"   السيريال (IMEI): {imei}");
                     }
-                    sb.AppendLine($"   ▫️ {qty:0.##} × {price:N2} = {tot:N2} ج.م{discStr}");
+                    sb.AppendLine($"   {qty:0.##} × {price:N2} = {tot:N2} ج.م{discStr}");
                     idx++;
                 }
             }
@@ -464,22 +464,22 @@ namespace ChickenDist.Forms
 
             if (invDisc > 0)
             {
-                sb.AppendLine($"🏷️ *خصم الفاتورة:* -{invDisc:N2} ج.م");
+                sb.AppendLine($"*خصم الفاتورة:* -{invDisc:N2} ج.م");
             }
-            sb.AppendLine($"💰 *صافي الفاتورة:* {net:N2} ج.م");
+            sb.AppendLine($"*صافي الفاتورة:* {net:N2} ج.م");
             if (cash > 0)
             {
-                sb.AppendLine($"💵 *المدفوع:* {cash:N2} ج.م");
-                sb.AppendLine($"⏳ *المتبقي من الفاتورة:* {(net - cash):N2} ج.م");
+                sb.AppendLine($"*المدفوع:* {cash:N2} ج.م");
+                sb.AppendLine($"*المتبقي من الفاتورة:* {(net - cash):N2} ج.م");
             }
             if (prevBalance != 0)
             {
-                sb.AppendLine($"⚖️ *الرصيد السابق:* {prevBalance:N2} ج.م");
+                sb.AppendLine($"*الرصيد السابق:* {prevBalance:N2} ج.م");
             }
-            sb.AppendLine($"🔴 *إجمالي الحساب المستحق:* {actualCurrentBalance:N2} ج.م");
+            sb.AppendLine($"*إجمالي الحساب المستحق:* {actualCurrentBalance:N2} ج.م");
             try
             {
-                sb.AppendLine($"📝 *فقط {TafqeetHelper.ConvertToArabicWords(net)} لا غير.*");
+                sb.AppendLine($"*فقط {TafqeetHelper.ConvertToArabicWords(net)} لا غير.*");
             }
             catch { }
             sb.AppendLine("━━━━━━━━━━━━━━━━");
@@ -490,16 +490,16 @@ namespace ChickenDist.Forms
         {
             string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة";
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"🧾 *فاتورة مبيعات - {comp}*");
+            sb.AppendLine($"*فاتورة مبيعات - {comp}*");
             if (AppConfig.PrintTaxAndCommercial && !string.IsNullOrWhiteSpace(AppConfig.GetTaxAndCommercialShortText()))
             {
-                sb.AppendLine($"📄 *{AppConfig.GetTaxAndCommercialShortText()}*");
+                sb.AppendLine($"*{AppConfig.GetTaxAndCommercialShortText()}*");
             }
             sb.AppendLine($"رقم الفاتورة: #{saleRow["SaleCode"]}");
             sb.AppendLine($"التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):yyyy/MM/dd hh:mm tt}");
             sb.AppendLine($"العميل: {saleRow["ClientName"]}");
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            sb.AppendLine("📦 *الأصناف والمسحوبات:*");
+            sb.AppendLine("*الأصناف والمسحوبات:*");
             if (saleItems != null)
             {
                 foreach (DataRow r in saleItems.Rows)
@@ -513,16 +513,16 @@ namespace ChickenDist.Forms
                     sb.AppendLine($"• {pName} × {Convert.ToDecimal(r["Quantity"]):0.##} = {Convert.ToDecimal(r["TotalPrice"]):N2} ج.م");
                     if (AppConfig.BusinessType == "Mobiles" && !string.IsNullOrWhiteSpace(imei))
                     {
-                        sb.AppendLine($"   🔹 السيريال (IMEI): {imei}");
+                        sb.AppendLine($"   السيريال (IMEI): {imei}");
                     }
                 }
             }
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            sb.AppendLine($"💰 *إجمالي الفاتورة:* {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م");
-            sb.AppendLine($"💵 *المدفوع:* {Convert.ToDecimal(saleRow["CashPaid"]):N2} ج.م");
-            sb.AppendLine($"⚖️ *الرصيد السابق:* {prevBalance:N2} ج.م");
-            sb.AppendLine($"🔴 *الرصيد الحالي المستحق:* {actualCurrentBalance:N2} ج.م");
-            sb.AppendLine("🙏 شكراً لتعاملكم معنا!");
+            sb.AppendLine($"*إجمالي الفاتورة:* {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م");
+            sb.AppendLine($"*المدفوع:* {Convert.ToDecimal(saleRow["CashPaid"]):N2} ج.م");
+            sb.AppendLine($"*الرصيد السابق:* {prevBalance:N2} ج.م");
+            sb.AppendLine($"*الرصيد الحالي المستحق:* {actualCurrentBalance:N2} ج.م");
+            sb.AppendLine("شكراً لتعاملكم معنا!");
             return sb.ToString();
         }
 
@@ -530,11 +530,11 @@ namespace ChickenDist.Forms
         {
             string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة";
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"🧾 *فاتورة مبيعات سريعة - {comp}*");
+            sb.AppendLine($"*فاتورة مبيعات سريعة - {comp}*");
             sb.AppendLine($"العميل: {saleRow["ClientName"]} | #{saleRow["SaleCode"]}");
-            sb.AppendLine($"💰 إجمالي الفاتورة: {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م");
-            sb.AppendLine($"⚖️ الرصيد الحالي: {actualCurrentBalance:N2} ج.م");
-            sb.AppendLine("🙏 شكراً لتعاملكم معنا!");
+            sb.AppendLine($"إجمالي الفاتورة: {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م");
+            sb.AppendLine($"الرصيد الحالي: {actualCurrentBalance:N2} ج.م");
+            sb.AppendLine("شكراً لتعاملكم معنا!");
             return sb.ToString();
         }
 
@@ -542,16 +542,16 @@ namespace ChickenDist.Forms
         {
             string comp = !string.IsNullOrWhiteSpace(AppConfig.CompanyName) ? AppConfig.CompanyName : "المؤسسة العامة";
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"📊 *كشف حساب وموقف مالي - {comp}*");
+            sb.AppendLine($"*كشف حساب وموقف مالي - {comp}*");
             sb.AppendLine($"العميل: {saleRow["ClientName"]}");
             sb.AppendLine($"التاريخ: {Convert.ToDateTime(saleRow["SaleDate"]):yyyy/MM/dd}");
             sb.AppendLine("━━━━━━━━━━━━━━━━");
             sb.AppendLine($"• الرصيد السابق: {prevBalance:N2} ج.م");
             sb.AppendLine($"• قيمة الفاتورة الحالية: {Convert.ToDecimal(saleRow["TotalAmount"]):N2} ج.م");
             sb.AppendLine($"• المدفوع: {Convert.ToDecimal(saleRow["CashPaid"]):N2} ج.م");
-            sb.AppendLine($"🔴 *الرصيد النهائي المطلوب:* {actualCurrentBalance:N2} ج.م");
+            sb.AppendLine($"*الرصيد النهائي المطلوب:* {actualCurrentBalance:N2} ج.م");
             sb.AppendLine("━━━━━━━━━━━━━━━━");
-            sb.AppendLine("🙏 شاكرين ومقدرين حسن تعاونكم!");
+            sb.AppendLine("شاكرين ومقدرين حسن تعاونكم!");
             return sb.ToString();
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -33,7 +33,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "🎯 إدارة وتعديل حد طلب الأصناف (النواقص)";
+            this.Text = "إدارة وتعديل حد طلب الأصناف (النواقص)";
             this.Size = new Size(1180, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.RightToLeft = RightToLeft.Yes;
@@ -42,7 +42,7 @@ namespace ChickenDist.Forms
             this.Font = Theme.FontMain;
 
             // Title Bar
-            var titleBar = Theme.MakeTitleBar("🎯 تعديل حد طلب الأصناف (النواقص والحد الأدنى)",
+            var titleBar = Theme.MakeTitleBar("تعديل حد طلب الأصناف (النواقص والحد الأدنى)",
                 "شاشة سريعة لعرض وتعديل حد الطلب للأصناف، تصفية الأصناف التي يقل رصيدها عن الحد الأدنى، وإمكانية التعديل اليدوي المباشر.");
             this.Controls.Add(titleBar);
 
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 
             Label lblSearch = new Label
             {
-                Text = "🔍 بحث سريع:",
+                Text = "بحث سريع:",
                 AutoSize = true,
                 Location = new Point(15, 20),
                 ForeColor = Theme.TextMain,
@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
 
             Label lblCat = new Label
             {
-                Text = "📂 التصنيف:",
+                Text = "التصنيف:",
                 AutoSize = true,
                 Location = new Point(345, 20),
                 ForeColor = Theme.TextMain,
@@ -98,7 +98,7 @@ namespace ChickenDist.Forms
 
             chkBelowMinOnly = new CheckBox
             {
-                Text = "⚠️ الأصناف أقل من حد الطلب فقط (النواقص)",
+                Text = "الأصناف أقل من حد الطلب فقط (النواقص)",
                 AutoSize = true,
                 Location = new Point(630, 19),
                 ForeColor = Color.FromArgb(220, 53, 69),
@@ -138,7 +138,7 @@ namespace ChickenDist.Forms
 
             Label lblBulkTitle = new Label
             {
-                Text = "⚡ تعديل جماعي للحد الأدنى القائم:",
+                Text = "تعديل جماعي للحد الأدنى القائم:",
                 AutoSize = true,
                 Location = new Point(15, 14),
                 Font = Theme.FontBold,
@@ -240,7 +240,7 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ كافة التغييرات", Theme.Success);
+            btnSave = Theme.MakeButton("حفظ كافة التغييرات", Theme.Success);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             btnSave.Size = new Size(180, 40);
             btnSave.Location = new Point(15, 10);
@@ -329,7 +329,7 @@ namespace ChickenDist.Forms
             {
                 Name = "MinStockLimit",
                 DataPropertyName = "MinStockLimit",
-                HeaderText = "حد الطلب (الحد الأدنى) ✏️",
+                HeaderText = "حد الطلب (الحد الأدنى)",
                 Width = 180,
                 ReadOnly = false,
                 DefaultCellStyle = new DataGridViewCellStyle
@@ -520,12 +520,12 @@ namespace ChickenDist.Forms
             {
                 if (minStock > 0 && bookQty <= minStock)
                 {
-                    e.Value = "⚠️ نقص في الرصيد";
+                    e.Value = "نقص في الرصيد";
                     e.CellStyle.ForeColor = Color.FromArgb(220, 53, 69);
                 }
                 else if (minStock > 0)
                 {
-                    e.Value = "✅ كافي";
+                    e.Value = "كافي";
                     e.CellStyle.ForeColor = Color.FromArgb(25, 135, 84);
                 }
                 else

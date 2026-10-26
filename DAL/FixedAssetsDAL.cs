@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using ChickenDist.Core;
@@ -253,7 +253,7 @@ namespace ChickenDist.DAL
                 if (isAlreadyPosted)
                 {
                     eligible = false;
-                    note = "⚠️ تم قيد إهلاك هذا الشهر مسبقاً";
+                    note = "تم قيد إهلاك هذا الشهر مسبقاً";
                 }
                 else if (rate <= 0)
                 {

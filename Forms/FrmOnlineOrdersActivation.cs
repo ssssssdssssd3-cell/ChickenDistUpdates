@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -27,7 +27,7 @@ namespace ChickenDist.Forms
 
         private void BuildUI()
         {
-            this.Text = "🔒 تفعيل اشتراك شاشة الطلبات الأونلاين";
+            this.Text = "تفعيل اشتراك شاشة الطلبات الأونلاين";
             this.Size = new Size(460, 360);
             this.MinimumSize = new Size(420, 340);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -42,7 +42,7 @@ namespace ChickenDist.Forms
             // ── أيقونة القفل الكبيرة ──
             var lblIcon = new Label
             {
-                Text = "🔒",
+                Text = "",
                 Font = new Font("Segoe UI Emoji", 44f),
                 ForeColor = Color.FromArgb(239, 68, 68),
                 AutoSize = true,
@@ -119,7 +119,7 @@ namespace ChickenDist.Forms
             // ── أزرار ──
             btnActivate = new Button
             {
-                Text = "✅ تفعيل الاشتراك",
+                Text = "تفعيل الاشتراك",
                 Size = new Size(160, 36),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -185,19 +185,19 @@ namespace ChickenDist.Forms
 
             if (string.IsNullOrEmpty(entered))
             {
-                lblStatus.Text = "⚠️ أدخل كود التفعيل أولاً";
+                lblStatus.Text = "أدخل كود التفعيل أولاً";
                 lblStatus.ForeColor = Color.FromArgb(251, 191, 36);
                 return;
             }
 
             if (entered == ACTIVATION_CODE)
             {
-                // ✅ صحيح — تفعيل 30 يوم
+                // صحيح — تفعيل 30 يوم
                 AppConfig.ActivateOnlineOrdersSubscription();
                 DateTime newExpiry = AppConfig.OnlineOrdersExpiryDate;
 
                 MessageBox.Show(
-                    $"✅ تم تفعيل الاشتراك بنجاح!\n\nينتهي الاشتراك في: {newExpiry:yyyy/MM/dd}",
+                    $"تم تفعيل الاشتراك بنجاح!\n\nينتهي الاشتراك في: {newExpiry:yyyy/MM/dd}",
                     "تم التفعيل",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -207,8 +207,8 @@ namespace ChickenDist.Forms
             }
             else
             {
-                // ❌ خطأ
-                lblStatus.Text = "❌ كود التفعيل غير صحيح";
+                // خطأ
+                lblStatus.Text = "كود التفعيل غير صحيح";
                 lblStatus.ForeColor = Color.FromArgb(239, 68, 68);
                 txtCode.Clear();
                 txtCode.Focus();

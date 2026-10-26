@@ -121,7 +121,7 @@ namespace ChickenDist.Forms
 
             btnToggleDetails = new Button
             {
-                Text = "👁️ التفاصيل",
+                Text = "التفاصيل",
                 Size = new Size(110, 36),
                 Dock = DockStyle.Left,
                 FlatStyle = FlatStyle.Flat,
@@ -146,13 +146,13 @@ namespace ChickenDist.Forms
                 }
                 else
                 {
-                    MessageBox.Show("🔒 ليس لديك صلاحية لعرض التفاصيل المباشرة للوردية (الإغلاق الأعمى).", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("ليس لديك صلاحية لعرض التفاصيل المباشرة للوردية (الإغلاق الأعمى).", "تنبيه الصلاحية", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
 
             btnDrawerMovementDetails = new Button
             {
-                Text = "🔍 حركة الدرج",
+                Text = "حركة الدرج",
                 Size = new Size(125, 36),
                 Dock = DockStyle.Left,
                 FlatStyle = FlatStyle.Flat,
@@ -175,18 +175,18 @@ namespace ChickenDist.Forms
                     }
                     else
                     {
-                        MessageBox.Show("⚠️ لا توجد وردية مفتوحة حالياً لعرض حركتها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("لا توجد وردية مفتوحة حالياً لعرض حركتها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
                 else
                 {
-                    MessageBox.Show("🔒 عفوًا: لا تملك صلاحية لعرض حركة وتفاصيل الدرج خلال الوردية!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("عفوًا: لا تملك صلاحية لعرض حركة وتفاصيل الدرج خلال الوردية!", "صلاحية مرفوضة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
 
             btnCountDenoms = new Button
             {
-                Text = "🧮 جرد الفئات (F4)",
+                Text = "جرد الفئات (F4)",
                 Size = new Size(150, 36),
                 Dock = DockStyle.Left,
                 FlatStyle = FlatStyle.Flat,
@@ -204,7 +204,7 @@ namespace ChickenDist.Forms
             Panel pnlTitleRow = new Panel { Dock = DockStyle.Top, Height = 32, BackColor = Color.Transparent };
             lblShiftTitle = new Label
             {
-                Text = "🔄 إدارة وإغلاق وردية الكاشير",
+                Text = "إدارة وإغلاق وردية الكاشير",
                 Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Right,
@@ -212,7 +212,7 @@ namespace ChickenDist.Forms
             };
             lblShiftBadge = new Label
             {
-                Text = "🟢 مفتوحة",
+                Text = "مفتوحة",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 ForeColor = Theme.Success,
                 BackColor = Color.FromArgb(20, 50, 30),
@@ -227,7 +227,7 @@ namespace ChickenDist.Forms
 
             lblShiftInfo = new Label
             {
-                Text = "الوردية رقم #--- | 👤 الكاشير: --- | 🏢 الفرع: الرئيسي | 💻 جهاز: POS-01 | ⏰ فتح: --- | ⌛ إغلاق: ---",
+                Text = "الوردية رقم #--- | الكاشير: --- | الفرع: الرئيسي | جهاز: POS-01 | فتح: --- | إغلاق: ---",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Theme.TextSub,
                 Dock = DockStyle.Top,
@@ -269,12 +269,12 @@ namespace ChickenDist.Forms
             };
             for (int i = 0; i < 6; i++) tblSalesKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66f));
 
-            lblInvoiceCountVal   = MakeMiniKpiCard(tblSalesKpi, "🧾 عدد الفواتير", "0", Theme.TextMain, 0);
-            lblGrossSalesVal     = MakeMiniKpiCard(tblSalesKpi, "💰 إجمالي المبيعات", "0.00 ج", Theme.Success, 1);
-            lblReturnsSummaryVal = MakeMiniKpiCard(tblSalesKpi, "↩️ المرتجعات", "0.00 ج", Theme.Danger, 2);
-            lblDiscountsVal      = MakeMiniKpiCard(tblSalesKpi, "🏷️ الخصومات", "0.00 ج", Color.FromArgb(230, 126, 34), 3);
-            lblTaxesVal          = MakeMiniKpiCard(tblSalesKpi, "🏛️ الضرائب", "0.00 ج", Color.FromArgb(142, 68, 173), 4);
-            lblNetSalesVal       = MakeMiniKpiCard(tblSalesKpi, "💎 صافي المبيعات", "0.00 ج", Theme.Accent, 5);
+            lblInvoiceCountVal   = MakeMiniKpiCard(tblSalesKpi, "عدد الفواتير", "0", Theme.TextMain, 0);
+            lblGrossSalesVal     = MakeMiniKpiCard(tblSalesKpi, "إجمالي المبيعات", "0.00 ج", Theme.Success, 1);
+            lblReturnsSummaryVal = MakeMiniKpiCard(tblSalesKpi, "المرتجعات", "0.00 ج", Theme.Danger, 2);
+            lblDiscountsVal      = MakeMiniKpiCard(tblSalesKpi, "الخصومات", "0.00 ج", Color.FromArgb(230, 126, 34), 3);
+            lblTaxesVal          = MakeMiniKpiCard(tblSalesKpi, "الضرائب", "0.00 ج", Color.FromArgb(142, 68, 173), 4);
+            lblNetSalesVal       = MakeMiniKpiCard(tblSalesKpi, "صافي المبيعات", "0.00 ج", Theme.Accent, 5);
 
             pnlSalesKpi.Controls.Add(tblSalesKpi);
             tblMain.Controls.Add(pnlSalesKpi, 0, 0);
@@ -290,15 +290,15 @@ namespace ChickenDist.Forms
             };
             for (int i = 0; i < 9; i++) tblKpi.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 11.11f));
 
-            lblOpeningCashVal = MakeKpiCard(tblKpi, "💵 رصيد البداية", "0.00 ج", Theme.TextMain, 0);
-            lblCashSalesVal   = MakeKpiCard(tblKpi, "🛒 مبيعات كاش", "0.00 ج", Theme.Success, 1);
-            lblVisaSalesVal   = MakeKpiCard(tblKpi, "💳 مبيعات فيزا", "0.00 ج", Color.FromArgb(142, 68, 173), 2);
-            lblWalletSalesVal = MakeKpiCard(tblKpi, "📱 مبيعات محافظ", "0.00 ج", Color.FromArgb(0, 168, 232), 3);
-            lblCreditSalesVal = MakeKpiCard(tblKpi, "📑 مبيعات آجل", "0.00 ج", Color.FromArgb(52, 152, 219), 4);
-            lblCashInVal      = MakeKpiCard(tblKpi, "➕ توريدات وتحويلات واردة", "0.00 ج", Color.FromArgb(16, 185, 129), 5);
-            lblReturnsVal     = MakeKpiCard(tblKpi, "↩ مرتجعات كاش", "0.00 ج", Theme.Danger, 6);
-            lblExpensesVal    = MakeKpiCard(tblKpi, "💸 مصروفات وتحويلات صادرة", "0.00 ج", Color.FromArgb(230, 126, 34), 7);
-            lblExpectedVal    = MakeKpiCard(tblKpi, "💰 المتوقع بالدرج", "0.00 ج", Theme.Accent, 8);
+            lblOpeningCashVal = MakeKpiCard(tblKpi, "رصيد البداية", "0.00 ج", Theme.TextMain, 0);
+            lblCashSalesVal   = MakeKpiCard(tblKpi, "مبيعات كاش", "0.00 ج", Theme.Success, 1);
+            lblVisaSalesVal   = MakeKpiCard(tblKpi, "مبيعات فيزا", "0.00 ج", Color.FromArgb(142, 68, 173), 2);
+            lblWalletSalesVal = MakeKpiCard(tblKpi, "مبيعات محافظ", "0.00 ج", Color.FromArgb(0, 168, 232), 3);
+            lblCreditSalesVal = MakeKpiCard(tblKpi, "مبيعات آجل", "0.00 ج", Color.FromArgb(52, 152, 219), 4);
+            lblCashInVal      = MakeKpiCard(tblKpi, "توريدات وتحويلات واردة", "0.00 ج", Color.FromArgb(16, 185, 129), 5);
+            lblReturnsVal     = MakeKpiCard(tblKpi, "مرتجعات كاش", "0.00 ج", Theme.Danger, 6);
+            lblExpensesVal    = MakeKpiCard(tblKpi, "مصروفات وتحويلات صادرة", "0.00 ج", Color.FromArgb(230, 126, 34), 7);
+            lblExpectedVal    = MakeKpiCard(tblKpi, "المتوقع بالدرج", "0.00 ج", Theme.Accent, 8);
 
             pnlKpiContainer.Controls.Add(tblKpi);
             tblMain.Controls.Add(pnlKpiContainer, 0, 1);
@@ -325,7 +325,7 @@ namespace ChickenDist.Forms
 
             // 1. حقل الفعلي
             Panel pnlAct = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblActTitle = new Label { Text = "💵 المبلغ الفعلي بالدرج:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblActTitle = new Label { Text = "المبلغ الفعلي بالدرج:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             
             Panel pnlActRow = new Panel { Dock = DockStyle.Top, Height = 32 };
             txtActualCash = new TextBox
@@ -343,7 +343,7 @@ namespace ChickenDist.Forms
             
             Button btnTinyDenom = new Button
             {
-                Text = "🧮",
+                Text = "فئات",
                 Dock = DockStyle.Left,
                 Width = 34,
                 FlatStyle = FlatStyle.Flat,
@@ -363,7 +363,7 @@ namespace ChickenDist.Forms
 
             // 2. حقل الفرق (عجز/زيادة)
             Panel pnlDiff = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblDiffTitle = new Label { Text = "⚖️ الفرق (عجز / زيادة):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblDiffTitle = new Label { Text = "الفرق (عجز / زيادة):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             lblDiffVal = new Label { Text = "0.00 ج", Dock = DockStyle.Top, Height = 32, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), ForeColor = Theme.Accent, TextAlign = ContentAlignment.MiddleCenter };
             pnlDiff.Controls.Add(lblDiffVal);
             pnlDiff.Controls.Add(lblDiffTitle);
@@ -371,7 +371,7 @@ namespace ChickenDist.Forms
 
             // 3. حقل وجهة نقدية الوردية
             Panel pnlTargetSafe = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblTargetTitle = new Label { Text = "🏦 وجهة النقدية:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblTargetTitle = new Label { Text = "وجهة النقدية:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             cboTargetSafe = new ComboBox { Dock = DockStyle.Top, Height = 30, DropDownStyle = ComboBoxStyle.DropDownList, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), FlatStyle = FlatStyle.Flat, RightToLeft = RightToLeft.Yes };
             cboTargetSafe.SelectedIndexChanged += (s, e) => OnTargetSafeChanged();
             pnlTargetSafe.Controls.Add(cboTargetSafe);
@@ -380,7 +380,7 @@ namespace ChickenDist.Forms
 
             // 4. حقل مبلغ التحويل للخزنة
             Panel pnlTransfer = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblTransferTitle = new Label { Text = "💸 توريد للخزنة:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblTransferTitle = new Label { Text = "توريد للخزنة:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             txtTransferAmount = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = new Font("Segoe UI", 11f, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle, Text = "0", TextAlign = HorizontalAlignment.Center, Enabled = false };
             txtTransferAmount.TextChanged += (s, e) => RecalcDiff();
             pnlTransfer.Controls.Add(txtTransferAmount);
@@ -389,7 +389,7 @@ namespace ChickenDist.Forms
 
             // 5. حقل رصيد الدرج بعد التحويل (الباقي بالدرج)
             Panel pnlRemaining = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblRemainingTitle = new Label { Text = "🪙 الباقي بالدرج (الجديد):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
+            var lblRemainingTitle = new Label { Text = "الباقي بالدرج (الجديد):", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.TextMain };
             lblRemainingVal = new Label { Text = "0.00 ج", Dock = DockStyle.Top, Height = 30, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), ForeColor = Theme.TextSub, TextAlign = ContentAlignment.MiddleCenter };
             pnlRemaining.Controls.Add(lblRemainingVal);
             pnlRemaining.Controls.Add(lblRemainingTitle);
@@ -397,7 +397,7 @@ namespace ChickenDist.Forms
 
             // 6. حقل سبب العجز الإجباري
             pnlDeficitReasonBox = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblDeficitTitle = new Label { Text = "⚠️ تبرير سبب العجز:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.Danger };
+            var lblDeficitTitle = new Label { Text = "تبرير سبب العجز:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontBold, ForeColor = Theme.Danger };
             txtDeficitReason = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
             pnlDeficitReasonBox.Controls.Add(txtDeficitReason);
             pnlDeficitReasonBox.Controls.Add(lblDeficitTitle);
@@ -405,7 +405,7 @@ namespace ChickenDist.Forms
 
             // 7. حقل الملاحظات
             Panel pnlNotes = new Panel { Dock = DockStyle.Fill, Padding = new Padding(2) };
-            var lblNotesTitle = new Label { Text = "📝 ملاحظات الإغلاق:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontMain, ForeColor = Theme.TextMain };
+            var lblNotesTitle = new Label { Text = "ملاحظات الإغلاق:", Dock = DockStyle.Top, Height = 22, Font = Theme.FontMain, ForeColor = Theme.TextMain };
             txtNotes = new TextBox { Dock = DockStyle.Top, Height = 30, BackColor = Theme.BgInput, ForeColor = Theme.TextMain, Font = Theme.FontMain, BorderStyle = BorderStyle.FixedSingle };
             pnlNotes.Controls.Add(txtNotes);
             pnlNotes.Controls.Add(lblNotesTitle);
@@ -423,14 +423,14 @@ namespace ChickenDist.Forms
                 Margin = new Padding(0, 2, 0, 2)
             };
 
-            AddFilterButton("ALL", "📌 الكل");
-            AddFilterButton("CASH", "💵 مبيعات نقدي");
-            AddFilterButton("VISA", "💳 فيزا ومحافظ");
-            AddFilterButton("CREDIT", "📑 مبيعات آجل");
-            AddFilterButton("RETURN", "↩️ مرتجعات");
-            AddFilterButton("EXPENSE", "💸 مصروفات وسحب");
-            AddFilterButton("CASHIN", "📥 توريدات وتحصيل");
-            AddFilterButton("TRANSFER", "🏦 تحويلات");
+            AddFilterButton("ALL", "الكل");
+            AddFilterButton("CASH", "مبيعات نقدي");
+            AddFilterButton("VISA", "فيزا ومحافظ");
+            AddFilterButton("CREDIT", "مبيعات آجل");
+            AddFilterButton("RETURN", "مرتجعات");
+            AddFilterButton("EXPENSE", "مصروفات وسحب");
+            AddFilterButton("CASHIN", "توريدات وتحصيل");
+            AddFilterButton("TRANSFER", "تحويلات");
 
             tblMain.Controls.Add(pnlFilterBar, 0, 3);
 
@@ -490,11 +490,11 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            btnCloseShift     = Theme.MakeButton("🔒 إغلاق وتقفيل الوردية", Theme.Danger, new Point(0, 0), new Size(200, 42));
-            btnApproveShift   = Theme.MakeButton("⭐ اعتماد الوردية (المدير)", Color.FromArgb(59, 130, 246), new Point(0, 0), new Size(190, 42));
-            btnDetailedReport = Theme.MakeButton("📊 تقرير تفصيلي", Theme.Accent, new Point(0, 0), new Size(150, 42));
-            btnPrintReport    = Theme.MakeButton("🖨️ طباعة", Theme.Primary, new Point(0, 0), new Size(120, 42));
-            btnRefresh        = Theme.MakeButton("🔄 تحديث (F5)", Color.FromArgb(60, 70, 85), new Point(0, 0), new Size(120, 42));
+            btnCloseShift     = Theme.MakeButton("إغلاق وتقفيل الوردية", Theme.Danger, new Point(0, 0), new Size(200, 42));
+            btnApproveShift   = Theme.MakeButton("اعتماد الوردية (المدير)", Color.FromArgb(59, 130, 246), new Point(0, 0), new Size(190, 42));
+            btnDetailedReport = Theme.MakeButton("تقرير تفصيلي", Theme.Accent, new Point(0, 0), new Size(150, 42));
+            btnPrintReport    = Theme.MakeButton("طباعة", Theme.Primary, new Point(0, 0), new Size(120, 42));
+            btnRefresh        = Theme.MakeButton("تحديث (F5)", Color.FromArgb(60, 70, 85), new Point(0, 0), new Size(120, 42));
 
             FlowLayoutPanel flowBottom = new FlowLayoutPanel
             {
@@ -516,7 +516,7 @@ namespace ChickenDist.Forms
             btnDetailedReport.Click += (s, e) => {
                 if (!Session.CanViewShiftDetails())
                 {
-                    MessageBox.Show("🔒 ليس لديك صلاحية لعرض تقرير وتفاصيل الوردية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("ليس لديك صلاحية لعرض تقرير وتفاصيل الوردية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 int? sid = _openShift != null ? Convert.ToInt32(_openShift["ShiftID"]) : (int?)null;
@@ -527,7 +527,7 @@ namespace ChickenDist.Forms
 
             flowBottom.Controls.Add(btnCloseShift);
             flowBottom.Controls.Add(btnApproveShift);
-            var btnShiftItemsSales = Theme.MakeButton("📦 مبيعات الأصناف", Color.FromArgb(16, 185, 129), new Point(0, 0), new Size(160, 42));
+            var btnShiftItemsSales = Theme.MakeButton("مبيعات الأصناف", Color.FromArgb(16, 185, 129), new Point(0, 0), new Size(160, 42));
             btnShiftItemsSales.Margin = new Padding(6, 0, 0, 0);
             btnShiftItemsSales.Click += (s, e) => {
                 int? sid = _openShift != null ? Convert.ToInt32(_openShift["ShiftID"]) : (int?)null;
@@ -734,10 +734,10 @@ namespace ChickenDist.Forms
                     string cashierName = _openShift["OpenedByName"]?.ToString() ?? "كاشير";
                     string approvalStatus = _openShift.Table.Columns.Contains("ApprovalStatus") && _openShift["ApprovalStatus"] != DBNull.Value ? _openShift["ApprovalStatus"].ToString() : "Open";
 
-                    lblShiftTitle.Text = $"🔄 تقفيل الوردية رقم #{shiftID}";
+                    lblShiftTitle.Text = $"تقفيل الوردية رقم #{shiftID}";
                     UpdateBadge(approvalStatus);
 
-                    lblShiftInfo.Text = $"👤 الكاشير: {cashierName}   |   🏢 الفرع: {branchName}   |   💻 جهاز: {posStation}   |   ⏰ فتح: {openTime:hh:mm tt}   |   ⏱️ المدة: {durationStr}";
+                    lblShiftInfo.Text = $"الكاشير: {cashierName}   |   الفرع: {branchName}   |   جهاز: {posStation}   |   فتح: {openTime:hh:mm tt}   |   المدة: {durationStr}";
                     
                     if (_openShift.Table.Columns.Contains("DenominationsJson") && _openShift["DenominationsJson"] != DBNull.Value)
                     {
@@ -759,25 +759,25 @@ namespace ChickenDist.Forms
         {
             if (status == "Approved")
             {
-                lblShiftBadge.Text = "🔵 معتمدة ومقفلة";
+                lblShiftBadge.Text = "معتمدة ومقفلة";
                 lblShiftBadge.ForeColor = Color.FromArgb(59, 130, 246);
                 lblShiftBadge.BackColor = Color.FromArgb(20, 40, 70);
             }
             else if (status == "Rejected")
             {
-                lblShiftBadge.Text = "🔴 مرفوضة للمراجعة";
+                lblShiftBadge.Text = "مرفوضة للمراجعة";
                 lblShiftBadge.ForeColor = Theme.Danger;
                 lblShiftBadge.BackColor = Color.FromArgb(60, 20, 20);
             }
             else if (status == "PendingApproval")
             {
-                lblShiftBadge.Text = "🟠 بانتظار الاعتماد";
+                lblShiftBadge.Text = "بانتظار الاعتماد";
                 lblShiftBadge.ForeColor = Color.FromArgb(245, 158, 11);
                 lblShiftBadge.BackColor = Color.FromArgb(60, 45, 15);
             }
             else
             {
-                lblShiftBadge.Text = "🟢 مفتوحة ونشطة";
+                lblShiftBadge.Text = "مفتوحة ونشطة";
                 lblShiftBadge.ForeColor = Theme.Success;
                 lblShiftBadge.BackColor = Color.FromArgb(20, 50, 30);
             }
@@ -893,23 +893,23 @@ namespace ChickenDist.Forms
                 bool canViewDetails = Session.CanViewShiftDetails() && _forceShowDetails;
 
                 // عرض مؤشرات المبيعات
-                lblInvoiceCountVal.Text   = canViewDetails ? invCount.ToString("N0") : "*** 🔒";
-                lblGrossSalesVal.Text     = canViewDetails ? grossSales.ToString("N2") + " ج" : "*** 🔒";
-                lblReturnsSummaryVal.Text = canViewDetails ? tr.ToString("N2") + " ج" : "*** 🔒";
-                lblDiscountsVal.Text      = canViewDetails ? discounts.ToString("N2") + " ج" : "*** 🔒";
-                lblTaxesVal.Text          = canViewDetails ? "0.00 ج" : "*** 🔒";
-                lblNetSalesVal.Text       = canViewDetails ? netSales.ToString("N2") + " ج" : "*** 🔒";
+                lblInvoiceCountVal.Text   = canViewDetails ? invCount.ToString("N0") : "***";
+                lblGrossSalesVal.Text     = canViewDetails ? grossSales.ToString("N2") + " ج" : "***";
+                lblReturnsSummaryVal.Text = canViewDetails ? tr.ToString("N2") + " ج" : "***";
+                lblDiscountsVal.Text      = canViewDetails ? discounts.ToString("N2") + " ج" : "***";
+                lblTaxesVal.Text          = canViewDetails ? "0.00 ج" : "***";
+                lblNetSalesVal.Text       = canViewDetails ? netSales.ToString("N2") + " ج" : "***";
 
                 // عرض كروت وسائل الدفع والنقدية
-                lblOpeningCashVal.Text = canViewDetails ? oc.ToString("N2") + " ج" : "*** 🔒";
-                lblCashSalesVal.Text   = canViewDetails ? cs.ToString("N2") + " ج" : "*** 🔒";
-                lblVisaSalesVal.Text   = canViewDetails ? vs.ToString("N2") + " ج" : "*** 🔒";
-                lblWalletSalesVal.Text = canViewDetails ? ws.ToString("N2") + " ج" : "*** 🔒";
-                lblCreditSalesVal.Text = canViewDetails ? (cr + os).ToString("N2") + " ج" : "*** 🔒";
-                lblCashInVal.Text      = canViewDetails ? cin.ToString("N2") + " ج" : "*** 🔒";
-                lblReturnsVal.Text     = canViewDetails ? crtn.ToString("N2") + " ج" : "*** 🔒";
-                lblExpensesVal.Text    = canViewDetails ? ex.ToString("N2") + " ج" : "*** 🔒";
-                lblExpectedVal.Text    = canViewDetails ? expected.ToString("N2") + " ج" : "*** 🔒";
+                lblOpeningCashVal.Text = canViewDetails ? oc.ToString("N2") + " ج" : "***";
+                lblCashSalesVal.Text   = canViewDetails ? cs.ToString("N2") + " ج" : "***";
+                lblVisaSalesVal.Text   = canViewDetails ? vs.ToString("N2") + " ج" : "***";
+                lblWalletSalesVal.Text = canViewDetails ? ws.ToString("N2") + " ج" : "***";
+                lblCreditSalesVal.Text = canViewDetails ? (cr + os).ToString("N2") + " ج" : "***";
+                lblCashInVal.Text      = canViewDetails ? cin.ToString("N2") + " ج" : "***";
+                lblReturnsVal.Text     = canViewDetails ? crtn.ToString("N2") + " ج" : "***";
+                lblExpensesVal.Text    = canViewDetails ? ex.ToString("N2") + " ج" : "***";
+                lblExpectedVal.Text    = canViewDetails ? expected.ToString("N2") + " ج" : "***";
                 
                 if (canViewDetails && (string.IsNullOrWhiteSpace(txtActualCash.Text) || txtActualCash.Text == "0" || txtActualCash.Text == "0.00"))
                 {
@@ -980,9 +980,9 @@ namespace ChickenDist.Forms
                         CAST(sr.ReturnID AS NVARCHAR) AS RefCode,
                         ISNULL(sr.Notes, N'مرتجع مبيعات') AS Details,
                         CASE 
-                            WHEN sr.PaymentType = 'Visa' THEN N'💳 فيزا'
-                            WHEN sr.PaymentType = 'Credit' THEN N'📋 آجل'
-                            ELSE N'💵 نقدي'
+                            WHEN sr.PaymentType = 'Visa' THEN N'فيزا'
+                            WHEN sr.PaymentType = 'Credit' THEN N'آجل'
+                            ELSE N'نقدي'
                         END AS PayMethod,
                         0.00 AS AmountIn,
                         sr.TotalAmount AS AmountOut,
@@ -1122,7 +1122,7 @@ namespace ChickenDist.Forms
             bool canViewDetails = Session.CanViewShiftDetails() && _forceShowDetails;
             if (!canViewDetails)
             {
-                lblDiffVal.Text = "*** 🔒 (إغلاق أعمى)";
+                lblDiffVal.Text = "*** (إغلاق أعمى)";
                 lblDiffVal.ForeColor = Theme.TextSub;
                 pnlDeficitReasonBox.Visible = false;
 
@@ -1134,19 +1134,19 @@ namespace ChickenDist.Forms
 
             if (diff > 0.01m)
             {
-                lblDiffVal.Text = $"🟢 زيادة: +{diff:N2} ج";
+                lblDiffVal.Text = $"زيادة: +{diff:N2} ج";
                 lblDiffVal.ForeColor = Theme.Success;
                 pnlDeficitReasonBox.Visible = false;
             }
             else if (diff < -0.01m)
             {
-                lblDiffVal.Text = $"🔴 عجز: {diff:N2} ج";
+                lblDiffVal.Text = $"عجز: {diff:N2} ج";
                 lblDiffVal.ForeColor = Theme.Danger;
                 pnlDeficitReasonBox.Visible = true;
             }
             else
             {
-                lblDiffVal.Text = "✅ مطابق تماماً (0.00 ج)";
+                lblDiffVal.Text = "مطابق تماماً (0.00 ج)";
                 lblDiffVal.ForeColor = Theme.Accent;
                 pnlDeficitReasonBox.Visible = false;
             }
@@ -1173,7 +1173,7 @@ namespace ChickenDist.Forms
             // التحقق من سبب العجز الإجباري
             if (canViewDetails && diff < -0.01m && string.IsNullOrWhiteSpace(txtDeficitReason.Text))
             {
-                MessageBox.Show("⚠️ يوجد عجز في نقدية الوردية بمقدار (" + diff.ToString("N2") + " ج).\n\nيرجى كتابة وتبرير سبب العجز في حقل 'تبرير سبب العجز' قبل تقفيل الوردية.", "إلزامية تبرير العجز", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("يوجد عجز في نقدية الوردية بمقدار (" + diff.ToString("N2") + " ج).\n\nيرجى كتابة وتبرير سبب العجز في حقل 'تبرير سبب العجز' قبل تقفيل الوردية.", "إلزامية تبرير العجز", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtDeficitReason.Focus();
                 return;
             }
@@ -1196,12 +1196,12 @@ namespace ChickenDist.Forms
                    $"• الفارق (العجز/الزيادة): {diff:N2} ج\n" +
                    (transfer > 0 ? $"• المبلغ المحول للخزنة: {transfer:N2} ج\n" : "") +
                    $"• المبلغ المتبقي كرصيد للوردية القادمة: {remainingInDrawer:N2} ج\n\n" +
-                   "⚡ سيتم فتح الوردية التالية تلقائياً فوراً.")
+                   "سيتم فتح الوردية التالية تلقائياً فوراً.")
                 : ($"هل أنت متأكد من تأكيد تسليم نقدية وتقفيل الوردية الحالية؟\n\n" +
                    $"• المبلغ الفعلي المسلم بالدرج: {actual:N2} ج\n" +
                    (transfer > 0 ? $"• المبلغ المحول للخزنة: {transfer:N2} ج\n" : "") +
                    $"• المبلغ المتبقي كرصيد للوردية القادمة: {remainingInDrawer:N2} ج\n\n" +
-                   "⚡ سيتم فتح الوردية التالية تلقائياً فوراً.");
+                   "سيتم فتح الوردية التالية تلقائياً فوراً.");
 
             if (MessageBox.Show(confirmMsg, "تأكيد إغلاق الوردية", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
@@ -1332,8 +1332,8 @@ namespace ChickenDist.Forms
                 // 3. فتح الوردية التالية فوراً تلقائياً
                 int newShiftID = ShiftDAL.EnsureActiveShift(Session.EmpID, currentSafeID, remainingInDrawer);
 
-                string successMsg = $"✅ تم إغلاق وتقفيل الوردية #{shiftID} بنجاح!\n\n" +
-                                   $"🚀 تم فتح الوردية الجديدة #{newShiftID} تلقائياً برصيد افتتاحي: ({remainingInDrawer:N2} ج).\n\n" +
+                string successMsg = $"تم إغلاق وتقفيل الوردية #{shiftID} بنجاح!\n\n" +
+                                   $"تم فتح الوردية الجديدة #{newShiftID} تلقائياً برصيد افتتاحي: ({remainingInDrawer:N2} ج).\n\n" +
                                    "هل ترغب في طباعة تقرير تقفيل الوردية الآن؟";
 
                 if (MessageBox.Show(successMsg, "تم تقفيل الوردية بنجاح", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
@@ -1358,7 +1358,7 @@ namespace ChickenDist.Forms
                 bool ok = ShiftDAL.ApproveShift(shiftID, Session.EmpID, Session.EmpName, "تم اعتماد التقفيل من شاشة إدارة الوردية");
                 if (ok)
                 {
-                    MessageBox.Show($"✅ تم اعتماد الوردية #{shiftID} بنجاح وقفلها محاسبياً.", "تم الاعتماد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"تم اعتماد الوردية #{shiftID} بنجاح وقفلها محاسبياً.", "تم الاعتماد", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadCurrentShift();
                 }
             }
@@ -1371,7 +1371,7 @@ namespace ChickenDist.Forms
                 DataTable dt = AccountDAL.GetActiveSafeAccounts();
                 if (cboTargetSafe == null) return;
                 cboTargetSafe.Items.Clear();
-                cboTargetSafe.Items.Add(new ComboItem(0, "📌 إبقاء بالدرج (رصيد افتتاحي للوردية القادمة)"));
+                cboTargetSafe.Items.Add(new ComboItem(0, "إبقاء بالدرج (رصيد افتتاحي للوردية القادمة)"));
 
                 int defaultTargetIdx = 0;
                 for (int i = 0; i < dt.Rows.Count; i++)
@@ -1379,7 +1379,7 @@ namespace ChickenDist.Forms
                     DataRow r = dt.Rows[i];
                     int id = Convert.ToInt32(r["AccountID"]);
                     string name = r["AccountName"].ToString();
-                    var item = new ComboItem(id, $"🏦 تحويل إلى: {name}");
+                    var item = new ComboItem(id, $"تحويل إلى: {name}");
                     int added = cboTargetSafe.Items.Add(item);
 
                     if (name.Contains("الرئيسية") || name.Contains("الخزنة") || name.Contains("العامة"))

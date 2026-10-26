@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -165,7 +165,7 @@ namespace ChickenDist.Forms
 
             var btnSearchSupplier = new Button
             {
-                Text = "🔍",
+                Text = "بحث",
                 Width = 34,
                 Height = 26,
                 Font = Theme.FontBold,
@@ -185,7 +185,7 @@ namespace ChickenDist.Forms
                     }
                 }
             };
-            pnlFilter.Controls.Add(MakeFilterPanel("🤝 المورد:", cmbSupplierSelector, 230, btnSearchSupplier));
+            pnlFilter.Controls.Add(MakeFilterPanel("المورد:", cmbSupplierSelector, 230, btnSearchSupplier));
 
             dtpFrom = new DateTimePicker
             {
@@ -207,19 +207,19 @@ namespace ChickenDist.Forms
             dtpTo.ValueChanged += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(MakeFilterPanel("إلى:", dtpTo, 180));
 
-            btnLoad = Theme.MakeButton("🔄 تحديث العرض", Theme.Accent);
+            btnLoad = Theme.MakeButton("تحديث العرض", Theme.Accent);
             btnLoad.Size = new Size(115, 30);
             btnLoad.Margin = new Padding(8, 2, 4, 2);
             btnLoad.Click += (s, e) => RefreshAllData();
             pnlFilter.Controls.Add(btnLoad);
 
-            var btnPay = Theme.MakeButton("💸 سداد نقدية", Color.FromArgb(140, 80, 0));
+            var btnPay = Theme.MakeButton("سداد نقدية", Color.FromArgb(140, 80, 0));
             btnPay.Size = new Size(125, 30);
             btnPay.Margin = new Padding(6, 2, 4, 2);
             btnPay.Click += (s, e) => OpenSupplierPaymentDialog();
             pnlFilter.Controls.Add(btnPay);
 
-            var btnAdjustment = Theme.MakeButton("⚖️ تسوية حساب", Color.FromArgb(79, 70, 229));
+            var btnAdjustment = Theme.MakeButton("تسوية حساب", Color.FromArgb(79, 70, 229));
             btnAdjustment.Size = new Size(130, 30);
             btnAdjustment.Margin = new Padding(6, 2, 4, 2);
             btnAdjustment.Click += (s, e) => OpenSupplierAdjustmentDialog();
@@ -232,8 +232,8 @@ namespace ChickenDist.Forms
                 Font = Theme.FontMain
             };
 
-            tabFinancial = new TabPage("📑 كشف الحساب المالي (الماليات والعمليات)") { BackColor = Theme.BgMain };
-            tabItemized = new TabPage("📦 كشف حساب أصناف المورد (التوريدات والمشتريات التفصيلية)") { BackColor = Theme.BgMain };
+            tabFinancial = new TabPage("كشف الحساب المالي (الماليات والعمليات)") { BackColor = Theme.BgMain };
+            tabItemized = new TabPage("كشف حساب أصناف المورد (التوريدات والمشتريات التفصيلية)") { BackColor = Theme.BgMain };
 
             BuildFinancialTab(tabFinancial);
             BuildItemizedTab(tabItemized);
@@ -274,7 +274,7 @@ namespace ChickenDist.Forms
                         {
                             string code = r.Table.Columns.Contains("SupplierCode") ? r["SupplierCode"].ToString() : "";
                             string phone = r.Table.Columns.Contains("Phone") && r["Phone"] != DBNull.Value ? r["Phone"].ToString() : "";
-                            r["SupplierDisplayInfo"] = string.IsNullOrEmpty(phone) ? $"{r["SupplierName"]} (كود: {code})" : $"{r["SupplierName"]}  |  📱 {phone}  |  (كود: {code})";
+                            r["SupplierDisplayInfo"] = string.IsNullOrEmpty(phone) ? $"{r["SupplierName"]} (كود: {code})" : $"{r["SupplierName"]}  |  {phone}  |  (كود: {code})";
                         }
                     }
 
@@ -370,25 +370,25 @@ namespace ChickenDist.Forms
                 Padding = new Padding(8, 5, 8, 5)
             };
 
-            btnPrintFinancial = Theme.MakeButton("🖨️ طباعة كشف الحساب", Color.FromArgb(30, 90, 160));
+            btnPrintFinancial = Theme.MakeButton("طباعة كشف الحساب", Color.FromArgb(30, 90, 160));
             btnPrintFinancial.Size = new Size(160, 28);
             btnPrintFinancial.Margin = new Padding(5, 0, 0, 0);
             btnPrintFinancial.Click += BtnPrintFinancial_Click;
             pnlTopBar.Controls.Add(btnPrintFinancial);
 
-            btnWhatsAppFinancial = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
+            btnWhatsAppFinancial = Theme.MakeButton("إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
             btnWhatsAppFinancial.Size = new Size(165, 28);
             btnWhatsAppFinancial.Margin = new Padding(10, 0, 0, 0);
             btnWhatsAppFinancial.Click += BtnWhatsAppFinancial_Click;
             pnlTopBar.Controls.Add(btnWhatsAppFinancial);
 
-            btnExportFinancialPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+            btnExportFinancialPdf = Theme.MakeButton("تصدير PDF", Color.FromArgb(220, 38, 38));
             btnExportFinancialPdf.Size = new Size(125, 28);
             btnExportFinancialPdf.Margin = new Padding(10, 0, 0, 0);
             btnExportFinancialPdf.Click += BtnExportFinancialPdf_Click;
             pnlTopBar.Controls.Add(btnExportFinancialPdf);
 
-            btnExportFinancialExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
+            btnExportFinancialExcel = Theme.MakeButton("تصدير إكسيل", Color.FromArgb(0, 102, 204));
             btnExportFinancialExcel.Size = new Size(125, 28);
             btnExportFinancialExcel.Margin = new Padding(10, 0, 0, 0);
             btnExportFinancialExcel.Click += (s, e) => ExportGridToCsv(dgStatement, $"كشف_حساب_مالي_{_supplierName}");
@@ -425,7 +425,7 @@ namespace ChickenDist.Forms
             {
                 Name = "BtnView",
                 HeaderText = "عرض",
-                Text = "👁️",
+                Text = "عرض",
                 UseColumnTextForButtonValue = true,
                 FillWeight = 25
             };
@@ -663,30 +663,30 @@ namespace ChickenDist.Forms
                 Padding = new Padding(8, 5, 8, 5)
             };
 
-            pnlTopBar.Controls.Add(new Label { Text = "🔍 تصفية الأصناف:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
+            pnlTopBar.Controls.Add(new Label { Text = "تصفية الأصناف:", AutoSize = true, ForeColor = Theme.TextSearchLabel, Font = Theme.FontBold, Margin = new Padding(5, 5, 0, 0) });
             txtItemSearch = new TextBox { Width = 200, BackColor = Theme.BgInput, ForeColor = Theme.TextMain };
             txtItemSearch.TextChanged += (s, e) => FilterAndDisplayItemized();
             pnlTopBar.Controls.Add(txtItemSearch);
 
-            btnPrintItemized = Theme.MakeButton("🖨️ طباعة كشف أصناف المورد", Color.FromArgb(30, 90, 160));
+            btnPrintItemized = Theme.MakeButton("طباعة كشف أصناف المورد", Color.FromArgb(30, 90, 160));
             btnPrintItemized.Size = new Size(185, 28);
             btnPrintItemized.Margin = new Padding(15, 0, 0, 0);
             btnPrintItemized.Click += BtnPrintItemized_Click;
             pnlTopBar.Controls.Add(btnPrintItemized);
 
-            btnWhatsAppItemized = Theme.MakeButton("📲 إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
+            btnWhatsAppItemized = Theme.MakeButton("إرسال الكشف واتساب", Color.FromArgb(37, 211, 102));
             btnWhatsAppItemized.Size = new Size(165, 28);
             btnWhatsAppItemized.Margin = new Padding(10, 0, 0, 0);
             btnWhatsAppItemized.Click += BtnWhatsAppItemized_Click;
             pnlTopBar.Controls.Add(btnWhatsAppItemized);
 
-            btnExportItemizedPdf = Theme.MakeButton("📄 تصدير PDF", Color.FromArgb(220, 38, 38));
+            btnExportItemizedPdf = Theme.MakeButton("تصدير PDF", Color.FromArgb(220, 38, 38));
             btnExportItemizedPdf.Size = new Size(125, 28);
             btnExportItemizedPdf.Margin = new Padding(10, 0, 0, 0);
             btnExportItemizedPdf.Click += BtnExportItemizedPdf_Click;
             pnlTopBar.Controls.Add(btnExportItemizedPdf);
 
-            btnExportItemizedExcel = Theme.MakeButton("📥 تصدير إكسيل", Color.FromArgb(0, 102, 204));
+            btnExportItemizedExcel = Theme.MakeButton("تصدير إكسيل", Color.FromArgb(0, 102, 204));
             btnExportItemizedExcel.Size = new Size(125, 28);
             btnExportItemizedExcel.Margin = new Padding(10, 0, 0, 0);
             btnExportItemizedExcel.Click += (s, e) => ExportGridToCsv(dgItemized, $"كشف_توريدات_أصناف_{_supplierName}");
@@ -844,7 +844,7 @@ namespace ChickenDist.Forms
                         sb.AppendLine(string.Join(",", cells));
                     }
                     System.IO.File.WriteAllText(sfd.FileName, sb.ToString(), System.Text.Encoding.UTF8);
-                    MessageBox.Show("✅ تم تصدير الملف بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم تصدير الملف بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -864,7 +864,7 @@ namespace ChickenDist.Forms
                     {
                         string phone = GetSupplierPhone();
                         PdfReportHelper.GenerateSupplierStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance, sfd.FileName);
-                        var res = MessageBox.Show("✅ تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             try { Process.Start(new ProcessStartInfo(sfd.FileName) { UseShellExecute = true }); } catch { }
@@ -893,7 +893,7 @@ namespace ChickenDist.Forms
                     {
                         string phone = GetSupplierPhone();
                         PdfReportHelper.GenerateSupplierItemizedStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgItemized, sfd.FileName);
-                        var res = MessageBox.Show("✅ تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        var res = MessageBox.Show("تم تصدير ملف الـ PDF بنجاح!\n\nهل ترغب في فتح الملف الآن؟", "نجاح التصدير", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (res == DialogResult.Yes)
                         {
                             try { Process.Start(new ProcessStartInfo(sfd.FileName) { UseShellExecute = true }); } catch { }
@@ -918,12 +918,12 @@ namespace ChickenDist.Forms
             string phone = GetSupplierPhone();
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"📋 *كشف حساب مورد تفصيلي*");
-            sb.AppendLine($"🏢 {AppConfig.CompanyName}");
-            sb.AppendLine($"🤝 المورد: {_supplierName}");
-            sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
+            sb.AppendLine($"*كشف حساب مورد تفصيلي*");
+            sb.AppendLine($"{AppConfig.CompanyName}");
+            sb.AppendLine($"المورد: {_supplierName}");
+            sb.AppendLine($"الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
             sb.AppendLine("──────────────────────");
-            sb.AppendLine("📝 *تفاصيل الحركات والمعاملات:*");
+            sb.AppendLine("*تفاصيل الحركات والمعاملات:*");
 
             int lineCount = 0;
             foreach (DataGridViewRow dgr in dgStatement.Rows)
@@ -937,12 +937,12 @@ namespace ChickenDist.Forms
                 string details = dgStatement.Columns.Contains("Notes") ? (dgr.Cells["Notes"]?.Value?.ToString() ?? "") : "";
 
                 string amountStr = "";
-                if (decimal.TryParse(credit, out decimal c) && c > 0) amountStr = $"🔴 مشتريات (علينا): {c:N2} ج";
-                else if (decimal.TryParse(debit, out decimal d) && d > 0) amountStr = $"🟢 مسدد/مرتجع: {d:N2} ج";
+                if (decimal.TryParse(credit, out decimal c) && c > 0) amountStr = $"مشتريات (علينا): {c:N2} ج";
+                else if (decimal.TryParse(debit, out decimal d) && d > 0) amountStr = $"مسدد/مرتجع: {d:N2} ج";
 
                 sb.AppendLine($"• {dtStr} | {typeStr}" + (!string.IsNullOrWhiteSpace(details) ? $" ({details})" : ""));
-                if (!string.IsNullOrWhiteSpace(amountStr)) sb.AppendLine($"   {amountStr} | 💰 الرصيد: {bal} ج");
-                else sb.AppendLine($"   💰 الرصيد: {bal} ج");
+                if (!string.IsNullOrWhiteSpace(amountStr)) sb.AppendLine($"   {amountStr} | الرصيد: {bal} ج");
+                else sb.AppendLine($"   الرصيد: {bal} ج");
 
                 lineCount++;
                 if (lineCount >= 40 && dgStatement.Rows.Count > 45)
@@ -953,21 +953,21 @@ namespace ChickenDist.Forms
             }
 
             sb.AppendLine("──────────────────────");
-            sb.AppendLine($"📥 إجمالي المشتريات: {_totalPurchases:N2} ج");
-            sb.AppendLine($"📤 إجمالي المسدد: {_totalPayments:N2} ج");
-            if (_totalReturns > 0) sb.AppendLine($"🔄 إجمالي المرتجع: {_totalReturns:N2} ج");
+            sb.AppendLine($"إجمالي المشتريات: {_totalPurchases:N2} ج");
+            sb.AppendLine($"إجمالي المسدد: {_totalPayments:N2} ج");
+            if (_totalReturns > 0) sb.AppendLine($"إجمالي المرتجع: {_totalReturns:N2} ج");
             sb.AppendLine("──────────────────────");
             string balStatus = _runBalance > 0 ? "رصيد مستحق للمورد" : (_runBalance < 0 ? "رصيد دائن لصالحنا" : "الحساب خالص ومطابق تماماً");
-            sb.AppendLine($"💰 *صافي الرصيد: {Math.Abs(_runBalance):N2} ج ({balStatus})*");
+            sb.AppendLine($"*صافي الرصيد: {Math.Abs(_runBalance):N2} ج ({balStatus})*");
             sb.AppendLine("──────────────────────");
-            sb.AppendLine("مع تحيات إدارة الحسابات 🙏");
+            sb.AppendLine("مع تحيات إدارة الحسابات");
 
             WhatsAppSender.ShowWhatsAppSendOptionsDialog(
                 this,
                 phone,
                 sb.ToString(),
                 () => ReceiptImageGenerator.GenerateTextCardImage("كشف حساب مورد", sb.ToString()),
-                "📱 إرسال كشف حساب المورد عبر الواتساب",
+                "إرسال كشف حساب المورد عبر الواتساب",
                 () => PdfReportHelper.GenerateSupplierStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance),
                 () => ReceiptImageGenerator.GenerateDetailedSupplierStatementImages(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgStatement, _totalPurchases, _totalPayments, _runBalance));
         }
@@ -983,10 +983,10 @@ namespace ChickenDist.Forms
             string phone = GetSupplierPhone();
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"📋 *كشف حساب أصناف وتوريدات المورد*");
-            sb.AppendLine($"🏢 {AppConfig.CompanyName}");
-            sb.AppendLine($"🤝 المورد: {_supplierName}");
-            sb.AppendLine($"📅 الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
+            sb.AppendLine($"*كشف حساب أصناف وتوريدات المورد*");
+            sb.AppendLine($"{AppConfig.CompanyName}");
+            sb.AppendLine($"المورد: {_supplierName}");
+            sb.AppendLine($"الفترة: من {dtpFrom.Value:yyyy/MM/dd} إلى {dtpTo.Value:yyyy/MM/dd}");
             sb.AppendLine("──────────────────────");
 
             foreach (DataGridViewRow row in dgItemized.Rows)
@@ -1001,9 +1001,9 @@ namespace ChickenDist.Forms
             }
 
             sb.AppendLine("──────────────────────");
-            sb.AppendLine($"📊 {lblItemizedCount.Text}");
-            sb.AppendLine($"📦 {lblItemizedTotalQty.Text}");
-            sb.AppendLine($"💰 {lblItemizedTotalAmount.Text}");
+            sb.AppendLine($"{lblItemizedCount.Text}");
+            sb.AppendLine($"{lblItemizedTotalQty.Text}");
+            sb.AppendLine($"{lblItemizedTotalAmount.Text}");
             sb.AppendLine("──────────────────────");
 
             WhatsAppSender.ShowWhatsAppSendOptionsDialog(
@@ -1011,7 +1011,7 @@ namespace ChickenDist.Forms
                 phone,
                 sb.ToString(),
                 () => ReceiptImageGenerator.GenerateTextCardImage("أصناف المورد", sb.ToString()),
-                "📱 إرسال كشف أصناف المورد عبر الواتساب",
+                "إرسال كشف أصناف المورد عبر الواتساب",
                 () => PdfReportHelper.GenerateSupplierItemizedStatementPdf(_supplierName, phone, dtpFrom.Value, dtpTo.Value, dgItemized));
         }
 
@@ -1351,7 +1351,7 @@ namespace ChickenDist.Forms
 
             using (var dlg = new Form())
             {
-                dlg.Text = "💸 صرف نقدية للمورد - " + _supplierName;
+                dlg.Text = "صرف نقدية للمورد - " + _supplierName;
                 dlg.Size = new Size(420, 275);
                 dlg.StartPosition = FormStartPosition.CenterScreen;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -1404,8 +1404,8 @@ namespace ChickenDist.Forms
                 };
                 dlg.Controls.Add(txtNote); dy += 50;
 
-                var btnOk = Theme.MakeButton("✅ تأكيد الصرف", 210, dy, 180, 38, Color.FromArgb(140, 80, 0));
-                var btnCancel = Theme.MakeButton("❌ إلغاء", 20, dy, 160, 38, Color.DarkSlateGray);
+                var btnOk = Theme.MakeButton("تأكيد الصرف", 210, dy, 180, 38, Color.FromArgb(140, 80, 0));
+                var btnCancel = Theme.MakeButton("إلغاء", 20, dy, 160, 38, Color.DarkSlateGray);
 
                 btnOk.Click += (s2, e2) =>
                 {

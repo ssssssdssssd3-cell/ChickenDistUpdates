@@ -161,25 +161,25 @@ namespace ChickenDist.Forms
             btnLoadCash.Click += (s, e) => LoadCashBox();
             pnlF.Controls.Add(btnLoadCash);
 
-            var btnDeposit = Theme.MakeButton("➕ توريد نقدي", Color.FromArgb(40, 130, 80));
+            var btnDeposit = Theme.MakeButton("توريد نقدي", Color.FromArgb(40, 130, 80));
             btnDeposit.Size = new Size(110, 30);
             btnDeposit.Margin = new Padding(6, 2, 4, 2);
             btnDeposit.Click += BtnDeposit_Click;
             pnlF.Controls.Add(btnDeposit);
 
-            var btnWithdraw = Theme.MakeButton("➖ صرف نقدي", Color.FromArgb(170, 70, 70));
+            var btnWithdraw = Theme.MakeButton("صرف نقدي", Color.FromArgb(170, 70, 70));
             btnWithdraw.Size = new Size(110, 30);
             btnWithdraw.Margin = new Padding(6, 2, 4, 2);
             btnWithdraw.Click += BtnWithdraw_Click;
             pnlF.Controls.Add(btnWithdraw);
 
-            var btnReconcile = Theme.MakeButton("⚖️ تسوية", Color.FromArgb(120, 90, 40));
+            var btnReconcile = Theme.MakeButton("تسوية", Color.FromArgb(120, 90, 40));
             btnReconcile.Size = new Size(95, 30);
             btnReconcile.Margin = new Padding(6, 2, 4, 2);
             btnReconcile.Click += BtnReconcile_Click;
             pnlF.Controls.Add(btnReconcile);
 
-            var btnManageAccounts = Theme.MakeButton("💳 الحسابات", Color.FromArgb(70, 70, 150));
+            var btnManageAccounts = Theme.MakeButton("الحسابات", Color.FromArgb(70, 70, 150));
             btnManageAccounts.Size = new Size(95, 30);
             btnManageAccounts.Margin = new Padding(6, 2, 4, 2);
             btnManageAccounts.Visible = Session.IsAdmin || (Session.CanAccess("SafeAccounts") && (Session.CanAdd("SafeAccounts") || Session.CanEdit("SafeAccounts")));
@@ -187,7 +187,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanAccess("SafeAccounts"))
                 {
-                    MessageBox.Show("⛔ غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("غير مصرح لك بالدخول على إدارة الحسابات والخزائن.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 new FrmSafeAccounts().ShowDialog();
@@ -196,13 +196,13 @@ namespace ChickenDist.Forms
             };
             pnlF.Controls.Add(btnManageAccounts);
 
-            var btnTransfer = Theme.MakeButton("🔄 تحويل", Color.FromArgb(100, 70, 150));
+            var btnTransfer = Theme.MakeButton("تحويل", Color.FromArgb(100, 70, 150));
             btnTransfer.Size = new Size(95, 30);
             btnTransfer.Margin = new Padding(6, 2, 4, 2);
             btnTransfer.Click += BtnTransfer_Click;
             pnlF.Controls.Add(btnTransfer);
 
-            var btnOpenVouchers = Theme.MakeButton("📄 شاشة السندات المستقلة", Color.FromArgb(40, 120, 180));
+            var btnOpenVouchers = Theme.MakeButton("شاشة السندات المستقلة", Color.FromArgb(40, 120, 180));
             btnOpenVouchers.Size = new Size(160, 30);
             btnOpenVouchers.Margin = new Padding(6, 2, 4, 2);
             btnOpenVouchers.Click += (s, e) =>
@@ -212,7 +212,7 @@ namespace ChickenDist.Forms
             };
             pnlF.Controls.Add(btnOpenVouchers);
 
-            var btnPrintVoucher = Theme.MakeButton("🖨️ طباعة كشف الحركة", Color.FromArgb(16, 185, 129));
+            var btnPrintVoucher = Theme.MakeButton("طباعة كشف الحركة", Color.FromArgb(16, 185, 129));
             btnPrintVoucher.Size = new Size(130, 30);
             btnPrintVoucher.Margin = new Padding(6, 2, 4, 2);
             btnPrintVoucher.Click += (s, e) =>
@@ -316,7 +316,7 @@ namespace ChickenDist.Forms
                 Font = Theme.FontMain
             };
             txtExpSearch.TextChanged += (s, e) => LoadExpenses();
-            pnlF.Controls.Add(MakeFilterPanel("🔍 بحث:", txtExpSearch, 140));
+            pnlF.Controls.Add(MakeFilterPanel("بحث:", txtExpSearch, 140));
             
             btnLoadExp = Theme.MakeButton("عرض", Theme.Accent);
             btnLoadExp.Size = new Size(70, 30);
@@ -341,8 +341,8 @@ namespace ChickenDist.Forms
             pnlGridContainer.Controls.Add(dgExpenses);
 
             var pnlExpFoot = new Panel { Dock = DockStyle.Bottom, Height = 45, BackColor = Color.FromArgb(20, 30, 48), Padding = new Padding(12, 8, 12, 8) };
-            lblExpTotal = new Label { Text = "💵 إجمالي المصروفات: 0.00 ج.م", ForeColor = Color.FromArgb(251, 191, 36), AutoSize = true, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), Location = new Point(12, 11) };
-            lblExpCount = new Label { Text = "📊 عدد العمليات: 0", ForeColor = Color.FromArgb(203, 213, 225), AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Location = new Point(320, 12) };
+            lblExpTotal = new Label { Text = "إجمالي المصروفات: 0.00 ج.م", ForeColor = Color.FromArgb(251, 191, 36), AutoSize = true, Font = new Font("Segoe UI", 11.5f, FontStyle.Bold), Location = new Point(12, 11) };
+            lblExpCount = new Label { Text = "عدد العمليات: 0", ForeColor = Color.FromArgb(203, 213, 225), AutoSize = true, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), Location = new Point(320, 12) };
             pnlExpFoot.Controls.AddRange(new Control[] { lblExpTotal, lblExpCount });
 
             pnlList.Controls.Add(pnlGridContainer); // Fill
@@ -396,7 +396,7 @@ namespace ChickenDist.Forms
                 Margin = new Padding(0, 5, 0, 5)
             };
             
-            var btnAddExpType = Theme.MakeButton("➕", 0, 0, 30, 32, Color.FromArgb(70, 70, 70));
+            var btnAddExpType = Theme.MakeButton("+", 0, 0, 30, 32, Color.FromArgb(70, 70, 70));
             btnAddExpType.Dock = DockStyle.Fill;
             btnAddExpType.Margin = new Padding(3, 4, 0, 4);
             btnAddExpType.Click += (s, e) => 
@@ -469,13 +469,13 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(tblFields);
 
             // Bottom Actions (Absolute positioning inside pnlDetails)
-            btnNewExp = Theme.MakeButton("🆕 جديد", 20, 390, 85, 38, Color.FromArgb(60, 100, 60));
+            btnNewExp = Theme.MakeButton("جديد", 20, 390, 85, 38, Color.FromArgb(60, 100, 60));
             btnNewExp.Click += (s, e) => ClearExp();
 
-            btnSaveExp = Theme.MakeButton("💾 حفظ المصروف", 115, 390, 115, 38, Theme.Accent);
+            btnSaveExp = Theme.MakeButton("حفظ المصروف", 115, 390, 115, 38, Theme.Accent);
             btnSaveExp.Click += BtnSaveExp_Click;
 
-            btnDelExp = Theme.MakeButton("🗑 حذف", 240, 390, 80, 38, Color.FromArgb(140, 40, 40));
+            btnDelExp = Theme.MakeButton("حذف", 240, 390, 80, 38, Color.FromArgb(140, 40, 40));
             btnDelExp.Click += BtnDelExp_Click;
 
             pnlDetails.Controls.AddRange(new Control[] { btnNewExp, btnSaveExp, btnDelExp });
@@ -693,7 +693,7 @@ namespace ChickenDist.Forms
                 };
 
                 string accName = r.Table.Columns.Contains("AccountName") && r["AccountName"] != DBNull.Value ? $" [{r["AccountName"]}]" : "";
-                string runningBalanceText = canViewBalance ? runningBalance.ToString("N2") : "*** 🔒";
+                string runningBalanceText = canViewBalance ? runningBalance.ToString("N2") : "***";
 
                 string partyName = r.Table.Columns.Contains("PartyName") && r["PartyName"] != DBNull.Value ? r["PartyName"].ToString().Trim() : "";
                 if (string.IsNullOrWhiteSpace(partyName))
@@ -724,9 +724,9 @@ namespace ChickenDist.Forms
             }
             else
             {
-                lblCashIn.Text = "إجمالي وارد: *** 🔒";
-                lblCashOut.Text = "إجمالي صادر: *** 🔒";
-                lblCashBalance.Text = "رصيد الخزنة/الدرج: *** 🔒 (محجوب)";
+                lblCashIn.Text = "إجمالي وارد: ***";
+                lblCashOut.Text = "إجمالي صادر: ***";
+                lblCashBalance.Text = "رصيد الخزنة/الدرج: *** (محجوب)";
             }
         }
 
@@ -794,19 +794,19 @@ namespace ChickenDist.Forms
 
         private void BtnDeposit_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية التوريد النقدي.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("ليس لديك صلاحية التوريد النقدي.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             ShowCashActionDialog("توريد نقدي للحساب", "Deposit");
         }
 
         private void BtnWithdraw_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية الصرف النقدي.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("ليس لديك صلاحية الصرف النقدي.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             ShowCashActionDialog("صرف نقدي من الحساب", "Withdraw");
         }
 
         private void BtnReconcile_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية إجراء التسوية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("ليس لديك صلاحية إجراء التسوية.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             int? selectedAccountID = null;
             if (cboSafeFilter != null && cboSafeFilter.SelectedItem is ComboItem safeItem && safeItem.ID > 0)
             {
@@ -818,15 +818,15 @@ namespace ChickenDist.Forms
 
         private void BtnTransfer_Click(object sender, EventArgs e)
         {
-            if (!Session.CanAdd("CashBox")) { MessageBox.Show("⛔ ليس لديك صلاحية تحويل النقدية بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanAdd("CashBox")) { MessageBox.Show("ليس لديك صلاحية تحويل النقدية بين الحسابات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             if (!Session.IsAdmin && !Session.CanChangeSafe("CashBox"))
             {
-                MessageBox.Show("⛔ ليس لديك صلاحية تحويل النقدية بين الخزن والأدراج.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ليس لديك صلاحية تحويل النقدية بين الخزن والأدراج.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             var dlg = new Form
             {
-                Text = "🔄 تحويل نقدية بين الحسابات والخزن",
+                Text = "تحويل نقدية بين الحسابات والخزن",
                 Size = new Size(420, 470),
                 StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -959,7 +959,7 @@ namespace ChickenDist.Forms
             };
 
             currentY += 60;
-            var btnSave = Theme.MakeButton("✅ إتمـام التحويل", Theme.Accent);
+            var btnSave = Theme.MakeButton("إتمـام التحويل", Theme.Accent);
             btnSave.Location = new Point(25, currentY);
             btnSave.Size = new Size(355, 38);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
@@ -986,13 +986,13 @@ namespace ChickenDist.Forms
                 try
                 {
                     AccountDAL.TransferFunds(srcItem.ID, destItem.ID, amt, txtNotes.Text.Trim());
-                    MessageBox.Show("✅ تم التحويل بنجاح!");
+                    MessageBox.Show("تم التحويل بنجاح!");
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ فشل التحويل: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل التحويل: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 
@@ -1150,7 +1150,7 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10f)
             };
 
-            var btnSave = Theme.MakeButton("💾 حفظ الحركة المالية", Theme.Accent);
+            var btnSave = Theme.MakeButton("حفظ الحركة المالية", Theme.Accent);
             btnSave.Size = new Size(355, 38);
             btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
 
@@ -1420,7 +1420,7 @@ namespace ChickenDist.Forms
                 {
                     if (amount > currentBalance)
                     {
-                        MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المختار ({currentBalance:N2} ج) لا يكفي لصرف مبلغ ({amount:N2} ج).", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المختار ({currentBalance:N2} ج) لا يكفي لصرف مبلغ ({amount:N2} ج).", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
 
@@ -1498,7 +1498,7 @@ namespace ChickenDist.Forms
                 catch { }
 
                 string actName = type == "Deposit" ? "التوريد النقدي" : (type == "Withdraw" ? "الصرف النقدي" : "التسوية النقدية");
-                MessageBox.Show($"✅ تم تسجيل حركة {actName} بنجاح وتحديث الحسابات المقابلة!");
+                MessageBox.Show($"تم تسجيل حركة {actName} بنجاح وتحديث الحسابات المقابلة!");
 
                 if (lastCashID > 0 && type != "Reconcile")
                 {
@@ -1506,7 +1506,7 @@ namespace ChickenDist.Forms
                     string formatLabel = string.Equals(defFormat, "Receipt", StringComparison.OrdinalIgnoreCase) ? "طابعة الريسيت الحراري"
                                        : (string.Equals(defFormat, "A5", StringComparison.OrdinalIgnoreCase) ? "ورق A5" : "ورق A4");
 
-                    if (MessageBox.Show($"🖨️ هل تريد طباعة سند {actName} (رقم #{lastCashID}) الآن على ({formatLabel})؟", "طباعة السند", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    if (MessageBox.Show($"هل تريد طباعة سند {actName} (رقم #{lastCashID}) الآن على ({formatLabel})؟", "طباعة السند", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                     {
                         new FrmPrintPayment(lastCashID, null, true, defFormat);
                     }
@@ -1597,9 +1597,9 @@ namespace ChickenDist.Forms
             }
 
             if (lblExpTotal != null)
-                lblExpTotal.Text = $"💵 إجمالي المصروفات: {totAmount:N2} ج.م";
+                lblExpTotal.Text = $"إجمالي المصروفات: {totAmount:N2} ج.م";
             if (lblExpCount != null)
-                lblExpCount.Text = $"📊 عدد العمليات: {count}";
+                lblExpCount.Text = $"عدد العمليات: {count}";
         }
 
         private void DgExpenses_SelectionChanged(object sender, EventArgs e)
@@ -1614,7 +1614,7 @@ namespace ChickenDist.Forms
             if (decimal.TryParse(row.Cells["Amount"].Value?.ToString(), out decimal amt)) txtExpAmount.Text = amt.ToString("N2");
             txtExpNotes.Text = row.Cells["Notes"].Value?.ToString();
 
-            // 🔒 حماية أمنية: قفل تعديل المصروفات السابقة لغير المصرح لهم
+            // حماية أمنية: قفل تعديل المصروفات السابقة لغير المصرح لهم
             bool canEditExp = Session.IsAdmin || Session.CanEdit("CashBox") || Session.CanEdit("Expenses");
             bool canDelExp  = Session.IsAdmin || Session.CanDelete("CashBox") || Session.CanDelete("Expenses");
 
@@ -1626,7 +1626,7 @@ namespace ChickenDist.Forms
             dtpExpDate.Enabled    = canEditExp;
 
             btnSaveExp.Enabled = canEditExp;
-            btnSaveExp.Text    = canEditExp ? "💾 تعديل المصروف" : "🔒 تعديل مقفل";
+            btnSaveExp.Text    = canEditExp ? "تعديل المصروف" : "تعديل مقفل";
             btnDelExp.Enabled  = canDelExp;
             
             // select vehicle if present
@@ -1674,7 +1674,7 @@ namespace ChickenDist.Forms
             if (cboExpSafeAccount != null) cboExpSafeAccount.Enabled = true;
             dtpExpDate.Enabled    = true;
             btnSaveExp.Enabled    = Session.CanAdd("CashBox") || Session.IsAdmin;
-            btnSaveExp.Text       = "💾 حفظ المصروف";
+            btnSaveExp.Text       = "حفظ المصروف";
             btnDelExp.Enabled     = false;
             dtpExpDate.Value = DateTime.Today;
             cboExpType.Text = "";
@@ -1703,7 +1703,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.IsAdmin && !Session.CanEdit("CashBox") && !Session.CanEdit("Expenses"))
                 {
-                    MessageBox.Show("⛔ غير مصرح لك بتعديل قيود المصروفات المسجلة سابقاً.\nتعديل المصروفات مقفل بصلاحية المدير العام فقط لمنع التلاعب في الخزنة.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("غير مصرح لك بتعديل قيود المصروفات المسجلة سابقاً.\nتعديل المصروفات مقفل بصلاحية المدير العام فقط لمنع التلاعب في الخزنة.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -1711,7 +1711,7 @@ namespace ChickenDist.Forms
             {
                 if (!Session.CanAdd("CashBox") && !Session.IsAdmin)
                 {
-                    MessageBox.Show("⛔ ليس لديك صلاحية حفظ المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("ليس لديك صلاحية حفظ المصروفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -1735,20 +1735,20 @@ namespace ChickenDist.Forms
             decimal currentBal = AccountDAL.GetCashBalance(targetSafeID);
             if (expAmt > currentBal && _selectedExpID == 0)
             {
-                MessageBox.Show($"⛔ غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المالي المختار هو ({currentBal:N2} ج) فقط، بينما مبلغ المصروف المطلوب تسجيله هو ({expAmt:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show($"غير مسموح بالصرف على المكشوف أو تحويل الحساب لرصيد سالب!\nرصيد الحساب المالي المختار هو ({currentBal:N2} ج) فقط، بينما مبلغ المصروف المطلوب تسجيله هو ({expAmt:N2} ج).\nيرجى توريد نقدية أولاً أو اختيار خزنة بها رصيد كافٍ.", "رصيد غير كافٍ بالخزنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             try
             {
                 int id = AccountDAL.SaveExpense(_selectedExpID, dtpExpDate.Value, cboExpType.Text, expAmt, txtExpNotes.Text, supplierID, vehicleID, safeAccountID);
-                if (id > 0) { MessageBox.Show("✅ تم الحفظ"); _selectedExpID = id; LoadExpenses(); LoadCashBox(); }
-                else MessageBox.Show("❌ فشل الحفظ");
+                if (id > 0) { MessageBox.Show("تم الحفظ"); _selectedExpID = id; LoadExpenses(); LoadCashBox(); }
+                else MessageBox.Show("فشل الحفظ");
             }
             catch (Exception ex)
             {
                 AppLogger.Error("فشل حفظ المصروف", ex, "FrmCashBox.BtnSaveExp_Click");
-                MessageBox.Show($"❌ حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"حدث خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1757,7 +1757,7 @@ namespace ChickenDist.Forms
             if (_selectedExpID == 0) return;
             if (!Session.IsAdmin && !Session.CanDelete("CashBox") && !Session.CanDelete("Expenses"))
             {
-                MessageBox.Show("⛔ غير مصرح لك بحذف قيود المصروفات. يتطلب صلاحية المدير العام.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("غير مصرح لك بحذف قيود المصروفات. يتطلب صلاحية المدير العام.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (MessageBox.Show("حذف المصروف؟", "تأكيد", MessageBoxButtons.YesNo) == DialogResult.Yes)

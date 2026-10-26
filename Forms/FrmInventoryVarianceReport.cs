@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -37,7 +37,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            Text = "📊 تقرير فروق وتسويات الجرد والعجز والزيادة والتقييم المالي";
+            Text = "تقرير فروق وتسويات الجرد والعجز والزيادة والتقييم المالي";
             Size = new Size(1250, 750);
             StartPosition = FormStartPosition.CenterScreen;
             RightToLeft = RightToLeft.Yes;
@@ -70,7 +70,7 @@ namespace ChickenDist.Forms
 
             pnlTop.Controls.Add(new Label { Text = "التصفية:", AutoSize = true, ForeColor = Theme.TextMain, Font = Theme.FontBold, Margin = new Padding(15, 10, 0, 0) });
             cboFilterType = new ComboBox { Width = 140, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboFilterType.Items.AddRange(new object[] { "--- كل الفروق ---", "🔻 عجز فقط (خسارة)", "🔺 زيادة فقط (فائض)" });
+            cboFilterType.Items.AddRange(new object[] { "--- كل الفروق ---", "عجز فقط (خسارة)", "زيادة فقط (فائض)" });
             cboFilterType.SelectedIndex = 0;
             pnlTop.Controls.Add(cboFilterType);
 
@@ -78,27 +78,27 @@ namespace ChickenDist.Forms
             txtSearch = new TextBox { Width = 140 };
             pnlTop.Controls.Add(txtSearch);
 
-            btnLoad = Theme.MakeButton("🔍 عرض التقرير", Theme.Primary);
+            btnLoad = Theme.MakeButton("عرض التقرير", Theme.Primary);
             btnLoad.Size = new Size(110, 32);
             btnLoad.Click += (s, e) => LoadReportData();
             pnlTop.Controls.Add(btnLoad);
 
-            btnPrint = Theme.MakeButton("🖨️ طباعة A4", Theme.Secondary);
+            btnPrint = Theme.MakeButton("طباعة A4", Theme.Secondary);
             btnPrint.Size = new Size(110, 32);
             btnPrint.Click += BtnPrint_Click;
             pnlTop.Controls.Add(btnPrint);
 
-            btnExport = Theme.MakeButton("📊 إكسيل", Color.FromArgb(40, 120, 60));
+            btnExport = Theme.MakeButton("إكسيل", Color.FromArgb(40, 120, 60));
             btnExport.Size = new Size(90, 32);
             btnExport.Click += BtnExport_Click;
             pnlTop.Controls.Add(btnExport);
 
-            var btnPrintSurplusBarcodes = Theme.MakeButton("🏷️ طباعة باركود الزيادات", Color.FromArgb(39, 174, 96));
+            var btnPrintSurplusBarcodes = Theme.MakeButton("طباعة باركود الزيادات", Color.FromArgb(39, 174, 96));
             btnPrintSurplusBarcodes.Size = new Size(160, 32);
             btnPrintSurplusBarcodes.Click += BtnPrintSurplusBarcodes_Click;
             pnlTop.Controls.Add(btnPrintSurplusBarcodes);
 
-            var btnSessions = Theme.MakeButton("📋 استرجاع عمليات الجرد", Color.FromArgb(70, 40, 130));
+            var btnSessions = Theme.MakeButton("استرجاع عمليات الجرد", Color.FromArgb(70, 40, 130));
             btnSessions.Size = new Size(160, 32);
             btnSessions.Click += (s, e) => new FrmInventorySessions().ShowDialog(this);
             pnlTop.Controls.Add(btnSessions);
@@ -120,19 +120,19 @@ namespace ChickenDist.Forms
 
             lblTotalShortageCost = new Label();
             lblTotalShortageQty = new Label();
-            var card1 = CreateCard("🔴 إجمالي العجز (خسارة التكلفة)", lblTotalShortageCost, lblTotalShortageQty, Color.FromArgb(140, 30, 30), Color.FromArgb(255, 235, 235));
+            var card1 = CreateCard("إجمالي العجز (خسارة التكلفة)", lblTotalShortageCost, lblTotalShortageQty, Color.FromArgb(140, 30, 30), Color.FromArgb(255, 235, 235));
 
             lblTotalSurplusCost = new Label();
             lblTotalSurplusQty = new Label();
-            var card2 = CreateCard("🟢 إجمالي الزيادة (بالتكلفة)", lblTotalSurplusCost, lblTotalSurplusQty, Color.FromArgb(25, 110, 45), Color.FromArgb(230, 250, 235));
+            var card2 = CreateCard("إجمالي الزيادة (بالتكلفة)", lblTotalSurplusCost, lblTotalSurplusQty, Color.FromArgb(25, 110, 45), Color.FromArgb(230, 250, 235));
 
             lblNetCostDiff = new Label();
             var lblNetDesc = new Label { Text = "الفرق بين الزيادة والعجز", Font = new Font("Arial", 8f), ForeColor = Color.DarkGray };
-            var card3 = CreateCard("⚖️ صافي الفارق المالي", lblNetCostDiff, lblNetDesc, Color.FromArgb(20, 80, 140), Color.FromArgb(230, 240, 255));
+            var card3 = CreateCard("صافي الفارق المالي", lblNetCostDiff, lblNetDesc, Color.FromArgb(20, 80, 140), Color.FromArgb(230, 240, 255));
 
             lblTotalShortageSale = new Label();
             var lblSaleDesc = new Label { Text = "القيمة البيعية المفقودة", Font = new Font("Arial", 8f), ForeColor = Color.DarkGray };
-            var card4 = CreateCard("🏷️ خسارة العجز (بسعر البيع)", lblTotalShortageSale, lblSaleDesc, Color.FromArgb(110, 40, 120), Color.FromArgb(245, 235, 255));
+            var card4 = CreateCard("خسارة العجز (بسعر البيع)", lblTotalShortageSale, lblSaleDesc, Color.FromArgb(110, 40, 120), Color.FromArgb(245, 235, 255));
 
             bool canSeeCost = Session.CanViewCost("Inventory");
             card1.Visible = canSeeCost;
@@ -276,14 +276,14 @@ namespace ChickenDist.Forms
                     string typeStr = "مطابق";
                     if (diff < 0)
                     {
-                        typeStr = "🔻 عجز";
+                        typeStr = "عجز";
                         totalShortageQty += Math.Abs(diff);
                         totalShortageCost += shortageLoss;
                         totalShortageSale += shortageSaleLoss;
                     }
                     else if (diff > 0)
                     {
-                        typeStr = "🔺 زيادة";
+                        typeStr = "زيادة";
                         totalSurplusQty += diff;
                         totalSurplusCost += surplusGain;
                     }
@@ -396,11 +396,11 @@ namespace ChickenDist.Forms
                         }
 
                         System.IO.File.WriteAllText(dlg.FileName, sb.ToString(), System.Text.Encoding.UTF8);
-                        Theme.ShowMsg("✅ تم تصدير التقرير بنجاح!\nيمكنك الآن فتح الملف باستخدام برنامج Excel.", "تم التصدير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Theme.ShowMsg("تم تصدير التقرير بنجاح!\nيمكنك الآن فتح الملف باستخدام برنامج Excel.", "تم التصدير بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        Theme.ShowMsg("❌ فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Theme.ShowMsg("فشل تصدير الملف:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -445,9 +445,9 @@ namespace ChickenDist.Forms
                 // Metrics summary line on page 1
                 if (_printRowIndex == 0)
                 {
-                    string shortageStr = $"{lblTotalShortageCost.Text} ({lblTotalShortageQty.Text})".Replace("🔴 ", "");
-                    string surplusStr = $"{lblTotalSurplusCost.Text}".Replace("🟢 ", "");
-                    string netStr = $"{lblNetCostDiff.Text}".Replace("⚖️ ", "");
+                    string shortageStr = $"{lblTotalShortageCost.Text} ({lblTotalShortageQty.Text})";
+                    string surplusStr = $"{lblTotalSurplusCost.Text}";
+                    string netStr = $"{lblNetCostDiff.Text}";
 
                     string summaryLine = $"إجمالي العجز: {shortageStr}   |   إجمالي الزيادة: {surplusStr}   |   الصافي: {netStr}";
                     g.DrawString(summaryLine, smallBold, Brushes.Black, new RectangleF(20, y, pageW - 40, 20), center);

@@ -48,7 +48,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = $"🏷️ طباعة باركود أصناف الفاتورة: {_purchaseCode}";
+            this.Text = $"طباعة باركود أصناف الفاتورة: {_purchaseCode}";
             this.Size = new Size(750, 610);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgMain;
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
             this.RightToLeftLayout = true;
 
             // شريط العنوان
-            var pnlTop = Theme.MakeTitleBar("🏷️ طباعة ملصقات الباركود", $"تحديد كميات الطباعة للملصقات (الافتراضي هو الكميات المشتراة) للفاتورة {_purchaseCode}");
+            var pnlTop = Theme.MakeTitleBar("طباعة ملصقات الباركود", $"تحديد كميات الطباعة للملصقات (الافتراضي هو الكميات المشتراة) للفاتورة {_purchaseCode}");
             this.Controls.Add(pnlTop);
 
             // الجدول
@@ -177,7 +177,7 @@ namespace ChickenDist.Forms
             cboBarcodeTemplate.Items.Add("كود الصنف علي العرض");
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
-                "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
+                "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "الافتراضي (اسم صنف + سعر + باركود)",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
@@ -185,12 +185,12 @@ namespace ChickenDist.Forms
                 "اسم صنف كبير + باركود (بدون سعر)"
             });
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate == "CodeOnSide" ? "كود الصنف علي العرض"
-                                            : AppConfig.BarcodeTemplate == "MobileIMEI" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
+                                            : AppConfig.BarcodeTemplate == "MobileIMEI" ? "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)"
                                             : AppConfig.BarcodeTemplate == "PriceHeavy" ? "سعر بارز (سعر كبير + باركود)"
                                             : AppConfig.BarcodeTemplate == "Small" ? "ملصق صغير (سعر وباركود فقط)"
                                             : AppConfig.BarcodeTemplate == "Shelf" ? "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)"
                                             : (AppConfig.BarcodeTemplate == "NoPrice" || AppConfig.BarcodeTemplate == "NoPriceBigName") ? "اسم صنف كبير + باركود (بدون سعر)"
-                                            : (AppConfig.BusinessType == "Mobiles" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)");
+                                            : (AppConfig.BusinessType == "Mobiles" ? "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)");
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
             this.Controls.Add(cboBarcodeTemplate);
             y += 35;
@@ -258,17 +258,17 @@ namespace ChickenDist.Forms
             y += 45;
 
             // أزرار
-            btnPrint = Theme.MakeButton("🖨️ طباعة الملصقات", 20, y, 170, 38, Theme.Success);
+            btnPrint = Theme.MakeButton("طباعة الملصقات", 20, y, 170, 38, Theme.Success);
             btnPrint.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPrint.Click += (s, e) => StartPrintJob(false);
             this.Controls.Add(btnPrint);
 
-            var btnPreview = Theme.MakeButton("🔍 معاينة", 200, y, 100, 38, Theme.Accent);
+            var btnPreview = Theme.MakeButton("معاينة", 200, y, 100, 38, Theme.Accent);
             btnPreview.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnPreview.Click += (s, e) => StartPrintJob(true);
             this.Controls.Add(btnPreview);
 
-            btnCancel = Theme.MakeButton("إلغاء ↩", 310, y, 100, 38, Color.FromArgb(70, 80, 95));
+            btnCancel = Theme.MakeButton("إلغاء", 310, y, 100, 38, Color.FromArgb(70, 80, 95));
             btnCancel.Click += (s, e) => this.Close();
             this.Controls.Add(btnCancel);
         }
@@ -304,7 +304,7 @@ namespace ChickenDist.Forms
                 if (hasAnyIMEI || AppConfig.BusinessType == "Mobiles")
                 {
                     dgItems.Columns["IMEI"].Visible = true;
-                    cboBarcodeTemplate.SelectedItem = "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)";
+                    cboBarcodeTemplate.SelectedItem = "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)";
                 }
 
                 dgItems.Rows.Clear();
@@ -422,7 +422,7 @@ namespace ChickenDist.Forms
                 else
                 {
                     AppConfig.PrintInBackground(pd);
-                    MessageBox.Show("✅ تم إرسال أمر طباعة الملصقات إلى الطابعة بنجاح.", "تم الإرسال", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم إرسال أمر طباعة الملصقات إلى الطابعة بنجاح.", "تم الإرسال", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.Close();
                 }
             }

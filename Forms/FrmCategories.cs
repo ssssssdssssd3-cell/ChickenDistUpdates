@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -84,9 +84,9 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(chkActive);
             y += 50;
 
-            btnNew = Theme.MakeButton("➕ إضافة", 175, y, 70, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("➕ حفظ", 95, y, 75, 32, Theme.Accent);
-            btnDelete = Theme.MakeButton("🗑️ إيقاف", 15, y, 75, 32, Color.FromArgb(140, 40, 40));
+            btnNew = Theme.MakeButton("إضافة", 175, y, 70, 32, Color.FromArgb(60, 100, 60));
+            btnSave = Theme.MakeButton("حفظ", 95, y, 75, 32, Theme.Accent);
+            btnDelete = Theme.MakeButton("إيقاف", 15, y, 75, 32, Color.FromArgb(140, 40, 40));
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
@@ -144,7 +144,7 @@ namespace ChickenDist.Forms
             foreach (DataRow r in dt.Rows)
             {
                 bool active = Convert.ToBoolean(r["IsActive"]);
-                int ri = dgCategories.Rows.Add(r["CategoryID"], r["CategoryName"], active ? "✓ نشط" : "✗ متوقف");
+                int ri = dgCategories.Rows.Add(r["CategoryID"], r["CategoryName"], active ? "نشط" : "متوقف");
                 if (!active)
                 {
                     dgCategories.Rows[ri].DefaultCellStyle.ForeColor = Color.Gray;
@@ -162,7 +162,7 @@ namespace ChickenDist.Forms
             txtName.Text = r["CategoryName"].ToString();
             chkActive.Checked = Convert.ToBoolean(r["IsActive"]);
             btnDelete.Enabled = true;
-            if (btnSave != null) btnSave.Text = "💾 حفظ";
+            if (btnSave != null) btnSave.Text = "حفظ";
         }
 
         private void ClearDetail()
@@ -171,14 +171,14 @@ namespace ChickenDist.Forms
             txtName.Clear();
             chkActive.Checked = true;
             btnDelete.Enabled = false;
-            if (btnSave != null) btnSave.Text = "➕ حفظ";
+            if (btnSave != null) btnSave.Text = "حفظ";
             txtName.Focus();
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (_selectedID == 0 && !Session.CanAdd("Categories")) { MessageBox.Show("⛔ ليس لديك صلاحية إضافة تصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (_selectedID > 0 && !Session.CanEdit("Categories")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل التصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID == 0 && !Session.CanAdd("Categories")) { MessageBox.Show("ليس لديك صلاحية إضافة تصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID > 0 && !Session.CanEdit("Categories")) { MessageBox.Show("ليس لديك صلاحية تعديل التصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
@@ -189,21 +189,21 @@ namespace ChickenDist.Forms
             int id = CategoryDAL.Save(_selectedID, txtName.Text.Trim(), chkActive.Checked);
             if (id > 0)
             {
-                MessageBox.Show("✅ تم الحفظ بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم الحفظ بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 _selectedID = id;
                 LoadCategories();
                 ClearDetail();
             }
             else
             {
-                MessageBox.Show("❌ فشل الحفظ.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل الحفظ.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedID == 0) return;
-            if (!Session.CanDelete("Categories")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف التصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanDelete("Categories")) { MessageBox.Show("ليس لديك صلاحية حذف التصنيفات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (MessageBox.Show("هل تريد بالتأكيد إيقاف هذا القسم؟", "تأكيد الإيقاف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {

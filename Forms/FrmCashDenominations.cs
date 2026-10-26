@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
@@ -44,7 +44,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent(decimal? expectedAmount)
         {
-            this.Text = "🧮 جرد وعد النقدية بالفئات - درج الكاشير";
+            this.Text = "جرد وعد النقدية بالفئات - درج الكاشير";
             this.Size = new Size(580, 680);
             this.MinimumSize = new Size(540, 620);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -67,7 +67,7 @@ namespace ChickenDist.Forms
 
             Label lblTitle = new Label
             {
-                Text = "💵 جرد النقدية الفعلية بالدرج بالفئات",
+                Text = "جرد النقدية الفعلية بالدرج بالفئات",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Theme.TextMain,
                 Dock = DockStyle.Top,
@@ -231,9 +231,9 @@ namespace ChickenDist.Forms
                 Padding = new Padding(15, 10, 15, 10)
             };
 
-            btnApply = Theme.MakeButton("✅ اعتماد ونقل الإجمالي للدرج", Theme.Success, new Point(0, 0), new Size(240, 42));
-            btnClear = Theme.MakeButton("🔄 تصفير العداد", Color.FromArgb(100, 110, 125), new Point(0, 0), new Size(130, 42));
-            btnCancel = Theme.MakeButton("❌ إلغاء", Theme.Danger, new Point(0, 0), new Size(100, 42));
+            btnApply = Theme.MakeButton("اعتماد ونقل الإجمالي للدرج", Theme.Success, new Point(0, 0), new Size(240, 42));
+            btnClear = Theme.MakeButton("تصفير العداد", Color.FromArgb(100, 110, 125), new Point(0, 0), new Size(130, 42));
+            btnCancel = Theme.MakeButton("إلغاء", Theme.Danger, new Point(0, 0), new Size(100, 42));
 
             btnApply.Click += (s, e) =>
             {

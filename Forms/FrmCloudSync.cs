@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
@@ -34,7 +34,7 @@ namespace ChickenDist.Forms
 
         private void InitUI()
         {
-            this.Text = "📱 تطبيق المالك وخدمات السحاب (Firebase Realtime Cloud)";
+            this.Text = "تطبيق المالك وخدمات السحاب (Firebase Realtime Cloud)";
             this.Size = new Size(1100, 820);
             this.MinimumSize = new Size(980, 720);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -54,7 +54,7 @@ namespace ChickenDist.Forms
 
             var lblTitleText = new Label
             {
-                Text = "📱 تطبيق المالك وخدمات السحاب (Firebase Realtime Cloud)",
+                Text = "تطبيق المالك وخدمات السحاب (Firebase Realtime Cloud)",
                 Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Top,
@@ -113,22 +113,22 @@ namespace ChickenDist.Forms
             };
 
             // الصف الأول: عمليات المزامنة والنشر
-            btnSyncNow = Theme.MakeButton("🔥 مزامنة ورفع البيانات لحظياً", Color.FromArgb(16, 185, 129));
+            btnSyncNow = Theme.MakeButton("مزامنة ورفع البيانات لحظياً", Color.FromArgb(16, 185, 129));
             btnSyncNow.Size = new Size(220, 36);
             btnSyncNow.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSyncNow.Click += BtnSyncNow_Click;
 
-            btnDeployFirebase = Theme.MakeButton("🚀 نشر تطبيق المالك (Deploy)", Color.FromArgb(234, 88, 12));
+            btnDeployFirebase = Theme.MakeButton("نشر تطبيق المالك (Deploy)", Color.FromArgb(234, 88, 12));
             btnDeployFirebase.Size = new Size(210, 36);
             btnDeployFirebase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnDeployFirebase.Click += BtnDeployFirebase_Click;
 
-            btnOpenMobileApp = Theme.MakeButton("📱 فتح تطبيق المالك", Color.FromArgb(147, 51, 234));
+            btnOpenMobileApp = Theme.MakeButton("فتح تطبيق المالك", Color.FromArgb(147, 51, 234));
             btnOpenMobileApp.Size = new Size(160, 36);
             btnOpenMobileApp.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnOpenMobileApp.Click += BtnOpenMobileApp_Click;
 
-            btnCopyUrl = Theme.MakeButton("📋 نسخ الرابط", Color.FromArgb(2, 132, 199));
+            btnCopyUrl = Theme.MakeButton("نسخ الرابط", Color.FromArgb(2, 132, 199));
             btnCopyUrl.Size = new Size(110, 36);
             btnCopyUrl.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCopyUrl.Click += (s, e) =>
@@ -137,43 +137,43 @@ namespace ChickenDist.Forms
                 if (!string.IsNullOrEmpty(u))
                 {
                     Clipboard.SetText(u);
-                    MessageBox.Show("✅ تم نسخ رابط تطبيق المالك إلى الحافظة بنجاح:\n" + u, "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم نسخ رابط تطبيق المالك إلى الحافظة بنجاح:\n" + u, "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
 
-            btnSave = Theme.MakeButton("💾 حفظ الإعدادات", Color.FromArgb(71, 85, 105));
+            btnSave = Theme.MakeButton("حفظ الإعدادات", Color.FromArgb(71, 85, 105));
             btnSave.Size = new Size(120, 36);
             btnSave.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnSave.Click += BtnSave_Click;
 
             // الصف الثاني: أدوات التثبيت وتسجيل الدخول وإنشاء الملفات
-            btnInstallTools = Theme.MakeButton("📦 تثبيت أداة Firebase Tools", Color.FromArgb(79, 70, 229));
+            btnInstallTools = Theme.MakeButton("تثبيت أداة Firebase Tools", Color.FromArgb(79, 70, 229));
             btnInstallTools.Size = new Size(220, 36);
             btnInstallTools.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnInstallTools.Click += BtnInstallFirebaseTools_Click;
 
-            btnLoginFirebase = Theme.MakeButton("🔑 تسجيل دخول فيربيز (Firebase Login)", Color.FromArgb(13, 148, 136));
+            btnLoginFirebase = Theme.MakeButton("تسجيل دخول فيربيز (Firebase Login)", Color.FromArgb(13, 148, 136));
             btnLoginFirebase.Size = new Size(270, 36);
             btnLoginFirebase.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnLoginFirebase.Click += BtnLoginFirebase_Click;
 
-            btnEnsureFiles = Theme.MakeButton("🔄 تهيئة ملفات firebase.json", Color.FromArgb(37, 99, 235));
+            btnEnsureFiles = Theme.MakeButton("تهيئة ملفات firebase.json", Color.FromArgb(37, 99, 235));
             btnEnsureFiles.Size = new Size(210, 36);
             btnEnsureFiles.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnEnsureFiles.Click += BtnEnsureFiles_Click;
 
-            btnCloudBackup = Theme.MakeButton("💾 عمل ورفع نسخة احتياطية سحابية الآن", Color.FromArgb(13, 148, 136));
+            btnCloudBackup = Theme.MakeButton("عمل ورفع نسخة احتياطية سحابية الآن", Color.FromArgb(13, 148, 136));
             btnCloudBackup.Size = new Size(270, 36);
             btnCloudBackup.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnCloudBackup.Click += BtnCloudBackup_Click;
 
-            var btnOnlineStore = Theme.MakeButton("🌐 إعدادات المتجر الإلكتروني", Color.FromArgb(56, 189, 248));
+            var btnOnlineStore = Theme.MakeButton("إعدادات المتجر الإلكتروني", Color.FromArgb(56, 189, 248));
             btnOnlineStore.Size = new Size(190, 36);
             btnOnlineStore.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnOnlineStore.ForeColor = Color.Black;
             btnOnlineStore.Click += (s, e) => new FrmOnlineStoreSettings().ShowDialog();
 
-            var btnOpenOrders = Theme.MakeButton("🛒 طلبات المتجر أونلاين", Color.FromArgb(244, 63, 94));
+            var btnOpenOrders = Theme.MakeButton("طلبات المتجر أونلاين", Color.FromArgb(244, 63, 94));
             btnOpenOrders.Size = new Size(160, 36);
             btnOpenOrders.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             btnOpenOrders.Click += (s, e) => new FrmOnlineOrders().ShowDialog();
@@ -194,7 +194,7 @@ namespace ChickenDist.Forms
 
             var grpSettings = new GroupBox
             {
-                Text = "⚙️ إعدادات حساب Firebase الخاص بالعميل والتزامن اللحظي",
+                Text = "إعدادات حساب Firebase الخاص بالعميل والتزامن اللحظي",
                 Dock = DockStyle.Top,
                 Height = 230,
                 ForeColor = Color.FromArgb(56, 189, 248),
@@ -230,7 +230,7 @@ namespace ChickenDist.Forms
             cboInterval.Items.AddRange(new object[] { "كل 15 دقيقة (موصى به)", "كل 30 دقيقة", "كل ساعة", "كل ساعتين" });
             cboInterval.SelectedIndex = 1;
 
-            lblLastSyncTime = new Label { Text = "🕒 آخر تحديث: لم تتم بعد", AutoSize = true, ForeColor = Color.FromArgb(52, 211, 153), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Padding = new Padding(10, 4, 0, 0) };
+            lblLastSyncTime = new Label { Text = "آخر تحديث: لم تتم بعد", AutoSize = true, ForeColor = Color.FromArgb(52, 211, 153), Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), Padding = new Padding(10, 4, 0, 0) };
             pnlIntRow.Controls.Add(cboInterval);
             pnlIntRow.Controls.Add(lblLastSyncTime);
 
@@ -238,7 +238,7 @@ namespace ChickenDist.Forms
             var pnlCredRow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
             var lblCredBadge = new Label 
             { 
-                Text = "🔑 اسم المستخدم: admin    |    كلمة المرور: 2468", 
+                Text = "اسم المستخدم: admin    |    كلمة المرور: 2468", 
                 AutoSize = true, 
                 ForeColor = Color.FromArgb(250, 204, 21), 
                 BackColor = Color.FromArgb(30, 41, 59),
@@ -246,15 +246,15 @@ namespace ChickenDist.Forms
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Padding = new Padding(8, 4, 8, 4)
             };
-            var btnCopyCred = Theme.MakeButton("📋 نسخ الرابط والبيانات للعميل", Color.FromArgb(16, 185, 129));
+            var btnCopyCred = Theme.MakeButton("نسخ الرابط والبيانات للعميل", Color.FromArgb(16, 185, 129));
             btnCopyCred.Size = new Size(200, 32);
             btnCopyCred.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnCopyCred.Click += (s, e) =>
             {
                 string u = lblLiveWebUrl.Text.Trim();
-                string txt = $"📱 تطبيق المالك ProSoft Cloud:\nالرابط: {u}\nاسم المستخدم: admin\nكلمة المرور: 2468";
+                string txt = $"تطبيق المالك ProSoft Cloud:\nالرابط: {u}\nاسم المستخدم: admin\nكلمة المرور: 2468";
                 Clipboard.SetText(txt);
-                MessageBox.Show("✅ تم نسخ رابط وبيانات دخول تطبيق المالك بنجاح لإرسالها للعميل:\n\n" + txt, "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ رابط وبيانات دخول تطبيق المالك بنجاح لإرسالها للعميل:\n\n" + txt, "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             pnlCredRow.Controls.Add(lblCredBadge);
             pnlCredRow.Controls.Add(btnCopyCred);
@@ -270,7 +270,7 @@ namespace ChickenDist.Forms
             // Group: Deploy & Log Box
             var grpDeploy = new GroupBox
             {
-                Text = "🚀 سجل نشر وتهيئة تطبيق المالك على Firebase (Deploy Log)",
+                Text = "سجل نشر وتهيئة تطبيق المالك على Firebase (Deploy Log)",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(245, 158, 11),
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
@@ -366,9 +366,9 @@ namespace ChickenDist.Forms
                     cboInterval.SelectedIndex = interval <= 15 ? 0 : interval <= 30 ? 1 : interval <= 60 ? 2 : 3;
 
                     if (r["LastSyncDate"] != DBNull.Value)
-                        lblLastSyncTime.Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: " + Convert.ToDateTime(r["LastSyncDate"]).ToString("yyyy-MM-dd HH:mm:ss");
+                        lblLastSyncTime.Text = "تاريخ وساعة آخر تحديث ومزامنة: " + Convert.ToDateTime(r["LastSyncDate"]).ToString("yyyy-MM-dd HH:mm:ss");
                     else
-                        lblLastSyncTime.Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: لم تتم بعد";
+                        lblLastSyncTime.Text = "تاريخ وساعة آخر تحديث ومزامنة: لم تتم بعد";
                 }
             }
             catch (Exception ex)
@@ -407,7 +407,7 @@ namespace ChickenDist.Forms
         private async void BtnSyncNow_Click(object sender, EventArgs e)
         {
             btnSyncNow.Enabled = false;
-            btnSyncNow.Text = "⏳ جاري الرفع والمزامنة...";
+            btnSyncNow.Text = "جاري الرفع والمزامنة...";
 
             try
             {
@@ -417,7 +417,7 @@ namespace ChickenDist.Forms
                     MessageBox.Show("يرجى كتابة معرّف مشروع Firebase الخاص بحساب هذا العميل (Project ID) أولاً لحفظ البيانات ومزامنتها في سحابته الخاصة بأمان.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtFirebaseProjectId.Focus();
                     btnSyncNow.Enabled = true;
-                    btnSyncNow.Text = "🚀 مزامنة ورفع فوري الآن";
+                    btnSyncNow.Text = "مزامنة ورفع فوري الآن";
                     return;
                 }
 
@@ -426,25 +426,25 @@ namespace ChickenDist.Forms
 
                 if (ok)
                 {
-                    lblLastSyncTime.Text = "🕒 تاريخ وساعة آخر تحديث ومزامنة: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    lblSyncStatus.Text = "متصل بنجاح 🔥";
-                    MessageBox.Show($"✅ تم رفع ومزامنة كافة بيانات وتقارير المحل لحظياً بنجاح إلى Firebase للمشروع:\n({projectId})\n\nيمكن للمالك فتح التطبيق الآن ومتابعة البيانات مباشرة!", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    lblLastSyncTime.Text = "تاريخ وساعة آخر تحديث ومزامنة: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    lblSyncStatus.Text = "متصل بنجاح";
+                    MessageBox.Show($"تم رفع ومزامنة كافة بيانات وتقارير المحل لحظياً بنجاح إلى Firebase للمشروع:\n({projectId})\n\nيمكن للمالك فتح التطبيق الآن ومتابعة البيانات مباشرة!", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
-                    MessageBox.Show("⚠️ لم تكتمل المزامنة. يرجى التأكد من اتصال الإنترنت وصحة معرّف المشروع (Project ID).", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("لم تكتمل المزامنة. يرجى التأكد من اتصال الإنترنت وصحة معرّف المشروع (Project ID).", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
                 RefreshLiveStats();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ خطأ أثناء المزامنة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("خطأ أثناء المزامنة:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 btnSyncNow.Enabled = true;
-                btnSyncNow.Text = "🔥 مزامنة ورفع كافة البيانات لحظياً الآن";
+                btnSyncNow.Text = "مزامنة ورفع كافة البيانات لحظياً الآن";
             }
         }
 
@@ -461,7 +461,7 @@ namespace ChickenDist.Forms
             if (confirm != DialogResult.Yes) return;
 
             btnCloudBackup.Enabled = false;
-            btnCloudBackup.Text = "⏳ جاري النسخ والرفع السحابي...";
+            btnCloudBackup.Text = "جاري النسخ والرفع السحابي...";
 
             Task.Run(() =>
             {
@@ -474,12 +474,12 @@ namespace ChickenDist.Forms
                 this.BeginInvoke((MethodInvoker)(() =>
                 {
                     btnCloudBackup.Enabled = true;
-                    btnCloudBackup.Text = "💾 عمل ورفع نسخة احتياطية سحابية الآن";
+                    btnCloudBackup.Text = "عمل ورفع نسخة احتياطية سحابية الآن";
                     RefreshLiveStats();
                     if (ok)
                     {
                         MessageBox.Show(
-                            "✅ تم إنشاء النسخة الاحتياطية وضغطها ورفعها للسحابة بنجاح!\n\nيمكنك الآن فتح تطبيق المالك وتحميلها بنقرة واحدة.",
+                            "تم إنشاء النسخة الاحتياطية وضغطها ورفعها للسحابة بنجاح!\n\nيمكنك الآن فتح تطبيق المالك وتحميلها بنقرة واحدة.",
                             "نجاح النسخ الاحتياطي السحابي",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information,
@@ -489,7 +489,7 @@ namespace ChickenDist.Forms
                     else
                     {
                         MessageBox.Show(
-                            "❌ فشل عمل النسخة الاحتياطية أو رفعها للسحابة. يرجى مراجعة سجل البرنامج.",
+                            "فشل عمل النسخة الاحتياطية أو رفعها للسحابة. يرجى مراجعة سجل البرنامج.",
                             "خطأ",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Error,
@@ -509,11 +509,11 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            var dr = MessageBox.Show($"هل تريد نشر وتحديث استضافة تطبيق المالك (Dedicated Hosting) على مشروع فيربيز الخاص بالعميل:\n\n🔥 {projectId}\n\n💡 ملاحظة: تطبيق المالك يعمل بالفعل دون حاجة للنشر عبر الرابط:\nhttps://checkin-192ab.web.app/?p={projectId}", "تأكيد النشر", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var dr = MessageBox.Show($"هل تريد نشر وتحديث استضافة تطبيق المالك (Dedicated Hosting) على مشروع فيربيز الخاص بالعميل:\n\n{projectId}\n\nملاحظة: تطبيق المالك يعمل بالفعل دون حاجة للنشر عبر الرابط:\nhttps://checkin-192ab.web.app/?p={projectId}", "تأكيد النشر", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (dr != DialogResult.Yes) return;
 
             btnDeployFirebase.Enabled = false;
-            btnDeployFirebase.Text = "⏳ جاري التحديث والنشر...";
+            btnDeployFirebase.Text = "جاري التحديث والنشر...";
             txtDeployLog.Text = $"=== بدء عملية تحديث ونشر تطبيق المالك (Deploy) للمشروع: {projectId} ===\r\n";
 
             try
@@ -531,7 +531,7 @@ namespace ChickenDist.Forms
 
                 if (!Directory.Exists(mobileAppDir))
                 {
-                    txtDeployLog.AppendText($"❌ مجلد ملفات الموبايل MobileApp غير موجود: {mobileAppDir}\r\n");
+                    txtDeployLog.AppendText($"مجلد ملفات الموبايل MobileApp غير موجود: {mobileAppDir}\r\n");
                     return;
                 }
 
@@ -539,13 +539,13 @@ namespace ChickenDist.Forms
                 string firebaseCmd = FindFirebaseCLI();
                 if (string.IsNullOrEmpty(firebaseCmd))
                 {
-                    txtDeployLog.AppendText("❌ لم يتم العثور على Firebase CLI!\r\n");
+                    txtDeployLog.AppendText("لم يتم العثور على Firebase CLI!\r\n");
                     txtDeployLog.AppendText("يرجى تثبيت Node.js ثم تشغيل:\r\n");
                     txtDeployLog.AppendText("   npm install -g firebase-tools\r\n");
                     txtDeployLog.AppendText("ثم تسجيل الدخول عبر:\r\n");
                     txtDeployLog.AppendText("   firebase login\r\n");
                     MessageBox.Show(
-                        "❌ Firebase CLI غير موجود!\r\n\r\nخطوات الإعداد:\r\n1. ثبّت Node.js من: https://nodejs.org\r\n2. افتح CMD وشغّل: npm install -g firebase-tools\r\n3. ثم: firebase login\r\n4. بعدها اضغط نشر مرة ثانية",
+                        "Firebase CLI غير موجود!\r\n\r\nخطوات الإعداد:\r\n1. ثبّت Node.js من: https://nodejs.org\r\n2. افتح CMD وشغّل: npm install -g firebase-tools\r\n3. ثم: firebase login\r\n4. بعدها اضغط نشر مرة ثانية",
                         "مطلوب إعداد Firebase CLI", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -602,17 +602,17 @@ namespace ChickenDist.Forms
 
                         string appUrl = $"https://{projectId}.web.app";
                         txtDeployLog.AppendText($"\r\n==========================================\r\n");
-                        txtDeployLog.AppendText($"✅ تم نشر وتحديث تطبيق المالك ومزامنة البيانات بنجاح!\r\n");
-                        txtDeployLog.AppendText($"🔗 رابط تطبيق المالك: {appUrl}\r\n");
+                        txtDeployLog.AppendText($"تم نشر وتحديث تطبيق المالك ومزامنة البيانات بنجاح!\r\n");
+                        txtDeployLog.AppendText($"رابط تطبيق المالك: {appUrl}\r\n");
                         txtDeployLog.AppendText($"==========================================\r\n");
                         Clipboard.SetText(appUrl);
                         MessageBox.Show(
-                            $"✅ تم تحديث ونشر تطبيق المالك ومزامنة البيانات بنجاح!\r\n\r\n🔗 رابط التطبيق:\r\n{appUrl}\r\n\r\n(تم نسخ الرابط تلقائياً للحافظة)",
+                            $"تم تحديث ونشر تطبيق المالك ومزامنة البيانات بنجاح!\r\n\r\nرابط التطبيق:\r\n{appUrl}\r\n\r\n(تم نسخ الرابط تلقائياً للحافظة)",
                             "نجاح النشر والتحديث", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        txtDeployLog.AppendText($"\r\n❌ انتهت عملية النشر بكود: {proc.ExitCode}\r\n");
+                        txtDeployLog.AppendText($"\r\nانتهت عملية النشر بكود: {proc.ExitCode}\r\n");
                         txtDeployLog.AppendText("\r\nالأسباب المحتملة:\r\n");
                         txtDeployLog.AppendText("• المشروع غير موجود في Firebase Console (يجب إنشاؤه أولاً)\r\n");
                         txtDeployLog.AppendText("• لم يتم تسجيل الدخول (شغّل: firebase login)\r\n");
@@ -622,20 +622,20 @@ namespace ChickenDist.Forms
             }
             catch (Exception ex)
             {
-                txtDeployLog.AppendText($"\r\n❌ استثناء أثناء النشر: {ex.Message}\r\n");
+                txtDeployLog.AppendText($"\r\nاستثناء أثناء النشر: {ex.Message}\r\n");
                 MessageBox.Show("خطأ أثناء النشر: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 btnDeployFirebase.Enabled = true;
-                btnDeployFirebase.Text = "🚀 نشر تطبيق المالك (Deploy)";
+                btnDeployFirebase.Text = "نشر تطبيق المالك (Deploy)";
             }
         }
 
         private async void BtnInstallFirebaseTools_Click(object sender, EventArgs e)
         {
             btnInstallTools.Enabled = false;
-            btnInstallTools.Text = "⏳ جاري التثبيت...";
+            btnInstallTools.Text = "جاري التثبيت...";
             txtDeployLog.Text = "=== بدء تثبيت أداة Firebase Tools (npm install -g firebase-tools) ===\r\n";
             txtDeployLog.AppendText("يرجى الانتظار، جاري تحميل وتثبيت حزمة الأدوات عبر Node.js...\r\n");
 
@@ -646,7 +646,7 @@ namespace ChickenDist.Forms
                 string npmCmd = FindNpmCLI();
                 if (string.IsNullOrEmpty(npmCmd))
                 {
-                    txtDeployLog.AppendText("❌ لم يتم العثور على Node.js / npm على هذا الجهاز!\r\n");
+                    txtDeployLog.AppendText("لم يتم العثور على Node.js / npm على هذا الجهاز!\r\n");
                     txtDeployLog.AppendText("يرجى تثبيت Node.js أولاً من الموقع الرسمي: https://nodejs.org\r\n");
                     var res = MessageBox.Show(
                         "لم يتم العثور على Node.js على هذا الجهاز!\n\nهل ترغب في فتح موقع Node.js الرسمي لتحميله وتثبيته الآن؟",
@@ -703,26 +703,26 @@ namespace ChickenDist.Forms
                     if (proc.ExitCode == 0)
                     {
                         txtDeployLog.AppendText("\r\n==========================================\r\n");
-                        txtDeployLog.AppendText("✅ تم تثبيت أداة Firebase Tools بنجاح!\r\n");
-                        txtDeployLog.AppendText("الخطوة التالية: اضغط على زر '🔑 تسجيل دخول فيربيز (Firebase Login)' لربط حساب Google.\r\n");
+                        txtDeployLog.AppendText("تم تثبيت أداة Firebase Tools بنجاح!\r\n");
+                        txtDeployLog.AppendText("الخطوة التالية: اضغط على زر 'تسجيل دخول فيربيز (Firebase Login)' لربط حساب Google.\r\n");
                         txtDeployLog.AppendText("==========================================\r\n");
-                        MessageBox.Show("✅ تم تثبيت أداة Firebase Tools بنجاح على الجهاز!\n\nالخطوة التالية: اضغط على زر 'تسجيل دخول فيربيز' لربط الحساب.", "نجاح التثبيت", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم تثبيت أداة Firebase Tools بنجاح على الجهاز!\n\nالخطوة التالية: اضغط على زر 'تسجيل دخول فيربيز' لربط الحساب.", "نجاح التثبيت", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        txtDeployLog.AppendText($"\r\n⚠️ انتهى التثبيت بكود: {proc.ExitCode}\r\n");
+                        txtDeployLog.AppendText($"\r\nانتهى التثبيت بكود: {proc.ExitCode}\r\n");
                     }
                 }
             }
             catch (Exception ex)
             {
-                txtDeployLog.AppendText($"\r\n❌ خطأ أثناء تثبيت Firebase Tools: {ex.Message}\r\n");
+                txtDeployLog.AppendText($"\r\nخطأ أثناء تثبيت Firebase Tools: {ex.Message}\r\n");
                 MessageBox.Show("خطأ أثناء التثبيت: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 btnInstallTools.Enabled = true;
-                btnInstallTools.Text = "📦 تثبيت أداة Firebase Tools";
+                btnInstallTools.Text = "تثبيت أداة Firebase Tools";
             }
         }
 
@@ -761,11 +761,11 @@ namespace ChickenDist.Forms
                 };
 
                 Process.Start(psi);
-                txtDeployLog.AppendText("✅ تم فتح نافذة تسجيل الدخول. يرجى إتمام التسجيل في المتصفح والعودة للبرنامج.\r\n");
+                txtDeployLog.AppendText("تم فتح نافذة تسجيل الدخول. يرجى إتمام التسجيل في المتصفح والعودة للبرنامج.\r\n");
             }
             catch (Exception ex)
             {
-                txtDeployLog.AppendText($"❌ خطأ أثناء فتح نافذة تسجيل الدخول: {ex.Message}\r\n");
+                txtDeployLog.AppendText($"خطأ أثناء فتح نافذة تسجيل الدخول: {ex.Message}\r\n");
                 MessageBox.Show("خطأ أثناء تسجيل الدخول: " + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -776,8 +776,8 @@ namespace ChickenDist.Forms
             {
                 CloudSyncService.EnsureMobileAppFiles();
                 string mobileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MobileApp");
-                txtDeployLog.AppendText("✅ تم توليد وتحديث ملفات firebase.json و index.html في المجلد:\r\n" + mobileDir + "\r\n");
-                MessageBox.Show($"✅ تم التأكد وإنشاء ملفات:\n- MobileApp/firebase.json\n- MobileApp/index.html\n- firebase.json\n\nبنجاح داخل مسار البرنامج!", "تهيئة الملفات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                txtDeployLog.AppendText("تم توليد وتحديث ملفات firebase.json و index.html في المجلد:\r\n" + mobileDir + "\r\n");
+                MessageBox.Show($"تم التأكد وإنشاء ملفات:\n- MobileApp/firebase.json\n- MobileApp/index.html\n- firebase.json\n\nبنجاح داخل مسار البرنامج!", "تهيئة الملفات", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -919,11 +919,11 @@ namespace ChickenDist.Forms
                 else
                     CloudSyncService.StopAutoBackgroundSync();
 
-                MessageBox.Show("✅ تم حفظ إعدادات تطبيق المالك وربط Firebase بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم حفظ إعدادات تطبيق المالك وربط Firebase بنجاح!", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("❌ حدث خطأ أثناء الحفظ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("حدث خطأ أثناء الحفظ:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

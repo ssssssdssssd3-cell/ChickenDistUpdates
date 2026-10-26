@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
@@ -29,7 +29,7 @@ namespace ChickenDist.Forms
 
         public FrmAccountantPortal()
         {
-            this.Text             = "📡 بوابة مزامنة المحاسب";
+            this.Text             = "بوابة مزامنة المحاسب";
             this.Size             = new Size(720, 600);
             this.StartPosition    = FormStartPosition.CenterParent;
             this.BackColor        = Theme.BgMain;
@@ -60,7 +60,7 @@ namespace ChickenDist.Forms
 
         private void BuildUI()
         {
-            var pnlTop = Theme.MakeTitleBar("📡 بوابة طلبات وحجوزات المحاسب",
+            var pnlTop = Theme.MakeTitleBar("بوابة طلبات وحجوزات المحاسب",
                 "طرق مزامنة وتوصيل البيانات للمحاسب — سحابي (كود) أو واي فاي محلي أو ملف مباشر");
             this.Controls.Add(pnlTop);
 
@@ -79,7 +79,7 @@ namespace ChickenDist.Forms
 
         private TabPage BuildCloudTab()
         {
-            var page = new TabPage("🌐  مزامنة سحابية (الإنترنت)");
+            var page = new TabPage("مزامنة سحابية (الإنترنت)");
             page.BackColor = Theme.BgMain;
             page.RightToLeft = RightToLeft.Yes;
 
@@ -87,11 +87,11 @@ namespace ChickenDist.Forms
 
             var lblInfo = new Label
             {
-                Text = "📋 الطريقة السحابية:\n" +
-                       "① اضغط «رفع وتوليد رمز المزامنة» ← سيظهر رمز سحابي فريد للبيانات\n" +
-                       "② أرسل الرمز للمحاسب (أو انسخ الرسالة الجاهزة للواتساب)\n" +
-                       "③ يفتح المحاسب صفحة الطلبات ← يكتب الرمز ← يضغط «سحب»\n" +
-                       "⏰ كود المزامنة السحابي صالح للاستخدام لمدة 24 ساعة",
+                Text = "الطريقة السحابية:\n" +
+                       "1- اضغط «رفع وتوليد رمز المزامنة» - سيظهر رمز سحابي فريد للبيانات\n" +
+                       "2- أرسل الرمز للمحاسب (أو انسخ الرسالة الجاهزة للواتساب)\n" +
+                       "3- يفتح المحاسب صفحة الطلبات - يكتب الرمز - يضغط «سحب»\n" +
+                       "كود المزامنة السحابي صالح للاستخدام لمدة 24 ساعة",
                 Location  = new Point(14, y),
                 Size      = new Size(645, 95),
                 ForeColor = Theme.TextSub,
@@ -101,7 +101,7 @@ namespace ChickenDist.Forms
             page.Controls.Add(lblInfo);
             y += 108;
 
-            btnUploadCloud = Theme.MakeButton("☁️  رفع وتوليد رمز المزامنة للعملاء والأصناف", Color.FromArgb(14, 122, 200));
+            btnUploadCloud = Theme.MakeButton("رفع وتوليد رمز المزامنة للعملاء والأصناف", Color.FromArgb(14, 122, 200));
             btnUploadCloud.Location = new Point(14, y);
             btnUploadCloud.Size     = new Size(645, 46);
             btnUploadCloud.Font     = new Font("Segoe UI", 14f, FontStyle.Bold);
@@ -143,27 +143,27 @@ namespace ChickenDist.Forms
             page.Controls.Add(lblCloudExpiry);
             y += 28;
 
-            btnCopyCode = Theme.MakeButton("📋  نسخ الرمز", Color.FromArgb(37, 170, 90));
+            btnCopyCode = Theme.MakeButton("نسخ الرمز", Color.FromArgb(37, 170, 90));
             btnCopyCode.Location = new Point(14, y);
             btnCopyCode.Size     = new Size(310, 38);
             btnCopyCode.Click   += (s, e) => CopyCode();
             btnCopyCode.Enabled  = false;
             page.Controls.Add(btnCopyCode);
 
-            var btnWhatsApp = Theme.MakeButton("📲  إرسال للمحاسب عبر واتساب", Color.FromArgb(37, 211, 102));
+            var btnWhatsApp = Theme.MakeButton("إرسال للمحاسب عبر واتساب", Color.FromArgb(37, 211, 102));
             btnWhatsApp.Location = new Point(340, y);
             btnWhatsApp.Size     = new Size(319, 38);
             btnWhatsApp.Click   += (s, e) =>
             {
                 if (!string.IsNullOrEmpty(DriverPortalServer.LastCloudCode) && DriverPortalServer.LastCloudCode != "——")
                 {
-                    string msg = $"💼 رمز مزامنة كارت الأصناف والعملاء للمحاسب: {DriverPortalServer.LastCloudCode}\n\n" +
+                    string msg = $"رمز مزامنة كارت الأصناف والعملاء للمحاسب: {DriverPortalServer.LastCloudCode}\n\n" +
                                  $"رابط صفحة الحجوزات والطلبات:\n" +
                                  $"https://raw.githack.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist/Forms/accountant_orders.html\n\n" +
-                                 $"افتح الرابط ← سحب سحابي من الإنترنت ← اكتب الرمز\n" +
-                                 $"⏰ الرمز صالح لمدة 24 ساعة.";
+                                 $"افتح الرابط - سحب سحابي من الإنترنت - اكتب الرمز\n" +
+                                 $"الرمز صالح لمدة 24 ساعة.";
                     Clipboard.SetText(msg);
-                    MessageBox.Show("✅ تم نسخ الرسالة الجاهزة!\nقم بلصق النص للمحاسب في محادثة الواتساب.",
+                    MessageBox.Show("تم نسخ الرسالة الجاهزة!\nقم بلصق النص للمحاسب في محادثة الواتساب.",
                         "جاهز", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     System.Diagnostics.Process.Start("https://web.whatsapp.com");
                 }
@@ -178,7 +178,7 @@ namespace ChickenDist.Forms
 
             var lblDriverLinkTitle = new Label
             {
-                Text      = "🔗 رابط صفحة المحاسب (يمكن فتحها من المتصفح مباشرة):",
+                Text      = "رابط صفحة المحاسب (يمكن فتحها من المتصفح مباشرة):",
                 Location  = new Point(14, y),
                 Size      = new Size(645, 20),
                 ForeColor = Theme.TextSub,
@@ -200,18 +200,18 @@ namespace ChickenDist.Forms
             };
             page.Controls.Add(txtDriverLink);
 
-            var btnCopyLink = Theme.MakeButton("📋 نسخ الرابط", Color.FromArgb(70, 80, 95));
+            var btnCopyLink = Theme.MakeButton("نسخ الرابط", Color.FromArgb(70, 80, 95));
             btnCopyLink.Location = new Point(424, y - 1);
             btnCopyLink.Size     = new Size(110, 28);
             btnCopyLink.Font     = new Font("Segoe UI", 9f, FontStyle.Bold);
             btnCopyLink.Click   += (s, e) =>
             {
                 Clipboard.SetText("https://raw.githack.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist/Forms/accountant_orders.html");
-                MessageBox.Show("✅ تم نسخ الرابط السحابي إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم نسخ الرابط السحابي إلى الحافظة!", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             page.Controls.Add(btnCopyLink);
 
-            var btnOpenFile = Theme.MakeButton("📂 فتح الملف المحلي", Color.FromArgb(120, 80, 30));
+            var btnOpenFile = Theme.MakeButton("فتح الملف المحلي", Color.FromArgb(120, 80, 30));
             btnOpenFile.Location = new Point(540, y - 1);
             btnOpenFile.Size     = new Size(120, 28);
             btnOpenFile.Font     = new Font("Segoe UI", 9f, FontStyle.Bold);
@@ -234,7 +234,7 @@ namespace ChickenDist.Forms
 
         private TabPage BuildLocalTab()
         {
-            var page = new TabPage("📶  مزامنة Wi-Fi محلي (نفس الشبكة)");
+            var page = new TabPage("مزامنة Wi-Fi محلي (نفس الشبكة)");
             page.BackColor = Theme.BgMain;
             page.RightToLeft = RightToLeft.Yes;
 
@@ -284,13 +284,13 @@ namespace ChickenDist.Forms
             page.Controls.Add(chkAutoStart);
             y += 72;
 
-            btnStartServer = Theme.MakeButton("▶ تشغيل الخادم", Color.FromArgb(14, 122, 55));
+            btnStartServer = Theme.MakeButton("تشغيل الخادم", Color.FromArgb(14, 122, 55));
             btnStartServer.Location = new Point(14, y);
             btnStartServer.Size     = new Size(190, 36);
             btnStartServer.Click   += (s, e) => StartServer();
             page.Controls.Add(btnStartServer);
 
-            btnStopServer = Theme.MakeButton("⏹ إيقاف الخادم", Color.FromArgb(160, 30, 30));
+            btnStopServer = Theme.MakeButton("إيقاف الخادم", Color.FromArgb(160, 30, 30));
             btnStopServer.Location = new Point(210, y);
             btnStopServer.Size     = new Size(190, 36);
             btnStopServer.Click   += (s, e) => StopServer();
@@ -319,7 +319,7 @@ namespace ChickenDist.Forms
 
             var lblQRTitle = new Label
             {
-                Text      = "📱 كود QR — امسحه بجوال المحاسب للوصول المباشر لصفحة التسجيل عبر الشبكة:",
+                Text      = "كود QR — امسحه بجوال المحاسب للوصول المباشر لصفحة التسجيل عبر الشبكة:",
                 Location  = new Point(14, y),
                 Size      = new Size(640, 22),
                 ForeColor = Theme.TextSub,
@@ -340,7 +340,7 @@ namespace ChickenDist.Forms
 
             var lblLog = new Label
             {
-                Text     = "📋 سجل الاتصالات:",
+                Text     = "سجل الاتصالات:",
                 Location = new Point(228, y),
                 AutoSize = true,
                 ForeColor= Theme.TextSub
@@ -381,7 +381,7 @@ namespace ChickenDist.Forms
                 DriverPortalServer.Start(port);
                 RefreshServerStatus();
                 RefreshQR();
-                rtbLog?.AppendText($"[{DateTime.Now:HH:mm:ss}] ✅ الخادم يعمل على المنفذ {port}\n");
+                rtbLog?.AppendText($"[{DateTime.Now:HH:mm:ss}] الخادم يعمل على المنفذ {port}\n");
             }
             catch (Exception ex)
             {
@@ -394,7 +394,7 @@ namespace ChickenDist.Forms
             DriverPortalServer.Stop();
             RefreshServerStatus();
             picQR.Image = null;
-            rtbLog?.AppendText($"[{DateTime.Now:HH:mm:ss}] ⏹ الخادم متوقف\n");
+            rtbLog?.AppendText($"[{DateTime.Now:HH:mm:ss}] الخادم متوقف\n");
         }
 
         private void RefreshServerStatus()
@@ -403,7 +403,7 @@ namespace ChickenDist.Forms
             bool running = DriverPortalServer.IsRunning;
             btnStartServer.Enabled  = !running;
             btnStopServer.Enabled   =  running;
-            lblServerStatus.Text    = running ? "🟢 الخادم نشط" : "🔴 الخادم متوقف";
+            lblServerStatus.Text    = running ? "الخادم نشط" : "الخادم متوقف";
             lblServerStatus.ForeColor = running ? Color.FromArgb(0, 210, 100) : Color.FromArgb(200, 60, 60);
         }
 
@@ -427,27 +427,27 @@ namespace ChickenDist.Forms
         private async void BtnUploadCloud_Click(object sender, EventArgs e)
         {
             btnUploadCloud.Enabled = false;
-            btnUploadCloud.Text    = "⏳ جاري الرفع...";
-            lblCloudCode.Text      = "⏳";
+            btnUploadCloud.Text    = "جاري الرفع...";
+            lblCloudCode.Text      = "...";
             lblCloudExpiry.Text    = "جارٍ رفع البيانات للإنترنت — انتظر...";
 
             try
             {
                 string code = await Task.Run(() => DriverPortalServer.UploadToCloud());
                 lblCloudCode.Text   = code;
-                lblCloudExpiry.Text = $"⏰ الرمز صالح حتى {DriverPortalServer.CloudCodeExpiry:hh:mm tt} — أرسله للمحاسب";
+                lblCloudExpiry.Text = $"الرمز صالح حتى {DriverPortalServer.CloudCodeExpiry:hh:mm tt} — أرسله للمحاسب";
                 btnCopyCode.Enabled = true;
             }
             catch (Exception ex)
             {
-                lblCloudCode.Text   = "❌ فشل";
+                lblCloudCode.Text   = "فشل";
                 lblCloudExpiry.Text = "تأكد من اتصال الإنترنت وحاول مرة أخرى";
                 MessageBox.Show("فشل رفع البيانات:\n" + ex.Message, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 btnUploadCloud.Enabled = true;
-                btnUploadCloud.Text    = "☁️  رفع وتوليد رمز المزامنة";
+                btnUploadCloud.Text    = "رفع وتوليد رمز المزامنة";
             }
         }
 
@@ -457,7 +457,7 @@ namespace ChickenDist.Forms
                 DriverPortalServer.LastCloudCode != "——")
             {
                 Clipboard.SetText(DriverPortalServer.LastCloudCode);
-                MessageBox.Show($"✅ تم نسخ الرمز: {DriverPortalServer.LastCloudCode}",
+                MessageBox.Show($"تم نسخ الرمز: {DriverPortalServer.LastCloudCode}",
                     "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }

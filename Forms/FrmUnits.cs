@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -73,9 +73,9 @@ namespace ChickenDist.Forms
             pnlDetails.Controls.Add(txtName);
             y += 60;
 
-            btnNew = Theme.MakeButton("➕ إضافة", 175, y, 70, 32, Color.FromArgb(60, 100, 60));
-            btnSave = Theme.MakeButton("➕ حفظ", 95, y, 75, 32, Theme.Accent);
-            btnDelete = Theme.MakeButton("🗑️ حذف", 15, y, 75, 32, Color.FromArgb(140, 40, 40));
+            btnNew = Theme.MakeButton("إضافة", 175, y, 70, 32, Color.FromArgb(60, 100, 60));
+            btnSave = Theme.MakeButton("حفظ", 95, y, 75, 32, Theme.Accent);
+            btnDelete = Theme.MakeButton("حذف", 15, y, 75, 32, Color.FromArgb(140, 40, 40));
 
             btnNew.Click += (s, e) => ClearDetail();
             btnSave.Click += BtnSave_Click;
@@ -141,7 +141,7 @@ namespace ChickenDist.Forms
             _selectedID = Convert.ToInt32(dgUnits.SelectedRows[0].Cells["UnitID"].Value);
             txtName.Text = dgUnits.SelectedRows[0].Cells["UnitName"].Value.ToString();
             btnDelete.Enabled = true;
-            if (btnSave != null) btnSave.Text = "💾 حفظ";
+            if (btnSave != null) btnSave.Text = "حفظ";
         }
 
         private void ClearDetail()
@@ -149,14 +149,14 @@ namespace ChickenDist.Forms
             _selectedID = 0;
             txtName.Clear();
             btnDelete.Enabled = false;
-            if (btnSave != null) btnSave.Text = "➕ حفظ";
+            if (btnSave != null) btnSave.Text = "حفظ";
             txtName.Focus();
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (_selectedID == 0 && !Session.CanAdd("Units")) { MessageBox.Show("⛔ ليس لديك صلاحية إضافة وحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (_selectedID > 0 && !Session.CanEdit("Units")) { MessageBox.Show("⛔ ليس لديك صلاحية تعديل الوحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID == 0 && !Session.CanAdd("Units")) { MessageBox.Show("ليس لديك صلاحية إضافة وحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (_selectedID > 0 && !Session.CanEdit("Units")) { MessageBox.Show("ليس لديك صلاحية تعديل الوحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
@@ -167,21 +167,21 @@ namespace ChickenDist.Forms
             int id = UnitDAL.Save(_selectedID, txtName.Text.Trim());
             if (id > 0)
             {
-                MessageBox.Show("✅ تم الحفظ بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("تم الحفظ بنجاح.", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 _selectedID = id;
                 LoadUnits();
                 ClearDetail();
             }
             else
             {
-                MessageBox.Show("❌ فشل الحفظ. اسم الوحدة قد يكون مكرراً.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("فشل الحفظ. اسم الوحدة قد يكون مكرراً.", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (_selectedID == 0) return;
-            if (!Session.CanDelete("Units")) { MessageBox.Show("⛔ ليس لديك صلاحية حذف الوحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!Session.CanDelete("Units")) { MessageBox.Show("ليس لديك صلاحية حذف الوحدات.", "رفض الوصول", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
             if (MessageBox.Show("هل تريد بالتأكيد حذف هذه الوحدة؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
@@ -193,7 +193,7 @@ namespace ChickenDist.Forms
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("❌ فشل الحذف. قد تكون الوحدة مستخدمة في بعض الأصناف.\n" + ex.Message, "خطأ الحذف", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("فشل الحذف. قد تكون الوحدة مستخدمة في بعض الأصناف.\n" + ex.Message, "خطأ الحذف", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

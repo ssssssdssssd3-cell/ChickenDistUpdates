@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
@@ -57,7 +57,7 @@ namespace ChickenDist.Forms
 
         private void InitializeComponent()
         {
-            this.Text = AppConfig.IsRestaurant ? "⚙️ لوحة التحكم في المنيو الإلكتروني والطلب أونلاين (Online Menu)" : "⚙️ لوحة التحكم في المتجر الإلكتروني للعملاء (Online Store)";
+            this.Text = AppConfig.IsRestaurant ? "لوحة التحكم في المنيو الإلكتروني والطلب أونلاين (Online Menu)" : "لوحة التحكم في المتجر الإلكتروني للعملاء (Online Store)";
             this.Size = new Size(950, 750);
             this.MinimumSize = new Size(880, 680);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -77,7 +77,7 @@ namespace ChickenDist.Forms
 
             var lblTitle = new Label
             {
-                Text = AppConfig.IsRestaurant ? "🌐 إعدادات وتحكم المنيو الإلكتروني والطلب أونلاين (Online Menu)" : "🌐 إعدادات وتحكم المتجر الإلكتروني للعملاء (Web Store)",
+                Text = AppConfig.IsRestaurant ? "إعدادات وتحكم المنيو الإلكتروني والطلب أونلاين (Online Menu)" : "إعدادات وتحكم المتجر الإلكتروني للعملاء (Web Store)",
                 Font = new Font("Segoe UI", 12.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Top,
@@ -108,7 +108,7 @@ namespace ChickenDist.Forms
 
             btnSaveAndSync = new Button
             {
-                Text = "💾 حفظ الإعدادات ومزامنة المتجر الآن",
+                Text = "حفظ الإعدادات ومزامنة المتجر الآن",
                 Size = new Size(250, 38),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
@@ -193,7 +193,7 @@ namespace ChickenDist.Forms
             // ب. فئة السعر المعروض للعملاء (Price Tier)
             var grpPriceTier = new GroupBox
             {
-                Text = "🏷️ فئة السعر المعروض للعملاء في المتجر",
+                Text = "فئة السعر المعروض للعملاء في المتجر",
                 Location = new Point(10, 52),
                 Size = new Size(470, 120),
                 ForeColor = Color.FromArgb(96, 165, 250),
@@ -204,7 +204,7 @@ namespace ChickenDist.Forms
 
             rbRetail = new RadioButton
             {
-                Text = "🔘 سعر القطاعي (سعر البيع العادي للمستهلك)",
+                Text = "سعر القطاعي (سعر البيع العادي للمستهلك)",
                 Location = new Point(15, 25),
                 Size = new Size(440, 26),
                 ForeColor = Color.White,
@@ -216,7 +216,7 @@ namespace ChickenDist.Forms
 
             rbSemiWholesale = new RadioButton
             {
-                Text = "🔘 سعر نصف الجملة (للتجار الصغار ومحلات التجزئة)",
+                Text = "سعر نصف الجملة (للتجار الصغار ومحلات التجزئة)",
                 Location = new Point(15, 55),
                 Size = new Size(440, 26),
                 ForeColor = Color.White,
@@ -227,7 +227,7 @@ namespace ChickenDist.Forms
 
             rbWholesale = new RadioButton
             {
-                Text = "🔘 سعر الجملة (أسعار كبار العملاء والتوزيع)",
+                Text = "سعر الجملة (أسعار كبار العملاء والتوزيع)",
                 Location = new Point(15, 85),
                 Size = new Size(440, 26),
                 ForeColor = Color.White,
@@ -244,7 +244,7 @@ namespace ChickenDist.Forms
             // ج. خيارات الشفافية والعرض (Visibility Controls)
             var grpVisibility = new GroupBox
             {
-                Text = "👁️ خيارات إظهار الأسعار ورصيد المخزون للعملاء",
+                Text = "خيارات إظهار الأسعار ورصيد المخزون للعملاء",
                 Location = new Point(10, 180),
                 Size = new Size(470, 185),
                 ForeColor = Color.FromArgb(96, 165, 250),
@@ -255,7 +255,7 @@ namespace ChickenDist.Forms
 
             chkShowPrices = new CheckBox
             {
-                Text = "عرض أسعار البيع للعملاء في الموقع\n(إذا أُلغي الخيار، يظهر 'السعر عند الطلب 📞')",
+                Text = "عرض أسعار البيع للعملاء في الموقع\n(إذا أُلغي الخيار، يظهر 'السعر عند الطلب')",
                 Location = new Point(15, 22),
                 Size = new Size(440, 44),
                 ForeColor = Color.White,
@@ -266,7 +266,7 @@ namespace ChickenDist.Forms
 
             chkShowStockQty = new CheckBox
             {
-                Text = "إظهار رصيد الأصناف والكميات المتاحة في المخزن للعملاء\n(إذا أُلغي الخيار، يظهر 'متوفر للطلب ✅' دون كشف رصيد المخزن الحقيقي)",
+                Text = "إظهار رصيد الأصناف والكميات المتاحة في المخزن للعملاء\n(إذا أُلغي الخيار، يظهر 'متوفر للطلب' دون كشف رصيد المخزن الحقيقي)",
                 Location = new Point(15, 70),
                 Size = new Size(440, 48),
                 ForeColor = Color.White,
@@ -294,7 +294,7 @@ namespace ChickenDist.Forms
             // د. مصاريف الشحن والتوصيل (Delivery & Shipping)
             var grpDelivery = new GroupBox
             {
-                Text = "🚚 مصاريف الشحن والتوصيل",
+                Text = "مصاريف الشحن والتوصيل",
                 Location = new Point(10, 372),
                 Size = new Size(470, 105),
                 ForeColor = Color.FromArgb(96, 165, 250),
@@ -354,7 +354,7 @@ namespace ChickenDist.Forms
             // هـ. تفاصيل إضافية ورقم الواتساب والحد الأدنى
             var grpExtra = new GroupBox
             {
-                Text = "📢 تفاصيل المتجر والتواصل",
+                Text = "تفاصيل المتجر والتواصل",
                 Location = new Point(10, 485),
                 Size = new Size(470, 495),
                 ForeColor = Color.FromArgb(96, 165, 250),
@@ -426,7 +426,7 @@ namespace ChickenDist.Forms
 
             var lblProjTitle = new Label
             {
-                Text = "🔥 معرّف مشروع فيربيز السحابي (Firebase Project ID):",
+                Text = "معرّف مشروع فيربيز السحابي (Firebase Project ID):",
                 Location = new Point(120, 180),
                 Size = new Size(335, 22),
                 ForeColor = Color.FromArgb(251, 191, 36),
@@ -470,7 +470,7 @@ namespace ChickenDist.Forms
 
             btnCopyUrl = new Button
             {
-                Text = "📋 نسخ",
+                Text = "نسخ",
                 Location = new Point(282, 260),
                 Size = new Size(78, 30),
                 BackColor = Color.FromArgb(37, 99, 235),
@@ -485,13 +485,13 @@ namespace ChickenDist.Forms
                 if (!string.IsNullOrEmpty(txtStoreUrl.Text))
                 {
                     Clipboard.SetText(txtStoreUrl.Text);
-                    MessageBox.Show("تم نسخ رابط المتجر للحافظة بنجاح ✅", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم نسخ رابط المتجر للحافظة بنجاح", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
 
             btnOpenStore = new Button
             {
-                Text = "🌐 فتح",
+                Text = "فتح",
                 Location = new Point(366, 260),
                 Size = new Size(88, 30),
                 BackColor = Color.FromArgb(16, 185, 129),
@@ -511,7 +511,7 @@ namespace ChickenDist.Forms
 
             var lblUrlHint = new Label
             {
-                Text = "💡 هذا الرابط والباركود مخصصان للعميل الحالي تلقائياً؛ اضغط 'حفظ ومزامنة' لتحديث الأصناف بالسحابة.",
+                Text = "هذا الرابط والباركود مخصصان للعميل الحالي تلقائياً؛ اضغط 'حفظ ومزامنة' لتحديث الأصناف بالسحابة.",
                 Location = new Point(15, 298),
                 Size = new Size(440, 24),
                 ForeColor = Color.FromArgb(148, 163, 184),
@@ -522,7 +522,7 @@ namespace ChickenDist.Forms
 
             var lblThemeTitle = new Label
             {
-                Text = "🎨 النشاط التجاري وتصميم المتجر (Activity & Theme):",
+                Text = "النشاط التجاري وتصميم المتجر (Activity & Theme):",
                 Location = new Point(190, 328),
                 Size = new Size(265, 24),
                 ForeColor = Color.FromArgb(241, 245, 249),
@@ -543,21 +543,21 @@ namespace ChickenDist.Forms
             };
 
             // الأنشطة التجارية المتخصصة الـ 7 + الثيمات العامة
-            cboStoreTheme.Items.Add(new ThemeItem("☕ كافيهات ومحامص البن (بن الأكابر)", "coffee", "واجهة متخصصة لمحامص وكافيهات البن مع توليفات القهوة وأوزان الطحن وشرح الفوائد"));
-            cboStoreTheme.Items.Add(new ThemeItem("🍔 المطاعم والمشاوي (شيف الأكابر)", "restaurant", "ثيم داكن وشهي للبرجر، الشاورما، المشاوي، والبيتزا مع تفاصيل الإضافات"));
-            cboStoreTheme.Items.Add(new ThemeItem("🛒 السوبرماركت والبقالة (سوبر الأكابر)", "supermarket", "واجهة سريعة وخفيفة للبقالة والألبان والزيوت مع عروض التوفير الأسبوعية"));
-            cboStoreTheme.Items.Add(new ThemeItem("👗 الأزياء والملابس (أكابر فاشون)", "fashion", "تصميم فندقي أنيق بلمسات بنفسجية للملابس الراقية ودليل المقاسات ونوع القماش"));
-            cboStoreTheme.Items.Add(new ThemeItem("📱 الموبايلات والإلكترونيات (أكابر فون)", "mobiles", "ثيم إلكتروني حديث للموبايلات، شواحن GaN، سماعات مع تفاصيل المعالج والضمان"));
-            cboStoreTheme.Items.Add(new ThemeItem("🍗 الدواجن واللحوم (مزارع الأكابر)", "butchery", "مزارع الدواجن واللحوم البلدي مع خيارات الذبح الحلال والتغليف المفرغ"));
-            cboStoreTheme.Items.Add(new ThemeItem("⚙️ قطع الغيار والزيوت (أكابر سبيرز)", "autoparts", "كتالوج تقني لقطع غيار السيارات والزيوت التخليقية مع أكواد OEM الأصلية"));
-            cboStoreTheme.Items.Add(new ThemeItem("👑 أسود وذهبي فاخر (Royal Gold)", "gold", "طابع ملكي فخم باللون الأسود والذهبي للمطاعم والبراندات الراقية"));
-            cboStoreTheme.Items.Add(new ThemeItem("🥗 أخضر صحي وطازج (Emerald Fresh)", "emerald", "طابع منعش للأغذية الصحية والمشروبات والمطابخ الصحية"));
-            cboStoreTheme.Items.Add(new ThemeItem("🌙 عصري داكن (Modern Dark)", "dark", "وضع ليلي عصري ومريح للعينين"));
-            cboStoreTheme.Items.Add(new ThemeItem("☀️ نهاري كلاسيكي (Light Classic)", "light", "تصميم نهاري خفيف وواضح لكافة الأنشطة"));
+            cboStoreTheme.Items.Add(new ThemeItem("كافيهات ومحامص البن (بن الأكابر)", "coffee", "واجهة متخصصة لمحامص وكافيهات البن مع توليفات القهوة وأوزان الطحن وشرح الفوائد"));
+            cboStoreTheme.Items.Add(new ThemeItem("المطاعم والمشاوي (شيف الأكابر)", "restaurant", "ثيم داكن وشهي للبرجر، الشاورما، المشاوي، والبيتزا مع تفاصيل الإضافات"));
+            cboStoreTheme.Items.Add(new ThemeItem("السوبرماركت والبقالة (سوبر الأكابر)", "supermarket", "واجهة سريعة وخفيفة للبقالة والألبان والزيوت مع عروض التوفير الأسبوعية"));
+            cboStoreTheme.Items.Add(new ThemeItem("الأزياء والملابس (أكابر فاشون)", "fashion", "تصميم فندقي أنيق بلمسات بنفسجية للملابس الراقية ودليل المقاسات ونوع القماش"));
+            cboStoreTheme.Items.Add(new ThemeItem("الموبايلات والإلكترونيات (أكابر فون)", "mobiles", "ثيم إلكتروني حديث للموبايلات، شواحن GaN، سماعات مع تفاصيل المعالج والضمان"));
+            cboStoreTheme.Items.Add(new ThemeItem("الدواجن واللحوم (مزارع الأكابر)", "butchery", "مزارع الدواجن واللحوم البلدي مع خيارات الذبح الحلال والتغليف المفرغ"));
+            cboStoreTheme.Items.Add(new ThemeItem("قطع الغيار والزيوت (أكابر سبيرز)", "autoparts", "كتالوج تقني لقطع غيار السيارات والزيوت التخليقية مع أكواد OEM الأصلية"));
+            cboStoreTheme.Items.Add(new ThemeItem("أسود وذهبي فاخر (Royal Gold)", "gold", "طابع ملكي فخم باللون الأسود والذهبي للمطاعم والبراندات الراقية"));
+            cboStoreTheme.Items.Add(new ThemeItem("أخضر صحي وطازج (Emerald Fresh)", "emerald", "طابع منعش للأغذية الصحية والمشروبات والمطابخ الصحية"));
+            cboStoreTheme.Items.Add(new ThemeItem("عصري داكن (Modern Dark)", "dark", "وضع ليلي عصري ومريح للعينين"));
+            cboStoreTheme.Items.Add(new ThemeItem("نهاري كلاسيكي (Light Classic)", "light", "تصميم نهاري خفيف وواضح لكافة الأنشطة"));
 
             lblThemeDesc = new Label
             {
-                Text = "💡 اختر النشاط المناسب لضبط هوية وألوان وأيقونات متجرك الإلكتروني تلقائياً.",
+                Text = "اختر النشاط المناسب لضبط هوية وألوان وأيقونات متجرك الإلكتروني تلقائياً.",
                 Location = new Point(15, 358),
                 Size = new Size(440, 34),
                 ForeColor = Color.FromArgb(251, 191, 36),
@@ -570,14 +570,14 @@ namespace ChickenDist.Forms
             {
                 if (cboStoreTheme.SelectedItem is ThemeItem ti)
                 {
-                    if (lblThemeDesc != null) lblThemeDesc.Text = "💡 " + ti.Description;
+                    if (lblThemeDesc != null) lblThemeDesc.Text = "" + ti.Description;
                     UpdateStoreUrlAndQr();
                 }
             };
 
             btnPreviewActivity = new Button
             {
-                Text = "👁️ معاينة قالب النشاط",
+                Text = "معاينة قالب النشاط",
                 Location = new Point(235, 396),
                 Size = new Size(220, 34),
                 BackColor = Color.FromArgb(37, 99, 235),
@@ -631,7 +631,7 @@ namespace ChickenDist.Forms
 
             btnOpenSimulator = new Button
             {
-                Text = "📱 محاكي كافة الأنشطة",
+                Text = "محاكي كافة الأنشطة",
                 Location = new Point(15, 396),
                 Size = new Size(210, 34),
                 BackColor = Color.FromArgb(217, 119, 6),
@@ -674,7 +674,7 @@ namespace ChickenDist.Forms
 
             btnProductBenefits = new Button
             {
-                Text = "📝 إدارة فوائد ومكونات الأصناف للمتجر أونلاين ✨",
+                Text = "إدارة فوائد ومكونات الأصناف للمتجر أونلاين",
                 Location = new Point(15, 440),
                 Size = new Size(440, 36),
                 BackColor = Color.FromArgb(16, 185, 129),
@@ -724,7 +724,7 @@ namespace ChickenDist.Forms
             // أ. تحديد الأقسام المسموح بظهورها في المتجر (Category Filter)
             var grpCategories = new GroupBox
             {
-                Text = "📂 الأقسام المعروضة في المتجر (تحديد قسم معين أو استبعاده)",
+                Text = "الأقسام المعروضة في المتجر (تحديد قسم معين أو استبعاده)",
                 Dock = DockStyle.Fill,
                 ForeColor = Color.FromArgb(96, 165, 250),
                 BackColor = Color.FromArgb(24, 33, 53),
@@ -826,7 +826,7 @@ namespace ChickenDist.Forms
 
             var lblQrInfo = new Label
             {
-                Text = "📱 رمز المتجر الإلكتروني (Store QR Code)\nامسح الرمز بكاميرا الهاتف لفتح المتجر مباشرة، أو استخدم خيارات الطباعة والمشاركة:",
+                Text = "رمز المتجر الإلكتروني (Store QR Code)\nامسح الرمز بكاميرا الهاتف لفتح المتجر مباشرة، أو استخدم خيارات الطباعة والمشاركة:",
                 Dock = DockStyle.Top,
                 Height = 44,
                 ForeColor = Color.FromArgb(226, 232, 240),
@@ -846,7 +846,7 @@ namespace ChickenDist.Forms
 
             var btnOpenQRDialog = new Button
             {
-                Text = "🔍 تكبير وطباعة ومشاركة الرمز",
+                Text = "تكبير وطباعة ومشاركة الرمز",
                 Size = new Size(225, 34),
                 BackColor = Color.FromArgb(99, 102, 241),
                 ForeColor = Color.White,
@@ -866,7 +866,7 @@ namespace ChickenDist.Forms
 
             var btnCopyQrImage = new Button
             {
-                Text = "📋 نسخ الصورة",
+                Text = "نسخ الصورة",
                 Size = new Size(110, 34),
                 BackColor = Color.FromArgb(147, 51, 234),
                 ForeColor = Color.White,
@@ -881,13 +881,13 @@ namespace ChickenDist.Forms
                 if (picQR.Image != null)
                 {
                     Clipboard.SetImage(picQR.Image);
-                    MessageBox.Show("تم نسخ صورة كود المتجر للحافظة بنجاح 📋\nيمكنك لصقها الآن في واتساب أو أي برنامج آخر (Ctrl + V).", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("تم نسخ صورة كود المتجر للحافظة بنجاح\nيمكنك لصقها الآن في واتساب أو أي برنامج آخر (Ctrl + V).", "تم النسخ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
 
             var btnSaveQrImage = new Button
             {
-                Text = "💾 حفظ كصورة",
+                Text = "حفظ كصورة",
                 Size = new Size(110, 34),
                 BackColor = Color.FromArgb(217, 119, 6),
                 ForeColor = Color.White,
@@ -908,7 +908,7 @@ namespace ChickenDist.Forms
                     if (sfd.ShowDialog() == DialogResult.OK)
                     {
                         picQR.Image.Save(sfd.FileName, System.Drawing.Imaging.ImageFormat.Png);
-                        MessageBox.Show("تم حفظ الصورة بنجاح ✅", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("تم حفظ الصورة بنجاح", "تم الحفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
             };
@@ -979,7 +979,7 @@ namespace ChickenDist.Forms
                     cboStoreTheme.SelectedIndex = selIdx;
                     if (cboStoreTheme.SelectedItem is ThemeItem selTi && lblThemeDesc != null)
                     {
-                        lblThemeDesc.Text = "💡 " + selTi.Description;
+                        lblThemeDesc.Text = "" + selTi.Description;
                     }
                 }
             }
@@ -1077,7 +1077,7 @@ namespace ChickenDist.Forms
 
             btnSaveAndSync.Enabled = false;
             lblSyncStatus.ForeColor = Color.FromArgb(56, 189, 248);
-            lblSyncStatus.Text = "⏳ جاري حفظ الإعدادات ومزامنة المتجر مع السحابة...";
+            lblSyncStatus.Text = "جاري حفظ الإعدادات ومزامنة المتجر مع السحابة...";
 
             try
             {
@@ -1127,13 +1127,13 @@ namespace ChickenDist.Forms
                 if (syncOk)
                 {
                     lblSyncStatus.ForeColor = Color.FromArgb(52, 211, 153);
-                    lblSyncStatus.Text = "✅ تم حفظ الإعدادات ومزامنة المتجر مع السحابة بنجاح!";
-                    MessageBox.Show($"تم حفظ إعدادات المتجر الإلكتروني ومزامنة أصناف العميل بنجاح إلى مشروع فيربيز:\n({enteredProjectId}) 🔥", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    lblSyncStatus.Text = "تم حفظ الإعدادات ومزامنة المتجر مع السحابة بنجاح!";
+                    MessageBox.Show($"تم حفظ إعدادات المتجر الإلكتروني ومزامنة أصناف العميل بنجاح إلى مشروع فيربيز:\n({enteredProjectId})", "نجاح المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
                     lblSyncStatus.ForeColor = Color.FromArgb(244, 63, 94);
-                    lblSyncStatus.Text = "⚠️ تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى Firebase (" + enteredProjectId + ")";
+                    lblSyncStatus.Text = "تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى Firebase (" + enteredProjectId + ")";
                     MessageBox.Show($"تم حفظ الإعدادات محلياً، لكن تعذر رفع الأصناف إلى سيرفر Firebase للمشروع:\n({enteredProjectId})\n\nسبب الفشل: {(string.IsNullOrWhiteSpace(CloudSyncService.LastSyncError) ? "غير معروف" : CloudSyncService.LastSyncError)}\n\nيرجى التأكد من اتصال الإنترنت وتفعيل Realtime Database وصحة قواعد الحماية في Firebase.", "تنبيه المزامنة", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }

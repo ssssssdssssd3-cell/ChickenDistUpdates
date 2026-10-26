@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -229,9 +229,9 @@ namespace ChickenDist.Core
                     s.LastHeartbeat,
                     s.LocalMachineTime,
                     CASE 
-                        WHEN s.Status = 'Active' AND DATEDIFF(minute, s.LastHeartbeat, GETDATE()) <= 5 THEN N'متصل الآن 🟢'
-                        WHEN s.Status = 'Active' THEN N'معلق 🟡'
-                        ELSE N'تم الخروج ⚪'
+                        WHEN s.Status = 'Active' AND DATEDIFF(minute, s.LastHeartbeat, GETDATE()) <= 5 THEN N'متصل الآن'
+                        WHEN s.Status = 'Active' THEN N'معلق'
+                        ELSE N'تم الخروج'
                     END AS StatusArabic,
                     s.Status,
                     s.AppVersion,
