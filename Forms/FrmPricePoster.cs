@@ -260,6 +260,27 @@ namespace ChickenDist.Forms
             pnlControls.Controls.Add(btnCopy);
             y += 44;
 
+            var btnWhatsApp = Theme.MakeButton("📱 إرسال واتساب", 10, y, 280, 38, Color.FromArgb(18, 140, 126));
+            btnWhatsApp.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+            btnWhatsApp.Click += (s, e) =>
+            {
+                if (_posterBitmap == null) GeneratePoster();
+                if (_posterBitmap == null)
+                {
+                    MessageBox.Show("يرجى اختيار أصناف أولاً لإنشاء الملصق.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                WhatsAppSender.ShowWhatsAppSendOptionsDialog(
+                    this,
+                    "",
+                    $"{AppConfig.CompanyName}\n*{txtPosterTitle.Text}*\nتاريخ: {DateTime.Today:dd/MM/yyyy}\n(مرفق صورة لستة الأصناف والأسعار)",
+                    () => _posterBitmap,
+                    "📱 إرسال لستة الأصناف والأسعار عبر الواتساب"
+                );
+            };
+            pnlControls.Controls.Add(btnWhatsApp);
+            y += 44;
+
             btnExportExcel = Theme.MakeButton("📊 تصدير إكسيل (Excel)", 10, y, 280, 38, Color.FromArgb(30, 96, 64));
             btnExportExcel.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
             btnExportExcel.Click += BtnExportExcel_Click;
@@ -411,7 +432,7 @@ namespace ChickenDist.Forms
                 return;
             }
 
-            int totalW = 750;
+            int totalW = 1050;
             int headerH = 160;
             int notesH = string.IsNullOrWhiteSpace(txtPosterNotes.Text) ? 0 : 50;
             int tableHeaderH = 35;
@@ -419,16 +440,16 @@ namespace ChickenDist.Forms
 
             bool showQty   = chkShowQty   != null && chkShowQty.Checked;
             bool showPrice = chkShowPrice == null || chkShowPrice.Checked;
-            int colSerialW = 40;
+            int colSerialW = 50;
             int colSerialX = totalW - 40 - colSerialW;
             int colNameX, colUnitX, colQtyX, colPriceX;
             int colNameW, colUnitW, colQtyW, colPriceW;
 
             if (showQty && showPrice)
             {
-                colPriceW = 140;
-                colQtyW   = 75;
-                colUnitW  = 75;
+                colPriceW = 190;
+                colQtyW   = 100;
+                colUnitW  = 100;
                 colNameW  = (totalW - 80 - colSerialW) - (colPriceW + colQtyW + colUnitW);
                 colNameX  = colSerialX - colNameW;
                 colUnitX  = colNameX - colUnitW;
@@ -448,9 +469,9 @@ namespace ChickenDist.Forms
             }
             else if (!showQty && showPrice)
             {
-                colPriceW = 155;
+                colPriceW = 220;
                 colQtyW   = 0;
-                colUnitW  = 85;
+                colUnitW  = 110;
                 colNameW  = (totalW - 80 - colSerialW) - (colPriceW + colUnitW);
                 colNameX  = colSerialX - colNameW;
                 colUnitX  = colNameX - colUnitW;
@@ -479,7 +500,7 @@ namespace ChickenDist.Forms
                 foreach (ProductItem item in clbProducts.CheckedItems)
                 {
                     SizeF sz = gMeasure.MeasureString(item.Name, fBoldMeasure, colNameW - 14, rtlMeasure);
-                    int rh = (sz.Height > 20f || sz.Width > colNameW - 16f) ? 48 : 30;
+                    int rh = (sz.Height > 24f || sz.Width > colNameW - 16f) ? 54 : 36;
                     rowHeights.Add(rh);
                 }
             }
@@ -490,6 +511,7 @@ namespace ChickenDist.Forms
 
             if (_posterBitmap != null) _posterBitmap.Dispose();
             _posterBitmap = new Bitmap(totalW, totalH);
+            _posterBitmap.SetResolution(144f, 144f);
 
             using (var g = Graphics.FromImage(_posterBitmap))
             {
@@ -504,12 +526,12 @@ namespace ChickenDist.Forms
                 }
 
                 // Fonts
-                var fTitle = new Font("Arial", 18f, FontStyle.Bold);
-                var fComp = new Font("Arial", 13f, FontStyle.Bold);
-                var fSub = new Font("Arial", 9.5f);
-                var fBold = new Font("Arial", 10.5f, FontStyle.Bold);
-                var fRegular = new Font("Arial", 10f);
-                var fSmall = new Font("Arial", 8.5f, FontStyle.Bold);
+                var fTitle = new Font("Segoe UI", 22f, FontStyle.Bold);
+                var fComp = new Font("Segoe UI", 16f, FontStyle.Bold);
+                var fSub = new Font("Segoe UI", 11f);
+                var fBold = new Font("Segoe UI", 12f, FontStyle.Bold);
+                var fRegular = new Font("Segoe UI", 11f);
+                var fSmall = new Font("Segoe UI", 10f, FontStyle.Bold);
 
                 var center = new StringFormat { Alignment = StringAlignment.Center };
                 var rtlNear = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.DirectionRightToLeft };
@@ -565,7 +587,7 @@ namespace ChickenDist.Forms
                         if (phoneStr != "") phoneStr += " - ";
                         phoneStr += AppConfig.CompanyPhone2;
                     }
-                    if (phoneStr != "") infoStr += $"  |  📞 هاتف: {phoneStr}";
+                    if (phoneStr != "") infoStr += $"  |  هاتف: {phoneStr}";
 
                     g.DrawString(infoStr, fSub, brushBannerText, new RectangleF(0, textY, totalW, 20), center);
                 }
@@ -897,7 +919,7 @@ namespace ChickenDist.Forms
                         if (phoneStr != "") phoneStr += " - ";
                         phoneStr += AppConfig.CompanyPhone2;
                     }
-                    if (phoneStr != "") infoStr += $"  |  📞 هاتف: {phoneStr}";
+                    if (phoneStr != "") infoStr += $"  |  هاتف: {phoneStr}";
 
                     g.DrawString(infoStr, fSub, brushWhite, new RectangleF(xStart, textY, pageWidth, 18), center);
                 }

@@ -72,22 +72,6 @@ namespace ChickenDist.Forms
             {
                 _printItemIndex = 0;
                 _runningTotal = 0;
-
-                if (AppConfig.BusinessType == "Mobiles" && _items != null && _items.Columns.Contains("IMEI"))
-                {
-                    foreach (DataRow r in _items.Rows)
-                    {
-                        string imei = r["IMEI"]?.ToString()?.Trim() ?? "";
-                        if (!string.IsNullOrWhiteSpace(imei))
-                        {
-                            string pName = r["ProductName"]?.ToString() ?? "";
-                            if (!pName.Contains(imei))
-                            {
-                                r["ProductName"] = pName + " (سيريال: " + imei + ")";
-                            }
-                        }
-                    }
-                }
             };
 
             pd.PrintPage += (s, e) =>
@@ -154,6 +138,13 @@ namespace ChickenDist.Forms
                             // Line 1: Product Name (right aligned)
                             g.DrawString(prodName, bold, Brushes.Black, new RectangleF(margin, y, pageW - 2 * margin, 18), right);
                             y += 16;
+
+                            string imei = r.Table.Columns.Contains("IMEI") ? (r["IMEI"]?.ToString()?.Trim() ?? "") : "";
+                            if (!string.IsNullOrWhiteSpace(imei))
+                            {
+                                g.DrawString($"السيريال: {imei}", small, Brushes.DarkSlateGray, new RectangleF(margin, y, pageW - 2 * margin, 15), right);
+                                y += 15;
+                            }
 
                             // Line 2: Qty x UnitPrice = Total (and maybe Discount)
                             string details = $"{qty:0.##} x {price:N2} = {tot:N2}";
@@ -304,7 +295,18 @@ namespace ChickenDist.Forms
                             DrawColCell(g, normal, price.ToString("N2"),   xPrice,    colWPrice,    y);
                             DrawColCell(g, normal, qty.ToString("N2"),     xQty,      colWQty,      y);
                             DrawColCell(g, normal, r["ProductName"].ToString(), xProduct, colWProduct,  y);
-                            _runningTotal += tot; y += 18;
+
+                            string sheetImei = r.Table.Columns.Contains("IMEI") ? (r["IMEI"]?.ToString()?.Trim() ?? "") : "";
+                            if (!string.IsNullOrWhiteSpace(sheetImei))
+                            {
+                                DrawColCell(g, small, $"سيريال: {sheetImei}", xProduct, colWProduct, y + 16);
+                                y += 33;
+                            }
+                            else
+                            {
+                                y += 18;
+                            }
+                            _runningTotal += tot;
                             _printItemIndex++;
                         }
                     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
@@ -761,6 +761,11 @@ namespace ChickenDist.Core
                         string uStr = !string.IsNullOrEmpty(u) ? $" {u}" : "";
                         string bonusStr = bonus > 0 ? $" (بونص: {bonus:0.##})" : "";
                         sb.AppendLine($"▫️ {pName}: {q:0.##}{uStr} × {p:N2} = *{t:N2} ج*{bonusStr}");
+                        string imei = ir.Table.Columns.Contains("IMEI") ? (ir["IMEI"]?.ToString()?.Trim() ?? "") : "";
+                        if (!string.IsNullOrWhiteSpace(imei))
+                        {
+                            sb.AppendLine($"   🔹 السيريال (IMEI): `{imei}`");
+                        }
                     }
                     sb.AppendLine("───────────────────");
                 }
