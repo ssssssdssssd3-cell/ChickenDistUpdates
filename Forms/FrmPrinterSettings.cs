@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Windows.Forms;
 using ChickenDist.Core;
@@ -9,6 +10,7 @@ namespace ChickenDist.Forms
 {
     /// <summary>
     /// شاشة إعدادات الطابعات ونماذج الفواتير والباركود وأذونات التحضير
+    /// بتصميم بطاقات عصري ومنظم ومريح للعين
     /// </summary>
     public class FrmPrinterSettings : Form
     {
@@ -17,7 +19,7 @@ namespace ChickenDist.Forms
         private NumericUpDown numReceiptCopies;       // عدد نسخ طباعة ريسيت البيع
         private ComboBox cboA4Printer;
         private ComboBox cboBarcodePrinter;
-        private ComboBox cboKitchenPrinter;   // طابعة المطبخ والتحضير
+        private ComboBox cboKitchenPrinter;           // طابعة المطبخ والتحضير
         private ComboBox cboInvoiceFormat;
         private ComboBox cboReportFormat;
         private ComboBox cboVoucherFormat;
@@ -57,211 +59,323 @@ namespace ChickenDist.Forms
 
         private void InitializeComponentCustom()
         {
-            this.Text = "🖨️ إعدادات الطابعات ونماذج الفواتير";
-            this.Size = new Size(760, 710);
+            this.Text = "إعدادات الطابعات ونماذج الفواتير";
+            this.Size = new Size(860, 770);
+            this.MinimumSize = new Size(840, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
-            this.BackColor = Theme.BgMain;
+            this.BackColor = Color.FromArgb(243, 244, 246);
             this.Font = Theme.FontMain;
 
-            var pnlTop = Theme.MakeTitleBar("🖨️ إعدادات الطابعات ونماذج الفواتير", "تخصيص الطابعات الافتراضية، مقاسات الفواتير والتقارير، القوالب، وملصقات الباركود");
+            // ── 1. Top Header Bar (Modern, Calm Navy Header) ──
+            var pnlTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 62,
+                BackColor = Color.FromArgb(15, 23, 42),
+                Padding = new Padding(20, 10, 20, 10)
+            };
+            var lblTitle = new Label
+            {
+                Text = "إعدادات الطابعات ونماذج الفواتير والباركود",
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+                ForeColor = Color.White,
+                AutoSize = true,
+                Location = new Point(20, 8)
+            };
+            var lblSub = new Label
+            {
+                Text = "تخصيص الطابعات الافتراضية، مقاسات الفواتير والتقارير، قوالب الطباعة، وهوامش ورق A4/A5 وملصقات الباركود",
+                Font = new Font("Segoe UI", 9f),
+                ForeColor = Color.FromArgb(203, 213, 225),
+                AutoSize = true,
+                Location = new Point(20, 34)
+            };
+            pnlTop.Controls.Add(lblTitle);
+            pnlTop.Controls.Add(lblSub);
             this.Controls.Add(pnlTop);
+
+            // ── 2. Bottom Footer Bar (Docked Bottom with Prominent Save Button) ──
+            var pnlFooter = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 60,
+                BackColor = Color.White,
+                Padding = new Padding(20, 10, 20, 10)
+            };
+            pnlFooter.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1f))
+                {
+                    e.Graphics.DrawLine(pen, 0, 0, pnlFooter.Width, 0);
+                }
+            };
+
+            var btnSave = new Button
+            {
+                Text = "💾 حفظ إعدادات الطباعة",
+                Size = new Size(230, 40),
+                Location = new Point(20, 10),
+                BackColor = Color.FromArgb(5, 150, 105),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnSave.FlatAppearance.BorderSize = 0;
+            btnSave.Click += BtnSave_Click;
+            pnlFooter.Controls.Add(btnSave);
+
+            var btnCancel = new Button
+            {
+                Text = "إغلاق النافذة",
+                Size = new Size(130, 40),
+                Location = new Point(265, 10),
+                BackColor = Color.FromArgb(100, 116, 139),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.Click += (s, e) => this.Close();
+            pnlFooter.Controls.Add(btnCancel);
+
+            this.Controls.Add(pnlFooter);
+
+            // ── 3. Main TabControl (Clean Tabs Without Broken Emojis) ──
+            var pnlTabContainer = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(15, 12, 15, 12),
+                BackColor = Color.FromArgb(243, 244, 246)
+            };
 
             var tabControl = new TabControl
             {
-                Location = new Point(15, 75),
-                Size = new Size(715, 560),
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold)
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ItemSize = new Size(180, 36),
+                SizeMode = TabSizeMode.Fixed
             };
-            this.Controls.Add(tabControl);
 
             // ── Tab 1: الطابعات وسلوك الطباعة ────────────────────────
-            var tabPrinters = new TabPage("🖨️ الطابعات وسلوك الطباعة")
+            var tabPrinters = new TabPage("الطابعات وسلوك الطباعة")
             {
-                BackColor = Theme.BgMain,
-                AutoScroll = true
+                BackColor = Color.FromArgb(248, 250, 252),
+                AutoScroll = true,
+                Padding = new Padding(12)
             };
             tabControl.TabPages.Add(tabPrinters);
             BuildTabPrinters(tabPrinters);
 
-            // ── Tab 2: قوالب الفواتير والريسيت A4 / A5 ─────────────────
-            var tabTemplates = new TabPage("📄 قوالب ونماذج الفواتير")
+            // ── Tab 2: قوالب ونماذج الفواتير ─────────────────
+            var tabTemplates = new TabPage("قوالب ونماذج الفواتير")
             {
-                BackColor = Theme.BgMain,
-                AutoScroll = true
+                BackColor = Color.FromArgb(248, 250, 252),
+                AutoScroll = true,
+                Padding = new Padding(12)
             };
             tabControl.TabPages.Add(tabTemplates);
             BuildTabTemplates(tabTemplates);
 
             // ── Tab 3: أذونات التحضير والباركود ──────────────────────
-            var tabPrepAndBarcode = new TabPage("🏷️ أذونات التحضير والباركود")
+            var tabPrepAndBarcode = new TabPage("أذونات التحضير والباركود")
             {
-                BackColor = Theme.BgMain,
-                AutoScroll = true
+                BackColor = Color.FromArgb(248, 250, 252),
+                AutoScroll = true,
+                Padding = new Padding(12)
             };
             tabControl.TabPages.Add(tabPrepAndBarcode);
             BuildTabPrepAndBarcode(tabPrepAndBarcode);
 
-            // ── شريط الأزرار السفلي ─────────────────────────────────
-            var pnlFooter = new Panel
-            {
-                Location = new Point(0, 642),
-                Size = new Size(760, 55),
-                BackColor = Theme.BgCard,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            this.Controls.Add(pnlFooter);
+            pnlTabContainer.Controls.Add(tabControl);
+            this.Controls.Add(pnlTabContainer);
 
-            var btnSave = Theme.MakeButton("💾 حفظ إعدادات الطباعة", 15, 8, 220, 38, Theme.Primary);
-            btnSave.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            btnSave.Click += BtnSave_Click;
-            pnlFooter.Controls.Add(btnSave);
-
-            var btnCancel = Theme.MakeButton("إغلاق", 245, 8, 100, 38, Color.FromArgb(100, 110, 120));
-            btnCancel.Click += (s, e) => this.Close();
-            pnlFooter.Controls.Add(btnCancel);
+            // Ensure proper docking order so Top Banner and Footer Bar are docked first, and Fill claims the middle area
+            pnlTop.SendToBack();
+            pnlFooter.SendToBack();
+            pnlTabContainer.BringToFront();
 
             Theme.ApplyFormRTL(this);
         }
 
+        /// <summary>
+        /// ينشئ كارت أبيض أنيق مع شريط جانبي ملون وعنوان بارز لإراحة العين وفصل الإعدادات
+        /// </summary>
+        private Panel CreateSectionCard(string title, Color accentColor, int width, int height)
+        {
+            var card = new Panel
+            {
+                Size = new Size(width, height),
+                BackColor = Color.White,
+                Margin = new Padding(0, 0, 0, 14)
+            };
+
+            card.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                using (var penBorder = new Pen(Color.FromArgb(226, 232, 240), 1.2f))
+                {
+                    g.DrawRectangle(penBorder, 0, 0, card.Width - 1, card.Height - 1);
+                }
+                // شريط ملون بالطرف الأيمن في نظام الـ RTL
+                using (var brushAccent = new SolidBrush(accentColor))
+                {
+                    g.FillRectangle(brushAccent, card.Width - 5, 0, 5, card.Height);
+                }
+            };
+
+            var lblHeader = new Label
+            {
+                Text = title,
+                Location = new Point(15, 8),
+                Size = new Size(width - 35, 24),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+            card.Controls.Add(lblHeader);
+
+            var div = new Panel
+            {
+                Location = new Point(12, 34),
+                Size = new Size(width - 24, 1),
+                BackColor = Color.FromArgb(241, 245, 249)
+            };
+            card.Controls.Add(div);
+
+            return card;
+        }
+
         private void BuildTabPrinters(TabPage page)
         {
-            int y = 15;
+            int cardW = 745;
+            int curY = 12;
 
-            // 1. طابعة الريسيت الافتراضية
-            AddLabel(page, "طابعة الريسيت الافتراضية (Receipt 80mm):", 20, y);
-            y += 24;
-            cboReceiptPrinter = MakePrintersCombo(20, y, 660);
+            // =========================================================================
+            // ── البطاقة 1: أجهزة الطابعات الافتراضية (Hardware Devices) ──
+            // =========================================================================
+            var cardPrinters = CreateSectionCard("أجهزة الطابعات الافتراضية المتصلة بالجهاز", Color.FromArgb(37, 99, 235), cardW, 255);
+            cardPrinters.Location = new Point(15, curY);
+
+            // 1. طابعة الريسيت الحراري + عدد النسخ
+            AddLabel(cardPrinters, "طابعة الريسيت الحراري الافتراضية (Receipt 80mm):", 340, 44);
+            cboReceiptPrinter = MakePrintersCombo(340, 68, 385);
             cboReceiptPrinter.SelectedItem = string.IsNullOrEmpty(AppConfig.ReceiptPrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.ReceiptPrinterName;
             if (cboReceiptPrinter.SelectedIndex == -1 && cboReceiptPrinter.Items.Count > 0) cboReceiptPrinter.SelectedIndex = 0;
-            page.Controls.Add(cboReceiptPrinter);
-            y += 38;
+            cardPrinters.Controls.Add(cboReceiptPrinter);
 
-            AddLabel(page, "عدد نسخ طباعة ريسيت البيع تلقائياً (نسخة للمحل + نسخة للعميل):", 20, y);
-            y += 24;
+            AddLabel(cardPrinters, "عدد نسخ طباعة ريسيت البيع تلقائياً:", 20, 44);
             numReceiptCopies = new NumericUpDown
             {
-                Location = new Point(20, y),
-                Width = 120,
+                Location = new Point(175, 68),
+                Width = 90,
                 Minimum = 1,
                 Maximum = 10,
                 Value = AppConfig.ReceiptCopies,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = HorizontalAlignment.Center
             };
-            page.Controls.Add(numReceiptCopies);
+            cardPrinters.Controls.Add(numReceiptCopies);
 
-            var lblReceiptCopiesHint = new Label
+            var lblCopiesUnit = new Label
             {
-                Text = "↪ اضبط القيمة على (2) لطباعة نسختين تلقائياً عند كل بيع (نسخة يحتفظ بها المحل ونسخة يستلمها العميل).",
-                Location = new Point(155, y + 4),
+                Text = "نسخة (لكل بيع)",
+                Location = new Point(60, 72),
                 AutoSize = true,
-                ForeColor = Color.Gray,
-                Font = new Font("Segoe UI", 9f, FontStyle.Italic)
+                ForeColor = Color.FromArgb(71, 85, 105),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
-            page.Controls.Add(lblReceiptCopiesHint);
-            y += 38;
+            cardPrinters.Controls.Add(lblCopiesUnit);
 
-            // 2. طابعة A4 الافتراضية
-            AddLabel(page, "طابعة A4 / A5 والتقارير الافتراضية:", 20, y);
-            y += 24;
-            cboA4Printer = MakePrintersCombo(20, y, 660);
+            // 2. طابعة ورق A4 / A5 والتقارير
+            AddLabel(cardPrinters, "طابعة ورق A4 / A5 والتقارير الافتراضية:", 20, 110);
+            cboA4Printer = MakePrintersCombo(20, 134, 705);
             cboA4Printer.SelectedItem = string.IsNullOrEmpty(AppConfig.A4PrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.A4PrinterName;
             if (cboA4Printer.SelectedIndex == -1 && cboA4Printer.Items.Count > 0) cboA4Printer.SelectedIndex = 0;
-            page.Controls.Add(cboA4Printer);
-            y += 38;
+            cardPrinters.Controls.Add(cboA4Printer);
 
-            // 3. طابعة الباركود الافتراضية
-            AddLabel(page, "طابعة ملصقات الباركود الافتراضية (Stickers):", 20, y);
-            y += 24;
-            cboBarcodePrinter = MakePrintersCombo(20, y, 660);
+            // 3. طابعة ملصقات الباركود
+            AddLabel(cardPrinters, "طابعة ملصقات واستيكرات الباركود الافتراضية (Barcode Stickers):", 20, 176);
+            cboBarcodePrinter = MakePrintersCombo(20, 200, 705);
             cboBarcodePrinter.SelectedItem = string.IsNullOrEmpty(AppConfig.BarcodePrinterName) ? "(طابعة النظام الافتراضية)" : AppConfig.BarcodePrinterName;
             if (cboBarcodePrinter.SelectedIndex == -1 && cboBarcodePrinter.Items.Count > 0) cboBarcodePrinter.SelectedIndex = 0;
-            page.Controls.Add(cboBarcodePrinter);
-            y += 42;
+            cardPrinters.Controls.Add(cboBarcodePrinter);
 
-            // 4. طابعة المطبخ والتحضير (مطاعم / كافيهات / محامص بن / مخازن)
+            page.Controls.Add(cardPrinters);
+            curY += 270;
+
+            // =========================================================================
+            // ── البطاقة 2: طابعة المطبخ وبون التحضير (Kitchen / Prep) ──
+            // =========================================================================
+            var cardKitchen = CreateSectionCard("طابعة وبون التحضير (Kitchen / Prep Printer) — للمطاعم والكافيهات والتجهيز", Color.FromArgb(217, 119, 6), cardW, 165);
+            cardKitchen.Location = new Point(15, curY);
+
+            AddLabel(cardKitchen, "طابعة بون المطبخ والتحضير (أو اختيار نفس طابعة الريسيت تلقائياً):", 20, 44);
+            cboKitchenPrinter = new ComboBox
             {
-                var sepKitchen = new Panel { Location = new Point(20, y), Size = new Size(660, 2), BackColor = Color.FromArgb(110, 65, 25) };
-                page.Controls.Add(sepKitchen);
-                y += 10;
+                Location = new Point(20, 68),
+                Width = 705,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
+            };
+            cboKitchenPrinter.Items.Add("(نفس طابعة الريسيت — Fallback تلقائي)");
+            try { foreach (string p in PrinterSettings.InstalledPrinters) cboKitchenPrinter.Items.Add(p); } catch { }
+            if (!string.IsNullOrEmpty(AppConfig.KitchenPrinterName))
+                cboKitchenPrinter.SelectedItem = AppConfig.KitchenPrinterName;
+            if (cboKitchenPrinter.SelectedIndex < 0) cboKitchenPrinter.SelectedIndex = 0;
+            cardKitchen.Controls.Add(cboKitchenPrinter);
 
-                AddLabel(page, "🍳 طابعة المطبخ وبون التحضير (Kitchen / Prep Printer) — للمطاعم والكافيهات ومناطق التحضير:", 20, y);
-                y += 24;
-                cboKitchenPrinter = new ComboBox
-                {
-                    Location = new Point(20, y),
-                    Width = 660,
-                    DropDownStyle = ComboBoxStyle.DropDownList,
-                    BackColor = Theme.BgInput,
-                    ForeColor = Theme.TextMain,
-                    Font = new Font("Segoe UI", 10.5f)
-                };
-                cboKitchenPrinter.Items.Add("(نفس طابعة الريسيت — Fallback تلقائي)");
-                try { foreach (string p in PrinterSettings.InstalledPrinters) cboKitchenPrinter.Items.Add(p); } catch { }
-                if (!string.IsNullOrEmpty(AppConfig.KitchenPrinterName))
-                    cboKitchenPrinter.SelectedItem = AppConfig.KitchenPrinterName;
-                if (cboKitchenPrinter.SelectedIndex < 0) cboKitchenPrinter.SelectedIndex = 0;
-                page.Controls.Add(cboKitchenPrinter);
-                y += 38;
+            chkKitchenAutoPrint = new CheckBox
+            {
+                Text = "طباعة بون التحضير تلقائياً فور حفظ عملية البيع في شاشة الكاشير (POS)",
+                Location = new Point(320, 110),
+                Size = new Size(425, 24),
+                Checked = AppConfig.KitchenAutoPrint,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            cardKitchen.Controls.Add(chkKitchenAutoPrint);
 
-                chkKitchenAutoPrint = new CheckBox
-                {
-                    Text = "⚡ طباعة بون التحضير تلقائياً عند إتمام كل عملية بيع في POS",
-                    Location = new Point(20, y),
-                    Size = new Size(660, 24),
-                    Checked = AppConfig.KitchenAutoPrint,
-                    ForeColor = Theme.TextMain,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
-                };
-                page.Controls.Add(chkKitchenAutoPrint);
-                y += 30;
+            chkKitchenPrintBlendRecipe = new CheckBox
+            {
+                Text = "طباعة تفاصيل وتوليفة الصنف (المكونات والمقادير) داخل بون التحضير",
+                Location = new Point(20, 110),
+                Size = new Size(300, 24),
+                Checked = AppConfig.KitchenPrintBlendRecipe,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
+            };
+            cardKitchen.Controls.Add(chkKitchenPrintBlendRecipe);
 
-                chkKitchenPrintBlendRecipe = new CheckBox
-                {
-                    Text = "☕ طباعة توليفة العميل (المقادير والمكونات) داخل بون التحضير",
-                    Location = new Point(20, y),
-                    AutoSize = false,
-                    Size = new Size(660, 24),
-                    Checked = AppConfig.KitchenPrintBlendRecipe,
-                    ForeColor = Theme.TextMain,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
-                };
-                var lblBlendNote = new Label
-                {
-                    Text = "   ↪ إيقاف هذا الخيار يطبع بون التحضير بالأصناف والكميات فقط دون إظهار التوليفة",
-                    Location = new Point(20, y + 24),
-                    Size = new Size(660, 18),
-                    ForeColor = Color.Gray,
-                    Font = new Font("Segoe UI", 8.5f, FontStyle.Italic)
-                };
-                page.Controls.Add(chkKitchenPrintBlendRecipe);
-                page.Controls.Add(lblBlendNote);
-                y += 56;
+            page.Controls.Add(cardKitchen);
+            curY += 180;
 
-                var sepKitchenEnd = new Panel { Location = new Point(20, y), Size = new Size(660, 2), BackColor = Color.FromArgb(110, 65, 25) };
-                page.Controls.Add(sepKitchenEnd);
-                y += 10;
-            }
+            // =========================================================================
+            // ── البطاقة 3: مقاسات وأحجام الطباعة الافتراضية ──
+            // =========================================================================
+            var cardSizes = CreateSectionCard("مقاسات وأحجام الطباعة الافتراضية للفواتير والتقارير والسندات", Color.FromArgb(5, 150, 105), cardW, 185);
+            cardSizes.Location = new Point(15, curY);
 
-            // 5 (old 4). مقاس الفاتورة الافتراضي ومقاس التقارير
-            AddLabel(page, "حجم طباعة الفاتورة الافتراضي:", 20, y);
-            AddLabel(page, "حجم طباعة التقارير الافتراضي:", 360, y);
-            y += 24;
-
+            // Row 1: Invoice Format + Report Format
+            AddLabel(cardSizes, "حجم طباعة الفاتورة الافتراضي:", 380, 44);
             cboInvoiceFormat = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 320,
+                Location = new Point(380, 68),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboInvoiceFormat.Items.AddRange(new object[]
             {
@@ -270,16 +384,17 @@ namespace ChickenDist.Forms
                 "ورق A5 نصف صفحة (A5 Sheet)"
             });
             cboInvoiceFormat.SelectedIndex = AppConfig.DefaultInvoiceFormat == "Receipt" ? 0 : (AppConfig.DefaultInvoiceFormat == "A5" ? 2 : 1);
-            page.Controls.Add(cboInvoiceFormat);
+            cardSizes.Controls.Add(cboInvoiceFormat);
 
+            AddLabel(cardSizes, "حجم طباعة التقارير الافتراضي:", 20, 44);
             cboReportFormat = new ComboBox
             {
-                Location = new Point(360, y),
-                Width = 320,
+                Location = new Point(20, 68),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboReportFormat.Items.AddRange(new object[]
             {
@@ -288,21 +403,18 @@ namespace ChickenDist.Forms
                 "ريسيت حراري (Receipt 80mm)"
             });
             cboReportFormat.SelectedIndex = AppConfig.DefaultReportFormat == "A5" ? 1 : (AppConfig.DefaultReportFormat == "Receipt" ? 2 : 0);
-            page.Controls.Add(cboReportFormat);
-            y += 42;
+            cardSizes.Controls.Add(cboReportFormat);
 
-            // 6. مقاس طباعة سندات الصرف والتوريد (سندات القبض والدفع)
-            AddLabel(page, "مقاس طباعة سندات الصرف والتوريد الافتراضي (سندات القبض والدفع):", 20, y);
-            y += 24;
-
+            // Row 2: Voucher Format
+            AddLabel(cardSizes, "مقاس طباعة سندات الصرف والقبض الافتراضي (سندات الخزينة والقبض والدفع):", 20, 110);
             cboVoucherFormat = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 660,
+                Location = new Point(20, 134),
+                Width = 705,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboVoucherFormat.Items.AddRange(new object[]
             {
@@ -314,20 +426,27 @@ namespace ChickenDist.Forms
             cboVoucherFormat.SelectedIndex = AppConfig.VoucherPaperSize == "A4" ? 1 
                                            : (AppConfig.VoucherPaperSize == "A5" ? 2 
                                            : (AppConfig.VoucherPaperSize == "Ask" ? 3 : 0));
-            page.Controls.Add(cboVoucherFormat);
-            y += 42;
+            cardSizes.Controls.Add(cboVoucherFormat);
 
-            // 7 (old 5). سلوك وسؤال الطباعة عند الحفظ
-            AddLabel(page, "سلوك وسؤال الطباعة عند حفظ الفاتورة (بيع / بيان تسعير / POS):", 20, y);
-            y += 24;
+            page.Controls.Add(cardSizes);
+            curY += 200;
+
+            // =========================================================================
+            // ── البطاقة 4: سلوك الطباعة وطباعة الكاشير POS ──
+            // =========================================================================
+            var cardBehavior = CreateSectionCard("سلوك الطباعة التلقائية وأنماط الحفظ وشاشات الكاشير (POS)", Color.FromArgb(99, 102, 241), cardW, 185);
+            cardBehavior.Location = new Point(15, curY);
+
+            // Row 1: Print Behavior on save
+            AddLabel(cardBehavior, "سلوك وسؤال الطباعة عند حفظ الفاتورة (بيع / تسعير / POS):", 20, 44);
             cboPrintBehavior = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 660,
+                Location = new Point(20, 68),
+                Width = 705,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboPrintBehavior.Items.AddRange(new object[]
             {
@@ -337,22 +456,18 @@ namespace ChickenDist.Forms
             });
             cboPrintBehavior.SelectedIndex = AppConfig.PrintBehaviorOnSave == "Direct" ? 1
                                            : (AppConfig.PrintBehaviorOnSave == "None" ? 2 : 0);
-            page.Controls.Add(cboPrintBehavior);
-            y += 42;
+            cardBehavior.Controls.Add(cboPrintBehavior);
 
-            // 6. نمط طباعة الفاتورة وطباعة رسيت البيع بعد الدفع
-            AddLabel(page, "نمط طباعة الفاتورة:", 20, y);
-            AddLabel(page, "طباعة رسيت البيع بعد الدفع (POS):", 360, y);
-            y += 24;
-
+            // Row 2: Receipt Mode + POS Mode
+            AddLabel(cardBehavior, "نمط طباعة الفاتورة:", 380, 110);
             cboReceiptPrintMode = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 320,
+                Location = new Point(380, 134),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboReceiptPrintMode.Items.AddRange(new object[]
             {
@@ -360,16 +475,17 @@ namespace ChickenDist.Forms
                 "مختصر - يظهر المجموع النهائي فقط"
             });
             cboReceiptPrintMode.SelectedIndex = AppConfig.ReceiptPrintMode == "Compact" ? 1 : 0;
-            page.Controls.Add(cboReceiptPrintMode);
+            cardBehavior.Controls.Add(cboReceiptPrintMode);
 
+            AddLabel(cardBehavior, "طباعة رسيت البيع بعد الدفع (POS):", 20, 110);
             cboPOSReceiptMode = new ComboBox
             {
-                Location = new Point(360, y),
-                Width = 320,
+                Location = new Point(20, 134),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboPOSReceiptMode.Items.AddRange(new object[]
             {
@@ -385,24 +501,36 @@ namespace ChickenDist.Forms
                 "Ask" => 1,
                 _ => 0
             };
-            page.Controls.Add(cboPOSReceiptMode);
+            cardBehavior.Controls.Add(cboPOSReceiptMode);
+
+            page.Controls.Add(cardBehavior);
+            curY += 205;
+
+            // Extra space at bottom to ensure zero clipping
+            var pnlSpacer = new Panel { Location = new Point(15, curY), Size = new Size(cardW, 20), BackColor = Color.Transparent };
+            page.Controls.Add(pnlSpacer);
         }
 
         private void BuildTabTemplates(TabPage page)
         {
-            int y = 15;
+            int cardW = 745;
+            int curY = 12;
 
-            // 1. قالب طباعة الريسيت الحراري
-            AddLabel(page, "قالب طباعة الريسيت الحراري (Receipt):", 20, y);
-            y += 24;
+            // =========================================================================
+            // ── البطاقة 1: قوالب وإعدادات الريسيت الحراري (Receipt 80mm) ──
+            // =========================================================================
+            var cardReceipt = CreateSectionCard("قوالب ومظهر فاتورة الريسيت الحراري (Receipt 80mm)", Color.FromArgb(37, 99, 235), cardW, 240);
+            cardReceipt.Location = new Point(15, curY);
+
+            AddLabel(cardReceipt, "قالب طباعة الريسيت الحراري الافتراضي:", 180, 44);
             cboReceiptTemplate = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 470,
+                Location = new Point(180, 68),
+                Width = 565,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboReceiptTemplate.Items.AddRange(new object[]
             {
@@ -433,86 +561,95 @@ namespace ChickenDist.Forms
                 _ => "النموذج الشبكي المبوب (أعمدة سوداء بارزة - زي الصورة)"
             };
             if (cboReceiptTemplate.SelectedIndex == -1) cboReceiptTemplate.SelectedIndex = 0;
-            page.Controls.Add(cboReceiptTemplate);
+            cardReceipt.Controls.Add(cboReceiptTemplate);
 
-            var btnPreviewReceipt = Theme.MakeButton("🖨️ معاينة الريسيت", 500, y - 2, 180, 32, Theme.Primary);
-            btnPreviewReceipt.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            var btnPreviewReceipt = new Button
+            {
+                Text = "معاينة الريسيت",
+                Location = new Point(20, 66),
+                Size = new Size(150, 32),
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnPreviewReceipt.FlatAppearance.BorderSize = 0;
             btnPreviewReceipt.Click += (s, e) => PreviewReceipt();
-            page.Controls.Add(btnPreviewReceipt);
-            y += 38;
+            cardReceipt.Controls.Add(btnPreviewReceipt);
 
-            // خيارات محتوى الريسيت
+            // خيارات الريسيت
             chkReceiptShowDiscount = new CheckBox
             {
                 Text = "إظهار عمود الخصم في جدول الأصناف بالريسيت",
-                Location = new Point(20, y),
-                Size = new Size(320, 22),
-                ForeColor = Theme.TextMain,
+                Location = new Point(380, 110),
+                Size = new Size(355, 22),
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Checked = AppConfig.ReceiptShowDiscount
             };
-            page.Controls.Add(chkReceiptShowDiscount);
+            cardReceipt.Controls.Add(chkReceiptShowDiscount);
 
             chkReceiptShowClientInfo = new CheckBox
             {
                 Text = "إظهار بيانات العميل (اسم + هاتف + عنوان) في رأس الريسيت",
-                Location = new Point(350, y),
-                Size = new Size(330, 22),
-                ForeColor = Theme.TextMain,
+                Location = new Point(20, 110),
+                Size = new Size(355, 22),
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 Checked = AppConfig.ReceiptShowClientInfo
             };
-            page.Controls.Add(chkReceiptShowClientInfo);
-            y += 30;
+            cardReceipt.Controls.Add(chkReceiptShowClientInfo);
 
-            // مقدمة وتذييل الريسيت
-            AddLabel(page, "ترويسة / مقدمة فاتورة الريسيت (نص بأعلى الفاتورة):", 20, y);
-            AddLabel(page, "تذييل / خاتمة الريسيت (سياسة الاستبدال أو رسالة شكر):", 360, y);
-            y += 24;
-
+            // مقدمة وخاتمة الفاتورة
+            AddLabel(cardReceipt, "ترويسة ومقدمة الفاتورة (نص بأعلى الريسيت):", 380, 142);
             txtReceiptHeader = new TextBox
             {
-                Location = new Point(20, y),
-                Width = 320,
-                Height = 46,
+                Location = new Point(380, 166),
+                Width = 345,
+                Height = 54,
                 Multiline = true,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9.5f),
                 Text = AppConfig.ReceiptHeaderNote
             };
-            page.Controls.Add(txtReceiptHeader);
+            cardReceipt.Controls.Add(txtReceiptHeader);
 
+            AddLabel(cardReceipt, "تذييل وخاتمة الفاتورة (سياسة الاستبدال أو رسالة شكر):", 20, 142);
             txtReceiptFooter = new TextBox
             {
-                Location = new Point(360, y),
-                Width = 320,
-                Height = 46,
+                Location = new Point(20, 166),
+                Width = 345,
+                Height = 54,
                 Multiline = true,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9.5f),
                 Text = AppConfig.ReceiptFooterNote
             };
-            page.Controls.Add(txtReceiptFooter);
-            y += 56;
+            cardReceipt.Controls.Add(txtReceiptFooter);
 
-            var sep = new Panel { Location = new Point(20, y), Size = new Size(660, 2), BackColor = Theme.BorderColor };
-            page.Controls.Add(sep);
-            y += 12;
+            page.Controls.Add(cardReceipt);
+            curY += 255;
 
-            // 2. قالب طباعة ورق A4 / A5
-            AddLabel(page, "قالب طباعة ورق A4 / A5:", 20, y);
-            y += 24;
+            // =========================================================================
+            // ── البطاقة 2: قوالب ومحاذاة ورق A4 و A5 ──
+            // =========================================================================
+            var cardA4 = CreateSectionCard("قوالب الفواتير الكاملة A4 ومحاذاة دفاتر A5 بالسنتيمتر", Color.FromArgb(5, 150, 105), cardW, 260);
+            cardA4.Location = new Point(15, curY);
 
+            AddLabel(cardA4, "قالب طباعة ورق A4 / A5 الافتراضي:", 280, 44);
             cboA4Template = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 380,
+                Location = new Point(280, 68),
+                Width = 465,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cboA4Template.Items.AddRange(new object[]
             {
@@ -546,30 +683,47 @@ namespace ChickenDist.Forms
                 _ => "نموذج الطارق هوم (Al Tarek Home)"
             };
             if (cboA4Template.SelectedIndex == -1) cboA4Template.SelectedIndex = 2;
-            page.Controls.Add(cboA4Template);
+            cardA4.Controls.Add(cboA4Template);
 
-            var btnPreviewA4 = Theme.MakeButton("📄 معاينة A4", 410, y - 2, 130, 32, Color.FromArgb(40, 120, 180));
-            btnPreviewA4.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            var btnPreviewA4 = new Button
+            {
+                Text = "معاينة A4",
+                Location = new Point(150, 66),
+                Size = new Size(120, 32),
+                BackColor = Color.FromArgb(2, 132, 199),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnPreviewA4.FlatAppearance.BorderSize = 0;
             btnPreviewA4.Click += (s, e) => PreviewA4();
-            page.Controls.Add(btnPreviewA4);
+            cardA4.Controls.Add(btnPreviewA4);
 
-            var btnPreviewA5 = Theme.MakeButton("📑 معاينة A5", 550, y - 2, 130, 32, Color.FromArgb(46, 125, 50));
-            btnPreviewA5.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            var btnPreviewA5 = new Button
+            {
+                Text = "معاينة A5",
+                Location = new Point(20, 66),
+                Size = new Size(120, 32),
+                BackColor = Color.FromArgb(5, 150, 105),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnPreviewA5.FlatAppearance.BorderSize = 0;
             btnPreviewA5.Click += (s, e) => PreviewA5();
-            page.Controls.Add(btnPreviewA5);
-            y += 42;
+            cardA4.Controls.Add(btnPreviewA5);
 
-            // 3. مقاس ومحاذاة ورق A5
-            AddLabel(page, "📐 مقاس ومحاذاة ورق A5 (إزاحة درج الطابعة / دفاتر الفواتير):", 20, y);
-            y += 24;
-
+            // A5 Shift
+            AddLabel(cardA4, "مقاس ومحاذاة ورق A5 (إزاحة درج الطابعة ودفاتر الفواتير المطبوعة):", 20, 110);
             cboA5Shift = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 510,
+                Location = new Point(165, 134),
+                Width = 580,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 10f)
             };
             cboA5Shift.Items.AddRange(new object[]
@@ -589,16 +743,16 @@ namespace ChickenDist.Forms
 
             numA5ShiftCm = new NumericUpDown
             {
-                Location = new Point(540, y),
-                Width = 140,
-                Height = 30,
+                Location = new Point(20, 134),
+                Width = 135,
                 DecimalPlaces = 1,
                 Increment = 0.2m,
                 Minimum = 0.0m,
                 Maximum = 15.0m,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = HorizontalAlignment.Center
             };
 
             decimal curCm = Math.Round((decimal)(AppConfig.A5ShiftRight * 0.0254), 1);
@@ -634,89 +788,89 @@ namespace ChickenDist.Forms
                     case 9: numA5ShiftCm.Value = 0.0m; break;
                 }
             };
+            cardA4.Controls.Add(cboA5Shift);
+            cardA4.Controls.Add(numA5ShiftCm);
 
-            page.Controls.Add(cboA5Shift);
-            page.Controls.Add(numA5ShiftCm);
-
-            y += 38;
-
-            // 4. إزاحة محتوى فاتورة A4 لليمين
-            AddLabel(page, "📐 إزاحة محتوى فاتورة A4 لليمين (لمعالجة الهامش الزائد في الطابعة):", 20, y);
-            y += 24;
-
-            AddLabel(page, "الإزاحة بالسنتيمتر (0 = بدون إزاحة):", 20, y + 4);
+            // A4 Shift
+            AddLabel(cardA4, "إزاحة محتوى فاتورة A4 لليمين بالسنتيمتر (لمعالجة هوامش الطابعة):", 20, 180);
             numA4ShiftCm = new NumericUpDown
             {
-                Location = new Point(350, y),
-                Width = 140,
-                Height = 30,
+                Location = new Point(610, 206),
+                Width = 135,
                 DecimalPlaces = 1,
                 Increment = 0.5m,
                 Minimum = -5.0m,
                 Maximum = 15.0m,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = HorizontalAlignment.Center
             };
             decimal curA4Cm = Math.Round((decimal)(AppConfig.A4ShiftRight * 0.0254), 1);
             if (curA4Cm < -5m) curA4Cm = 0m;
             if (curA4Cm > 15m) curA4Cm = 0m;
             numA4ShiftCm.Value = curA4Cm;
+            cardA4.Controls.Add(numA4ShiftCm);
 
-            AddLabel(page, "💡 اضبط الإزاحة حتى يتمركز المحتوى في منتصف ورقة A4 (جرب 1.0 ~ 4.0 سم)", 20, y + 34);
+            var lblA4Hint = new Label
+            {
+                Text = "💡 اضبط الإزاحة لتوسيط جدول الفاتورة تماماً على ورقة A4 (الافتراضي 0 أو بين 1.0 و 3.0 سم)",
+                Location = new Point(20, 210),
+                Size = new Size(580, 20),
+                ForeColor = Color.FromArgb(100, 116, 139),
+                Font = new Font("Segoe UI", 9f, FontStyle.Italic)
+            };
+            cardA4.Controls.Add(lblA4Hint);
 
-            page.Controls.Add(numA4ShiftCm);
-            y += 70;
+            page.Controls.Add(cardA4);
+            curY += 275;
+
+            var pnlSpacer = new Panel { Location = new Point(15, curY), Size = new Size(cardW, 20), BackColor = Color.Transparent };
+            page.Controls.Add(pnlSpacer);
         }
 
         private void BuildTabPrepAndBarcode(TabPage page)
         {
-            int y = 15;
+            int cardW = 745;
+            int curY = 12;
 
-            // 1. إذن التحضير وصرف البضاعة بالمخزن
-            var lblPrepTitle = new Label
-            {
-                Text = "📦 نماذج إذن التحضير وصرف البضاعة بالمخزن:",
-                Location = new Point(20, y),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Theme.Accent
-            };
-            page.Controls.Add(lblPrepTitle);
-            y += 26;
+            // =========================================================================
+            // ── البطاقة 1: نماذج إذن التحضير وصرف البضاعة بالمخزن ──
+            // =========================================================================
+            var cardPrep = CreateSectionCard("نماذج إذن التحضير وصرف البضاعة بالمخزن (Disbursement Slip)", Color.FromArgb(217, 119, 6), cardW, 200);
+            cardPrep.Location = new Point(15, curY);
 
-            AddLabel(page, "نموذج إذن التحضير وصرف البضاعة:", 20, y);
-            AddLabel(page, "مقاس ورق إذن التحضير الافتراضي:", 360, y);
-            y += 24;
-
+            // Row 1: Template + Paper Size
+            AddLabel(cardPrep, "نموذج إذن التحضير وصرف البضاعة:", 380, 44);
             cboPrepTemplate = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 320,
+                Location = new Point(380, 68),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 10f)
             };
             cboPrepTemplate.Items.AddRange(new object[]
             {
-                "نموذج إذن صرف بضاعة مع خانة الملاحظات (Disbursement Slip)",
-                "النموذج القياسي مع موقع الرف والتخزين (Standard Grid)",
-                "النموذج العصري الحديث (Modern Dark Preparation)"
+                "إذن صرف بضاعة مع خانة الملاحظات (Disbursement)",
+                "النموذج القياسي مع موقع الرف (Standard Grid)",
+                "النموذج العصري الحديث (Modern Dark)"
             });
-            cboPrepTemplate.SelectedItem = AppConfig.PreparationSlipTemplate == "Standard" ? "النموذج القياسي مع موقع الرف والتخزين (Standard Grid)"
-                                         : AppConfig.PreparationSlipTemplate == "Modern" ? "النموذج العصري الحديث (Modern Dark Preparation)"
-                                         : "نموذج إذن صرف بضاعة مع خانة الملاحظات (Disbursement Slip)";
+            cboPrepTemplate.SelectedIndex = AppConfig.PreparationSlipTemplate == "Standard" ? 1
+                                          : AppConfig.PreparationSlipTemplate == "Modern" ? 2
+                                          : 0;
             if (cboPrepTemplate.SelectedIndex == -1) cboPrepTemplate.SelectedIndex = 0;
-            page.Controls.Add(cboPrepTemplate);
+            cardPrep.Controls.Add(cboPrepTemplate);
 
+            AddLabel(cardPrep, "مقاس ورق إذن التحضير الافتراضي:", 20, 44);
             cboPrepPaperSize = new ComboBox
             {
-                Location = new Point(360, y),
-                Width = 320,
+                Location = new Point(20, 68),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 10f)
             };
             cboPrepPaperSize.Items.AddRange(new object[]
@@ -729,51 +883,37 @@ namespace ChickenDist.Forms
                                           : AppConfig.PreparationPaperSize == "Receipt" ? "بون حراري Receipt (80 mm)"
                                           : "ورق كامل A4 (210 x 297 mm)";
             if (cboPrepPaperSize.SelectedIndex == -1) cboPrepPaperSize.SelectedIndex = 0;
-            page.Controls.Add(cboPrepPaperSize);
-            y += 40;
+            cardPrep.Controls.Add(cboPrepPaperSize);
 
-            AddLabel(page, "عدد نسخ طباعة إذن التحضير وصرف البضاعة:", 20, y);
-            y += 24;
+            // Row 2: Copies + A5 Shift + Preview
+            AddLabel(cardPrep, "عدد نسخ الطباعة:", 580, 110);
             numPrepCopies = new NumericUpDown
             {
-                Location = new Point(20, y),
-                Width = 120,
+                Location = new Point(580, 134),
+                Width = 165,
                 Minimum = 1,
                 Maximum = 10,
                 Value = AppConfig.PreparationSlipCopies,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = HorizontalAlignment.Center
             };
-            page.Controls.Add(numPrepCopies);
+            cardPrep.Controls.Add(numPrepCopies);
 
-            var lblPrepCopiesHint = new Label
-            {
-                Text = "↪ عدد النسخ المطبوعة من إذن التحضير وصرف البضاعة (مثلاً نسخة للمخزن ونسخة مع السائق أو المستلم).",
-                Location = new Point(155, y + 4),
-                AutoSize = true,
-                ForeColor = Color.Gray,
-                Font = new Font("Segoe UI", 9f, FontStyle.Italic)
-            };
-            page.Controls.Add(lblPrepCopiesHint);
-            y += 38;
-
-            // محاذاة إذن التحضير A5
-            AddLabel(page, "محاذاة إذن التحضير A5 (إزاحة درج الطابعة):", 20, y);
-            y += 24;
-
+            AddLabel(cardPrep, "محاذاة إذن التحضير A5 وإزاحة الدرج:", 190, 110);
             cboPrepA5Shift = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 360,
+                Location = new Point(310, 134),
+                Width = 250,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 9.5f)
             };
             cboPrepA5Shift.Items.AddRange(new object[]
             {
-                "مطابق لمقاس ومحاذاة الفاتورة A5 تلقائياً (موصى به)",
+                "مطابق لمحاذاة الفاتورة A5 تلقائياً (توصية)",
                 "مقاس 1: إزاحة 3.0 سم",
                 "مقاس 2: إزاحة 2.8 سم",
                 "مقاس 3: إزاحة 3.2 سم",
@@ -785,18 +925,20 @@ namespace ChickenDist.Forms
                 "مقاس 9: إزاحة 1.0 سم",
                 "بدون إزاحة 0 سم"
             });
+            cardPrep.Controls.Add(cboPrepA5Shift);
 
             numPrepA5ShiftCm = new NumericUpDown
             {
-                Location = new Point(390, y),
+                Location = new Point(190, 134),
                 Width = 110,
                 DecimalPlaces = 1,
                 Increment = 0.2m,
                 Minimum = 0.0m,
                 Maximum = 15.0m,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                TextAlign = HorizontalAlignment.Center
             };
             decimal prepCurCm = Math.Round((decimal)(AppConfig.GetPreparationA5Shift() * 0.0254), 1);
             numPrepA5ShiftCm.Value = prepCurCm >= 0 && prepCurCm <= 15 ? prepCurCm : 3.0m;
@@ -816,49 +958,47 @@ namespace ChickenDist.Forms
             {
                 numPrepA5ShiftCm.Enabled = (cboPrepA5Shift.SelectedIndex != 0);
             };
+            cardPrep.Controls.Add(numPrepA5ShiftCm);
 
-            page.Controls.Add(cboPrepA5Shift);
-            page.Controls.Add(numPrepA5ShiftCm);
-
-            var btnPreviewPrepA5 = Theme.MakeButton("📋 معاينة إذن التحضير A5", 510, y - 2, 170, 30, Color.FromArgb(34, 153, 84));
-            btnPreviewPrepA5.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
-            btnPreviewPrepA5.Click += (s, e) => PreviewPrepSlip("A5");
-            page.Controls.Add(btnPreviewPrepA5);
-            y += 48;
-
-            var sep2 = new Panel { Location = new Point(20, y), Size = new Size(660, 2), BackColor = Theme.BorderColor };
-            page.Controls.Add(sep2);
-            y += 12;
-
-            // 2. إعدادات ملصقات الباركود
-            var lblBarcodeTitle = new Label
+            var btnPreviewPrepA5 = new Button
             {
-                Text = "🏷️ إعدادات ملصقات واستيكرات الباركود (Barcode Stickers):",
-                Location = new Point(20, y),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = Theme.Accent
+                Text = "معاينة إذن التحضير",
+                Location = new Point(20, 132),
+                Size = new Size(160, 32),
+                BackColor = Color.FromArgb(217, 119, 6),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
-            page.Controls.Add(lblBarcodeTitle);
-            y += 26;
+            btnPreviewPrepA5.FlatAppearance.BorderSize = 0;
+            btnPreviewPrepA5.Click += (s, e) => PreviewPrepSlip("A5");
+            cardPrep.Controls.Add(btnPreviewPrepA5);
 
-            AddLabel(page, "قالب ملصق الباركود الافتراضي:", 20, y);
-            AddLabel(page, "مقاس ملصق الباركود (Sticker Size):", 360, y);
-            y += 24;
+            page.Controls.Add(cardPrep);
+            curY += 215;
 
+            // =========================================================================
+            // ── البطاقة 2: إعدادات ملصقات واستيكرات الباركود ──
+            // =========================================================================
+            var cardBarcode = CreateSectionCard("إعدادات ملصقات واستيكرات الباركود (Barcode Stickers)", Color.FromArgb(13, 148, 136), cardW, 230);
+            cardBarcode.Location = new Point(15, curY);
+
+            // Row 1: Barcode Template + Sticker Size
+            AddLabel(cardBarcode, "قالب ملصق الباركود الافتراضي:", 380, 44);
             cboBarcodeTemplate = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 320,
+                Location = new Point(380, 68),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 10f)
             };
             cboBarcodeTemplate.Items.AddRange(new object[]
             {
                 "الافتراضي (اسم صنف + سعر + باركود)",
-                "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
+                "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "كود الصنف علي العرض",
                 "سعر بارز (سعر كبير + باركود)",
                 "ملصق صغير (سعر وباركود فقط)",
@@ -868,23 +1008,24 @@ namespace ChickenDist.Forms
             cboBarcodeTemplate.SelectedItem = AppConfig.BarcodeTemplate switch
             {
                 "CodeOnSide" => "كود الصنف علي العرض",
-                "MobileIMEI" => "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
+                "MobileIMEI" => "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)",
                 "PriceHeavy" => "سعر بارز (سعر كبير + باركود)",
                 "Small" => "ملصق صغير (سعر وباركود فقط)",
                 "Shelf" => "ملصق الرف (اسم صنف وسعر كبير - بدون باركود)",
                 "NoPrice" or "NoPriceBigName" => "اسم صنف كبير + باركود (بدون سعر)",
-                _ => (AppConfig.BusinessType == "Mobiles" ? "📱 ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)")
+                _ => (AppConfig.BusinessType == "Mobiles" ? "ملصق أجهزة وسيريالات الموبايل (اسم المكان كبير + IMEI)" : "الافتراضي (اسم صنف + سعر + باركود)")
             };
             if (cboBarcodeTemplate.SelectedIndex == -1) cboBarcodeTemplate.SelectedIndex = 0;
-            page.Controls.Add(cboBarcodeTemplate);
+            cardBarcode.Controls.Add(cboBarcodeTemplate);
 
+            AddLabel(cardBarcode, "مقاس ملصق الباركود (Sticker Size):", 20, 44);
             cboBarcodeStickerSize = new ComboBox
             {
-                Location = new Point(360, y),
-                Width = 320,
+                Location = new Point(20, 68),
+                Width = 345,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 10f)
             };
             cboBarcodeStickerSize.Items.AddRange(new object[]
@@ -901,20 +1042,17 @@ namespace ChickenDist.Forms
                 "38x26" => 1,
                 _ => 0
             };
-            page.Controls.Add(cboBarcodeStickerSize);
-            y += 42;
+            cardBarcode.Controls.Add(cboBarcodeStickerSize);
 
-            // تشفير الباركود
-            AddLabel(page, "نوع تشفير وترميز الباركود المطبوع:", 20, y);
-            y += 24;
-
+            // Row 2: Encoding
+            AddLabel(cardBarcode, "نوع تشفير وترميز الباركود المطبوع (Encoding):", 20, 110);
             cboBarcodeEncoding = new ComboBox
             {
-                Location = new Point(20, y),
-                Width = 660,
+                Location = new Point(20, 134),
+                Width = 705,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
                 Font = new Font("Segoe UI", 10f)
             };
             var encList = BarcodeEngine.GetAvailableEncodings();
@@ -924,31 +1062,36 @@ namespace ChickenDist.Forms
             }
             int defEncIdx = encList.FindIndex(x => x.Item1 == AppConfig.BarcodeEncoding);
             cboBarcodeEncoding.SelectedIndex = defEncIdx >= 0 ? defEncIdx : 0;
-            page.Controls.Add(cboBarcodeEncoding);
-            y += 38;
+            cardBarcode.Controls.Add(cboBarcodeEncoding);
 
+            // Row 3: Checkboxes
             chkBarcodePrintPrice = new CheckBox
             {
-                Text = "🏷️ طباعة سعر البيع على ملصقات الباركود بشكل دائم",
-                Location = new Point(20, y),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Theme.TextMain,
+                Text = "طباعة سعر البيع على ملصقات واستيكرات الباركود بشكل دائم",
+                Location = new Point(380, 180),
+                Size = new Size(355, 24),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 41, 59),
                 Checked = AppConfig.BarcodePrintPrice
             };
-            page.Controls.Add(chkBarcodePrintPrice);
-            y += 30;
+            cardBarcode.Controls.Add(chkBarcodePrintPrice);
 
             chkBarcodePrintCategory = new CheckBox
             {
-                Text = "📂 طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود",
-                Location = new Point(20, y),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Theme.Accent,
+                Text = "طباعة اسم التصنيف بدلاً من اسم الصنف على ملصق الباركود",
+                Location = new Point(20, 180),
+                Size = new Size(355, 24),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 41, 59),
                 Checked = AppConfig.BarcodePrintCategoryInsteadOfName
             };
-            page.Controls.Add(chkBarcodePrintCategory);
+            cardBarcode.Controls.Add(chkBarcodePrintCategory);
+
+            page.Controls.Add(cardBarcode);
+            curY += 245;
+
+            var pnlSpacer = new Panel { Location = new Point(15, curY), Size = new Size(cardW, 20), BackColor = Color.Transparent };
+            page.Controls.Add(pnlSpacer);
         }
 
         private void AddLabel(Control parent, string text, int x, int y)
@@ -958,7 +1101,7 @@ namespace ChickenDist.Forms
                 Text = text,
                 Location = new Point(x, y),
                 AutoSize = true,
-                ForeColor = Theme.TextMain,
+                ForeColor = Color.FromArgb(51, 65, 85),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold)
             };
             parent.Controls.Add(lbl);
@@ -971,9 +1114,9 @@ namespace ChickenDist.Forms
                 Location = new Point(x, y),
                 Width = width,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Theme.BgInput,
-                ForeColor = Theme.TextMain,
-                Font = new Font("Segoe UI", 10.5f)
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                Font = new Font("Segoe UI", 10f)
             };
             cbo.Items.Add("(طابعة النظام الافتراضية)");
             try
