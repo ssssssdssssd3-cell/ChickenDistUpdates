@@ -1,5 +1,5 @@
-version=4.4.16
+version=4.4.17
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.16&t=1792975006
-sha256=354D5DF5C1D33D534543EFAF88C64E6E68BFA544D2681481AD6336348BF10FD4
-changelog=v4.4.16 - 2026-10-26: إعادة تصميم وتنسيق شاشة إعدادات الطابعات ونماذج الفواتير والباركود (FrmPrinterSettings) بنظام البطاقات (Cards) ذات الحواف الملونة، وتنظيم الإعدادات في أقسام بصرية مريحة تمنع التشتت مع التخلص من الرموز المربعة وتنسيق الأبعاد والألوان وتثبيت شريط الحفظ السفلي.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.17&t=1793003459
+sha256=842A0E5662DB2E30DC3623F806D5F072BCC6F574E062A2E98E0E57D54E98DDF4
+changelog=v4.4.17 - 2026-10-26: 1) تخصيص شاشة البحث المتقدم للأصناف: إظهار نسبة وهامش الربح % مكان نسبة الخصم حصرياً في نشاط (قطع غيار ومنزلي - نسب ربح وضريبة)، وإخفاء نسبة الخصم تماماً في هذا النشاط. 2) إظهار نسبة الخصم % وإخفاء نسبة الربح في كافة الأنشطة التجارية الأخرى تلقائياً. 3) التخلص من الرموز المربعة في مسميات شريط البحث السفلي وتنسيق وتوسيع الحقول.
