@@ -1,5 +1,5 @@
-version=4.4.20
+version=4.4.21
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.20&t=1793110939
-sha256=25C27EF01BEDF0483660CEFA4DD1CEE9BAD8E9AF8265D0977BBFFC6F1CE81F62
-changelog=v4.4.20 - 2026-10-27: ترقية معمارية ومحاسبية وأمنية شاملة (إصلاح تسريب مقابض GDI+ والخطوط، تسريع إقلاع البرنامج والتنقل بين التبويبات، تأمين التراخيص والكود المصدري، ضبط حسابات تكلفة الوحدات المتعددة وصافي الربح وتقفيل الوردية والمرتجعات، ومنع تعارض السندات والأقساط المتزامنة).
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.21&t=1793181198
+sha256=C227D4E1C4C0E0A26FEC616AB7893BDC41A50AAD3B2AF3C7F548B8E9F08CE56C
+changelog=v4.4.21 - 2026-10-28: ترقية معمارية ومحاسبية وأمنية شاملة (إصلاح تسريب مقابض GDI+ والخطوط، تسريع إقلاع البرنامج والتنقل بين التبويبات، تأمين التراخيص والكود المصدري، ضبط حسابات تكلفة الوحدات المتعددة وصافي الربح وتقفيل الوردية والمرتجعات، ومنع تعارض السندات والأقساط المتزامنة).
