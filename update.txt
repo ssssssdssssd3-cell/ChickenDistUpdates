@@ -1,5 +1,5 @@
-version=4.4.25
+version=4.4.26
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.25&t=1793189987
-sha256=20E5CE0B221DC1361782275A5E8BAE79DF82F87D811D11D967732EB1607B96E3
-changelog=v4.4.25 - 2026-10-28: تخصيص وفصل خيارات الأنشطة التجارية بدقة — إخفاء خيارات وإعدادات المطاعم والكافيهات (طابعة المطبخ، توليفة العميل، رسوم الخدمة والضريبة) عن باقي الأنشطة غير المطاعم، وإخفاء تواريخ الصلاحية وموازين الباركود عن نشاط قطع الغيار والأنشطة غير الغذائية في كارت الصنف والجداول والتقارير.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.26&t=1793190983
+sha256=FAEF7A1B7889F5697B12631AEACC15F4C759BABED84618AE7F2635839209600C
+changelog=v4.4.26 - 2026-10-28: تعديل وتنسيق شاشة POS

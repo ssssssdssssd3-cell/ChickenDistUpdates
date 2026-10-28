@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.25";
-$CHANGELOG = "v4.4.25 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): تخصيص وفصل خيارات الأنشطة التجارية بدقة — إخفاء خيارات وإعدادات المطاعم والكافيهات (طابعة المطبخ، توليفة العميل، رسوم الخدمة والضريبة) عن باقي الأنشطة غير المطاعم، وإخفاء تواريخ الصلاحية وموازين الباركود عن نشاط قطع الغيار والأنشطة غير الغذائية في كارت الصنف والجداول والتقارير.";
+$VERSION = "4.4.26";
+$CHANGELOG = "v4.4.26 - 2026-10-28: تعديل وتنسيق شاشة POS";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # ────────────────────────────────────────────────────────────
