@@ -1,5 +1,5 @@
-version=4.4.24
+version=4.4.25
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.24&t=1793188230
-sha256=94210BE72E5D1BAC94C43A53E439550EB6EBDC2D6D5D439699C0F31A2AB1CF7E
-changelog=v4.4.24 - 2026-10-28: إعادة تصميم وتنسيق شاشة إعدادات الطابعات ونماذج الفواتير والباركود بالكامل بألوان عصرية هادئة ومتناسقة وترتيب شبكي متوازن ومريح للعين.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.25&t=1793189987
+sha256=20E5CE0B221DC1361782275A5E8BAE79DF82F87D811D11D967732EB1607B96E3
+changelog=v4.4.25 - 2026-10-28: تخصيص وفصل خيارات الأنشطة التجارية بدقة — إخفاء خيارات وإعدادات المطاعم والكافيهات (طابعة المطبخ، توليفة العميل، رسوم الخدمة والضريبة) عن باقي الأنشطة غير المطاعم، وإخفاء تواريخ الصلاحية وموازين الباركود عن نشاط قطع الغيار والأنشطة غير الغذائية في كارت الصنف والجداول والتقارير.
