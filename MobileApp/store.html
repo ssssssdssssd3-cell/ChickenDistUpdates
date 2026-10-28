@@ -20,7 +20,7 @@
     let deferredInstallPrompt = null;
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=4.4.29').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=4.4.30').then(reg => {
           reg.update();
         }).catch(err => console.log('SW Note:', err));
       });
@@ -910,9 +910,9 @@
     </div>
 
     <!-- شريط الإعلان الترويجي إذا وُجد -->
-    <div id="storeAnnouncementBanner" class="hidden mt-2 p-2 bg-blue-950/60 border border-blue-500/30 rounded-xl text-[11px] sm:text-xs text-blue-200 text-center font-bold flex items-center justify-center gap-2">
-      <i class="fa-solid fa-bullhorn text-amber-400"></i>
-      <span id="lblAnnouncementText">خدمة التوصيل السريع متوفرة لجميع المناطق</span>
+    <div id="storeAnnouncementBanner" class="hidden mt-2.5 py-2.5 px-4 sm:py-3 sm:px-6 bg-gradient-to-r from-amber-950/50 via-slate-900/90 to-amber-950/50 border border-amber-500/50 rounded-2xl text-center flex items-center justify-center gap-3 shadow-lg shadow-amber-500/15">
+      <i class="fa-solid fa-bullhorn text-amber-400 text-base sm:text-lg animate-pulse flex-shrink-0"></i>
+      <span id="lblAnnouncementText" class="text-sm sm:text-base md:text-lg font-black tracking-wide" style="color: #f5c518; text-shadow: 0 1px 4px rgba(245, 197, 24, 0.35);">خدمة التوصيل السريع متوفرة لجميع المناطق</span>
     </div>
 
     <!-- بانر تثبيت الآيفون الذكي (يظهر تلقائياً لمستخدمي Safari على هواتف iPhone) -->

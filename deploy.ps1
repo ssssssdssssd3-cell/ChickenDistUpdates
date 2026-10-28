@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.29";
-$CHANGELOG = "v4.4.29 - 2026-10-29: Hide cart and order buttons and display menu browsing mode when online ordering is disabled";
+$VERSION = "4.4.30";
+$CHANGELOG = "v4.4.30 - 2026-10-29: Enhance announcement banner with larger font size and luxury royal gold styling";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # ────────────────────────────────────────────────────────────

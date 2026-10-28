@@ -1,5 +1,5 @@
-version=4.4.29
+version=4.4.30
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.29&t=1793230572
-sha256=85EC02205519268C4BD639278159DAF1B45538DE29CB469C35BD4004EC925E23
-changelog=v4.4.29 - 2026-10-29: Hide cart and order buttons and display menu browsing mode when online ordering is disabled
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.30&t=1793231301
+sha256=EA9E582C8E28421C306E7CC99179D6FF64243C38E4FB40E27E540EF07BDCC64D
+changelog=v4.4.30 - 2026-10-29: Enhance announcement banner with larger font size and luxury royal gold styling
