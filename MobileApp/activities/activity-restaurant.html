@@ -598,6 +598,25 @@
       { id: 2, name: "شاورما صاج عائلي", category: "شاورما", weight: "مع ثومية وبطاطس", price: 210, img: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=400&q=80", benefits: "🌯 قطع شاورما متبلة بالخلطة الشامية الخاصة داخل خبز الصاج السوري المقرمش.\n• ثومية بيور معمولة طازة بدون أي مواد حافظة.\n• بطاطس مقلية ذهبية ومخلل خيار بيتي مقرمش.\n• تكفي 3-4 أفراد بكل متعة." }
     ];
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const isOrderDisabled = urlParams.get('order') === '0' || urlParams.get('order') === 'false' || urlParams.get('mode') === 'menu';
+
+    function initOrderVisibility() {
+      if (!isOrderDisabled) return;
+      document.querySelectorAll('.btn-add-cart').forEach(btn => btn.style.display = 'none');
+      const headerCart = document.querySelector('.header-icon-btn[onclick*="openCartModal"]');
+      if (headerCart) headerCart.style.display = 'none';
+      const navCart = document.querySelector('.nav-tab[onclick*="openCartModal"]');
+      if (navCart) navCart.style.display = 'none';
+      const heroBadge = document.querySelector('.hero-badge');
+      if (heroBadge) heroBadge.innerHTML = '📜 منيو رقمي للتصفح والعرض';
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initOrderVisibility);
+    } else {
+      initOrderVisibility();
+    }
+
     let cart = [];
     function addToCart(index) {
       const prod = productsData[index];

@@ -1,11 +1,11 @@
-﻿# ============================================================
+# ============================================================
 #  Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.26";
-$CHANGELOG = "v4.4.26 - 2026-10-28: تعديل وتنسيق شاشة POS";
+$VERSION = "4.4.27";
+$CHANGELOG = "v4.4.27 - 2026-10-29: Online ordering toggle for restaurant menu";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # ────────────────────────────────────────────────────────────

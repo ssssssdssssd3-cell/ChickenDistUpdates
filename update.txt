@@ -1,5 +1,5 @@
-version=4.4.26
+version=4.4.27
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.26&t=1793190983
-sha256=FAEF7A1B7889F5697B12631AEACC15F4C759BABED84618AE7F2635839209600C
-changelog=v4.4.26 - 2026-10-28: تعديل وتنسيق شاشة POS
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.27&t=1793225601
+sha256=3879B2D0CA1653827850E5C0142753484E81A3BC806ACDA98AC143309DB47881
+changelog=v4.4.27 - 2026-10-29: Online ordering toggle for restaurant menu

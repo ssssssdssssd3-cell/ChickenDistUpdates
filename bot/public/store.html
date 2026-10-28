@@ -900,7 +900,7 @@
         </button>
 
         <!-- زر سلة المشتريات -->
-        <button onclick="openCartDrawer()" class="px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-600/30 transition flex items-center gap-2 transform active:scale-95">
+        <button id="btnHeaderCart" onclick="openCartDrawer()" class="px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-600/30 transition flex items-center gap-2 transform active:scale-95">
           <i class="fa-solid fa-cart-shopping text-sm"></i>
           <span>السلة</span>
           <span id="cartCountBadge" class="px-1.5 py-0.2 bg-white text-blue-900 rounded-full text-[10px] font-black">0</span>
@@ -1855,6 +1855,8 @@
       Phone: "",
       Address: "",
       IsActive: true,
+      AllowOrdering: true,
+      IsMenuOnly: false,
       PriceTier: "Retail",
       ShowPrices: true,
       ShowStockQty: false,
@@ -1864,6 +1866,22 @@
       Announcement: "",
       NotificationWhatsApp: ""
     };
+
+    // هل مسموح بالطلب أونلاين وإضافة الأصناف للسلة؟
+    function isOrderingAllowed() {
+      try {
+        const urlMode = (urlParams.get('mode') || '').toLowerCase();
+        if (urlMode === 'menu') return false;
+        const urlOrder = urlParams.get('order');
+        if (urlOrder === '0' || urlOrder === 'false' || urlOrder === 'no') return false;
+      } catch (e) {}
+
+      if (storeConfig.IsActive === false) return false;
+      if (storeConfig.AllowOrdering === false) return false;
+      if (storeConfig.IsMenuOnly === true) return false;
+
+      return true;
+    }
 
     function calculateDeliveryFee(subTotal) {
       if (subTotal <= 0) return 0;
@@ -1959,6 +1977,9 @@
             if (cfg.DeliveryCharge !== undefined) storeConfig.DeliveryCharge = parseFloat(cfg.DeliveryCharge) || 0;
             if (cfg.FreeDeliveryThreshold !== undefined) storeConfig.FreeDeliveryThreshold = parseFloat(cfg.FreeDeliveryThreshold) || 0;
             if (cfg.MinimumOrder !== undefined) storeConfig.MinimumOrder = parseFloat(cfg.MinimumOrder) || 0;
+            if (cfg.IsActive !== undefined) storeConfig.IsActive = (cfg.IsActive === true || cfg.IsActive === 'true');
+            if (cfg.AllowOrdering !== undefined) storeConfig.AllowOrdering = (cfg.AllowOrdering === true || cfg.AllowOrdering === 'true');
+            if (cfg.IsMenuOnly !== undefined) storeConfig.IsMenuOnly = (cfg.IsMenuOnly === true || cfg.IsMenuOnly === 'true');
             if (cfg.StoreTheme) {
               storeConfig.StoreTheme = cfg.StoreTheme;
               const manualTheme = localStorage.getItem('prosoft_store_theme_manual');
@@ -2100,10 +2121,32 @@
         if (btnWa) btnWa.classList.add('hidden');
       }
 
+      const isRest = (storeConfig.BusinessType && storeConfig.BusinessType.toLowerCase().includes('restaurant')) || 
+                     (storeConfig.StoreTheme === 'restaurant' || storeConfig.StoreTheme === 'coffee');
+
+      const cartBtn = document.getElementById('btnHeaderCart');
+      if (cartBtn) {
+        if (!isOrderingAllowed()) {
+          cartBtn.classList.add('hidden');
+        } else {
+          cartBtn.classList.remove('hidden');
+        }
+      }
+
+      const floatBar = document.getElementById('floatingCartBar');
+      if (floatBar && !isOrderingAllowed()) {
+        floatBar.classList.add('hidden');
+      }
+
       const statusBadge = document.getElementById('storeStatusBadge');
-      if (storeConfig.IsActive === false) {
-        statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> مغلق مؤقتاً`;
-        statusBadge.className = "inline-flex items-center gap-1 text-rose-400 font-bold";
+      if (!isOrderingAllowed()) {
+        if (isRest) {
+          statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span> منيو رقمي (للتصفح فقط)`;
+          statusBadge.className = "inline-flex items-center gap-1 text-amber-300 font-bold";
+        } else {
+          statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span> كتالوج للتصفح (الطلب متوقف)`;
+          statusBadge.className = "inline-flex items-center gap-1 text-amber-300 font-bold";
+        }
       } else {
         statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> مفتوح للطلبات`;
         statusBadge.className = "inline-flex items-center gap-1 text-emerald-400 font-bold";
@@ -2331,7 +2374,8 @@
                 </button>
               </div>
 
-              <!-- أزرار الإضافة والتحكم بالكمية -->
+              <!-- أزرار الإضافة والتحكم بالكمية (تظهر فقط عند تفعيل خيار الطلب أونلاين) -->
+              ${isOrderingAllowed() ? `
               <div class="mt-3 pt-2.5 border-t border-slate-800/80">
                 ${inCartQty > 0 ? `
                   <div class="flex items-center justify-between bg-slate-900/90 rounded-xl p-1 border border-blue-500/40 shadow-sm">
@@ -2355,6 +2399,7 @@
                   </button>
                 `}
               </div>
+              ` : ''}
 
             </div>
           `;
@@ -2427,27 +2472,36 @@
       // الفوتر (زر الإضافة للسلة أو زيادة/نقصان الكمية)
       const footer = document.getElementById('benefitsModalFooter');
       if (footer) {
-        const inCart = cart.find(c => c.ProductID == p.ProductID);
-        const inCartQty = inCart ? inCart.Quantity : 0;
-        if (inCartQty > 0) {
+        if (!isOrderingAllowed()) {
           footer.innerHTML = `
-            <div class="flex items-center justify-between bg-slate-900 rounded-xl p-1.5 border border-blue-500/40">
-              <button onclick="updateItemQuantity(${p.ProductID}, -1); openProductBenefitsModal(${p.ProductID});" class="w-8 h-8 rounded-lg bg-slate-800 text-white font-bold flex items-center justify-center">
-                <i class="fa-solid fa-minus text-xs"></i>
-              </button>
-              <span class="font-black text-white text-sm px-3">${inCartQty} في السلة</span>
-              <button onclick="updateItemQuantity(${p.ProductID}, 1); openProductBenefitsModal(${p.ProductID});" class="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center">
-                <i class="fa-solid fa-plus text-xs"></i>
-              </button>
+            <div class="w-full py-2.5 px-3 bg-slate-900/80 border border-slate-700/60 rounded-xl text-center text-xs font-bold text-amber-300 flex items-center justify-center gap-2 shadow-sm">
+              <i class="fa-solid fa-book-open"></i>
+              <span>قائمة الطعام للعرض والتصفح فقط</span>
             </div>
           `;
         } else {
-          footer.innerHTML = `
-            <button onclick="addToCart(${p.ProductID}); openProductBenefitsModal(${p.ProductID});" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md">
-              <i class="fa-solid fa-cart-plus"></i>
-              <span>إضافة إلى سلة الطلبات</span>
-            </button>
-          `;
+          const inCart = cart.find(c => c.ProductID == p.ProductID);
+          const inCartQty = inCart ? inCart.Quantity : 0;
+          if (inCartQty > 0) {
+            footer.innerHTML = `
+              <div class="flex items-center justify-between bg-slate-900 rounded-xl p-1.5 border border-blue-500/40">
+                <button onclick="updateItemQuantity(${p.ProductID}, -1); openProductBenefitsModal(${p.ProductID});" class="w-8 h-8 rounded-lg bg-slate-800 text-white font-bold flex items-center justify-center">
+                  <i class="fa-solid fa-minus text-xs"></i>
+                </button>
+                <span class="font-black text-white text-sm px-3">${inCartQty} في السلة</span>
+                <button onclick="updateItemQuantity(${p.ProductID}, 1); openProductBenefitsModal(${p.ProductID});" class="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center">
+                  <i class="fa-solid fa-plus text-xs"></i>
+                </button>
+              </div>
+            `;
+          } else {
+            footer.innerHTML = `
+              <button onclick="addToCart(${p.ProductID}); openProductBenefitsModal(${p.ProductID});" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md">
+                <i class="fa-solid fa-cart-plus"></i>
+                <span>إضافة إلى سلة الطلبات</span>
+              </button>
+            `;
+          }
         }
       }
 
@@ -2626,6 +2680,19 @@
         </button>
       `;
 
+      if (!isOrderingAllowed()) {
+        container.innerHTML = `
+          <div class="flex items-center gap-2 w-full">
+            <div class="flex-1 py-3 bg-slate-900/90 text-amber-300 font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-700/80 shadow-sm">
+              <i class="fa-solid fa-book-open"></i>
+              <span>قائمة الطعام للعرض والتصفح فقط</span>
+            </div>
+            ${shareBtnHtml}
+          </div>
+        `;
+        return;
+      }
+
       if (inCartQty > 0) {
         container.innerHTML = `
           <div class="flex items-center gap-2">
@@ -2668,6 +2735,10 @@
     // 4. إدارة سلة المشتريات (Cart Operations)
     // ──────────────────────────────────────────
     function addToCart(productId) {
+      if (!isOrderingAllowed()) {
+        alert("خدمة الطلب أونلاين غير مفعلة حالياً، القائمة معروضة للعرض والتصفح فقط.");
+        return;
+      }
       const prod = products.find(p => p.ProductID == productId);
       if (!prod) return;
 
@@ -2704,6 +2775,7 @@
     }
 
     function updateItemQuantity(productId, delta) {
+      if (!isOrderingAllowed()) return;
       const idx = cart.findIndex(c => c.ProductID == productId);
       if (idx === -1) return;
 
@@ -2746,7 +2818,7 @@
       document.getElementById('floatCartTotal').textContent = `${totalSum.toFixed(2)} ج.م`;
 
       const floatBar = document.getElementById('floatingCartBar');
-      if (totalQty > 0) {
+      if (totalQty > 0 && isOrderingAllowed()) {
         floatBar.classList.remove('hidden');
       } else {
         floatBar.classList.add('hidden');
@@ -2768,6 +2840,10 @@
     }
 
     function openCartDrawer() {
+      if (!isOrderingAllowed()) {
+        alert("خدمة الطلب أونلاين غير مفعلة حالياً، القائمة معروضة للتصفح فقط.");
+        return;
+      }
       renderCartDrawer();
       document.getElementById('cartModal').classList.remove('hidden');
     }
