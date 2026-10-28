@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.27";
-$CHANGELOG = "v4.4.27 - 2026-10-29: Online ordering toggle for restaurant menu";
+$VERSION = "4.4.28";
+$CHANGELOG = "v4.4.28 - 2026-10-29: Fix ProductBenefits CategoryName exception";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # ────────────────────────────────────────────────────────────

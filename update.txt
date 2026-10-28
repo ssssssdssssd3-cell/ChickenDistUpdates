@@ -1,5 +1,5 @@
-version=4.4.27
+version=4.4.28
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.27&t=1793225601
-sha256=3879B2D0CA1653827850E5C0142753484E81A3BC806ACDA98AC143309DB47881
-changelog=v4.4.27 - 2026-10-29: Online ordering toggle for restaurant menu
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.28&t=1793229049
+sha256=030BF58B5A2F8F6EE3E70005150E6191A67AC2116C147C9C8113BCF1FA49D754
+changelog=v4.4.28 - 2026-10-29: Fix ProductBenefits CategoryName exception
