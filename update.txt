@@ -1,5 +1,5 @@
-version=4.4.22
+version=4.4.23
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.22&t=1793182503
-sha256=2F9CB537E97F60C131162261C19C2022C69825F89051EB3C387039DEF3F9FF1E
-changelog=v4.4.22 - 2026-10-28: تحسين الأصناف السريعة في شاشة البيع التفصيلية (عرض صنفين جنب بعض وبطاقات أكبر بخط واضح وسعر بارز وشارة ملونة للرصيد).
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.23&t=1793186752
+sha256=E99ED4DBADE8C6891DC2D40C7815D0189093870F5B83796059D77DDC587895BD
+changelog=v4.4.23 - 2026-10-28: إضافة رسوم الخدمة والضريبة للمطاعم والكافيهات، تطوير اقتراحات الشراء الذكية بفلاتر متقدمة، تحسين عرض الأصناف السريعة بدون فراغات، وتمييز البيع بالوحدة غير الكبرى بلون خاص.
