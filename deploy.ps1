@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.28";
-$CHANGELOG = "v4.4.28 - 2026-10-29: Fix ProductBenefits CategoryName exception";
+$VERSION = "4.4.29";
+$CHANGELOG = "v4.4.29 - 2026-10-29: Hide cart and order buttons and display menu browsing mode when online ordering is disabled";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # ────────────────────────────────────────────────────────────
@@ -164,6 +164,28 @@ if (Test-Path $mobileImagesSrc) {
     if (-not (Test-Path $botImagesDst)) { New-Item -ItemType Directory -Path $botImagesDst -Force | Out-Null }
     Copy-Item -Path "$mobileImagesSrc\*" -Destination $botImagesDst -Force -Recurse
     Write-OK "Synced MobileApp/images to bot/public/images"
+}
+
+# Step 5.55: Deploy Firebase Hosting (web.app)
+Write-Step "Deploying Firebase Hosting (web.app)"
+$cmdObj = Get-Command "firebase.cmd" -ErrorAction SilentlyContinue
+$firebaseCmd = if ($cmdObj) { $cmdObj.Source } else { "$env:APPDATA\npm\firebase.cmd" }
+if (Test-Path $firebaseCmd) {
+    try {
+        Push-Location (Join-Path $REPO_ROOT "bot")
+        cmd.exe /c "`"$firebaseCmd`" deploy --only hosting --non-interactive"
+        if ($LASTEXITCODE -eq 0) {
+            Write-OK "Firebase Hosting deployed successfully!"
+        } else {
+            Write-Host "  [WARN] Firebase Hosting deploy returned code $LASTEXITCODE" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "  [WARN] Firebase deploy encountered an error: $_" -ForegroundColor Yellow
+    } finally {
+        Pop-Location
+    }
+} else {
+    Write-Host "  [INFO] firebase.cmd not found, skipping hosting deploy" -ForegroundColor Gray
 }
 
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory

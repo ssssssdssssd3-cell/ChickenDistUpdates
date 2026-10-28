@@ -20,7 +20,7 @@
     let deferredInstallPrompt = null;
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=3.2.5').then(reg => {
+        navigator.serviceWorker.register('./sw.js?v=4.4.29').then(reg => {
           reg.update();
         }).catch(err => console.log('SW Note:', err));
       });
@@ -894,7 +894,7 @@
         </button>
 
         <!-- زر طلباتي السابقة -->
-        <button onclick="openMyOrdersModal()" title="متابعة طلباتي" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+        <button id="btnHeaderOrders" onclick="openMyOrdersModal()" title="متابعة طلباتي" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span class="hidden md:inline">طلباتي</span>
         </button>
@@ -2121,7 +2121,7 @@
         if (btnWa) btnWa.classList.add('hidden');
       }
 
-      const isRest = (storeConfig.BusinessType && storeConfig.BusinessType.toLowerCase().includes('restaurant')) || 
+      const isRest = (storeConfig.BusinessType && (storeConfig.BusinessType.toLowerCase().includes('restaurant') || storeConfig.BusinessType.includes('مطعم') || storeConfig.BusinessType.includes('مطاعم'))) || 
                      (storeConfig.StoreTheme === 'restaurant' || storeConfig.StoreTheme === 'coffee');
 
       const cartBtn = document.getElementById('btnHeaderCart');
@@ -2130,6 +2130,15 @@
           cartBtn.classList.add('hidden');
         } else {
           cartBtn.classList.remove('hidden');
+        }
+      }
+
+      const ordersBtn = document.getElementById('btnHeaderOrders');
+      if (ordersBtn) {
+        if (!isOrderingAllowed()) {
+          ordersBtn.classList.add('hidden');
+        } else {
+          ordersBtn.classList.remove('hidden');
         }
       }
 
@@ -2295,7 +2304,13 @@
               stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-500/30 font-bold">غير متوفر حالياً</span>`;
             }
           } else {
-            stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-500/30 font-bold">متوفر للطلب ✅</span>`;
+            if (isOrderingAllowed()) {
+              stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-950/80 text-blue-300 border border-blue-500/30 font-bold">متوفر للطلب ✅</span>`;
+            } else {
+              const isRestStore = (storeConfig.BusinessType && (storeConfig.BusinessType.toLowerCase().includes('restaurant') || storeConfig.BusinessType.includes('مطعم') || storeConfig.BusinessType.includes('مطاعم'))) || 
+                                  (storeConfig.StoreTheme === 'restaurant' || storeConfig.StoreTheme === 'coffee');
+              stockHtml = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30 font-bold">${isRestStore ? 'متوفر بالمنيو ✨' : 'متوفر بالمعرض ✨'}</span>`;
+            }
           }
 
           // استخراج الصورة الرئيسية وعدد الصور
