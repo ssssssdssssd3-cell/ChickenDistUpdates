@@ -1,5 +1,5 @@
-version=4.4.21
+version=4.4.22
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.21&t=1793181310
-sha256=70A987135C933134CA14A05E63DEB9610F2A428936E9C10A59437D240651D461
-changelog=v4.4.21 - 2026-10-28: تحسين الأصناف السريعة في شاشة البيع التفصيلية (عرض صنفين جنب بعض بدل ثلاثة وتكبير خط اسم الصنف والسعر والرصيد لوضوح أكبر).
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.22&t=1793182503
+sha256=2F9CB537E97F60C131162261C19C2022C69825F89051EB3C387039DEF3F9FF1E
+changelog=v4.4.22 - 2026-10-28: تحسين الأصناف السريعة في شاشة البيع التفصيلية (عرض صنفين جنب بعض وبطاقات أكبر بخط واضح وسعر بارز وشارة ملونة للرصيد).

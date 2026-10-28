@@ -1,11 +1,11 @@
-﻿﻿﻿# ============================================================
+﻿﻿﻿﻿# ============================================================
 #  Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.21";
-$CHANGELOG = "v4.4.21 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): تحسين الأصناف السريعة في شاشة البيع التفصيلية (عرض صنفين جنب بعض بدل ثلاثة وتكبير خط اسم الصنف والسعر والرصيد لوضوح أكبر).";
+$VERSION = "4.4.22";
+$CHANGELOG = "v4.4.22 - $([System.DateTime]::Now.ToString('yyyy-MM-dd')): تحسين الأصناف السريعة في شاشة البيع التفصيلية (عرض صنفين جنب بعض وبطاقات أكبر بخط واضح وسعر بارز وشارة ملونة للرصيد).";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # ────────────────────────────────────────────────────────────
