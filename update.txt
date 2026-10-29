@@ -1,5 +1,5 @@
-version=4.4.34
+version=4.4.35
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.34&t=1793291420
-sha256=7D6CCE93C4B2C5A45D77FDA49911D60F71FB4EFD9E63077356AFA9AC8A83C1F8
-changelog=v4.4.34 - 2026-10-29: ProSoft Web Store UI/UX improvements, Mobiles purchases decoupled pricing and hidden discount column, A4 full-width purchases invoice printing with enlarged fonts
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.35&t=1793293096
+sha256=602E7C942E50961FD99C0C69EE0B3054FF64625CA2BBE8A5ED3B059974ED9EA0
+changelog=v4.4.35 - 2026-10-29: Mobiles purchases interactive discount and purchase price synchronization with net unit total calculation

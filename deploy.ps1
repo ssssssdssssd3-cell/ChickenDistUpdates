@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.34";
-$CHANGELOG = "v4.4.34 - 2026-10-29: ProSoft Web Store UI/UX improvements, Mobiles purchases decoupled pricing and hidden discount column, A4 full-width purchases invoice printing with enlarged fonts";
+$VERSION = "4.4.35";
+$CHANGELOG = "v4.4.35 - 2026-10-29: Mobiles purchases interactive discount and purchase price synchronization with net unit total calculation";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
