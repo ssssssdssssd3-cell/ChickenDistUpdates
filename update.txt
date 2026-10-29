@@ -1,5 +1,5 @@
-version=4.4.39
+version=4.4.40
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.39&t=1793301144
-sha256=F0C6036A4CE5A4C9D4B5F67594A227BF517B1C495D549E780EDA551BBCB83FFC
-changelog=v4.4.39 - 2026-10-29: Fix store theme synchronization from settings, remove customer theme switch button, and enforce central theme control
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.40&t=1793302730
+sha256=1FA30978BC0F5A72A026ED503B8F11806798E6056FE433CF91831B0B29308B85
+changelog=v4.4.40 - 2026-10-29: Add configurable purchase pricing mode (independent profit margin vs distributor discount) in settings and purchase invoice toolbar with real-time margin calculation
