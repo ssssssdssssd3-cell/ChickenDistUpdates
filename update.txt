@@ -1,5 +1,5 @@
-version=4.4.43
+version=4.4.44
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.43&t=1793309451
-sha256=FC1F88D24131CDF4E81277A5674517FDA8BD206C3FCA4CB880556634E6415573
-changelog=v4.4.43 - 2026-10-29: POS enhancements: dynamic auto-fill columns without white gap, smart client lookup without search popup, client blend button repositioning under info, restore voucher discount controls, compact totals panel
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.44&t=1793310431
+sha256=48EAE5FDA4C5442F869496E7617DB2E2F0AB8B3D8F0F0FD68A4BBE6EF0769421
+changelog=v4.4.44 - 2026-10-29: Redesign kitchen order ticket with clean grid table, remove thermal dark banner, print kitchen ticket on order suspension only, and print customer receipt only on save
