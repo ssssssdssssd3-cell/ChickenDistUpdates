@@ -1,5 +1,5 @@
-version=4.4.42
+version=4.4.43
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.42&t=1793305384
-sha256=62C3C045091391B18571C51DDBC06FA7F54908B80D929BF258223DE5C3D9CA90
-changelog=v4.4.42 - 2026-10-29: Remove supplier code and local product code from MobileIMEI barcode template per user request
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.43&t=1793309451
+sha256=FC1F88D24131CDF4E81277A5674517FDA8BD206C3FCA4CB880556634E6415573
+changelog=v4.4.43 - 2026-10-29: POS enhancements: dynamic auto-fill columns without white gap, smart client lookup without search popup, client blend button repositioning under info, restore voucher discount controls, compact totals panel
