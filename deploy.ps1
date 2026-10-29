@@ -1,11 +1,11 @@
-﻿# ============================================================
+# ============================================================
 #  Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.35";
-$CHANGELOG = "v4.4.35 - 2026-10-29: Mobiles purchases interactive discount and purchase price synchronization with net unit total calculation";
+$VERSION = "4.4.36";
+$CHANGELOG = "v4.4.36 - 2026-10-29: Fix mobile barcode printing - respect printer settings barcode price toggle and form checkbox so price never prints unless explicitly checked";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

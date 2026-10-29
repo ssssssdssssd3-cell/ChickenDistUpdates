@@ -1,5 +1,5 @@
-version=4.4.35
+version=4.4.36
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.35&t=1793293096
-sha256=602E7C942E50961FD99C0C69EE0B3054FF64625CA2BBE8A5ED3B059974ED9EA0
-changelog=v4.4.35 - 2026-10-29: Mobiles purchases interactive discount and purchase price synchronization with net unit total calculation
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.36&t=1793296877
+sha256=85D3278EB4597D4B19C2C9583B6157E09915F06174423AD5FA7A78A276393243
+changelog=v4.4.36 - 2026-10-29: Fix mobile barcode printing - respect printer settings barcode price toggle and form checkbox so price never prints unless explicitly checked
