@@ -401,45 +401,162 @@
     .brand-logo-slogan { font-size: 0.40rem; color: #94a3b8; font-weight: 700; }
 
     .hero-container { padding: 0; width: 100%; }
-    .hero-card {
+    /* 🌟 سلايدر الهيرو التفاعلي الحديث ثلاثي البنرات (Interactive 3-Banner Hero Slider) */
+    .hero-slider-container {
+      position: relative;
+      width: 100%;
+      min-height: 220px;
       border-radius: 20px;
       overflow: hidden;
-      position: relative;
-      background: linear-gradient(rgba(13, 17, 23, 0.45), rgba(9, 13, 22, 0.85)),
-                  url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
-      min-height: 205px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      user-select: none;
+      background: #0d1117;
+    }
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(1.03);
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.9s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 22px 20px 18px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      color: #ffffff;
-      border: 1px solid rgba(245, 158, 11, 0.25);
+      padding: 22px 24px 20px;
+      background-size: cover;
+      background-position: center;
+      z-index: 1;
     }
-    .hero-eyebrow { font-size: 0.82rem; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 6px; }
-    .hero-headline { font-size: 1.65rem; font-weight: 900; color: #ffffff; margin: 4px 0 2px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
-    .hero-subtext { font-size: 0.82rem; color: rgba(255,255,255,0.9); font-weight: 600; max-width: 420px; line-height: 1.4; }
-    .hero-action-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; gap: 10px; }
+    .hero-slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1);
+      z-index: 2;
+    }
+    .hero-slide-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(9, 13, 22, 0.93) 0%, rgba(13, 17, 23, 0.62) 50%, rgba(0, 0, 0, 0.40) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .hero-slide-content {
+      position: relative;
+      z-index: 2;
+    }
+    .hero-eyebrow {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #fbbf24;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 3px 12px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .hero-headline {
+      font-size: 1.65rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin: 8px 0 4px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.85);
+      line-height: 1.25;
+    }
+    @media (min-width: 640px) {
+      .hero-slider-container { min-height: 250px; }
+      .hero-headline { font-size: 2.1rem; }
+    }
+    .hero-subtext {
+      font-size: 0.84rem;
+      color: rgba(255,255,255,0.92);
+      font-weight: 600;
+      max-width: 480px;
+      line-height: 1.45;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .hero-action-row {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      gap: 10px;
+    }
     .btn-shop-now {
       background: linear-gradient(135deg, #ea580c, #dc2626);
       color: #ffffff !important;
       border: none;
       border-radius: 50px;
-      padding: 8px 22px;
-      font-size: 0.88rem;
+      padding: 9px 24px;
+      font-size: 0.90rem;
       font-weight: 800;
       display: inline-flex;
       align-items: center;
       gap: 8px;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(234,88,12,0.45);
+      box-shadow: 0 4px 16px rgba(234,88,12,0.5);
       text-decoration: none;
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .btn-shop-now:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(234,88,12,0.6); }
-    .carousel-dots { display: flex; gap: 5px; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); }
-    .dot.active { background: #f59e0b; width: 18px; border-radius: 10px; }
+    .btn-shop-now:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(234,88,12,0.7); }
+    
+    /* أزرار الأسهم للتنقل بين البنرات */
+    .hero-nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 5;
+      transition: background 0.2s, transform 0.2s;
+      font-size: 0.9rem;
+    }
+    .hero-nav-arrow:hover {
+      background: rgba(234, 88, 12, 0.85);
+      transform: translateY(-50%) scale(1.08);
+      border-color: #ea580c;
+    }
+    .hero-nav-arrow.prev { right: 12px; }
+    .hero-nav-arrow.next { left: 12px; }
+    
+    /* مؤشرات السلايدر (Dots) */
+    .carousel-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 5;
+    }
+    .carousel-dots .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .carousel-dots .dot:hover {
+      background: rgba(255, 255, 255, 0.7);
+    }
+    .carousel-dots .dot.active {
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      width: 24px;
+      border-radius: 12px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
 
     .features-bar {
       background: #161b22;
@@ -1099,6 +1216,7 @@
         </div>
         <div class="min-w-0">
           <h1 id="lblStoreName" class="font-black text-sm sm:text-base text-white truncate">متجرنا الإلكتروني</h1>
+          <p id="lblStoreSubtitle" class="hidden text-[10px] sm:text-xs text-amber-300 font-bold truncate mt-0.5"></p>
           <div class="flex items-center gap-2 text-[10px] sm:text-xs">
             <span id="storeStatusBadge" class="inline-flex items-center gap-1 text-emerald-400 font-bold">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -1184,21 +1302,79 @@
       </button>
     </div>
 
-    <!-- بانر الهيرو الاحترافي للمطاعم والمأكولات (Restaurant Hero Banner) -->
+    <!-- بانر الهيرو الاحترافي للمطاعم والمأكولات - سلايدر تفاعلي ثلاثي (Interactive 3-Banner Slider) -->
     <section id="restaurantHeroSection" class="hidden pt-1 pb-1">
-      <div class="hero-card">
-        <div>
-          <span id="heroEyebrow" class="hero-eyebrow"><i class="fa-solid fa-fire"></i> أشهى المأكولات على أصولها</span>
-          <h1 id="heroHeadline" class="hero-headline">طعم لا يُقاوم</h1>
-          <p id="heroSubtext" class="hero-subtext">مشاوي على الفحم وبرجر طازج بخلطات سرية تسعد حواسك</p>
+      <div class="hero-slider-container" id="heroSliderContainer">
+        <!-- شريحة 1 -->
+        <div class="hero-slide active" id="heroSlide0">
+          <div class="hero-slide-overlay"></div>
+          <div class="hero-slide-content">
+            <span class="hero-eyebrow" id="heroSlide0Badge"><i class="fa-solid fa-fire"></i> أشهى المأكولات على أصولها</span>
+            <h1 class="hero-headline" id="heroSlide0Title">طعم لا يُقاوم</h1>
+            <p class="hero-subtext" id="heroSlide0Sub">مشاوي على الفحم وبرجر طازج بخلطات سرية تسعد حواسك</p>
+          </div>
+          <div class="hero-action-row">
+            <a href="#productsSectionHeader" class="btn-shop-now hero-action-cta">
+              <span class="hero-action-text">اطلب وجبتك</span>
+              <i class="fa-solid fa-utensils hero-action-icon"></i>
+            </a>
+            <div class="carousel-dots">
+              <span class="dot active" onclick="goToHeroSlide(0)"></span>
+              <span class="dot" onclick="goToHeroSlide(1)"></span>
+              <span class="dot" onclick="goToHeroSlide(2)"></span>
+            </div>
+          </div>
         </div>
-        <div class="hero-action-row">
-          <a id="heroActionBtn" href="#productsSectionHeader" class="btn-shop-now">
-            <span id="heroActionText">اطلب وجبتك</span>
-            <i id="heroActionIcon" class="fa-solid fa-utensils"></i>
-          </a>
-          <div class="carousel-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+
+        <!-- شريحة 2 -->
+        <div class="hero-slide" id="heroSlide1">
+          <div class="hero-slide-overlay"></div>
+          <div class="hero-slide-content">
+            <span class="hero-eyebrow" id="heroSlide1Badge"><i class="fa-solid fa-bolt"></i> عروض التوفير اليومية</span>
+            <h1 class="hero-headline" id="heroSlide1Title">كومبو العيلة والتوفير</h1>
+            <p class="hero-subtext" id="heroSlide1Sub">وفر أكثر مع وجباتنا العائلية والعروض الخاصة لفترة محدودة</p>
+          </div>
+          <div class="hero-action-row">
+            <a href="#productsSectionHeader" class="btn-shop-now hero-action-cta">
+              <span class="hero-action-text">اطلب وجبتك</span>
+              <i class="fa-solid fa-utensils hero-action-icon"></i>
+            </a>
+            <div class="carousel-dots">
+              <span class="dot" onclick="goToHeroSlide(0)"></span>
+              <span class="dot active" onclick="goToHeroSlide(1)"></span>
+              <span class="dot" onclick="goToHeroSlide(2)"></span>
+            </div>
+          </div>
         </div>
+
+        <!-- شريحة 3 -->
+        <div class="hero-slide" id="heroSlide2">
+          <div class="hero-slide-overlay"></div>
+          <div class="hero-slide-content">
+            <span class="hero-eyebrow" id="heroSlide2Badge"><i class="fa-solid fa-motorcycle"></i> أسرع توصيل للمنازل</span>
+            <h1 class="hero-headline" id="heroSlide2Title">طلبك يوصلك ساخن لباب بيتك</h1>
+            <p class="hero-subtext" id="heroSlide2Sub">خدمة توصيل سريعة بأعلى معايير الجودة والنظافة والسرعة</p>
+          </div>
+          <div class="hero-action-row">
+            <a href="#productsSectionHeader" class="btn-shop-now hero-action-cta">
+              <span class="hero-action-text">اطلب وجبتك</span>
+              <i class="fa-solid fa-utensils hero-action-icon"></i>
+            </a>
+            <div class="carousel-dots">
+              <span class="dot" onclick="goToHeroSlide(0)"></span>
+              <span class="dot" onclick="goToHeroSlide(1)"></span>
+              <span class="dot active" onclick="goToHeroSlide(2)"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- أزرار التنقل (Next/Prev Arrows) -->
+        <button type="button" class="hero-nav-arrow prev" onclick="prevHeroSlide()" title="السابق">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <button type="button" class="hero-nav-arrow next" onclick="nextHeroSlide()" title="التالي">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
       </div>
     </section>
 
@@ -1268,7 +1444,7 @@
       </div>
       <div class="min-w-0 flex-1">
         <h4 class="text-xs sm:text-sm font-extrabold text-amber-300">استقبال الطلبات متوقف مؤقتاً</h4>
-        <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed">
+        <p id="lblPausedBannerMsg" class="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed">
           استقبال الطلبات متوقف مؤقتاً حتى عودة الإنترنت أو إعادة فتح الطلبات من إدارة المتجر. يمكنك تصفح الأصناف وقائمة الأسعار بحرية.
         </p>
       </div>
@@ -1611,7 +1787,7 @@
 
       <div>
         <h3 class="text-base sm:text-lg font-black text-white">تم استلام طلبك بنجاح! 🎉</h3>
-        <p class="text-xs text-slate-300 mt-1">طلبك الآن مسجل لدى الكاشير وجاري مراجعته وتجهيزه</p>
+        <p id="lblSuccessModalMsg" class="text-xs text-slate-300 mt-1">طلبك الآن مسجل لدى الكاشير وجاري مراجعته وتجهيزه</p>
       </div>
 
       <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 space-y-2 text-xs">
@@ -2381,6 +2557,83 @@
       grid.innerHTML = cardsHtml;
     }
 
+    // 🌟 تحكم سلايدر الهيرو التفاعلي ثلاثي البنرات (Hero 3-Banner Carousel Slider)
+    let currentHeroSlide = 0;
+    let heroSliderTimer = null;
+    const TOTAL_HERO_SLIDES = 3;
+
+    function goToHeroSlide(idx) {
+      currentHeroSlide = (idx + TOTAL_HERO_SLIDES) % TOTAL_HERO_SLIDES;
+      for (let i = 0; i < TOTAL_HERO_SLIDES; i++) {
+        const slide = document.getElementById(`heroSlide${i}`);
+        if (slide) {
+          if (i === currentHeroSlide) {
+            slide.classList.add('active');
+          } else {
+            slide.classList.remove('active');
+          }
+        }
+      }
+      document.querySelectorAll('.carousel-dots').forEach(dotsContainer => {
+        const dots = dotsContainer.querySelectorAll('.dot');
+        dots.forEach((dot, dIdx) => {
+          if (dIdx === currentHeroSlide) dot.classList.add('active');
+          else dot.classList.remove('active');
+        });
+      });
+      restartHeroSliderTimer();
+    }
+
+    function nextHeroSlide() {
+      goToHeroSlide(currentHeroSlide + 1);
+    }
+
+    function prevHeroSlide() {
+      goToHeroSlide(currentHeroSlide - 1);
+    }
+
+    function restartHeroSliderTimer() {
+      if (heroSliderTimer) clearInterval(heroSliderTimer);
+      heroSliderTimer = setInterval(nextHeroSlide, 4500);
+    }
+
+    function initHeroSliderGestures() {
+      const container = document.getElementById('heroSliderContainer');
+      if (!container || container.dataset.sliderInit) return;
+      container.dataset.sliderInit = "true";
+
+      let touchStartX = 0;
+      let touchEndX = 0;
+      container.addEventListener('touchstart', e => {
+        if (e.changedTouches && e.changedTouches[0]) {
+          touchStartX = e.changedTouches[0].screenX;
+        }
+        if (heroSliderTimer) clearInterval(heroSliderTimer);
+      }, { passive: true });
+
+      container.addEventListener('touchend', e => {
+        if (e.changedTouches && e.changedTouches[0]) {
+          touchEndX = e.changedTouches[0].screenX;
+          const diff = touchEndX - touchStartX;
+          if (Math.abs(diff) > 35) {
+            if (diff > 0) prevHeroSlide();
+            else nextHeroSlide();
+          } else {
+            restartHeroSliderTimer();
+          }
+        }
+      }, { passive: true });
+
+      container.addEventListener('mouseenter', () => {
+        if (heroSliderTimer) clearInterval(heroSliderTimer);
+      });
+      container.addEventListener('mouseleave', () => {
+        restartHeroSliderTimer();
+      });
+
+      restartHeroSliderTimer();
+    }
+
     function applyRestaurantThemeUI() {
       const isRest = isRestaurantMode();
       const hero = document.getElementById('restaurantHeroSection');
@@ -2392,7 +2645,9 @@
       const secHeader = document.getElementById('productsSectionHeader');
       const menuMode = isMenuMode();
 
-      if (!isRest) {
+      const hasCustomBanners = (Array.isArray(storeConfig.Banners) && storeConfig.Banners.some(b => b && b.Image && b.Image.trim() !== ''));
+
+      if (!isRest && !hasCustomBanners) {
         if (hero) hero.classList.add('hidden');
         if (feats) feats.classList.add('hidden');
         if (cats) cats.classList.add('hidden');
@@ -2403,7 +2658,7 @@
         return;
       }
 
-      // إظهار أقسام قالب المطعم الفاخر
+      // إظهار أقسام قالب المتجر الفاخر
       if (hero) hero.classList.remove('hidden');
       if (feats) feats.classList.remove('hidden');
       if (cats) cats.classList.remove('hidden');
@@ -2421,23 +2676,67 @@
         logoIcon.className = "fa-solid fa-fire-burner";
       }
 
-      // نصوص الهيرو والمود
-      const heroEyebrow = document.getElementById('heroEyebrow');
-      const heroActionBtn = document.getElementById('heroActionBtn');
-      const heroActionText = document.getElementById('heroActionText');
-      const heroActionIcon = document.getElementById('heroActionIcon');
+      // 1. نصوص أزرار الطلب والعمل في البنرات
+      const actionText = storeConfig.HeroActionText || (menuMode ? "تصفح قائمة الأصناف والأسعار" : "اطلب وجبتك الآن");
+      document.querySelectorAll('.hero-action-text').forEach(el => el.textContent = actionText);
+      document.querySelectorAll('.hero-action-icon').forEach(el => {
+        el.className = menuMode ? "fa-solid fa-book-open hero-action-icon" : "fa-solid fa-utensils hero-action-icon";
+      });
 
-      if (menuMode) {
-        if (heroEyebrow) heroEyebrow.innerHTML = `<i class="fa-solid fa-book-open"></i> <span>قائمة طعام رقمية (المنيو الإلكتروني)</span>`;
-        if (heroActionText) heroActionText.textContent = "تصفح قائمة الأصناف والأسعار";
-        if (heroActionIcon) heroActionIcon.className = "fa-solid fa-book-open";
-        const bCart = document.getElementById('bottomNavCartTab');
-        if (bCart) bCart.classList.add('hidden');
-      } else {
-        if (heroEyebrow) heroEyebrow.innerHTML = `<i class="fa-solid fa-fire"></i> <span>أشهى المأكولات على أصولها</span>`;
-        if (heroActionText) heroActionText.textContent = "اطلب وجبتك الآن";
-        if (heroActionIcon) heroActionIcon.className = "fa-solid fa-utensils";
+      // 2. ربط صور ونصوص بنرات السلايدر الثلاثي من إعدادات العميل
+      const defaultBanners = [
+        {
+          Image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80',
+          Badge: '🔥 أشهى المأكولات على أصولها',
+          Title: 'طعم لا يُقاوم',
+          Sub: 'مشاوي على الفحم وبرجر طازج بخلطات سرية تسعد حواسك'
+        },
+        {
+          Image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80',
+          Badge: '⚡ عروض التوفير اليومية',
+          Title: 'كومبو العيلة والتوفير',
+          Sub: 'وفر أكثر مع وجباتنا العائلية والعروض الخاصة لفترة محدودة'
+        },
+        {
+          Image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80',
+          Badge: '🛵 أسرع توصيل للمنازل',
+          Title: 'طلبك يوصلك ساخن لباب بيتك',
+          Sub: 'خدمة توصيل سريعة بأعلى معايير الجودة والنظافة والسرعة'
+        }
+      ];
+
+      const bannersList = (Array.isArray(storeConfig.Banners) && storeConfig.Banners.length > 0)
+        ? storeConfig.Banners
+        : defaultBanners;
+
+      for (let i = 0; i < TOTAL_HERO_SLIDES; i++) {
+        const slide = document.getElementById(`heroSlide${i}`);
+        const b = (bannersList && bannersList[i]) || defaultBanners[i];
+        if (slide && b) {
+          const imgUrl = (b.Image && b.Image.trim() !== '') ? b.Image.trim() : defaultBanners[i].Image;
+          slide.style.backgroundImage = `url('${imgUrl}')`;
+
+          const badgeEl = document.getElementById(`heroSlide${i}Badge`);
+          if (badgeEl) {
+            const badgeVal = (b.Badge && b.Badge.trim() !== '') ? b.Badge : defaultBanners[i].Badge;
+            badgeEl.innerHTML = badgeVal;
+          }
+
+          const titleEl = document.getElementById(`heroSlide${i}Title`);
+          if (titleEl) {
+            const titleVal = (b.Title && b.Title.trim() !== '') ? b.Title : defaultBanners[i].Title;
+            titleEl.textContent = titleVal;
+          }
+
+          const subEl = document.getElementById(`heroSlide${i}Sub`);
+          if (subEl) {
+            const subVal = (b.Sub && b.Sub.trim() !== '') ? b.Sub : defaultBanners[i].Sub;
+            subEl.textContent = subVal;
+          }
+        }
       }
+
+      initHeroSliderGestures();
 
       // تحديث روابط الواتساب في كافة العناصر
       const rawPhone = getStorePhoneNumber();
@@ -2729,8 +3028,29 @@
     }
 
     function renderStoreHeader() {
-      document.getElementById('pageTitle').textContent = `${storeConfig.StoreName || 'المتجر الإلكتروني'} | طلبات أونلاين`;
-      document.getElementById('lblStoreName').textContent = storeConfig.StoreName || 'المتجر الإلكتروني';
+      const storeName = storeConfig.StoreTitle || storeConfig.StoreName || 'المتجر الإلكتروني';
+      document.getElementById('pageTitle').textContent = `${storeName} | طلبات أونلاين`;
+      document.getElementById('lblStoreName').textContent = storeName;
+
+      const subElem = document.getElementById('lblStoreSubtitle');
+      if (subElem) {
+        if (storeConfig.StoreSubtitle && storeConfig.StoreSubtitle.trim() !== '') {
+          subElem.textContent = storeConfig.StoreSubtitle;
+          subElem.classList.remove('hidden');
+        } else {
+          subElem.classList.add('hidden');
+        }
+      }
+
+      if (storeConfig.ClosedMessage) {
+        const pausedMsgElem = document.getElementById('lblPausedBannerMsg');
+        if (pausedMsgElem) pausedMsgElem.textContent = storeConfig.ClosedMessage;
+      }
+
+      if (storeConfig.OrderSuccessMessage) {
+        const succMsgElem = document.getElementById('lblSuccessModalMsg');
+        if (succMsgElem) succMsgElem.textContent = storeConfig.OrderSuccessMessage;
+      }
 
       if (storeConfig.StoreLogo) {
         const img = document.getElementById('storeLogoImg');

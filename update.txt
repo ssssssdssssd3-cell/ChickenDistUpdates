@@ -1,5 +1,5 @@
 version=4.4.37
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.37&t=1793298733
-sha256=2855C3DEF0395CEA7DEEC143E0DA30A5B9CEDAEF56450481632FFD1C0A51D2D9
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.37&t=1793300440
+sha256=98CB61DFAE632FBF466F45553C5FA01D849406C3C480AD9EFB7E8F5517644C93
 changelog=v4.4.37 - 2026-10-29: Fix purchase & sales invoice editing, automatic register refresh, print edited invoice directly, and unified purchase & sales audit comparison log
