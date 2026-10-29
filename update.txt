@@ -1,5 +1,5 @@
-version=4.4.45
+version=4.4.46
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.45&t=1793311944
-sha256=C3E487B8EA966C1B3ADA0A161BE2552F181B64D51EDF3F7069BB190F5B9F9787
-changelog=v4.4.45 - 2026-10-30: Fix automatic service charge and tax calculation and receipt printing in POS and sales invoices, guarantee schema migration for restaurant service and tax columns
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.46&t=1793313440
+sha256=046D4D05CD1E63B636AE1859B92CE3C719B3904FFF516AE78684098298213B80
+changelog=v4.4.46 - 2026-10-30: Add custom sale price and quantity support for client blends, automatically insert blend quantity and price into invoice, and add ClientPrice column that recalculates on quantity adjustments
