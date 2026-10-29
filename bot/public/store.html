@@ -77,11 +77,16 @@
   </script>
 
   <script>
+    // تنظيف أي قيم سابقة مخزنة محلياً لفرض السيم المحدد مركزياً من لوحة التحكم السحابية
+    try {
+      localStorage.removeItem('prosoft_store_theme_manual');
+      localStorage.removeItem('prosoft_store_theme');
+    } catch(e) {}
     // تحميل وتطبيق مظهر المتجر فوراً قبل اكتمال رسم الصفحة لمنع الوميض
     (function() {
       const urlParams = new URLSearchParams(window.location.search);
-      const urlTheme = urlParams.get('theme');
-      const savedTheme = urlTheme || localStorage.getItem('prosoft_store_theme') || 'restaurant';
+      const previewTheme = urlParams.get('preview_theme');
+      const savedTheme = previewTheme || 'restaurant';
       document.documentElement.classList.add('theme-' + savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
       const meta = document.querySelector('meta[name="theme-color"]');
@@ -1246,11 +1251,7 @@
           <span class="sm:hidden">تثبيت 📲</span>
         </button>
 
-        <!-- زر اختيار المظهر (الثيمات: ليلي / نهاري / أسود وذهبي) -->
-        <button onclick="openThemeSelectorModal()" id="btnThemeSelector" title="تغيير مظهر المتجر (ليلي / نهاري / أسود وذهبي فاخر)" class="p-2 sm:px-3 sm:py-2 bg-slate-800/80 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-          <i id="themeIcon" class="fa-solid fa-moon text-sm text-indigo-400"></i>
-          <span id="themeLabel" class="hidden sm:inline">المظهر</span>
-        </button>
+
 
         <!-- زر طلباتي السابقة -->
         <button id="btnHeaderOrders" onclick="openMyOrdersModal()" title="متابعة طلباتي" class="p-2 sm:px-3 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
@@ -2477,13 +2478,16 @@
 
     function isRestaurantMode() {
       try {
-        const urlTheme = (urlParams.get('theme') || '').toLowerCase();
-        if (urlTheme === 'restaurant' || urlTheme === 'coffee') return true;
-        const cfgTheme = (storeConfig.StoreTheme || '').toLowerCase();
+        const previewTheme = (urlParams.get('preview_theme') || '').toLowerCase();
+        if (previewTheme === 'restaurant' || previewTheme === 'coffee') return true;
+        if (['mobiles', 'supermarket', 'fashion', 'autoparts'].includes(previewTheme)) return false;
+
+        const cfgTheme = (storeConfig.StoreTheme || document.documentElement.getAttribute('data-theme') || '').toLowerCase();
         if (cfgTheme === 'restaurant' || cfgTheme === 'coffee') return true;
+        if (['mobiles', 'supermarket', 'fashion', 'autoparts'].includes(cfgTheme)) return false;
+
         const biz = (storeConfig.BusinessType || '').toLowerCase();
         if (biz.includes('restaurant') || biz.includes('مطعم') || biz.includes('مشاوي') || biz.includes('كافيه') || biz.includes('وجبات') || biz.includes('مأكولات')) return true;
-        if (document.documentElement.classList.contains('theme-restaurant')) return true;
       } catch (e) {}
       return false;
     }
@@ -2896,10 +2900,7 @@
             if (cfg.IsMenuOnly !== undefined) storeConfig.IsMenuOnly = (cfg.IsMenuOnly === true || cfg.IsMenuOnly === 'true');
             if (cfg.StoreTheme) {
               storeConfig.StoreTheme = cfg.StoreTheme;
-              const manualTheme = localStorage.getItem('prosoft_store_theme_manual');
-              if (!manualTheme) {
-                applyTheme(cfg.StoreTheme);
-              }
+              applyTheme(cfg.StoreTheme);
             }
           }
         }
@@ -3001,6 +3002,10 @@
             if (cfg.IsActive !== undefined) storeConfig.IsActive = (cfg.IsActive === true || cfg.IsActive === 'true');
             if (cfg.AllowOrdering !== undefined) storeConfig.AllowOrdering = (cfg.AllowOrdering === true || cfg.AllowOrdering === 'true');
             if (cfg.IsMenuOnly !== undefined) storeConfig.IsMenuOnly = (cfg.IsMenuOnly === true || cfg.IsMenuOnly === 'true');
+            if (cfg.StoreTheme && cfg.StoreTheme !== storeConfig.StoreTheme) {
+              storeConfig.StoreTheme = cfg.StoreTheme;
+              applyTheme(cfg.StoreTheme);
+            }
             const nowAllowed = isOrderingAllowed();
             if (wasAllowed !== nowAllowed) {
               renderStoreHeader();
@@ -4993,18 +4998,24 @@ ${itemsText}
 
     function initTheme() {
       const urlParams = new URLSearchParams(window.location.search);
-      const urlTheme = urlParams.get('theme');
-      const savedTheme = urlTheme || localStorage.getItem(STORE_THEME_KEY) || (storeConfig && storeConfig.StoreTheme ? storeConfig.StoreTheme : 'restaurant');
+      const previewTheme = urlParams.get('preview_theme');
+      const savedTheme = previewTheme || (storeConfig && storeConfig.StoreTheme ? storeConfig.StoreTheme : 'restaurant');
       applyTheme(savedTheme);
     }
 
     function applyTheme(theme) {
+      if (!theme) theme = 'restaurant';
+      theme = String(theme).toLowerCase().trim();
       if (!ALL_STORE_THEMES.includes(theme)) theme = 'restaurant';
 
       ALL_STORE_THEMES.forEach(t => document.documentElement.classList.remove('theme-' + t));
       document.documentElement.classList.add('theme-' + theme);
       document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem(STORE_THEME_KEY, theme);
+
+      try {
+        localStorage.removeItem('prosoft_store_theme_manual');
+        localStorage.removeItem(STORE_THEME_KEY);
+      } catch(e) {}
 
       // تحديث شريط حالة متصفح الهاتف
       const meta = document.querySelector('meta[name="theme-color"]');
@@ -5067,21 +5078,17 @@ ${itemsText}
     }
 
     function selectTheme(theme) {
-      localStorage.setItem('prosoft_store_theme_manual', '1');
       applyTheme(theme);
-      setTimeout(() => closeThemeSelectorModal(), 250);
     }
 
     function openThemeSelectorModal() {
-      const modal = document.getElementById('themeSelectorModal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        const currentTheme = localStorage.getItem(STORE_THEME_KEY) || 'dark';
-        applyTheme(currentTheme);
-      }
+      // تم إلغاء التغيير اليدوي للثيم من جانب العميل ليكون التحكم مركزياً من لوحة التحكم فقط
     }
 
     function closeThemeSelectorModal() {
+      const modal = document.getElementById('themeSelectorModal');
+      if (modal) modal.classList.add('hidden');
+    }
       const modal = document.getElementById('themeSelectorModal');
       if (modal) modal.classList.add('hidden');
     }

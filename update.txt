@@ -1,5 +1,5 @@
-version=4.4.38
+version=4.4.39
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.38&t=1793300569
-sha256=F8169D8C259CCF9A4232919DEFC43545108940FFA8D7810AF9D44F006630A26C
-changelog=v4.4.38 - 2026-10-29: Add complete store copywriting controls screen, interactive 3-banner carousel slider with swipe and custom images, and sync store updates to clients and server
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.39&t=1793301144
+sha256=F0C6036A4CE5A4C9D4B5F67594A227BF517B1C495D549E780EDA551BBCB83FFC
+changelog=v4.4.39 - 2026-10-29: Fix store theme synchronization from settings, remove customer theme switch button, and enforce central theme control
