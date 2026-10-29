@@ -1,5 +1,5 @@
-version=4.4.32
+version=4.4.33
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.32&t=1793235776
-sha256=983D2B3DBDC5E0FB7E0D63D5047CBBEAC89EDCECAFB4DBD525210C6CADA44541
-changelog=v4.4.32 - 2026-10-29: Print service charge and VAT in restaurant receipts and enlarge/enhance logo clarity
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.33&t=1793267542
+sha256=B172BAD0AE8E87A85F1492FE5B2ACE73709B9AB03581E6A5B45F0A1DF3ECA052
+changelog=v4.4.33 - 2026-10-29: Restaurant POS fast customer entry, phone lookup, 3-column product cards, matching category colors, and invoice discount with permissions

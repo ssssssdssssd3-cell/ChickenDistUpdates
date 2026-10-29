@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.32";
-$CHANGELOG = "v4.4.32 - 2026-10-29: Print service charge and VAT in restaurant receipts and enlarge/enhance logo clarity";
+$VERSION = "4.4.33";
+$CHANGELOG = "v4.4.33 - 2026-10-29: Restaurant POS fast customer entry, phone lookup, 3-column product cards, matching category colors, and invoice discount with permissions";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
