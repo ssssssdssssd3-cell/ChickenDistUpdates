@@ -1,16 +1,16 @@
-# ============================================================
+﻿# ============================================================
 #  Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.31";
-$CHANGELOG = "v4.4.31 - 2026-10-29: Add one-click publish and deploy website feature directly from store settings screen";
+$VERSION = "4.4.32";
+$CHANGELOG = "v4.4.32 - 2026-10-29: Print service charge and VAT in restaurant receipts and enlarge/enhance logo clarity";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
-# ────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 #  Paths
-# ────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $REPO_ROOT    = $PSScriptRoot
 $PROJECT_DIR  = $REPO_ROOT
 $CSPROJ       = Join-Path $PROJECT_DIR "ChickenDist.csproj"
@@ -268,3 +268,4 @@ Write-Host "==========================================" -ForegroundColor Green
 Write-Host ""
 
 Remove-Item $OUT_DIR -Recurse -Force -ErrorAction SilentlyContinue
+

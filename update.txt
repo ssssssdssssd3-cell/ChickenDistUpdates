@@ -1,5 +1,5 @@
-version=4.4.31
+version=4.4.32
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.31&t=1793234709
-sha256=A9B48C70B126A6450808BEDD2DD01C0C0CB397253861B2770F585F8066D667CC
-changelog=v4.4.31 - 2026-10-29: Add one-click publish and deploy website feature directly from store settings screen
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.32&t=1793235776
+sha256=983D2B3DBDC5E0FB7E0D63D5047CBBEAC89EDCECAFB4DBD525210C6CADA44541
+changelog=v4.4.32 - 2026-10-29: Print service charge and VAT in restaurant receipts and enlarge/enhance logo clarity
