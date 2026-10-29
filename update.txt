@@ -1,5 +1,5 @@
-version=4.4.30
+version=4.4.31
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.30&t=1793231301
-sha256=EA9E582C8E28421C306E7CC99179D6FF64243C38E4FB40E27E540EF07BDCC64D
-changelog=v4.4.30 - 2026-10-29: Enhance announcement banner with larger font size and luxury royal gold styling
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.31&t=1793234709
+sha256=A9B48C70B126A6450808BEDD2DD01C0C0CB397253861B2770F585F8066D667CC
+changelog=v4.4.31 - 2026-10-29: Add one-click publish and deploy website feature directly from store settings screen

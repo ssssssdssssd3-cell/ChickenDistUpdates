@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.30";
-$CHANGELOG = "v4.4.30 - 2026-10-29: Enhance announcement banner with larger font size and luxury royal gold styling";
+$VERSION = "4.4.31";
+$CHANGELOG = "v4.4.31 - 2026-10-29: Add one-click publish and deploy website feature directly from store settings screen";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # ────────────────────────────────────────────────────────────
