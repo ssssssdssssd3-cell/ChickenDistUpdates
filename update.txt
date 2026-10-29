@@ -1,5 +1,5 @@
-version=4.4.44
+version=4.4.45
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.44&t=1793310431
-sha256=48EAE5FDA4C5442F869496E7617DB2E2F0AB8B3D8F0F0FD68A4BBE6EF0769421
-changelog=v4.4.44 - 2026-10-29: Redesign kitchen order ticket with clean grid table, remove thermal dark banner, print kitchen ticket on order suspension only, and print customer receipt only on save
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.45&t=1793311944
+sha256=C3E487B8EA966C1B3ADA0A161BE2552F181B64D51EDF3F7069BB190F5B9F9787
+changelog=v4.4.45 - 2026-10-30: Fix automatic service charge and tax calculation and receipt printing in POS and sales invoices, guarantee schema migration for restaurant service and tax columns
