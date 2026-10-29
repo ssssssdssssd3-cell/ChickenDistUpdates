@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.36";
-$CHANGELOG = "v4.4.36 - 2026-10-29: Fix mobile barcode printing - respect printer settings barcode price toggle and form checkbox so price never prints unless explicitly checked";
+$VERSION = "4.4.37";
+$CHANGELOG = "v4.4.37 - 2026-10-29: Fix purchase & sales invoice editing, automatic register refresh, print edited invoice directly, and unified purchase & sales audit comparison log";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
