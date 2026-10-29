@@ -1,5 +1,5 @@
-version=4.4.41
+version=4.4.42
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.41&t=1793304545
-sha256=B035E20C0E5AF8D2A4B34A0CC50349A8EF259D254412987C71B4AAB5E6755496
-changelog=v4.4.41 - 2026-10-29: Add 3 purchase pricing modes (Sales Margin 50%, Markup on Cost, Distributor Discount), hide discount column in profit mode, column customizer for profit, and purchase discount print toggle
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.42&t=1793305384
+sha256=62C3C045091391B18571C51DDBC06FA7F54908B80D929BF258223DE5C3D9CA90
+changelog=v4.4.42 - 2026-10-29: Remove supplier code and local product code from MobileIMEI barcode template per user request
