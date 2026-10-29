@@ -1,5 +1,5 @@
-version=4.4.33
+version=4.4.34
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.33&t=1793267542
-sha256=B172BAD0AE8E87A85F1492FE5B2ACE73709B9AB03581E6A5B45F0A1DF3ECA052
-changelog=v4.4.33 - 2026-10-29: Restaurant POS fast customer entry, phone lookup, 3-column product cards, matching category colors, and invoice discount with permissions
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.34&t=1793291420
+sha256=7D6CCE93C4B2C5A45D77FDA49911D60F71FB4EFD9E63077356AFA9AC8A83C1F8
+changelog=v4.4.34 - 2026-10-29: ProSoft Web Store UI/UX improvements, Mobiles purchases decoupled pricing and hidden discount column, A4 full-width purchases invoice printing with enlarged fonts

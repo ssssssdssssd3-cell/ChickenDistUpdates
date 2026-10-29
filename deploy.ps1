@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.33";
-$CHANGELOG = "v4.4.33 - 2026-10-29: Restaurant POS fast customer entry, phone lookup, 3-column product cards, matching category colors, and invoice discount with permissions";
+$VERSION = "4.4.34";
+$CHANGELOG = "v4.4.34 - 2026-10-29: ProSoft Web Store UI/UX improvements, Mobiles purchases decoupled pricing and hidden discount column, A4 full-width purchases invoice printing with enlarged fonts";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

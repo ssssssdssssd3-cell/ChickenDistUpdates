@@ -1,6 +1,19 @@
-﻿rules_version = '2';
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /store_catalog/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /store_config/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /online_orders/{orderId} {
+      allow create: if request.resource.data.CustomerName != null && request.resource.data.CustomerPhone != null;
+      allow read: if true;
+      allow update, delete: if false;
+    }
     match /{document=**} {
       allow read, write: if true;
     }

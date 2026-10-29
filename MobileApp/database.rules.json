@@ -1,6 +1,27 @@
-﻿{
+{
   "rules": {
-    ".read": true,
-    ".write": true
+    "store_config": {
+      ".read": true,
+      ".write": true
+    },
+    "store_catalog": {
+      ".read": true,
+      ".write": true
+    },
+    "store_vouchers": {
+      ".read": true,
+      ".write": true
+    },
+    "erp_data": {
+      ".read": true,
+      ".write": true
+    },
+    "online_orders": {
+      ".read": true,
+      "$order_id": {
+        ".write": "(!data.exists() && newData.exists() && root.child('store_config/AllowOrdering').val() == true && root.child('store_config/IsActive').val() == true) || (data.exists() && newData.exists())",
+        ".validate": "newData.hasChildren(['OrderNumber', 'CustomerName', 'CustomerPhone', 'CustomerAddress', 'TotalAmount', 'Items']) && newData.child('TotalAmount').isNumber() && newData.child('TotalAmount').val() >= 0"
+      }
+    }
   }
 }
