@@ -1,5 +1,5 @@
-version=4.4.37
+version=4.4.38
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.37&t=1793300440
-sha256=98CB61DFAE632FBF466F45553C5FA01D849406C3C480AD9EFB7E8F5517644C93
-changelog=v4.4.37 - 2026-10-29: Fix purchase & sales invoice editing, automatic register refresh, print edited invoice directly, and unified purchase & sales audit comparison log
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.38&t=1793300569
+sha256=F8169D8C259CCF9A4232919DEFC43545108940FFA8D7810AF9D44F006630A26C
+changelog=v4.4.38 - 2026-10-29: Add complete store copywriting controls screen, interactive 3-banner carousel slider with swipe and custom images, and sync store updates to clients and server
