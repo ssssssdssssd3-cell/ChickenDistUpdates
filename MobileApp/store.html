@@ -380,6 +380,247 @@
       background: #78350f !important;
     }
 
+    /* 🍽️ مطاعم وكافيهات - عناصر ومكونات الواجهة الحديثة (Culinary Restaurant UI) */
+    .brand-logo-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #1c2128;
+      border: 2px solid #ea580c;
+      box-shadow: 0 4px 15px rgba(234, 88, 12, 0.35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .brand-logo-circle i { color: #f59e0b; font-size: 1.15rem; margin-bottom: 2px; }
+    .brand-logo-title { font-size: 0.65rem; font-weight: 900; color: #ff7849; line-height: 1.1; max-width: 46px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand-logo-slogan { font-size: 0.40rem; color: #94a3b8; font-weight: 700; }
+
+    .hero-container { padding: 0; width: 100%; }
+    .hero-card {
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(rgba(13, 17, 23, 0.45), rgba(9, 13, 22, 0.85)),
+                  url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+      min-height: 205px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 22px 20px 18px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      color: #ffffff;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+    .hero-eyebrow { font-size: 0.82rem; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 6px; }
+    .hero-headline { font-size: 1.65rem; font-weight: 900; color: #ffffff; margin: 4px 0 2px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+    .hero-subtext { font-size: 0.82rem; color: rgba(255,255,255,0.9); font-weight: 600; max-width: 420px; line-height: 1.4; }
+    .hero-action-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; gap: 10px; }
+    .btn-shop-now {
+      background: linear-gradient(135deg, #ea580c, #dc2626);
+      color: #ffffff !important;
+      border: none;
+      border-radius: 50px;
+      padding: 8px 22px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(234,88,12,0.45);
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-shop-now:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(234,88,12,0.6); }
+    .carousel-dots { display: flex; gap: 5px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); }
+    .dot.active { background: #f59e0b; width: 18px; border-radius: 10px; }
+
+    .features-bar {
+      background: #161b22;
+      border-radius: 16px;
+      padding: 12px 6px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .feature-item { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 4px; position: relative; }
+    .feature-item:not(:last-child)::after { content: ''; position: absolute; left: 0; top: 15%; height: 70%; width: 1px; background: #30363d; }
+    .feature-icon-wrapper {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(234,88,12,0.18);
+      color: #ea580c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      margin-bottom: 5px;
+    }
+    .feature-title { font-size: 0.74rem; font-weight: 800; color: #f1f5f9; }
+    .feature-subtitle { font-size: 0.58rem; color: #94a3b8; margin-top: 1px; font-weight: 600; }
+
+    .section-header { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0 10px; }
+    .section-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.35), transparent); }
+    .section-title { font-size: 1.05rem; font-weight: 900; color: #f1f5f9; }
+
+    .categories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+    @media (max-width: 640px) {
+      .categories-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    }
+    .category-card {
+      background: #161b22;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid #30363d;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .category-card:hover { transform: translateY(-3px); border-color: #ea580c; box-shadow: 0 4px 14px rgba(234,88,12,0.25); }
+    .category-card.active { border: 2px solid #ea580c; box-shadow: 0 0 12px rgba(234,88,12,0.4); }
+    .category-img-box { height: 78px; width: 100%; overflow: hidden; background: #0d1117; position: relative; }
+    .category-img-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .category-card:hover .category-img-box img { transform: scale(1.08); }
+    .category-btn-pill {
+      background: #1f242c;
+      color: #ffffff;
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 0.68rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border-top: 1px solid #30363d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .category-card.active .category-btn-pill {
+      background: linear-gradient(135deg, #ea580c, #c2410c);
+      color: #ffffff;
+    }
+
+    .promo-banner {
+      border-radius: 18px;
+      background: linear-gradient(to right, rgba(234, 88, 12, 0.92), rgba(185, 28, 28, 0.85)),
+                  url('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=900&q=80') center/cover no-repeat;
+      padding: 20px 22px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .promo-content h3 { font-size: 1.15rem; font-weight: 900; color: #ffffff; }
+    .promo-content p { font-size: 0.78rem; color: #fef08a; margin: 4px 0 10px; font-weight: 600; }
+    .btn-contact-us {
+      background: #ffffff;
+      color: #991b1b !important;
+      border: none;
+      border-radius: 50px;
+      padding: 7px 18px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    .btn-contact-us:hover { transform: scale(1.05); }
+
+    .floating-whatsapp {
+      position: fixed;
+      bottom: 84px;
+      right: 18px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #25d366;
+      color: #ffffff !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      box-shadow: 0 4px 18px rgba(37, 211, 102, 0.5);
+      cursor: pointer;
+      z-index: 85;
+      text-decoration: none;
+      transition: transform 0.2s;
+    }
+    .floating-whatsapp:hover { transform: scale(1.1); }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      background: rgba(22, 27, 34, 0.96);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(245, 158, 11, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 8px 6px 6px;
+      z-index: 90;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+    }
+    .bottom-nav-inner {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+    }
+    .nav-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #94a3b8;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      position: relative;
+      padding: 4px 8px;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .nav-tab i { font-size: 1.15rem; margin-bottom: 2px; }
+    .nav-tab:hover, .nav-tab.active { color: #ea580c; }
+    .nav-cart-badge {
+      position: absolute;
+      top: 0;
+      right: 4px;
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 0.58rem;
+      font-weight: 900;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 2px;
+      border: 1.5px solid #161b22;
+    }
+
     /* ══════════════════════════════════════════════════ */
     /* 🥗 THEME: EMERALD FRESH (أخضر صحي وطازج)           */
     /* ══════════════════════════════════════════════════ */
@@ -943,6 +1184,62 @@
       </button>
     </div>
 
+    <!-- بانر الهيرو الاحترافي للمطاعم والمأكولات (Restaurant Hero Banner) -->
+    <section id="restaurantHeroSection" class="hidden pt-1 pb-1">
+      <div class="hero-card">
+        <div>
+          <span id="heroEyebrow" class="hero-eyebrow"><i class="fa-solid fa-fire"></i> أشهى المأكولات على أصولها</span>
+          <h1 id="heroHeadline" class="hero-headline">طعم لا يُقاوم</h1>
+          <p id="heroSubtext" class="hero-subtext">مشاوي على الفحم وبرجر طازج بخلطات سرية تسعد حواسك</p>
+        </div>
+        <div class="hero-action-row">
+          <a id="heroActionBtn" href="#productsSectionHeader" class="btn-shop-now">
+            <span id="heroActionText">اطلب وجبتك</span>
+            <i id="heroActionIcon" class="fa-solid fa-utensils"></i>
+          </a>
+          <div class="carousel-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- شريط مميزات المطعم والخدمة (4 بطاقات سريعة) -->
+    <section id="restaurantFeaturesBar" class="hidden py-1">
+      <div class="features-bar">
+        <div class="feature-item">
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-clock"></i></div>
+          <span class="feature-title">توصيل سريع</span>
+          <span class="feature-subtitle">30 دقيقة ساخن</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-drumstick-bite"></i></div>
+          <span class="feature-title">لحوم بلدي</span>
+          <span class="feature-subtitle">طازجة يومياً</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-tags"></i></div>
+          <span class="feature-title">عروض يومية</span>
+          <span class="feature-subtitle">كومبو التوفير</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-star"></i></div>
+          <span class="feature-title">جودة مضمونة</span>
+          <span class="feature-subtitle">أعلى معايير النظافة</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- شبكة أقسام المنيو المصورة للمطاعم (Categories Visual Grid) -->
+    <section id="restaurantCategoriesSection" class="hidden py-1">
+      <div class="section-header">
+        <div class="section-line"></div>
+        <h2 class="section-title">أقسام المنيو</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="categories-grid" id="restaurantCategoriesGrid">
+        <!-- يتم ملؤها ديناميكياً -->
+      </div>
+    </section>
+
     <!-- شريط الأقسام المسموح بها (Category Pills) -->
     <div id="categoryPillsContainer" class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 text-xs">
       <button onclick="selectCategory(0)" id="pill-cat-0" class="active-pill px-3.5 py-2 rounded-xl bg-slate-900 text-slate-300 border border-slate-700 font-bold whitespace-nowrap transition">
@@ -956,6 +1253,13 @@
   <!-- 3. شبكة المنتجات (PRODUCTS GRID) -->
   <!-- ========================================== -->
   <main class="max-w-6xl w-full mx-auto px-3 sm:px-6 py-2 flex-1">
+    
+    <!-- عنوان قسم الأصناف والمنيو للمطاعم -->
+    <div id="productsSectionHeader" class="section-header hidden">
+      <div class="section-line"></div>
+      <h2 class="section-title" id="productsSectionTitle">الأطباق وقائمة المنيو</h2>
+      <div class="section-line"></div>
+    </div>
     
     <!-- بانر إغلاق استقبال الطلبات المؤقت -->
     <div id="ordersPausedBanner" class="hidden glass-card bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 mb-4 text-right flex items-center gap-3 shadow-lg">
@@ -1032,6 +1336,19 @@
 
     <!-- شبكة كروت المنتجات -->
     <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"></div>
+
+    <!-- بانر ترويجي للمناسبات والعزومات للمطاعم -->
+    <section id="restaurantPromoBanner" class="hidden my-4">
+      <div class="promo-banner">
+        <div class="promo-content">
+          <h3 id="promoBannerTitle">عزومة لمة العيلة</h3>
+          <p id="promoBannerSubtitle">أشهى الأطباق والوجبات الساخنة بأعلى معايير الجودة والنظافة</p>
+          <a id="btnPromoContact" href="#" target="_blank" class="btn-contact-us">
+            <i class="fa-brands fa-whatsapp"></i><span>تواصل معنا عبر واتساب</span>
+          </a>
+        </div>
+      </div>
+    </section>
 
     <!-- كارت التواصل المباشر مع المتجر -->
     <div id="storeContactCard" class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 text-center space-y-3 mt-8">
@@ -1973,6 +2290,194 @@
       return true;
     }
 
+    function isMenuMode() {
+      try {
+        const urlMode = (urlParams.get('mode') || '').toLowerCase();
+        if (urlMode === 'menu') return true;
+        if (storeConfig.IsMenuOnly === true) return true;
+      } catch (e) {}
+      return false;
+    }
+
+    function isRestaurantMode() {
+      try {
+        const urlTheme = (urlParams.get('theme') || '').toLowerCase();
+        if (urlTheme === 'restaurant' || urlTheme === 'coffee') return true;
+        const cfgTheme = (storeConfig.StoreTheme || '').toLowerCase();
+        if (cfgTheme === 'restaurant' || cfgTheme === 'coffee') return true;
+        const biz = (storeConfig.BusinessType || '').toLowerCase();
+        if (biz.includes('restaurant') || biz.includes('مطعم') || biz.includes('مشاوي') || biz.includes('كافيه') || biz.includes('وجبات') || biz.includes('مأكولات')) return true;
+        if (document.documentElement.classList.contains('theme-restaurant')) return true;
+      } catch (e) {}
+      return false;
+    }
+
+    function getRestaurantCategoryImage(catName) {
+      if (!catName) return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80';
+      const name = String(catName).toLowerCase();
+      if (name.includes('برجر') || name.includes('burger')) {
+        return 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80';
+      }
+      if (name.includes('مشاوي') || name.includes('لحم') || name.includes('كفتة') || name.includes('كباب') || name.includes('شيش') || name.includes('طرب') || name.includes('grill') || name.includes('meat')) {
+        return 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80';
+      }
+      if (name.includes('شاورما') || name.includes('دجاج') || name.includes('فراخ') || name.includes('كرسبي') || name.includes('زنجر') || name.includes('صاج') || name.includes('chicken') || name.includes('shawarma')) {
+        return 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=400&q=80';
+      }
+      if (name.includes('بيتزا') || name.includes('pizza') || name.includes('باستا') || name.includes('pasta') || name.includes('كريب') || name.includes('crepe') || name.includes('مكرونة')) {
+        return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80';
+      }
+      if (name.includes('سمك') || name.includes('جمبري') || name.includes('سي فود') || name.includes('بحري') || name.includes('seafood') || name.includes('fish')) {
+        return 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=400&q=80';
+      }
+      if (name.includes('مشروب') || name.includes('عصير') || name.includes('قهوة') || name.includes('شاي') || name.includes('coffee') || name.includes('drink')) {
+        return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80';
+      }
+      if (name.includes('حلو') || name.includes('حلى') || name.includes('وافل') || name.includes('كيك') || name.includes('dessert') || name.includes('sweet')) {
+        return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80';
+      }
+      if (name.includes('سلط') || name.includes('مقبل') || name.includes('بطاطس') || name.includes('fries') || name.includes('salad') || name.includes('appetizer')) {
+        return 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=400&q=80';
+      }
+      return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80';
+    }
+
+    function renderRestaurantCategories() {
+      const grid = document.getElementById('restaurantCategoriesGrid');
+      if (!grid) return;
+
+      const allCount = products.length;
+      let allImg = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80';
+
+      let cardsHtml = `
+        <div class="category-card ${selectedCatID === 0 || selectedCatID === '0' ? 'active' : ''}" id="rest-cat-0" onclick="selectCategory(0)">
+          <div class="category-img-box">
+            <img src="${allImg}" alt="الكل" loading="lazy">
+          </div>
+          <div class="category-btn-pill">
+            <span>🌟 الكل (${allCount})</span>
+            <i class="fa-solid fa-circle-arrow-left"></i>
+          </div>
+        </div>
+      `;
+
+      cardsHtml += categories.map(cat => {
+        const count = products.filter(p => String(p.CategoryID) === String(cat.CategoryID)).length;
+        const img = cat.ImageUrl || cat.Image || getRestaurantCategoryImage(cat.CategoryName);
+        const isActive = String(selectedCatID) === String(cat.CategoryID);
+        return `
+          <div class="category-card ${isActive ? 'active' : ''}" id="rest-cat-${cat.CategoryID}" onclick="selectCategory(${cat.CategoryID})">
+            <div class="category-img-box">
+              <img src="${img}" alt="${cat.CategoryName}" loading="lazy">
+            </div>
+            <div class="category-btn-pill">
+              <span>${cat.CategoryName} (${count})</span>
+              <i class="fa-solid fa-circle-arrow-left"></i>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      grid.innerHTML = cardsHtml;
+    }
+
+    function applyRestaurantThemeUI() {
+      const isRest = isRestaurantMode();
+      const hero = document.getElementById('restaurantHeroSection');
+      const feats = document.getElementById('restaurantFeaturesBar');
+      const cats = document.getElementById('restaurantCategoriesSection');
+      const promo = document.getElementById('restaurantPromoBanner');
+      const floatWa = document.getElementById('btnFloatingWhatsApp');
+      const bNav = document.getElementById('restaurantBottomNav');
+      const secHeader = document.getElementById('productsSectionHeader');
+      const menuMode = isMenuMode();
+
+      if (!isRest) {
+        if (hero) hero.classList.add('hidden');
+        if (feats) feats.classList.add('hidden');
+        if (cats) cats.classList.add('hidden');
+        if (promo) promo.classList.add('hidden');
+        if (floatWa) floatWa.classList.add('hidden');
+        if (bNav) bNav.classList.add('hidden');
+        if (secHeader) secHeader.classList.add('hidden');
+        return;
+      }
+
+      // إظهار أقسام قالب المطعم الفاخر
+      if (hero) hero.classList.remove('hidden');
+      if (feats) feats.classList.remove('hidden');
+      if (cats) cats.classList.remove('hidden');
+      if (promo) promo.classList.remove('hidden');
+      if (bNav) bNav.classList.remove('hidden');
+      if (secHeader) secHeader.classList.remove('hidden');
+
+      // الشعار الدائري المميز في الهيدر
+      const logoCont = document.getElementById('storeLogoContainer');
+      const logoIcon = document.getElementById('storeLogoIcon');
+      if (logoCont) {
+        logoCont.className = "brand-logo-circle";
+      }
+      if (logoIcon && (!storeConfig.StoreLogo || storeConfig.StoreLogo.trim() === '')) {
+        logoIcon.className = "fa-solid fa-fire-burner";
+      }
+
+      // نصوص الهيرو والمود
+      const heroEyebrow = document.getElementById('heroEyebrow');
+      const heroActionBtn = document.getElementById('heroActionBtn');
+      const heroActionText = document.getElementById('heroActionText');
+      const heroActionIcon = document.getElementById('heroActionIcon');
+
+      if (menuMode) {
+        if (heroEyebrow) heroEyebrow.innerHTML = `<i class="fa-solid fa-book-open"></i> <span>قائمة طعام رقمية (المنيو الإلكتروني)</span>`;
+        if (heroActionText) heroActionText.textContent = "تصفح قائمة الأصناف والأسعار";
+        if (heroActionIcon) heroActionIcon.className = "fa-solid fa-book-open";
+        const bCart = document.getElementById('bottomNavCartTab');
+        if (bCart) bCart.classList.add('hidden');
+      } else {
+        if (heroEyebrow) heroEyebrow.innerHTML = `<i class="fa-solid fa-fire"></i> <span>أشهى المأكولات على أصولها</span>`;
+        if (heroActionText) heroActionText.textContent = "اطلب وجبتك الآن";
+        if (heroActionIcon) heroActionIcon.className = "fa-solid fa-utensils";
+      }
+
+      // تحديث روابط الواتساب في كافة العناصر
+      const rawPhone = getStorePhoneNumber();
+      if (rawPhone) {
+        const cleanDigits = rawPhone.replace(/[^0-9]/g, '');
+        let waNumber = cleanDigits;
+        if (waNumber.startsWith('0')) waNumber = '2' + waNumber;
+        else if (!waNumber.startsWith('20')) waNumber = '20' + waNumber;
+
+        const waGeneralUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('السلام عليكم، مرحباً بكم! أود الاستفسار عن قائمة المأكولات والأسعار.')}`;
+        const waPromoUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن عروض الحفلات والعزومات.')}`;
+
+        if (floatWa) {
+          floatWa.href = waGeneralUrl;
+          floatWa.classList.remove('hidden');
+        }
+        const bWa = document.getElementById('bottomNavWhatsApp');
+        if (bWa) bWa.href = waGeneralUrl;
+        const promoBtn = document.getElementById('btnPromoContact');
+        if (promoBtn) promoBtn.href = waPromoUrl;
+      }
+
+      renderRestaurantCategories();
+    }
+
+    function bookTableViaWhatsApp() {
+      const rawPhone = getStorePhoneNumber();
+      if (!rawPhone) {
+        if (typeof showToast === 'function') showToast("🍽️ خدمة حجز الطاولات متاحة هاتفياً في فرع المطعم.");
+        return;
+      }
+      const cleanDigits = rawPhone.replace(/[^0-9]/g, '');
+      let waNumber = cleanDigits;
+      if (waNumber.startsWith('0')) waNumber = '2' + waNumber;
+      else if (!waNumber.startsWith('20')) waNumber = '20' + waNumber;
+
+      const url = `https://wa.me/${waNumber}?text=${encodeURIComponent('مرحباً، أود الاستفسار عن إمكانية حجز طاولة لديكم في المطعم.')}`;
+      window.open(url, '_blank');
+    }
+
     function calculateDeliveryFee(subTotal) {
       if (subTotal <= 0) return 0;
       const freeThreshold = parseFloat(storeConfig.FreeDeliveryThreshold || 0);
@@ -2275,24 +2780,32 @@
       const isRest = (storeConfig.BusinessType && (storeConfig.BusinessType.toLowerCase().includes('restaurant') || storeConfig.BusinessType.includes('مطعم') || storeConfig.BusinessType.includes('مطاعم'))) || 
                      (storeConfig.StoreTheme === 'restaurant' || storeConfig.StoreTheme === 'coffee');
 
+      const menuMode = isMenuMode();
+
       const cartBtn = document.getElementById('btnHeaderCart');
       if (cartBtn) {
-        cartBtn.classList.remove('hidden');
+        if (menuMode || !isOrderingAllowed()) cartBtn.classList.add('hidden');
+        else cartBtn.classList.remove('hidden');
       }
 
       const ordersBtn = document.getElementById('btnHeaderOrders');
       if (ordersBtn) {
-        ordersBtn.classList.remove('hidden');
+        if (menuMode) ordersBtn.classList.add('hidden');
+        else ordersBtn.classList.remove('hidden');
       }
 
       const floatBar = document.getElementById('floatingCartBar');
-      if (floatBar && !isOrderingAllowed()) {
+      if (floatBar && (menuMode || !isOrderingAllowed())) {
         floatBar.classList.add('hidden');
       }
 
       const statusBadge = document.getElementById('storeStatusBadge');
       const pausedBanner = document.getElementById('ordersPausedBanner');
-      if (!isOrderingAllowed()) {
+      if (menuMode) {
+        statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> 📜 منيو رقمي للتصفح والأسعار`;
+        statusBadge.className = "inline-flex items-center gap-1.5 text-amber-300 font-extrabold text-[11px] sm:text-xs";
+        if (pausedBanner) pausedBanner.classList.add('hidden');
+      } else if (!isOrderingAllowed()) {
         statusBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> استقبال الطلبات متوقف مؤقتاً`;
         statusBadge.className = "inline-flex items-center gap-1.5 text-amber-300 font-extrabold text-[11px] sm:text-xs";
         if (pausedBanner) pausedBanner.classList.remove('hidden');
@@ -2306,6 +2819,9 @@
         document.getElementById('lblAnnouncementText').textContent = storeConfig.Announcement;
         document.getElementById('storeAnnouncementBanner').classList.remove('hidden');
       }
+
+      // تفعيل عناصر وقالب المطاعم الفاخر إذا كان المتجر مطعماً
+      applyRestaurantThemeUI();
 
       // توليد أيقونة التطبيق والمانيفيست الخاص بالمتجر تلقائياً
       if (typeof generateStoreAppIconCanvas === 'function') {
@@ -2335,6 +2851,8 @@
         </button>
         ${html}
       `;
+
+      renderRestaurantCategories();
     }
 
     function selectCategory(catId) {
@@ -2347,6 +2865,11 @@
       document.querySelectorAll('#categoryPillsContainer button').forEach(b => b.classList.remove('active-pill'));
       const activeBtn = document.getElementById(`pill-cat-${catId}`);
       if (activeBtn) activeBtn.classList.add('active-pill');
+
+      document.querySelectorAll('#restaurantCategoriesGrid .category-card').forEach(b => b.classList.remove('active'));
+      const activeRest = document.getElementById(`rest-cat-${catId}`);
+      if (activeRest) activeRest.classList.add('active');
+
       renderProducts();
     }
 
@@ -2460,20 +2983,18 @@
             ? p.Images.length
             : (mainImg ? 1 : 0);
 
+          const fallbackFoodImg = getRestaurantCategoryImage(p.CategoryName || p.ProductName);
+          const hasImg = mainImg && mainImg.length > 0;
+          const displayImg = hasImg ? mainImg : (isRestaurantMode() ? fallbackFoodImg : '');
+
           let imgHtml = '';
-          if (mainImg) {
+          if (displayImg) {
             imgHtml = `
-              <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-slate-950/70 border border-slate-800/80 mb-3 cursor-pointer group-hover:border-blue-500/40 transition-all flex items-center justify-center p-2.5 shadow-inner" onclick="openProductGalleryModal(${p.ProductID})">
-                <img src="${mainImg}" alt="${p.ProductName}" loading="lazy" decoding="async" class="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');">
-                <div class="hidden text-slate-500 flex flex-col items-center justify-center gap-1.5 w-full h-full">
-                  <div class="w-12 h-12 rounded-2xl bg-slate-850 border border-slate-700/50 flex items-center justify-center text-slate-400 text-xl shadow-inner">
-                    <i class="fa-solid fa-box-open"></i>
-                  </div>
-                  <span class="text-[10px] font-bold text-slate-400/90 px-2 py-0.5 rounded-md bg-slate-900/60">${p.CategoryName || 'عام'}</span>
-                </div>
+              <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-slate-950/70 border border-slate-800/80 mb-3 cursor-pointer group-hover:border-amber-500/40 transition-all flex items-center justify-center ${isRestaurantMode() ? 'p-0' : 'p-2.5'} shadow-inner" onclick="openProductGalleryModal(${p.ProductID})">
+                <img src="${displayImg}" alt="${p.ProductName}" loading="lazy" decoding="async" class="w-full h-full ${isRestaurantMode() ? 'object-cover' : 'object-contain'} transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='${fallbackFoodImg}';">
                 ${imagesCount > 1 ? `
                   <span class="absolute bottom-2 left-2 bg-black/75 backdrop-blur-md text-[10px] text-white px-2 py-0.5 rounded-md flex items-center gap-1 font-bold border border-white/10 shadow">
-                    <i class="fa-solid fa-images text-[9px] text-blue-400"></i>
+                    <i class="fa-solid fa-images text-[9px] text-amber-400"></i>
                     <span>${imagesCount}</span>
                   </span>
                 ` : ''}
@@ -2558,15 +3079,15 @@
                 ` : `
                   <button onclick="addToCart(${p.ProductID})" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 transition-all cursor-pointer">
                     <i class="fa-solid fa-cart-plus text-xs"></i>
-                    <span>إضافة للسلة</span>
+                    <span>${isRestaurantMode() ? 'أضف للطلب' : 'إضافة للسلة'}</span>
                   </button>
                 `}
               </div>
               ` : `
               <div class="mt-3 pt-2.5 border-t border-slate-800/80">
-                <div class="w-full py-2 bg-slate-900/80 text-amber-300/90 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-amber-500/20">
-                  <i class="fa-regular fa-eye text-xs"></i>
-                  <span>للتصفح فقط</span>
+                <div class="w-full py-2 bg-amber-500/10 text-amber-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-amber-500/25">
+                  <i class="${isMenuMode() ? 'fa-solid fa-utensils' : 'fa-regular fa-eye'} text-xs"></i>
+                  <span>${isMenuMode() ? 'متوفر في المنيو ✨' : 'للتصفح فقط'}</span>
                 </div>
               </div>
               `}
@@ -2986,6 +3507,9 @@
       document.getElementById('cartCountBadge').textContent = totalQty;
       document.getElementById('floatCartCount').textContent = totalQty;
       document.getElementById('floatCartTotal').textContent = `${totalSum.toFixed(2)} ج.م`;
+
+      const bNavCart = document.getElementById('bottomNavCartCount');
+      if (bNavCart) bNavCart.textContent = totalQty;
 
       const floatBar = document.getElementById('floatingCartBar');
       if (totalQty > 0 && isOrderingAllowed()) {
@@ -4216,6 +4740,10 @@ ${itemsText}
           if (check) check.classList.add('hidden');
         }
       });
+
+      if (typeof applyRestaurantThemeUI === 'function') {
+        applyRestaurantThemeUI();
+      }
     }
 
     function selectTheme(theme) {
@@ -4269,5 +4797,37 @@ ${itemsText}
       }
     });
   </script>
+
+  <!-- زر واتساب عائم سريع -->
+  <a id="btnFloatingWhatsApp" href="#" target="_blank" class="floating-whatsapp hidden" title="تواصل عبر واتساب">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+
+  <!-- شريط التنقل السفلي للهواتف الذكية (Bottom Navigation Bar) -->
+  <nav class="bottom-nav hidden" id="restaurantBottomNav">
+    <div class="bottom-nav-inner">
+      <a href="javascript:void(0)" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="nav-tab active">
+        <i class="fa-solid fa-house"></i>
+        <span>الرئيسية</span>
+      </a>
+      <a href="#productsSectionHeader" onclick="const s = document.getElementById('searchInput'); if (s) { s.focus(); s.scrollIntoView({behavior: 'smooth'}); }" class="nav-tab">
+        <i class="fa-solid fa-utensils"></i>
+        <span>المنيو</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openCartDrawer()" class="nav-tab" id="bottomNavCartTab">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span>السلة</span>
+        <span class="nav-cart-badge" id="bottomNavCartCount">0</span>
+      </a>
+      <a href="javascript:void(0)" onclick="bookTableViaWhatsApp()" class="nav-tab" id="bottomNavTableTab">
+        <i class="fa-solid fa-chair"></i>
+        <span>حجز طاولة</span>
+      </a>
+      <a id="bottomNavWhatsApp" href="#" target="_blank" class="nav-tab">
+        <i class="fa-brands fa-whatsapp"></i>
+        <span>واتساب</span>
+      </a>
+    </div>
+  </nav>
 </body>
 </html>
