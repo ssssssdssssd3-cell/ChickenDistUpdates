@@ -85,7 +85,7 @@
     // تحميل وتطبيق مظهر المتجر فوراً قبل اكتمال رسم الصفحة لمنع الوميض
     (function() {
       const urlParams = new URLSearchParams(window.location.search);
-      const previewTheme = urlParams.get('preview_theme');
+      const previewTheme = urlParams.get('preview_theme') || urlParams.get('theme');
       const savedTheme = previewTheme || 'restaurant';
       document.documentElement.classList.add('theme-' + savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
@@ -2478,7 +2478,7 @@
 
     function isRestaurantMode() {
       try {
-        const previewTheme = (urlParams.get('preview_theme') || '').toLowerCase();
+        const previewTheme = (urlParams.get('preview_theme') || urlParams.get('theme') || '').toLowerCase();
         if (previewTheme === 'restaurant' || previewTheme === 'coffee') return true;
         if (['mobiles', 'supermarket', 'fashion', 'autoparts'].includes(previewTheme)) return false;
 
@@ -4998,7 +4998,7 @@ ${itemsText}
 
     function initTheme() {
       const urlParams = new URLSearchParams(window.location.search);
-      const previewTheme = urlParams.get('preview_theme');
+      const previewTheme = urlParams.get('preview_theme') || urlParams.get('theme');
       const savedTheme = previewTheme || (storeConfig && storeConfig.StoreTheme ? storeConfig.StoreTheme : 'restaurant');
       applyTheme(savedTheme);
     }
@@ -5086,9 +5086,6 @@ ${itemsText}
     }
 
     function closeThemeSelectorModal() {
-      const modal = document.getElementById('themeSelectorModal');
-      if (modal) modal.classList.add('hidden');
-    }
       const modal = document.getElementById('themeSelectorModal');
       if (modal) modal.classList.add('hidden');
     }
