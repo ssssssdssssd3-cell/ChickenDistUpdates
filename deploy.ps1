@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.48";
-$CHANGELOG = "v4.4.48 - 2026-10-30: Fix RTL layout so labels precede input fields in POS, optimize invoice grid column widths and header fonts, clarify blend field labels and change preferred blend checkbox color";
+$VERSION = "4.4.49";
+$CHANGELOG = "v4.4.49 - 2026-10-31: Display all categories completely without scrolling, fix category overlap on products, prevent cash payment button overlap with total, and add percentage or amount discount option";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -1,5 +1,5 @@
-version=4.4.48
+version=4.4.49
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.48&t=1793379310
-sha256=31D42DBDBCDE9396411040B56309A9A36E197906DB126CDAEEF4435B909FAB5E
-changelog=v4.4.48 - 2026-10-30: Fix RTL layout so labels precede input fields in POS, optimize invoice grid column widths and header fonts, clarify blend field labels and change preferred blend checkbox color
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.49&t=1793400033
+sha256=06504115ACD36DD887A609BBF58537A6FC32F8EAAAF9B1B3E4FF3E7FE2BE3C8D
+changelog=v4.4.49 - 2026-10-31: Display all categories completely without scrolling, fix category overlap on products, prevent cash payment button overlap with total, and add percentage or amount discount option
