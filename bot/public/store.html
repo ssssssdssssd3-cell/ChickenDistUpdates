@@ -509,6 +509,21 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
     .btn-shop-now:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(234,88,12,0.7); }
+
+    /* تحسين وضوح وجمالية اسم الصنف في بطاقات المنيو والمعرض */
+    .product-title-text {
+      font-size: 0.98rem !important;
+      font-weight: 900 !important;
+      line-height: 1.4 !important;
+      color: #ffffff !important;
+      letter-spacing: -0.01em;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+    }
+    @media (min-width: 640px) {
+      .product-title-text {
+        font-size: 1.10rem !important;
+      }
+    }
     
     /* أزرار الأسهم للتنقل بين البنرات */
     .hero-nav-arrow {
@@ -1310,14 +1325,14 @@
         <div class="hero-slide active" id="heroSlide0">
           <div class="hero-slide-overlay"></div>
           <div class="hero-slide-content">
-            <span class="hero-eyebrow" id="heroSlide0Badge"><i class="fa-solid fa-fire"></i> أشهى المأكولات على أصولها</span>
-            <h1 class="hero-headline" id="heroSlide0Title">طعم لا يُقاوم</h1>
-            <p class="hero-subtext" id="heroSlide0Sub">مشاوي على الفحم وبرجر طازج بخلطات سرية تسعد حواسك</p>
+            <span class="hero-eyebrow" id="heroSlide0Badge"><i class="fa-solid fa-mug-hot"></i> بن الأكابر — تحميص طازج يومياً</span>
+            <h1 class="hero-headline" id="heroSlide0Title">مزاجك بأعلى جودة</h1>
+            <p class="hero-subtext" id="heroSlide0Sub">توليفات بن فاخرة وحبوب مختارة بعناية لعشاق القهوة والمذاق الأصيل</p>
           </div>
           <div class="hero-action-row">
             <a href="#productsSectionHeader" class="btn-shop-now hero-action-cta">
-              <span class="hero-action-text">اطلب وجبتك</span>
-              <i class="fa-solid fa-utensils hero-action-icon"></i>
+              <span class="hero-action-text">تصفح قائمة البن والمشروبات</span>
+              <i class="fa-solid fa-book-open hero-action-icon"></i>
             </a>
             <div class="carousel-dots">
               <span class="dot active" onclick="goToHeroSlide(0)"></span>
@@ -1331,14 +1346,14 @@
         <div class="hero-slide" id="heroSlide1">
           <div class="hero-slide-overlay"></div>
           <div class="hero-slide-content">
-            <span class="hero-eyebrow" id="heroSlide1Badge"><i class="fa-solid fa-bolt"></i> عروض التوفير اليومية</span>
-            <h1 class="hero-headline" id="heroSlide1Title">كومبو العيلة والتوفير</h1>
-            <p class="hero-subtext" id="heroSlide1Sub">وفر أكثر مع وجباتنا العائلية والعروض الخاصة لفترة محدودة</p>
+            <span class="hero-eyebrow" id="heroSlide1Badge"><i class="fa-solid fa-glass-water"></i> مشروبات باردة وموهيتو منعش</span>
+            <h1 class="hero-headline" id="heroSlide1Title">انتعاش لا يُقاوم</h1>
+            <p class="hero-subtext" id="heroSlide1Sub">تشكيلة واسعة من الآيس كوفي، الموهيتو، والسموزي والعصائر الطبيعية المنعشة</p>
           </div>
           <div class="hero-action-row">
             <a href="#productsSectionHeader" class="btn-shop-now hero-action-cta">
-              <span class="hero-action-text">اطلب وجبتك</span>
-              <i class="fa-solid fa-utensils hero-action-icon"></i>
+              <span class="hero-action-text">تصفح المشروبات والأسعار</span>
+              <i class="fa-solid fa-book-open hero-action-icon"></i>
             </a>
             <div class="carousel-dots">
               <span class="dot" onclick="goToHeroSlide(0)"></span>
@@ -1352,14 +1367,14 @@
         <div class="hero-slide" id="heroSlide2">
           <div class="hero-slide-overlay"></div>
           <div class="hero-slide-content">
-            <span class="hero-eyebrow" id="heroSlide2Badge"><i class="fa-solid fa-motorcycle"></i> أسرع توصيل للمنازل</span>
-            <h1 class="hero-headline" id="heroSlide2Title">طلبك يوصلك ساخن لباب بيتك</h1>
-            <p class="hero-subtext" id="heroSlide2Sub">خدمة توصيل سريعة بأعلى معايير الجودة والنظافة والسرعة</p>
+            <span class="hero-eyebrow" id="heroSlide2Badge"><i class="fa-solid fa-fire-burner"></i> قهوة ومشروبات على أصولها</span>
+            <h1 class="hero-headline" id="heroSlide2Title">قهوتك معمولة بمزاج</h1>
+            <p class="hero-subtext" id="heroSlide2Sub">أجود أنواع البن والمشروبات الساخنة والباردة مجهزة فوراً خصيصاً لأجلك</p>
           </div>
           <div class="hero-action-row">
             <a href="#productsSectionHeader" class="btn-shop-now hero-action-cta">
-              <span class="hero-action-text">اطلب وجبتك</span>
-              <i class="fa-solid fa-utensils hero-action-icon"></i>
+              <span class="hero-action-text">تصفح المنيو والأسعار</span>
+              <i class="fa-solid fa-book-open hero-action-icon"></i>
             </a>
             <div class="carousel-dots">
               <span class="dot" onclick="goToHeroSlide(0)"></span>
@@ -1383,24 +1398,24 @@
     <section id="restaurantFeaturesBar" class="hidden py-1">
       <div class="features-bar">
         <div class="feature-item">
-          <div class="feature-icon-wrapper"><i class="fa-solid fa-clock"></i></div>
-          <span class="feature-title">توصيل سريع</span>
-          <span class="feature-subtitle">30 دقيقة ساخن</span>
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-mug-hot"></i></div>
+          <span class="feature-title">بن طازج</span>
+          <span class="feature-subtitle">تحميص يومي فاخر</span>
         </div>
         <div class="feature-item">
-          <div class="feature-icon-wrapper"><i class="fa-solid fa-drumstick-bite"></i></div>
-          <span class="feature-title">لحوم بلدي</span>
-          <span class="feature-subtitle">طازجة يومياً</span>
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-cubes-stacked"></i></div>
+          <span class="feature-title">توليفات خاصة</span>
+          <span class="feature-subtitle">حسب ذوقك ومزاجك</span>
         </div>
         <div class="feature-item">
-          <div class="feature-icon-wrapper"><i class="fa-solid fa-tags"></i></div>
-          <span class="feature-title">عروض يومية</span>
-          <span class="feature-subtitle">كومبو التوفير</span>
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-bolt"></i></div>
+          <span class="feature-title">تجهيز فوري</span>
+          <span class="feature-subtitle">مشروباتك طازجة</span>
         </div>
         <div class="feature-item">
-          <div class="feature-icon-wrapper"><i class="fa-solid fa-star"></i></div>
-          <span class="feature-title">جودة مضمونة</span>
-          <span class="feature-subtitle">أعلى معايير النظافة</span>
+          <div class="feature-icon-wrapper"><i class="fa-solid fa-award"></i></div>
+          <span class="feature-title">أعلى جودة</span>
+          <span class="feature-subtitle">بن 100% طبيعي</span>
         </div>
       </div>
     </section>
@@ -2492,34 +2507,96 @@
       return false;
     }
 
+    function getCategorySortPriority(catName) {
+      if (!catName) return 999;
+      const name = String(catName).toLowerCase().trim();
+      // 1. البن وتوليفات القهوة وحبوب البن
+      if (name.includes('بن') || name.includes('حبوب') || name.includes('توليف') || name.includes('coffee beans') || name.includes('roastery')) return 10;
+      // 2. المشروبات الساخنة والقهوة والشاي
+      if (name.includes('ساخن') || name.includes('سخن') || name.includes('hot') || name.includes('شاي') || name.includes('قهوة') || name.includes('اسبريسو') || name.includes('لاتيه') || name.includes('كابتشينو')) return 20;
+      // 3. المشروبات الباردة والآيس كوفي
+      if (name.includes('بارد') || name.includes('ساقع') || name.includes('cold') || name.includes('ايس كوفي') || name.includes('iced') || name.includes('كولد')) return 30;
+      // 4. العصائر الطبيعية والفريش
+      if (name.includes('عصير') || name.includes('عصائر') || name.includes('juice') || name.includes('فريش')) return 40;
+      // 5. الموهيتو
+      if (name.includes('مهيتو') || name.includes('موهيتو') || name.includes('mojito')) return 50;
+      // 6. السموزي
+      if (name.includes('سموزي') || name.includes('smoothie')) return 55;
+      // 7. سوفت درينك وكانز وصودا
+      if (name.includes('سوف') || name.includes('صودا') || name.includes('soft') || name.includes('كانز') || name.includes('بيبسي') || name.includes('كولا')) return 58;
+      // 8. الآيس كريم
+      if (name.includes('ايس') || name.includes('أيس') || name.includes('ice cream')) return 60;
+      // 9. الحلويات والديزارت
+      if (name.includes('ديزارت') || name.includes('حلو') || name.includes('كيك') || name.includes('dessert') || name.includes('sweet') || name.includes('وافل')) return 65;
+      // 10. المياه
+      if (name.includes('مياه') || name.includes('ماء') || name.includes('water')) return 80;
+      // 11. الإضافات والصوصات دائماً في الأخير
+      if (name.includes('اضاف') || name.includes('إضاف') || name.includes('صوص') || name.includes('عسل') || name.includes('نوتيلا') || name.includes('مكسرات') || name.includes('extra') || name.includes('addon') || name.includes('topping')) return 990;
+      return 100;
+    }
+
     function getRestaurantCategoryImage(catName) {
-      if (!catName) return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80';
+      if (!catName) return 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=400&q=80';
       const name = String(catName).toLowerCase();
+
+      // 1. البن وتوليفات القهوة وحبوب البن
+      if (name.includes('بن') || name.includes('حبوب') || name.includes('توليف') || name.includes('coffee beans') || name.includes('roastery')) {
+        return 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=400&q=80';
+      }
+      // 2. المشروبات الساخنة والقهوة والشاي والاسبريسو
+      if (name.includes('ساخن') || name.includes('سخن') || name.includes('اسبريسو') || name.includes('شاي') || name.includes('قهوة') || name.includes('لاتيه') || name.includes('كابتشينو') || name.includes('hot')) {
+        return 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=400&q=80';
+      }
+      // 3. المشروبات الباردة والآيس كوفي
+      if (name.includes('بارد') || name.includes('ساقع') || name.includes('ايس كوفي') || name.includes('iced') || name.includes('cold brew')) {
+        return 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=400&q=80';
+      }
+      // 4. العصائر الطبيعية والفريش
+      if (name.includes('عصير') || name.includes('عصائر') || name.includes('فريش') || name.includes('juice')) {
+        return 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=400&q=80';
+      }
+      // 5. الموهيتو والمشروبات المنعشة
+      if (name.includes('مهيتو') || name.includes('موهيتو') || name.includes('mojito')) {
+        return 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80';
+      }
+      // 6. السموزي
+      if (name.includes('سموزي') || name.includes('smoothie')) {
+        return 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=400&q=80';
+      }
+      // 7. سوفت درينك وكانز وصودا
+      if (name.includes('سوف') || name.includes('صودا') || name.includes('soft') || name.includes('كانز') || name.includes('بيبسي') || name.includes('كولا')) {
+        return 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&q=80';
+      }
+      // 8. الآيس كريم
+      if (name.includes('ايس') || name.includes('أيس') || name.includes('ice cream')) {
+        return 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=400&q=80';
+      }
+      // 9. ديزارت وحلويات وكيك وشيكولاتة
+      if (name.includes('ديزارت') || name.includes('حلو') || name.includes('كيك') || name.includes('شيكولات') || name.includes('وافل') || name.includes('dessert') || name.includes('sweet')) {
+        return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=400&q=80';
+      }
+      // 10. مياه ومياه معدنية
+      if (name.includes('مياه') || name.includes('ماء') || name.includes('water')) {
+        return 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=400&q=80';
+      }
+      // 11. إضافات وصوصات وعسل ونوتيلا
+      if (name.includes('اضاف') || name.includes('إضاف') || name.includes('صوص') || name.includes('عسل') || name.includes('نوتيلا') || name.includes('مكسرات') || name.includes('topping')) {
+        return 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80';
+      }
+      // 12. مأكولات أخرى في حال وجودها
       if (name.includes('برجر') || name.includes('burger')) {
         return 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80';
       }
-      if (name.includes('مشاوي') || name.includes('لحم') || name.includes('كفتة') || name.includes('كباب') || name.includes('شيش') || name.includes('طرب') || name.includes('grill') || name.includes('meat')) {
+      if (name.includes('مشاوي') || name.includes('لحم') || name.includes('كفتة') || name.includes('كباب') || name.includes('grill') || name.includes('meat')) {
         return 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80';
       }
-      if (name.includes('شاورما') || name.includes('دجاج') || name.includes('فراخ') || name.includes('كرسبي') || name.includes('زنجر') || name.includes('صاج') || name.includes('chicken') || name.includes('shawarma')) {
+      if (name.includes('شاورما') || name.includes('دجاج') || name.includes('فراخ') || name.includes('chicken')) {
         return 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=400&q=80';
       }
-      if (name.includes('بيتزا') || name.includes('pizza') || name.includes('باستا') || name.includes('pasta') || name.includes('كريب') || name.includes('crepe') || name.includes('مكرونة')) {
+      if (name.includes('بيتزا') || name.includes('pizza') || name.includes('باستا') || name.includes('pasta')) {
         return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80';
       }
-      if (name.includes('سمك') || name.includes('جمبري') || name.includes('سي فود') || name.includes('بحري') || name.includes('seafood') || name.includes('fish')) {
-        return 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=400&q=80';
-      }
-      if (name.includes('مشروب') || name.includes('عصير') || name.includes('قهوة') || name.includes('شاي') || name.includes('coffee') || name.includes('drink')) {
-        return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80';
-      }
-      if (name.includes('حلو') || name.includes('حلى') || name.includes('وافل') || name.includes('كيك') || name.includes('dessert') || name.includes('sweet')) {
-        return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80';
-      }
-      if (name.includes('سلط') || name.includes('مقبل') || name.includes('بطاطس') || name.includes('fries') || name.includes('salad') || name.includes('appetizer')) {
-        return 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=400&q=80';
-      }
-      return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80';
+      return 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=400&q=80';
     }
 
     function renderRestaurantCategories() {
@@ -2527,7 +2604,15 @@
       if (!grid) return;
 
       const allCount = products.length;
-      let allImg = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80';
+      let allImg = 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=400&q=80';
+
+      // ترتيب الأقسام: البن أولاً، ثم المشروبات الساخنة، ثم الباردة، ثم العصائر، ثم الموهيتو، والحلويات، والمياه، والإضافات أخيراً
+      const sortedCategories = [...categories].sort((a, b) => {
+        const pA = getCategorySortPriority(a.CategoryName || a.Name);
+        const pB = getCategorySortPriority(b.CategoryName || b.Name);
+        if (pA !== pB) return pA - pB;
+        return String(a.CategoryName || '').localeCompare(String(b.CategoryName || ''), 'ar');
+      });
 
       let cardsHtml = `
         <div class="category-card ${selectedCatID === 0 || selectedCatID === '0' ? 'active' : ''}" id="rest-cat-0" onclick="selectCategory(0)">
@@ -2541,7 +2626,7 @@
         </div>
       `;
 
-      cardsHtml += categories.map(cat => {
+      cardsHtml += sortedCategories.map(cat => {
         const count = products.filter(p => String(p.CategoryID) === String(cat.CategoryID)).length;
         const img = cat.ImageUrl || cat.Image || getRestaurantCategoryImage(cat.CategoryName);
         const isActive = String(selectedCatID) === String(cat.CategoryID);
@@ -2677,35 +2762,35 @@
         logoCont.className = "brand-logo-circle";
       }
       if (logoIcon && (!storeConfig.StoreLogo || storeConfig.StoreLogo.trim() === '')) {
-        logoIcon.className = "fa-solid fa-fire-burner";
+        logoIcon.className = "fa-solid fa-mug-hot";
       }
 
       // 1. نصوص أزرار الطلب والعمل في البنرات
-      const actionText = storeConfig.HeroActionText || (menuMode ? "تصفح قائمة الأصناف والأسعار" : "اطلب وجبتك الآن");
+      const actionText = storeConfig.HeroActionText || (menuMode ? "تصفح قائمة الأصناف والأسعار" : "اطلب مشروبك الآن");
       document.querySelectorAll('.hero-action-text').forEach(el => el.textContent = actionText);
       document.querySelectorAll('.hero-action-icon').forEach(el => {
-        el.className = menuMode ? "fa-solid fa-book-open hero-action-icon" : "fa-solid fa-utensils hero-action-icon";
+        el.className = menuMode ? "fa-solid fa-book-open hero-action-icon" : "fa-solid fa-mug-saucer hero-action-icon";
       });
 
-      // 2. ربط صور ونصوص بنرات السلايدر الثلاثي من إعدادات العميل
+      // 2. ربط صور ونصوص بنرات السلايدر الثلاثي من إعدادات العميل (مطاعم وكافيهات ومحلات بن)
       const defaultBanners = [
         {
-          Image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80',
-          Badge: '🔥 أشهى المأكولات على أصولها',
-          Title: 'طعم لا يُقاوم',
-          Sub: 'مشاوي على الفحم وبرجر طازج بخلطات سرية تسعد حواسك'
+          Image: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80',
+          Badge: '☕ بن الأكابر — تحميص طازج يومياً',
+          Title: 'مزاجك بأعلى جودة',
+          Sub: 'توليفات بن فاخرة وحبوب مختارة بعناية لعشاق القهوة والمذاق الأصيل'
         },
         {
-          Image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80',
-          Badge: '⚡ عروض التوفير اليومية',
-          Title: 'كومبو العيلة والتوفير',
-          Sub: 'وفر أكثر مع وجباتنا العائلية والعروض الخاصة لفترة محدودة'
+          Image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=1200&q=80',
+          Badge: '🧊 مشروبات باردة وموهيتو منعش',
+          Title: 'انتعاش لا يُقاوم',
+          Sub: 'تشكيلة واسعة من الآيس كوفي، الموهيتو، والسموزي والعصائر الطبيعية المنعشة'
         },
         {
-          Image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80',
-          Badge: '🛵 أسرع توصيل للمنازل',
-          Title: 'طلبك يوصلك ساخن لباب بيتك',
-          Sub: 'خدمة توصيل سريعة بأعلى معايير الجودة والنظافة والسرعة'
+          Image: 'https://images.unsplash.com/photo-1509785307050-d4066910ec1e?auto=format&fit=crop&w=1200&q=80',
+          Badge: '✨ قهوة ومشروبات على أصولها',
+          Title: 'قهوتك معمولة بمزاج',
+          Sub: 'أجود أنواع البن والمشروبات الساخنة والباردة مجهزة فوراً خصيصاً لأجلك'
         }
       ];
 
@@ -2750,8 +2835,8 @@
         if (waNumber.startsWith('0')) waNumber = '2' + waNumber;
         else if (!waNumber.startsWith('20')) waNumber = '20' + waNumber;
 
-        const waGeneralUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('السلام عليكم، مرحباً بكم! أود الاستفسار عن قائمة المأكولات والأسعار.')}`;
-        const waPromoUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن عروض الحفلات والعزومات.')}`;
+        const waGeneralUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('السلام عليكم، مرحباً بكم! أود الاستفسار عن قائمة البن والمشروبات والأسعار.')}`;
+        const waPromoUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('السلام عليكم، أود الاستفسار عن توليفات البن وقائمة المشروبات.')}`;
 
         if (floatWa) {
           floatWa.href = waGeneralUrl;
@@ -2913,6 +2998,20 @@
             if (storeConfig.OnlyInStockProducts) {
               products = products.filter(p => (parseFloat(p.StockQty) || 0) > 0);
             }
+            // ترتيب الأقسام تلقائياً: البن أولاً، المشروبات الساخنة، الباردة، العصائر، الموهيتو، الحلويات... والإضافات في النهاية
+            categories.sort((a, b) => {
+              const pA = getCategorySortPriority(a.CategoryName || a.Name);
+              const pB = getCategorySortPriority(b.CategoryName || b.Name);
+              if (pA !== pB) return pA - pB;
+              return String(a.CategoryName || '').localeCompare(String(b.CategoryName || ''), 'ar');
+            });
+            // ترتيب الأصناف تلقائياً حسب أولوية الأقسام بحيث يظهر البن والمشروبات في الصدارة
+            products.sort((a, b) => {
+              const pA = getCategorySortPriority(a.CategoryName);
+              const pB = getCategorySortPriority(b.CategoryName);
+              if (pA !== pB) return pA - pB;
+              return (a.ProductID || 0) - (b.ProductID || 0);
+            });
           }
         }
 
@@ -3264,6 +3363,14 @@
           if (q && !(p.ProductName || '').toLowerCase().includes(q) && !(p.ProductCode || '').toLowerCase().includes(q)) return false;
           return true;
         });
+
+        // ترتيب الأصناف دائماً حسب أولوية الأقسام (البن أولاً ثم المشروبات الساخنة والباردة والعصائر والموهيتو ... والإضافات في النهاية)
+        filtered.sort((a, b) => {
+          const pA = getCategorySortPriority(a.CategoryName);
+          const pB = getCategorySortPriority(b.CategoryName);
+          if (pA !== pB) return pA - pB;
+          return (a.ProductID || 0) - (b.ProductID || 0);
+        });
       }
 
       if (!filtered.length) {
@@ -3352,12 +3459,12 @@
               <!-- معلومات الصنف -->
               <div class="space-y-1.5 flex-1 flex flex-col justify-between">
                 <div>
-                  <div class="flex items-center justify-between gap-1 mb-1">
-                    <span class="text-[10px] text-slate-400 font-semibold truncate max-w-[50%]">${p.CategoryName || 'عام'}</span>
+                  <div class="flex items-center justify-between gap-1 mb-1.5">
+                    <span class="text-[11px] text-amber-400 font-extrabold truncate max-w-[55%]">${p.CategoryName || 'عام'}</span>
                     ${stockHtml}
                   </div>
 
-                  <h4 onclick="openProductGalleryModal(${p.ProductID})" class="font-extrabold text-white text-xs sm:text-sm line-clamp-2 leading-tight min-h-[2.4rem] group-hover:text-blue-300 transition cursor-pointer" title="${p.ProductName}">
+                  <h4 onclick="openProductGalleryModal(${p.ProductID})" class="product-title-text line-clamp-2 min-h-[2.8rem] group-hover:text-amber-300 transition-colors cursor-pointer" title="${p.ProductName}">
                     ${p.ProductName}
                   </h4>
                   ${(p.OnlineDescription || p.Description || p.Benefits || '').trim() ? `
