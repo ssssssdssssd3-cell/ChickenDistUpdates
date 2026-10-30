@@ -1,5 +1,5 @@
-version=4.4.46
+version=4.4.47
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.46&t=1793313440
-sha256=046D4D05CD1E63B636AE1859B92CE3C719B3904FFF516AE78684098298213B80
-changelog=v4.4.46 - 2026-10-30: Add custom sale price and quantity support for client blends, automatically insert blend quantity and price into invoice, and add ClientPrice column that recalculates on quantity adjustments
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.47&t=1793334490
+sha256=0C0F3D95EEAB7727E284EF8BB86259C60726B9D949E753CDE457183ABBD4BEC2
+changelog=v4.4.47 - 2026-10-30: Fix RTL layout so labels precede input fields in POS, optimize invoice grid column widths and header fonts, clarify blend field labels and change preferred blend checkbox color
