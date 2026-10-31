@@ -1,5 +1,5 @@
-version=4.4.50
+version=4.4.51
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.50&t=1793463183
-sha256=DE4A684F0D9CE89D3C43030B3E37BD3E197CFADAC2D08981D987B7BC5AF08B08
-changelog=v4.4.50 - 2026-10-31: Show sold IMEI invoice details in sales and inventory search, filter exact serial in inventory, link cost and price to individual IMEI for used mobiles without averages
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.51&t=1793465275
+sha256=757613FA44BD5F3F52C86DF798967DEEA138B2A0BEBBCA81F598A0A03D0C0B7D
+changelog=v4.4.51 - 2026-10-31: Fix mobile IMEI printing and sync between grid and invoice items, ensure exact IMEI printed across thermal, A4, A5 and preparation slips
