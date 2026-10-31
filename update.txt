@@ -1,5 +1,5 @@
-version=4.4.51
+version=4.4.52
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.51&t=1793465275
-sha256=757613FA44BD5F3F52C86DF798967DEEA138B2A0BEBBCA81F598A0A03D0C0B7D
-changelog=v4.4.51 - 2026-10-31: Fix mobile IMEI printing and sync between grid and invoice items, ensure exact IMEI printed across thermal, A4, A5 and preparation slips
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.52&t=1793467848
+sha256=B2281880B748D5651C65F38CD33F2FD719A891336194CD9FC3AF694D468FCBA6
+changelog=v4.4.52 - 2026-10-31: Fix purchase invoice discount elimination in profit margin and mobile modes (SalesMargin): completely hide discount column and guarantee total is strictly quantity * purchase price without discount deduction
