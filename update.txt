@@ -1,5 +1,5 @@
-version=4.4.49
+version=4.4.50
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.49&t=1793400033
-sha256=06504115ACD36DD887A609BBF58537A6FC32F8EAAAF9B1B3E4FF3E7FE2BE3C8D
-changelog=v4.4.49 - 2026-10-31: Display all categories completely without scrolling, fix category overlap on products, prevent cash payment button overlap with total, and add percentage or amount discount option
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.50&t=1793463183
+sha256=DE4A684F0D9CE89D3C43030B3E37BD3E197CFADAC2D08981D987B7BC5AF08B08
+changelog=v4.4.50 - 2026-10-31: Show sold IMEI invoice details in sales and inventory search, filter exact serial in inventory, link cost and price to individual IMEI for used mobiles without averages

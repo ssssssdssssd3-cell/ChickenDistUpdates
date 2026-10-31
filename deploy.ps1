@@ -4,8 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.49";
-$CHANGELOG = "v4.4.49 - 2026-10-31: Display all categories completely without scrolling, fix category overlap on products, prevent cash payment button overlap with total, and add percentage or amount discount option";
+$VERSION = "4.4.50";
+$CHANGELOG = "v4.4.50 - 2026-10-31: Show sold IMEI invoice details in sales and inventory search, filter exact serial in inventory, link cost and price to individual IMEI for used mobiles without averages";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
