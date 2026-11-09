@@ -1,5 +1,5 @@
-version=4.4.52
+version=4.4.53
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.52&t=1793467848
-sha256=B2281880B748D5651C65F38CD33F2FD719A891336194CD9FC3AF694D468FCBA6
-changelog=v4.4.52 - 2026-10-31: Fix purchase invoice discount elimination in profit margin and mobile modes (SalesMargin): completely hide discount column and guarantee total is strictly quantity * purchase price without discount deduction
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.53&t=1794238948
+sha256=F9962B0655602D250CC6EC7DA707530832E3D3EF25633B769835CD003A397C94
+changelog=v4.4.53 - 2026-11-09: Non-system-user employees (delivery) without username/password, quick items search + category filter, separate selling-price edit permission from discount permission, customer change display in POS
