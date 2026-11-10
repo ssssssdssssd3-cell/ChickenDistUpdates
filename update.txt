@@ -1,5 +1,5 @@
-version=4.4.53
+version=4.4.54
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.53&t=1794238948
-sha256=F9962B0655602D250CC6EC7DA707530832E3D3EF25633B769835CD003A397C94
-changelog=v4.4.53 - 2026-11-09: Non-system-user employees (delivery) without username/password, quick items search + category filter, separate selling-price edit permission from discount permission, customer change display in POS
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.54&t=1794304597
+sha256=739BE457181F2C6409C25C50D07779B0F9CAF6CE5739DB411886368DAA0D0971
+changelog=v4.4.54 - 2026-11-10: Fix quick items loading and category filter in POS and Sale invoice, fix voucher apply button text width, adjust client balance label layout and size for 5-digit balances
