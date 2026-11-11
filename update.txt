@@ -1,5 +1,5 @@
-version=4.4.54
+version=4.4.55
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.54&t=1794304597
-sha256=739BE457181F2C6409C25C50D07779B0F9CAF6CE5739DB411886368DAA0D0971
-changelog=v4.4.54 - 2026-11-10: Fix quick items loading and category filter in POS and Sale invoice, fix voucher apply button text width, adjust client balance label layout and size for 5-digit balances
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.55&t=1794401274
+sha256=E609705E904315577211A1CF770C6083ED9F16BEF8D2CDC5E5CA55128C6FA8E9
+changelog=v4.4.55 - 2026-11-11: Detailed granular permissions across Employees HR module (Transactions, Attendance, Commissions, Payroll), Sales, Purchases, Inventory, Reports & Admin; fast cached debounced quick items search (capped at 40 search results); widened client statement button in Sales
