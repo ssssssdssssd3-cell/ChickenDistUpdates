@@ -1,5 +1,5 @@
-version=4.4.63
+version=4.4.64
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.63&t=1794689016
-sha256=7DFC3D2A9CEA4CF50145AB320A82E2FB541DCE8D457087FFDFB86DDA7F3A60A8
-changelog=v4.4.63 - 2026-11-14: Resolved modal dialog auto-closing glitch by removing dynamic RightToLeftLayout override in Theme.cs, preserving custom form mirroring and fixing ProductCard and modal forms, plus fixed CurrentStock query in BranchSyncService
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.64&t=1794690967
+sha256=B009C97838C7CA9A28D0FFC9BD4B73479403EB6B11F35B34CD150E78AEE97AE8
+changelog=v4.4.64 - 2026-11-14: Added date & hour search filter in Branch Sync reports, centered active screen title header in main window, and established dedicated 'ربط الفروع' top-level navigation dropdown before 'الإدارة'
