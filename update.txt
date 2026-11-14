@@ -1,5 +1,5 @@
-version=4.4.61
+version=4.4.62
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.61&t=1794685792
-sha256=A7DD0CC44DE4AC29DA5FA16172B2663A1949B1A0CBEFA3C8090EC00BD681A0F2
-changelog=v4.4.61 - 2026-11-14: Comprehensive Multi-Branch Cloud Sync Overhaul (RTL layout, actual target warehouses/safes, zero ghost branches, Main branch multi-report suite, cross-branch stock lookup [F6]), Eye-Comfort Inventory row contrast (#ECFDF5 soft mint), balanced Product Search layout, and Attendance polish
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.62&t=1794687277
+sha256=A080617A8EA12D50CF832EA5C53F7A23E5C76C4EEE4CC55D49F2AE1C95FE702C
+changelog=v4.4.62 - 2026-11-14: Restored classic luxury dark styling (#0A0A0A midnight black & gold branding) for Login screen and Main Screen/Dashboard while preserving Eye-Comfort design across all working forms
