@@ -1,5 +1,5 @@
-version=4.4.64
+version=4.4.65
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.64&t=1794690967
-sha256=B009C97838C7CA9A28D0FFC9BD4B73479403EB6B11F35B34CD150E78AEE97AE8
-changelog=v4.4.64 - 2026-11-14: Added date & hour search filter in Branch Sync reports, centered active screen title header in main window, and established dedicated 'ربط الفروع' top-level navigation dropdown before 'الإدارة'
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.65&t=1794691923
+sha256=DEB8323E37144523113B8D0920E0C71918FCE9688C590658DA923DC6EE4F3656
+changelog=v4.4.65 - 2026-11-14: Resolved expense types duplicate code generation conflict in LookupDAL and restored missing expense types in Receipt Voucher operational expenses dropdown by ensuring schema compatibility and safe querying
