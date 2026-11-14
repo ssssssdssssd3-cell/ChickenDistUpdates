@@ -1,5 +1,5 @@
-version=4.4.57
+version=4.4.58
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.57&t=1794678025
-sha256=BC0038184BD0C304FA8D4F3495C1B52646B76986872434CC75E9118570D4A936
-changelog=v4.4.57 - 2026-11-14: Fixed Shift Product Sales Excel export to formatted RTL SpreadsheetML (.xls) supporting Arabic on all Office versions (2007-365) + native high-DPI PDF export compatible with Windows 7/10/11
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.58&t=1794679335
+sha256=E49D60FC5FA0506DAE40A840203C7C196C3F984D89593AE95DF8E9D6C1CB2E39
+changelog=v4.4.58 - 2026-11-14: Enterprise Corporate HR & Attendance Module: Self-Service Time Clock Kiosk with PIN verification, strict one-time Check-In/Check-Out anti-tampering lock, HR Daily Approval & Day Lock, Leaves/Permissions/Missions management, Monthly Discipline Matrix Report, and full Attendance Audit Trail
