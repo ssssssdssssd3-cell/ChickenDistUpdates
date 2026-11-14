@@ -1,5 +1,5 @@
-version=4.4.58
+version=4.4.59
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.58&t=1794679335
-sha256=E49D60FC5FA0506DAE40A840203C7C196C3F984D89593AE95DF8E9D6C1CB2E39
-changelog=v4.4.58 - 2026-11-14: Enterprise Corporate HR & Attendance Module: Self-Service Time Clock Kiosk with PIN verification, strict one-time Check-In/Check-Out anti-tampering lock, HR Daily Approval & Day Lock, Leaves/Permissions/Missions management, Monthly Discipline Matrix Report, and full Attendance Audit Trail
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.59&t=1794681341
+sha256=74E0EB3E717B36EDDA2026D45E3AAAD5B760CDFFF641262655D154D2CE39D816
+changelog=v4.4.59 - 2026-11-14: Enterprise Eye-Comfort Design System & UI/UX Overhaul (WCAG 2.2 AA): Unified calm Nordic Alabaster & Soft Slate palettes, eliminated harsh dark/yellow clashes across FrmSale, FrmProductSearch, FrmPOS, FrmPurchase, DataGridViews, and Quick Item cards, while preserving Classic Dark Mode in Settings
