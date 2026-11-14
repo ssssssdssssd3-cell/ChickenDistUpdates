@@ -1,5 +1,5 @@
-version=4.4.59
+version=4.4.60
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.59&t=1794681341
-sha256=74E0EB3E717B36EDDA2026D45E3AAAD5B760CDFFF641262655D154D2CE39D816
-changelog=v4.4.59 - 2026-11-14: Enterprise Eye-Comfort Design System & UI/UX Overhaul (WCAG 2.2 AA): Unified calm Nordic Alabaster & Soft Slate palettes, eliminated harsh dark/yellow clashes across FrmSale, FrmProductSearch, FrmPOS, FrmPurchase, DataGridViews, and Quick Item cards, while preserving Classic Dark Mode in Settings
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.60&t=1794682112
+sha256=F4500E9230526953393665A58B18D1C6CC8142112A6A5EF7AD83604FB2909ACC
+changelog=v4.4.60 - 2026-11-14: Clean Attendance UI (removed redundant top KPI header) and full support for non-system employees without passwords in Attendance Kiosk & HR sheets
