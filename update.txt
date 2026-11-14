@@ -1,5 +1,5 @@
-version=4.4.67
+version=4.4.68
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.67&t=1794697607
-sha256=7710D4E172F5C2B5F77AAC4FAE4758BC3B046DF8FC62A1993154516B53981C30
-changelog=v4.4.67 - 2026-11-15: Included all employee advances from ledger and vouchers in monthly payroll; added owner approval toggles to apply or excuse late arrival and general deductions; resolved print preview window disappearing issue with robust owner anchoring and added direct PDF export for payroll sheet and employee payslips
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.68&t=1794698700
+sha256=AFBD11CAC000794774D316D3F2ADA04D63F475095BFC052FC9B85AA509C487B4
+changelog=v4.4.68 - 2026-11-15: Enhanced contrast and legibility for safe balances, cash preview badges, and payment details across payment vouchers and cashbox dialogs in both light and dark themes
