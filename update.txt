@@ -1,5 +1,5 @@
-version=4.4.55
+version=4.4.56
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.55&t=1794401274
-sha256=E609705E904315577211A1CF770C6083ED9F16BEF8D2CDC5E5CA55128C6FA8E9
-changelog=v4.4.55 - 2026-11-11: Detailed granular permissions across Employees HR module (Transactions, Attendance, Commissions, Payroll), Sales, Purchases, Inventory, Reports & Admin; fast cached debounced quick items search (capped at 40 search results); widened client statement button in Sales
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.56&t=1794675350
+sha256=26196CCD7C3C061438B4C76DEAAB166FB86BDAE505F2CB64D8E11D32CD318EF1
+changelog=v4.4.56 - 2026-11-14: Cloud Multi-Branch Sync & Warehouse Transfers (Licensed-only visibility + detailed permissions); unified operational expense categories between CashBox & Vouchers; detailed Shift Product Sales report + PDF/Excel export; Safe/Drawer balance & details lock permissions; Quick Items stock badge visibility permission
