@@ -2,10 +2,12 @@
 #  Auto-Build and Deploy Script - ChickenDist
 # ============================================================
 
+param([switch]$SkipFirebase = $true)
+
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.52";
-$CHANGELOG = "v4.4.52 - 2026-10-31: Fix purchase invoice discount elimination in profit margin and mobile modes (SalesMargin): completely hide discount column and guarantee total is strictly quantity * purchase price without discount deduction";
+$VERSION = "4.4.67";
+$CHANGELOG = "v4.4.67 - 2026-11-15: Included all employee advances from ledger and vouchers in monthly payroll; added owner approval toggles to apply or excuse late arrival and general deductions; resolved print preview window disappearing issue with robust owner anchoring and added direct PDF export for payroll sheet and employee payslips";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -167,30 +169,34 @@ if (Test-Path $mobileImagesSrc) {
 }
 
 # Step 5.55: Deploy Firebase Hosting (web.app)
-Write-Step "Deploying Firebase Hosting (web.app)"
-$cmdObj = Get-Command "firebase.cmd" -ErrorAction SilentlyContinue
-$firebaseCmd = if ($cmdObj) { $cmdObj.Source } else { "$env:APPDATA\npm\firebase.cmd" }
-if (Test-Path $firebaseCmd) {
-    try {
-        Push-Location (Join-Path $REPO_ROOT "bot")
-        $fbJs = "$env:APPDATA\npm\node_modules\firebase-tools\lib\bin\firebase.js"
-        if (Test-Path $fbJs) {
-            & node $fbJs deploy --only hosting --non-interactive
-        } else {
-            cmd.exe /c "`"$firebaseCmd`" deploy --only hosting --non-interactive"
+if (-not $SkipFirebase) {
+    Write-Step "Deploying Firebase Hosting (web.app)"
+    $cmdObj = Get-Command "firebase.cmd" -ErrorAction SilentlyContinue
+    $firebaseCmd = if ($cmdObj) { $cmdObj.Source } else { "$env:APPDATA\npm\firebase.cmd" }
+    if (Test-Path $firebaseCmd) {
+        try {
+            Push-Location (Join-Path $REPO_ROOT "bot")
+            $fbJs = "$env:APPDATA\npm\node_modules\firebase-tools\lib\bin\firebase.js"
+            if (Test-Path $fbJs) {
+                & node $fbJs deploy --only hosting --non-interactive
+            } else {
+                cmd.exe /c "`"$firebaseCmd`" deploy --only hosting --non-interactive"
+            }
+            if ($LASTEXITCODE -eq 0) {
+                Write-OK "Firebase Hosting deployed successfully!"
+            } else {
+                Write-Host "  [WARN] Firebase Hosting deploy returned code $LASTEXITCODE" -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "  [WARN] Firebase deploy encountered an error: $_" -ForegroundColor Yellow
+        } finally {
+            Pop-Location
         }
-        if ($LASTEXITCODE -eq 0) {
-            Write-OK "Firebase Hosting deployed successfully!"
-        } else {
-            Write-Host "  [WARN] Firebase Hosting deploy returned code $LASTEXITCODE" -ForegroundColor Yellow
-        }
-    } catch {
-        Write-Host "  [WARN] Firebase deploy encountered an error: $_" -ForegroundColor Yellow
-    } finally {
-        Pop-Location
+    } else {
+        Write-Host "  [INFO] firebase.cmd not found, skipping hosting deploy" -ForegroundColor Gray
     }
 } else {
-    Write-Host "  [INFO] firebase.cmd not found, skipping hosting deploy" -ForegroundColor Gray
+    Write-Host "  [INFO] Skipping Firebase Hosting deploy (-SkipFirebase)" -ForegroundColor Gray
 }
 
 # Step 5.6: Copy final EXE to FINAL_RELEASE directory
@@ -239,7 +245,7 @@ $ErrorActionPreference = "Continue"
 # Ensure C# source files are untracked from the public update repo index (kept locally on disk)
 git rm -r --cached --ignore-unmatch Core DAL Forms Services Models Properties *.cs *.csproj *.sln obfuscar.xml 2>$null | Out-Null
 
-git add -A
+git add ChickenDist.bin update.txt
 if ($LASTEXITCODE -ne 0) { Write-Fail "git add failed" }
 Write-OK "git add ok"
 
