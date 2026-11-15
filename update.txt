@@ -1,5 +1,5 @@
-version=4.4.70
+version=4.4.71
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.70&t=1794702890
-sha256=CC121DC6FFCFAE36BE83BE0301D541A7ACC6BE83076347BC5CB81BBCE609FA11
-changelog=v4.4.70 - 2026-11-15: Added product category, shelf location, available warehouse stock and remaining balance columns in branch transfer table, with strict available stock validation and interactive quantity controls (+ / - buttons and inline edit with auto-clamping).
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.71&t=1794704044
+sha256=6720F75DFD46A103C1D85FE96CB38034D2461EC2E7DEA1BB877ECD81582F8B70
+changelog=v4.4.71 - 2026-11-15: Resolved payroll payslip and monthly payroll sheet print preview disappearing issue by replacing legacy PrintPreviewDialog with dedicated FrmPrintPreviewModal, enforcing safe A4 dimensions and positive GDI+ layout calculations, adding print dialog selection and direct PDF fallback.
