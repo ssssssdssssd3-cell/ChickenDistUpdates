@@ -1,5 +1,5 @@
-version=4.4.68
+version=4.4.69
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.68&t=1794698700
-sha256=AFBD11CAC000794774D316D3F2ADA04D63F475095BFC052FC9B85AA509C487B4
-changelog=v4.4.68 - 2026-11-15: Enhanced contrast and legibility for safe balances, cash preview badges, and payment details across payment vouchers and cashbox dialogs in both light and dark themes
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.69&t=1794701587
+sha256=6EAAAE5830ED0FBDA13CA8C1B2BB1098B8B4EA1933C8D517A29B98A4B3A5EEAB
+changelog=v4.4.69 - 2026-11-15: Streamlined branch transfer screen into a dedicated send interface without top header chatter, enabled direct continuous product search and addition to transfer draft with inline quantity editing in grid, and cleaned navigation
