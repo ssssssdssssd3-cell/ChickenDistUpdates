@@ -1,5 +1,5 @@
-version=4.4.71
+version=4.4.72
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.71&t=1794704044
-sha256=6720F75DFD46A103C1D85FE96CB38034D2461EC2E7DEA1BB877ECD81582F8B70
-changelog=v4.4.71 - 2026-11-15: Resolved payroll payslip and monthly payroll sheet print preview disappearing issue by replacing legacy PrintPreviewDialog with dedicated FrmPrintPreviewModal, enforcing safe A4 dimensions and positive GDI+ layout calculations, adding print dialog selection and direct PDF fallback.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.72&t=1794704929
+sha256=869CA01D9F29A272D18B52B5D57F446CF0245B4FA1F7B1ABFB9DF1A4BB5100DE
+changelog=v4.4.72 - 2026-11-15: Added Eye-Comfort Sky Blue and Mint Green color styles in POS cashier screen with custom framing and borders distinguishing panels from the items entry grid, plus real-time style switcher button.
