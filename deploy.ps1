@@ -6,8 +6,8 @@ param([switch]$SkipFirebase = $true)
 
 $ErrorActionPreference = "Stop"
 
-$VERSION = "4.4.67";
-$CHANGELOG = "v4.4.67 - 2026-11-15: Included all employee advances from ledger and vouchers in monthly payroll; added owner approval toggles to apply or excuse late arrival and general deductions; resolved print preview window disappearing issue with robust owner anchoring and added direct PDF export for payroll sheet and employee payslips";
+$VERSION = "4.4.74";
+$CHANGELOG = "v4.4.74 - 2026-11-15: Enhanced branch transfers: cleaned up outgoing history grid, removed row indicator and +/- buttons in favor of manual entry; added cost price, total cost, and sale price columns with totals summary; added incoming barcode printing for products flagged in product card; added transfer invoice voucher printing for outgoing and incoming; added 1-click import from purchase invoices; added 50-item shortage order from target branch; added full category transfer with stock validation; and added branch stagnant/slow-moving items report (report 6) with direct 1-click transfer.";
 $UPDATE_URL = "https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin"
 
 # Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
