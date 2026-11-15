@@ -1,5 +1,5 @@
-version=4.4.74
+version=4.4.75
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.74&t=1794712391
-sha256=69F46040556971EFAE9E6502C81DC0974674D3A7957A074E102AABC73C5AF075
-changelog=v4.4.74 - 2026-11-15: Enhanced branch transfers: cleaned up outgoing history grid, removed row indicator and +/- buttons in favor of manual entry; added cost price, total cost, and sale price columns with totals summary; added incoming barcode printing for products flagged in product card; added transfer invoice voucher printing for outgoing and incoming; added 1-click import from purchase invoices; added 50-item shortage order from target branch; added full category transfer with stock validation; and added branch stagnant/slow-moving items report (report 6) with direct 1-click transfer.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.75&t=1794719120
+sha256=B20518D969B475A3762E842BFEF2E64BAFD13633D5D08FDC54F28DE06D74C41B
+changelog=v4.4.75 - 2026-11-15: Resolved screen vertical height constraints and cut-off bottom buttons across forms: streamlined top screen title banner to ultra-compact 25px height, reset child form MinimumSize when docked into content tabs to prevent overflowing laptop/768p viewports, enabled multi-line wrapping on FrmEmployees tabs without scroll arrows, and permanently anchored bottom action buttons (Save/Add/Deactivate/Permissions) at the visible card bottom.
