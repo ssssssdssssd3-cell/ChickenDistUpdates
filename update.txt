@@ -1,5 +1,5 @@
-version=4.4.69
+version=4.4.70
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.69&t=1794701587
-sha256=6EAAAE5830ED0FBDA13CA8C1B2BB1098B8B4EA1933C8D517A29B98A4B3A5EEAB
-changelog=v4.4.69 - 2026-11-15: Streamlined branch transfer screen into a dedicated send interface without top header chatter, enabled direct continuous product search and addition to transfer draft with inline quantity editing in grid, and cleaned navigation
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.70&t=1794702890
+sha256=CC121DC6FFCFAE36BE83BE0301D541A7ACC6BE83076347BC5CB81BBCE609FA11
+changelog=v4.4.70 - 2026-11-15: Added product category, shelf location, available warehouse stock and remaining balance columns in branch transfer table, with strict available stock validation and interactive quantity controls (+ / - buttons and inline edit with auto-clamping).
