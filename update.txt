@@ -1,5 +1,5 @@
-version=4.4.72
+version=4.4.73
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.72&t=1794704929
-sha256=869CA01D9F29A272D18B52B5D57F446CF0245B4FA1F7B1ABFB9DF1A4BB5100DE
-changelog=v4.4.72 - 2026-11-15: Added Eye-Comfort Sky Blue and Mint Green color styles in POS cashier screen with custom framing and borders distinguishing panels from the items entry grid, plus real-time style switcher button.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.73&t=1794706120
+sha256=C1AB27A5E8268F7B4681CBD300959E823C4E0CDC57103152FF204C471324A07F
+changelog=v4.4.73 - 2026-11-15: Fixed inventory & stock reporting for connected branches (Report 5 & 4) by calculating real warehouse stock without relying on missing tables; enhanced expense item management in LookupManager with automatic reactivation and alphabetical sorting; hardened outgoing branch transfers with strict real stock validation and category/location display.
