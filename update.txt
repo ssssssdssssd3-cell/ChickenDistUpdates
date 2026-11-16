@@ -1,5 +1,5 @@
-version=4.4.82
+version=4.4.83
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.82&t=1794859642
-sha256=D3E6919061E0FD534BDCFE5ABC4D0E858F497AFBB050C14EA7F560A4C0CF6742
-changelog=v4.4.82 - 2026-11-16: إصلاح تداخل وترتيب الـ Docking والاتجاه العربي RTL بالكامل في شاشات التصنيع الخمس، وإصلاح استعلامات SQL في شاشة الخامات وأمر التصنيع والوصفات لتطابق أعمدة قاعدة البيانات الفعلية (MinQuantity, Unit1Name, OutputQty) وتحديث كروت التكلفة والربحية فورياً.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.83&t=1794865644
+sha256=C3B862A57A7476077A2A404DE022026D82D44A9B49DC5E4A2C596E43A6E59961
+changelog=v4.4.83 - 2026-11-16: إصلاح ظهور أسماء أزرار البحث وإضافة الخامة، وإضافة زر اختيار المنتج النهائي وعرض جميع الأصناف في شاشة الوصفات (BOM)، وإصلاح ظهور تسميات الصف الأول وتصغير الخطوط لتتناسب مع حجم الشاشة.
