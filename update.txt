@@ -1,5 +1,5 @@
-version=4.4.85
+version=4.4.86
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.85&t=1794866859
-sha256=EC94D307368720705036C935E7F2849C7EAB8FA357D558D069253F348F62A55A
-changelog=v4.4.85 - 2026-11-17: إصلاح ترتيب الـ Docking في شاشة البحث عن الأصناف (FrmProductSearch) لإظهار ترويسة الجدول وأول صفوف الأصناف بالكامل دون تداخل مع شريط البحث.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.86&t=1794867779
+sha256=DD2D989E97C28310F41E206CB358E961D6088DCD27C175D22D6A1CEBB06F4BED
+changelog=v4.4.86 - 2026-11-17: تحديث أرصدة المخزون لحظياً عند التبديل بين تبويبات البرنامج (VisibleChanged) في شاشات المبيعات والكاشير، وتحديث أرصدة البحث السريع والأصناف السريعة فوراً دون الحاجة لإغلاق الشاشة أو البرنامج.
