@@ -1,5 +1,5 @@
-version=4.4.81
+version=4.4.82
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.81&t=1794856520
-sha256=5E9B241A128F8BC301D74B55C2B1F12E64E12FBF0B5EADB73ED671593D7CA546
-changelog=v4.4.81 - 2026-11-16: إطلاق المرحلة الثانية لمنظومة التصنيع والوصفات (ProSoft Manufacturing Suite) بهندسة نظيفة خماسية الطبقات (Forms, Services, Repositories, Models, Helpers)، واجهات احترافية موحدة تدعم المطاعم والمصانع، معالجة بطء الشاشات وحساب أقصى طاقة إنتاجية، ربط الصلاحيات، وحل مشكلة مرتجع البيع وقصر الخدمة والضريبة على المطاعم فقط.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.82&t=1794859642
+sha256=D3E6919061E0FD534BDCFE5ABC4D0E858F497AFBB050C14EA7F560A4C0CF6742
+changelog=v4.4.82 - 2026-11-16: إصلاح تداخل وترتيب الـ Docking والاتجاه العربي RTL بالكامل في شاشات التصنيع الخمس، وإصلاح استعلامات SQL في شاشة الخامات وأمر التصنيع والوصفات لتطابق أعمدة قاعدة البيانات الفعلية (MinQuantity, Unit1Name, OutputQty) وتحديث كروت التكلفة والربحية فورياً.
