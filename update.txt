@@ -1,5 +1,5 @@
-version=4.4.76
+version=4.4.77
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.76&t=1794842557
-sha256=B7BA9B90E711BC7B00570FF59830D36AFC683BAC0EA031CE7CA3E634958F8721
-changelog=v4.4.76 - 2026-11-16: General sales return: fixed freezing by removing the heavy product dropdown; items are now searched via the product search screen (click the search field, F2, or double-click the empty center of the screen).
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.77&t=1794846578
+sha256=CC8B42869972673576F77817BD462E4058587053B09A5FC6FD7369C55A434708
+changelog=v4.4.77 - 2026-11-16: وحدة التصنيع والوصفات المتكاملة (Manufacturing & Recipe Management) للمطاعم والكافيهات والمصانع: تعريف الوصفات وإصداراتها، حساب القدرة الإنتاجية الممكنة تلقائياً بناءً على أقل خامة، أوامر التصنيع اليدوي وحساب الهالك والتكلفة والربحية، والربط الدقيق بخصم الخامات مع المبيعات والمرتجعات بدون مخزون سالب وبأعلى دقة محاسبية.
