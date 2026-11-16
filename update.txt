@@ -1,5 +1,5 @@
-version=4.4.80
+version=4.4.81
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.80&t=1794850996
-sha256=58082A15C821318FE801E681F89C6315B8F15707CC73A7557458E61692477AA8
-changelog=v4.4.80 - 2026-11-16: معالجة تهنيج شاشات التصنيع وأوامر التشغيل والوصفات (BOM) عبر تسريع جلب الأرصدة والتكاليف ومنع الاستعلامات المتكررة، وقصر ظهور شاشات وقوائم التصنيع على الحسابات المصرح لها فقط وحصرياً لنشاط المطاعم ونشاط المصانع والإنتاج.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.81&t=1794856520
+sha256=5E9B241A128F8BC301D74B55C2B1F12E64E12FBF0B5EADB73ED671593D7CA546
+changelog=v4.4.81 - 2026-11-16: إطلاق المرحلة الثانية لمنظومة التصنيع والوصفات (ProSoft Manufacturing Suite) بهندسة نظيفة خماسية الطبقات (Forms, Services, Repositories, Models, Helpers)، واجهات احترافية موحدة تدعم المطاعم والمصانع، معالجة بطء الشاشات وحساب أقصى طاقة إنتاجية، ربط الصلاحيات، وحل مشكلة مرتجع البيع وقصر الخدمة والضريبة على المطاعم فقط.
