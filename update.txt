@@ -1,5 +1,5 @@
-version=4.4.79
+version=4.4.80
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.79&t=1794849412
-sha256=9CF3720F2602F163BA5797C6F909115E3938AC6E183BF623AD9BA0CE61DE6B82
-changelog=v4.4.79 - 2026-11-16: قصر ظهور واحتساب رسوم الخدمة والضريبة على نشاط المطاعم والكافيهات فقط (IsRestaurant)، وإخفائها وتعطيلها تماماً في شاشات المبيعات والـ POS لكافة الأنشطة التجارية الأخرى لمنع أي احتساب غير مقصود.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.80&t=1794850996
+sha256=58082A15C821318FE801E681F89C6315B8F15707CC73A7557458E61692477AA8
+changelog=v4.4.80 - 2026-11-16: معالجة تهنيج شاشات التصنيع وأوامر التشغيل والوصفات (BOM) عبر تسريع جلب الأرصدة والتكاليف ومنع الاستعلامات المتكررة، وقصر ظهور شاشات وقوائم التصنيع على الحسابات المصرح لها فقط وحصرياً لنشاط المطاعم ونشاط المصانع والإنتاج.
