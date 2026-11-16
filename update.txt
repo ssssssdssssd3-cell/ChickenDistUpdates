@@ -1,5 +1,5 @@
-version=4.4.75
+version=4.4.76
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.75&t=1794719120
-sha256=B20518D969B475A3762E842BFEF2E64BAFD13633D5D08FDC54F28DE06D74C41B
-changelog=v4.4.75 - 2026-11-15: Resolved screen vertical height constraints and cut-off bottom buttons across forms: streamlined top screen title banner to ultra-compact 25px height, reset child form MinimumSize when docked into content tabs to prevent overflowing laptop/768p viewports, enabled multi-line wrapping on FrmEmployees tabs without scroll arrows, and permanently anchored bottom action buttons (Save/Add/Deactivate/Permissions) at the visible card bottom.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.76&t=1794842557
+sha256=B7BA9B90E711BC7B00570FF59830D36AFC683BAC0EA031CE7CA3E634958F8721
+changelog=v4.4.76 - 2026-11-16: General sales return: fixed freezing by removing the heavy product dropdown; items are now searched via the product search screen (click the search field, F2, or double-click the empty center of the screen).
