@@ -1,5 +1,5 @@
-version=4.4.84
+version=4.4.85
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.84&t=1794866145
-sha256=A2F3BB684A61FCE502B1F802528E2EC2DC3B90EF65C90C8CAEE4997CDE622B75
-changelog=v4.4.84 - 2026-11-16: استبعاد حسابات الفيزا من قائمة الخزينة النقدية في شاشة المبيعات لمنع تسجيل الفواتير النقدية على حساب الفيزا مستقبلاً.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.85&t=1794866859
+sha256=EC94D307368720705036C935E7F2849C7EAB8FA357D558D069253F348F62A55A
+changelog=v4.4.85 - 2026-11-17: إصلاح ترتيب الـ Docking في شاشة البحث عن الأصناف (FrmProductSearch) لإظهار ترويسة الجدول وأول صفوف الأصناف بالكامل دون تداخل مع شريط البحث.
