@@ -1,5 +1,5 @@
-version=4.4.78
+version=4.4.79
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.78&t=1794848541
-sha256=EA072C02F13F15D1C7FCA0443502B2494E5D132A43389EAF8F0B3858BE132648
-changelog=v4.4.78 - 2026-11-16: معالجة جذرية لتهنيج شاشة مرتجع المبيعات وبحث الأصناف: تسريع تحميل الأرصدة إلى أجزاء من الثانية من خلال ProductStock والذاكرة الكاش، منع التكرار اللانهائي للنوافذ الحوارية، وإتاحة اختيار الأصناف ذات الرصيد الصفري في المرتجع العام مع حماية إعادة الدخول والتخطيط البصري السليم.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.79&t=1794849412
+sha256=9CF3720F2602F163BA5797C6F909115E3938AC6E183BF623AD9BA0CE61DE6B82
+changelog=v4.4.79 - 2026-11-16: قصر ظهور واحتساب رسوم الخدمة والضريبة على نشاط المطاعم والكافيهات فقط (IsRestaurant)، وإخفائها وتعطيلها تماماً في شاشات المبيعات والـ POS لكافة الأنشطة التجارية الأخرى لمنع أي احتساب غير مقصود.
