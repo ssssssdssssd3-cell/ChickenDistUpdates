@@ -1,5 +1,5 @@
-version=4.4.83
+version=4.4.84
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.83&t=1794865644
-sha256=C3B862A57A7476077A2A404DE022026D82D44A9B49DC5E4A2C596E43A6E59961
-changelog=v4.4.83 - 2026-11-16: إصلاح ظهور أسماء أزرار البحث وإضافة الخامة، وإضافة زر اختيار المنتج النهائي وعرض جميع الأصناف في شاشة الوصفات (BOM)، وإصلاح ظهور تسميات الصف الأول وتصغير الخطوط لتتناسب مع حجم الشاشة.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.84&t=1794866145
+sha256=A2F3BB684A61FCE502B1F802528E2EC2DC3B90EF65C90C8CAEE4997CDE622B75
+changelog=v4.4.84 - 2026-11-16: استبعاد حسابات الفيزا من قائمة الخزينة النقدية في شاشة المبيعات لمنع تسجيل الفواتير النقدية على حساب الفيزا مستقبلاً.
