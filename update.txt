@@ -1,5 +1,5 @@
-version=4.4.87
+version=4.4.88
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.87&t=1794930317
-sha256=98BCE3E579D98C06090570A1C05361C3BC4CAA6704D132E82442283F7810036A
-changelog=v4.4.87 - 2026-11-17: إصلاح ظهور زري (بحث خامة) و(+ إضافة خامة) في شاشة الوصفات (BOM) عبر تنظيم شريط الإضافة السريعة في صفين منفصلين بوضوح كامل.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.88&t=1794932779
+sha256=EEF9581A9AE7A5CC56ABC12D9A68E012ED3628A09A6FF6354AB8FF2F92619078
+changelog=v4.4.88 - 2026-11-17: دعم أنشطة الكافيهات والمطاعم (Restaurant/Cafe/Cafes) في خاصية IsRestaurant وضبط ارتفاع لوحة العميل في شاشة الـ POS لضمان ظهور زر توليفة العميل دائماً.
