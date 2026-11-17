@@ -1,5 +1,5 @@
-version=4.4.86
+version=4.4.87
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.86&t=1794867779
-sha256=DD2D989E97C28310F41E206CB358E961D6088DCD27C175D22D6A1CEBB06F4BED
-changelog=v4.4.86 - 2026-11-17: تحديث أرصدة المخزون لحظياً عند التبديل بين تبويبات البرنامج (VisibleChanged) في شاشات المبيعات والكاشير، وتحديث أرصدة البحث السريع والأصناف السريعة فوراً دون الحاجة لإغلاق الشاشة أو البرنامج.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.87&t=1794930317
+sha256=98BCE3E579D98C06090570A1C05361C3BC4CAA6704D132E82442283F7810036A
+changelog=v4.4.87 - 2026-11-17: إصلاح ظهور زري (بحث خامة) و(+ إضافة خامة) في شاشة الوصفات (BOM) عبر تنظيم شريط الإضافة السريعة في صفين منفصلين بوضوح كامل.
