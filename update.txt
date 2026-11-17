@@ -1,5 +1,5 @@
-version=4.4.89
+version=4.4.90
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.89&t=1794938294
-sha256=601D765E44E095E6BEC7BC6AF2D5247244B64B457C90E6F876030D7DF037A6F9
-changelog=v4.4.89 - 2026-11-17: إضافة شاشة تقرير توليفات العملاء الخاصة لنشاط الكافيهات والمحامص (FrmClientBlendsReport) لعرض اسم العميل ورقم الهاتف والتوليفة والمقادير مع الطباعة الاحترافية A4 والتصدير المباشر إلى PDF و Excel.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.90&t=1794940184
+sha256=7C3228876B67361041ECA9F462EC6605F8959CDDC6BCCB1D0312ACE72B6571B7
+changelog=v4.4.90 - 2026-11-17: في بون التحضير للمطاعم والكافيهات (FrmKitchenPrint)، تم وضع رقم هاتف العميل في سطر مستقل أسفل اسم العميل مع دعم التفاف الاسم الطويل لضمان ظهور الرقم كاملاً دائماً.
