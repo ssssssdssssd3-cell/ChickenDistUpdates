@@ -1,5 +1,5 @@
-version=4.4.88
+version=4.4.89
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.88&t=1794932779
-sha256=EEF9581A9AE7A5CC56ABC12D9A68E012ED3628A09A6FF6354AB8FF2F92619078
-changelog=v4.4.88 - 2026-11-17: دعم أنشطة الكافيهات والمطاعم (Restaurant/Cafe/Cafes) في خاصية IsRestaurant وضبط ارتفاع لوحة العميل في شاشة الـ POS لضمان ظهور زر توليفة العميل دائماً.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.89&t=1794938294
+sha256=601D765E44E095E6BEC7BC6AF2D5247244B64B457C90E6F876030D7DF037A6F9
+changelog=v4.4.89 - 2026-11-17: إضافة شاشة تقرير توليفات العملاء الخاصة لنشاط الكافيهات والمحامص (FrmClientBlendsReport) لعرض اسم العميل ورقم الهاتف والتوليفة والمقادير مع الطباعة الاحترافية A4 والتصدير المباشر إلى PDF و Excel.
