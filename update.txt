@@ -1,5 +1,5 @@
-version=4.4.91
+version=4.4.92
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.91&t=1795036076
-sha256=7F7BDAE725A62449210A1AF5A8EBF1D31E1B60ED06DF8F2159DB91027CF3EED0
-changelog=v4.4.91 - 2026-11-18: توحيد ألوان وتنظيم كل الشاشات بثيم مريح للعين، إصلاح اختفاء معاينة الطباعة، تسريع البرنامج للعملاء ذوي 3 وحدات، إخفاء كل خيارات ربط الفروع ورصيد الفروع F6 لو الربط غير مفعل، وإمكانية اختيار مندوب/سيلز (حتى لو لا يستخدم البرنامج) في كارت العميل مع احتساب عمولته تلقائياً.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.92&t=1795037188
+sha256=B2884DF7F976E17C2209670588168D02D7757B44B723940E4A7A1E1F8360D29A
+changelog=v4.4.92 - 2026-11-18: رفع أزرار الشريط السفلي في فاتورة المشتريات لتظهر بالكامل على الشاشات المتوسطة بدون قص، وتوسيع أزرار بحث في سجل المبيعات وباقي شاشات التقارير لتظهر كلمة بحث كاملة.
