@@ -1,5 +1,5 @@
-version=4.4.92
+version=4.4.93
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.92&t=1795037188
-sha256=B2884DF7F976E17C2209670588168D02D7757B44B723940E4A7A1E1F8360D29A
-changelog=v4.4.92 - 2026-11-18: رفع أزرار الشريط السفلي في فاتورة المشتريات لتظهر بالكامل على الشاشات المتوسطة بدون قص، وتوسيع أزرار بحث في سجل المبيعات وباقي شاشات التقارير لتظهر كلمة بحث كاملة.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.93&t=1795040830
+sha256=FA0010B116BFA6EE21CC484DB0EED8E6A212D3ACA14983C547D416B9E067FB46
+changelog=v4.4.93 - 2026-11-19: إصلاح ظهور الخطوط الزرقاء المتكررة في الجداول عند التمرير الأفقي وتحسين سرعة الرسم، وتحديث أيقونة البرنامج (logo.ico) بلوجو ProSoft الذهبي الجديد بدقة متعددة لجميع الشاشات والنوافذ.
