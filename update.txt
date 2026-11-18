@@ -1,5 +1,5 @@
-version=4.4.90
+version=4.4.91
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.90&t=1794940184
-sha256=7C3228876B67361041ECA9F462EC6605F8959CDDC6BCCB1D0312ACE72B6571B7
-changelog=v4.4.90 - 2026-11-17: في بون التحضير للمطاعم والكافيهات (FrmKitchenPrint)، تم وضع رقم هاتف العميل في سطر مستقل أسفل اسم العميل مع دعم التفاف الاسم الطويل لضمان ظهور الرقم كاملاً دائماً.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.91&t=1795036076
+sha256=7F7BDAE725A62449210A1AF5A8EBF1D31E1B60ED06DF8F2159DB91027CF3EED0
+changelog=v4.4.91 - 2026-11-18: توحيد ألوان وتنظيم كل الشاشات بثيم مريح للعين، إصلاح اختفاء معاينة الطباعة، تسريع البرنامج للعملاء ذوي 3 وحدات، إخفاء كل خيارات ربط الفروع ورصيد الفروع F6 لو الربط غير مفعل، وإمكانية اختيار مندوب/سيلز (حتى لو لا يستخدم البرنامج) في كارت العميل مع احتساب عمولته تلقائياً.
