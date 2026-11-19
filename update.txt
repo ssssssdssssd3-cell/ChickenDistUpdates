@@ -1,5 +1,5 @@
-version=4.4.96
+version=4.4.97
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.96&t=1795103386
-sha256=5D0138C2B9599F11DFF0BD1A877DFE51A21AEA2ABD557E5BE5E49A53FDB9AFAF
-changelog=v4.4.96 - 2026-11-19: إضافة خلفية ضبابية محيطية احترافية (Ambient Blurred Backdrop) مستخرجة تلقائياً من لوجو أو بوستر الشاشة الرئيسية لملء الجانبين الأيمن والأيسر بالكامل بشكل متناسق وأنيق بدون فراغات سوداء أو مطّ للصورة.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.97&t=1795104554
+sha256=C3DEC9843112CB1ED1E5E131EF7D16CB0C6855B39EB3C639546DC977EA60B008
+changelog=v4.4.97 - 2026-11-19: تضمين أيقونة ProSoft الذهبية الرسمية داخل ملف البرنامج وتحديث أيقونة اختصار سطح المكتب وقائمة ابدأ تلقائياً وفورياً عند كل عميل بعد التحديث مع كسر كاش أيقونات الويندوز، حتى لو كان للعميل لوجو خاص به داخل البرنامج.
