@@ -1,5 +1,5 @@
-version=4.4.95
+version=4.4.96
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.95&t=1795102690
-sha256=35FCEE8BB6DD7E14254A46917DBB40719782837CDB670C4CF5DDA05F2119C00B
-changelog=v4.4.95 - 2026-11-19: جعل خلفية ولوجو الشاشة الرئيسية يملآن كامل الشاشة (100% من الحافة للحافة) مع تلاشي شفاف للحواف لإخفاء أي حدود مربعة وتكبير الشعار الذهبي بوضوح تام.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.96&t=1795103386
+sha256=5D0138C2B9599F11DFF0BD1A877DFE51A21AEA2ABD557E5BE5E49A53FDB9AFAF
+changelog=v4.4.96 - 2026-11-19: إضافة خلفية ضبابية محيطية احترافية (Ambient Blurred Backdrop) مستخرجة تلقائياً من لوجو أو بوستر الشاشة الرئيسية لملء الجانبين الأيمن والأيسر بالكامل بشكل متناسق وأنيق بدون فراغات سوداء أو مطّ للصورة.
