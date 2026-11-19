@@ -1,5 +1,5 @@
-version=4.4.94
+version=4.4.95
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.94&t=1795041020
-sha256=1C84F3CE9897DDC054E412CC7DA4426424F566F7CA4D4EAC66C59229EB59E36D
-changelog=v4.4.94 - 2026-11-19: توسيع لوجو الشاشة الرئيسية ليمتد بكامل مساحة الشاشة بدمج سلس بدون حدود مربعة، مع تحديث رقم الإصدار المعروض تلقائياً، وتضمين كافة تحديثات الأيقونة الذهبية الجديدة وإصلاح خطوط الجداول.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.95&t=1795102690
+sha256=35FCEE8BB6DD7E14254A46917DBB40719782837CDB670C4CF5DDA05F2119C00B
+changelog=v4.4.95 - 2026-11-19: جعل خلفية ولوجو الشاشة الرئيسية يملآن كامل الشاشة (100% من الحافة للحافة) مع تلاشي شفاف للحواف لإخفاء أي حدود مربعة وتكبير الشعار الذهبي بوضوح تام.
