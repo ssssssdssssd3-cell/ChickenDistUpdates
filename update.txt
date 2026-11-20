@@ -1,5 +1,5 @@
-version=4.4.97
+version=4.4.98
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.97&t=1795104554
-sha256=C3DEC9843112CB1ED1E5E131EF7D16CB0C6855B39EB3C639546DC977EA60B008
-changelog=v4.4.97 - 2026-11-19: تضمين أيقونة ProSoft الذهبية الرسمية داخل ملف البرنامج وتحديث أيقونة اختصار سطح المكتب وقائمة ابدأ تلقائياً وفورياً عند كل عميل بعد التحديث مع كسر كاش أيقونات الويندوز، حتى لو كان للعميل لوجو خاص به داخل البرنامج.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.98&t=1795200488
+sha256=1186DCCACD26F57BA10F697DEB923662CADF83ECF72BF85416F3D00FB881A48E
+changelog=v4.4.98 - 2026-11-20: تحديث محاسبي شامل يعالج أكثر من 35 نقطة ضعف محاسبية عبر المبيعات والمشتريات ومتوسط التكلفة والخزائن والورديات والقوائم المالية والأصول الثابتة والشركاء والأقساط والرواتب والجرد والتحويلات المخزنية + إضافة إمكانية طباعة ومعاينة أصناف الوردية على طابعة الريسيت الحراري 80mm من شاشة تقفيل الوردية وتقارير الورديات.
