@@ -1,5 +1,5 @@
-version=4.4.98
+version=4.4.99
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.98&t=1795200488
-sha256=1186DCCACD26F57BA10F697DEB923662CADF83ECF72BF85416F3D00FB881A48E
-changelog=v4.4.98 - 2026-11-20: تحديث محاسبي شامل يعالج أكثر من 35 نقطة ضعف محاسبية عبر المبيعات والمشتريات ومتوسط التكلفة والخزائن والورديات والقوائم المالية والأصول الثابتة والشركاء والأقساط والرواتب والجرد والتحويلات المخزنية + إضافة إمكانية طباعة ومعاينة أصناف الوردية على طابعة الريسيت الحراري 80mm من شاشة تقفيل الوردية وتقارير الورديات.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.4.99&t=1795227419
+sha256=98BCC413C8F979AA2691F9AAE6932A90A1187BA0E1F45C3458B7221D5231C95D
+changelog=v4.4.99 - 2026-11-21: تحديث شامل لتوحيد وضبط أرصدة المخزون وتسريع فتح الشاشات والحفظ (5× إلى 10×): معالجة جذرية لمشكلة تضارب الرصيد الفعلي عند الحفظ (توحيد القراءة من ProductStock والتحديث الذري داخل المعاملة وتصحيح معاملات الوحدات المتعددة وتواريخ الصلاحية والـ BOM والاستيراد)، وإزالة استعلامات الفحص والتزامن المتكررة، وتحسين كاش الأصناف والعملاء والمخزون، وإلغاء إعادة بناء القوائم وإبطاء الرسومات وتجميد الشاشات عند الفتح والحفظ والتنقل بين التبويبات.
