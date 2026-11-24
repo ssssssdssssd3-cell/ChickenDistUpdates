@@ -1,5 +1,5 @@
-version=4.5.2
+version=4.5.3
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.2&t=1795548146
-sha256=E619509AF1080FCD292996150478C14F4C14D36349CCEC09355865185616F370
-changelog=v4.5.2 - 2026-11-24: حل مشكلة عدم ظهور الفواتير في سجل المشتريات وإظهار عمود القسم في تفاصيل الأصناف.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.3&t=1795548709
+sha256=926F136A7ED6975315081F5D4E52B9A5306FDB60B9D194266E3BC5FC1DF7E291
+changelog=v4.5.3 - 2026-11-24: تحديث شامل: حل مشكلة عدم ظهور الفواتير في سجل المشتريات وإظهار عمود القسم في تفاصيل الأصناف.
