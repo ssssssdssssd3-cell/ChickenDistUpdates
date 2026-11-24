@@ -1,5 +1,5 @@
-version=4.5.01
+version=4.5.0
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.01&t=1795259982
-sha256=24598EF93F0CD4DB61F02464FDBAB0D666478194FA4AFFE96887B2CD9EE1571F
-changelog=v4.5.01 - 2026-11-21: تنسيق طباعة منظومة التصنيع (A4 وريسيت 80mm)، إصلاح عرض واسترجاع أوامر التصنيع المعلقة وطباعة أمر التصنيع، إعادة تصميم شاشة الوصفات (تقسيم علوي/سفلي، تحميل الوصفات المحفوظة فقط، وإضافة الخامات مباشرة من البحث)، إصلاح تعليق شاشة تتبع أجهزة الضمان وإعادة تنسيقها مع إضافة حقل عدد القطع وإثباته في إيصالي الاستلام والتسليم والواتساب، وإصلاح محرك الاقتراح الذكي لأمر الشراء وإعادة تنسيق جدوله وفلاتره.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.0&t=1795539962
+sha256=4F9811B24A09798F81746B1DE3E9DCB9C7FEBFEF62DB6203537BA0A70D5C618B
+changelog=v4.5.0 - 2026-11-24: إصلاح عدم ظهور عمود "القسم" في تفاصيل أصناف سجل المشتريات.
