@@ -1,5 +1,5 @@
-version=4.5.3
+version=4.5.4
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.3&t=1795548709
-sha256=926F136A7ED6975315081F5D4E52B9A5306FDB60B9D194266E3BC5FC1DF7E291
-changelog=v4.5.3 - 2026-11-24: تحديث شامل: حل مشكلة عدم ظهور الفواتير في سجل المشتريات وإظهار عمود القسم في تفاصيل الأصناف.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.4&t=1795699006
+sha256=E87DB08257602CB476A566E9F791D4A3601984644687E2122BBDB91546D4731D
+changelog=v4.5.4 - 2026-11-26: 1) دعم تقسيم الوحدات (ربع/نص/كيلو أو وحدات الصنف) في المتجر الإلكتروني وشاشة استقبال الطلبات 2) إخفاء كلمة مرور تفعيل اشتراك الأونلاين وحفظ الاشتراك في قاعدة البيانات لضمان استمراره 3) إصلاح قواعد Firebase لمنع توقف تطبيق الموبايل.

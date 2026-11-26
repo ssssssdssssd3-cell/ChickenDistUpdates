@@ -16,7 +16,7 @@ echo [1/2] Setting project: %PROJECT_ID%...
 call npx -y firebase-tools use %PROJECT_ID% --add
 echo.
 echo [2/2] Deploying files to Firebase Hosting...
-call npx -y firebase-tools deploy --only hosting,database,firestore --project %PROJECT_ID%
+call npx -y firebase-tools deploy --only hosting --project %PROJECT_ID%
 echo.
 echo ========================================================
 echo   Deployed successfully!

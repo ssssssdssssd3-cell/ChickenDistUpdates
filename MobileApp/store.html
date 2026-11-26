@@ -3322,6 +3322,50 @@
       renderProducts();
     }
 
+    const selectedUnitsMap = {};
+
+    function getProductUnits(p) {
+      if (Array.isArray(p.Units) && p.Units.length > 0) {
+        return p.Units.map(u => ({
+          Name: String(u.Name || p.Unit || 'قطعة').trim(),
+          Price: parseFloat(u.Price || 0),
+          Factor: parseFloat(u.Factor || 1) || 1
+        }));
+      }
+      const baseUnit = String(p.Unit || 'قطعة').trim();
+      const basePrice = parseFloat(p.Price || 0);
+      const uLow = baseUnit.toLowerCase();
+      const isKilo = ['كيلو', 'كجم', 'kg', 'كيلوجرام', 'كيلوغرام', 'كيلو جرام'].includes(uLow);
+      if (isKilo && basePrice > 0) {
+        return [
+          { Name: 'ربع كيلو', Price: Math.round(basePrice * 0.25 * 100) / 100, Factor: 0.25 },
+          { Name: 'نص كيلو', Price: Math.round(basePrice * 0.50 * 100) / 100, Factor: 0.50 },
+          { Name: baseUnit, Price: basePrice, Factor: 1 }
+        ];
+      }
+      return [{ Name: baseUnit, Price: basePrice, Factor: 1 }];
+    }
+
+    function getSelectedProductUnit(p) {
+      const units = getProductUnits(p);
+      const chosenName = selectedUnitsMap[p.ProductID];
+      if (chosenName) {
+        const found = units.find(u => u.Name === chosenName);
+        if (found) return found;
+      }
+      const mainUnit = units.find(u => u.Name === String(p.Unit || '').trim()) || units[units.length - 1];
+      return mainUnit;
+    }
+
+    function selectProductUnit(productId, unitName) {
+      selectedUnitsMap[productId] = unitName;
+      renderProducts();
+    }
+
+    function escapeAttr(str) {
+      return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
     function renderProducts() {
       const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
       let grid = document.getElementById('productsGrid');
@@ -3382,13 +3426,30 @@
 
       grid.innerHTML = filtered.map(p => {
         try {
-          const inCartItem = cart.find(c => c.ProductID == p.ProductID);
+          const prodUnits = getProductUnits(p);
+          const selUnit = getSelectedProductUnit(p);
+          const inCartItem = cart.find(c => c.ProductID == p.ProductID && (c.Unit || p.Unit || 'قطعة') === selUnit.Name);
           const inCartQty = inCartItem ? inCartItem.Quantity : 0;
 
           // فحص إظهار السعر
           const priceHtml = storeConfig.ShowPrices
-            ? `<div class="font-black text-emerald-400 text-sm sm:text-base">${parseFloat(p.Price || 0).toFixed(2)} <span class="text-[10px] text-slate-400">ج.م</span></div>`
+            ? `<div class="font-black text-emerald-400 text-sm sm:text-base">${parseFloat(selUnit.Price || 0).toFixed(2)} <span class="text-[10px] text-slate-400">ج.م</span></div>`
             : `<div class="text-[11px] font-bold text-amber-300/90">السعر عند الطلب 📞</div>`;
+
+          // شريط اختيار الوحدات (ربع / نص / كيلو أو وحدات الصنف)
+          const unitsHtml = prodUnits.length > 1 ? `
+            <div class="mt-2 flex flex-wrap gap-1.5" onclick="event.stopPropagation()">
+              ${prodUnits.map(u => {
+                const isActive = u.Name === selUnit.Name;
+                return `<button type="button" onclick="selectProductUnit(${p.ProductID}, '${escapeAttr(u.Name)}')"
+                  class="flex-1 min-w-[3.1rem] py-1 px-1.5 rounded-lg text-[10.5px] font-extrabold border transition-all cursor-pointer active:scale-95 ${
+                    isActive
+                      ? 'bg-blue-600 text-white border-blue-400 shadow-sm shadow-blue-600/30'
+                      : 'bg-slate-900/70 text-slate-300 border-slate-700/70 hover:border-blue-500/50 hover:text-white'
+                  }">${u.Name}</button>`;
+              }).join('')}
+            </div>
+          ` : '';
 
           // فحص إظهار رصيد المخزون
           let stockHtml = '';
@@ -3476,8 +3537,9 @@
 
                 <div class="pt-2 flex items-baseline justify-between border-t border-slate-800/40">
                   ${priceHtml}
-                  <span class="text-[10px] text-slate-400 font-medium">${p.Unit ? `لكل ${p.Unit}` : ''}</span>
+                  <span class="text-[10px] text-slate-400 font-medium">${selUnit.Name ? `لكل ${selUnit.Name}` : ''}</span>
                 </div>
+                ${unitsHtml}
 
                 <!-- زر فوائد ومكونات ومواصفات الصنف للموقع والمنيو -->
                 ${(p.OnlineDescription || p.Description || p.Benefits || '').trim() ? `
@@ -3495,11 +3557,11 @@
               <div class="mt-3 pt-2.5 border-t border-slate-800/80">
                 ${inCartQty > 0 ? `
                   <div class="flex items-center justify-between bg-slate-900/90 rounded-xl p-1 border border-blue-500/40 shadow-sm">
-                    <button onclick="updateItemQuantity(${p.ProductID}, -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-90 text-white font-bold flex items-center justify-center transition">
+                    <button onclick="updateItemQuantity(${p.ProductID}, -1, '${escapeAttr(selUnit.Name)}')" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-90 text-white font-bold flex items-center justify-center transition">
                       <i class="fa-solid fa-minus text-[10px]"></i>
                     </button>
                     <span class="font-black text-white text-xs px-2">${inCartQty}</span>
-                    <button onclick="updateItemQuantity(${p.ProductID}, 1)" class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-bold flex items-center justify-center transition">
+                    <button onclick="updateItemQuantity(${p.ProductID}, 1, '${escapeAttr(selUnit.Name)}')" class="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 active:scale-90 text-white font-bold flex items-center justify-center transition">
                       <i class="fa-solid fa-plus text-[10px]"></i>
                     </button>
                   </div>
@@ -3793,7 +3855,8 @@
       if (!container || !activeGalleryProduct) return;
 
       const p = activeGalleryProduct;
-      const inCartItem = cart.find(c => c.ProductID == p.ProductID);
+      const selUnit = getSelectedProductUnit(p);
+      const inCartItem = cart.find(c => c.ProductID == p.ProductID && (c.Unit || p.Unit || 'قطعة') === selUnit.Name);
       const inCartQty = inCartItem ? inCartItem.Quantity : 0;
       const isOutOfStock = storeConfig.ShowStockQty && parseFloat(p.StockQty || 0) <= 0;
 
@@ -3820,11 +3883,11 @@
         container.innerHTML = `
           <div class="flex items-center gap-2">
             <div class="flex-1 flex items-center justify-between bg-slate-900 rounded-xl p-1.5 border border-blue-500/40">
-              <button onclick="updateItemQuantity(${p.ProductID}, -1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition">
+              <button onclick="updateItemQuantity(${p.ProductID}, -1, '${escapeAttr(selUnit.Name)}'); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition">
                 <i class="fa-solid fa-minus text-xs"></i>
               </button>
-              <span class="font-black text-white text-sm px-3">${inCartQty} في السلة</span>
-              <button onclick="updateItemQuantity(${p.ProductID}, 1); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center transition">
+              <span class="font-black text-white text-sm px-3">${inCartQty} (${selUnit.Name}) في السلة</span>
+              <button onclick="updateItemQuantity(${p.ProductID}, 1, '${escapeAttr(selUnit.Name)}'); renderGalleryFooterAction();" class="w-9 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center justify-center transition">
                 <i class="fa-solid fa-plus text-xs"></i>
               </button>
             </div>
@@ -3857,7 +3920,7 @@
     // ──────────────────────────────────────────
     // 4. إدارة سلة المشتريات (Cart Operations)
     // ──────────────────────────────────────────
-    function addToCart(productId) {
+    function addToCart(productId, unitNameOverride) {
       if (!isOrderingAllowed()) {
         alert("خدمة الطلب أونلاين غير مفعلة حالياً، القائمة معروضة للعرض والتصفح فقط.");
         return;
@@ -3870,25 +3933,38 @@
         return;
       }
 
-      const existing = cart.find(c => c.ProductID == productId);
+      const prodUnits = getProductUnits(prod);
+      const selUnit = unitNameOverride
+        ? (prodUnits.find(u => u.Name === unitNameOverride) || getSelectedProductUnit(prod))
+        : getSelectedProductUnit(prod);
+
+      const unitName = selUnit.Name || prod.Unit || 'قطعة';
+      const unitPrice = parseFloat(selUnit.Price || prod.Price || 0);
+      const unitFactor = parseFloat(selUnit.Factor || 1) || 1;
+
+      const existing = cart.find(c => c.ProductID == productId && (c.Unit || prod.Unit || 'قطعة') === unitName);
       if (existing) {
         if (storeConfig.ShowStockQty) {
           const maxStock = parseFloat(prod.StockQty || 0);
-          if (maxStock > 0 && existing.Quantity >= maxStock) {
+          const totalReqStock = cart
+            .filter(c => c.ProductID == productId)
+            .reduce((s, c) => s + ((parseFloat(c.Quantity) || 0) * (parseFloat(c.Factor) || 1)), 0) + unitFactor;
+          if (maxStock > 0 && totalReqStock > maxStock + 0.0001) {
             alert(`عذراً، أقصى كمية متاحة في المخزن حالياً هي ${maxStock} ${prod.Unit || ''}`);
             return;
           }
         }
         existing.Quantity += 1;
-        existing.TotalPrice = existing.Quantity * existing.Price;
+        existing.TotalPrice = Math.round(existing.Quantity * existing.Price * 100) / 100;
       } else {
         cart.push({
           ProductID: prod.ProductID,
           ProductName: prod.ProductName,
-          Unit: prod.Unit || 'قطعة',
-          Price: parseFloat(prod.Price || 0),
+          Unit: unitName,
+          Factor: unitFactor,
+          Price: unitPrice,
           Quantity: 1,
-          TotalPrice: parseFloat(prod.Price || 0)
+          TotalPrice: Math.round(unitPrice * 100) / 100
         });
       }
 
@@ -3897,15 +3973,21 @@
       updateCartBadge();
     }
 
-    function updateItemQuantity(productId, delta) {
+    function updateItemQuantity(productId, delta, unitName) {
       if (!isOrderingAllowed()) return;
-      const idx = cart.findIndex(c => c.ProductID == productId);
+      const idx = unitName
+        ? cart.findIndex(c => c.ProductID == productId && (c.Unit || 'قطعة') === unitName)
+        : cart.findIndex(c => c.ProductID == productId);
       if (idx === -1) return;
 
       if (delta > 0 && storeConfig.ShowStockQty) {
         const prod = products.find(p => p.ProductID == productId);
         const maxStock = parseFloat(prod?.StockQty || 0);
-        if (maxStock > 0 && cart[idx].Quantity >= maxStock) {
+        const itemFactor = parseFloat(cart[idx].Factor || 1) || 1;
+        const totalReqStock = cart
+          .filter(c => c.ProductID == productId)
+          .reduce((s, c) => s + ((parseFloat(c.Quantity) || 0) * (parseFloat(c.Factor) || 1)), 0) + itemFactor;
+        if (maxStock > 0 && totalReqStock > maxStock + 0.0001) {
           alert(`عذراً، أقصى كمية متاحة في المخزن حالياً هي ${maxStock} ${prod?.Unit || ''}`);
           return;
         }
@@ -3915,7 +3997,7 @@
       if (cart[idx].Quantity <= 0) {
         cart.splice(idx, 1);
       } else {
-        cart[idx].TotalPrice = cart[idx].Quantity * cart[idx].Price;
+        cart[idx].TotalPrice = Math.round(cart[idx].Quantity * cart[idx].Price * 100) / 100;
       }
 
       saveCartToStorage();
@@ -3924,8 +4006,10 @@
       updateCartBadge();
     }
 
-    function removeFromCart(productId) {
-      cart = cart.filter(c => c.ProductID != productId);
+    function removeFromCart(productId, unitName) {
+      cart = unitName
+        ? cart.filter(c => !(c.ProductID == productId && (c.Unit || 'قطعة') === unitName))
+        : cart.filter(c => c.ProductID != productId);
       saveCartToStorage();
       renderProducts();
       renderCartDrawer();
@@ -4073,16 +4157,16 @@
             ` : ''}
             
             <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700">
-              <button onclick="updateItemQuantity(${it.ProductID}, -1)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white">
+              <button onclick="updateItemQuantity(${it.ProductID}, -1, '${escapeAttr(it.Unit || 'قطعة')}')" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white">
                 <i class="fa-solid fa-minus text-[9px]"></i>
               </button>
               <span class="text-xs font-bold px-1.5 text-white">${it.Quantity}</span>
-              <button onclick="updateItemQuantity(${it.ProductID}, 1)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white">
+              <button onclick="updateItemQuantity(${it.ProductID}, 1, '${escapeAttr(it.Unit || 'قطعة')}')" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white">
                 <i class="fa-solid fa-plus text-[9px]"></i>
               </button>
             </div>
 
-            <button onclick="removeFromCart(${it.ProductID})" title="حذف" class="p-1.5 text-slate-500 hover:text-rose-400 transition text-xs">
+            <button onclick="removeFromCart(${it.ProductID}, '${escapeAttr(it.Unit || 'قطعة')}')" title="حذف" class="p-1.5 text-slate-500 hover:text-rose-400 transition text-xs">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </div>
@@ -4316,16 +4400,26 @@
         localStorage.setItem('prosoft_store_cust_info', JSON.stringify({ name, phone, address }));
       } catch(e) {}
 
-      // التحقق من صحة الأسعار بمقارنتها مع قائمة المنتجات الحالية
+      // التحقق من صحة الأسعار بمقارنتها مع قائمة المنتجات الحالية والوحدة المختارة
       const verifiedItems = cart.map(it => {
         const prod = products.find(p => p.ProductID == it.ProductID);
-        const unitPrice = (prod && typeof prod.Price === 'number' && prod.Price > 0) ? prod.Price : it.Price;
+        const targetUnitName = (it.Unit || (prod && prod.Unit) || "قطعة").trim();
+        let unitPrice = it.Price;
+        if (prod) {
+          const prodUnits = getProductUnits(prod);
+          const matchedUnit = prodUnits.find(u => u.Name === targetUnitName);
+          if (matchedUnit && matchedUnit.Price > 0) {
+            unitPrice = matchedUnit.Price;
+          } else if (typeof prod.Price === 'number' && prod.Price > 0 && targetUnitName === (prod.Unit || '').trim()) {
+            unitPrice = prod.Price;
+          }
+        }
         const qty = Math.max(1, parseInt(it.Quantity) || 1);
         const lineTotal = Math.round(unitPrice * qty * 100) / 100;
         return {
           ProductID: it.ProductID,
           ProductName: (prod && prod.ProductName) ? prod.ProductName : it.ProductName,
-          UnitName: (prod && prod.Unit) ? prod.Unit : (it.Unit || "قطعة"),
+          UnitName: targetUnitName,
           Quantity: qty,
           UnitPrice: unitPrice,
           TotalPrice: lineTotal,
