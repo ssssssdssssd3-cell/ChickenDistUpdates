@@ -1,5 +1,5 @@
-version=4.5.4
+version=4.5.5
 url=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin
-download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.4&t=1795699006
-sha256=E87DB08257602CB476A566E9F791D4A3601984644687E2122BBDB91546D4731D
-changelog=v4.5.4 - 2026-11-26: 1) دعم تقسيم الوحدات (ربع/نص/كيلو أو وحدات الصنف) في المتجر الإلكتروني وشاشة استقبال الطلبات 2) إخفاء كلمة مرور تفعيل اشتراك الأونلاين وحفظ الاشتراك في قاعدة البيانات لضمان استمراره 3) إصلاح قواعد Firebase لمنع توقف تطبيق الموبايل.
+download=https://raw.githubusercontent.com/ssssssdssssd3-cell/ChickenDistUpdates/main/ChickenDist.bin?v=4.5.5&t=1795887082
+sha256=BB2EA600B0D6D63A2680656CB80EC281F0F61767878304CC84CC32359A0702D9
+changelog=v4.5.5 - 2026-11-28: إصلاح خطأ حساب إجمالي المرتجعات وصافي الربح في تقرير مبيعات العملاء والمسدد (منع تكرار قيمة فاتورة المرتجع عند وجود أكثر من صنف بداخلها).
